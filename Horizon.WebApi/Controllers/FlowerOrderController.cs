@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,8 @@ using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
 using Horizon.WebApi.Identity.Users;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Orleans;
 using Orleans.Configuration;
 
@@ -45,9 +48,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{orderId}")]
-        public async Task<ResultVM<OrderState>> GetOrderAsync(long orderId)
+        public async Task<ResultVM<OrderDto>> GetOrderAsync(long orderId)
         {
-            var result = new ResultVM<OrderState>();
+            var result = new ResultVM<OrderDto>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -79,7 +82,7 @@ namespace Horizon.WebApi.Controllers
                     }
                 }
 
-                result.Data = order;
+                result.Data = order is null ? null : FlowerDtoMapper.ToDto(order);
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -199,6 +202,210 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        /// <summary>
+        /// 创建订单（行情品种直购）。
+        /// 客户端行情页下单：items 可传 productId（商品直购）或 speciesId（行情品种直购）。
+        /// 品种直购时按 speciesId 匹配在售商品；无匹配则以服务端行情快照价自动创建「行情直供」商品并上架，
+        /// 订单金额一律以服务端商品价格为准。
+        /// </summary>
+        [HttpPost("create")]
+        public async Task<ResultVM<CreateOrderResultDto>> CreateOrderAsync([FromBody] CreateOrderRequest request)
+        {
+            var result = new ResultVM<CreateOrderResultDto>();
+            try
+            {
+                var userId = GetAuthenticatedUserId();
+                if (userId == Guid.Empty)
+                {
+                    result.ErrorMessage = "用户未认证";
+                    return result;
+                }
+
+                if (request?.Items == null || request.Items.Count == 0 || request.Items.Count > 100)
+                {
+                    result.ErrorMessage = "商品列表为空或超出限制";
+                    return result;
+                }
+
+                if (IsRateLimited(userId))
+                {
+                    result.ErrorMessage = "下单过于频繁，请稍后再试";
+                    return result;
+                }
+
+                if (!TryBeginOrderCreation(userId))
+                {
+                    result.ErrorMessage = "存在进行中的下单请求，请稍候";
+                    return result;
+                }
+
+                try
+                {
+                    var client = await OrleansConnectClient();
+
+                    // 逐项解析商品：productId 优先，其次按 speciesId 匹配在售商品/自动创建直供商品
+                    var orderItems = new List<OrderItemState>();
+                    long merchantId = 0;
+                    foreach (var item in request.Items)
+                    {
+                        if (item.Quantity <= 0)
+                        {
+                            result.ErrorMessage = $"商品数量无效：{item.ProductName}";
+                            return result;
+                        }
+
+                        var resolved = await ResolveOrCreateProductAsync(client, item);
+                        if (resolved == null)
+                        {
+                            result.ErrorMessage = $"品种「{item.ProductName}」暂无在售商品且行情快照缺失，无法下单";
+                            return result;
+                        }
+
+                        if (merchantId == 0)
+                        {
+                            merchantId = resolved.MerchantId;
+                        }
+
+                        orderItems.Add(new OrderItemState
+                        {
+                            ProductId = resolved.ProductId,
+                            SpeciesId = resolved.SpeciesId,
+                            Quantity = item.Quantity
+                        });
+                    }
+
+                    var orderState = new OrderState
+                    {
+                        BuyerId = userId,
+                        MerchantId = merchantId,
+                        Items = orderItems,
+                        ShippingAddress = Sanitize(request.ShippingAddress),
+                        ShipTo = Sanitize(request.ShipTo),
+                        CellPhone = Sanitize(request.CellPhone),
+                        Address = Sanitize(request.Address),
+                        Platform = "1"
+                    };
+
+                    // 临时 Grain Key 下单（与 FlowerProductController 创建商品同模式），落库后返回真实 OrderId
+                    var tempGrainId = DateTimeOffset.UtcNow.Ticks;
+                    var orderGrain = client.GetGrain<IOrderGrain>(tempGrainId);
+                    var created = await orderGrain.CreateOrderAsync(orderState);
+                    if (created == null || created.OrderId <= 0)
+                    {
+                        result.ErrorMessage = "创建订单失败（商品校验未通过或库存不足）";
+                        return result;
+                    }
+
+                    result.Data = new CreateOrderResultDto
+                    {
+                        OrderId = created.OrderId,
+                        OrderNo = created.OrderNo,
+                        OrderTotalAmount = created.OrderTotalAmount,
+                        ProductTotalAmount = created.ProductTotalAmount,
+                        Status = (int)created.Status
+                    };
+                    result.IsSuccess = true;
+
+                    _logger.LogInformation("行情直购订单创建成功: OrderId={OrderId}, OrderNo={OrderNo}, UserId={UserId}, Amount={Amount}",
+                        created.OrderId, created.OrderNo, userId, created.OrderTotalAmount);
+                }
+                finally
+                {
+                    EndOrderCreation(userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "创建订单异常");
+                result.ErrorMessage = "创建订单失败";
+            }
+            return result;
+        }
+
+        /// <summary>解析下单商品：productId 优先；否则按 speciesId 找在售商品；再无则以行情快照价自动创建直供商品。</summary>
+        private async Task<ProductState?> ResolveOrCreateProductAsync(IClusterClient client, CreateOrderItem item)
+        {
+            // 1. 指定商品直购
+            if (item.ProductId > 0)
+            {
+                var productGrain = client.GetGrain<IProductGrain>(item.ProductId);
+                return await productGrain.GetProductAsync();
+            }
+
+            if (item.SpeciesId <= 0)
+            {
+                return null;
+            }
+
+            // 2. 品种在售商品匹配（须已上架且审核通过）
+            var queryGrain = client.GetGrain<IFlowerQueryGrain>(0);
+            var candidates = await queryGrain.QueryActiveProductsAsync(item.SpeciesId, 0, 20);
+            var matched = candidates?.FirstOrDefault(p => p.IsActive && p.AuditStatus == 1 && p.Stock >= item.Quantity);
+            if (matched != null)
+            {
+                return matched;
+            }
+
+            // 3. 无在售商品：以服务端行情快照价自动创建「行情直供」商品
+            var marketGrain = client.GetGrain<IFlowerMarketGrain>(FlowerSpeciesCatalog.DounanMarketId);
+            var snapshots = await marketGrain.GetMarketOverviewAsync();
+            var snapshot = snapshots?.FirstOrDefault(s => s.SpeciesId == item.SpeciesId);
+            var price = snapshot?.AvgPrice ?? 0m;
+            var speciesName = FlowerSpeciesCatalog.GetName(item.SpeciesId);
+            if (price <= 0)
+            {
+                _logger.LogWarning("品种直购失败：无在售商品且行情快照无价格 SpeciesId={SpeciesId}", item.SpeciesId);
+                return null;
+            }
+
+            var tempGrainId = DateTimeOffset.UtcNow.Ticks;
+            var newProductGrain = client.GetGrain<IProductGrain>(tempGrainId);
+            var product = await newProductGrain.CreateProductAsync(new ProductState
+            {
+                MerchantId = 1,
+                SpeciesId = item.SpeciesId,
+                ProductName = $"{speciesName}（行情直供）",
+                Description = $"斗南行情直供：{speciesName}",
+                Price = price,
+                Stock = 999999,
+                Unit = "扎",
+                IsActive = true
+            });
+            if (product == null || product.ProductId <= 0)
+            {
+                return null;
+            }
+
+            // 自动审核通过（OrderGrain 要求 AuditStatus==1 才可下单）
+            await newProductGrain.AuditProductAsync(product.ProductId, true, "行情直供自动上架");
+            product.AuditStatus = 1;
+
+            _logger.LogInformation("行情直供商品自动创建: ProductId={ProductId}, SpeciesId={SpeciesId}, Price={Price}",
+                product.ProductId, item.SpeciesId, price);
+            return product;
+        }
+
+        private static string Sanitize(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return string.Empty;
+            }
+            var trimmed = input.Trim();
+            return trimmed.Length > 500 ? trimmed.Substring(0, 500) : trimmed;
+        }
+
+        private bool TryBeginOrderCreation(Guid userId)
+        {
+            CleanupExpiredEntries();
+            return _activeOrderCreations.TryAdd(userId, DateTime.UtcNow);
+        }
+
+        private void EndOrderCreation(Guid userId)
+        {
+            _activeOrderCreations.TryRemove(userId, out _);
+        }
+
         [HttpPost("{orderId}/cancel")]
         public async Task<ResultVM<bool>> CancelOrderAsync(long orderId, [FromQuery] string? reason = null)
         {
@@ -316,9 +523,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("my-orders")]
-        public async Task<ResultVM<List<OrderState>>> MyOrdersAsync([FromQuery] Guid buyerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<OrderDto>>> MyOrdersAsync([FromQuery] Guid buyerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<OrderState>>();
+            var result = new ResultVM<List<OrderDto>>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -341,7 +548,8 @@ namespace Horizon.WebApi.Controllers
                 var client = await OrleansConnectClient();
                 var queryGrain = client.GetGrain<IFlowerQueryGrain>(0);
                 var skip = (page - 1) * pageSize;
-                result.Data = await queryGrain.QueryOrdersByBuyerAsync(buyerId, skip, pageSize);
+                var orders = await queryGrain.QueryOrdersByBuyerAsync(buyerId, skip, pageSize);
+                result.Data = orders?.Select(o => FlowerDtoMapper.ToDto(o)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -353,9 +561,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("merchant-orders")]
-        public async Task<ResultVM<List<OrderState>>> MerchantOrdersAsync([FromQuery] long merchantId, [FromQuery] int? status = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<OrderDto>>> MerchantOrdersAsync([FromQuery] long merchantId, [FromQuery] int? status = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<OrderState>>();
+            var result = new ResultVM<List<OrderDto>>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -378,17 +586,19 @@ namespace Horizon.WebApi.Controllers
                 if (page < 1) page = 1;
                 if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
+                List<OrderState> orders;
                 if (status.HasValue)
                 {
                     var orderGrain = client.GetGrain<IOrderGrain>(merchantId);
-                    result.Data = await orderGrain.GetMerchantOrdersByStatusAsync(merchantId, status, page, pageSize);
+                    orders = await orderGrain.GetMerchantOrdersByStatusAsync(merchantId, status, page, pageSize);
                 }
                 else
                 {
                     var queryGrain = client.GetGrain<IFlowerQueryGrain>(0);
                     var skip = (page - 1) * pageSize;
-                    result.Data = await queryGrain.QueryOrdersByMerchantAsync(merchantId, skip, pageSize);
+                    orders = await queryGrain.QueryOrdersByMerchantAsync(merchantId, skip, pageSize);
                 }
+                result.Data = orders?.Select(o => FlowerDtoMapper.ToDto(o)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -630,9 +840,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("frequent-products/{buyerId}")]
-        public async Task<ResultVM<List<RepurchaseState>>> GetFrequentProductsAsync(Guid buyerId)
+        public async Task<ResultVM<List<RepurchaseDto>>> GetFrequentProductsAsync(Guid buyerId)
         {
-            var result = new ResultVM<List<RepurchaseState>>();
+            var result = new ResultVM<List<RepurchaseDto>>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -650,7 +860,8 @@ namespace Horizon.WebApi.Controllers
 
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IOrderGrain>(0);
-                result.Data = await grain.GetFrequentProductsAsync(buyerId, 10);
+                var products = await grain.GetFrequentProductsAsync(buyerId, 10);
+                result.Data = products?.Select(p => FlowerDtoMapper.ToDto(p)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -700,5 +911,39 @@ namespace Horizon.WebApi.Controllers
         public string ExpressCompanyName { get; set; } = "";
         public string ShipOrderNumber { get; set; } = "";
         public long ShipperId { get; set; }
+    }
+
+    /// <summary>行情直购下单请求（客户端行情页/购物车结算提交）</summary>
+    public class CreateOrderRequest
+    {
+        public List<CreateOrderItem> Items { get; set; } = new();
+        /// <summary>收件人姓名</summary>
+        public string ShipTo { get; set; } = "";
+        /// <summary>联系电话</summary>
+        public string CellPhone { get; set; } = "";
+        /// <summary>完整地址</summary>
+        public string Address { get; set; } = "";
+        /// <summary>地址快照（JSON 文本，与 Address 二选一或同时提供）</summary>
+        public string ShippingAddress { get; set; } = "";
+    }
+
+    /// <summary>下单商品项：ProductId 优先（商品直购），否则按 SpeciesId 品种直购</summary>
+    public class CreateOrderItem
+    {
+        public long ProductId { get; set; }
+        public int SpeciesId { get; set; }
+        public string ProductName { get; set; } = "";
+        public int Quantity { get; set; }
+    }
+
+    /// <summary>下单结果：金额一律以服务端商品价格核算为准</summary>
+    public class CreateOrderResultDto
+    {
+        public long OrderId { get; set; }
+        public string OrderNo { get; set; } = "";
+        public decimal OrderTotalAmount { get; set; }
+        public decimal ProductTotalAmount { get; set; }
+        /// <summary>订单状态（OrderStatus 枚举数值，0=待支付）</summary>
+        public int Status { get; set; }
     }
 }

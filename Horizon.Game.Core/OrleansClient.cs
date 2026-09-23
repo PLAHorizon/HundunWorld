@@ -89,8 +89,10 @@ namespace Horizon.Game.Core
             var invariant = _options.SqlServer.Invariant;
             // ===== Redis 集群配置（主方案） =====
             // 从配置读取 Redis 连接字符串（优先使用 Redis:ConnectionString，降级到原 SqlServer 配置）
-            var redisConnectionStr = Configuration?.GetSection("Redis:ConnectionString").Value
-                ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+            // 阶段 0.1：配置必需——删除 127.0.0.1 本地默认回退，缺失抛清晰错误。
+            var redisConnectionStr = Horizon.Game.Message.Configuration.ConnectionStrings.Require(
+                Configuration?.GetSection("Redis:ConnectionString").Value,
+                "Redis:ConnectionString", "Orleans 客户端 Redis 集群", "GATEWAY_REDIS_CONNECTION_STRING");
             var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
 
             try

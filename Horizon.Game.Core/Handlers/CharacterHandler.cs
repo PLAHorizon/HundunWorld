@@ -584,7 +584,11 @@ namespace Horizon.Game.Core.Handlers
             {
                 var currentToken = _authTokenProvider.ParseToken(message.Header.AuthToken);
                 var passportId = currentToken?.PassportId ?? "";
-                var machineId = currentToken?.MachineId ?? "";
+                // 共享令牌不绑定机器ID（MachineId 为空），角色令牌兜底取消息头 MachineId，
+                // 保持"开启 ValidateTokenMachineId 的部署"下角色令牌仍可校验
+                var machineId = !string.IsNullOrWhiteSpace(currentToken?.MachineId)
+                    ? currentToken.MachineId
+                    : message.Header.MachineId ?? "";
                 response.AuthToken = _authTokenProvider.GenerateToken(passportId, machineId, (long)enterGame.CharacterId);
                 Logger.LogInformation("已为角色 {CharacterId} 生成含角色Id的新鉴权令牌", enterGame.CharacterId);
             }
@@ -609,6 +613,9 @@ namespace Horizon.Game.Core.Handlers
                 createCharacter.ZoneId = (int)message.Header.ZoneId;
                 createCharacter.ServerId = (int)message.Header.ServerId;
                 createCharacter.UserId = message.Header.UserId;
+                // 协议级幂等键（请求头携带，客户端在途断线重试时保持不变）：
+                // 服务端角色管理器按键去重，重试不会重复创建角色。
+                createCharacter.IdempotencyKey = message.Header.IdempotencyKey ?? string.Empty;
 
                 // 使用用户角色管理器来创建角色，支持多角色
                 var userCharacterManager = _clusterClient.GetGrain<IUserCharacterManagerGrain>((long)createCharacter.UserId);
@@ -629,38 +636,25 @@ namespace Horizon.Game.Core.Handlers
         }
 
         /// <summary>
-        /// 异步处理移动消息
+        /// 异步处理移动消息（阶段 3.3 后为拒绝路径）。<br/>
+        /// 移动权威已迁移至空间权威（ZoneShardGrain + SimWorld），
+        /// 旧 <see cref="MessageType.Movement"/> 写路径（CharacterGrain.MoveAsync）已下线，
+        /// 消除 HP/位置双权威。保留本分支仅返回拒绝响应，避免旧客户端静默无响应；
+        /// 真实移动请走同步协议（SyncPacketKind.Input，经 SyncInputHandler → ZoneShardGrain）。
         /// </summary>
         /// <param name="message">移动请求消息包</param>
         /// <returns>处理结果和响应消息包</returns>
-        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleMovementAsync(HorizonMessagePacket message)
+        private Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleMovementAsync(HorizonMessagePacket message)
         {
-            try
+            if (message.Body is MoveRequest moveRequest)
             {
-                MoveRequest moveRequest = message.Body as MoveRequest;
-
-                // 同步更新 CharacterGrain 中的权威位置状态，确保后续快照/广播返回正确坐标，
-                // 避免因状态未持久化导致客户端被回拉到原点。
-                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>((long)moveRequest.CharacterId);
-                var grainResponse = await characterGrain.MoveAsync(moveRequest);
-
-                var response = new MoveResponse
-                {
-                    Success = grainResponse.Success,
-                    CharacterId = grainResponse.CharacterId,
-                    CurrentX = grainResponse.CurrentX,
-                    CurrentY = grainResponse.CurrentY,
-                    CurrentZ = grainResponse.CurrentZ,
-                    AcknowledgedSequence = moveRequest.SequenceNumber
-                };
-                var tem = CreateHorizonMessage(response);
-                return (true, tem);
+                Logger.LogWarning(
+                    "拒绝旧版移动请求（MessageType.Movement）：移动权威已迁移至空间权威，请改用同步协议。CharacterId={CharacterId}",
+                    moveRequest.CharacterId);
             }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "处理移动消息失败");
-                return (false, CreateHorizonMessage(new MoveResponse { Success = false }));
-            }
+
+            var tem = CreateHorizonMessage(new MoveResponse { Success = false });
+            return Task.FromResult<(bool, HorizonMessagePacket)>((true, tem));
         }
 
         /// <summary>

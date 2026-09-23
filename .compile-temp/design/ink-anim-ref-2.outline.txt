@@ -1,0 +1,84 @@
+## page: ink-anim-ref-2
+## dom-ids: 
+  div
+    div
+    div
+    div
+      div .ref-header
+        div .ref-title-group
+          span .ref-title-num | 02
+          div
+            div .ref-title-main | 水墨笔触
+            div .ref-title-sub | INK BRUSH STROKE · 分镜参考 02/02
+        div
+          span .ink-tag ink-tag-vermilion | 笔触
+          span .ink-tag | 分镜
+          span .ink-tag | 视觉参考
+      div
+        div | 1
+        div .ref-annotation-title | 落笔 · 蓄势
+        div | 笔锋触纸瞬间，浓墨凝聚一点，scale 0→1.2 回弹，持续 0.3s。模拟笔尖压纸的力度感
+      div
+        div | 2
+        div .ref-annotation-title | 行笔 · 游走
+        div | 笔触沿贝塞尔曲线游走，stroke-dashoffset 动画展开路径，宽度随速度变化 2px→6px→3px，持续 0.9s
+      div
+        div | 3
+        div .ref-annotation-title | 飞白 · 枯笔
+        div | 行笔末段速度加快，墨色渐枯，以 filter:contrast() + noise texture 模拟飞白效果，持续 0.5s
+      div
+        div | 4
+        div .ref-annotation-title | 收笔 · 回锋
+        div | 笔锋回转收束，末点 opacity 渐隐 0.8→0，半径缩小至 2px，持续 0.3s。模拟回锋藏锋之韵
+      div .ref-spec-panel ink-panel
+        span
+        span
+        div .ink-panel-title
+          span | 技术参数
+        div
+          div .ref-spec-row
+            span .ref-spec-label | 动画类型
+            span | Brush
+          div .ref-spec-row
+            span .ref-spec-label | 总时长
+            span | 2.0s
+          div .ref-spec-row
+            span .ref-spec-label | 路径方式
+            span | Bezier
+          div .ref-spec-row
+            span .ref-spec-label | 笔触段数
+            span | 4 段
+          div .ref-spec-row
+            span .ref-spec-label | 宽度变化
+            span | 2-6px
+          div .ref-spec-row
+            span .ref-spec-label | 飞白纹理
+            span | noise
+          div .ref-spec-row
+            span .ref-spec-label | 触发场景
+            span | 技能释放
+        span
+        span
+      div
+        div .ref-timeline-title
+          span | 笔触时间轴 · BRUSH TIMELINE
+        div
+          div
+            div | 0.0s — 0.3s
+            div | 落笔蓄势
+            div | 浓墨凝聚 · scale 0→1.2
+          div
+            div | 0.3s — 1.2s
+            div | 行笔游走
+            div | Bezier 路径 · 宽度 2→6→3px
+          div
+            div | 1.2s — 1.7s
+            div | 飞白枯笔
+            div | contrast + noise · 速度加快
+          div
+            div | 1.7s — 2.0s
+            div | 收笔回锋
+            div | opacity 0.8→0 · 半径收束
+
+## COPY (41)
+水墨笔触 | INK BRUSH STROKE · 分镜参考 02/02 | 笔触 | 分镜 | 视觉参考 | 落笔 · 蓄势 | 笔锋触纸瞬间，浓墨凝聚一点，scale 0→1.2 回弹，持续 0.3s。模拟笔尖压纸的力度感 | 行笔 · 游走 | 笔触沿贝塞尔曲线游走，stroke-dashoffset 动画展开路径，宽度随速度变化 2px→6px→3px，持续 0.9s | 飞白 · 枯笔 | 行笔末段速度加快，墨色渐枯，以 filter:contrast() + noise texture 模拟飞白效果，持续 0.5s | 收笔 · 回锋 | 笔锋回转收束，末点 opacity 渐隐 0.8→0，半径缩小至 2px，持续 0.3s。模拟回锋藏锋之韵 | 技术参数 | 动画类型 | Brush | 总时长 | 2.0s | 路径方式 | Bezier | 笔触段数 | 4 段 | 宽度变化 | 2-6px | 飞白纹理 | noise | 触发场景 | 技能释放 | 笔触时间轴 · BRUSH TIMELINE | 0.0s — 0.3s | 落笔蓄势 | 浓墨凝聚 · scale 0→1.2 | 0.3s — 1.2s | 行笔游走 | Bezier 路径 · 宽度 2→6→3px | 1.2s — 1.7s | 飞白枯笔 | contrast + noise · 速度加快 | 1.7s — 2.0s | 收笔回锋 | opacity 0.8→0 · 半径收束

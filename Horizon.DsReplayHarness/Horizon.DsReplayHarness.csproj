@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!--
+      确定性对拍参照：与 Horizon.Game.Sim 同规则禁用 TieredCompilation，
+      保证跨运行时（本 harness / Orleans Silo / UE5 UnrealSharp 宿主 CLR）按位一致。
+    -->
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 与 UE5 DS SimDriver 相同的引用面：确定性模拟 + 协议类型（不引用 Orleans / 测试基建） -->
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+  </ItemGroup>
+
+</Project>

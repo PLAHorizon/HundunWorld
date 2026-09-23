@@ -2143,6 +2143,15 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(15)]
         [Id(15)]
         public decimal TotalRefundedAmount { get; set; }
+
+        /// <summary>
+        /// 客户端拉起支付参数（JSON）。
+        /// 微信：appId/partnerId/prepayId/nonceStr/timeStamp/package/sign/signType（服务端 RSA-SHA256 二次签名）；
+        /// 支付宝：orderInfo（App 支付签名串）。仅存活于 Grain State（预下单窗口内有效），不落库。
+        /// </summary>
+        [MemoryPackOrder(16)]
+        [Id(16)]
+        public string PayParams { get; set; } = "";
     }
 
     [MemoryPackable(SerializeLayout.Explicit)]

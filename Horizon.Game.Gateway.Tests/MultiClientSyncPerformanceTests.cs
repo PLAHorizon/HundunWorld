@@ -19,9 +19,11 @@ using Orleans.Runtime;
 namespace Horizon.Game.Gateway.Tests;
 
 /// <summary>
-/// 多客户端同步性能验证测试。
-/// 模拟 2/5 客户端场景，验证 20Hz 降频后单 tick 耗时是否回到 16.7ms 帧预算以内。
+/// 多客户端同步性能验证测试
+/// 模拟 2/5 客户端场景，验证 20Hz 降频后单 tick 耗时是否回到 16.7ms 帧预算以内
+/// 归入 SyncPerformanceSerial 串行集合：预算断言在并行 CPU 竞争下会随机超限。
 /// </summary>
+[Collection("SyncPerformanceSerial")]
 public class MultiClientSyncPerformanceTests
 {
     private static ZoneShardGrain CreateGrain(int broadcastInterval = 3, bool useNullLogger = false)
@@ -39,12 +41,7 @@ public class MultiClientSyncPerformanceTests
         mockState.SetupGet(s => s.State).Returns(new ZoneShardState());
         var grain = new ZoneShardGrain(logger, mockState.Object);
 
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         grain.SnapshotBroadcastIntervalTicks = broadcastInterval;
         return grain;
@@ -233,6 +230,7 @@ public class MultiClientSyncPerformanceTests
     /// 7. tick 持续递增（无 tick 停滞）
     /// </summary>
     [Fact]
+    [Trait("Category", "Flaky")] // 十分钟级墙钟稳定性断言，机器负载敏感（TECH_DEBT §D.2）；CI 主门禁过滤 Category!=Flaky，隔离到 nightly。
     public async Task LongRunning_StaticEntities_RemainRegisteredAndReceiveHeartbeat()
     {
         const int broadcastInterval = 3; // 20Hz 降频
@@ -497,6 +495,10 @@ public class MultiClientSyncPerformanceTests
         observer.EntityDeltaDiffCount = 0;
         observer.EventDiffCount = 0;
 
+        // 宿主争用度量：本进程在压测窗口内实际拿到的 CPU 时间 vs 墙钟时间。
+        // 最大单 tick 断言是**墙钟**断言，宿主机被其它进程（编辑器/杀毒/浏览器）抢占时
+        // 会出现单个离群 tick —— 这与"应用变慢"是两回事，必须在失败信息里可区分。
+        var procCpuBefore = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime;
         var sw = Stopwatch.StartNew();
         double maxTickMs = 0;
         var tickTimes = new List<double>(totalTicks);
@@ -583,8 +585,18 @@ public class MultiClientSyncPerformanceTests
             $"{totalTicks} tick 内仅 {entityDeltaDiffs} 个 EntityDelta diff，预期至少 {expectedMinDiffs} 个（同步可能停滞）");
 
         // === 验证 5：最大 tick 耗时 ≤ 50ms（允许 GC 暂停但不应过长）===
+        // 宿主争用判据：进程 CPU 时间 / 墙钟时间。压测循环本身是 CPU 密集的，
+        // 若该比值显著偏低，说明本进程没拿到 CPU（宿主被抢占），离群 tick 属环境而非应用。
+        var procCpuMs = (System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime - procCpuBefore).TotalMilliseconds;
+        var cpuRatio = sw.Elapsed.TotalMilliseconds > 0 ? procCpuMs / sw.Elapsed.TotalMilliseconds : 0;
+        var nl = Environment.NewLine;
+        var contentionNote =
+            $"  进程 CPU 时间 {procCpuMs:F0}ms / 墙钟 {sw.Elapsed.TotalMilliseconds:F0}ms = {cpuRatio:F2}{nl}" +
+            $"  判读：比值接近或超过 1.0 → 应用侧问题；显著低于 1.0 → 宿主被抢占（环境问题）{nl}" +
+            $"  平均 {avgTickMs:F3}ms、P99 {p99Ms:F3}ms（这两项用于排除系统性变慢）";
+
         Assert.True(maxTickMs <= 50.0,
-            $"最大单 tick 耗时 {maxTickMs:F3}ms 超过 50ms（可能存在卡顿）");
+            $"最大单 tick 耗时 {maxTickMs:F3}ms 超过 50ms（可能是 GC 暂停或宿主抢占）。{nl}{contentionNote}");
     }
 
     /// <summary>

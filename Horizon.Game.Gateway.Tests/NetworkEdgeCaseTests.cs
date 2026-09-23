@@ -473,12 +473,7 @@ public class NetworkEdgeCaseTests
         mockState.SetupGet(s => s.State).Returns(new Horizon.Orleans.Grains.World.ZoneShardState());
         var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
 
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), shardId.ToString());
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain, grainKey: shardId.ToString());
 
         return grain;
     }

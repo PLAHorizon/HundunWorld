@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>GengDi.HarmonyOS</AssemblyName>
+    <AssemblyTitle>耕地 HarmonyOS</AssemblyTitle>
+    <NoWarn>$(NoWarn);NU1507</NoWarn>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+    <PackageReference Include="WebViewControl-Avalonia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Game.GengDi\Horizon.Game.GengDi.csproj" />
+  </ItemGroup>
+
+  <!-- 本工程为纯 C# + WebView 壳，不含任何 .axaml 界面文件。
+       Avalonia buildTransitive 的 AvaloniaBuildTasks.props 在 EnableDefaultItems 时
+       默认注入 **\*.axaml / **\*.paml glob；因无匹配文件，MSBuild 会保留为字面量 item，
+       随后 GenerateAvaloniaResourcesTask 对 new FileInfo("**\*.axaml") 抛出
+       “文件名、目录名或卷标语法不正确 / 路径中具有非法字符”的 MSB4018。
+       此处显式清空默认 AvaloniaXaml item 以规避。 -->
+  <ItemGroup>
+    <!-- 原因见下：本工程所有默认 glob（Compile **\*.cs / AvaloniaXaml **\*.axaml /
+         EmbeddedResource **\*.resx）在评估时均未按文件系统展开，而是被原样保留为
+         字面量 item（FullPath 形如 ...\**\*.cs），导致 CSC / GenerateResource /
+         GenerateAvaloniaResourcesTask 相继报“路径中具有非法字符 / 找不到文件”。
+         因此显式清空并手动列明本工程真实存在的项，彻底绕开默认 glob。 -->
+    <Compile Remove="@(Compile)" />
+    <Compile Include="Program.cs" />
+    <AvaloniaXaml Remove="@(AvaloniaXaml)" />
+    <EmbeddedResource Remove="@(EmbeddedResource)" />
+  </ItemGroup>
+
+  <!-- HarmonyOS 平台设计原型 HTML 页面 -->
+  <ItemGroup>
+    <Content Include="Assets\Pages\*.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Pages\colors_and_type.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

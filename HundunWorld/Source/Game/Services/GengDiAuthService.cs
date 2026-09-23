@@ -290,6 +290,15 @@ namespace HundunWorld.Game.Services
             try
             {
                 var config = NetworkConfigManager.LoadConfig();
+
+                // 显式配置优先：适应开发/灰度环境切换后端地址，无需重新编译。
+                if (!string.IsNullOrWhiteSpace(config?.WebApiBaseUrl))
+                {
+                    var url = EnsureTrailingSlash(config.WebApiBaseUrl.Trim());
+                    Debug.Log($"[GengDiAuth] WebApi基础URL来自network_config.json的WebApiBaseUrl: {url}");
+                    return url;
+                }
+
                 if (config?.GatewayList != null && config.GatewayList.Count > 0)
                 {
                     var firstGateway = config.GatewayList[0];
@@ -319,23 +328,11 @@ namespace HundunWorld.Game.Services
 
         private static HttpClient CreateHttpClient()
         {
-            var handler = new HttpClientHandler();
-
-            bool bypassSsl = false;
-#if DEBUG
-            bypassSsl = true;
-#endif
-            var forceBypass = Environment.GetEnvironmentVariable("HUNDUN_FORCE_BYPASS_SSL");
-            if (string.Equals(forceBypass, "true", StringComparison.OrdinalIgnoreCase))
-            {
-                bypassSsl = true;
-            }
-
-            if (bypassSsl)
-            {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                Debug.Log("[GengDiAuth] 已启用SSL证书验证跳过（开发模式）");
-            }
+            // TLS 信任策略交给 DevTlsTrustPolicy：生产走系统校验，开发环境自签证书按
+            // 锁定证书 / 私有网段 / 显式开关放行。
+            // 原“#if DEBUG 才跳过校验”在发布构建（BUILD_DEVELOPMENT，未定义 DEBUG）
+            // 不生效，导致其它电脑登录 / 刷新令牌报 SSL 连接错误。
+            var handler = DevTlsTrustPolicy.CreateHttpClientHandler();
 
             var client = new HttpClient(handler)
             {

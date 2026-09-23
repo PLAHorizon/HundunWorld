@@ -5,12 +5,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Horizon.Game.GengDi.Core.Services;
+using Horizon.Game.Message.Network;   // FlowerPriceSnapshot（行情快照 DTO，与 FlowerMarketService 同源）
 
 namespace Horizon.Game.GengDi.Core.ViewModels
 {
     public class FlowerAIAssistantViewModel : ViewModelBase
     {
         private readonly FlowerAIService _aiService;
+        private readonly FlowerAIAnswerEngine _answerEngine = new();
         private ObservableCollection<ChatMessageItem> _messages = new();
         private ObservableCollection<QuickActionGroup> _quickActionGroups = new();
         private string _inputText = "";
@@ -67,6 +69,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         /// </summary>
         public ICommand QuickActionCommand { get; }
 
+
         public FlowerAIAssistantViewModel()
         {
             _aiService = new FlowerAIService();
@@ -88,45 +91,60 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         /// </summary>
         private void InitializeMockData()
         {
-            // 快捷问题分组（匹配设计原型左侧面板）
+            // 快捷问题分组（2026-09-18 精准化）：
+            // 每组的问题都**能命中本地意图引擎**，且尽量点明品种/问法，
+            // 避免"行情咨询"这类泛化表述带来泛化回答。
             QuickActionGroups = new ObservableCollection<QuickActionGroup>
             {
                 new QuickActionGroup
                 {
                     IconEmoji = "📈",
-                    GroupTitle = "行情咨询",
+                    GroupTitle = "花价行情",
                     Items = new List<QuickActionItem>
                     {
-                        new QuickActionItem { Text = "今天红玫瑰均价多少？" },
-                        new QuickActionItem { Text = "下周花卉价格走势" },
-                        new QuickActionItem { Text = "哪种花本周涨幅最大？" },
+                        new QuickActionItem { Text = "红玫瑰今天多少钱？" },
+                        new QuickActionItem { Text = "百合最近一周走势" },
+                        new QuickActionItem { Text = "本周涨幅最大的品种" },
+                        new QuickActionItem { Text = "下周价格预判" },
                     }
                 },
                 new QuickActionGroup
                 {
                     IconEmoji = "🌱",
-                    GroupTitle = "种植建议",
+                    GroupTitle = "种植养护",
                     Items = new List<QuickActionItem>
                     {
-                        new QuickActionItem { Text = "推荐春季种植品种" },
-                        new QuickActionItem { Text = "白粉病防治方法" },
-                        new QuickActionItem { Text = "土壤 PH 偏高怎么办" },
+                        new QuickActionItem { Text = "土壤 pH 偏高怎么调？" },
+                        new QuickActionItem { Text = "春季种什么品种收益高？" },
+                        new QuickActionItem { Text = "水肥怎么管理？" },
+                        new QuickActionItem { Text = "花期怎么保鲜？" },
+                    }
+                },
+                new QuickActionGroup
+                {
+                    IconEmoji = "🐛",
+                    GroupTitle = "病虫害防治",
+                    Items = new List<QuickActionItem>
+                    {
+                        new QuickActionItem { Text = "白粉病怎么防治？" },
+                        new QuickActionItem { Text = "红蜘蛛怎么处理？" },
                     }
                 },
                 new QuickActionGroup
                 {
                     IconEmoji = "🛍️",
-                    GroupTitle = "订单帮助",
+                    GroupTitle = "订单售后",
                     Items = new List<QuickActionItem>
                     {
                         new QuickActionItem { Text = "如何申请退款？" },
-                        new QuickActionItem { Text = "发货周期是多久" },
+                        new QuickActionItem { Text = "发货周期是多久？" },
+                        new QuickActionItem { Text = "怎么查物流？" },
                     }
                 },
                 new QuickActionGroup
                 {
                     IconEmoji = "👤",
-                    GroupTitle = "账户问题",
+                    GroupTitle = "账户与会员",
                     Items = new List<QuickActionItem>
                     {
                         new QuickActionItem { Text = "如何升级会员？" },
@@ -135,58 +153,18 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 },
             };
 
-            // 聊天记录（匹配设计原型右侧对话区）
-            var baseTime = DateTime.Today.AddHours(9);
+            // 初始对话只放**欢迎语**：不再预置写死行情数字的示例回答（¥3.20 之类），
+            // 避免"看起来在答非所问 / 数据不实"。行情问题一律走真实行情接口后再回答。
             Messages = new ObservableCollection<ChatMessageItem>
             {
                 new ChatMessageItem
                 {
                     Role = "花卉AI助手",
                     SenderName = "花卉AI助手",
-                    Content = "您好！我是花卉AI助手，可以为您提供行情分析、种植建议与市场洞察。请问有什么可以帮您？",
+                    Content = "您好！我是花卉 AI 助手，可以为您查行情、讲种植、诊病虫害，也能处理订单与账户问题。\n" +
+                              "试着问我：「今天红玫瑰均价多少？」「土壤 pH 偏高怎么办？」「白粉病怎么治？」「如何申请退款？」",
                     IsUser = false,
-                    Timestamp = baseTime.AddMinutes(12),
-                },
-                new ChatMessageItem
-                {
-                    Role = "我",
-                    SenderName = "我",
-                    Content = "今天红玫瑰的均价是多少？下周走势如何？",
-                    IsUser = true,
-                    Timestamp = baseTime.AddMinutes(13),
-                },
-                new ChatMessageItem
-                {
-                    Role = "花卉AI助手",
-                    SenderName = "花卉AI助手",
-                    Content = "今日红玫瑰均价 ¥3.20/支，较昨日 +2.4%。预计下周延续上行，建议关注以下品种：",
-                    IsUser = false,
-                    Timestamp = baseTime.AddMinutes(13),
-                    HasMarketData = true,
-                    MarketDataHeader = "行情分析",
-                    MarketDataItems = new List<MarketDataRow>
-                    {
-                        new MarketDataRow { Variety = "红玫瑰", Price = "¥3.20", Change = "+2.4%", IsUp = true, Suggestion = "增持" },
-                        new MarketDataRow { Variety = "百合", Price = "¥2.45", Change = "-1.1%", IsUp = false, Suggestion = "观望" },
-                        new MarketDataRow { Variety = "康乃馨", Price = "¥1.80", Change = "+0.8%", IsUp = true, Suggestion = "持有" },
-                    },
-                    MarketSummary = "下周一红玫瑰预计冲高至 ¥3.35，建议本周完成备货。",
-                },
-                new ChatMessageItem
-                {
-                    Role = "我",
-                    SenderName = "我",
-                    Content = "那推荐一个适合春季种植的品种",
-                    IsUser = true,
-                    Timestamp = baseTime.AddMinutes(15),
-                },
-                new ChatMessageItem
-                {
-                    Role = "花卉AI助手",
-                    SenderName = "花卉AI助手",
-                    Content = "综合收益与难度，推荐 高原红玫瑰：预计收益 ¥2,580/亩，建议评分 5.0，适宜春季种植，抗病性较强。",
-                    IsUser = false,
-                    Timestamp = baseTime.AddMinutes(15),
+                    Timestamp = DateTime.Now,
                 },
             };
 
@@ -220,16 +198,34 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
             try
             {
-                var response = await CallAIAssistantAsync(userMessage).ConfigureAwait(false);
+                var answer = await ResolveAnswerAsync(userMessage).ConfigureAwait(false);
 
-                Messages.Add(new ChatMessageItem
+                var aiMessage = new ChatMessageItem
                 {
                     Role = "花卉AI助手",
                     SenderName = "花卉AI助手",
-                    Content = response ?? "抱歉，暂时无法回答您的问题，请稍后重试。",
+                    Content = answer.Text,
                     IsUser = false,
                     Timestamp = DateTime.Now
-                });
+                };
+
+                // 行情类回答附带行情卡片（数据由应答引擎随回答一并产出，不重复请求）
+                if (answer.MarketCard is { Rows.Count: > 0 } card)
+                {
+                    aiMessage.HasMarketData = true;
+                    aiMessage.MarketDataHeader = card.Header;
+                    aiMessage.MarketDataItems = card.Rows.Select(r => new MarketDataRow
+                    {
+                        Variety = r.Variety,
+                        Price = r.Price,
+                        Change = r.Change,
+                        IsUp = r.IsUp,
+                        Suggestion = r.Suggestion,
+                    }).ToList();
+                    aiMessage.MarketSummary = card.Summary;
+                }
+
+                Messages.Add(aiMessage);
             }
             catch (Exception)
             {
@@ -250,9 +246,94 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             }
         }
 
-        private async Task<string?> CallAIAssistantAsync(string question)
+        /// <summary>
+        /// 应答解析顺序（2026-09-18 调整，修复"答非所问"）：
+        /// ① 本地意图引擎 —— 行情类用真实行情接口，种植/病虫害/订单/账户用内置知识库，
+        ///    命中即返回与问题强相关的答案；
+        /// ② 远程 AI（flower-ai/chat）—— 仅用于本地引擎识别不出意图的开放性问题；
+        /// ③ 都没有 —— 给出"没听懂 + 建议问法"的引导，而不是丢一句泛化寒暄。
+        /// </summary>
+        private async Task<AIAnswerResult> ResolveAnswerAsync(string question)
         {
-            return await _aiService.ChatWithAIAsync(question).ConfigureAwait(false);
+            try
+            {
+                var local = await _answerEngine.TryAnswerAsync(question).ConfigureAwait(false);
+                if (local != null && !string.IsNullOrWhiteSpace(local.Text))
+                {
+                    return local;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogDiagnostic($"本地意图引擎异常：{ex.Message}");
+            }
+
+            try
+            {
+                var remote = await _aiService.ChatWithAIAsync(question).ConfigureAwait(false);
+                if (IsRemoteAnswerUsable(question, remote))
+                {
+                    return new AIAnswerResult { Text = remote!.Trim(), Intent = AIAnswerIntent.Unknown };
+                }
+            }
+            catch (Exception ex)
+            {
+                LogDiagnostic($"远程 AI 调用异常：{ex.Message}");
+            }
+
+            // ③ 本地分诊兜底：保证"随意/自定义问题"也有体面、可执行的回应
+            //    （而不是一句"抱歉，这个问题我还没完全理解"）
+            var triage = _answerEngine.BuildFallbackAnswer(question);
+            if (triage != null)
+            {
+                return triage;
+            }
+
+            return new AIAnswerResult
+            {
+                Intent = AIAnswerIntent.Unknown,
+                Text = "请直接说说您想了解的问题，例如花价、种植、病虫害或订单售后。",
+            };
+        }
+
+        /// <summary>
+        /// 远程回答质量闸门（2026-09-18）：后端 flower-ai/chat 在无法回答时会返回
+        /// 与提问无关的自我介绍类寒暄（如"我是花卉AI助手，可以为您提供行情分析…"），
+        /// 直接展示就是用户看到的"答非所问"。这里把这类回复识别出来并丢弃，
+        /// 交给本地分诊兜底，保证输出始终与提问相关。
+        /// </summary>
+        private static bool IsRemoteAnswerUsable(string question, string? remote)
+        {
+            if (string.IsNullOrWhiteSpace(remote)) return false;
+
+            var text = remote.Trim();
+            if (text.Length < 8) return false;
+
+            var askedForIntro = question.Contains("你好", StringComparison.Ordinal)
+                                || question.Contains("您好", StringComparison.Ordinal)
+                                || question.Contains("你是谁", StringComparison.Ordinal)
+                                || question.Contains("能做什么", StringComparison.Ordinal);
+
+            // 短小的自我介绍式寒暄，且用户问的并不是"你是谁" → 视为无效回答
+            string[] cannedMarkers =
+            {
+                "我是花卉AI助手", "我是花卉 AI 助手", "可以为您提供行情分析",
+                "请问有什么可以帮您", "随时为您服务",
+            };
+
+            if (!askedForIntro && text.Length <= 200 &&
+                cannedMarkers.Any(marker => text.Contains(marker, StringComparison.Ordinal)))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>引擎/远程调用失败的诊断输出（走 Debug 输出，不引入额外日志依赖）。</summary>
+        private static void LogDiagnostic(string message)
+        {
+            System.Diagnostics.Debug.WriteLine($"[FlowerAIAssistant] {message}");
         }
 
         private void ResetDailyCountIfNeeded()
@@ -285,12 +366,33 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public string MarketSummary { get; set; } = "";
     }
 
-    /// <summary>快捷问题分组（含图标 emoji、组标题、问题条目）。</summary>
-    public class QuickActionGroup
+    /// <summary>快捷问题分组（含图标 emoji、组标题、问题条目，可折叠）。</summary>
+    public class QuickActionGroup : ViewModelBase
     {
+        private bool _isExpanded = true;
+
         public string IconEmoji { get; set; } = "";
         public string GroupTitle { get; set; } = "";
         public List<QuickActionItem> Items { get; set; } = new();
+
+        /// <summary>分组是否展开（点击分组标题切换）。</summary>
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set
+            {
+                if (SetProperty(ref _isExpanded, value))
+                {
+                    OnPropertyChanged(nameof(ExpandGlyph));
+                }
+            }
+        }
+
+        /// <summary>折叠指示符（XAML 直接用字形，项目图标集无 chevron）。</summary>
+        public string ExpandGlyph => _isExpanded ? "▾" : "▸";
+
+        /// <summary>条目数（分组标题右侧显示）。</summary>
+        public string ItemCountText => Items.Count.ToString();
     }
 
     /// <summary>快捷问题条目（满足 IconEmoji/Title/Description 契约，Text 为展示文本）。</summary>

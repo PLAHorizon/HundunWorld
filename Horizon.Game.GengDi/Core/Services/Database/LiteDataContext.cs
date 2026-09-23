@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using Horizon.Game.GengDi.Core.Services.Security;
 
 namespace Horizon.Game.GengDi.Core.Services.Database
 {
@@ -125,6 +126,7 @@ namespace Horizon.Game.GengDi.Core.Services.Database
                     });
 
                     CreateIndexes();
+                    RunMigrations();
                     IsInitialized = true;
                     CleanExpiredCache();
 
@@ -163,6 +165,73 @@ namespace Horizon.Game.GengDi.Core.Services.Database
                 Debug.Print($"[LiteDataContext] 创建索引失败: {ex.Message}");
             }
         }
+
+        #region Schema 版本迁移
+        private const string SchemaVersionKey = "_schemaVersion";
+
+        /// <summary>当前 schema 版本。每次破坏性结构变更时 +1，并在 <see cref="Migrations"/> 追加迁移步骤。</summary>
+        public const int CurrentSchemaVersion = 1;
+
+        /// <summary>已落库的 schema 版本（未迁移过返回 0）。</summary>
+        public static int GetAppliedSchemaVersion()
+        {
+            var doc = _configDatabase.GetCollection<GameConfig>()
+                .FindOne(c => c.Key == SchemaVersionKey);
+            return doc != null && int.TryParse(doc.Value, out var v) ? v : 0;
+        }
+
+        /// <summary>
+        /// schema 迁移管线：按版本顺序执行迁移步骤，全部成功后写回版本号。
+        /// 任何一步失败即中止并抛出异常，避免半迁移状态。
+        /// </summary>
+        private static void RunMigrations()
+        {
+            try
+            {
+                var applied = GetAppliedSchemaVersion();
+                if (applied >= CurrentSchemaVersion)
+                {
+                    return;
+                }
+
+                var migrations = Migrations();
+                for (var version = applied + 1; version <= CurrentSchemaVersion; version++)
+                {
+                    if (migrations.TryGetValue(version, out var migrate))
+                    {
+                        migrate();
+                    }
+                }
+
+                var col = _configDatabase.GetCollection<GameConfig>();
+                var versionDoc = col.FindOne(c => c.Key == SchemaVersionKey);
+                if (versionDoc == null)
+                {
+                    col.Insert(new GameConfig { Key = SchemaVersionKey, Value = CurrentSchemaVersion.ToString(), Category = "system" });
+                }
+                else
+                {
+                    versionDoc.Value = CurrentSchemaVersion.ToString();
+                    versionDoc.UpdatedAt = DateTime.Now;
+                    col.Update(versionDoc);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[LiteDataContext] schema 迁移失败: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>版本 → 迁移步骤。当前无存量结构变更，为后续演进预留。</summary>
+        private static Dictionary<int, Action> Migrations()
+        {
+            return new Dictionary<int, Action>
+            {
+                // 示例：{ 2, () => _gameDatabase.GetCollection<GameUserInfo>().UpdateAll(...) }
+            };
+        }
+        #endregion
 
         public static void SetDatabasePath(string path)
         {
@@ -230,16 +299,34 @@ namespace Horizon.Game.GengDi.Core.Services.Database
 
         public static int AddRange<T>(LiteDatabaseKind liteDatabaseKind, IEnumerable<T> models, bool isAll = false)
         {
+            // 物化一次，避免 InsertBulk 消费枚举后再 Count() 得到 0 导致误回滚
+            var modelList = models as ICollection<T> ?? models.ToList();
             int count = 0;
-            if (_databaseKind[liteDatabaseKind].BeginTrans())
+            var inTransaction = false;
+            try
             {
-                count = _databaseKind[liteDatabaseKind].GetCollection<T>().InsertBulk(models);
-                if (isAll && count != models.Count())
+                inTransaction = _databaseKind[liteDatabaseKind].BeginTrans();
+                count = _databaseKind[liteDatabaseKind].GetCollection<T>().InsertBulk(modelList);
+                if (isAll && count != modelList.Count)
                 {
-                    _databaseKind[liteDatabaseKind].Rollback();
+                    if (inTransaction)
+                    {
+                        _databaseKind[liteDatabaseKind].Rollback();
+                    }
                     return -1;
                 }
-                _databaseKind[liteDatabaseKind].Commit();
+                if (inTransaction)
+                {
+                    _databaseKind[liteDatabaseKind].Commit();
+                }
+            }
+            catch (Exception)
+            {
+                if (inTransaction)
+                {
+                    try { _databaseKind[liteDatabaseKind].Rollback(); } catch { /* 见 Updates */ }
+                }
+                throw;
             }
             return count;
         }
@@ -251,16 +338,33 @@ namespace Horizon.Game.GengDi.Core.Services.Database
 
         public static int Removes<T, K>(LiteDatabaseKind liteDatabaseKind, IEnumerable<BsonValue> ids, bool isAll = false) where T : LiteDbBaseModel<K>
         {
+            var idList = ids as ICollection<BsonValue> ?? ids.ToList();
             int count = 0;
-            if (_databaseKind[liteDatabaseKind].BeginTrans())
+            var inTransaction = false;
+            try
             {
-                count = _databaseKind[liteDatabaseKind].GetCollection<T>().DeleteMany(Query.In("Id", ids));
-                if (isAll && count != ids.Count())
+                inTransaction = _databaseKind[liteDatabaseKind].BeginTrans();
+                count = _databaseKind[liteDatabaseKind].GetCollection<T>().DeleteMany(Query.In("Id", idList));
+                if (isAll && count != idList.Count)
                 {
-                    _databaseKind[liteDatabaseKind].Rollback();
+                    if (inTransaction)
+                    {
+                        _databaseKind[liteDatabaseKind].Rollback();
+                    }
                     return -1;
                 }
-                _databaseKind[liteDatabaseKind].Commit();
+                if (inTransaction)
+                {
+                    _databaseKind[liteDatabaseKind].Commit();
+                }
+            }
+            catch (Exception)
+            {
+                if (inTransaction)
+                {
+                    try { _databaseKind[liteDatabaseKind].Rollback(); } catch { /* 见 Updates */ }
+                }
+                throw;
             }
             return count;
         }
@@ -277,22 +381,33 @@ namespace Horizon.Game.GengDi.Core.Services.Database
 
         public static int Updates<T, K>(LiteDatabaseKind liteDatabaseKind, IEnumerable<T> models, bool isAll = false)
         {
+            // 事务必须先于 Update 开启，否则 isAll 校验失败时回滚不了已写入的数据
+            var inTransaction = false;
             try
             {
-                int count = _databaseKind[liteDatabaseKind].GetCollection<T>().Update(models);
-                if (isAll && _databaseKind[liteDatabaseKind].BeginTrans())
+                var modelList = models as ICollection<T> ?? models.ToList();
+                inTransaction = _databaseKind[liteDatabaseKind].BeginTrans();
+                int count = _databaseKind[liteDatabaseKind].GetCollection<T>().Update(modelList);
+                if (isAll && count != modelList.Count)
                 {
-                    if (count != models.Count())
+                    if (inTransaction)
                     {
                         _databaseKind[liteDatabaseKind].Rollback();
-                        count = -1;
                     }
+                    return -1;
+                }
+                if (inTransaction)
+                {
                     _databaseKind[liteDatabaseKind].Commit();
                 }
                 return count;
             }
-            catch (Exception e)
+            catch (Exception)
             {
+                if (inTransaction)
+                {
+                    try { _databaseKind[liteDatabaseKind].Rollback(); } catch { /* 回滚失败时保留异常语义 */ }
+                }
                 return -1;
             }
         }
@@ -356,8 +471,9 @@ namespace Horizon.Game.GengDi.Core.Services.Database
 
                 if (rememberPassword)
                 {
-                    passportInfo.Password = password ?? string.Empty;
-                    passportInfo.Token = token ?? string.Empty;
+                    // 修复（安全）：密码/令牌落盘前用 DPAPI 加密（桌面端），不再明文存入 LiteDB。
+                    passportInfo.Password = CredentialProtector.Protect(password);
+                    passportInfo.Token = CredentialProtector.Protect(token);
                 }
                 else
                 {
@@ -390,7 +506,7 @@ namespace Horizon.Game.GengDi.Core.Services.Database
                     return false;
 
                 passportId = record.PassportId;
-                password = record.Password;
+                password = CredentialProtector.Unprotect(record.Password);
                 return true;
             }
             catch (Exception ex)

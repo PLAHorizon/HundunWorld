@@ -130,6 +130,33 @@ namespace Horizon.Strategy.Storage.Redis
             return await database.StringIncrementAsync(key);
         }
 
+        /// <summary>按指定增量原子累加（INCRBY；阶段 6.3 P2 修正计数跨进程汇聚用）。</summary>
+        public async Task<long> IncrementValueAsync(string key, long delta)
+        {
+            var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
+            return await database.StringIncrementAsync(key, delta);
+        }
+
+        /// <summary>按字段原子累加（HINCRBY；阶段 6.3 P2⑨ 修正计数按 reason 维度汇聚用）。</summary>
+        public async Task<long> IncrementHashValueAsync(string key, string field, long delta)
+        {
+            var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
+            return await database.HashIncrementAsync(key, field, delta);
+        }
+
+        /// <summary>读取整个 hash 为字典（HGETALL；阶段 6.3 P2⑨ 网关按 reason 读修正计数）。</summary>
+        public async Task<Dictionary<string, long>> GetHashAllAsync(string key)
+        {
+            var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
+            var entries = await database.HashGetAllAsync(key);
+            var result = new Dictionary<string, long>(entries.Length);
+            foreach (var e in entries)
+            {
+                if (e.Value.TryParse(out long v)) result[e.Name.ToString()] = v;
+            }
+            return result;
+        }
+
         public async Task<bool> SetAsync(string key, object value, TimeSpan? expiry = null)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);

@@ -5,6 +5,7 @@
              xmlns:models="using:Horizon.Game.GengDi.Models"
              xmlns:converters="using:Horizon.Game.GengDi.Core.Converters"
              xmlns:views="using:Horizon.Game.GengDi.Core.Views"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="Horizon.Game.GengDi.Core.Views.HomeView"
              x:DataType="vm:HomeViewModel">
 
@@ -23,7 +24,7 @@
                       Background="{DynamicResource GdBackgroundBrush}">
             <StackPanel Spacing="20" Margin="24">
 
-                <!-- ═══ 1. Hero Header（设计稿：64px渐变图标 + 标题 + 副标题 + 描述） ═══ -->
+                <!-- ═══ 1. Hero Header（动态问候 + 日期 + 品牌图标） ═══ -->
                 <StackPanel Orientation="Horizontal" Spacing="16">
                     <Border Width="64" Height="64" CornerRadius="{DynamicResource GdRadiusLg}"
                             VerticalAlignment="Center">
@@ -33,17 +34,19 @@
                                 <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
                             </LinearGradientBrush>
                         </Border.Background>
-                        <TextBlock Text="🏠" FontSize="32"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center" />
+                        <ui:IconSourceElement IconSource="{StaticResource SproutIcon}"
+                                              Width="32" Height="32"
+                                              Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
                     </Border>
                     <StackPanel Spacing="2" VerticalAlignment="Center">
-                        <TextBlock Text="Horizon 游戏管理平台" FontSize="20" FontWeight="SemiBold"
+                        <TextBlock Text="{Binding WelcomeMessage}" FontSize="20" FontWeight="SemiBold"
                                    Foreground="{DynamicResource GdForegroundBrush}" />
-                        <TextBlock Text="Horizon Game GengDi" FontSize="13"
+                        <TextBlock Text="{Binding CurrentDateDisplay}" FontSize="13"
                                    FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
                                    Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                        <TextBlock Text="下载、更新和启动您喜爱的游戏" FontSize="13"
+                        <TextBlock Text="天气 · 花卉行情 · 快捷入口，一览即达" FontSize="13"
                                    Foreground="{DynamicResource GdMutedForegroundBrush}" />
                     </StackPanel>
                 </StackPanel>
@@ -158,20 +161,46 @@
                                 </TextBlock>
                             </StackPanel>
                         </StackPanel>
-                        <!-- 右栏：温度趋势图区域 -->
+                        <!-- 右栏：24小时温度趋势（真实曲线：渐变面积 + 折线） -->
                         <Border Grid.Column="1" Margin="24 0 0 0"
                                 Background="#05FFFFFF"
                                 CornerRadius="{DynamicResource GdRadiusMd}"
                                 Padding="12">
                             <StackPanel Spacing="8">
-                                <TextBlock Text="24小时温度趋势" FontSize="12"
-                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="24小时温度趋势" FontSize="12"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding HourlyCardSummary}" FontSize="11"
+                                               FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                               IsVisible="{Binding HourlyCardSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                </Grid>
                                 <Border Height="120" Background="#08FFFFFF"
-                                        CornerRadius="{DynamicResource GdRadiusSm}">
-                                    <TextBlock Text="📈" FontSize="32"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Opacity="0.4" />
+                                        CornerRadius="{DynamicResource GdRadiusSm}"
+                                        ClipToBounds="True">
+                                    <Panel Margin="4">
+                                        <!-- 有数据：面积填充 + 温度曲线 -->
+                                        <Viewbox Stretch="Fill" IsVisible="{Binding HourlyTemperaturePoints, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                            <Canvas Width="800" Height="80">
+                                                <Polygon Points="{Binding HourlyTemperatureFillPoints}">
+                                                    <Polygon.Fill>
+                                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                                            <GradientStop Color="#667AA9FF" Offset="0" />
+                                                            <GradientStop Color="#007AA9FF" Offset="1" />
+                                                        </LinearGradientBrush>
+                                                    </Polygon.Fill>
+                                                </Polygon>
+                                                <Polyline Points="{Binding HourlyTemperaturePoints}"
+                                                          Stroke="#7AA9FF" StrokeThickness="2" />
+                                            </Canvas>
+                                        </Viewbox>
+                                        <!-- 无数据：占位 -->
+                                        <TextBlock Text="📈" FontSize="32"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Opacity="0.4"
+                                                   IsVisible="{Binding HourlyTemperaturePoints, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                                    </Panel>
                                 </Border>
                             </StackPanel>
                         </Border>
@@ -254,7 +283,7 @@
                                 </Border>
                                 <TextBlock Text="逐时预报" FontSize="14" FontWeight="Medium"
                                            Foreground="{DynamicResource GdForegroundBrush}" />
-                                <TextBlock Text="查看未来24小时天气变化" FontSize="12"
+                                <TextBlock Text="{Binding HourlyCardSummary}" FontSize="12"
                                            Foreground="{DynamicResource GdMutedForegroundBrush}" />
                             </StackPanel>
                         </Border>
@@ -270,7 +299,7 @@
                                 </Border>
                                 <TextBlock Text="空气质量" FontSize="14" FontWeight="Medium"
                                            Foreground="{DynamicResource GdForegroundBrush}" />
-                                <TextBlock Text="AQI 45 · 优" FontSize="12"
+                                <TextBlock Text="{Binding AirCardSummary}" FontSize="12"
                                            Foreground="{DynamicResource GdMutedForegroundBrush}" />
                             </StackPanel>
                         </Border>
@@ -287,7 +316,7 @@
                                 </Border>
                                 <TextBlock Text="生活指数" FontSize="14" FontWeight="Medium"
                                            Foreground="{DynamicResource GdForegroundBrush}" />
-                                <TextBlock Text="紫外线强 · 注意防晒" FontSize="12"
+                                <TextBlock Text="{Binding LifeIndexSummary}" FontSize="12"
                                            Foreground="{DynamicResource GdMutedForegroundBrush}" />
                             </StackPanel>
                         </Border>
@@ -339,7 +368,8 @@
                                        TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <Border Grid.Column="2" Classes="GdBadge GdWarning" VerticalAlignment="Center">
-                            <TextBlock Text="高温预警" />
+                            <!-- 徽标随节气季节变化（原写死「高温预警」，冬天也对显示高温预警） -->
+                            <TextBlock Text="{Binding WeatherForecast.SolarTerm.Season, TargetNullValue='节气'}" />
                         </Border>
                     </Grid>
                 </Border>
@@ -354,12 +384,15 @@
                         <!-- 行情仪表盘 -->
                         <Button Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
                                 HorizontalContentAlignment="Stretch"
-                                Command="{Binding NavigateToGamesCommand}">
+                                Command="{Binding QuickNavigateCommand}" CommandParameter="FlowerDashboard">
                             <Border Classes="GdMetricCard">
                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                                     <TextBlock Text="📊" FontSize="28" HorizontalAlignment="Center" />
                                     <TextBlock Text="行情仪表盘" FontSize="13" FontWeight="Medium"
                                                Foreground="{DynamicResource GdForegroundBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="实时行情" FontSize="11"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -367,12 +400,15 @@
                         <!-- 花卉市场 -->
                         <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
                                 HorizontalContentAlignment="Stretch"
-                                Command="{Binding NavigateToGamesCommand}">
+                                Command="{Binding QuickNavigateCommand}" CommandParameter="FlowerShop">
                             <Border Classes="GdMetricCard">
                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                                     <TextBlock Text="🌸" FontSize="28" HorizontalAlignment="Center" />
                                     <TextBlock Text="花卉市场" FontSize="13" FontWeight="Medium"
                                                Foreground="{DynamicResource GdForegroundBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="挑选鲜花" FontSize="11"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -380,12 +416,15 @@
                         <!-- 种植建议 -->
                         <Button Grid.Column="2" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
                                 HorizontalContentAlignment="Stretch"
-                                Command="{Binding NavigateToGamesCommand}">
+                                Command="{Binding QuickNavigateCommand}" CommandParameter="FlowerPlantingAdvice">
                             <Border Classes="GdMetricCard">
                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                                     <TextBlock Text="🌱" FontSize="28" HorizontalAlignment="Center" />
                                     <TextBlock Text="种植建议" FontSize="13" FontWeight="Medium"
                                                Foreground="{DynamicResource GdForegroundBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="养护指南" FontSize="11"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -393,12 +432,15 @@
                         <!-- AI助手 -->
                         <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
                                 HorizontalContentAlignment="Stretch"
-                                Command="{Binding NavigateToGamesCommand}">
+                                Command="{Binding QuickNavigateCommand}" CommandParameter="FlowerAIAssistant">
                             <Border Classes="GdMetricCard">
                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                                     <TextBlock Text="🤖" FontSize="28" HorizontalAlignment="Center" />
                                     <TextBlock Text="AI助手" FontSize="13" FontWeight="Medium"
                                                Foreground="{DynamicResource GdForegroundBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="智能问答" FontSize="11"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -406,12 +448,15 @@
                         <!-- 数据大屏 -->
                         <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
                                 HorizontalContentAlignment="Stretch"
-                                Command="{Binding NavigateToGamesCommand}">
+                                Command="{Binding QuickNavigateCommand}" CommandParameter="FlowerDataScreen">
                             <Border Classes="GdMetricCard">
                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                                     <TextBlock Text="📈" FontSize="28" HorizontalAlignment="Center" />
                                     <TextBlock Text="数据大屏" FontSize="13" FontWeight="Medium"
                                                Foreground="{DynamicResource GdForegroundBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="交易看板" FontSize="11"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -419,12 +464,15 @@
                         <!-- 音乐 -->
                         <Button Grid.Column="5" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
                                 HorizontalContentAlignment="Stretch"
-                                Command="{Binding NavigateToGamesCommand}">
+                                Command="{Binding QuickNavigateCommand}" CommandParameter="MusicDiscover">
                             <Border Classes="GdMetricCard">
                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                                     <TextBlock Text="🎵" FontSize="28" HorizontalAlignment="Center" />
                                     <TextBlock Text="音乐" FontSize="13" FontWeight="Medium"
                                                Foreground="{DynamicResource GdForegroundBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="放松一下" FontSize="11"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -443,8 +491,9 @@
                                            Foreground="{DynamicResource GdForegroundBrush}"
                                            VerticalAlignment="Center" />
                             </StackPanel>
-                            <Button Grid.Column="1" Content="预警中心" Classes="GdGhost"
-                                    Padding="8 4" FontSize="11" />
+                            <Button Grid.Column="1" Content="预警中心 →" Classes="GdGhost"
+                                    Padding="8 4" FontSize="11"
+                                    Command="{Binding QuickNavigateCommand}" CommandParameter="FlowerAlertCenter" />
                         </Grid>
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
                             <Border Background="{DynamicResource GdInfoSurfaceBrush}"
@@ -465,9 +514,10 @@
                                     <TextBlock Text="涨跌幅" FontSize="11"
                                                Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                HorizontalAlignment="Center" />
+                                    <!-- 中国行情惯例：涨红 / 跌绿 / 平盘灰 -->
                                     <TextBlock Text="{Binding FlowerPriceChange}" FontSize="22"
                                                FontWeight="SemiBold"
-                                               Foreground="{DynamicResource GdForegroundBrush}"
+                                               Foreground="{Binding FlowerPriceChangeBrush, Converter={StaticResource HexToBrushConverter}}"
                                                HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苹果首页 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto bg-background min-h-screen relative">
+
+        <!-- ====== iOS Sticky Header: 状态栏 + Large Title + 搜索栏 ====== -->
+        <header class="sticky top-0 z-50 backdrop-blur-xl" style="background: rgba(10,14,23,0.82)">
+            <!-- Large Title + 搜索栏 -->
+            <div class="px-5 pb-3">
+                <h1 class="text-[34px] font-bold tracking-tight leading-tight text-foreground">耕地花卉</h1>
+                <div class="mt-2 flex items-center gap-2">
+                    <div class="flex-1 flex items-center gap-2 bg-muted rounded-xl px-3 h-11">
+                        <i data-lucide="search" class="w-4 h-4 text-muted-foreground shrink-0"></i>
+                        <input type="text" placeholder="搜索花卉、品种…" class="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"/>
+                    </div>
+                    <button class="w-11 h-11 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                        <i data-lucide="scan-line" class="w-5 h-5 text-foreground"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ====== 可滚动内容区 ====== -->
+        <div class="px-4 pt-4 pb-36 space-y-6">
+
+            <!-- 市场速览卡片 -->
+            <section>
+                <h2 class="text-[13px] font-medium text-muted-foreground px-1 mb-2">市场速览</h2>
+                <div class="rounded-2xl bg-card p-4" style="box-shadow: var(--gd-shadow-lg)">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-foreground">大盘指数</span>
+                            <span class="text-[11px] text-muted-foreground">09:41 实时</span>
+                        </div>
+                        <i data-lucide="activity" class="w-4 h-4 text-muted-foreground"></i>
+                    </div>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <span class="text-[32px] font-bold font-mono tracking-tight text-foreground">1286.50</span>
+                        <span class="text-sm font-medium text-up">+12.23</span>
+                        <span class="text-xs text-up bg-up-surface px-1.5 py-0.5 rounded-md font-medium">+0.96%</span>
+                    </div>
+                    <div class="mt-3 h-16">
+                        <canvas id="marketChart"></canvas>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                        <div class="text-xs">
+                            <span class="text-muted-foreground">成交量</span>
+                            <span class="ml-1 font-mono text-foreground">2.8亿</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs">
+                            <div class="flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full" style="background: var(--gd-up)"></span>
+                                <span class="text-muted-foreground">涨</span>
+                                <span class="font-mono text-up">1245</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full" style="background: var(--gd-down)"></span>
+                                <span class="text-muted-foreground">跌</span>
+                                <span class="font-mono text-down">632</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 快捷功能 4 列网格 -->
+            <section>
+                <h2 class="text-[13px] font-medium text-muted-foreground px-1 mb-2">快捷功能</h2>
+                <div class="grid grid-cols-4 gap-3">
+                    <button class="flex flex-col items-center gap-1.5 py-3 rounded-2xl bg-card min-h-[80px]">
+                        <div class="w-11 h-11 rounded-full flex items-center justify-center bg-up-surface">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-up"></i>
+                        </div>
+                        <span class="text-xs font-medium text-foreground">买入</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-1.5 py-3 rounded-2xl bg-card min-h-[80px]">
+                        <div class="w-11 h-11 rounded-full flex items-center justify-center bg-down-surface">
+                            <i data-lucide="trending-down" class="w-5 h-5 text-down"></i>
+                        </div>
+                        <span class="text-xs font-medium text-foreground">卖出</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-1.5 py-3 rounded-2xl bg-card min-h-[80px]">
+                        <div class="w-11 h-11 rounded-full flex items-center justify-center" style="background: var(--gd-state-info-surface)">
+                            <i data-lucide="message-circle" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <span class="text-xs font-medium text-foreground">询价</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-1.5 py-3 rounded-2xl bg-card min-h-[80px]">
+                        <div class="w-11 h-11 rounded-full flex items-center justify-center" style="background: var(--gd-state-warning-surface)">
+                            <i data-lucide="bell" class="w-5 h-5" style="color: var(--gd-state-warning)"></i>
+                        </div>
+                        <span class="text-xs font-medium text-foreground">预警</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 热门花卉横向滚动 -->
+            <section>
+                <div class="flex items-center justify-between px-1 mb-2">
+                    <h2 class="text-[13px] font-medium text-muted-foreground">热门花卉</h2>
+                    <button class="text-[13px] text-primary flex items-center">
+                        更多 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                    <!-- 玫瑰 -->
+                    <div class="shrink-0 w-[136px]">
+                        <div class="rounded-2xl bg-card overflow-hidden">
+                            <div class="h-24 flex items-center justify-center" style="background: linear-gradient(135deg, #be123c, #fb7185)">
+                                <i data-lucide="flower-2" class="w-10 h-10 text-white/50"></i>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-sm font-medium text-foreground">玫瑰</div>
+                                <div class="flex items-center justify-between mt-1">
+                                    <span class="text-xs font-mono text-foreground">¥3.85</span>
+                                    <span class="text-xs text-up font-medium">+2.4%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 百合 -->
+                    <div class="shrink-0 w-[136px]">
+                        <div class="rounded-2xl bg-card overflow-hidden">
+                            <div class="h-24 flex items-center justify-center" style="background: linear-gradient(135deg, #ca8a04, #fde68a)">
+                                <i data-lucide="flower-2" class="w-10 h-10 text-white/50"></i>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-sm font-medium text-foreground">百合</div>
+                                <div class="flex items-center justify-between mt-1">
+                                    <span class="text-xs font-mono text-foreground">¥12.50</span>
+                                    <span class="text-xs text-down font-medium">-1.2%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 康乃馨 -->
+                    <div class="shrink-0 w-[136px]">
+                        <div class="rounded-2xl bg-card overflow-hidden">
+                            <div class="h-24 flex items-center justify-center" style="background: linear-gradient(135deg, #db2777, #f9a8d4)">
+                                <i data-lucide="flower-2" class="w-10 h-10 text-white/50"></i>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-sm font-medium text-foreground">康乃馨</div>
+                                <div class="flex items-center justify-between mt-1">
+                                    <span class="text-xs font-mono text-foreground">¥1.95</span>
+                                    <span class="text-xs text-up font-medium">+0.8%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 向日葵 -->
+                    <div class="shrink-0 w-[136px]">
+                        <div class="rounded-2xl bg-card overflow-hidden">
+                            <div class="h-24 flex items-center justify-center" style="background: linear-gradient(135deg, #c2410c, #fbbf24)">
+                                <i data-lucide="flower-2" class="w-10 h-10 text-white/50"></i>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-sm font-medium text-foreground">向日葵</div>
+                                <div class="flex items-center justify-between mt-1">
+                                    <span class="text-xs font-mono text-foreground">¥8.60</span>
+                                    <span class="text-xs text-up font-medium">+5.6%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 郁金香 -->
+                    <div class="shrink-0 w-[136px]">
+                        <div class="rounded-2xl bg-card overflow-hidden">
+                            <div class="h-24 flex items-center justify-center" style="background: linear-gradient(135deg, #7c3aed, #c084fc)">
+                                <i data-lucide="flower-2" class="w-10 h-10 text-white/50"></i>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-sm font-medium text-foreground">郁金香</div>
+                                <div class="flex items-center justify-between mt-1">
+                                    <span class="text-xs font-mono text-foreground">¥6.20</span>
+                                    <span class="text-xs text-down font-medium">-3.1%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 兰花 -->
+                    <div class="shrink-0 w-[136px]">
+                        <div class="rounded-2xl bg-card overflow-hidden">
+                            <div class="h-24 flex items-center justify-center" style="background: linear-gradient(135deg, #6d28d9, #a78bfa)">
+                                <i data-lucide="flower-2" class="w-10 h-10 text-white/50"></i>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-sm font-medium text-foreground">兰花</div>
+                                <div class="flex items-center justify-between mt-1">
+                                    <span class="text-xs font-mono text-foreground">¥45.80</span>
+                                    <span class="text-xs text-up font-medium">+1.5%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 实时资讯（iOS 分组列表） -->
+            <section>
+                <div class="flex items-center justify-between px-1 mb-2">
+                    <h2 class="text-[13px] font-medium text-muted-foreground">实时资讯</h2>
+                    <button class="text-[13px] text-primary flex items-center">
+                        更多 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div class="rounded-2xl bg-card overflow-hidden">
+                    <!-- 资讯 1 -->
+                    <div class="px-4 py-3">
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <span class="text-[11px] text-muted-foreground">10:32</span>
+                            <span class="text-[11px] text-muted-foreground">·</span>
+                            <span class="text-[11px] text-muted-foreground">财经社</span>
+                            <span class="text-[10px] text-up bg-up-surface px-1.5 py-0.5 rounded">利好</span>
+                        </div>
+                        <p class="text-sm leading-snug text-foreground">云南斗南花卉市场日交易量创新高 突破300万枝</p>
+                    </div>
+                    <div class="mx-4 border-t border-border"></div>
+                    <!-- 资讯 2 -->
+                    <div class="px-4 py-3">
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <span class="text-[11px] text-muted-foreground">09:15</span>
+                            <span class="text-[11px] text-muted-foreground">·</span>
+                            <span class="text-[11px] text-muted-foreground">花卉日报</span>
+                        </div>
+                        <p class="text-sm leading-snug text-foreground">玫瑰价格连续三日上涨 产地供应偏紧</p>
+                    </div>
+                    <div class="mx-4 border-t border-border"></div>
+                    <!-- 资讯 3 -->
+                    <div class="px-4 py-3">
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <span class="text-[11px] text-muted-foreground">08:40</span>
+                            <span class="text-[11px] text-muted-foreground">·</span>
+                            <span class="text-[11px] text-muted-foreground">市场公告</span>
+                        </div>
+                        <p class="text-sm leading-snug text-foreground">进口郁金香品种清单更新 新增5个优质品种</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ====== Sticky Bottom: 迷你播放条 + iOS Tab Bar ====== -->
+        <div class="sticky bottom-0 z-50">
+            <!-- 迷你播放条 -->
+            <div class="backdrop-blur-xl border-t border-border px-3 py-2" style="background: rgba(19,23,34,0.88)">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background: linear-gradient(135deg, #2962ff, #1f4fd6)">
+                        <i data-lucide="music" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-sm font-medium truncate text-foreground">花语轻音乐</span>
+                            <button class="w-9 h-9 flex items-center justify-center shrink-0">
+                                <i data-lucide="play" class="w-5 h-5 text-foreground"></i>
+                            </button>
+                        </div>
+                        <div class="text-[11px] text-muted-foreground truncate">钢琴曲集 · 放松时刻</div>
+                        <div class="mt-1 h-0.5 bg-muted rounded-full overflow-hidden">
+                            <div class="h-full rounded-full" style="width: 42%; background: var(--gd-primary)"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- iOS Tab Bar -->
+            <nav class="backdrop-blur-xl border-t border-border" style="background: rgba(19,23,34,0.88)">
+                <div class="flex items-center justify-around px-2 pt-1.5 pb-1">
+                    <button class="flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] justify-center">
+                        <i data-lucide="home" class="w-6 h-6 text-primary"></i>
+                        <span class="text-[10px] font-medium text-primary">首页</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] justify-center">
+                        <i data-lucide="cloud" class="w-6 h-6 text-muted-foreground"></i>
+                        <span class="text-[10px] font-medium text-muted-foreground">天气</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] justify-center">
+                        <i data-lucide="bar-chart-2" class="w-6 h-6 text-muted-foreground"></i>
+                        <span class="text-[10px] font-medium text-muted-foreground">市场</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] justify-center">
+                        <i data-lucide="compass" class="w-6 h-6 text-muted-foreground"></i>
+                        <span class="text-[10px] font-medium text-muted-foreground">发现</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] justify-center">
+                        <i data-lucide="user" class="w-6 h-6 text-muted-foreground"></i>
+                        <span class="text-[10px] font-medium text-muted-foreground">我的</span>
+                    </button>
+                </div>
+                <!-- Safe Area -->
+                <div class="h-7"></div>
+            </nav>
+        </div>
+
+    </main>
+    <script>
+        lucide.createIcons();
+        // Chart.js 迷你折线图
+        (function () {
+            var ctx = document.getElementById('marketChart');
+            if (ctx && window.Chart) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['', '', '', '', '', '', '', '', '', '', '', ''],
+                        datasets: [{
+                            data: [1272, 1275, 1271, 1278, 1280, 1276, 1282, 1285, 1283, 1286, 1284, 1286.5],
+                            borderColor: '#26a69a',
+                            backgroundColor: function (context) {
+                                var chart = context.chart;
+                                var area = chart.chartArea;
+                                if (!area) return 'rgba(38,166,154,0.1)';
+                                var g = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+                                g.addColorStop(0, 'rgba(38,166,154,0.3)');
+                                g.addColorStop(1, 'rgba(38,166,154,0)');
+                                return g;
+                            },
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 800 },
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false, suggestedMin: 1268, suggestedMax: 1290 }
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

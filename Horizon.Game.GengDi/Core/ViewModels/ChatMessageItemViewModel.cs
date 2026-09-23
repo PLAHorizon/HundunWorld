@@ -57,6 +57,19 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         public bool IsOutgoing { get; }
 
+        /// <summary>撤回提示文案：已撤回消息以居中灰字渲染，不再显示气泡与操作行</summary>
+        public string RecallNoticeText => IsOutgoing ? "你撤回了一条消息" : $"{SenderDisplayName} 撤回了一条消息";
+
+        public bool IsRecalled => Message?.IsRecalled == true;
+
+        /// <summary>是否可撤回：自己发送的私聊消息且在 48 小时窗口内（与服务端 RecallTimeWindowHours 对齐）</summary>
+        public bool CanRecall =>
+            !IsRecalled
+            && IsOutgoing
+            && Message != null
+            && !Message.IsGroupConversation
+            && DateTime.Now - Message.Timestamp <= TimeSpan.FromHours(48);
+
         public HorizontalAlignment BubbleAlignment => IsOutgoing ? HorizontalAlignment.Right : HorizontalAlignment.Left;
 
         public Thickness BubbleMargin => IsOutgoing ? new Thickness(140, 0, 0, 14) : new Thickness(0, 0, 140, 14);
@@ -77,7 +90,38 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         public bool HasText => !string.IsNullOrWhiteSpace(Text);
 
-        public bool HasCard => _content.Type == MessageType.Image || _content.Type == MessageType.Video || _content.Type == MessageType.LinkCard;
+        public bool HasCard => (_content.Type == MessageType.Image || _content.Type == MessageType.Video || _content.Type == MessageType.LinkCard)
+            && !IsVoiceMessage;
+
+        /// <summary>语音消息：Video 结构 + provider=audio（鸿蒙端 RichMessageContent.createAudio），以专属语音卡片渲染</summary>
+        public bool IsVoiceMessage => _content.Type == MessageType.Video
+            && string.Equals(_content.Provider, "audio", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>语音时长显示（subtitle 存秒数），如 12"</summary>
+        public string VoiceDurationText
+        {
+            get
+            {
+                if (int.TryParse(_content.Subtitle?.Trim(), out var seconds) && seconds > 0)
+                {
+                    return $"{seconds}\"";
+                }
+                return "语音";
+            }
+        }
+
+        /// <summary>语音播放地址（优先 PlaybackUrl，回退 MediaUrl）</summary>
+        public string VoicePlaybackUrl => !string.IsNullOrWhiteSpace(_content.PlaybackUrl)
+            ? _content.PlaybackUrl
+            : _content.MediaUrl;
+
+        private bool _isVoicePlaying;
+        /// <summary>本条语音是否正在播放（播放器全局单实例，切换播放时旧消息自动复位）</summary>
+        public bool IsVoicePlaying
+        {
+            get => _isVoicePlaying;
+            set => SetProperty(ref _isVoicePlaying, value);
+        }
 
         public bool HasFileCard => _content.Type == MessageType.File;
 
@@ -97,6 +141,22 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
                 {
                     return FormatFileSize(new FileInfo(path).Length);
+                }
+                // 远程文件：若共享文件缓存中已有副本，显示真实大小
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    try
+                    {
+                        var cached = SharedFileService.FindCachedLocalCopy(path, FileDisplayName);
+                        if (cached != null)
+                        {
+                            return FormatFileSize(new FileInfo(cached).Length);
+                        }
+                    }
+                    catch
+                    {
+                        // 缓存探测失败忽略，回退默认文案
+                    }
                 }
                 return "未知大小";
             }

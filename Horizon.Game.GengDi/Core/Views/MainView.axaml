@@ -13,6 +13,12 @@
              x:Class="Horizon.Game.GengDi.Core.Views.MainView"
              x:DataType="vm:MainViewModel">
 
+    <!-- 全局导航快捷键：Alt+← 返回上一页，Alt+→ 前进下一页 -->
+    <UserControl.KeyBindings>
+        <KeyBinding Gesture="Alt+Left" Command="{Binding GoBackCommand}" />
+        <KeyBinding Gesture="Alt+Right" Command="{Binding GoForwardCommand}" />
+    </UserControl.KeyBindings>
+
     <Grid RowDefinitions="Auto,*,Auto">
         <!-- ══════════════════════════════════════════════════════════════
              设计稿顶栏（56px）：品牌 Logo + 水平主导航 + 右侧工具区
@@ -50,6 +56,22 @@
                                        Foreground="{DynamicResource GdForegroundBrush}"
                                        VerticalAlignment="Center" />
                         </StackPanel>
+                    </Button>
+
+                    <!-- 全局返回 / 前进（浏览器式导航历史，Alt+Left / Alt+Right） -->
+                    <Button Classes="TitleBarIconButton"
+                            ToolTip.Tip="{Binding GoBackToolTip}"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            IsEnabled="{Binding CanGoBack}"
+                            Command="{Binding GoBackCommand}">
+                        <ui:IconSourceElement IconSource="{StaticResource NavBackIcon}" Width="18" Height="18" />
+                    </Button>
+                    <Button Classes="TitleBarIconButton"
+                            ToolTip.Tip="{Binding GoForwardToolTip}"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            IsEnabled="{Binding CanGoForward}"
+                            Command="{Binding GoForwardCommand}">
+                        <ui:IconSourceElement IconSource="{StaticResource NavForwardIcon}" Width="18" Height="18" />
                     </Button>
 
                     <Border Width="1" Height="24" Margin="16 0"
@@ -185,7 +207,7 @@
                             </ui:FAMenuFlyout>
                         </Button.Flyout>
                         <Border Background="{DynamicResource GdMutedBrush}"
-                                CornerRadius="{DynamicResource GdRadiusFull}"
+                                CornerRadius="18"
                                 Padding="5 5 12 5">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Grid Width="26" Height="26">

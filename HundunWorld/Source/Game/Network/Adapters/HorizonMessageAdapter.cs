@@ -1,8 +1,32 @@
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+// ⚠️ 关键：LZ4Pickler 必须**显式绑定**到协议实现，绝不能让 `using K4os.Compression.LZ4;`
+//    参与名字解析。
+//
+//    事故复盘（2026-09-20，表现为「登录成功但角色列表恒为空」）：
+//      本文件原本写的是 `using K4os.Compression.LZ4;`，而 K4os 包里**恰好也有**一个
+//      `K4os.Compression.LZ4.LZ4Pickler`。于是 C# 名字解析把这里的 `LZ4Pickler`
+//      静默绑定到了 K4os 版，而服务端解析包体用的是
+//      `Horizon.Game.Message.Utilities.LZ4Pickler`。
+//      两者的线格式**互不兼容**：
+//        · K4os 版      → [1 字节 seed][7bit 变长原长][LZ4 块]
+//        · Horizon 版   → [4 字节 int32 原长][LZ4 块 或 原文]
+//      后果：客户端发出的所有压缩包（body 长度 > 256）在网关侧
+//      `LZ4Pickler.Unpickle` 处解压失败被丢弃，客户端永远收不到响应。
+//      网关日志特征：`OnParsingBody: decompression failed (malformed or exceeds 8388608
+//      bytes), compressed=True, wireSize=NNN`。登录/握手等小包（≤256 不压缩）不受影响，
+//      所以「登录成功但列表为空」这个现象极具迷惑性。
+//
+//    为什么编译期发现不了：K4os 版的 Pickle/Unpickle 签名与协议版一致（都是 byte[] 进出），
+//    所以**编译零警告、运行期才炸**。这正是本仓库 LZ4Pickler 出现三份实现
+//    （Horizon.Game.Core / Horizon.Game.Message / Horizon.IM.Core，外加 K4os 这份）
+//    所引入的重复定义风险。
+//
+//    约束：本仓库协议的权威实现是 `Horizon.Game.Message.Utilities.LZ4Pickler`
+//    （客户端收、网关收发均以它为准）。任何客户端/宿主侧的适配器都必须显式别名到它。
+using LZ4Pickler = Horizon.Game.Message.Utilities.LZ4Pickler;
 using HundunWorld.Game.UI.Authentication;
-using K4os.Compression.LZ4;
 using MemoryPack;
 using System;
 using System.Collections.Generic;

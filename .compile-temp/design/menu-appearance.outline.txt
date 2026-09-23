@@ -1,0 +1,206 @@
+## page: menu-appearance
+## dom-ids: back-hud, btn-apply-dye, btn-reset-dye, btn-reset-view, btn-rotate-left, btn-rotate-right, btn-zoom-in, btn-zoom-out, card-set-1, card-set-2, card-set-3, card-set-4, card-set-5, card-set-6, dye-accent-1, dye-accent-2, dye-accent-3, dye-accent-4, dye-accent-5, dye-accent-6, dye-accent-7, dye-accent-8, dye-primary-1, dye-primary-2, dye-primary-3, dye-primary-4, dye-primary-5, dye-primary-6, dye-primary-7, dye-primary-8, dye-secondary-1, dye-secondary-2, dye-secondary-3, dye-secondary-4, dye-secondary-5, dye-secondary-6, dye-secondary-7, dye-secondary-8, nav-appearance, nav-battle-prep, nav-bestiary, nav-character, nav-equipment, nav-livelihood, nav-mail, nav-martial, nav-personal-info, nav-quest, nav-sect, nav-settings, nav-shop, nav-team, nav-time, tab-cape, tab-costume, tab-headwear, tab-mount, tab-weapon-skin
+  main
+    nav .flex-col
+      div .items-center justify-center
+        span | 混沌世界
+      div
+        div
+          span | 角色
+        div .flex-col
+          a #nav-character .nav-item
+            i
+            span | 角色
+          a #nav-equipment .nav-item
+            i
+            span | 装备
+          a #nav-appearance .nav-item nav-item-active
+            i
+            span | 外观
+          a #nav-battle-prep .nav-item
+            i
+            span | 备战
+          a #nav-sect .nav-item
+            i
+            span | 门派
+          a #nav-personal-info .nav-item
+            i
+            span | 个人信息
+          a #nav-time .nav-item
+            i
+            span | 时间
+        div
+        div
+          span | 江湖
+        div .flex-col
+          a #nav-quest .nav-item
+            i
+            span | 任务
+          a #nav-bestiary .nav-item
+            i
+            span | 博物志
+          a #nav-martial .nav-item
+            i
+            span | 武林录
+          a #nav-livelihood .nav-item
+            i
+            span | 营生
+          a #nav-team .nav-item
+            i
+            span | 组队
+          a #nav-mail .nav-item
+            i
+            span | 邮箱
+          a #nav-shop .nav-item nav-item-disabled
+            i
+            span | 商店
+        div
+        div
+          span | 系统
+        div .flex-col
+          a #nav-settings .nav-item nav-item-disabled
+            i
+            span | 设置
+    div .flex-col
+      header .items-center
+        div .items-center
+          button #back-hud .ink-back-btn [aria="返回战斗"]
+            i
+          div .items-center justify-center
+            span | 无
+          div .items-center
+            span | 无名侠
+            span .ink-tag ink-tag-vermilion | Lv.42
+            span | 逍遥派
+        div .items-center
+          div .items-center
+            span
+            span | 铜钱 12,450
+          div .items-center
+            span
+            span | 银两 328
+      div
+        section .flex-col
+          div .flex-col
+            div .top-10 left-10
+            div .bottom-20 right-10
+            div .top-6 right-6 ink-vertical-title | 外观预览
+            div .items-center justify-center
+            div .items-center justify-center
+              button #btn-rotate-left [aria="左旋"]
+                i
+              button #btn-rotate-right [aria="右旋"]
+                i
+              div
+              button #btn-zoom-in [aria="放大"]
+                i
+              button #btn-zoom-out [aria="缩小"]
+                i
+              div
+              button #btn-reset-view [aria="重置视角"]
+                i
+        section .flex-col
+          div
+            div .items-center
+              button #tab-headwear .tab-item | 头饰
+              button #tab-costume .tab-item tab-item-active | 服装
+              button #tab-cape .tab-item | 披风
+              button #tab-weapon-skin .tab-item | 武器外观
+              button #tab-mount .tab-item | 坐骑
+          div .grid grid-cols-3
+            div #card-set-1 .set-card
+              div .set-card-thumb
+                i
+              div .flex-col justify-center
+                span | 青衫客服
+                span .ink-tag tag-common | 凡品
+            div #card-set-2 .set-card
+              div .set-card-thumb
+                i
+              div .flex-col justify-center
+                span | 墨衣夜行
+                span .ink-tag tag-rare | 珍品
+            div #card-set-3 .set-card set-card-selected
+              div .set-card-thumb
+                i
+              div .flex-col justify-center
+                span | 朱雀翎衫
+                span .ink-tag ink-tag-brand | 仙品
+            div #card-set-4 .set-card
+              div .set-card-thumb
+                i
+              div .flex-col justify-center
+                span | 玉虚道袍
+                span .ink-tag tag-jade | 灵品
+            div #card-set-5 .set-card
+              div .set-card-thumb
+                i
+              div .flex-col justify-center
+                span | 赤焰战甲
+                span .ink-tag ink-tag-vermilion | 神品
+            div #card-set-6 .set-card
+              div .set-card-thumb
+                i
+              div .flex-col justify-center
+                span | 玄武铁铠
+                span .ink-tag ink-tag-brand | 仙品
+          div .flex-col
+            div .items-center
+              div .items-center
+                i
+                span | 染色
+                span | ·
+                span | 朱雀翎衫
+              span | 选择颜色后点击应用
+            div .flex-col
+              div .items-center
+                div .flex-col
+                  span | 主色
+                  span | 大面积
+                div .items-center
+                  button #dye-primary-1 [aria="朱红"]
+                  button #dye-primary-2 [aria="墨黑"]
+                  button #dye-primary-3 [aria="纸白"]
+                  button #dye-primary-4 [aria="金色"]
+                  button #dye-primary-5 [aria="玉色"]
+                  button #dye-primary-6 [aria="藏青"]
+                  button #dye-primary-7 [aria="绛紫"]
+                  button #dye-primary-8 [aria="青灰"]
+              div
+              div .items-center
+                div .flex-col
+                  span | 辅色
+                  span | 点缀面
+                div .items-center
+                  button #dye-secondary-1 [aria="赭石"]
+                  button #dye-secondary-2 [aria="金色"]
+                  button #dye-secondary-3 [aria="黛绿"]
+                  button #dye-secondary-4 [aria="银灰"]
+                  button #dye-secondary-5 [aria="茶褐"]
+                  button #dye-secondary-6 [aria="月白"]
+                  button #dye-secondary-7 [aria="烟灰"]
+                  button #dye-secondary-8 [aria="胭脂"]
+              div
+              div .items-center
+                div .flex-col
+                  span | 点缀
+                  span | 纹饰
+                div .items-center
+                  button #dye-accent-1 [aria="金色"]
+                  button #dye-accent-2 [aria="朱红"]
+                  button #dye-accent-3 [aria="玉色"]
+                  button #dye-accent-4 [aria="银白"]
+                  button #dye-accent-5 [aria="翠绿"]
+                  button #dye-accent-6 [aria="琥珀"]
+                  button #dye-accent-7 [aria="珊瑚"]
+                  button #dye-accent-8 [aria="碧蓝"]
+            div .items-center
+              button #btn-reset-dye .ink-btn ink-btn-ghost
+                i
+                span | 重置
+              button #btn-apply-dye .ink-btn ink-btn-vermilion
+                i
+                span | 应用染色
+
+## COPY (51)
+混沌世界 | 角色 | 装备 | 外观 | 备战 | 门派 | 个人信息 | 时间 | 江湖 | 任务 | 博物志 | 武林录 | 营生 | 组队 | 邮箱 | 商店 | 系统 | 设置 | 无 | 无名侠 | Lv.42 | 逍遥派 | 铜钱 12,450 | 银两 328 | 外观预览 | 头饰 | 服装 | 披风 | 武器外观 | 坐骑 | 青衫客服 | 凡品 | 墨衣夜行 | 珍品 | 朱雀翎衫 | 仙品 | 玉虚道袍 | 灵品 | 赤焰战甲 | 神品 | 玄武铁铠 | 染色 | 选择颜色后点击应用 | 主色 | 大面积 | 辅色 | 点缀面 | 点缀 | 纹饰 | 重置 | 应用染色

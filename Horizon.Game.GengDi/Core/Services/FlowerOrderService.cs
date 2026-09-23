@@ -58,6 +58,30 @@ namespace Horizon.Game.GengDi.Core.Services
         public string SellerAuditRemark { get; set; } = "";
         public DateTime? SellerAuditTime { get; set; }
         public long MerchantId { get; set; }
+
+        /// <summary>退款状态中文文案（对齐后端 RefundStatus 枚举；原徽标直接显示数字状态码）。</summary>
+        public string StatusText => Status switch
+        {
+            0 => "待审核",
+            1 => "卖家已同意",
+            2 => "卖家已拒绝",
+            3 => "退款中",
+            4 => "退款完成",
+            5 => "已关闭",
+            _ => "未知"
+        };
+
+        /// <summary>退款状态徽标颜色（十六进制，配合 HexToBrushConverter）。</summary>
+        public string StatusBrushHex => Status switch
+        {
+            0 => "#FFA726",  // 待审核 - 橙
+            1 => "#42A5F5",  // 卖家已同意 - 蓝
+            2 => "#EF5350",  // 卖家已拒绝 - 红
+            3 => "#FF7043",  // 退款中 - 橙红
+            4 => "#66BB6A",  // 退款完成 - 绿
+            5 => "#94A3B8",  // 已关闭 - 灰
+            _ => "#888888"
+        };
     }
 
     public class CommentInfo
@@ -463,6 +487,44 @@ namespace Horizon.Game.GengDi.Core.Services
                 Debug.WriteLine($"[FlowerOrderService] {nameof(CancelOrderAsync)}: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>未支付订单的自动关闭时限（超时未付款的订单应被关闭）。</summary>
+        public static readonly TimeSpan UnpaidOrderTimeout = TimeSpan.FromMinutes(30);
+
+        /// <summary>
+        /// 订单状态：已取消（与后端 OrderStatus.Cancelled 对齐）。
+        /// 注意：4 是「已完成」，超时关闭必须用 5，否则未付款订单会被误显示为已完成。
+        /// </summary>
+        public const int OrderStatusCancelled = 5;
+
+        /// <summary>
+        /// 惰性关闭超时未支付订单：遍历传入订单，Status==0（待付款）且创建时间
+        /// 超过 <see cref="UnpaidOrderTimeout"/> 的，逐个调用后端取消接口关闭。
+        /// 修复 BUG：超时限未支付的订单一直挂在「待付款」列表中未被关闭。
+        /// </summary>
+        /// <param name="orders">当前加载到的订单集合</param>
+        /// <returns>实际关闭成功的订单 id 列表</returns>
+        public async Task<List<long>> CloseExpiredUnpaidOrdersAsync(IEnumerable<OrderDisplay> orders)
+        {
+            var closedIds = new List<long>();
+            if (orders == null) return closedIds;
+
+            var deadline = DateTime.Now - UnpaidOrderTimeout;
+            var expired = orders
+                .Where(o => o.Status == 0 && o.CreatedAt < deadline)
+                .ToList();
+
+            foreach (var order in expired)
+            {
+                var ok = await CancelOrderAsync(order.OrderId, "超时未支付，系统自动关闭").ConfigureAwait(false);
+                if (ok)
+                    closedIds.Add(order.OrderId);
+            }
+
+            if (closedIds.Count > 0)
+                Debug.WriteLine($"[FlowerOrderService] 已自动关闭 {closedIds.Count} 笔超时未支付订单");
+            return closedIds;
         }
 
         public async Task<bool> RequestRefundAsync(long orderId, string reason)

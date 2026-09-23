@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙个人中心 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen bg-background relative">
+        <!-- ========== 鸿蒙状态栏 + 导航栏 (sticky top, 磨砂玻璃) ========== -->
+        <header class="sticky top-0 z-50 bg-background/70 backdrop-blur-xl border-b border-border/30">
+            <!-- 鸿蒙导航栏: 我的 + 设置 -->
+            <div class="px-4 h-14 flex items-center justify-between">
+                <h1 class="text-xl font-bold text-foreground tracking-tight">我的</h1>
+                <div class="flex items-center gap-1">
+                    <button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-secondary/50 active:scale-95 transition-all" aria-label="扫一扫">
+                        <i data-lucide="scan-line" class="w-5 h-5 text-foreground"></i>
+                    </button>
+                    <button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-secondary/50 active:scale-95 transition-all" aria-label="设置">
+                        <i data-lucide="settings" class="w-5 h-5 text-foreground"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ========== 内容区 ========== -->
+        <div class="px-4 pt-4 pb-28 space-y-3">
+
+            <!-- 1. 用户信息卡片 -->
+            <section class="relative rounded-3xl bg-card/80 backdrop-blur-xl p-5 border border-border/30 shadow-lg overflow-hidden">
+                <!-- 装饰光晕 -->
+                <div class="absolute -top-10 -right-10 w-44 h-44 rounded-full opacity-[0.07] pointer-events-none" style="background: radial-gradient(circle, #2962ff, transparent 70%);"></div>
+                <div class="relative flex items-center gap-4">
+                    <!-- 64px 头像: 品牌蓝渐变 + "王" -->
+                    <div class="relative shrink-0">
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-lg" style="background: linear-gradient(135deg, #3a78ff 0%, #1f4fd6 100%);">
+                            王
+                        </div>
+                        <div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-card border-2 border-card flex items-center justify-center">
+                            <div class="w-2.5 h-2.5 rounded-full" style="background-color: #26a69a;"></div>
+                        </div>
+                    </div>
+                    <!-- 用户信息 -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <h2 class="text-lg font-bold text-foreground truncate">王小花</h2>
+                            <span class="shrink-0 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: linear-gradient(135deg, #d4b878, #c4956a); color: #1a1f2e;">
+                                <i data-lucide="crown" class="w-2.5 h-2.5"></i>
+                                黄金会员
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <!-- 种植户 切换 -->
+                            <button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/12 text-primary text-xs font-medium hover:bg-primary/20 active:scale-95 transition-all min-h-[28px]">
+                                <i data-lucide="sprout" class="w-3 h-3"></i>
+                                种植户
+                                <i data-lucide="chevrons-up-down" class="w-3 h-3"></i>
+                            </button>
+                            <span class="text-[11px] text-muted-foreground">ID: GD20241208</span>
+                        </div>
+                    </div>
+                    <!-- 编辑资料 -->
+                    <button class="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-secondary/40 hover:bg-secondary active:scale-95 transition-all" aria-label="编辑资料">
+                        <i data-lucide="pencil" class="w-4 h-4 text-muted-foreground"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 2. 数据统计 -->
+            <section class="rounded-3xl bg-card/80 backdrop-blur-xl p-5 border border-border/30 shadow-lg">
+                <div class="grid grid-cols-4 gap-1">
+                    <div class="flex flex-col items-center text-center">
+                        <span class="text-[10px] text-muted-foreground mb-1.5">成交额</span>
+                        <span class="text-[15px] font-bold text-foreground tracking-tight">¥128,560</span>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <span class="text-[10px] text-muted-foreground mb-1.5">订单</span>
+                        <span class="text-[15px] font-bold text-foreground tracking-tight">156</span>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <span class="text-[10px] text-muted-foreground mb-1.5">关注</span>
+                        <span class="text-[15px] font-bold text-foreground tracking-tight">23</span>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <span class="text-[10px] text-muted-foreground mb-1.5">积分</span>
+                        <span class="text-[15px] font-bold text-primary tracking-tight">2,580</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. 订单管理 -->
+            <section class="rounded-3xl bg-card/80 backdrop-blur-xl p-5 border border-border/30 shadow-lg">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-foreground">我的订单</h3>
+                    <button class="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[28px]">
+                        查看全部
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-4 gap-2">
+                    <!-- 全部 -->
+                    <button class="flex flex-col items-center gap-2 py-1 hover:bg-secondary/30 rounded-2xl active:scale-95 transition-all">
+                        <div class="w-12 h-12 rounded-2xl bg-primary/12 flex items-center justify-center">
+                            <i data-lucide="list" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <span class="text-xs text-foreground">全部</span>
+                    </button>
+                    <!-- 待付款 (角标2) -->
+                    <button class="flex flex-col items-center gap-2 py-1 hover:bg-secondary/30 rounded-2xl active:scale-95 transition-all">
+                        <div class="relative">
+                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background-color: rgba(255,152,0,0.12);">
+                                <i data-lucide="clock" class="w-5 h-5" style="color: #c4956a;"></i>
+                            </div>
+                            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center">2</span>
+                        </div>
+                        <span class="text-xs text-foreground">待付款</span>
+                    </button>
+                    <!-- 待发货 (角标3) -->
+                    <button class="flex flex-col items-center gap-2 py-1 hover:bg-secondary/30 rounded-2xl active:scale-95 transition-all">
+                        <div class="relative">
+                            <div class="w-12 h-12 rounded-2xl bg-primary/12 flex items-center justify-center">
+                                <i data-lucide="package" class="w-5 h-5 text-primary"></i>
+                            </div>
+                            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center">3</span>
+                        </div>
+                        <span class="text-xs text-foreground">待发货</span>
+                    </button>
+                    <!-- 已完成 -->
+                    <button class="flex flex-col items-center gap-2 py-1 hover:bg-secondary/30 rounded-2xl active:scale-95 transition-all">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background-color: rgba(38,166,154,0.12);">
+                            <i data-lucide="check-circle" class="w-5 h-5" style="color: #26a69a;"></i>
+                        </div>
+                        <span class="text-xs text-foreground">已完成</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 4. 常用功能 -->
+            <section class="rounded-3xl bg-card/80 backdrop-blur-xl p-5 border border-border/30 shadow-lg">
+                <h3 class="text-base font-bold text-foreground mb-4">常用功能</h3>
+                <div class="grid grid-cols-3 gap-y-4 gap-x-2">
+                    <!-- 我的店铺 -->
+                    <button class="flex flex-col items-center gap-2 hover:bg-secondary/30 rounded-2xl py-2 active:scale-95 transition-all">
+                        <div class="w-11 h-11 rounded-2xl bg-primary/12 flex items-center justify-center">
+                            <i data-lucide="store" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <span class="text-xs text-foreground">我的店铺</span>
+                    </button>
+                    <!-- 资金账户 -->
+                    <button class="flex flex-col items-center gap-1.5 hover:bg-secondary/30 rounded-2xl py-2 active:scale-95 transition-all">
+                        <div class="w-11 h-11 rounded-2xl bg-primary/12 flex items-center justify-center">
+                            <i data-lucide="wallet" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <span class="text-xs text-foreground">资金账户</span>
+                        <span class="text-[10px] text-primary font-semibold -mt-0.5">¥56,200</span>
+                    </button>
+                    <!-- 收货地址 -->
+                    <button class="flex flex-col items-center gap-2 hover:bg-secondary/30 rounded-2xl py-2 active:scale-95 transition-all">
+                        <div class="w-11 h-11 rounded-2xl bg-primary/12 flex items-center justify-center">
+                            <i data-lucide="map-pin" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <span class="text-xs text-foreground">收货地址</span>
+                    </button>
+                    <!-- 优惠券 (角标3) -->
+                    <button class="flex flex-col items-center gap-2 hover:bg-secondary/30 rounded-2xl py-2 active:scale-95 transition-all">
+                        <div class="relative">
+                            <div class="w-11 h-11 rounded-2xl bg-primary/12 flex items-center justify-center">
+                                <i data-lucide="ticket" class="w-5 h-5 text-primary"></i>
+                            </div>
+                            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center">3</span>
+                        </div>
+                        <span class="text-xs text-foreground">优惠券</span>
+                    </button>
+                    <!-- 收藏 -->
+                    <button class="flex flex-col items-center gap-2 hover:bg-secondary/30 rounded-2xl py-2 active:scale-95 transition-all">
+                        <div class="w-11 h-11 rounded-2xl bg-primary/12 flex items-center justify-center">
+                            <i data-lucide="heart" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <span class="text-xs text-foreground">收藏</span>
+                    </button>
+                    <!-- 浏览历史 -->
+                    <button class="flex flex-col items-center gap-2 hover:bg-secondary/30 rounded-2xl py-2 active:scale-95 transition-all">
+                        <div class="w-11 h-11 rounded-2xl bg-primary/12 flex items-center justify-center">
+                            <i data-lucide="history" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <span class="text-xs text-foreground">浏览历史</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 5. 预警设置 -->
+            <section class="rounded-3xl bg-card/80 backdrop-blur-xl p-5 border border-border/30 shadow-lg">
+                <h3 class="text-base font-bold text-foreground mb-2">预警设置</h3>
+                <!-- 价格预警 -->
+                <div class="flex items-center gap-3 py-3 min-h-[52px]">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background-color: rgba(255,152,0,0.12);">
+                        <i data-lucide="trending-up" class="w-[18px] h-[18px]" style="color: #c4956a;"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-sm text-foreground font-medium">价格预警</span>
+                        <span class="text-xs text-muted-foreground ml-2">5条活跃</span>
+                    </div>
+                    <!-- 鸿蒙 Toggle ON (品牌蓝) -->
+                    <button class="relative w-12 h-7 rounded-full bg-primary transition-colors shrink-0" aria-label="价格预警开关" role="switch" aria-checked="true">
+                        <span class="absolute top-0.5 right-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"></span>
+                    </button>
+                </div>
+                <!-- 胶囊分隔 -->
+                <div class="ml-12 h-px bg-border/30"></div>
+                <!-- 天气预警 -->
+                <div class="flex items-center gap-3 py-3 min-h-[52px]">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background-color: rgba(41,98,255,0.12);">
+                        <i data-lucide="cloud-sun" class="w-[18px] h-[18px] text-primary"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-sm text-foreground font-medium">天气预警</span>
+                    </div>
+                    <button class="relative w-12 h-7 rounded-full bg-primary transition-colors shrink-0" aria-label="天气预警开关" role="switch" aria-checked="true">
+                        <span class="absolute top-0.5 right-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"></span>
+                    </button>
+                </div>
+                <div class="ml-12 h-px bg-border/30"></div>
+                <!-- 库存预警 -->
+                <div class="flex items-center gap-3 py-3 min-h-[52px]">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background-color: rgba(38,166,154,0.12);">
+                        <i data-lucide="boxes" class="w-[18px] h-[18px]" style="color: #26a69a;"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-sm text-foreground font-medium">库存预警</span>
+                    </div>
+                    <button class="relative w-12 h-7 rounded-full bg-primary transition-colors shrink-0" aria-label="库存预警开关" role="switch" aria-checked="true">
+                        <span class="absolute top-0.5 right-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"></span>
+                    </button>
+                </div>
+                <div class="ml-12 h-px bg-border/30"></div>
+                <!-- 消息通知 -->
+                <div class="flex items-center gap-3 py-3 min-h-[52px]">
+                    <div class="w-9 h-9 rounded-xl bg-primary/12 flex items-center justify-center shrink-0">
+                        <i data-lucide="bell" class="w-[18px] h-[18px] text-primary"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-sm text-foreground font-medium">消息通知</span>
+                    </div>
+                    <button class="relative w-12 h-7 rounded-full bg-primary transition-colors shrink-0" aria-label="消息通知开关" role="switch" aria-checked="true">
+                        <span class="absolute top-0.5 right-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"></span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 6. 其他设置 -->
+            <section class="rounded-3xl bg-card/80 backdrop-blur-xl p-5 border border-border/30 shadow-lg">
+                <h3 class="text-base font-bold text-foreground mb-2">其他设置</h3>
+                <!-- 账号安全 -->
+                <button class="w-full flex items-center gap-3 py-3 min-h-[52px] hover:bg-secondary/20 rounded-xl px-1 -mx-1 transition-colors">
+                    <div class="w-9 h-9 rounded-xl bg-primary/12 flex items-center justify-center shrink-0">
+                        <i data-lucide="shield-check" class="w-[18px] h-[18px] text-primary"></i>
+                    </div>
+                    <span class="flex-1 text-left text-sm text-foreground font-medium">账号安全</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground shrink-0"></i>
+                </button>
+                <div class="ml-12 h-px bg-border/30"></div>
+                <!-- 帮助中心 -->
+                <button class="w-full flex items-center gap-3 py-3 min-h-[52px] hover:bg-secondary/20 rounded-xl px-1 -mx-1 transition-colors">
+                    <div class="w-9 h-9 rounded-xl bg-primary/12 flex items-center justify-center shrink-0">
+                        <i data-lucide="help-circle" class="w-[18px] h-[18px] text-primary"></i>
+                    </div>
+                    <span class="flex-1 text-left text-sm text-foreground font-medium">帮助中心</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground shrink-0"></i>
+                </button>
+                <div class="ml-12 h-px bg-border/30"></div>
+                <!-- 关于 -->
+                <button class="w-full flex items-center gap-3 py-3 min-h-[52px] hover:bg-secondary/20 rounded-xl px-1 -mx-1 transition-colors">
+                    <div class="w-9 h-9 rounded-xl bg-primary/12 flex items-center justify-center shrink-0">
+                        <i data-lucide="info" class="w-[18px] h-[18px] text-primary"></i>
+                    </div>
+                    <span class="flex-1 text-left text-sm text-foreground font-medium">关于</span>
+                    <span class="text-xs text-muted-foreground">v2.4.1</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground shrink-0"></i>
+                </button>
+                <!-- 退出登录 (红色) -->
+                <div class="mt-2 pt-3 border-t border-border/30">
+                    <button class="w-full flex items-center justify-center gap-2 py-3.5 min-h-[48px] rounded-2xl hover:bg-destructive/10 active:scale-95 transition-all">
+                        <i data-lucide="log-out" class="w-4 h-4 text-destructive"></i>
+                        <span class="text-sm font-semibold text-destructive">退出登录</span>
+                    </button>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ========== 鸿蒙底部导航 (sticky bottom, 磨砂玻璃) ========== -->
+        <nav class="sticky bottom-0 z-50 bg-background/70 backdrop-blur-xl border-t border-border/30">
+            <div class="flex items-center justify-around px-2 py-1.5">
+                <!-- 首页 -->
+                <button class="flex flex-col items-center gap-0.5 px-3 py-2 min-h-[48px] justify-center rounded-2xl active:scale-95 transition-all">
+                    <i data-lucide="home" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground font-medium">首页</span>
+                </button>
+                <!-- 交易 -->
+                <button class="flex flex-col items-center gap-0.5 px-3 py-2 min-h-[48px] justify-center rounded-2xl active:scale-95 transition-all">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground font-medium">交易</span>
+                </button>
+                <!-- 购物车 -->
+                <button class="flex flex-col items-center gap-0.5 px-3 py-2 min-h-[48px] justify-center rounded-2xl active:scale-95 transition-all">
+                    <i data-lucide="shopping-cart" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground font-medium">购物车</span>
+                </button>
+                <!-- 消息 -->
+                <button class="flex flex-col items-center gap-0.5 px-3 py-2 min-h-[48px] justify-center rounded-2xl active:scale-95 transition-all">
+                    <i data-lucide="message-square" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground font-medium">消息</span>
+                </button>
+                <!-- 我的高亮 (胶囊选中态) -->
+                <button class="flex flex-col items-center gap-0.5 px-5 py-2 min-h-[48px] justify-center rounded-full bg-primary/15 active:scale-95 transition-all">
+                    <i data-lucide="user" class="w-5 h-5 text-primary"></i>
+                    <span class="text-[10px] text-primary font-semibold">我的</span>
+                </button>
+            </div>
+            <!-- 鸿蒙 Home Indicator -->
+            <div class="flex justify-center pb-1.5 pt-0.5">
+                <div class="w-32 h-1 rounded-full bg-foreground/30"></div>
+            </div>
+        </nav>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

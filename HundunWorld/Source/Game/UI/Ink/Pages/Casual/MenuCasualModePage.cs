@@ -22,23 +22,149 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
 
         private InkButton[] _tabButtons;
 
-        private InkPanel[] _activityCards;
+        private ActivityCardView[] _activityCards;
 
         private InkPanel _rewardPreviewBar;
 
-        private string[] _activityNames = { "每日签到", "闲庭信步", "品茗对弈", "听书赏曲", "垂钓时光", "飞花令" };
-        private string[] _activityDescs = {
-            "签到打卡，连签7天获额外奖励",
-            "在城镇中散步10分钟，感受江湖烟火",
-            "与NPC对弈一局，以棋会友",
-            "在茶馆听书30分钟，闲品江湖事",
-            "完成钓鱼3次，享受悠然午后",
-            "参与诗词小游戏，以诗会友"
+        // ------------------------------------------------------------------
+        // 活动卡示例数据
+        // 直接逐项取自设计稿 menu-casual-mode.html 的 6 张 .activity-card（标题 / 描述 /
+        // 进度标签与数值 / 进度条百分比 / 状态标签 / 插画字 / 剩余时间 / 两项奖励）。
+        // 接入真实活动数据源时整体替换本数组即可，字段与设计稿元素一一对应。
+        // ------------------------------------------------------------------
+
+        /// <summary>活动奖励项规格（设计稿 .reward-item：图标 + 数量 + 名称）。</summary>
+        private sealed class ActivityRewardSpec
+        {
+            /// <summary>数量文案（设计稿 .reward-qty，如 "×500"）</summary>
+            public string Qty;
+
+            /// <summary>奖励名称（设计稿 .reward-name，如 "铜钱"）</summary>
+            public string Name;
+
+            /// <summary>品质（决定图标描边色，设计稿 ink-q-*）</summary>
+            public InkWashTheme.InkQuality Quality;
+
+            /// <summary>图标字形（设计稿 lucide 图标的引擎侧近似）</summary>
+            public string Glyph;
+
+            /// <summary>构造一条奖励规格。</summary>
+            public ActivityRewardSpec(string qty, string name, InkWashTheme.InkQuality quality, string glyph)
+            {
+                Qty = qty;
+                Name = name;
+                Quality = quality;
+                Glyph = glyph;
+            }
+        }
+
+        /// <summary>活动卡规格（设计稿 .activity-card）。</summary>
+        private sealed class ActivityCardSpec
+        {
+            /// <summary>活动名（设计稿 .card-title）</summary>
+            public string Name;
+
+            /// <summary>活动描述（设计稿 .card-desc）</summary>
+            public string Desc;
+
+            /// <summary>进度标签（设计稿 .progress-label，如 "连签进度"）</summary>
+            public string ProgressLabel;
+
+            /// <summary>进度数值（设计稿 .progress-value，如 "6 / 7 天"）</summary>
+            public string ProgressValue;
+
+            /// <summary>进度条百分比（设计稿 .ink-bar-fill width，0-1）</summary>
+            public float Progress;
+
+            /// <summary>状态文案（设计稿头部 ink-tag，"进行中" / "即将结束"）</summary>
+            public string StatusText;
+
+            /// <summary>是否为即将结束状态（决定状态标签配色：朱红）</summary>
+            public bool Ending;
+
+            /// <summary>插画字（设计稿 .illust-char）</summary>
+            public string Illustration;
+
+            /// <summary>剩余时间（设计稿 .card-meta .time-value）</summary>
+            public string Time;
+
+            /// <summary>两项奖励（设计稿 .reward-row）</summary>
+            public ActivityRewardSpec[] Rewards;
+
+            /// <summary>构造一张活动卡规格。</summary>
+            public ActivityCardSpec(string name, string desc, string progressLabel, string progressValue,
+                float progress, string statusText, bool ending, string illustration, string time,
+                ActivityRewardSpec[] rewards)
+            {
+                Name = name;
+                Desc = desc;
+                ProgressLabel = progressLabel;
+                ProgressValue = progressValue;
+                Progress = progress;
+                StatusText = statusText;
+                Ending = ending;
+                Illustration = illustration;
+                Time = time;
+                Rewards = rewards;
+            }
+        }
+
+        /// <summary>6 张活动卡设计数据（顺序与设计稿 article 顺序一致）。</summary>
+        private static readonly ActivityCardSpec[] _activitySpecs =
+        {
+            new ActivityCardSpec("每日签到", "签到打卡，连签7天获额外奖励", "连签进度", "6 / 7 天", 0.85f,
+                "进行中", false, "签", "23:45:12",
+                new[]
+                {
+                    new ActivityRewardSpec("×500", "铜钱", InkWashTheme.InkQuality.Common, "钱"),
+                    new ActivityRewardSpec("×1", "玉色签到卡", InkWashTheme.InkQuality.Uncommon, "卡"),
+                }),
+
+            new ActivityCardSpec("闲庭信步", "在城镇中散步10分钟，感受江湖烟火", "散步里程", "4 / 10 公里", 0.40f,
+                "进行中", false, "步", "无限制",
+                new[]
+                {
+                    new ActivityRewardSpec("×2000", "经验", InkWashTheme.InkQuality.Rare, "验"),
+                    new ActivityRewardSpec("×1", "轻功残页", InkWashTheme.InkQuality.Epic, "页"),
+                }),
+
+            new ActivityCardSpec("品茗对弈", "与NPC对弈一局，以棋会友", "对弈状态", "等待对手", 0.15f,
+                "进行中", false, "弈", "02:30:00",
+                new[]
+                {
+                    new ActivityRewardSpec("×1", "棋谱", InkWashTheme.InkQuality.Rare, "谱"),
+                    new ActivityRewardSpec("×50", "元宝", InkWashTheme.InkQuality.Epic, "宝"),
+                }),
+
+            new ActivityCardSpec("听书赏曲", "在茶馆听书30分钟，闲品江湖事", "聆听进度", "12 / 30 分钟", 0.40f,
+                "进行中", false, "曲", "05:15:30",
+                new[]
+                {
+                    new ActivityRewardSpec("×1500", "经验", InkWashTheme.InkQuality.Rare, "验"),
+                    new ActivityRewardSpec("×300", "铜钱", InkWashTheme.InkQuality.Common, "钱"),
+                }),
+
+            new ActivityCardSpec("垂钓时光", "完成钓鱼3次，享受悠然午后", "钓鱼进度", "1 / 3 次", 0.33f,
+                "进行中", false, "钓", "12:00:00",
+                new[]
+                {
+                    new ActivityRewardSpec("×5", "鱼饵", InkWashTheme.InkQuality.Common, "饵"),
+                    new ActivityRewardSpec("×3", "烹饪材料", InkWashTheme.InkQuality.Uncommon, "材"),
+                }),
+
+            new ActivityCardSpec("飞花令", "参与诗词小游戏，以诗会友", "吟诗进度", "第 8 联", 0.75f,
+                "即将结束", true, "花", "18:22:45",
+                new[]
+                {
+                    new ActivityRewardSpec("×2", "诗词残卷", InkWashTheme.InkQuality.Rare, "卷"),
+                    new ActivityRewardSpec("×30", "元宝", InkWashTheme.InkQuality.Epic, "宝"),
+                }),
         };
-        private string[] _activityProgress = { "6 / 7 天", "4 / 10 分钟", "等待对手", "12 / 30 分钟", "1 / 3 次", "第 8 名" };
-        private float[] _activityProgressValues = { 0.85f, 0.40f, 0.15f, 0.40f, 0.33f, 0.75f };
-        private string[] _activityTimes = { "23:45:12", "无限制", "02:30:00", "05:15:30", "12:00:00", "18:22:45" };
-        private string[] _activityIllustChars = { "签", "步", "弈", "曲", "钓", "花" };
+
+        /// <summary>
+        /// 标准导航事件（对齐 Ink 页面契约，由工厂挂钩后经路由器跳转）。
+        /// </summary>
+        public event Action<string> NavigationRequested;
 
         public MenuCasualModePage()
         {
@@ -86,6 +212,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 BackgroundColor = InkWashTheme.BaseDefault,
                 Parent = this
             };
+            // 返回战斗 HUD（设计隐藏出口 back-hud）
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
         }
 
         private void BuildLeftNav()
@@ -132,6 +260,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
             int[] badgeIndices = { 0, 2 };
             int[] badgeValues = { 6, 3 };
 
+            // 左侧导航即设计链路（批次5 §3.2）：不肝→抽卡→活动→通行证→属性→奇珍阁→设置
+            string[] navTargets =
+            {
+                InkPageDomIds.NavCasualMode,
+                InkPageDomIds.NavGacha,
+                InkPageDomIds.NavActivities,
+                InkPageDomIds.NavBattlePass,
+                InkPageDomIds.NavCharacterV2,
+                InkPageDomIds.NavShopRare,
+                InkPageDomIds.NavSettings,
+            };
+
             for (int i = 0; i < navItems.Length; i++)
             {
                 var navItem = new InkButton
@@ -167,6 +307,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                         Parent = navItem
                     };
                 }
+
+                // 左栏项直达对应菜单（设计链路）
+                int navIndex = i;
+                navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
             }
 
             var footerDivider = new InkDivider
@@ -430,115 +574,357 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
 
         private void BuildActivityCards()
         {
-            _activityCards = new InkPanel[_activityNames.Length];
+            _activityCards = new ActivityCardView[_activitySpecs.Length];
 
-            for (int i = 0; i < _activityNames.Length; i++)
+            for (int i = 0; i < _activitySpecs.Length; i++)
             {
-                _activityCards[i] = new InkPanel
+                var card = new ActivityCardView(_activitySpecs[i])
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    BackgroundColor = InkWashTheme.BaseTertiary,
                     Parent = _contentArea
                 };
 
+                // 四角金线装饰（设计稿 .ink-corner-deco）
                 var cornerDecoTL = new InkCornerDeco
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Parent = _activityCards[i]
+                    Parent = card
                 };
 
                 var cornerDecoTR = new InkCornerDeco
                 {
                     AnchorPreset = AnchorPresets.TopRight,
-                    Parent = _activityCards[i]
+                    Parent = card
                 };
 
                 var cornerDecoBL = new InkCornerDeco
                 {
                     AnchorPreset = AnchorPresets.BottomLeft,
-                    Parent = _activityCards[i]
+                    Parent = card
                 };
 
                 var cornerDecoBR = new InkCornerDeco
                 {
                     AnchorPreset = AnchorPresets.BottomRight,
-                    Parent = _activityCards[i]
+                    Parent = card
                 };
 
-                var illustPanel = new InkPanel
+                // 「前往」按钮直达对应活动入口（设计稿 .card-action-btn / btn-*）
+                card.ActionClicked += () => NavigationRequested?.Invoke(InkPageDomIds.NavActivities);
+
+                _activityCards[i] = card;
+            }
+        }
+
+        /// <summary>
+        /// 活动卡视图。
+        /// 对应设计稿 <c>.activity-card</c>：横向 flex 布局，左侧 64×64 插画块，
+        /// 右侧 <c>.card-body</c> = 标题 + 状态标签 / 描述 / 进度标签行 + 进度条 /
+        /// 底部奖励行（两项 .reward-item）+ 剩余时间与「前往」按钮。
+        /// 子控件位置全部由 <see cref="LayoutCard"/> 按卡片实际尺寸计算。
+        /// </summary>
+        private sealed class ActivityCardView : InkPanel
+        {
+            /// <summary>卡片内边距（设计稿 .activity-card padding: 16px）</summary>
+            private const float Padding = 16f;
+
+            /// <summary>插画块边长（设计稿 .card-illustration 64px）</summary>
+            private const float IllustrationSize = 64f;
+
+            /// <summary>插画与内容列间距（设计稿 gap: 12px）</summary>
+            private const float BodyGap = 12f;
+
+            /// <summary>奖励图标方块边长（设计稿 .reward-icon 28px）</summary>
+            private const float RewardIconSize = 28f;
+
+            /// <summary>奖励项间距（设计稿 .reward-row gap: 12px）</summary>
+            private const float RewardGap = 12f;
+
+            /// <summary>奖励图标与文字间距（设计稿 .reward-item gap: 6px）</summary>
+            private const float RewardTextGap = 6f;
+
+            /// <summary>「前往」按钮尺寸（设计稿 .card-action-btn）</summary>
+            private const float ActionButtonWidth = 68f;
+            private const float ActionButtonHeight = 28f;
+
+            /// <summary>状态标签宽度</summary>
+            private const float StatusTagWidth = 72f;
+
+            private readonly Label _title;
+            private readonly Label _statusTag;
+            private readonly Label _desc;
+            private readonly Label _progressLabel;
+            private readonly Label _progressValue;
+            private readonly InkBar _progressBar;
+            private readonly Panel _illustration;
+            private readonly Label _illustChar;
+            private readonly RewardIconBox[] _rewardIcons;
+            private readonly Label[] _rewardQty;
+            private readonly Label[] _rewardName;
+            private readonly Label _timeLabel;
+            private readonly InkButton _actionButton;
+
+            /// <summary>「前往」按钮点击事件（由页面订阅后导航）。</summary>
+            public event Action ActionClicked;
+
+            /// <summary>
+            /// 构造函数：按规格创建全部子控件（尺寸与位置在 <see cref="LayoutCard"/> 中统一计算）。
+            /// </summary>
+            /// <param name="spec">活动卡规格</param>
+            public ActivityCardView(ActivityCardSpec spec)
+            {
+                BackgroundColor = InkWashTheme.BaseTertiary;
+                ClipChildren = true;
+
+                // 插画块（设计稿 .card-illustration：64px、金线描边、深墨底）
+                _illustration = new Panel
                 {
-                    Size = new Float2(80f, 80f),
+                    Size = new Float2(IllustrationSize, IllustrationSize),
                     BackgroundColor = InkWashTheme.GoldPrimary * 0.08f,
-                    Parent = _activityCards[i]
+                    Parent = this
                 };
 
-                var illustChar = new Label
+                _illustChar = new Label
                 {
-                    Text = _activityIllustChars[i],
+                    Text = spec.Illustration,
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 28f),
                     TextColor = InkWashTheme.GoldBright,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
                     AnchorPreset = AnchorPresets.StretchAll,
-                    Parent = illustPanel
+                    Parent = _illustration
                 };
 
-                var cardTitle = new Label
+                // 标题 + 状态标签（设计稿 .card-header）
+                _title = new Label
                 {
-                    Text = _activityNames[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
-                    TextColor = InkWashTheme.PaperBright,
-                    Parent = _activityCards[i]
+                    Text = spec.Name,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 16f),
+                    TextColor = InkWashTheme.TextDefault,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = this
                 };
 
-                var statusTag = new Label
+                _statusTag = new Label
                 {
-                    Text = i == 5 ? "即将结束" : "进行中",
+                    Text = spec.StatusText,
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
-                    TextColor = i == 5 ? InkWashTheme.VermilionBright : InkWashTheme.QualityUncommon,
-                    Parent = _activityCards[i]
+                    TextColor = spec.Ending ? InkWashTheme.VermilionBright : InkWashTheme.QualityUncommon,
+                    HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = this
                 };
 
-                var cardDesc = new Label
+                // 描述（设计稿 .card-desc 12px 三级色）
+                _desc = new Label
                 {
-                    Text = _activityDescs[i],
+                    Text = spec.Desc,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                    TextColor = InkWashTheme.TextTertiary,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = this
+                };
+
+                // 进度标签行 + 进度条（设计稿 .card-progress）
+                _progressLabel = new Label
+                {
+                    Text = spec.ProgressLabel,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    TextColor = InkWashTheme.TextDisabled,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = this
+                };
+
+                _progressValue = new Label
+                {
+                    Text = spec.ProgressValue,
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                     TextColor = InkWashTheme.PaperAged,
-                    Parent = _activityCards[i]
+                    HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = this
                 };
 
-                var progressLabel = new Label
-                {
-                    Text = _activityProgress[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                    TextColor = InkWashTheme.TextDisabled,
-                    Parent = _activityCards[i]
-                };
-
-                var cardBar = new InkBar
+                _progressBar = new InkBar
                 {
                     Height = 4f,
-                    Parent = _activityCards[i]
+                    Parent = this
                 };
-                cardBar.Value = _activityProgressValues[i];
+                _progressBar.Value = spec.Progress;
 
-                var timeLabel = new Label
+                // 奖励行（设计稿 .card-footer .reward-row，固定两项）
+                int rewardCount = spec.Rewards != null ? spec.Rewards.Length : 0;
+                _rewardIcons = new RewardIconBox[rewardCount];
+                _rewardQty = new Label[rewardCount];
+                _rewardName = new Label[rewardCount];
+
+                for (int i = 0; i < rewardCount; i++)
                 {
-                    Text = _activityTimes[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                    ActivityRewardSpec reward = spec.Rewards[i];
+
+                    _rewardIcons[i] = new RewardIconBox(reward.Quality, reward.Glyph)
+                    {
+                        Parent = this
+                    };
+
+                    _rewardQty[i] = new Label
+                    {
+                        Text = reward.Qty,
+                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                        TextColor = InkWashTheme.TextDefault,
+                        HorizontalAlignment = TextAlignment.Near,
+                        VerticalAlignment = TextAlignment.Center,
+                        Parent = this
+                    };
+
+                    _rewardName[i] = new Label
+                    {
+                        Text = reward.Name,
+                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                        TextColor = InkWashTheme.TextTertiary,
+                        HorizontalAlignment = TextAlignment.Near,
+                        VerticalAlignment = TextAlignment.Center,
+                        Parent = this
+                    };
+                }
+
+                // 剩余时间 + 「前往」按钮（设计稿 .card-meta）
+                _timeLabel = new Label
+                {
+                    Text = spec.Time,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                     TextColor = InkWashTheme.TextDisabled,
-                    Parent = _activityCards[i]
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = this
                 };
 
-                var actionButton = new InkButton
+                _actionButton = new InkButton
                 {
-                    Width = 80f,
-                    Height = 32f,
                     Text = "前往",
-                    // 设计方案：朱红仅限战斗/危险/扣减场景；飞花令为休闲活动，用Primary强调
+                    // 设计方案：朱红仅限战斗/危险/扣减场景；休闲活动用 Primary 强调
                     Variant = InkButtonVariant.Primary,
-                    Parent = _activityCards[i]
+                    Parent = this
                 };
+                _actionButton.Clicked += () => ActionClicked?.Invoke();
+            }
+
+            /// <summary>
+            /// 按卡片实际尺寸排布全部子控件（浮动自适应，无硬编码坐标）。
+            /// 应在卡片被赋予尺寸后（构建期与每次刷新布局时）调用。
+            /// </summary>
+            public void LayoutCard()
+            {
+                float w = Width;
+                float h = Height;
+                if (w <= 0f || h <= 0f)
+                    return;
+
+                // 左侧插画块
+                _illustration.Location = new Float2(Padding, Padding);
+                _illustration.Size = new Float2(IllustrationSize, IllustrationSize);
+
+                // 右侧内容列
+                float bodyX = Padding + IllustrationSize + BodyGap;
+                float bodyW = w - bodyX - Padding;
+                if (bodyW < 60f)
+                    bodyW = 60f;
+
+                _title.Location = new Float2(bodyX, Padding);
+                _title.Size = new Float2(bodyW - StatusTagWidth - 8f, 22f);
+
+                _statusTag.Location = new Float2(w - Padding - StatusTagWidth, Padding + 2f);
+                _statusTag.Size = new Float2(StatusTagWidth, 18f);
+
+                _desc.Location = new Float2(bodyX, Padding + 24f);
+                _desc.Size = new Float2(bodyW, 18f);
+
+                _progressLabel.Location = new Float2(bodyX, Padding + 46f);
+                _progressLabel.Size = new Float2(bodyW * 0.5f, 14f);
+                _progressValue.Location = new Float2(bodyX + bodyW * 0.5f, Padding + 46f);
+                _progressValue.Size = new Float2(bodyW * 0.5f, 14f);
+
+                _progressBar.Location = new Float2(bodyX, Padding + 64f);
+                _progressBar.Size = new Float2(bodyW, 4f);
+
+                // 底部：奖励行在上、剩余时间与按钮在下（设计稿 .card-footer margin-top: auto）
+                float metaY = h - Padding - ActionButtonHeight;
+                float rewardY = metaY - 8f - RewardIconSize;
+                if (rewardY < Padding + 72f)
+                    rewardY = Padding + 72f;
+
+                float itemW = (bodyW - RewardGap) * 0.5f;
+                for (int i = 0; i < _rewardIcons.Length; i++)
+                {
+                    float itemX = bodyX + i * (itemW + RewardGap);
+
+                    _rewardIcons[i].Location = new Float2(itemX, rewardY);
+                    _rewardIcons[i].Size = new Float2(RewardIconSize, RewardIconSize);
+
+                    _rewardQty[i].Location = new Float2(itemX + RewardIconSize + RewardTextGap, rewardY + 1f);
+                    _rewardQty[i].Size = new Float2(itemW - RewardIconSize - RewardTextGap, 14f);
+
+                    _rewardName[i].Location = new Float2(itemX + RewardIconSize + RewardTextGap, rewardY + 15f);
+                    _rewardName[i].Size = new Float2(itemW - RewardIconSize - RewardTextGap, 13f);
+                }
+
+                _timeLabel.Location = new Float2(bodyX, metaY);
+                _timeLabel.Size = new Float2(bodyW - ActionButtonWidth - 8f, ActionButtonHeight);
+
+                _actionButton.Location = new Float2(w - Padding - ActionButtonWidth, metaY);
+                _actionButton.Size = new Float2(ActionButtonWidth, ActionButtonHeight);
+            }
+        }
+
+        /// <summary>
+        /// 奖励图标方块。
+        /// 对应设计稿 <c>.reward-icon</c>：28×28、品质色 1px 描边、2px 圆角、深墨底，
+        /// 内含图标字形（lucide 图标的引擎侧近似）。
+        /// </summary>
+        private sealed class RewardIconBox : ContainerControl
+        {
+            /// <summary>圆角半径（设计稿 var(--ink-radius-sm) = 2px）</summary>
+            private const float CornerRadius = 2f;
+
+            private readonly Color _borderColor;
+
+            /// <summary>
+            /// 构造函数。
+            /// </summary>
+            /// <param name="quality">奖励品质（决定描边色）</param>
+            /// <param name="glyph">图标字形</param>
+            public RewardIconBox(InkWashTheme.InkQuality quality, string glyph)
+            {
+                BackgroundColor = new Color(0f, 0f, 0f, 0.3f);
+                ClipChildren = true;
+                AutoFocus = false;
+                _borderColor = InkWashTheme.QualityColor(quality);
+
+                var glyphLabel = new Label
+                {
+                    Text = glyph,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f),
+                    TextColor = _borderColor,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.StretchAll,
+                    Parent = this
+                };
+            }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+
+                if (Width <= 0f || Height <= 0f)
+                    return;
+
+                InkRenderHelper.DrawRoundedRectangle(
+                    new Rectangle(0f, 0f, Width, Height), CornerRadius, _borderColor, 1f);
             }
         }
 
@@ -686,6 +1072,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 {
                     _activityCards[i].Size = new Float2(cardWidth, cardHeight);
                     _activityCards[i].Location = new Float2(cardGridX, cardGridY);
+                    // 卡片内部为浮动布局：尺寸变化后必须重排子控件
+                    _activityCards[i].LayoutCard();
                 }
 
                 cardGridX += cardWidth + 12f;

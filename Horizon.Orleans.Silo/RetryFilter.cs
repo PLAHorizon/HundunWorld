@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using System;
@@ -8,10 +8,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Horizon.Orleans.Silo.Monitoring;
+using Horizon.Orleans.Interface;
 
 namespace Horizon.Orleans.Silo
 {
-    // 在Grain接口增加重试策略 
+    // 在Grain接口增加重试策略
+    // 修复：全局 3× 重试会重放非幂等副作用（重复 CreateCharacter 插入、DeathCount++ 等）。
+    // 现改为仅对显式标注 [Idempotent] 的方法重试；未标注的方法失败即传播（精确执行一次）。
     [GenerateSerializer]
     public class RetryFilter : IIncomingGrainCallFilter
     {
@@ -29,6 +32,7 @@ namespace Horizon.Orleans.Silo
             {
 
                 const int maxRetries = 3;
+                var canRetry = IsIdempotent(context);
                 for (var i = 0; i < maxRetries; i++)
                 {
                     try
@@ -37,7 +41,7 @@ namespace Horizon.Orleans.Silo
                         await context.Invoke();
                         return;
                     }
-                    catch (Exception) when (i < maxRetries - 1)
+                    catch (Exception) when (i < maxRetries - 1 && canRetry)
                     {
                         await Task.Delay(100 * (i + 1));
                     }
@@ -56,6 +60,22 @@ namespace Horizon.Orleans.Silo
                 HorizonMetrics.GrainCallDuration.Record(executionTime, new KeyValuePair<string, object?>("grain_type", grainType));
             }
 
+        }
+
+        /// <summary>
+        /// 仅当方法显式标注 <see cref="IdempotentAttribute"/> 时才允许重试。
+        /// 幂等性是契约属性，优先看接口方法；缺失时回退到实现方法。
+        /// </summary>
+        private static bool IsIdempotent(IIncomingGrainCallContext context)
+        {
+            return HasIdempotentAttribute(context.InterfaceMethod)
+                || HasIdempotentAttribute(context.ImplementationMethod);
+        }
+
+        private static bool HasIdempotentAttribute(System.Reflection.MethodInfo? method)
+        {
+            return method != null
+                && method.GetCustomAttributes(typeof(IdempotentAttribute), inherit: true).Length > 0;
         }
     }
 

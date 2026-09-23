@@ -8,7 +8,7 @@ namespace Horizon.IM.Gateway.Services;
 public class IMConnectionManager : IIMConnectionManager
 {
     private readonly ConcurrentDictionary<string, IMConnection> _connections = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<ulong, string> _userBindings = new();
+    private readonly ConcurrentDictionary<ulong, ConcurrentDictionary<string, bool>> _userBindings = new();
     private readonly ILogger<IMConnectionManager> _logger;
 
     public IMConnectionManager(ILogger<IMConnectionManager> logger)
@@ -31,7 +31,14 @@ public class IMConnectionManager : IIMConnectionManager
 
         if (_connections.TryRemove(connectionId, out var connection) && connection.UserId > 0)
         {
-            _userBindings.TryRemove(connection.UserId, out _);
+            if (_userBindings.TryGetValue(connection.UserId, out var connSet))
+            {
+                connSet.TryRemove(connectionId, out _);
+                if (connSet.IsEmpty)
+                {
+                    _userBindings.TryRemove(connection.UserId, out _);
+                }
+            }
         }
 
         return Task.CompletedTask;
@@ -53,15 +60,9 @@ public class IMConnectionManager : IIMConnectionManager
 
         if (_connections.TryGetValue(connectionId, out var connection))
         {
-            if (_userBindings.TryGetValue(userId, out var previousConnectionId)
-                && !string.Equals(previousConnectionId, connectionId, StringComparison.Ordinal)
-                && _connections.TryGetValue(previousConnectionId, out var previousConnection))
-            {
-                previousConnection.UserId = 0;
-            }
-
             connection.UserId = userId;
-            _userBindings[userId] = connectionId;
+            var connSet = _userBindings.GetOrAdd(userId, _ => new ConcurrentDictionary<string, bool>(StringComparer.Ordinal));
+            connSet[connectionId] = true;
         }
 
         return Task.CompletedTask;
@@ -69,35 +70,74 @@ public class IMConnectionManager : IIMConnectionManager
 
     public IMConnection? GetConnectionByUser(ulong userId)
     {
-        return _userBindings.TryGetValue(userId, out var connectionId)
-            ? GetConnection(connectionId)
-            : null;
+        if (!_userBindings.TryGetValue(userId, out var connSet) || connSet.IsEmpty)
+        {
+            return null;
+        }
+
+        foreach (var connId in connSet.Keys)
+        {
+            if (_connections.TryGetValue(connId, out var connection))
+            {
+                return connection;
+            }
+        }
+
+        return null;
+    }
+
+    public IReadOnlyList<IMConnection> GetConnectionsByUser(ulong userId)
+    {
+        if (!_userBindings.TryGetValue(userId, out var connSet) || connSet.IsEmpty)
+        {
+            return Array.Empty<IMConnection>();
+        }
+
+        var list = new List<IMConnection>();
+        foreach (var connId in connSet.Keys)
+        {
+            if (_connections.TryGetValue(connId, out var connection))
+            {
+                list.Add(connection);
+            }
+        }
+
+        return list;
+    }
+
+    public bool HasConnections(ulong userId)
+    {
+        return _userBindings.TryGetValue(userId, out var connSet) && !connSet.IsEmpty;
     }
 
     public async Task<bool> SendToUserAsync(ulong userId, byte[] message)
     {
-        var connection = GetConnectionByUser(userId);
-        if (connection == null)
+        var connections = GetConnectionsByUser(userId);
+        if (connections.Count == 0)
         {
             return false;
         }
 
-        try
+        var success = false;
+        foreach (var connection in connections)
         {
-            await connection.SendAsync(message).ConfigureAwait(false);
-            return true;
+            try
+            {
+                await connection.SendAsync(message).ConfigureAwait(false);
+                success = true;
+            }
+            catch (SocketException ex)
+            {
+                _logger.LogDebug(ex, "客户端已断开连接，无法发送消息: UserId={UserId}, ConnectionId={ConnectionId}", userId, connection.Id);
+                await RemoveConnectionAsync(connection.Id).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "发送消息失败: UserId={UserId}, ConnectionId={ConnectionId}", userId, connection.Id);
+                await RemoveConnectionAsync(connection.Id).ConfigureAwait(false);
+            }
         }
-        catch (SocketException ex)
-        {
-            _logger.LogDebug(ex, "客户端已断开连接，无法发送消息: UserId={UserId}, ConnectionId={ConnectionId}", userId, connection.Id);
-            await RemoveConnectionAsync(connection.Id).ConfigureAwait(false);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "发送消息失败: UserId={UserId}, ConnectionId={ConnectionId}", userId, connection.Id);
-            await RemoveConnectionAsync(connection.Id).ConfigureAwait(false);
-            return false;
-        }
+
+        return success;
     }
 }

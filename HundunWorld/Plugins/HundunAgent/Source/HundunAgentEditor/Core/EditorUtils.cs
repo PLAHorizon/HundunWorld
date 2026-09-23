@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -7,11 +9,88 @@ using FlaxEngine;
 namespace HundunAgent.Core
 {
     /// <summary>
-    /// 编辑器通用工具：Actor 查找、JSON 参数解析、反射赋值。
-    /// 所有方法均假设已在主线程执行（除显式说明）。
+    /// 编辑器通用工具：Actor 查找、JSON 参数解析、反射赋值、工作区路径解析。
+    /// 除 <see cref="ResolveWorkspacePath"/> 与参数解析外，其余方法均假设已在主线程执行。
     /// </summary>
     public static class EditorUtils
     {
+        /// <summary>Flax 工程目录（含 Content / Source / Logs），已规范化分隔符与末尾符。</summary>
+        /// <remarks>
+        /// <c>Globals.ProjectFolder</c> 的分隔符是本机混用的（如 <c>C:\Works/.../HundunWorld</c>），
+        /// 直接做前缀比较会全部失败，因此一律先过 <see cref="Path.GetFullPath"/>。
+        /// </remarks>
+        public static string ProjectRoot => Path.GetFullPath(Globals.ProjectFolder);
+
+        /// <summary>
+        /// 工作区根：Flax 工程的上一级目录（本仓库根，设计稿与本机分析产物都在这里）。
+        /// </summary>
+        public static string WorkspaceRoot
+        {
+            get
+            {
+                var root = ProjectRoot;
+                var parent = Directory.GetParent(root);
+                return parent != null ? parent.FullName : root;
+            }
+        }
+
+        /// <summary>
+        /// 解析「工程内相对路径 / 工作区相对路径 / 绝对路径」为绝对路径，并约束结果落在
+        /// <see cref="ProjectRoot"/> 或 <see cref="WorkspaceRoot"/> 之内。
+        /// </summary>
+        /// <remarks>
+        /// 先按工程目录解析，失败再回退工作区根：设计稿（<c>hundun-yy-ui/</c>）与临时分析产物
+        /// （<c>.compile-temp/</c>、<c>.dbg/</c>）都位于工程目录之外、工作区之内。
+        /// </remarks>
+        public static string ResolveWorkspacePath(string path, bool mustExist = false)
+        {
+            if (string.IsNullOrEmpty(path))
+                throw new ArgumentException("缺少 path 参数");
+
+            var isRooted = Path.IsPathRooted(path);
+            var full = isRooted
+                ? Path.GetFullPath(path)
+                : Path.GetFullPath(Path.Combine(ProjectRoot, path));
+
+            if (!IsInside(full, ProjectRoot))
+            {
+                var workspace = WorkspaceRoot;
+                var candidate = isRooted ? full : Path.GetFullPath(Path.Combine(workspace, path));
+                if (!IsInside(candidate, workspace))
+                    throw new UnauthorizedAccessException("路径越出工作区范围: " + path);
+                full = candidate;
+            }
+
+            if (mustExist && !File.Exists(full) && !Directory.Exists(full))
+                throw new ArgumentException("路径不存在: " + path);
+
+            return full;
+        }
+
+        /// <summary>把绝对路径转为「工程根相对」或「工作区根相对」的展示用路径（正斜杠）。</summary>
+        public static string ToDisplayPath(string fullPath)
+        {
+            var project = ProjectRoot;
+            if (IsInside(fullPath, project))
+                return Path.GetRelativePath(project, fullPath).Replace('\\', '/');
+
+            var workspace = WorkspaceRoot;
+            if (IsInside(fullPath, workspace))
+                return Path.GetRelativePath(workspace, fullPath).Replace('\\', '/');
+
+            return fullPath.Replace('\\', '/');
+        }
+
+        /// <summary>判断路径是否等于 root 或位于 root 之下（已规范化的两侧）。</summary>
+        public static bool IsInside(string fullPath, string root)
+        {
+            if (string.IsNullOrEmpty(fullPath) || string.IsNullOrEmpty(root))
+                return false;
+            if (string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase))
+                return true;
+            return fullPath.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                   fullPath.StartsWith(root + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
         /// <summary>
         /// 按名称（不区分大小写，支持模糊后缀匹配）或 Guid 字符串查找 Actor。
         /// </summary>
@@ -146,6 +225,33 @@ namespace HundunAgent.Core
             return defaultValue;
         }
 
+        /// <summary>读取字符串数组参数，同时接受单个字符串（自动包装为单元素表）。</summary>
+        public static List<string> GetStringArray(JsonElement obj, string name)
+        {
+            var list = new List<string>();
+            if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(name, out var v))
+                return list;
+
+            if (v.ValueKind == JsonValueKind.String)
+            {
+                var single = v.GetString();
+                if (!string.IsNullOrEmpty(single))
+                    list.Add(single);
+                return list;
+            }
+
+            if (v.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in v.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(item.GetString()))
+                        list.Add(item.GetString());
+                }
+            }
+
+            return list;
+        }
+
         /// <summary>
         /// 将 JSON 值转换为目标 C# 类型（反射属性赋值用）。
         /// 支持：基础类型 / enum（名称或数字）/ string / Vector2/3/4 / Color / Guid / Asset（按路径加载）。
@@ -195,6 +301,11 @@ namespace HundunAgent.Core
                     throw new ArgumentException("无法解析颜色: " + hex);
                 }
                 return new Color(GetNum(value, "r"), GetNum(value, "g"), GetNum(value, "b"), GetNum(value, "a", 1f));
+            }
+            if (targetType == typeof(LocalizedString))
+            {
+                // Flax UI 控件的 Text 等属性为 LocalizedString（支持字符串隐式转换）
+                return (LocalizedString)(value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText());
             }
             if (targetType == typeof(Color32))
             {

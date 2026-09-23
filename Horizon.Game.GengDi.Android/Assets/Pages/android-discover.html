@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安卓发现 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto bg-background min-h-screen relative shadow-2xl">
+      <!-- Material 应用栏 + M3 Tab栏 (sticky) -->
+      <header class="sticky top-0 z-20 bg-card/95 backdrop-blur-md border-b border-border">
+        <!-- App Bar -->
+        <div class="flex items-center justify-between px-4 h-14">
+          <h1 class="text-[22px] font-semibold text-foreground tracking-tight">发现</h1>
+          <div class="flex items-center gap-1">
+            <button aria-label="搜索" class="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-full text-foreground hover:bg-secondary transition-colors">
+              <i data-lucide="search" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+        <!-- M3 Tabs -->
+        <div class="flex">
+          <button class="flex-1 min-h-[48px] flex items-center justify-center text-sm text-muted-foreground relative hover:bg-secondary/50 transition-colors">
+            关注
+          </button>
+          <button class="flex-1 min-h-[48px] flex items-center justify-center text-sm font-semibold text-primary relative hover:bg-secondary/50 transition-colors">
+            推荐
+            <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-primary rounded-full"></span>
+          </button>
+          <button class="flex-1 min-h-[48px] flex items-center justify-center text-sm text-muted-foreground relative hover:bg-secondary/50 transition-colors">
+            附近
+          </button>
+        </div>
+      </header>
+
+      <!-- 内容区 -->
+      <div class="pb-24">
+
+        <!-- 热门话题 (横向滚动) -->
+        <section class="pt-4">
+          <div class="flex items-center justify-between px-4 mb-3">
+            <h2 class="text-base font-semibold text-foreground flex items-center gap-1.5">
+              <i data-lucide="flame" class="w-4 h-4" style="color:#c4956a"></i>
+              热门话题
+            </h2>
+            <button class="min-h-[40px] px-1 text-xs text-muted-foreground flex items-center gap-0.5 hover:text-foreground transition-colors">
+              更多<i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <div class="flex gap-2 overflow-x-auto no-scrollbar px-4 pb-1">
+            <span class="flex-shrink-0 min-h-[40px] inline-flex items-center gap-1.5 px-3.5 rounded-full bg-secondary text-sm text-secondary-foreground">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>#玫瑰价格走势
+            </span>
+            <span class="flex-shrink-0 min-h-[40px] inline-flex items-center gap-1.5 px-3.5 rounded-full bg-secondary text-sm text-secondary-foreground">
+              <span class="w-1.5 h-1.5 rounded-full" style="background:#ec4899"></span>#情人节备货
+            </span>
+            <span class="flex-shrink-0 min-h-[40px] inline-flex items-center gap-1.5 px-3.5 rounded-full bg-secondary text-sm text-secondary-foreground">
+              <span class="w-1.5 h-1.5 rounded-full" style="background:#26a69a"></span>#大棚种植技巧
+            </span>
+            <span class="flex-shrink-0 min-h-[40px] inline-flex items-center gap-1.5 px-3.5 rounded-full bg-secondary text-sm text-secondary-foreground">
+              <span class="w-1.5 h-1.5 rounded-full" style="background:#c4956a"></span>#新品种推荐
+            </span>
+            <span class="flex-shrink-0 min-h-[40px] inline-flex items-center gap-1.5 px-3.5 rounded-full bg-secondary text-sm text-secondary-foreground">
+              <span class="w-1.5 h-1.5 rounded-full" style="background:#5a90ff"></span>#鲜花冷链物流
+            </span>
+          </div>
+        </section>
+
+        <!-- IM聊天入口 -->
+        <section class="px-4 pt-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-semibold text-foreground flex items-center gap-1.5">
+              <i data-lucide="message-circle" class="w-4 h-4 text-primary"></i>
+              消息
+            </h2>
+            <button class="min-h-[40px] px-1 text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors">
+              <i data-lucide="check-check" class="w-3.5 h-3.5"></i>全部已读
+            </button>
+          </div>
+          <div class="bg-card rounded-xl divide-y divide-border overflow-hidden">
+            <!-- 对话1 -->
+            <div class="flex items-center gap-3 px-4 py-3 min-h-[68px] hover:bg-secondary/40 transition-colors cursor-pointer">
+              <div class="relative flex-shrink-0">
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md" style="background:linear-gradient(135deg,#e53935,#b71c1c)">王</div>
+                <span class="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#26a69a] border-2 border-card"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-foreground truncate">云南花农小王</span>
+                  <span class="text-[11px] text-muted-foreground flex-shrink-0 ml-2">10:23</span>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                  <span class="text-xs text-muted-foreground truncate pr-2">这批玫瑰质量很好</span>
+                  <span class="flex-shrink-0 min-w-[20px] h-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold flex items-center justify-center">2</span>
+                </div>
+              </div>
+            </div>
+            <!-- 对话2 -->
+            <div class="flex items-center gap-3 px-4 py-3 min-h-[68px] hover:bg-secondary/40 transition-colors cursor-pointer">
+              <div class="relative flex-shrink-0">
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md" style="background:linear-gradient(135deg,#2962ff,#1a40ad)">批</div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-foreground truncate">昆明花卉批发</span>
+                  <span class="text-[11px] text-muted-foreground flex-shrink-0 ml-2">09:15</span>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                  <span class="text-xs text-muted-foreground truncate pr-2">今日百合价格已更新</span>
+                </div>
+              </div>
+            </div>
+            <!-- 对话3 -->
+            <div class="flex items-center gap-3 px-4 py-3 min-h-[68px] hover:bg-secondary/40 transition-colors cursor-pointer">
+              <div class="relative flex-shrink-0">
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md" style="background:linear-gradient(135deg,#8e44ad,#6c3483)">李</div>
+                <span class="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#26a69a] border-2 border-card"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-foreground truncate">花艺师李姐</span>
+                  <span class="text-[11px] text-muted-foreground flex-shrink-0 ml-2">昨天</span>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                  <span class="text-xs text-muted-foreground truncate pr-2">求购向日葵500扎</span>
+                  <span class="flex-shrink-0 min-w-[20px] h-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold flex items-center justify-center">1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="mt-3 w-full min-h-[48px] rounded-xl border border-border bg-card text-sm text-foreground flex items-center justify-center gap-1.5 hover:bg-secondary transition-colors">
+            查看全部对话<i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </section>
+
+        <!-- 社交动态信息流 -->
+        <section class="pt-5">
+          <div class="flex items-center justify-between px-4 mb-3">
+            <h2 class="text-base font-semibold text-foreground flex items-center gap-1.5">
+              <i data-lucide="newspaper" class="w-4 h-4 text-primary"></i>
+              推荐动态
+            </h2>
+            <span class="text-xs text-muted-foreground">为你推荐</span>
+          </div>
+          <div class="space-y-3 px-4">
+
+            <!-- 动态1 -->
+            <article class="bg-card rounded-xl overflow-hidden">
+              <div class="flex items-center gap-3 px-4 pt-4">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#e53935,#b71c1c)">王</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-foreground">云南花农小王</div>
+                  <div class="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <i data-lucide="map-pin" class="w-3 h-3"></i>云南·昆明·5分钟前
+                  </div>
+                </div>
+                <button aria-label="更多" class="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary">
+                  <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <p class="px-4 pt-2.5 text-sm text-foreground leading-relaxed">今年的红玫瑰长势喜人，花苞饱满、色泽纯正，欢迎各位老板前来看花采购。</p>
+              <div class="mx-4 mt-3 h-44 rounded-lg" style="background:radial-gradient(circle at 30% 30%, rgba(255,200,200,0.35), transparent 45%),radial-gradient(circle at 70% 65%, rgba(120,0,0,0.5), transparent 55%),linear-gradient(135deg, #881337 0%, #dc2626 50%, #7f1d1d 100%)"></div>
+              <div class="flex items-center justify-around px-2 py-2.5">
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="heart" class="w-4 h-4"></i><span>128</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="message-circle" class="w-4 h-4"></i><span>32</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="repeat-2" class="w-4 h-4"></i><span>15</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="bookmark" class="w-4 h-4"></i><span>收藏</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- 动态2 -->
+            <article class="bg-card rounded-xl overflow-hidden">
+              <div class="flex items-center gap-3 px-4 pt-4">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#8e44ad,#6c3483)">李</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-foreground">花艺师李姐</div>
+                  <div class="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <i data-lucide="award" class="w-3 h-3"></i>认证花艺师·20分钟前
+                  </div>
+                </div>
+                <button aria-label="更多" class="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary">
+                  <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <p class="px-4 pt-2.5 text-sm text-foreground leading-relaxed">分享一组情人节花束设计，粉红主色调搭配满天星，浪漫又不失高级感。</p>
+              <div class="mx-4 mt-3 h-44 rounded-lg" style="background:radial-gradient(circle at 25% 30%, rgba(255,220,235,0.45), transparent 45%),radial-gradient(circle at 75% 70%, rgba(131,24,67,0.5), transparent 55%),linear-gradient(135deg, #be185d 0%, #ec4899 50%, #831843 100%)"></div>
+              <div class="flex items-center justify-around px-2 py-2.5">
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="heart" class="w-4 h-4"></i><span>256</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="message-circle" class="w-4 h-4"></i><span>48</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="repeat-2" class="w-4 h-4"></i><span>29</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="bookmark" class="w-4 h-4"></i><span>收藏</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- 动态3 -->
+            <article class="bg-card rounded-xl overflow-hidden">
+              <div class="flex items-center gap-3 px-4 pt-4">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#2962ff,#1a40ad)">批</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-foreground">昆明花卉批发</div>
+                  <div class="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <i data-lucide="store" class="w-3 h-3"></i>商家·1小时前
+                  </div>
+                </div>
+                <button aria-label="更多" class="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary">
+                  <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <p class="px-4 pt-2.5 text-sm text-foreground leading-relaxed">今日新到A级百合，花头大、叶片翠绿，产地直发，量大从优。</p>
+              <div class="mx-4 mt-3 h-44 rounded-lg" style="background:radial-gradient(circle at 30% 25%, rgba(255,250,230,0.55), transparent 45%),radial-gradient(circle at 70% 70%, rgba(101,163,13,0.45), transparent 55%),linear-gradient(135deg, #fef9c3 0%, #fde68a 45%, #65a30d 100%)"></div>
+              <div class="flex items-center justify-around px-2 py-2.5">
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="heart" class="w-4 h-4"></i><span>89</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="message-circle" class="w-4 h-4"></i><span>21</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="repeat-2" class="w-4 h-4"></i><span>9</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="bookmark" class="w-4 h-4"></i><span>收藏</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- 动态4 -->
+            <article class="bg-card rounded-xl overflow-hidden">
+              <div class="flex items-center gap-3 px-4 pt-4">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#16a34a,#14532d)">张</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-foreground">种植专家张教授</div>
+                  <div class="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <i data-lucide="badge-check" class="w-3 h-3 text-primary"></i>专家·3小时前
+                  </div>
+                </div>
+                <button aria-label="更多" class="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary">
+                  <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <p class="px-4 pt-2.5 text-sm text-foreground leading-relaxed">春季花卉病虫害防治要点：注意通风降湿，早发现早处理，预防为主、综合防治。</p>
+              <div class="mx-4 mt-3 h-44 rounded-lg" style="background:radial-gradient(circle at 30% 30%, rgba(200,255,200,0.35), transparent 45%),radial-gradient(circle at 70% 65%, rgba(20,60,20,0.5), transparent 55%),linear-gradient(135deg, #166534 0%, #16a34a 50%, #14532d 100%)"></div>
+              <div class="flex items-center justify-around px-2 py-2.5">
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="heart" class="w-4 h-4"></i><span>312</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="message-circle" class="w-4 h-4"></i><span>76</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="repeat-2" class="w-4 h-4"></i><span>54</span>
+                </button>
+                <button class="flex items-center gap-1.5 min-h-[44px] px-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <i data-lucide="bookmark" class="w-4 h-4"></i><span>收藏</span>
+                </button>
+              </div>
+            </article>
+
+          </div>
+        </section>
+
+        <!-- 推荐商家 (横向滚动) -->
+        <section class="pt-5">
+          <div class="flex items-center justify-between px-4 mb-3">
+            <h2 class="text-base font-semibold text-foreground flex items-center gap-1.5">
+              <i data-lucide="store" class="w-4 h-4 text-primary"></i>
+              推荐商家
+            </h2>
+            <button class="min-h-[40px] px-1 text-xs text-muted-foreground flex items-center gap-0.5 hover:text-foreground transition-colors">
+              更多<i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <div class="flex gap-3 overflow-x-auto no-scrollbar px-4 pb-2">
+
+            <!-- 商家1 -->
+            <div class="flex-shrink-0 w-40 bg-card rounded-xl p-3.5 border border-border">
+              <div class="flex items-center gap-2.5 mb-2.5">
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#e53935,#b71c1c)">云</div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-foreground truncate">云南玫瑰基地</div>
+                  <div class="flex items-center gap-0.5 mt-0.5">
+                    <i data-lucide="star" class="w-3 h-3" style="color:#ffb300;fill:#ffb300"></i>
+                    <span class="text-[11px] text-muted-foreground">4.9</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-[11px] text-muted-foreground mb-2.5 truncate">主营：玫瑰种植</div>
+              <button class="w-full min-h-[36px] rounded-full bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-1 hover:bg-brand-600 transition-colors">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>关注
+              </button>
+            </div>
+
+            <!-- 商家2 -->
+            <div class="flex-shrink-0 w-40 bg-card rounded-xl p-3.5 border border-border">
+              <div class="flex items-center gap-2.5 mb-2.5">
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#c4956a,#e65100)">春</div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-foreground truncate">春城花卉市场</div>
+                  <div class="flex items-center gap-0.5 mt-0.5">
+                    <i data-lucide="star" class="w-3 h-3" style="color:#ffb300;fill:#ffb300"></i>
+                    <span class="text-[11px] text-muted-foreground">4.8</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-[11px] text-muted-foreground mb-2.5 truncate">主营：百合批发</div>
+              <button class="w-full min-h-[36px] rounded-full bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-1 hover:bg-brand-600 transition-colors">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>关注
+              </button>
+            </div>
+
+            <!-- 商家3 -->
+            <div class="flex-shrink-0 w-40 bg-card rounded-xl p-3.5 border border-border">
+              <div class="flex items-center gap-2.5 mb-2.5">
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#16a34a,#14532d)">花</div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-foreground truncate">花之都园艺</div>
+                  <div class="flex items-center gap-0.5 mt-0.5">
+                    <i data-lucide="star" class="w-3 h-3" style="color:#ffb300;fill:#ffb300"></i>
+                    <span class="text-[11px] text-muted-foreground">4.7</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-[11px] text-muted-foreground mb-2.5 truncate">主营：绿植盆栽</div>
+              <button class="w-full min-h-[36px] rounded-full bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-1 hover:bg-brand-600 transition-colors">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>关注
+              </button>
+            </div>
+
+            <!-- 商家4 -->
+            <div class="flex-shrink-0 w-40 bg-card rounded-xl p-3.5 border border-border">
+              <div class="flex items-center gap-2.5 mb-2.5">
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#2962ff,#1a40ad)">鲜</div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-foreground truncate">鲜花源头直供</div>
+                  <div class="flex items-center gap-0.5 mt-0.5">
+                    <i data-lucide="star" class="w-3 h-3" style="color:#ffb300;fill:#ffb300"></i>
+                    <span class="text-[11px] text-muted-foreground">4.9</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-[11px] text-muted-foreground mb-2.5 truncate">主营：产地直发</div>
+              <button class="w-full min-h-[36px] rounded-full bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-1 hover:bg-brand-600 transition-colors">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>关注
+              </button>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 底部留白 -->
+        <div class="h-2"></div>
+      </div>
+
+      <!-- Material 底部导航栏 (sticky) -->
+      <nav class="sticky bottom-0 z-20 bg-card border-t border-border">
+        <div class="grid grid-cols-5 px-1.5 pt-1.5 pb-2">
+          <button class="flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg hover:bg-secondary/50 transition-colors">
+            <span class="w-12 h-8 rounded-full flex items-center justify-center">
+              <i data-lucide="home" class="w-5 h-5 text-muted-foreground"></i>
+            </span>
+            <span class="text-[10px] text-muted-foreground">首页</span>
+          </button>
+          <button class="flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg hover:bg-secondary/50 transition-colors">
+            <span class="w-12 h-8 rounded-full flex items-center justify-center">
+              <i data-lucide="trending-up" class="w-5 h-5 text-muted-foreground"></i>
+            </span>
+            <span class="text-[10px] text-muted-foreground">行情</span>
+          </button>
+          <button class="flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg hover:bg-secondary/50 transition-colors">
+            <span class="w-12 h-8 rounded-full flex items-center justify-center bg-[rgba(41,98,255,0.15)]">
+              <i data-lucide="compass" class="w-5 h-5 text-primary"></i>
+            </span>
+            <span class="text-[10px] text-primary font-semibold">发现</span>
+          </button>
+          <button class="flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg hover:bg-secondary/50 transition-colors relative">
+            <span class="w-12 h-8 rounded-full flex items-center justify-center">
+              <i data-lucide="message-circle" class="w-5 h-5 text-muted-foreground"></i>
+            </span>
+            <span class="text-[10px] text-muted-foreground">消息</span>
+            <span class="absolute top-1 right-3 w-2 h-2 rounded-full bg-destructive"></span>
+          </button>
+          <button class="flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-lg hover:bg-secondary/50 transition-colors">
+            <span class="w-12 h-8 rounded-full flex items-center justify-center">
+              <i data-lucide="user" class="w-5 h-5 text-muted-foreground"></i>
+            </span>
+            <span class="text-[10px] text-muted-foreground">我的</span>
+          </button>
+        </div>
+      </nav>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

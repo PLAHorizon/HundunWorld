@@ -44,14 +44,47 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
         private InkPanel _matchBanner;
         private InkButton _matchButton;
 
+        /// <summary>匹配横幅 meta 行（预计等待 / 匹配范围 / 当前匹配，设计稿 .match-banner-meta）</summary>
+        private Panel _matchMeta;
+
+        /// <summary>匹配按钮下方提示“点击进入匹配队列”（设计稿 .match-btn-hint）</summary>
+        private Label _matchBtnHint;
+
+        /// <summary>模式面板底部提示“选择模式进入对应大厅”（设计稿 .mode-panel-footer）</summary>
+        private Label _modeFooterHint;
+
+        /// <summary>模式面板底部提示图标</summary>
+        private Label _modeFooterHintIcon;
+
         private InkPanel _filterBar;
         private InkButton[] _filterButtons;
+
+        /// <summary>筛选栏“排序”分组标签（设计稿 .filter-group 第三组）</summary>
+        private Label _sortGroupLabel;
+
+        /// <summary>筛选栏“排序”分组按钮（人数 / 房间名）</summary>
+        private InkButton[] _sortButtons;
+
+        /// <summary>筛选栏右侧刷新按钮（设计稿 #btn-refresh）</summary>
+        private InkButton _refreshButton;
 
         private Panel _roomList;
         private InkPanel[] _roomRows;
 
+        /// <summary>房间列表页脚（共 N 个房间 · 已加载全部 + 加载更多，设计稿 .room-list-footer）</summary>
+        private Panel _roomListFooter;
+
+        /// <summary>房间列表页脚“加载更多”按钮（设计稿 #btn-load-more）</summary>
+        private InkButton _loadMoreButton;
+
         public event Action BackRequested;
         public event Action StartMatchRequested;
+
+        /// <summary>“加载更多”按钮点击事件（设计稿 #btn-load-more，当前 mock 数据已全部加载）。</summary>
+        public event Action LoadMoreRequested;
+
+        /// <summary>筛选栏刷新按钮点击事件（设计稿 #btn-refresh）。</summary>
+        public event Action RefreshRequested;
 
         private readonly string[] _modeNames = { "快速匹配", "创建房间", "加入房间", "好友列表", "帮派" };
         private readonly string[] _roomNames = { "华山论剑", "帮派对战", "自由切磋", "夺宝奇兵", "江湖擂台", "阵营对抗" };
@@ -63,7 +96,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
         public MultiplayerPage()
         {
-            _screenSize = FlaxEngine.Screen.Size;
+            // 优先使用自身尺寸（挂载到 InkPageShell 设计坐标系后为 1920×1080）；未就绪时回退屏幕尺寸。
+            _screenSize = new Float2(Width > 0f ? Width : FlaxEngine.Screen.Size.X,
+                                     Height > 0f ? Height : FlaxEngine.Screen.Size.Y);
             if (_screenSize.X <= 0f || _screenSize.Y <= 0f)
             {
                 _screenSize = new Float2(1920f, 1080f);
@@ -403,6 +438,33 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 Parent = _modePanel
             };
 
+            // 模式面板页脚提示：图标 + “选择模式进入对应大厅”（设计稿 .mode-panel-footer）
+            _modeFooterHintIcon = new Label
+            {
+                Text = "✦",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.GoldPrimary,
+                Width = 14f,
+                Height = 16f,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(16f, _modePanel.Height - 32f),
+                Parent = _modePanel
+            };
+
+            _modeFooterHint = new Label
+            {
+                Text = "选择模式进入对应大厅",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.PaperDark,
+                Width = modePanelWidth - 48f,
+                Height = 16f,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(34f, _modePanel.Height - 32f),
+                Parent = _modePanel
+            };
+
             _contentArea = new InkPanel
             {
                 Width = contentWidth,
@@ -432,9 +494,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 VerticalAlignment = TextAlignment.Center,
                 Location = new Float2(24f, 20f),
                 Parent = _matchBanner
-            };
-
-            InkPanel matchTag = new InkPanel
+            };            InkPanel matchTag = new InkPanel
             {
                 Width = 48f,
                 Height = 20f,
@@ -480,6 +540,36 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
             };
             _matchButton.Clicked += () => StartMatchRequested?.Invoke();
 
+            // 匹配横幅下方提示（设计稿 .match-btn-hint，与按钮同宽居中）
+            _matchBtnHint = new Label
+            {
+                Text = "点击进入匹配队列",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                Width = 140f,
+                Height = 14f,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(contentWidth - 164f, 86f),
+                Parent = _matchBanner
+            };
+
+            // 匹配横幅 meta 行：预计等待 / 匹配范围 / 当前匹配（设计稿 .match-banner-meta）
+            _matchMeta = new Panel
+            {
+                Width = 480f,
+                Height = 16f,
+                Location = new Float2(24f, 76f),
+                BackgroundColor = Color.Transparent,
+                Parent = _matchBanner
+            };
+
+            CreateMatchMetaItem(_matchMeta, 0f, "✦", "预计等待", "15秒");
+            CreateMatchMetaDivider(_matchMeta, 150f);
+            CreateMatchMetaItem(_matchMeta, 166f, "✦", "匹配范围", "Lv. 38-46");
+            CreateMatchMetaDivider(_matchMeta, 316f);
+            CreateMatchMetaItem(_matchMeta, 332f, "✦", "当前匹配", "326人");
+
             _filterBar = new InkPanel
             {
                 Width = contentWidth,
@@ -489,9 +579,37 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 Parent = _contentArea
             };
 
+            // 设计稿筛选栏分为三个分组（模式 / 状态 / 排序），每组 = 分组标签 + 药丸按钮，
+            // 右侧另有刷新按钮（#btn-refresh）。分组标签沿用页面既有 12px 正文色。
+            Label modeGroupLabel = new Label
+            {
+                Text = "模式",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.PaperFaded,
+                Width = 40f,
+                Height = 28f,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(24f, 14f),
+                Parent = _filterBar
+            };
+
+            Label statusGroupLabel = new Label
+            {
+                Text = "状态",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.PaperFaded,
+                Width = 40f,
+                Height = 28f,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(452f, 14f),
+                Parent = _filterBar
+            };
+
             _filterButtons = new InkButton[8];
             string[] filterNames = { "全部", "1v1", "3v3", "5v5", "自由", "全部", "等待中", "进行中" };
-            float filterX = 24f;
+            float filterX = 68f;
 
             for (int i = 0; i < 5; i++)
             {
@@ -509,7 +627,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 filterX += 72f;
             }
 
-            filterX += 20f;
+            filterX = 496f;
 
             for (int i = 5; i < 8; i++)
             {
@@ -526,6 +644,49 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 };
                 filterX += 72f;
             }
+
+            // 第三分组：排序（人数 / 房间名），位置由 LayoutFilterBarRight 按实际内容宽度贴右排布
+            _sortGroupLabel = new Label
+            {
+                Text = "排序",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.PaperFaded,
+                Width = 40f,
+                Height = 28f,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _filterBar
+            };
+
+            string[] sortNames = { "人数", "房间名" };
+            _sortButtons = new InkButton[sortNames.Length];
+            for (int i = 0; i < sortNames.Length; i++)
+            {
+                _sortButtons[i] = new InkButton
+                {
+                    Width = 60f,
+                    Height = 28f,
+                    Text = sortNames[i],
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                    BackgroundColor = i == 0 ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f) : Color.Transparent,
+                    TextColor = i == 0 ? InkWashTheme.GoldBright : InkWashTheme.PaperAged,
+                    Parent = _filterBar
+                };
+            }
+
+            _refreshButton = new InkButton
+            {
+                Width = 36f,
+                Height = 28f,
+                Text = "↻",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
+                BackgroundColor = Color.Transparent,
+                TextColor = InkWashTheme.PaperFaded,
+                Parent = _filterBar
+            };
+            _refreshButton.Clicked += () => RefreshRequested?.Invoke();
+
+            LayoutFilterBarRight(contentWidth);
 
             _roomList = new Panel
             {
@@ -714,11 +875,182 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                     Parent = _roomRows[i]
                 };
             }
+
+            // 房间列表页脚（设计稿 .room-list-footer）：左侧统计信息 + 右侧“加载更多”按钮
+            _roomListFooter = new Panel
+            {
+                Width = contentWidth,
+                Height = 32f,
+                Location = new Float2(0f, _roomList.Height - 44f),
+                BackgroundColor = Color.Transparent,
+                Parent = _roomList
+            };
+
+            Label footerIcon = new Label
+            {
+                Text = "✦",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.GoldPrimary,
+                Width = 14f,
+                Height = 20f,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(0f, 6f),
+                Parent = _roomListFooter
+            };
+
+            Label footerCount = new Label
+            {
+                Text = $"共 {_roomNames.Length} 个房间",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.TextTertiary,
+                Width = 100f,
+                Height = 20f,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(18f, 6f),
+                Parent = _roomListFooter
+            };
+
+            Label footerDot = new Label
+            {
+                Text = "·",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.TextTertiary,
+                Width = 12f,
+                Height = 20f,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(122f, 6f),
+                Parent = _roomListFooter
+            };
+
+            Label footerLoaded = new Label
+            {
+                Text = "已加载全部",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.TextTertiary,
+                Width = 100f,
+                Height = 20f,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(136f, 6f),
+                Parent = _roomListFooter
+            };
+
+            _loadMoreButton = new InkButton
+            {
+                Width = 100f,
+                Height = 28f,
+                Text = "加载更多",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                Location = new Float2(contentWidth - 116f, 2f),
+                BackgroundColor = Color.Transparent,
+                TextColor = InkWashTheme.PaperFaded,
+                Parent = _roomListFooter
+            };
+            _loadMoreButton.Clicked += () => LoadMoreRequested?.Invoke();
+        }
+
+        /// <summary>
+        /// 创建匹配横幅 meta 项（设计稿 .meta-item：图标 + 标签 + 数值）。
+        /// </summary>
+        /// <param name="parent">承载的父控件（匹配横幅 meta 行）</param>
+        /// <param name="x">项左边界 X</param>
+        /// <param name="icon">图标字形（设计稿 lucide 图标的引擎侧近似）</param>
+        /// <param name="label">标签文字（预计等待 / 匹配范围 / 当前匹配）</param>
+        /// <param name="value">数值文字（15秒 / Lv. 38-46 / 326人）</param>
+        private void CreateMatchMetaItem(Panel parent, float x, string icon, string label, string value)
+        {
+            Label metaIcon = new Label
+            {
+                Text = icon,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.Info,
+                Width = 14f,
+                Height = 16f,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(x, 0f),
+                Parent = parent
+            };
+
+            Label metaLabel = new Label
+            {
+                Text = label,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.PaperFaded,
+                Width = 56f,
+                Height = 16f,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(x + 18f, 0f),
+                Parent = parent
+            };
+
+            Label metaValue = new Label
+            {
+                Text = value,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                TextColor = InkWashTheme.PaperBright,
+                Width = 72f,
+                Height = 16f,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(x + 76f, 0f),
+                Parent = parent
+            };
+        }
+
+        /// <summary>
+        /// 创建匹配横幅 meta 项之间的分隔线（设计稿 .meta-divider：1px × 12px）。
+        /// </summary>
+        /// <param name="parent">承载的父控件（匹配横幅 meta 行）</param>
+        /// <param name="x">分隔线 X 坐标</param>
+        private void CreateMatchMetaDivider(Panel parent, float x)
+        {
+            Panel metaDivider = new Panel
+            {
+                Width = 1f,
+                Height = 12f,
+                Location = new Float2(x, 2f),
+                BackgroundColor = InkWashTheme.TextTertiary,
+                Parent = parent
+            };
+        }
+
+        /// <summary>
+        /// 按内容区实际宽度贴右排布筛选栏第三分组（排序）与刷新按钮。
+        /// 排序分组宽度 = 标签 40 + 两枚 60px 药丸（间距 12），与刷新按钮间隔 16px。
+        /// </summary>
+        /// <param name="contentWidth">内容区当前宽度</param>
+        private void LayoutFilterBarRight(float contentWidth)
+        {
+            if (_refreshButton == null)
+                return;
+
+            float refreshX = contentWidth - 24f - _refreshButton.Width;
+            _refreshButton.Location = new Float2(refreshX, 14f);
+
+            const float sortWidth = 40f + 60f + 12f + 60f;
+            float sortX = refreshX - 16f - sortWidth;
+
+            if (_sortGroupLabel != null)
+                _sortGroupLabel.Location = new Float2(sortX, 14f);
+
+            if (_sortButtons != null)
+            {
+                for (int i = 0; i < _sortButtons.Length; i++)
+                    _sortButtons[i].Location = new Float2(sortX + 40f + i * 72f, 14f);
+            }
         }
 
         public void RefreshLayout()
         {
-            _screenSize = FlaxEngine.Screen.Size;
+            // 分辨率适配修复：以页面自身尺寸（InkPageShell 内容层 = 1920×1080 设计空间）为准，
+            // 不再无条件使用窗口尺寸——否则内容层等比缩放后页面坐标系将与窗口坐标系错位。
+            _screenSize = new Float2(Width > 0f ? Width : FlaxEngine.Screen.Size.X,
+                                     Height > 0f ? Height : FlaxEngine.Screen.Size.Y);
             if (_screenSize.X <= 0f || _screenSize.Y <= 0f)
             {
                 _screenSize = new Float2(1920f, 1080f);
@@ -752,11 +1084,38 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
             if (_filterBar != null)
             {
                 _filterBar.Size = new Float2(contentWidth, 56f);
+                LayoutFilterBarRight(contentWidth);
+            }
+
+            if (_modeFooterHint != null)
+            {
+                _modeFooterHint.Location = new Float2(34f, _modePanel.Height - 32f);
+            }
+
+            if (_modeFooterHintIcon != null)
+            {
+                _modeFooterHintIcon.Location = new Float2(16f, _modePanel.Height - 32f);
             }
 
             if (_roomList != null)
             {
                 _roomList.Size = new Float2(contentWidth, _screenSize.Y - 260f);
+            }
+
+            if (_roomListFooter != null)
+            {
+                _roomListFooter.Size = new Float2(contentWidth, 32f);
+                _roomListFooter.Location = new Float2(0f, _roomList.Height - 44f);
+            }
+
+            if (_loadMoreButton != null)
+            {
+                _loadMoreButton.Location = new Float2(contentWidth - 116f, 2f);
+            }
+
+            if (_matchBtnHint != null)
+            {
+                _matchBtnHint.Location = new Float2(contentWidth - 164f, 86f);
             }
 
             if (_roomRows != null)

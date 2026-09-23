@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -34,15 +37,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{brandId}")]
-        public async Task<ResultVM<BrandState>> GetBrandAsync(long brandId)
+        public async Task<ResultVM<BrandDto>> GetBrandAsync(long brandId)
         {
-            var result = new ResultVM<BrandState>();
+            var result = new ResultVM<BrandDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IBrandGrain>(0);
-                result.Data = await grain.GetBrandAsync(brandId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetBrandAsync(brandId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -53,14 +57,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ResultVM<List<BrandState>>> GetAllBrandsAsync()
+        public async Task<ResultVM<List<BrandDto>>> GetAllBrandsAsync()
         {
-            var result = new ResultVM<List<BrandState>>();
+            var result = new ResultVM<List<BrandDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IBrandGrain>(0);
-                result.Data = await grain.GetAllBrandsAsync();
+                var brands = await grain.GetAllBrandsAsync();
+                result.Data = brands?.Select(b => FlowerDtoMapper.ToDto(b)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -168,14 +173,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("shop/{shopId}/applies")]
-        public async Task<ResultVM<List<ShopBrandApplyState>>> GetShopBrandAppliesAsync(long shopId)
+        public async Task<ResultVM<List<ShopBrandApplyDto>>> GetShopBrandAppliesAsync(long shopId)
         {
-            var result = new ResultVM<List<ShopBrandApplyState>>();
+            var result = new ResultVM<List<ShopBrandApplyDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IBrandGrain>(0);
-                result.Data = await grain.GetShopBrandAppliesAsync(shopId);
+                var applies = await grain.GetShopBrandAppliesAsync(shopId);
+                result.Data = applies?.Select(a => FlowerDtoMapper.ToDto(a)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

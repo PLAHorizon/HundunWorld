@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
@@ -314,16 +315,19 @@ namespace Horizon.Game.GengDi.Core.Views
                 foreach (var child in panel.Children)
                 {
                     if (child is Button childBtn)
-                    {
-                        childBtn.Classes.Remove("PrimaryAction");
-                        if (!childBtn.Classes.Contains("QuietAction"))
-                            childBtn.Classes.Add("QuietAction");
-                    }
+                        childBtn.Classes.Remove("GdSegActive");
                 }
-                selectedBtn.Classes.Remove("QuietAction");
-                if (!selectedBtn.Classes.Contains("PrimaryAction"))
-                    selectedBtn.Classes.Add("PrimaryAction");
+                selectedBtn.Classes.Add("GdSegActive");
             }
+        }
+
+        /// <summary>
+        /// 发布表单图片预览：点击缩略图设为封面（该图移到列表首位）。
+        /// </summary>
+        private void OnSetCoverTapped(object? sender, TappedEventArgs e)
+        {
+            if (sender is Border border && border.Tag is string path && DataContext is FlowerMerchantViewModel vm)
+                vm.SetCoverImage(path);
         }
 
         private async void OnLocalImageUploadClick(object sender, RoutedEventArgs e)

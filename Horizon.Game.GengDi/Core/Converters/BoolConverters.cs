@@ -35,6 +35,46 @@ namespace Horizon.Game.GengDi.Core.Converters
         }
     }
 
+    /// <summary>bool → Opacity：true=1.0（当月），false=0.35（非当月日期置灰）。</summary>
+    public class BoolToOpacityConverter : IValueConverter
+    {
+        public static BoolToOpacityConverter Instance { get; } = new();
+
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            return value is bool b && b ? 1.0 : 0.35;
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// 宽度下限钳制：返回 max(value, parameter)。
+    /// 用于农事日历网格 —— 视口够宽时撑满自适应，不够宽时保住 7×168 最小宽度并出横向滚动。
+    /// </summary>
+    public class ClampToMinConverter : IValueConverter
+    {
+        public static ClampToMinConverter Instance { get; } = new();
+
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (value is double width && parameter != null
+                && double.TryParse(parameter.ToString(), System.Globalization.NumberStyles.Float, CultureInfo.InvariantCulture, out var min))
+            {
+                return Math.Max(min, width);
+            }
+            return value;
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class CountToVisibilityConverter : IValueConverter
     {
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

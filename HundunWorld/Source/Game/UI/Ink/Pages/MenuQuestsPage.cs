@@ -7,365 +7,719 @@ using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages
 {
+    /// <summary>
+    /// 任务菜单页面。
+    /// 设计稿：hundun-yy-ui/pages/menu-quests.html（燕云融合 · 深墨黑 + 鎏金 + 纸色卷轴）。
+    /// 结构：
+    ///   左侧 240px 导航栏（竖排「任务」+ 角色养成/功能入口/设置 三组导航）
+    ///   ＋ 顶部 60px 角色信息栏（头像 / 无名侠 Lv.42 逍遥派 / 铜钱 8,320 / 银两 328）
+    ///   ＋ 任务卷宗列表（左 40%：标题「任务卷宗 6 项」+ 主线/支线/世界/日常 标签页 + 任务卡）
+    ///   ＋ 任务详情（右 60%：标题 + 状态标签 + 推荐等级/难度/类型 + 任务背景纸卷 + 任务目标 + 任务奖励
+    ///      + 委托人/区域/时限 + 追踪/放弃/分享 操作按钮）。
+    /// 交互：导航跳转（博物志）、标签页筛选、任务选择、追踪/放弃/分享；
+    ///       返回战斗 HUD 由页面外壳返回按钮承担（设计稿左上 back-hud 出口）。
+    /// </summary>
     public class MenuQuestsPage : ContainerControl, IInkPage
     {
-        // ───────────── Data Types ─────────────
+        // ───────────────────────── 数据模型 ─────────────────────────
 
+        /// <summary>任务数据（对应设计稿卷宗列表项 + 右侧详情面板）。</summary>
         private class QuestData
         {
             public string Name;
-            public string Category; // 主线/支线/日常/周常
-            public string Status; // 进行中/未开始/已完成
-            public string Location;
-            public string Npc;
-            public string TimeLimit;
+            /// <summary>任务类型：主线/支线/世界/日常（对应设计稿标签页）。</summary>
+            public string Category;
+            /// <summary>任务状态：进行中/未开始/已完成。</summary>
+            public string Status;
+            /// <summary>推荐等级，如 Lv.42。</summary>
+            public string Level;
+            /// <summary>列表进度百分比（0~100）。</summary>
+            public int Progress;
+            /// <summary>难度星级（★★★★★）。</summary>
             public string Difficulty;
-            public string Description;
-            public int ProgressCurrent;
-            public int ProgressMax;
-            public int Level;
-            public string[] ObjectiveTexts;
+            /// <summary>委托人。</summary>
+            public string Npc;
+            /// <summary>区域。</summary>
+            public string Region;
+            /// <summary>时限。</summary>
+            public string TimeLimit;
+            /// <summary>任务背景（纸色卷轴正文）。</summary>
+            public string Background;
+            public string[] Objectives;
             public bool[] ObjectiveDone;
-            public int[] ObjectiveProgress;
-            public int[] ObjectiveMax;
             public RewardData[] Rewards;
         }
 
+        /// <summary>任务奖励项（经验 / 铜钱 / 装备 / 道具）。</summary>
         private class RewardData
         {
             public string Label;
             public string Value;
             public Color ValueColor;
+            public Color IconColor;
+            /// <summary>传世品质奖励（设计稿 .reward-legendary 朱红描边）。</summary>
+            public bool Legendary;
         }
 
-        // ───────────── Fields ─────────────
+        // ───────────────────────── 布局常量 ─────────────────────────
+
+        /// <summary>左侧导航栏宽度（设计稿 240px）。</summary>
+        private const float SidebarWidth = 240f;
+
+        /// <summary>顶部角色信息栏高度（设计稿 60px）。</summary>
+        private const float TopHeaderHeight = 60f;
+
+        /// <summary>任务卷宗列表占内容区宽度比例（设计稿 lg:w-2/5）。</summary>
+        private const float ListRatio = 0.4f;
+
+        /// <summary>详情面板内边距（设计稿 --ink-space-6）。</summary>
+        private const float DetailPadding = 32f;
+
+        /// <summary>卷宗列表项高度。</summary>
+        private const float QuestItemHeight = 84f;
+
+        /// <summary>奖励卡高度。</summary>
+        private const float RewardCardHeight = 84f;
+
+        /// <summary>导航项高度（设计稿 padding 10px + 15px 字）。</summary>
+        private const float NavItemHeight = 40f;
+
+        /// <summary>标签页高度（含 2px 底部指示线）。</summary>
+        private const float TabHeight = 42f;
+
+        /// <summary>设计稿标签页：主线 / 支线 / 世界 / 日常。</summary>
+        private static readonly string[] TabNames = { "主线", "支线", "世界", "日常" };
+
+        /// <summary>设计稿左侧导航项（按设计稿顺序，含禁用项）。</summary>
+        private static readonly string[] NavNames =
+        {
+            "角色", "装备", "外观", "备战", "门派", "个人信息", "时间",
+            "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店",
+            "设置"
+        };
+
+        /// <summary>导航项跳转目标（null = 设计稿 aria-disabled 的禁用项，不响应点击）。</summary>
+        private static readonly string[] NavTargets =
+        {
+            null, null, null, null, null, null, null,
+            "nav-quests", "nav-bestiary", null, null, null, null, null,
+            null
+        };
+
+        /// <summary>当前所在导航项索引（设计稿 nav-item-active：任务）。</summary>
+        private const int NavActiveIndex = 7;
+
+        /// <summary>导航分隔线插入位置（该索引之前插入一条 .ink-divider）。</summary>
+        private static readonly int[] NavDividerBefore = { 7, 14 };
+
+        /// <summary>设计稿默认选中任务（卷宗第 6 项「百年恩怨」）。</summary>
+        private const int DefaultSelectedQuest = 5;
+
+        // ───────────────────────── 字段 ─────────────────────────
 
         private Float2 _screenSize;
 
-        // Scrim
-        private Panel _scrim;
+        // 氛围层
+        private Panel _backgroundLayer;
+        private Panel _vignette;
 
-        // Main panel
+        // 左侧导航栏
+        private Panel _sidebar;
+        private Panel _sidebarTitleBlock;
+        private InkVerticalTitle _sidebarTitle;
+        private Panel _sidebarNavPanel;
+        private List<TextRowButton> _navButtons;
+        private List<Control> _navRows;
 
-        // Header
-        private Panel _header;
-        private Label _title;
-        private Label _subtitle;
-        private InkButton _closeBtn;
-        private List<InkButton> _tabs;
-        private List<Label> _tabBadges;
+        // 顶部角色信息栏
+        private Panel _mainArea;
+        private Panel _topHeader;
+        private CircleAvatar _playerAvatar;
+        private Label _playerNameLabel;
+        private InkTag _playerLevelTag;
+        private Label _playerSectLabel;
+        private Label _copperTitleLabel;
+        private Label _copperValueLabel;
+        private Label _silverTitleLabel;
+        private Label _silverValueLabel;
 
-        // Body
-        private Panel _body;
+        // 任务卷宗列表
+        private Panel _listSection;
+        private Label _listTitleLabel;
+        private Label _listCountLabel;
+        private Panel _tabBar;
+        private List<TextRowButton> _tabs;
+        private Panel _listScroll;
+        private Panel _listContent;
+        private List<QuestListItem> _questItems;
+        private Label _listEmptyHint;
 
-        // Left: Quest list
-        private Panel _questListPanel;
-        private List<QuestGroup> _questGroups;
-        private Panel _bottomPanel;
-        private Label _totalProgressLabel;
-        private Panel _totalProgressBar;
-        private Panel _totalProgressFill;
-
-        // Right: Quest detail
-        private Panel _questDetailPanel;
-        private Label _detailTitle;
-        private InkButton _detailCategoryTag;
-        private InkButton _detailDifficultyTag;
-        private Label _detailLocation;
-        private Label _detailNpc;
-        private Label _detailTimeLimit;
-        private InkPaperPanel _detailDescriptionPanel;
-        private Label _detailDescription;
+        // 任务详情
+        private Panel _detailSection;
+        private Panel _detailScroll;
+        private Panel _detailContent;
+        private Label _detailTitleLabel;
+        private QuestTag _detailStatusTag;
+        private Label _detailLevelPrefix;
+        private Label _detailLevelValue;
+        private Label _detailDifficultyPrefix;
+        private Label _detailDifficultyValue;
+        private Label _detailTypePrefix;
+        private Label _detailTypeValue;
+        private InkDivider _detailDividerMeta;
+        private InkPaperPanel _detailBackgroundPanel;
+        private Label _detailBackgroundTitle;
+        private Label _detailBackgroundText;
+        private InkDivider _detailDividerBackground;
         private Label _detailObjectiveTitle;
-        private List<ObjectiveRow> _detailObjectives;
+        private List<ObjectiveRow> _detailObjectiveRows;
+        private InkDivider _detailDividerObjective;
         private Label _detailRewardTitle;
-        private Panel _detailRewardsPanel;
         private List<RewardCard> _detailRewardCards;
-        private InkButton _abandonBtn;
+        private InkDivider _detailDividerReward;
+        private Label _detailNpcPrefix;
+        private Label _detailNpcValue;
+        private Label _detailRegionPrefix;
+        private Label _detailRegionValue;
+        private Label _detailTimePrefix;
+        private Label _detailTimeValue;
+        private InkDivider _detailDividerInfo;
         private InkButton _trackBtn;
-        private Label _detailLevelInfo;
+        private InkButton _abandonBtn;
+        private InkButton _shareBtn;
+        private Label _actionHintLabel;
 
-        private int _selectedTab;
-        private int _selectedQuest;
+        // 状态
         private List<QuestData> _allQuests;
+        private List<QuestData> _visibleQuests;
+        private QuestData _selectedQuest;
+        private QuestData _trackedQuest;
+        private int _selectedTab;
 
-        private const float PanelMaxW = 1400f;
-        private const float PanelMaxH = 900f;
-        private const float QuestListW = 450f;
-
+        /// <summary>页面导航请求（由 MainUIManager 通过 HookNavigationRequested 订阅）。</summary>
         public event Action<string> NavigationRequested;
 
-        // ───────────── Quest Group ─────────────
+        // ───────────────────────── 私有控件 ─────────────────────────
 
-        private class QuestGroup : ContainerControl
+        /// <summary>
+        /// 纯文本行按钮，对应设计稿 .nav-item（左对齐 + 2px 金竖线激活态）
+        /// 与 .quest-tab（居中 + 2px 金底边激活态）。
+        /// 自绘背景与激活指示线，避免依赖引擎 Button 的固定居中排版。
+        /// </summary>
+        private class TextRowButton : ContainerControl
         {
-            public Label TitleLabel;
-            public Label CountLabel;
-            public List<QuestItem> Items = new List<QuestItem>();
-            public bool Expanded = true;
+            /// <summary>激活指示线宽/高（设计稿 2px）。</summary>
+            private const float ActiveBarSize = 2f;
 
-            private Panel _headerPanel;
-            public Panel _bodyPanel;
-            private Label _chevron;
+            private readonly Label _label;
+            private readonly float _textLeft;
+            private readonly bool _bottomBar;
+            private bool _active;
+            private bool _hovered;
+            private bool _pressed;
 
-            public QuestGroup(string title, int count)
+            public event Action Clicked;
+
+            /// <summary>是否处于激活态（当前页 / 当前标签页）。</summary>
+            public bool Active
             {
+                get => _active;
+                set
+                {
+                    _active = value;
+                    ApplyColors();
+                }
+            }
+
+            /// <summary>行文案。</summary>
+            public string Text
+            {
+                get => _label.Text;
+                set => _label.Text = value;
+            }
+
+            public TextRowButton(string text, float textLeft, InkWashTheme.FontRole fontRole, float fontSize, bool bottomBar)
+            {
+                _textLeft = textLeft;
+                _bottomBar = bottomBar;
+                BackgroundColor = Color.Transparent;
                 ClipChildren = false;
 
-                _headerPanel = new Panel
+                _label = new Label
                 {
-                    BackgroundColor = Color.Transparent,
-                    Parent = this
-                };
-
-                _chevron = new Label
-                {
-                    Text = "\u25BC",
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
-                    TextColor = InkWashTheme.TextSecondary,
-                    Parent = _headerPanel
-                };
-
-                TitleLabel = new Label
-                {
-                    Text = title,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f),
-                    TextColor = InkWashTheme.TextDefault,
-                    Parent = _headerPanel
-                };
-
-                CountLabel = new Label
-                {
-                    Text = count.ToString(),
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
-                    TextColor = InkWashTheme.TextSecondary,
-                    BackgroundColor = new Color(InkWashTheme.Void.R, InkWashTheme.Void.G, InkWashTheme.Void.B, 0.4f),
-                    HorizontalAlignment = TextAlignment.Center,
+                    Text = text,
+                    Font = InkRenderHelper.GetFontRef(fontRole, fontSize),
+                    TextColor = InkWashTheme.PaperAged,
+                    HorizontalAlignment = bottomBar ? TextAlignment.Center : TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
-                    Parent = _headerPanel
-                };
-
-                _bodyPanel = new Panel
-                {
-                    BackgroundColor = Color.Transparent,
                     Parent = this
                 };
+
+                ApplyColors();
             }
 
-            public void Toggle()
+            /// <summary>设置文字字体（标签页激活态切换为标题字体）。</summary>
+            public void SetFont(InkWashTheme.FontRole fontRole, float fontSize)
             {
-                Expanded = !Expanded;
-                _bodyPanel.Visible = Expanded;
+                _label.Font = InkRenderHelper.GetFontRef(fontRole, fontSize);
             }
 
-            public void Layout(float width)
+            /// <summary>设置禁用态配色（设计稿 .nav-item-disabled）。</summary>
+            public void SetDisabled()
             {
-                float headerH = 34f;
-                _headerPanel.Location = Float2.Zero;
-                _headerPanel.Size = new Float2(width, headerH);
+                Enabled = false;
+                _label.TextColor = InkWashTheme.TextTertiary;
+            }
 
-                _chevron.Location = new Float2(8f, (headerH - 14f) / 2f);
-                _chevron.Size = new Float2(14f, 14f);
+            private void ApplyColors()
+            {
+                _label.TextColor = _active ? InkWashTheme.GoldBright : InkWashTheme.PaperAged;
+            }
 
-                TitleLabel.Location = new Float2(28f, (headerH - 18f) / 2f);
-                TitleLabel.Size = new Float2(width - 100f, 18f);
+            protected override void OnSizeChanged()
+            {
+                base.OnSizeChanged();
 
-                CountLabel.Location = new Float2(width - 50f, (headerH - 18f) / 2f);
-                CountLabel.Size = new Float2(36f, 18f);
-
-                _bodyPanel.Location = new Float2(0f, headerH);
-                _bodyPanel.Size = new Float2(width, Items.Count * 40f);
-                _bodyPanel.Visible = Expanded;
-
-                float iy = 4f;
-                foreach (var item in Items)
+                if (_label != null)
                 {
-                    item.Location = new Float2(6f, iy);
-                    item.Size = new Float2(width - 12f, 36f);
-                    iy += 38f;
+                    _label.Location = new Float2(_textLeft, 0f);
+                    _label.Size = new Float2(Mathf.Max(0f, Width - _textLeft), Height);
+                }
+            }
+
+            public override void OnMouseEnter(Float2 location)
+            {
+                base.OnMouseEnter(location);
+                _hovered = true;
+            }
+
+            public override void OnMouseLeave()
+            {
+                base.OnMouseLeave();
+                _hovered = false;
+                _pressed = false;
+            }
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left)
+                {
+                    _pressed = true;
+                    return true;
+                }
+                return base.OnMouseDown(location, button);
+            }
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _pressed)
+                {
+                    _pressed = false;
+                    if (ContainsPoint(ref location))
+                        Clicked?.Invoke();
+                    return true;
+                }
+                return base.OnMouseUp(location, button);
+            }
+
+            public override void Draw()
+            {
+                if (!Visible || Width <= 0f || Height <= 0f)
+                    return;
+
+                if (_active)
+                    Render2D.FillRectangle(new Rectangle(0f, 0f, Width, Height), WithAlpha(InkWashTheme.GoldPrimary, 0.1f));
+                else if (_hovered)
+                    Render2D.FillRectangle(new Rectangle(0f, 0f, Width, Height), WithAlpha(InkWashTheme.GoldPrimary, 0.06f));
+
+                base.Draw();
+
+                if (_active)
+                {
+                    var bar = _bottomBar
+                        ? new Rectangle(0f, Height - ActiveBarSize, Width, ActiveBarSize)
+                        : new Rectangle(0f, 0f, ActiveBarSize, Height);
+                    Render2D.FillRectangle(bar, InkWashTheme.GoldPrimary);
                 }
             }
         }
 
-        // ───────────── Quest Item ─────────────
-
-        private class QuestItem : ContainerControl
+        /// <summary>
+        /// 圆形玩家头像（设计稿 header：朱红圆底 + 金环 + 姓氏字）。
+        /// 先绘制圆形底，再交由基类绘制子控件（姓氏字），保证文字压在圆底之上。
+        /// </summary>
+        private class CircleAvatar : ContainerControl
         {
-            public Label StatusIcon;
-            public Label NameLabel;
-            public Label ProgressLabel;
-            public bool Active;
-            public bool Done;
-            public event Action Clicked;
-
-            public QuestItem(string name, string progress, bool active, bool done)
+            public CircleAvatar(string initial)
             {
-                Active = active;
-                Done = done;
+                BackgroundColor = Color.Transparent;
                 ClipChildren = false;
 
-                string icon = done ? "\u2713" : active ? "\u2605" : "\u25CB";
-                Color iconColor = done ? InkWashTheme.JadePrimary : active ? InkWashTheme.GoldPrimary : InkWashTheme.TextTertiary;
-
-                StatusIcon = new Label
+                new Label
                 {
-                    Text = icon,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
-                    TextColor = iconColor,
+                    Text = initial,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
+                    TextColor = InkWashTheme.PaperBright,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.StretchAll,
+                    Parent = this
+                };
+            }
+
+            public override void Draw()
+            {
+                if (Visible && Width > 0f && Height > 0f)
+                {
+                    var center = new Float2(Width * 0.5f, Height * 0.5f);
+                    float radius = Mathf.Min(Width, Height) * 0.5f - 1f;
+                    InkRenderHelper.FillCircle(center, radius, InkWashTheme.VermilionPrimary);
+                    InkRenderHelper.DrawCircle(center, radius, InkWashTheme.BorderGold, 1f);
+                }
+
+                base.Draw();
+            }
+        }
+
+        /// <summary>
+        /// 任务状态标签（设计稿 .ink-tag / .ink-tag-brand / .quest-tag-done / .ink-tag-vermilion）。
+        /// 进行中=鎏金、未开始=中性、已完成=翡翠（.quest-tag-done）、详情标题=朱红强调。
+        /// </summary>
+        private class QuestTag : Label
+        {
+            private Color _borderColor = InkWashTheme.BorderNeutralL2;
+
+            public QuestTag()
+            {
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f);
+                HorizontalAlignment = TextAlignment.Center;
+                VerticalAlignment = TextAlignment.Center;
+                ApplyStatus("未开始", false);
+            }
+
+            /// <summary>按任务状态刷新标签配色。</summary>
+            public void ApplyStatus(string status, bool highlight)
+            {
+                if (highlight)
+                {
+                    BackgroundColor = WithAlpha(InkWashTheme.VermilionPrimary, 0.12f);
+                    _borderColor = InkWashTheme.BorderVermilion;
+                    TextColor = InkWashTheme.TextVermilion;
+                }
+                else if (status == "已完成")
+                {
+                    BackgroundColor = WithAlpha(InkWashTheme.JadePrimary, 0.12f);
+                    _borderColor = InkWashTheme.BorderJade;
+                    TextColor = InkWashTheme.JadeBright;
+                }
+                else if (status == "进行中")
+                {
+                    BackgroundColor = WithAlpha(InkWashTheme.GoldPrimary, 0.12f);
+                    _borderColor = InkWashTheme.BorderGold;
+                    TextColor = InkWashTheme.TextBrand;
+                }
+                else
+                {
+                    BackgroundColor = InkWashTheme.GoldTrace;
+                    _borderColor = InkWashTheme.BorderNeutralL2;
+                    TextColor = InkWashTheme.TextSecondary;
+                }
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                if (_borderColor.A > 0f && Width > 0f && Height > 0f)
+                {
+                    Render2D.DrawRectangle(new Rectangle(0f, 0f, Width, Height), _borderColor, 1f);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 任务卷宗列表项（设计稿 .quest-item）：
+        /// 任务名 + 等级 + 状态标签 + 细进度条 + 百分比；选中态为金竖线 + 微金底。
+        /// </summary>
+        private class QuestListItem : ContainerControl
+        {
+            public readonly QuestData Quest;
+            public readonly Label NameLabel;
+            public readonly Label LevelLabel;
+            public readonly QuestTag StatusTag;
+            public readonly InkBar ProgressBar;
+            public readonly Label PercentLabel;
+
+            private readonly Panel _selectionAccent;
+
+            public event Action Clicked;
+
+            public QuestListItem(QuestData quest)
+            {
+                Quest = quest;
+                ClipChildren = false;
+                BackgroundColor = WithAlpha(InkWashTheme.BaseTertiary, 0.6f);
+
+                bool done = quest.Status == "已完成";
+
+                _selectionAccent = new Panel
+                {
+                    BackgroundColor = InkWashTheme.GoldPrimary,
+                    Visible = false,
                     Parent = this
                 };
 
                 NameLabel = new Label
                 {
-                    Text = name,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f),
-                    TextColor = active ? InkWashTheme.GoldBright : done ? InkWashTheme.TextTertiary : InkWashTheme.TextDefault,
+                    Text = quest.Name,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
+                    TextColor = done ? InkWashTheme.PaperAged : InkWashTheme.PaperBright,
                     VerticalAlignment = TextAlignment.Center,
                     Parent = this
                 };
 
-                ProgressLabel = new Label
+                LevelLabel = new Label
                 {
-                    Text = progress,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
-                    TextColor = InkWashTheme.TextTertiary,
-                    VerticalAlignment = TextAlignment.Center,
+                    Text = quest.Level,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                    TextColor = InkWashTheme.PaperAged,
                     HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
                     Parent = this
                 };
 
-                if (done)
-                    NameLabel.TextColor = InkWashTheme.TextTertiary;
+                StatusTag = new QuestTag
+                {
+                    Text = quest.Status,
+                    Parent = this
+                };
+                StatusTag.ApplyStatus(quest.Status, false);
+
+                ProgressBar = new InkBar
+                {
+                    Value = Mathf.Clamp(quest.Progress / 100f, 0f, 1f),
+                    FillVariant = done ? InkBarFillVariant.Jade : InkBarFillVariant.Gold,
+                    Parent = this
+                };
+
+                PercentLabel = new Label
+                {
+                    Text = quest.Progress + "%",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
+                    TextColor = done ? InkWashTheme.JadeBright : InkWashTheme.PaperAged,
+                    HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = this
+                };
+            }
+
+            /// <summary>切换选中态（设计稿 .quest-item-selected）。</summary>
+            public void SetSelected(bool selected)
+            {
+                BackgroundColor = selected
+                    ? WithAlpha(InkWashTheme.GoldPrimary, 0.08f)
+                    : WithAlpha(InkWashTheme.BaseTertiary, 0.6f);
+
+                _selectionAccent.Visible = selected;
+
+                LevelLabel.TextColor = selected ? InkWashTheme.GoldBright : InkWashTheme.PaperAged;
+                PercentLabel.TextColor = Quest.Status == "已完成"
+                    ? InkWashTheme.JadeBright
+                    : selected ? InkWashTheme.GoldBright : InkWashTheme.PaperAged;
+            }
+
+            /// <summary>布局内部元素（由页面布局统一调用）。</summary>
+            public void LayoutContent()
+            {
+                _selectionAccent.Location = Float2.Zero;
+                _selectionAccent.Size = new Float2(2f, Height);
+
+                NameLabel.Location = new Float2(16f, 12f);
+                NameLabel.Size = new Float2(Mathf.Max(0f, Width - 160f), 22f);
+
+                LevelLabel.Location = new Float2(Width - 116f, 14f);
+                LevelLabel.Size = new Float2(44f, 18f);
+
+                StatusTag.Location = new Float2(Width - 64f, 12f);
+                StatusTag.Size = new Float2(52f, 22f);
+
+                ProgressBar.Location = new Float2(16f, 52f);
+                ProgressBar.Size = new Float2(Mathf.Max(0f, Width - 104f), 4f);
+
+                PercentLabel.Location = new Float2(Width - 96f, 44f);
+                PercentLabel.Size = new Float2(84f, 18f);
             }
 
             public override bool OnMouseUp(Float2 location, MouseButton button)
             {
-                if (button == MouseButton.Left) Clicked?.Invoke();
+                if (button == MouseButton.Left)
+                    Clicked?.Invoke();
                 return base.OnMouseUp(location, button);
             }
         }
 
-        // ───────────── Objective Row ─────────────
+        /// <summary>
+        /// 圆形勾选标记（设计稿 .quest-check / .quest-check-done / .quest-check-pending）。
+        /// 已完成：翡翠实心圆 + 纸色勾；未完成：中性金细圆环。
+        /// </summary>
+        private class QuestCheckMark : ContainerControl
+        {
+            private readonly bool _done;
 
+            public QuestCheckMark(bool done)
+            {
+                _done = done;
+                BackgroundColor = Color.Transparent;
+                ClipChildren = false;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                if (!Visible || Width <= 0f || Height <= 0f)
+                    return;
+
+                var center = new Float2(Width * 0.5f, Height * 0.5f);
+                float radius = Mathf.Min(Width, Height) * 0.5f - 1f;
+
+                if (_done)
+                {
+                    InkRenderHelper.FillCircle(center, radius, InkWashTheme.JadeDeep);
+                    InkRenderHelper.DrawCircle(center, radius, InkWashTheme.JadeBright, 1f);
+
+                    var p1 = center + new Float2(-radius * 0.42f, 0f);
+                    var p2 = center + new Float2(-radius * 0.10f, radius * 0.40f);
+                    var p3 = center + new Float2(radius * 0.45f, -radius * 0.38f);
+                    Render2D.DrawLine(p1, p2, InkWashTheme.PaperBright, 1.6f);
+                    Render2D.DrawLine(p2, p3, InkWashTheme.PaperBright, 1.6f);
+                }
+                else
+                {
+                    InkRenderHelper.DrawCircle(center, radius, InkWashTheme.BorderNeutralL3, 1f);
+                }
+            }
+        }
+
+        /// <summary>任务目标行（设计稿：圆形勾选 + 目标文案）。</summary>
         private class ObjectiveRow : ContainerControl
         {
-            public Label Icon;
-            public Label Text;
-            public Label Status;
-            public Panel ProgressBar;
-            public Panel ProgressFill;
-            public Label CountLabel;
-
-            public ObjectiveRow(string text, bool done, bool active, int current, int max)
+            public ObjectiveRow(string text, bool done)
             {
                 ClipChildren = false;
 
-                string icon = done ? "\u2713" : active ? "\u25CB" : "\u25CB";
-                Color iconColor = done ? InkWashTheme.JadePrimary : active ? InkWashTheme.GoldPrimary : InkWashTheme.TextTertiary;
-
-                Icon = new Label
+                new QuestCheckMark(done)
                 {
-                    Text = icon,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
-                    TextColor = iconColor,
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
                     Parent = this
                 };
 
-                Text = new Label
+                new Label
                 {
                     Text = text,
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                    TextColor = done ? InkWashTheme.TextTertiary : active ? InkWashTheme.TextDefault : InkWashTheme.TextSecondary,
+                    TextColor = done ? InkWashTheme.PaperAged : InkWashTheme.PaperBright,
                     VerticalAlignment = TextAlignment.Center,
                     Parent = this
                 };
+            }
 
-                if (max > 0)
+            /// <summary>布局内部元素（圆形勾选 + 文案）。</summary>
+            public void LayoutContent()
+            {
+                foreach (var child in Children)
                 {
-                    CountLabel = new Label
+                    if (child is QuestCheckMark)
                     {
-                        Text = $"{current}/{max}",
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
-                        TextColor = InkWashTheme.TextSecondary,
-                        HorizontalAlignment = TextAlignment.Far,
-                        VerticalAlignment = TextAlignment.Center,
-                        Parent = this
-                    };
-
-                    ProgressBar = new Panel
+                        child.Location = new Float2(0f, (Height - 20f) * 0.5f);
+                        child.Size = new Float2(20f, 20f);
+                    }
+                    else if (child is Label)
                     {
-                        BackgroundColor = new Color(InkWashTheme.Void.R, InkWashTheme.Void.G, InkWashTheme.Void.B, 0.5f),
-                        Parent = this
-                    };
-
-                    float pct = max > 0 ? (float)current / max : 0f;
-                    ProgressFill = new Panel
-                    {
-                        BackgroundColor = InkWashTheme.GoldPrimary,
-                        Parent = ProgressBar
-                    };
+                        child.Location = new Float2(32f, 0f);
+                        child.Size = new Float2(Mathf.Max(0f, Width - 32f), Height);
+                    }
                 }
-
-                if (done)
-                    Text.TextColor = InkWashTheme.TextTertiary;
             }
         }
 
-        // ───────────── Reward Card ─────────────
-
+        /// <summary>任务奖励卡（设计稿 .reward-item / .reward-legendary）。</summary>
         private class RewardCard : ContainerControl
         {
-            public Label ValueLabel;
+            private readonly Color _borderColor;
+            private readonly Label _iconLabel;
+            private readonly Label _typeLabel;
+            private readonly Label _valueLabel;
 
-            public RewardCard(string label, string value, Color valueColor)
+            public RewardCard(RewardData reward)
             {
                 ClipChildren = false;
+                BackgroundColor = reward.Legendary
+                    ? WithAlpha(InkWashTheme.VermilionPrimary, 0.06f)
+                    : WithAlpha(InkWashTheme.Abyss, 0.5f);
+                _borderColor = reward.Legendary
+                    ? InkWashTheme.BorderVermilion
+                    : InkWashTheme.BorderNeutralL2;
 
-                var iconPanel = new Panel
+                _iconLabel = new Label
                 {
-                    Size = new Float2(32f, 32f),
-                    BackgroundColor = new Color(valueColor.R, valueColor.G, valueColor.B, 0.15f),
-                    Parent = this
-                };
-
-                new Label
-                {
-                    Text = label == "\u7ECF\u9A8C" ? "\u2728" : label == "\u94F6\u4E24" ? "\uFFE6" : label == "\u88C5\u5907" ? "\u26E8" : "\u2606",
+                    Text = RewardIcon(reward.Label),
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
-                    TextColor = valueColor,
+                    TextColor = reward.IconColor,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.StretchAll,
-                    Parent = iconPanel
-                };
-
-                new Label
-                {
-                    Text = label,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
-                    TextColor = InkWashTheme.TextTertiary,
                     Parent = this
                 };
 
-                ValueLabel = new Label
+                _typeLabel = new Label
                 {
-                    Text = value,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                    TextColor = valueColor,
+                    Text = reward.Label,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    TextColor = InkWashTheme.PaperAged,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = this
+                };
+
+                _valueLabel = new Label
+                {
+                    Text = reward.Value,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                    TextColor = reward.ValueColor,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
                     Parent = this
                 };
             }
+
+            /// <summary>布局内部元素（图标 / 类型 / 数值 三行居中）。</summary>
+            public void LayoutContent()
+            {
+                _iconLabel.Location = new Float2(0f, 10f);
+                _iconLabel.Size = new Float2(Width, 22f);
+
+                _typeLabel.Location = new Float2(0f, 40f);
+                _typeLabel.Size = new Float2(Width, 18f);
+
+                _valueLabel.Location = new Float2(0f, 58f);
+                _valueLabel.Size = new Float2(Width, 20f);
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                if (Width > 0f && Height > 0f)
+                {
+                    Render2D.DrawRectangle(new Rectangle(0f, 0f, Width, Height), _borderColor, 1f);
+                }
+            }
         }
 
-        // ───────────── Constructor ─────────────
+        // ───────────────────────── 构造 ─────────────────────────
 
         public MenuQuestsPage()
         {
-            _screenSize = new Float2(Width, Height);
+            _screenSize = FlaxEngine.Screen.Size;
             if (_screenSize.X <= 0f || _screenSize.Y <= 0f)
                 _screenSize = new Float2(1920f, 1080f);
 
@@ -377,681 +731,1045 @@ namespace HundunWorld.Game.UI.Ink.Pages
             Size = _screenSize;
 
             InitData();
+
             try
             {
-                BuildScrim();
-                BuildMainPanel();
+                BuildAtmosphere();
+                BuildSidebar();
+                BuildMainArea();
+                BuildTopHeader();
+                BuildQuestList();
+                BuildQuestDetail();
+
                 ApplyLayout();
-                SelectQuest(0);
+                SelectTab(0);
+                SelectQuest(_allQuests.Count > DefaultSelectedQuest ? _allQuests[DefaultSelectedQuest] : null);
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[MenuQuestsPage] init: {ex.Message}");
+                FlaxEngine.Debug.LogError($"[MenuQuestsPage] 初始化失败: {ex.Message}");
             }
         }
 
+        /// <summary>设计稿静态数据（任务卷宗 6 项 + 百年恩怨详情）。</summary>
         private void InitData()
         {
+            _visibleQuests = new List<QuestData>();
+            _questItems = new List<QuestListItem>();
+            _detailObjectiveRows = new List<ObjectiveRow>();
+            _detailRewardCards = new List<RewardCard>();
+
             _allQuests = new List<QuestData>
             {
                 new QuestData
                 {
-                    Name = "\u521D\u5165\u6C5F\u6E56", Category = "\u4E3B\u7EBF", Difficulty = "\u666E\u901A",
-                    Location = "\u5F00\u5C01\u57CE", Npc = "\u738B\u94C1\u5320", TimeLimit = "\u65E0\u65F6\u9650",
-                    Level = 1, Description = "\u4F60\u521D\u5230\u5F00\u5C01\u57CE\uFF0C\u542C\u95FB\u57CE\u4E2D\u6709\u4F4D\u9690\u4E16\u9AD8\u4EBA\uFF0C\u8EAB\u6000\u7EDD\u4E16\u6B66\u5B66\u3002\u524D\u5F80\u57CE\u4E2D\u5404\u5904\u63A2\u8BBF\uFF0C\u62DC\u8BBF\u5404\u6D3E\u957F\u8001\uFF0C\u4E86\u89E3\u6B66\u6797\u683C\u5C40\uFF0C\u6216\u53EF\u5BFB\u5F97\u673A\u7F18\u3002\u57CE\u90CA\u5C71\u8D3C\u4E3A\u60A3\uFF0C\u4EA6\u53EF\u501F\u6B64\u78E8\u7EC3\u6B66\u827A\u3002",
-                    ProgressCurrent = 2, ProgressMax = 5,
-                    ObjectiveTexts = new[] { "\u524D\u5F80\u5F00\u5C01\u57CE", "\u4E0ENPC\u5BF9\u8BDD", "\u51FB\u8D25\u5C71\u8D3C" },
-                    ObjectiveDone = new[] { true, false, false },
-                    ObjectiveProgress = new[] { 1, 0, 0 },
-                    ObjectiveMax = new[] { 1, 1, 5 },
+                    Name = "初入江湖", Category = "主线", Status = "进行中", Level = "Lv.1", Progress = 35,
+                    Difficulty = "★☆☆☆☆", Npc = "王铁匠", Region = "洛阳城东", TimeLimit = "无",
+                    Background = "你初入江湖，落脚洛阳城东。老铁匠王铁匠见你面生却筋骨清奇，指点你先去茶馆打探江湖近况，再决定拜入何门何派。城中近日山贼出没，也是磨炼身手的好去处。",
+                    Objectives = new[] { "前往洛阳城东茶馆，打探江湖近况", "与老铁匠王铁匠交谈", "击败城外山贼 ×5" },
+                    ObjectiveDone = new[] { true, true, false },
                     Rewards = new[]
                     {
-                        new RewardData { Label = "\u7ECF\u9A8C", Value = "+5000", ValueColor = InkWashTheme.JadeBright },
-                        new RewardData { Label = "\u94F6\u4E24", Value = "+200", ValueColor = InkWashTheme.GoldBright },
-                        new RewardData { Label = "\u88C5\u5907", Value = "\u7CBE\u94C1\u62A4\u8155", ValueColor = InkWashTheme.QualityUncommon },
+                        new RewardData { Label = "经验", Value = "5,000", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.GoldPrimary },
+                        new RewardData { Label = "铜钱", Value = "200", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.PaperAged },
+                        new RewardData { Label = "道具", Value = "行囊布包×1", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.JadeBright }
                     }
                 },
                 new QuestData
                 {
-                    Name = "\u62DC\u5E08\u5B66\u827A", Category = "\u4E3B\u7EBF", Difficulty = "\u666E\u901A",
-                    Location = "\u5C11\u6797\u5BFA", Npc = "\u65B9\u4E08", TimeLimit = "\u65E0\u65F6\u9650",
-                    Level = 1, Description = "\u524D\u5F80\u5C11\u6797\u5BFA\u62DC\u8BBF\u65B9\u4E08\uFF0C\u5B66\u4E60\u6B66\u529F\u57FA\u7840\u3002",
-                    ProgressCurrent = 0, ProgressMax = 3,
-                    ObjectiveTexts = new[] { "\u524D\u5F80\u5C11\u6797\u5BFA", "\u62DC\u89C1\u65B9\u4E08", "\u5B66\u4E60\u57FA\u7840\u62F3\u6CD5" },
+                    Name = "逍遥秘境", Category = "主线", Status = "进行中", Level = "Lv.15", Progress = 50,
+                    Difficulty = "★★★☆☆", Npc = "逍遥派掌门", Region = "逍遥谷", TimeLimit = "无",
+                    Background = "逍遥谷深处藏有一处秘境，传闻其中有前人留下的武学残卷。掌门命你携令牌入内探查，秘境之中机关重重，需步步为营。",
+                    Objectives = new[] { "前往逍遥谷入口", "破解秘境机关", "取得武学残卷" },
+                    ObjectiveDone = new[] { true, false, false },
+                    Rewards = new[]
+                    {
+                        new RewardData { Label = "经验", Value = "8,000", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.GoldPrimary },
+                        new RewardData { Label = "铜钱", Value = "300", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.PaperAged },
+                        new RewardData { Label = "装备", Value = "逍遥玉佩", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.VermilionBright }
+                    }
+                },
+                new QuestData
+                {
+                    Name = "武林盟主", Category = "主线", Status = "未开始", Level = "Lv.40", Progress = 0,
+                    Difficulty = "★★★★★", Npc = "武林盟长老", Region = "嵩山之巅", TimeLimit = "无",
+                    Background = "武林大会将启，各路豪杰齐聚嵩山。盟主之位空缺已久，唯有技压群雄者方可登顶。你若有意，需先取得三位长老的举荐。",
+                    Objectives = new[] { "取得三位长老的举荐", "在武林大会上连胜三场", "登上嵩山之巅接受盟主印" },
                     ObjectiveDone = new[] { false, false, false },
-                    ObjectiveProgress = new[] { 0, 0, 0 },
-                    ObjectiveMax = new[] { 1, 1, 1 },
                     Rewards = new[]
                     {
-                        new RewardData { Label = "\u7ECF\u9A8C", Value = "+2000", ValueColor = InkWashTheme.JadeBright },
-                        new RewardData { Label = "\u94F6\u4E24", Value = "+100", ValueColor = InkWashTheme.GoldBright },
+                        new RewardData { Label = "经验", Value = "30,000", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.GoldPrimary },
+                        new RewardData { Label = "铜钱", Value = "2,000", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.PaperAged },
+                        new RewardData { Label = "装备", Value = "盟主印", ValueColor = InkWashTheme.VermilionBright, IconColor = InkWashTheme.VermilionBright, Legendary = true }
                     }
                 },
                 new QuestData
                 {
-                    Name = "\u6C5F\u6E56\u521D\u63A2", Category = "\u4E3B\u7EBF", Difficulty = "\u666E\u901A",
-                    Location = "\u6D66\u6C5F\u9547", Npc = "\u9152\u5E97\u8001\u677F", TimeLimit = "\u65E0\u65F6\u9650",
-                    Level = 1, Description = "\u6D66\u6C5F\u9547\u9152\u5E97\u8001\u677F\u6709\u4E9B\u6D88\u606F\u8981\u544A\u8BC9\u4F60\u3002",
-                    ProgressCurrent = 0, ProgressMax = 2,
-                    ObjectiveTexts = new[] { "\u524D\u5F80\u6D66\u6C5F\u9547\u9152\u5E97", "\u4E0E\u9152\u5E97\u8001\u677F\u8C08\u8BDD" },
-                    ObjectiveDone = new[] { false, false },
-                    ObjectiveProgress = new[] { 0, 0 },
-                    ObjectiveMax = new[] { 1, 1 },
+                    Name = "天山雪莲", Category = "主线", Status = "进行中", Level = "Lv.35", Progress = 75,
+                    Difficulty = "★★★★☆", Npc = "药王谷医者", Region = "天山 · 冰崖", TimeLimit = "无",
+                    Background = "药王谷医者所配的解毒方尚缺一味天山雪莲。雪莲生于天山冰崖绝壁之上，采之须趁日出前的瞬息，迟则冰化花谢。",
+                    Objectives = new[] { "前往天山冰崖", "在日出前寻得雪莲", "护送雪莲返回药王谷" },
+                    ObjectiveDone = new[] { true, true, false },
                     Rewards = new[]
                     {
-                        new RewardData { Label = "\u7ECF\u9A8C", Value = "+1000", ValueColor = InkWashTheme.JadeBright },
+                        new RewardData { Label = "经验", Value = "18,000", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.GoldPrimary },
+                        new RewardData { Label = "铜钱", Value = "1,200", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.PaperAged },
+                        new RewardData { Label = "道具", Value = "天山雪莲×1", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.JadeBright }
                     }
                 },
                 new QuestData
                 {
-                    Name = "\u5BFB\u4EBA\u542F\u4E8B", Category = "\u652F\u7EBF", Difficulty = "\u666E\u901A",
-                    Location = "\u6D66\u6C5F\u9547", Npc = "\u5C0F\u5B69", TimeLimit = "\u65E0\u65F6\u9650",
-                    Level = 5, Description = "\u5C0F\u5B69\u7684\u7236\u4EB2\u5931\u8E2A\u591A\u65E5\uFF0C\u5E0C\u671B\u4F60\u80FD\u5E2E\u5FD9\u5BFB\u627E\u3002",
-                    ProgressCurrent = 1, ProgressMax = 3,
-                    ObjectiveTexts = new[] { "\u8BE2\u95EE\u8857\u574A", "\u524D\u5F80\u5C71\u4E2D\u5BFB\u627E", "\u8FD4\u56DE\u6D66\u6C5F\u9547" },
-                    ObjectiveDone = new[] { true, false, false },
-                    ObjectiveProgress = new[] { 1, 0, 0 },
-                    ObjectiveMax = new[] { 1, 1, 1 },
-                    Rewards = new[]
-                    {
-                        new RewardData { Label = "\u7ECF\u9A8C", Value = "+3000", ValueColor = InkWashTheme.JadeBright },
-                        new RewardData { Label = "\u94F6\u4E24", Value = "+150", ValueColor = InkWashTheme.GoldBright },
-                    }
-                },
-                new QuestData
-                {
-                    Name = "\u91C7\u96C6\u836F\u6750", Category = "\u652F\u7EBF", Difficulty = "\u666E\u901A",
-                    Location = "\u9752\u5C71", Npc = "\u91C7\u836F\u4EBA", TimeLimit = "\u65E0\u65F6\u9650",
-                    Level = 3, Description = "\u5E2E\u52A9\u91C7\u836F\u4EBA\u91C7\u96C6\u836F\u6750\u3002",
-                    ProgressCurrent = 3, ProgressMax = 3,
-                    ObjectiveTexts = new[] { "\u91C7\u96C6\u7D2B\u8349", "\u91C7\u96C6\u767D\u8349", "\u91C7\u96C6\u9EC4\u8349" },
+                    Name = "暗影追踪", Category = "主线", Status = "已完成", Level = "Lv.28", Progress = 100,
+                    Difficulty = "★★★☆☆", Npc = "六扇门捕头", Region = "洛阳城东 · 漕渠", TimeLimit = "无",
+                    Background = "漕渠沿岸接连失踪数名商旅，六扇门查无头绪。你沿暗影一路追踪，终于在废弃盐仓中揭出主谋，将这桩悬案了结。",
+                    Objectives = new[] { "调查漕渠失踪案", "追踪黑衣人踪迹", "在盐仓中擒下主谋" },
                     ObjectiveDone = new[] { true, true, true },
-                    ObjectiveProgress = new[] { 1, 1, 1 },
-                    ObjectiveMax = new[] { 1, 1, 1 },
                     Rewards = new[]
                     {
-                        new RewardData { Label = "\u7ECF\u9A8C", Value = "+1500", ValueColor = InkWashTheme.JadeBright },
-                        new RewardData { Label = "\u94F6\u4E24", Value = "+80", ValueColor = InkWashTheme.GoldBright },
+                        new RewardData { Label = "经验", Value = "15,000", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.GoldPrimary },
+                        new RewardData { Label = "铜钱", Value = "900", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.PaperAged },
+                        new RewardData { Label = "装备", Value = "影踪短刃", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.VermilionBright }
                     }
                 },
                 new QuestData
                 {
-                    Name = "\u6BCF\u65E5\u4FEE\u884C", Category = "\u65E5\u5E38", Difficulty = "\u666E\u901A",
-                    Location = "\u5404\u5730", Npc = "\u65E0", TimeLimit = "\u4ECA\u65E5",
-                    Level = 1, Description = "\u6BCF\u65E5\u4FEE\u884C\u4EFB\u52A1\uFF0C\u5B8C\u6210\u540E\u83B7\u5F97\u5927\u91CF\u7ECF\u9A8C\u3002",
-                    ProgressCurrent = 3, ProgressMax = 5,
-                    ObjectiveTexts = new[] { "\u51FB\u8D25\u602A\u7269 x3", "\u91C7\u96C6\u8D44\u6E90 x2" },
-                    ObjectiveDone = new[] { true, false },
-                    ObjectiveProgress = new[] { 3, 0 },
-                    ObjectiveMax = new[] { 3, 2 },
+                    Name = "百年恩怨", Category = "主线", Status = "进行中", Level = "Lv.42", Progress = 80,
+                    Difficulty = "★★★★★", Npc = "李沧海", Region = "洛阳城东 · 太行山巅", TimeLimit = "无",
+                    Background = "百年前，江湖中一场惊天动地的恩怨纠葛埋下祸根。如今你无意间得到一封泛黄的血书，揭开了一段尘封已久的往事。李沧海老人在洛阳城东的茶馆中苦苦等待有缘人，他将告诉你一段关于师门血仇的真相。太行山巅风雪依旧，仇敌赵无极盘踞已久，而你将成为这段百年恩怨的终结者。",
+                    Objectives = new[]
+                    {
+                        "前往洛阳城东茶馆，寻找老者李沧海",
+                        "聆听血书往事，了解百年前师门恩怨",
+                        "前往太行山巅，击败仇敌赵无极"
+                    },
+                    ObjectiveDone = new[] { true, true, false },
                     Rewards = new[]
                     {
-                        new RewardData { Label = "\u7ECF\u9A8C", Value = "+8000", ValueColor = InkWashTheme.JadeBright },
-                        new RewardData { Label = "\u94F6\u4E24", Value = "+500", ValueColor = InkWashTheme.GoldBright },
+                        new RewardData { Label = "经验", Value = "12,000", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.GoldPrimary },
+                        new RewardData { Label = "铜钱", Value = "5,000", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.PaperAged },
+                        new RewardData { Label = "装备", Value = "沧海剑", ValueColor = InkWashTheme.VermilionBright, IconColor = InkWashTheme.VermilionBright, Legendary = true },
+                        new RewardData { Label = "道具", Value = "血书残页×3", ValueColor = InkWashTheme.PaperBright, IconColor = InkWashTheme.JadeBright }
                     }
-                },
-                new QuestData
-                {
-                    Name = "\u95E8\u6D3E\u8BD5\u70BC", Category = "\u5468\u5E38", Difficulty = "\u56F0\u96BE",
-                    Location = "\u95E8\u6D3E\u5927\u6BBF", Npc = "\u95E8\u6D3E\u957F\u8001", TimeLimit = "\u672C\u5468",
-                    Level = 10, Description = "\u95E8\u6D3E\u8BD5\u70BC\uFF0C\u5C55\u793A\u4F60\u7684\u5B9E\u529B\u3002",
-                    ProgressCurrent = 0, ProgressMax = 1,
-                    ObjectiveTexts = new[] { "\u901A\u8FC7\u95E8\u6D3E\u8BD5\u70BC" },
-                    ObjectiveDone = new[] { false },
-                    ObjectiveProgress = new[] { 0 },
-                    ObjectiveMax = new[] { 1 },
-                    Rewards = new[]
-                    {
-                        new RewardData { Label = "\u7ECF\u9A8C", Value = "+15000", ValueColor = InkWashTheme.JadeBright },
-                        new RewardData { Label = "\u94F6\u4E24", Value = "+1000", ValueColor = InkWashTheme.GoldBright },
-                        new RewardData { Label = "\u88C5\u5907", Value = "\u7384\u94C1\u5251", ValueColor = InkWashTheme.QualityEpic },
-                    }
-                },
+                }
             };
         }
 
-        // ───────────── Build ─────────────
+        // ───────────────────────── 构建 ─────────────────────────
 
-        private void BuildScrim()
+        /// <summary>深墨底 + 暗角晕影（设计稿 .quest-bg-layer / .ink-vignette）。</summary>
+        private void BuildAtmosphere()
         {
-            _scrim = new Panel
+            _backgroundLayer = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                BackgroundColor = new Color(InkWashTheme.Void.R, InkWashTheme.Void.G, InkWashTheme.Void.B, 0.88f),
+                BackgroundColor = InkWashTheme.BaseDefault,
+                Parent = this
+            };
+
+            _vignette = new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                BackgroundColor = WithAlpha(InkWashTheme.Abyss, 0.4f),
                 Parent = this
             };
         }
 
-        private void BuildMainPanel()
+        /// <summary>左侧 240px 导航栏：竖排「任务」+ 三组导航项。</summary>
+        private void BuildSidebar()
         {
-            // Header
-            _header = new Panel
+            _sidebar = new Panel
             {
-                BackgroundColor = new Color(InkWashTheme.Void.R, InkWashTheme.Void.G, InkWashTheme.Void.B, 0.4f),
+                BackgroundColor = InkWashTheme.BaseTertiary,
                 Parent = this
             };
 
-            _title = new Label
+            _sidebarTitleBlock = new Panel
             {
-                Text = "\u4EFB\u52A1\u65E5\u5FD7",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
-                TextColor = InkWashTheme.GoldPrimary,
-                Parent = _header
+                BackgroundColor = Color.Transparent,
+                Parent = _sidebar
             };
 
-            _subtitle = new Label
+            _sidebarTitle = new InkVerticalTitle
             {
-                Text = "QUEST LOG",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = InkWashTheme.TextTertiary,
-                Parent = _header
+                Text = "任务",
+                FontSize = 28f,
+                Parent = _sidebarTitleBlock
             };
 
-            _closeBtn = new InkButton
+            _sidebarNavPanel = new Panel
             {
-                Text = "\u2715",
-                ButtonSize = InkButtonSize.Sm,
-                Variant = InkButtonVariant.Ghost,
-                Parent = _header
+                BackgroundColor = Color.Transparent,
+                Parent = _sidebar
             };
-            _closeBtn.Clicked += () => NavigationRequested?.Invoke("back-hud");
 
-            // Tabs
-            _tabs = new List<InkButton>();
-            _tabBadges = new List<Label>();
-            string[] tabNames = { "\u4E3B\u7EBF", "\u652F\u7EBF", "\u65E5\u5E38", "\u5468\u5E38", "\u6D3B\u52A8" };
-            int[] tabCounts = { 3, 2, 1, 1, 0 };
-            for (int i = 0; i < tabNames.Length; i++)
+            _navButtons = new List<TextRowButton>();
+            _navRows = new List<Control>();
+
+            for (int i = 0; i < NavNames.Length; i++)
             {
-                int ci = i;
-                var tab = new InkButton
+                foreach (int dividerIndex in NavDividerBefore)
                 {
-                    Text = tabNames[i],
-                    ButtonSize = InkButtonSize.Sm,
-                    Variant = InkButtonVariant.Ghost,
-                    Parent = _header
-                };
-                tab.Clicked += () => SelectTab(ci);
-                _tabs.Add(tab);
+                    if (dividerIndex == i)
+                        _navRows.Add(new InkDivider { Parent = _sidebarNavPanel });
+                }
 
-                var badge = new Label
+                bool disabled = string.IsNullOrEmpty(NavTargets[i]);
+                bool active = i == NavActiveIndex;
+
+                var navButton = new TextRowButton(
+                    NavNames[i],
+                    24f,
+                    InkWashTheme.FontRole.Heading,
+                    15f,
+                    false)
                 {
-                    Text = tabCounts[i].ToString(),
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 10f),
-                    TextColor = tabCounts[i] > 0 ? InkWashTheme.GoldBright : InkWashTheme.TextTertiary,
-                    BackgroundColor = tabCounts[i] > 0
-                        ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.2f)
-                        : new Color(InkWashTheme.Void.R, InkWashTheme.Void.G, InkWashTheme.Void.B, 0.5f),
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                    Parent = _header
+                    Active = active,
+                    Parent = _sidebarNavPanel
                 };
-                _tabBadges.Add(badge);
+
+                if (disabled)
+                {
+                    // 设计稿 .nav-item-disabled：不可点击（aria-disabled）
+                    navButton.SetDisabled();
+                }
+                else if (!active)
+                {
+                    string target = NavTargets[i];
+                    navButton.Clicked += () => NavigationRequested?.Invoke(target);
+                }
+
+                _navButtons.Add(navButton);
+                _navRows.Add(navButton);
             }
-            SelectTab(0);
+        }
 
-            // Body
-            _body = new Panel
+        /// <summary>右侧主区域容器（顶部信息栏 + 内容区）。</summary>
+        private void BuildMainArea()
+        {
+            _mainArea = new Panel
             {
                 BackgroundColor = Color.Transparent,
                 Parent = this
             };
+        }
 
-            // Left: Quest list
-            _questListPanel = new Panel
+        /// <summary>顶部 60px 角色信息栏：头像 / 名字 / 等级 / 门派 / 铜钱 / 银两。</summary>
+        private void BuildTopHeader()
+        {
+            _topHeader = new Panel
             {
-                BackgroundColor = new Color(InkWashTheme.Panel.R, InkWashTheme.Panel.G, InkWashTheme.Panel.B, 0.92f),
-                ClipChildren = true,
-                Parent = _body
+                BackgroundColor = InkWashTheme.BaseTertiary,
+                Parent = _mainArea
             };
 
-            BuildQuestGroups();
-
-            // Bottom progress
-            _bottomPanel = new Panel
+            _playerAvatar = new CircleAvatar("无")
             {
-                BackgroundColor = new Color(InkWashTheme.Void.R, InkWashTheme.Void.G, InkWashTheme.Void.B, 0.5f),
-                Parent = _questListPanel
+                Parent = _topHeader
             };
 
-            new Label
+            _playerNameLabel = new Label
             {
-                Text = "\u603B\u8FDB\u5EA6",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 12f),
-                TextColor = InkWashTheme.TextSecondary,
-                Parent = _bottomPanel
+                Text = "无名侠",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
+                TextColor = InkWashTheme.PaperBright,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _topHeader
             };
 
-            _totalProgressLabel = new Label
+            _playerLevelTag = new InkTag
             {
-                Text = "8/24",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 15f),
+                Text = "Lv.42",
+                TagVariant = InkTagVariant.Vermilion,
+                Parent = _topHeader
+            };
+
+            _playerSectLabel = new Label
+            {
+                Text = "逍遥派",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.GoldPrimary,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _topHeader
+            };
+
+            _copperTitleLabel = new Label
+            {
+                Text = "铜钱",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.PaperAged,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _topHeader
+            };
+
+            _copperValueLabel = new Label
+            {
+                Text = "8,320",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                TextColor = InkWashTheme.PaperBright,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _topHeader
+            };
+
+            _silverTitleLabel = new Label
+            {
+                Text = "银两",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.PaperAged,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _topHeader
+            };
+
+            _silverValueLabel = new Label
+            {
+                Text = "328",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                TextColor = InkWashTheme.GoldBright,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _topHeader
+            };
+        }
+
+        /// <summary>左侧任务卷宗：标题 + 计数 + 标签页 + 可滚动任务列表。</summary>
+        private void BuildQuestList()
+        {
+            _listSection = new Panel
+            {
+                BackgroundColor = InkWashTheme.BaseSecondary,
+                ClipChildren = true,
+                Parent = _mainArea
+            };
+
+            _listTitleLabel = new Label
+            {
+                Text = "任务卷宗",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
+                TextColor = InkWashTheme.GoldPrimary,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _listSection
+            };
+
+            _listCountLabel = new Label
+            {
+                Text = "6 项",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
+                TextColor = InkWashTheme.PaperAged,
                 HorizontalAlignment = TextAlignment.Far,
-                Parent = _bottomPanel
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _listSection
             };
 
-            _totalProgressBar = new Panel
+            _tabBar = new Panel
             {
-                BackgroundColor = new Color(InkWashTheme.Void.R, InkWashTheme.Void.G, InkWashTheme.Void.B, 0.5f),
-                Parent = _bottomPanel
+                BackgroundColor = InkWashTheme.BaseDefault,
+                Parent = _listSection
             };
 
-            _totalProgressFill = new Panel
+            _tabs = new List<TextRowButton>();
+            for (int i = 0; i < TabNames.Length; i++)
             {
-                BackgroundColor = InkWashTheme.GoldPrimary,
-                Parent = _totalProgressBar
-            };
+                int tabIndex = i;
+                var tab = new TextRowButton(TabNames[i], 0f, InkWashTheme.FontRole.Body, 13f, true)
+                {
+                    Parent = _tabBar
+                };
+                tab.Clicked += () => SelectTab(tabIndex);
+                _tabs.Add(tab);
+            }
 
-            // Right: Quest detail
-            _questDetailPanel = new Panel
+            _listScroll = new Panel
             {
-                BackgroundColor = new Color(InkWashTheme.Abyss.R, InkWashTheme.Abyss.G, InkWashTheme.Abyss.B, 0.4f),
+                BackgroundColor = Color.Transparent,
                 ClipChildren = true,
-                Parent = _body
+                ScrollBars = ScrollBars.Vertical,
+                Parent = _listSection
             };
 
-            _detailTitle = new Label
+            _listContent = new Panel
             {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 28f),
-                TextColor = InkWashTheme.GoldPrimary,
-                Parent = _questDetailPanel
+                BackgroundColor = Color.Transparent,
+                Parent = _listScroll
             };
 
-            _detailCategoryTag = new InkButton
+            _listEmptyHint = new Label
             {
-                ButtonSize = InkButtonSize.Sm,
-                Variant = InkButtonVariant.Ghost,
-                Parent = _questDetailPanel
+                Text = "暂无任务记录",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.TextTertiary,
+                Visible = false,
+                Parent = _listContent
             };
+        }
 
-            _detailDifficultyTag = new InkButton
+        /// <summary>右侧任务详情：标题/状态/元信息/背景/目标/奖励/委托人/操作按钮。</summary>
+        private void BuildQuestDetail()
+        {
+            _detailSection = new Panel
             {
-                ButtonSize = InkButtonSize.Sm,
-                Variant = InkButtonVariant.Ghost,
-                Parent = _questDetailPanel
+                BackgroundColor = WithAlpha(InkWashTheme.Abyss, 0.4f),
+                ClipChildren = true,
+                Parent = _mainArea
             };
 
-            _detailLocation = new Label
+            _detailScroll = new Panel
             {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = InkWashTheme.TextSecondary,
-                Parent = _questDetailPanel
+                BackgroundColor = Color.Transparent,
+                ClipChildren = true,
+                ScrollBars = ScrollBars.Vertical,
+                Parent = _detailSection
             };
 
-            _detailNpc = new Label
+            _detailContent = new Panel
             {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = InkWashTheme.TextSecondary,
-                Parent = _questDetailPanel
+                BackgroundColor = Color.Transparent,
+                Parent = _detailScroll
             };
 
-            _detailTimeLimit = new Label
+            _detailTitleLabel = new Label
             {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = InkWashTheme.TextSecondary,
-                Parent = _questDetailPanel
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 32f),
+                TextColor = InkWashTheme.TextBrand,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _detailContent
             };
 
-            // Description (ink paper scroll)
-            _detailDescriptionPanel = new InkPaperPanel
+            _detailStatusTag = new QuestTag { Parent = _detailContent };
+
+            // 元信息行：推荐等级 / 难度 / 类型
+            _detailLevelPrefix = CreateDetailMetaLabel("推荐等级：", InkWashTheme.PaperAged, false);
+            _detailLevelValue = CreateDetailMetaLabel("Lv.42", InkWashTheme.PaperBright, true);
+            _detailDifficultyPrefix = CreateDetailMetaLabel("难度：", InkWashTheme.PaperAged, false);
+            _detailDifficultyValue = CreateDetailMetaLabel("★★★★★", InkWashTheme.GoldBright, false);
+            _detailTypePrefix = CreateDetailMetaLabel("类型：", InkWashTheme.PaperAged, false);
+            _detailTypeValue = CreateDetailMetaLabel("主线", InkWashTheme.PaperBright, false);
+
+            _detailDividerMeta = CreateDetailDivider();
+
+            // 任务背景（纸色卷轴）
+            _detailBackgroundPanel = new InkPaperPanel { Parent = _detailContent };
+            _detailBackgroundTitle = new Label
             {
-                Parent = _questDetailPanel
+                Text = "任务背景",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 16f),
+                TextColor = InkWashTheme.TextOnPaper,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _detailBackgroundPanel
             };
-
-            _detailDescription = new Label
+            _detailBackgroundText = new Label
             {
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.TextOnPaper,
-                Parent = _detailDescriptionPanel
+                Wrapping = TextWrapping.WrapWords,
+                Parent = _detailBackgroundPanel
             };
 
-            // Objectives
+            _detailDividerBackground = CreateDetailDivider();
+
+            // 任务目标
             _detailObjectiveTitle = new Label
             {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                Text = "任务目标",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 16f),
                 TextColor = InkWashTheme.GoldPrimary,
-                Parent = _questDetailPanel
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _detailContent
             };
 
-            _detailObjectives = new List<ObjectiveRow>();
+            _detailDividerObjective = CreateDetailDivider();
 
-            // Rewards
+            // 任务奖励
             _detailRewardTitle = new Label
             {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                Text = "任务奖励",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 16f),
                 TextColor = InkWashTheme.GoldPrimary,
-                Parent = _questDetailPanel
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _detailContent
             };
 
-            _detailRewardsPanel = new Panel
-            {
-                BackgroundColor = new Color(InkWashTheme.Panel.R, InkWashTheme.Panel.G, InkWashTheme.Panel.B, 0.6f),
-                Parent = _questDetailPanel
-            };
+            _detailDividerReward = CreateDetailDivider();
 
-            _detailRewardCards = new List<RewardCard>();
+            // 委托人 / 区域 / 时限
+            _detailNpcPrefix = CreateDetailMetaLabel("委托人：", InkWashTheme.PaperAged, false);
+            _detailNpcValue = CreateDetailMetaLabel("李沧海", InkWashTheme.PaperBright, false);
+            _detailRegionPrefix = CreateDetailMetaLabel("区域：", InkWashTheme.PaperAged, false);
+            _detailRegionValue = CreateDetailMetaLabel("洛阳城东 · 太行山巅", InkWashTheme.PaperBright, false);
+            _detailTimePrefix = CreateDetailMetaLabel("时限：", InkWashTheme.PaperAged, false);
+            _detailTimeValue = CreateDetailMetaLabel("无", InkWashTheme.PaperBright, false);
 
-            // Action buttons
-            _abandonBtn = new InkButton
-            {
-                Text = "\u653E\u5F03\u4EFB\u52A1",
-                ButtonSize = InkButtonSize.Sm,
-                Variant = InkButtonVariant.Ghost,
-                Parent = _questDetailPanel
-            };
+            _detailDividerInfo = CreateDetailDivider();
 
+            // 操作按钮（设计稿：追踪任务=朱红主操作，放弃/分享=幽灵）
             _trackBtn = new InkButton
             {
-                Text = "\u53D6\u6D88\u8FFD\u8E2A",
-                ButtonSize = InkButtonSize.Sm,
-                Variant = InkButtonVariant.Primary,
-                Parent = _questDetailPanel
+                Text = "追踪任务",
+                Variant = InkButtonVariant.Vermilion,
+                ButtonSize = InkButtonSize.Md,
+                Parent = _detailContent
             };
+            _trackBtn.Clicked += OnTrackClicked;
 
-            _detailLevelInfo = new Label
+            _abandonBtn = new InkButton
+            {
+                Text = "放弃任务",
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Md,
+                Parent = _detailContent
+            };
+            _abandonBtn.Clicked += OnAbandonClicked;
+
+            _shareBtn = new InkButton
+            {
+                Text = "分享",
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Md,
+                Parent = _detailContent
+            };
+            _shareBtn.Clicked += OnShareClicked;
+
+            _actionHintLabel = new Label
             {
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
-                HorizontalAlignment = TextAlignment.Far,
-                Parent = _questDetailPanel
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _detailContent
             };
         }
 
-        private void BuildQuestGroups()
+        /// <summary>创建详情面板的元信息标签（统一字体与对齐）。</summary>
+        private Label CreateDetailMetaLabel(string text, Color color, bool numberFont)
         {
-            _questGroups = new List<QuestGroup>();
-
-            string[][] groupDefs = {
-                new[] { "\u4E3B\u7EBF\u4EFB\u52A1", "3" },
-                new[] { "\u652F\u7EBF\u4EFB\u52A1", "2" },
-                new[] { "\u65E5\u5E38\u4EFB\u52A1", "1" },
-                new[] { "\u5468\u5E38\u4EFB\u52A1", "1" },
+            return new Label
+            {
+                Text = text,
+                Font = InkRenderHelper.GetFontRef(
+                    numberFont ? InkWashTheme.FontRole.Number : InkWashTheme.FontRole.Body, 13f),
+                TextColor = color,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _detailContent
             };
-
-            for (int gi = 0; gi < groupDefs.Length; gi++)
-            {
-                var g = new QuestGroup(groupDefs[gi][0], int.Parse(groupDefs[gi][1]))
-                {
-                    Parent = _questListPanel
-                };
-                _questGroups.Add(g);
-            }
-
-            // Populate quest items
-            foreach (var q in _allQuests)
-            {
-                string cat = q.Category;
-                int groupIdx = cat == "\u4E3B\u7EBF" ? 0 : cat == "\u652F\u7EBF" ? 1 : cat == "\u65E5\u5E38" ? 2 : 3;
-                if (groupIdx < _questGroups.Count)
-                {
-                    bool active = q.Status == "\u8FDB\u884C\u4E2D";
-                    bool done = q.Status == "\u5DF2\u5B8C\u6210";
-                    string progress = done ? "\u5DF2\u5B8C\u6210" : active ? $"\u8FDB\u884C\u4E2D \u00B7 {q.ProgressCurrent}/{q.ProgressMax}" : "\u672A\u5F00\u59CB";
-                    var item = new QuestItem(q.Name, progress, active, done)
-                    {
-                        Parent = _questGroups[groupIdx]._bodyPanel
-                    };
-                    int qi = _allQuests.IndexOf(q);
-                    item.Clicked += () => SelectQuest(qi);
-                    _questGroups[groupIdx].Items.Add(item);
-                }
-            }
         }
 
-        private void SelectTab(int idx)
+        /// <summary>创建详情面板的分组分隔线（设计稿 &lt;hr class="ink-divider"&gt;）。</summary>
+        private InkDivider CreateDetailDivider()
         {
-            _selectedTab = idx;
+            return new InkDivider { Parent = _detailContent };
+        }
+
+        // ───────────────────────── 交互 ─────────────────────────
+
+        /// <summary>切换标签页并刷新卷宗列表（设计稿 .quest-tab-active）。</summary>
+        private void SelectTab(int index)
+        {
+            _selectedTab = Mathf.Clamp(index, 0, TabNames.Length - 1);
+
             for (int i = 0; i < _tabs.Count; i++)
             {
-                _tabs[i].TextColor = i == idx ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary;
+                bool active = i == _selectedTab;
+                _tabs[i].SetFont(
+                    active ? InkWashTheme.FontRole.Heading : InkWashTheme.FontRole.Body, 13f);
+                _tabs[i].Active = active;
             }
+
+            RefreshQuestList();
         }
 
-        private void SelectQuest(int index)
+        /// <summary>按当前标签页重建卷宗列表，并同步计数与选中态。</summary>
+        private void RefreshQuestList()
         {
-            if (index < 0 || index >= _allQuests.Count) return;
-            _selectedQuest = index;
-            var q = _allQuests[index];
+            if (_questItems == null || _detailContent == null)
+                return;
 
-            // Update list item selection
-            foreach (var group in _questGroups)
+            foreach (var item in _questItems)
+                item.Dispose();
+            _questItems.Clear();
+
+            _visibleQuests.Clear();
+            string category = TabNames[_selectedTab];
+            foreach (var quest in _allQuests)
             {
-                foreach (var item in group.Items)
-                {
-                    item.BackgroundColor = Color.Transparent;
-                }
-            }
-            // Find and highlight the selected item
-            int itemIdx = 0;
-            foreach (var group in _questGroups)
-            {
-                foreach (var item in group.Items)
-                {
-                    if (itemIdx == index)
-                    {
-                        item.BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.08f);
-                    }
-                    itemIdx++;
-                }
+                if (quest.Category == category)
+                    _visibleQuests.Add(quest);
             }
 
-            // Update detail
-            _detailTitle.Text = q.Name;
+            _listCountLabel.Text = _visibleQuests.Count + " 项";
+            _listEmptyHint.Visible = _visibleQuests.Count == 0;
 
-            _detailCategoryTag.Text = q.Category;
-            _detailDifficultyTag.Text = q.Difficulty;
-
-            _detailLocation.Text = q.Location;
-            _detailNpc.Text = q.Npc;
-            _detailTimeLimit.Text = q.TimeLimit;
-
-            _detailDescription.Text = q.Description;
-
-            // Rebuild objectives
-            foreach (var obj in _detailObjectives)
-                obj.Dispose();
-            _detailObjectives.Clear();
-
-            for (int i = 0; i < q.ObjectiveTexts.Length; i++)
+            foreach (var quest in _visibleQuests)
             {
-                bool done = q.ObjectiveDone[i];
-                bool active = !done && q.ObjectiveMax[i] > 0;
-                var row = new ObjectiveRow(q.ObjectiveTexts[i], done, active, q.ObjectiveProgress[i], q.ObjectiveMax[i])
+                var item = new QuestListItem(quest)
                 {
-                    Parent = _questDetailPanel
+                    Parent = _listContent
                 };
-                _detailObjectives.Add(row);
+                item.Clicked += () => SelectQuest(quest);
+                _questItems.Add(item);
             }
 
-            // Rebuild rewards
+            if (_visibleQuests.Count > 0 && (_selectedQuest == null || !_visibleQuests.Contains(_selectedQuest)))
+                _selectedQuest = _visibleQuests[0];
+
+            ApplyLayout();
+            UpdateSelectionVisuals();
+            UpdateQuestDetail();
+        }
+
+        /// <summary>选中任务：刷新列表选中态与右侧详情。</summary>
+        private void SelectQuest(QuestData quest)
+        {
+            if (quest != null)
+            {
+                _selectedQuest = quest;
+                _abandonBtn.Text = "放弃任务";
+                _abandonBtn.Variant = InkButtonVariant.Ghost;
+            }
+
+            UpdateSelectionVisuals();
+            UpdateQuestDetail();
+        }
+
+        /// <summary>刷新卷宗列表项的选中高亮。</summary>
+        private void UpdateSelectionVisuals()
+        {
+            foreach (var item in _questItems)
+                item.SetSelected(item.Quest == _selectedQuest);
+        }
+
+        /// <summary>把当前选中任务的数据写入右侧详情面板。</summary>
+        private void UpdateQuestDetail()
+        {
+            var quest = _selectedQuest;
+            if (quest == null)
+                return;
+
+            _detailTitleLabel.Text = quest.Name;
+            _detailStatusTag.Text = quest.Status;
+            _detailStatusTag.ApplyStatus(quest.Status, true);
+
+            _detailLevelValue.Text = quest.Level;
+            _detailDifficultyValue.Text = quest.Difficulty;
+            _detailTypeValue.Text = quest.Category;
+
+            _detailBackgroundText.Text = quest.Background;
+
+            // 任务目标
+            foreach (var row in _detailObjectiveRows)
+                row.Dispose();
+            _detailObjectiveRows.Clear();
+
+            for (int i = 0; i < quest.Objectives.Length; i++)
+            {
+                bool done = i < quest.ObjectiveDone.Length && quest.ObjectiveDone[i];
+                _detailObjectiveRows.Add(new ObjectiveRow(quest.Objectives[i], done)
+                {
+                    Parent = _detailContent
+                });
+            }
+
+            // 任务奖励
             foreach (var card in _detailRewardCards)
                 card.Dispose();
             _detailRewardCards.Clear();
 
-            foreach (var r in q.Rewards)
+            foreach (var reward in quest.Rewards)
             {
-                var card = new RewardCard(r.Label, r.Value, r.ValueColor)
+                _detailRewardCards.Add(new RewardCard(reward)
                 {
-                    Parent = _detailRewardsPanel
-                };
-                _detailRewardCards.Add(card);
+                    Parent = _detailContent
+                });
             }
 
-            _detailLevelInfo.Text = $"\u4EFB\u52A1\u7B49\u7EA7 Lv.{q.Level}";
+            _detailNpcValue.Text = quest.Npc;
+            _detailRegionValue.Text = quest.Region;
+            _detailTimeValue.Text = quest.TimeLimit;
+
+            _trackBtn.Text = _trackedQuest == quest ? "取消追踪" : "追踪任务";
+            _actionHintLabel.Text = string.Empty;
+
+            ApplyLayout();
         }
 
-        // ───────────── Layout ─────────────
+        /// <summary>追踪/取消追踪当前任务（设计稿「追踪任务」按钮）。</summary>
+        private void OnTrackClicked()
+        {
+            var quest = _selectedQuest;
+            if (quest == null)
+                return;
+
+            if (_trackedQuest == quest)
+            {
+                _trackedQuest = null;
+                _trackBtn.Text = "追踪任务";
+                _actionHintLabel.Text = "已取消追踪";
+            }
+            else
+            {
+                _trackedQuest = quest;
+                _trackBtn.Text = "取消追踪";
+                _actionHintLabel.Text = $"已追踪任务「{quest.Name}」";
+            }
+        }
+
+        /// <summary>放弃任务：二次确认后从卷宗中移除该任务（设计稿「放弃任务」按钮）。</summary>
+        private void OnAbandonClicked()
+        {
+            var quest = _selectedQuest;
+            if (quest == null)
+                return;
+
+            if (_abandonBtn.Text != "确认放弃")
+            {
+                _abandonBtn.Text = "确认放弃";
+                _abandonBtn.Variant = InkButtonVariant.Danger;
+                _actionHintLabel.Text = $"再次点击「确认放弃」将放弃任务「{quest.Name}」";
+                return;
+            }
+
+            _abandonBtn.Text = "放弃任务";
+            _abandonBtn.Variant = InkButtonVariant.Ghost;
+
+            if (_trackedQuest == quest)
+                _trackedQuest = null;
+
+            _allQuests.Remove(quest);
+            _selectedQuest = null;
+            _actionHintLabel.Text = $"已放弃任务「{quest.Name}」";
+            RefreshQuestList();
+        }
+
+        /// <summary>分享任务（设计稿「分享」按钮）。</summary>
+        private void OnShareClicked()
+        {
+            var quest = _selectedQuest;
+            if (quest == null)
+                return;
+
+            _actionHintLabel.Text = $"已分享任务「{quest.Name}」";
+        }
+
+        // ───────────────────────── 布局 ─────────────────────────
 
         private void ApplyLayout()
         {
-            float sw = Width > 0 ? Width : _screenSize.X;
-            float sh = Height > 0 ? Height : _screenSize.Y;
+            float sw = Width > 0f ? Width : _screenSize.X;
+            float sh = Height > 0f ? Height : _screenSize.Y;
+            if (sw <= 0f || sh <= 0f)
+                return;
 
-            float panelW = Math.Min(sw - 40f, PanelMaxW);
-            float panelH = Math.Min(sh - 40f, PanelMaxH);
-            float panelX = (sw - panelW) / 2f;
-            float panelY = (sh - panelH) / 2f;
+            // ── 左侧导航栏 ──
+            _sidebar.Location = Float2.Zero;
+            _sidebar.Size = new Float2(SidebarWidth, sh);
 
-            // Header
-            float headerH = 60f;
-            _header.Location = new Float2(panelX, panelY);
-            _header.Size = new Float2(panelW, headerH);
+            _sidebarTitleBlock.Location = Float2.Zero;
+            _sidebarTitleBlock.Size = new Float2(SidebarWidth, 104f);
 
-            _title.Location = new Float2(24f, 14f);
-            _title.Size = new Float2(120f, 28f);
+            _sidebarTitle.Location = new Float2((SidebarWidth - 40f) * 0.5f, 18f);
+            _sidebarTitle.Size = new Float2(40f, 68f);
 
-            _subtitle.Location = new Float2(150f, 18f);
-            _subtitle.Size = new Float2(80f, 20f);
+            _sidebarNavPanel.Location = new Float2(0f, 104f);
+            _sidebarNavPanel.Size = new Float2(SidebarWidth, Mathf.Max(0f, sh - 104f));
 
-            _closeBtn.Location = new Float2(panelW - 40f, 14f);
-            _closeBtn.Size = new Float2(32f, 32f);
-
-            // Tabs
-            float tabStartX = 24f;
-            float tabY = 40f;
-            float tabGap = 36f;
-            for (int i = 0; i < _tabs.Count; i++)
+            float navY = 8f;
+            foreach (var row in _navRows)
             {
-                float tx = tabStartX + i * tabGap;
-                _tabs[i].Location = new Float2(tx, tabY);
-                _tabs[i].Size = new Float2(50f, 20f);
-
-                _tabBadges[i].Location = new Float2(tx + 50f, tabY + 2f);
-                _tabBadges[i].Size = new Float2(18f, 18f);
-            }
-
-            // Body
-            float bodyY = panelY + 60f;
-            float bodyH = panelH - 60f;
-            _body.Location = new Float2(panelX, bodyY);
-            _body.Size = new Float2(panelW, bodyH);
-
-            // Left: Quest list (450px)
-            float listW = Math.Min(QuestListW, panelW * 0.4f);
-            _questListPanel.Location = Float2.Zero;
-            _questListPanel.Size = new Float2(listW, bodyH);
-
-            // Quest groups
-            float gy = 12f;
-            foreach (var group in _questGroups)
-            {
-                group.Location = new Float2(6f, gy);
-                group.Size = new Float2(listW - 12f, 0f);
-                group.Layout(listW - 12f);
-                gy += group.Expanded ? 34f + group.Items.Count * 38f + 4f : 34f + 4f;
-            }
-
-            // Bottom progress
-            float bottomH = 60f;
-            _bottomPanel.Location = new Float2(0f, bodyH - bottomH);
-            _bottomPanel.Size = new Float2(listW, bottomH);
-
-            foreach (var child in _bottomPanel.Children)
-            {
-                if (child is Label l)
+                if (row is InkDivider)
                 {
-                    if (l.Text == "\u603B\u8FDB\u5EA6")
-                    {
-                        l.Location = new Float2(16f, 10f);
-                        l.Size = new Float2(60f, 18f);
-                    }
-                    else if (l == _totalProgressLabel)
-                    {
-                        l.Location = new Float2(listW - 80f, 10f);
-                        l.Size = new Float2(64f, 18f);
-                    }
+                    navY += 8f;
+                    row.Location = new Float2(24f, navY);
+                    row.Size = new Float2(SidebarWidth - 48f, 1f);
+                    navY += 9f;
+                }
+                else
+                {
+                    row.Location = new Float2(0f, navY);
+                    row.Size = new Float2(SidebarWidth, NavItemHeight);
+                    navY += NavItemHeight + 2f;
                 }
             }
 
-            _totalProgressBar.Location = new Float2(16f, 34f);
-            _totalProgressBar.Size = new Float2(listW - 32f, 4f);
-            _totalProgressFill.Size = new Float2(_totalProgressBar.Width * 0.333f, 4f);
+            // ── 右侧主区域 ──
+            float mainW = Mathf.Max(0f, sw - SidebarWidth);
+            _mainArea.Location = new Float2(SidebarWidth, 0f);
+            _mainArea.Size = new Float2(mainW, sh);
 
-            // Right: Quest detail
-            float detailX = listW + 1f;
-            float detailW = panelW - listW - 1f;
-            _questDetailPanel.Location = new Float2(detailX, 0f);
-            _questDetailPanel.Size = new Float2(detailW, bodyH);
+            _topHeader.Location = Float2.Zero;
+            _topHeader.Size = new Float2(mainW, TopHeaderHeight);
 
-            float dy = 20f;
-            _detailTitle.Location = new Float2(28f, dy);
-            _detailTitle.Size = new Float2(detailW - 120f, 36f);
-            dy += 40f;
+            float headerX = 32f;
+            _playerAvatar.Location = new Float2(headerX, (TopHeaderHeight - 40f) * 0.5f);
+            _playerAvatar.Size = new Float2(40f, 40f);
+            headerX += 52f;
 
-            // Tags row
-            _detailCategoryTag.Location = new Float2(28f, dy);
-            _detailCategoryTag.Size = new Float2(50f, 22f);
+            _playerNameLabel.Location = new Float2(headerX, 18f);
+            _playerNameLabel.Size = new Float2(90f, 24f);
+            headerX += 96f;
 
-            _detailDifficultyTag.Location = new Float2(84f, dy);
-            _detailDifficultyTag.Size = new Float2(50f, 22f);
-            dy += 30f;
+            _playerLevelTag.Location = new Float2(headerX, 20f);
+            _playerLevelTag.Size = new Float2(52f, 20f);
+            headerX += 62f;
 
-            // Location / NPC / Time
-            float infoY = dy;
-            _detailLocation.Location = new Float2(28f, infoY);
-            _detailLocation.Size = new Float2(120f, 18f);
+            _playerSectLabel.Location = new Float2(headerX, 20f);
+            _playerSectLabel.Size = new Float2(80f, 20f);
 
-            _detailNpc.Location = new Float2(160f, infoY);
-            _detailNpc.Size = new Float2(100f, 18f);
+            float rightEdge = mainW - 32f;
+            const float valueW = 64f;
+            const float titleW = 42f;
+            _silverValueLabel.Location = new Float2(rightEdge - valueW, 20f);
+            _silverValueLabel.Size = new Float2(valueW, 20f);
+            _silverTitleLabel.Location = new Float2(rightEdge - valueW - titleW, 20f);
+            _silverTitleLabel.Size = new Float2(titleW, 20f);
 
-            _detailTimeLimit.Location = new Float2(280f, infoY);
-            _detailTimeLimit.Size = new Float2(100f, 18f);
-            dy += 28f;
+            float copperEdge = rightEdge - valueW - titleW - 24f;
+            _copperValueLabel.Location = new Float2(copperEdge - valueW, 20f);
+            _copperValueLabel.Size = new Float2(valueW, 20f);
+            _copperTitleLabel.Location = new Float2(copperEdge - valueW - titleW, 20f);
+            _copperTitleLabel.Size = new Float2(titleW, 20f);
 
-            // Description
-            float descPanelH = 100f;
-            _detailDescriptionPanel.Location = new Float2(28f, dy);
-            _detailDescriptionPanel.Size = new Float2(detailW - 56f, descPanelH);
-            dy += descPanelH + 20f;
+            // ── 内容区：任务卷宗（左 40%）+ 任务详情（右 60%）──
+            float contentY = TopHeaderHeight;
+            float contentH = Mathf.Max(0f, sh - TopHeaderHeight);
+            float listW = mainW * ListRatio;
+            float detailW = mainW - listW;
 
-            _detailDescription.Location = new Float2(16f, 16f);
-            _detailDescription.Size = new Float2(detailW - 88f, descPanelH - 32f);
+            _listSection.Location = new Float2(0f, contentY);
+            _listSection.Size = new Float2(listW, contentH);
 
-            // Objectives title
-            _detailObjectiveTitle.Location = new Float2(28f, dy);
-            _detailObjectiveTitle.Size = new Float2(120f, 20f);
-            dy += 28f;
+            LayoutQuestList(listW, contentH);
 
-            // Objective rows
-            foreach (var obj in _detailObjectives)
-            {
-                obj.Location = new Float2(28f, dy);
-                obj.Size = new Float2(detailW - 56f, 36f);
-                dy += 40f;
-            }
+            _detailSection.Location = new Float2(listW, contentY);
+            _detailSection.Size = new Float2(detailW, contentH);
 
-            // Rewards title
-            dy += 8f;
-            _detailRewardTitle.Location = new Float2(28f, dy);
-            _detailRewardTitle.Size = new Float2(120f, 20f);
-            dy += 28f;
-
-            // Rewards panel
-            _detailRewardsPanel.Location = new Float2(28f, dy);
-            _detailRewardsPanel.Size = new Float2(detailW - 56f, 60f);
-
-            float rx = 12f;
-            foreach (var card in _detailRewardCards)
-            {
-                card.Location = new Float2(rx, 8f);
-                card.Size = new Float2(120f, 44f);
-                rx += 140f;
-            }
-            dy += 68f;
-
-            // Action buttons
-            dy += 8f;
-            _abandonBtn.Location = new Float2(28f, dy);
-            _abandonBtn.Size = new Float2(100f, 32f);
-
-            _trackBtn.Location = new Float2(136f, dy);
-            _trackBtn.Size = new Float2(110f, 32f);
-
-            _detailLevelInfo.Location = new Float2(detailW - 160f, dy);
-            _detailLevelInfo.Size = new Float2(140f, 32f);
+            LayoutQuestDetail(detailW, contentH);
         }
 
+        /// <summary>布局任务卷宗列表（标题栏 + 标签页 + 滚动列表）。</summary>
+        private void LayoutQuestList(float listW, float contentH)
+        {
+            const float titleH = 56f;
+
+            _listTitleLabel.Location = new Float2(24f, 18f);
+            _listTitleLabel.Size = new Float2(140f, 22f);
+
+            _listCountLabel.Location = new Float2(listW - 24f - 64f, 19f);
+            _listCountLabel.Size = new Float2(64f, 20f);
+
+            _tabBar.Location = new Float2(0f, titleH);
+            _tabBar.Size = new Float2(listW, TabHeight);
+
+            float tabW = _tabs.Count > 0 ? listW / _tabs.Count : listW;
+            for (int i = 0; i < _tabs.Count; i++)
+            {
+                _tabs[i].Location = new Float2(i * tabW, 0f);
+                _tabs[i].Size = new Float2(tabW, TabHeight);
+            }
+
+            float scrollY = titleH + TabHeight;
+            _listScroll.Location = new Float2(0f, scrollY);
+            _listScroll.Size = new Float2(listW, Mathf.Max(0f, contentH - scrollY));
+
+            const float itemGap = 12f;
+            float contentHeight = itemGap;
+            foreach (var item in _questItems)
+                contentHeight += QuestItemHeight + itemGap;
+
+            _listContent.Location = Float2.Zero;
+            _listContent.Size = new Float2(listW, Mathf.Max(_listScroll.Height, contentHeight));
+
+            float itemY = itemGap;
+            foreach (var item in _questItems)
+            {
+                item.Location = new Float2(itemGap, itemY);
+                item.Size = new Float2(Mathf.Max(0f, listW - itemGap * 2f), QuestItemHeight);
+                item.LayoutContent();
+                itemY += QuestItemHeight + itemGap;
+            }
+
+            _listEmptyHint.Location = new Float2(24f, 16f);
+            _listEmptyHint.Size = new Float2(Mathf.Max(0f, listW - 48f), 24f);
+        }
+
+        /// <summary>布局任务详情面板（自顶向下顺序排布，底部按内容高度撑开滚动区）。</summary>
+        private void LayoutQuestDetail(float detailW, float contentH)
+        {
+            _detailScroll.Location = Float2.Zero;
+            _detailScroll.Size = new Float2(detailW, contentH);
+
+            float innerW = Mathf.Max(0f, detailW - DetailPadding * 2f);
+            float dy = DetailPadding;
+
+            // 标题 + 状态标签
+            _detailTitleLabel.Location = new Float2(DetailPadding, dy);
+            _detailTitleLabel.Size = new Float2(Mathf.Max(0f, innerW - 100f), 44f);
+
+            _detailStatusTag.Location = new Float2(detailW - DetailPadding - 72f, dy + 10f);
+            _detailStatusTag.Size = new Float2(72f, 24f);
+
+            dy += 56f;
+
+            // 元信息行：推荐等级 / 难度 / 类型
+            float metaX = DetailPadding;
+            _detailLevelPrefix.Location = new Float2(metaX, dy);
+            _detailLevelPrefix.Size = new Float2(72f, 20f);
+            metaX += 72f;
+            _detailLevelValue.Location = new Float2(metaX, dy);
+            _detailLevelValue.Size = new Float2(60f, 20f);
+            metaX += 84f;
+
+            _detailDifficultyPrefix.Location = new Float2(metaX, dy);
+            _detailDifficultyPrefix.Size = new Float2(48f, 20f);
+            metaX += 48f;
+            _detailDifficultyValue.Location = new Float2(metaX, dy);
+            _detailDifficultyValue.Size = new Float2(90f, 20f);
+            metaX += 114f;
+
+            _detailTypePrefix.Location = new Float2(metaX, dy);
+            _detailTypePrefix.Size = new Float2(48f, 20f);
+            metaX += 48f;
+            _detailTypeValue.Location = new Float2(metaX, dy);
+            _detailTypeValue.Size = new Float2(80f, 20f);
+
+            dy += 30f;
+
+            _detailDividerMeta.Location = new Float2(DetailPadding, dy);
+            _detailDividerMeta.Size = new Float2(innerW, 1f);
+            dy += 20f;
+
+            // 任务背景纸色卷轴
+            const float backgroundPanelH = 150f;
+            _detailBackgroundPanel.Location = new Float2(DetailPadding, dy);
+            _detailBackgroundPanel.Size = new Float2(innerW, backgroundPanelH);
+
+            _detailBackgroundTitle.Location = new Float2(24f, 18f);
+            _detailBackgroundTitle.Size = new Float2(Mathf.Max(0f, innerW - 48f), 24f);
+
+            _detailBackgroundText.Location = new Float2(24f, 50f);
+            _detailBackgroundText.Size = new Float2(Mathf.Max(0f, innerW - 48f), backgroundPanelH - 68f);
+
+            dy += backgroundPanelH + 24f;
+
+            _detailDividerBackground.Location = new Float2(DetailPadding, dy);
+            _detailDividerBackground.Size = new Float2(innerW, 1f);
+            dy += 24f;
+
+            // 任务目标
+            _detailObjectiveTitle.Location = new Float2(DetailPadding, dy);
+            _detailObjectiveTitle.Size = new Float2(160f, 24f);
+            dy += 34f;
+
+            const float objectiveRowH = 26f;
+            foreach (var row in _detailObjectiveRows)
+            {
+                row.Location = new Float2(DetailPadding, dy);
+                row.Size = new Float2(innerW, objectiveRowH);
+                row.LayoutContent();
+                dy += objectiveRowH + 8f;
+            }
+
+            dy += 12f;
+
+            _detailDividerObjective.Location = new Float2(DetailPadding, dy);
+            _detailDividerObjective.Size = new Float2(innerW, 1f);
+            dy += 24f;
+
+            // 任务奖励
+            _detailRewardTitle.Location = new Float2(DetailPadding, dy);
+            _detailRewardTitle.Size = new Float2(160f, 24f);
+            dy += 34f;
+
+            if (_detailRewardCards.Count > 0)
+            {
+                const int columns = 4;
+                const float gap = 12f;
+                float cardW = Mathf.Max(60f, (innerW - gap * (columns - 1)) / columns);
+
+                for (int i = 0; i < _detailRewardCards.Count; i++)
+                {
+                    int rowIndex = i / columns;
+                    int col = i % columns;
+
+                    var card = _detailRewardCards[i];
+                    card.Location = new Float2(
+                        DetailPadding + col * (cardW + gap),
+                        dy + rowIndex * (RewardCardHeight + gap));
+                    card.Size = new Float2(cardW, RewardCardHeight);
+                    card.LayoutContent();
+                }
+
+                int rows = (_detailRewardCards.Count + columns - 1) / columns;
+                dy += rows * (RewardCardHeight + gap);
+            }
+
+            _detailDividerReward.Location = new Float2(DetailPadding, dy);
+            _detailDividerReward.Size = new Float2(innerW, 1f);
+            dy += 24f;
+
+            // 委托人 / 区域 / 时限
+            float infoX = DetailPadding;
+            _detailNpcPrefix.Location = new Float2(infoX, dy);
+            _detailNpcPrefix.Size = new Float2(56f, 22f);
+            infoX += 56f;
+            _detailNpcValue.Location = new Float2(infoX, dy);
+            _detailNpcValue.Size = new Float2(72f, 22f);
+            infoX += 104f;
+
+            _detailRegionPrefix.Location = new Float2(infoX, dy);
+            _detailRegionPrefix.Size = new Float2(44f, 22f);
+            infoX += 44f;
+            _detailRegionValue.Location = new Float2(infoX, dy);
+            _detailRegionValue.Size = new Float2(200f, 22f);
+            infoX += 224f;
+
+            _detailTimePrefix.Location = new Float2(infoX, dy);
+            _detailTimePrefix.Size = new Float2(44f, 22f);
+            infoX += 44f;
+            _detailTimeValue.Location = new Float2(infoX, dy);
+            _detailTimeValue.Size = new Float2(120f, 22f);
+
+            dy += 34f;
+
+            _detailDividerInfo.Location = new Float2(DetailPadding, dy);
+            _detailDividerInfo.Size = new Float2(innerW, 1f);
+            dy += 24f;
+
+            // 操作按钮
+            const float btnH = 36f;
+            _trackBtn.Location = new Float2(DetailPadding, dy);
+            _trackBtn.Size = new Float2(112f, btnH);
+
+            _abandonBtn.Location = new Float2(DetailPadding + 124f, dy);
+            _abandonBtn.Size = new Float2(100f, btnH);
+
+            _shareBtn.Location = new Float2(DetailPadding + 236f, dy);
+            _shareBtn.Size = new Float2(88f, btnH);
+
+            dy += btnH + 16f;
+
+            _actionHintLabel.Location = new Float2(DetailPadding, dy);
+            _actionHintLabel.Size = new Float2(innerW, 20f);
+
+            dy += 32f;
+
+            _detailContent.Location = Float2.Zero;
+            _detailContent.Size = new Float2(detailW, Mathf.Max(_detailScroll.Height, dy));
+        }
+
+        /// <summary>奖励类型图标字形（引擎无图标字体，沿用项目既有字形约定）。</summary>
+        private static string RewardIcon(string label)
+        {
+            switch (label)
+            {
+                case "经验": return "✨";
+                case "铜钱": return "￥";
+                case "装备": return "⚔";
+                default: return "☆";
+            }
+        }
+
+        /// <summary>基于设计 Token 的颜色派生（仅调整透明度，不引入硬编码色值）。</summary>
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            return new Color(color.R, color.G, color.B, alpha);
+        }
+
+        /// <inheritdoc />
         public void RefreshLayout()
         {
             _screenSize = new Float2(Width, Height);

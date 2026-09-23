@@ -25,8 +25,10 @@ namespace Horizon.Core
         public const string BAIDULBS = nameof(BAIDULBS);
         /// <summary>
         /// 百度ak
+        /// <summary>
+        /// 百度地图 AK（从环境变量读取，避免硬编码密钥）
         /// </summary>
-        public const string BAIDUAK = "8ke07ezbbK4dpmVKgOjEtifqlVLoFKRf";
+        public static string BAIDUAK => Environment.GetEnvironmentVariable("BAIDU_AK") ?? string.Empty;
         /// <summary>
         /// 百度全球逆地理Get 接口，根据经纬度获取行政区信息
         /// </summary>
@@ -37,9 +39,9 @@ namespace Horizon.Core
         public const string BAIDU_G_A_V2 = "http://api.map.baidu.com/geocoder/v2/?address={1}&output=json&ak={0}";
 
         /// <summary>
-        /// SocketEDASIP
+        /// SocketEDASIP（遗留常量；真实地址须来自环境变量 SOCKET_EDAS_IP）
         /// </summary>
-        public const string SocketEDASIP = "192.168.1.34";
+        public static string SocketEDASIP => Environment.GetEnvironmentVariable("SOCKET_EDAS_IP") ?? "127.0.0.1";
         /// <summary>
         /// Grain Stream  用户订阅流标识键
         /// </summary>

@@ -21,16 +21,13 @@ namespace Horizon.Game.Gateway.Services
     /// <remarks>
     /// 工作循环：不停调用 <see cref="GatewaySyncDispatcher.RunOnceAsync"/>；dispatcher 内部用
     /// <see cref="IZoneShardFanoutSource.TryDequeueAsync"/> 自行阻塞等待，所以这里不需要额外 sleep。
-    /// 当取消 token 触发时，dispatcher 返回 0，循环自然退出。
+    /// 当取消 token 触发时，dispatcher 返回 0，循环自然退出。<br/>
+    /// 阶段 4（多 Shard 水平扩展）：fanout 订阅委托 <see cref="ShardFanoutSubscriber"/>——
+    /// 向 <c>0..ShardCount-1</c> 全部 ZoneShardGrain 订阅（原实现仅订阅 <c>Resolve(0)</c>，
+    /// 多 Shard 下其他 shard 的推送（含 Despawn 广播）永久丢失）。
     /// </remarks>
     public sealed class SyncDispatcherHostedService : BackgroundService
     {
-        /// <summary>订阅重试最大次数。</summary>
-        private const int MaxRetries = 10;
-
-        /// <summary>订阅重试初始间隔（毫秒）。</summary>
-        private const int RetryBaseDelayMs = 1000;
-
         private readonly GatewaySyncDispatcher _dispatcher;
         private readonly IOptionsMonitor<GatewayOptions> _options;
         private readonly ILogger<SyncDispatcherHostedService> _logger;
@@ -93,85 +90,59 @@ namespace Horizon.Game.Gateway.Services
 
             if (observerRef == null) return;
 
-            // 向 ZoneShardGrain 订阅 fanout，使 BroadcastSnapshotAsync 能推送到本 gateway
-            // Orleans 客户端启动后可能尚未完成 grain 元数据加载，需要重试直到成功
-            var subscriptionId = Guid.NewGuid();
-            var subscribed = false;
-            for (var attempt = 1; attempt <= MaxRetries && !subscribed; attempt++)
-            {
-                try
-                {
-                    var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(0));
-                    await zoneShard.SubscribeFanoutAsync(subscriptionId, observerRef).ConfigureAwait(false);
-                    _logger.LogInformation(
-                        "SyncDispatcherHostedService：已向 ZoneShard {ShardId} 订阅 fanout（SubscriptionId={SubscriptionId}，尝试={Attempt}）。",
-                        _shardRouter.Resolve(0), subscriptionId, attempt);
-                    subscribed = true;
-                }
-                catch (Exception ex) when (attempt < MaxRetries)
-                {
-                    _logger.LogWarning(ex,
-                        "SyncDispatcherHostedService：向 ZoneShard {ShardId} 订阅 fanout 失败（尝试 {Attempt}/{MaxRetries}），{Delay}ms 后重试。",
-                        _shardRouter.Resolve(0), attempt, MaxRetries, RetryBaseDelayMs * attempt);
-                    try
-                    {
-                        await Task.Delay(RetryBaseDelayMs * attempt, stoppingToken).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) { break; }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "SyncDispatcherHostedService：向 ZoneShard {ShardId} 订阅 fanout 已达最大重试次数（{MaxRetries}），进入循环但可能收不到推送。",
-                        _shardRouter.Resolve(0), MaxRetries);
-                }
-            }
+            // 阶段 4（多 Shard）：fanout 订阅委托 ShardFanoutSubscriber——
+            // 向 0..ShardCount-1 全部 ZoneShardGrain 订阅，初始失败自动重试（10 次指数退避），
+            // 已订阅 shard 幂等跳过；单 Shard（ShardCount=1）行为与旧实现一致（仅订阅 shard 0）。
+            // 修复 BUG：原实现只订阅 Resolve(0)，多 Shard 下其他 shard 的广播（含 Despawn）永久丢失，
+            // 离线角色在其他客户端永久残留。
+            var subscriber = new ShardFanoutSubscriber(
+                _clusterClient,
+                _shardRouter,
+                _logger,
+                subscriptionId: Guid.NewGuid(),
+                observerRef);
+
+            var initialSubscribed = await subscriber.SubscribeAllAsync(stoppingToken).ConfigureAwait(false);
 
             // 修复 BUG：即使初始订阅失败，也不释放 observerRef，保留以供定期重订阅使用。
             // 原实现在 !subscribed 时 DeleteObjectReference 释放 observerRef，导致引用失效，
             // 后续定期重订阅无法使用该引用，_fanoutObservers 永久为空，所有广播（包括 Despawn）
             // 永久丢失，离线角色在其他客户端永久残留。observerRef 将在 finally 块中统一释放。
-            // if (!subscribed) { DeleteObjectReference(observerRef); }  // 已移除
-
             _logger.LogInformation(
-                "SyncDispatcherHostedService：进入 ZoneShard fanout 循环。初始订阅状态: {Subscribed}",
-                subscribed);
+                "SyncDispatcherHostedService：进入 ZoneShard fanout 循环。初始订阅状态: {Subscribed}（{SubscribedCount}/{ShardCount}）。SubscriptionId={SubscriptionId}",
+                initialSubscribed, subscriber.SubscribedShardIds.Count, _shardRouter.ShardCount, subscriber.SubscriptionId);
 
             // 修复 BUG：无论初始订阅是否成功，都启动定期重新订阅 Timer。
             // 原实现只在 subscribed==true 时创建 Timer，初始 10 次重试全部失败则永远不重试，
             // 导致 _fanoutObservers 永久为空，Despawn 广播永久丢失，离线角色永久残留。
-            // 新实现：即使初始订阅失败，也每 30 秒重试一次，直到订阅成功或服务停止。
+            // 新实现：即使初始订阅失败，也每 30 秒重试一次（跳过已订阅 shard），直到全部订阅成功或服务停止。
             // 这与 ZoneShardGrain.UnregisterEntityAsync 的"广播失败保留实体等待重试"机制配合，
             // 确保订阅恢复后孤儿清理定时器能重试广播 Despawn。
             var resubscribeInterval = TimeSpan.FromSeconds(30);
+            // 防重入：订阅仍处于「Grain 映射未就绪」长重试窗口（最长约 120 秒）时，
+            // 上一轮 SubscribeAllAsync 可能尚未返回；若不做互斥，30 秒间隔会叠加多个
+            // 并发重试循环（日志与 RPC 成倍放大）。此处用 Interlocked 门闩跳过重叠轮次。
+            var resubscribeInProgress = 0;
             var resubscribeTimer = new System.Threading.Timer(
                 async _ =>
                 {
+                    if (Interlocked.CompareExchange(ref resubscribeInProgress, 1, 0) != 0)
+                        return;
+
                     try
                     {
-                        var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(0));
-                        await zoneShard.SubscribeFanoutAsync(subscriptionId, observerRef).ConfigureAwait(false);
-                        if (!subscribed)
-                        {
-                            // 标记订阅成功，finally 中执行 Unsubscribe 清理。
-                            // subscribed 是闭包捕获的局部变量，单调从 false→true，偶发竞态只导致重复日志，不影响正确性。
-                            subscribed = true;
-                            _logger.LogInformation(
-                                "SyncDispatcherHostedService：定期重新订阅 fanout 首次成功（初始订阅失败已恢复）。SubscriptionId={SubscriptionId}",
-                                subscriptionId);
-                        }
-                        else
-                        {
-                            _logger.LogDebug(
-                                "SyncDispatcherHostedService：定期重新订阅 fanout 成功。SubscriptionId={SubscriptionId}",
-                                subscriptionId);
-                        }
+                        if (stoppingToken.IsCancellationRequested) return;
+                        await subscriber.SubscribeAllAsync(stoppingToken).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogWarning(ex,
                             "SyncDispatcherHostedService：定期重新订阅 fanout 失败。SubscriptionId={SubscriptionId}",
-                            subscriptionId);
+                            subscriber.SubscriptionId);
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref resubscribeInProgress, 0);
                     }
                 },
                 null,
@@ -225,23 +196,8 @@ namespace Horizon.Game.Gateway.Services
                 resubscribeTimer?.Dispose();
                 _dispatcher.Enabled = false;
 
-                // 取消 fanout 订阅（仅在曾订阅成功时执行，避免对未订阅的 subscriptionId 调用 Unsubscribe）
-                if (subscribed)
-                {
-                    try
-                    {
-                        var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(0));
-                        await zoneShard.UnsubscribeFanoutAsync(subscriptionId).ConfigureAwait(false);
-                        _logger.LogInformation(
-                            "SyncDispatcherHostedService：已取消 ZoneShard {ShardId} fanout 订阅（SubscriptionId={SubscriptionId}）。",
-                            _shardRouter.Resolve(0), subscriptionId);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex,
-                            "SyncDispatcherHostedService：取消 fanout 订阅时异常（可忽略）。");
-                    }
-                }
+                // 取消全部已订阅 shard 的 fanout（阶段 4：逐 shard 退订；未订阅的 shard 自动跳过）。
+                await subscriber.UnsubscribeAllAsync().ConfigureAwait(false);
 
                 // 修复 BUG：统一释放 observerRef（原实现在 !subscribed 时提前释放，导致无法重订阅）。
                 // observerRef 在整个服务生命周期内被保留以供定期重订阅使用，此处服务停止时统一释放。

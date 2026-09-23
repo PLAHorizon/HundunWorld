@@ -1,0 +1,27 @@
+diff --git a/HundunWorld/Source/Game/Editor/AutoSkinnedModelImportPlugin.cs b/HundunWorld/Source/Game/Editor/AutoSkinnedModelImportPlugin.cs
+index 06a5f8c..1984af3 100644
+--- a/HundunWorld/Source/Game/Editor/AutoSkinnedModelImportPlugin.cs
++++ b/HundunWorld/Source/Game/Editor/AutoSkinnedModelImportPlugin.cs
+@@ -62,14 +62,15 @@ namespace HundunWorld.Game.Editor
+ 
+             // 2. 在 ContentDatabase 中查找该资产项
+-            var item = FlaxEditor.Editor.Instance.ContentDatabase.Find(assetPath);
+-            if (item == null)
++            //    注意：ContentDatabase.Find(path) 的路径格式匹配在实测中不可靠（可能返回 null）；
++            //    引擎提供了可靠的 Find(Guid) 重载（见 ContentDatabaseModule.cs L251），故以 GUID 查找为主。
++            var contentDb = FlaxEditor.Editor.Instance.ContentDatabase;
++            var binaryItem = contentDb.Find(asset.ID) as BinaryAssetItem;
++            if (binaryItem == null)
+             {
+-                Debug.LogError($"[AutoSkinnedModelImport] 在 ContentDatabase 中找不到: {assetPath}");
+-                return;
++                binaryItem = contentDb.Find(assetPath) as BinaryAssetItem;
+             }
+-
+-            if (!(item is BinaryAssetItem binaryItem))
++            if (binaryItem == null)
+             {
+-                Debug.LogError($"[AutoSkinnedModelImport] 资产项不是 BinaryAssetItem: {item.GetType().Name}");
++                Debug.LogError($"[AutoSkinnedModelImport] 在 ContentDatabase 中找不到（GUID/路径双查失败）: {assetPath}, ID={asset.ID}");
+                 return;
+             }

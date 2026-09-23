@@ -45,7 +45,9 @@ namespace Horizon.Entities
 
             if (string.IsNullOrWhiteSpace(cs))
             {
-                cs = "Data Source=.;Initial Catalog=IM;User Id=sa;Password=tkhjkdh#%!)[}Akjdh8;Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True;Encrypt=True;TrustServerCertificate=True";
+                // 兜底连接串不含凭据：真实连接信息必须来自配置或环境变量
+                cs = Environment.GetEnvironmentVariable("DB_IM_CONNECTION_STRING")
+                    ?? "Data Source=.;Initial Catalog=IM;Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True;Encrypt=True;TrustServerCertificate=True";
                 sb.AppendLine($"  使用默认连接字符串: {cs}");
                 sb.AppendLine($"  当前工作目录: {System.IO.Directory.GetCurrentDirectory()}");
                 System.Console.WriteLine(sb.ToString());

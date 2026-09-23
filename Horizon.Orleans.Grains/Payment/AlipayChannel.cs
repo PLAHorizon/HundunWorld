@@ -62,6 +62,16 @@ namespace Horizon.Orleans.Grains.Payment
         {
             try
             {
+                // 商户配置完整性校验：密钥缺失时给出明确错误（而非底层签名异常）
+                if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_privateKey))
+                {
+                    return new PrepayResult
+                    {
+                        Success = false,
+                        ErrorMessage = "支付宝商户配置缺失（AppId/应用私钥），请检查 Silo 端 AlipaySettings 配置"
+                    };
+                }
+
                 switch (scene)
                 {
                     case PaymentScene.Wap:
@@ -97,11 +107,22 @@ namespace Horizon.Orleans.Grains.Payment
                             ProductCode = "QUICK_MSECURITY_PAY"
                         });
                         var response = await Task.Run(() => GetClient().SdkExecute(request));
+                        var orderInfo = response.Body ?? "";
+                        if (string.IsNullOrEmpty(orderInfo))
+                        {
+                            return new PrepayResult
+                            {
+                                Success = false,
+                                ErrorMessage = "支付宝 App 下单成功但未返回签名串"
+                            };
+                        }
                         return new PrepayResult
                         {
                             Success = true,
                             PrepayId = orderNo,
-                            PayUrl = response.Body
+                            PayUrl = orderInfo,
+                            // 客户端拉起参数：orderString（已含 RSA2 签名），客户端拼 alipays scheme 拉起支付宝收银台
+                            PayParams = "{\"orderInfo\":\"" + orderInfo.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"}"
                         };
                     }
                     default:
@@ -211,13 +232,14 @@ namespace Horizon.Orleans.Grains.Payment
         {
             try
             {
+                var client = GetClient();
                 var request = new AlipayTradeQueryRequest();
                 request.SetBizModel(new AlipayTradeQueryModel
                 {
                     OutTradeNo = transactionNo
                 });
 
-                var response = await Task.Run(() => _client.Execute(request));
+                var response = await Task.Run(() => client.Execute(request));
                 if (response.IsError)
                 {
                     _logger.LogWarning("支付宝查询失败: {Code}-{SubCode}-{SubMsg}", response.Code, response.SubCode, response.SubMsg);
@@ -252,12 +274,13 @@ namespace Horizon.Orleans.Grains.Payment
         {
             try
             {
+                var client = GetClient();
                 var request = new AlipayTradeCloseRequest();
                 request.SetBizModel(new AlipayTradeCloseModel
                 {
                     OutTradeNo = transactionNo
                 });
-                var response = await Task.Run(() => _client.Execute(request));
+                var response = await Task.Run(() => client.Execute(request));
                 if (response.IsError)
                 {
                     _logger.LogWarning("支付宝关单失败: {Code}-{SubCode}-{SubMsg}", response.Code, response.SubCode, response.SubMsg);

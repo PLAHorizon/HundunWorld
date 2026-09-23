@@ -120,6 +120,17 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     Task<int> RenewLeaseAsync(ulong[] entityIds);
 
     /// <summary>
+    /// 续约会话订阅租约（不动实体）。<br/>
+    /// 边界分片上的会话是"纯订阅"（无实体，实体租约续约覆盖不到），
+    /// 由网关每 20 秒按其跟踪的边界分片集合调用本方法刷新订阅租约。<br/>
+    /// 超过订阅租约期未续约且本分片无对应实体的会话，将被孤儿清理定时器驱逐
+    /// （防止网关 Despawn 被跳过/网关重启场景下 AOI 订阅永久残留、广播持续扇出死会话）。
+    /// </summary>
+    /// <param name="sessionId">会话 ID（= characterId）。</param>
+    /// <returns>会话在本分片存在订阅并已刷新返回 true；否则 false。</returns>
+    Task<bool> RenewSessionLeaseAsync(long sessionId);
+
+    /// <summary>
     /// 向实体追加输入包（由上层调用，通常在收到客户端 input 时）。
     /// </summary>
     /// <param name="entityId">目标实体 ID。</param>

@@ -1,0 +1,143 @@
+## page: menu-char-attributes
+## dom-ids: back-hud, btn-mobile-menu, nav-appearance, nav-battle-prep, nav-char-attributes, nav-equipment, nav-personal-info, nav-sect, nav-time
+  main
+    aside .flex-col
+      div .items-center justify-center
+        span .ink-vertical-title | 角色
+      nav .flex-col nav-scroll
+        a #nav-char-attributes .nav-item nav-item-active items-center | 角色
+        a #nav-equipment .nav-item items-center | 装备
+        a #nav-appearance .nav-item items-center | 外观
+        a #nav-battle-prep .nav-item items-center | 备战
+        a #nav-sect .nav-item items-center | 门派
+        a #nav-personal-info .nav-item items-center | 个人信息
+        a #nav-time .nav-item items-center | 时间
+          a .nav-item nav-item-disabled items-center | 任务
+          a .nav-item nav-item-disabled items-center | 博物志
+          a .nav-item nav-item-disabled items-center | 武林录
+          a .nav-item nav-item-disabled items-center | 营生
+          a .nav-item nav-item-disabled items-center | 组队
+          a .nav-item nav-item-disabled items-center | 邮箱
+          a .nav-item nav-item-disabled items-center | 商店
+            a .nav-item nav-item-disabled items-center | 设置
+    div .flex-col
+      header .items-center
+        div .items-center
+          button #back-hud .ink-btn ink-btn-ghost items-center justify-center [aria="返回战斗"]
+          button #btn-mobile-menu .items-center justify-center [aria="打开菜单"]
+          div .items-center justify-center | 无
+          div .items-center
+            span | 无名侠
+            span .ink-tag ink-tag-brand | Lv.42
+            span | 逍遥派
+        div .items-center
+          div .items-center
+            span | 铜钱
+            span | 12,450
+          div .items-center
+            span | 银两
+            span | 328
+      div .flex-col lg:flex-row
+        div
+          div
+          span
+          span
+          span
+          span
+          div
+          div
+          div
+            div
+            div
+          div .bottom-0 left-0 right-0
+            div .items-center
+              span | 无名侠
+              span .ink-tag ink-tag-brand | Lv.42
+            p | 逍遥派 · 内功修为
+        div
+          div .items-start
+            span .ink-vertical-title | 属性
+            div
+              h1 | 角色属性
+              p | 无名侠 · 逍遥派
+          section
+            h2 | 基础属性
+            div .flex-col
+              div .attr-row
+                span .attr-label | 气血
+                div .ink-bar attr-bar
+                  div .ink-bar-fill ink-bar-fill-vermilion
+                span .attr-value | 3200/3200
+              div .attr-row
+                span .attr-label | 内力
+                div .ink-bar attr-bar
+                  div .ink-bar-fill ink-bar-fill-jade
+                span .attr-value | 1800/1800
+              div .attr-row
+                span .attr-label | 筋骨
+                div .ink-bar attr-bar
+                  div .ink-bar-fill
+                span .attr-value | 156
+              div .attr-row
+                span .attr-label | 气海
+                div .ink-bar attr-bar
+                  div .ink-bar-fill
+                span .attr-value | 168
+              div .attr-row
+                span .attr-label | 根骨
+                div .ink-bar attr-bar
+                  div .ink-bar-fill
+                span .attr-value | 142
+              div .attr-row
+                span .attr-label | 身法
+                div .ink-bar attr-bar
+                  div .ink-bar-fill
+                span .attr-value | 128
+            section
+              h2 | 进阶属性
+              div .adv-attr-grid
+                div .adv-attr-item
+                  div .items-center
+                    span .attr-label | 攻击
+                    span .adv-attr-value | 856
+                  div .ink-bar ink-bar-thin
+                    div .ink-bar-fill
+                div .adv-attr-item
+                  div .items-center
+                    span .attr-label | 防御
+                    span .adv-attr-value | 642
+                  div .ink-bar ink-bar-thin
+                    div .ink-bar-fill
+                div .adv-attr-item
+                  div .items-center
+                    span .attr-label | 暴击
+                    span .adv-attr-value | 23%
+                  div .ink-bar ink-bar-thin
+                    div .ink-bar-fill ink-bar-fill-vermilion
+                div .adv-attr-item
+                  div .items-center
+                    span .attr-label | 抗性
+                    span .adv-attr-value | 15%
+                  div .ink-bar ink-bar-thin
+                    div .ink-bar-fill ink-bar-fill-jade
+                div .adv-attr-item
+                  div .items-center
+                    span .attr-label | 命中
+                    span .adv-attr-value | 97%
+                  div .ink-bar ink-bar-thin
+                    div .ink-bar-fill
+                div .adv-attr-item
+                  div .items-center
+                    span .attr-label | 闪避
+                    span .adv-attr-value | 12%
+                  div .ink-bar ink-bar-thin
+                    div .ink-bar-fill ink-bar-fill-jade
+              section
+                h2 | 属性说明
+                p | 基础属性决定角色核心能力。气血影响生存，内力决定武学释放频率。筋骨主攻伐，根骨司体魄，气海蕴真元，身法判轻重。进阶属性由基础属性与装备加成共同计算，暴击与命中影响战斗输出效率。
+      footer .items-center
+        span | 混沌世界 v1.2.0
+        span | 逍遥盛世 · 32ms
+
+## COPY (46)
+角色 | 装备 | 外观 | 备战 | 门派 | 个人信息 | 时间 | 任务 | 博物志 | 武林录 | 营生 | 组队 | 邮箱 | 商店 | 设置 | 无 | 无名侠 | Lv.42 | 逍遥派 | 铜钱 | 12,450 | 银两 | 逍遥派 · 内功修为 | 属性 | 角色属性 | 无名侠 · 逍遥派 | 基础属性 | 气血 | 3200/3200 | 内力 | 1800/1800 | 筋骨 | 气海 | 根骨 | 身法 | 进阶属性 | 攻击 | 防御 | 暴击 | 抗性 | 命中 | 闪避 | 属性说明 | 基础属性决定角色核心能力。气血影响生存，内力决定武学释放频率。筋骨主攻伐，根骨司体魄，气海蕴真元，身法判轻重。进阶属性由基础属性与装备加成共同计算，暴击与命中影响战斗输出效率。 | 混沌世界 v1.2.0 | 逍遥盛世 · 32ms

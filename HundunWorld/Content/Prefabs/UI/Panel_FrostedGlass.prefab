@@ -1,0 +1,116 @@
+{
+	"ID": "12435e814c25f5d97d87dca4a9939673",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "cecc2d844aeb3f8ad7e9a2bd796fc68e",
+		"TypeName": "FlaxEngine.UIControl",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "Panel_FrostedGlass",
+		"Transform": {
+			"Orientation": {
+				"X": -1.0,
+				"Y": -4.3711388286737935e-8,
+				"Z": -4.3711388286737935e-8,
+				"W": 1.910685465164705e-15
+			}
+		},
+		"Control": "HundunWorld.Game.UI.Components.FrostedGlassPanel",
+		"Data": {
+			"BlurIntensity": 0.5,
+			"BackgroundOpacity": 0.7,
+			"BorderColor": {
+				"R": 0.78431374,
+				"G": 0.65882355,
+				"B": 0.34509805,
+				"A": 0.25
+			},
+			"BorderThickness": 1.0,
+			"InnerGlowColor": {
+				"R": 0.78431374,
+				"G": 0.65882355,
+				"B": 0.34509805,
+				"A": 0.08
+			},
+			"InnerGlowSize": 2.0,
+			"ScrollBars": 0,
+			"ScrollBarsSize": 14.0,
+			"AlwaysShowScrollbars": false,
+			"ScrollMargin": {
+				"Left": 0.0,
+				"Right": 0.0,
+				"Top": 0.0,
+				"Bottom": 0.0
+			},
+			"ScrollbarTrackColor": {
+				"R": 0.32941177,
+				"G": 0.32941177,
+				"B": 0.36078432,
+				"A": 1.0
+			},
+			"ScrollbarThumbColor": {
+				"R": 0.24705882,
+				"G": 0.24705882,
+				"B": 0.27450982,
+				"A": 1.0
+			},
+			"ScrollbarThumbSelectedColor": {
+				"R": 0.0,
+				"G": 0.47843137,
+				"B": 0.8,
+				"A": 1.0
+			},
+			"ClipChildren": true,
+			"CullChildren": true,
+			"AnchorMin": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"AnchorMax": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Offsets": {
+				"Left": 0.0,
+				"Right": 320.0,
+				"Top": 0.0,
+				"Bottom": 200.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0
+			},
+			"Pivot": {
+				"X": 0.5,
+				"Y": 0.5
+			},
+			"Shear": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Rotation": 0.0,
+			"BackgroundColor": {
+				"R": 0.078431375,
+				"G": 0.09019608,
+				"B": 0.11764706,
+				"A": 0.7
+			},
+			"BackgroundBrush": null,
+			"Enabled": true,
+			"Visible": true,
+			"AutoFocus": false
+		}
+	},
+	{
+		"ID": "99f1b1624cd2a86479c5efb824f40fc5",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.GenericControlProfile",
+		"ParentID": "cecc2d844aeb3f8ad7e9a2bd796fc68e",
+		"V": {
+			"ControlTypeName": "FrostedGlassPanel",
+			"Width": 320.0,
+			"Height": 200.0
+		}
+	}
+]
+}

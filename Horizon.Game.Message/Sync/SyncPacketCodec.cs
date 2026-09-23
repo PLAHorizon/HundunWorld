@@ -101,7 +101,9 @@ public static class SyncPacketCodec
                             | (frame[4] << 16)
                             | (frame[5] << 24);
 
-        if (payloadLength < 0 || FrameHeaderSize + payloadLength > frame.Length)
+        // 用减法而非加法判界：payloadLength 接近 int.MaxValue 时 FrameHeaderSize + payloadLength
+        // 回绕为负可绕过检查（安全审查 2026-08；与 SyncHandshakeWire.Unpack 的判界方式一致）。
+        if (payloadLength < 0 || payloadLength > frame.Length - FrameHeaderSize)
         {
             throw new ArgumentException("Invalid sync frame: payload length out of bounds.", nameof(frame));
         }

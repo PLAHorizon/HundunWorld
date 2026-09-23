@@ -627,7 +627,8 @@ namespace HundunWorld.Game
             }
 
             // 4. 重置快照基线缓存，确保重连后首个全量快照重建 baseline
-            Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.ResetLastAppliedSnapshot();
+            // 阶段 6.4 起 ResetLastAppliedSnapshot 为实例方法（静态竞态修复）：取当前系统实例调用。
+            GetSnapshotApplySystemInstance()?.ResetLastAppliedSnapshot();
 
             // 5. 重置 AOI 订阅状态，确保重连后重新全量订阅（而非被滞后防抖跳过）
             _localPlayerSubscribedChunks = null;
@@ -717,10 +718,11 @@ namespace HundunWorld.Game
         /// </summary>
         private void OnHandshakeReceived(HandshakePacket handshake)
         {
-            // 重连场景下重置快照基线缓存：ECS World 销毁重建后，SnapshotApplySystem._lastAppliedSnapshot
-            // （static 字段）会残留旧 baseline，导致增量快照重建基于过期 baseline。
+            // 重连场景下重置快照基线缓存：ECS World 销毁重建后，上一会话应用的 baseline 会残留，
+            // 导致增量快照重建基于过期 baseline。
             // 每次握手都重置是安全的：首个全量快照（BaselineTick=0）会重新建立 baseline。
-            Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.ResetLastAppliedSnapshot();
+            // 阶段 6.4 起 ResetLastAppliedSnapshot 为实例方法（静态竞态修复）：取当前系统实例调用。
+            GetSnapshotApplySystemInstance()?.ResetLastAppliedSnapshot();
             Debug.Log("[HundunWorldGame] 已重置快照基线缓存（重连/握手场景）");
 
             // 确保本地玩家 ID 已设置
@@ -2212,8 +2214,11 @@ namespace HundunWorld.Game
         // 重要：SkinnedModelGuid 对应的资产必须是 FlaxEngine.SkinnedModel 类型。
         // 如果实际是 FlaxEngine.Model，Content.Load<SkinnedModel> 会失败，导致角色没有骨骼网格体。
         // 出现此类问题时，请在 Flax Editor 中重新导入源 FBX 并选择 Type = SkinnedModel。
-        private static readonly Guid SkinnedModelGuid = new Guid("c7c70820409088e4d96db396a43c410f");
-        private static readonly Guid AnimationGraphGuid = new Guid("ceded67f4bb2623f40b4dcb493b0d419");
+        private static readonly Guid SkinnedModelGuid = new Guid("b0823a8576cb47cb9932f5af61aa1ef7"); // 2026-09-22 修正：资产重新导入后 GUID 由 bb21309c… 变更（更早 c7c70820… 已失效）；加载以路径为准
+        // 2026-09 修正：原 ceded67f4bb2623f40b4dcb493b0d419 为**错误 GUID**（字节顺序被写乱）。
+        // Content/Character/Models/Animation Graph.flax 头部实际 ID = ceded67f623f4bb2b4dcb44019d4b093，
+        // 与日志中的 "Invalid or missing asset (ceded67f623f4bb2b4dcb44019d4b093, FlaxEngine.AnimationGraph)" 一致。
+        private static readonly Guid AnimationGraphGuid = new Guid("ceded67f623f4bb2b4dcb44019d4b093");
 
         /// <summary>
         /// 安全初始化 AnimatedModel 的资源引用。

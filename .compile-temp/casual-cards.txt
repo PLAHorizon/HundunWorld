@@ -1,0 +1,18 @@
+card-signin status=ongoing   title=每日签到   desc=签到打卡，连签7天获额外奖励
+         progress="连签进度" / "6 / 7 天"  bar=85%
+         tag=-  time="-" "23:45:12"
+card-stroll status=ongoing   title=闲庭信步   desc=在城镇中散步10分钟，感受江湖烟火
+         progress="散步进度" / "4 / 10 分钟"  bar=40%
+         tag=-  time="-" "无限制"
+card-chess status=ongoing   title=品茗对弈   desc=与NPC对弈一局，以棋会友
+         progress="对弈状态" / "等待对手"  bar=15%
+         tag=-  time="-" "02:30:00"
+card-music status=ongoing   title=听书赏曲   desc=在茶馆听书30分钟，闲品江湖事
+         progress="聆听进度" / "12 / 30 分钟"  bar=40%
+         tag=-  time="-" "05:15:30"
+card-fishing status=ongoing   title=垂钓时光   desc=完成钓鱼3次，享受悠然午后
+         progress="钓鱼进度" / "1 / 3 次"  bar=33%
+         tag=-  time="-" "12:00:00"
+card-poetry status=ending    title=飞花令    desc=参与诗词小游戏，以诗会友
+         progress="今日排名" / "第 8 名"  bar=75%
+         tag=-  time="-" "18:22:45"

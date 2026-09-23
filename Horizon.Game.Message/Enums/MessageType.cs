@@ -160,7 +160,9 @@ namespace Horizon.Game.Message.Enums
         /// 轻功
         /// </summary>
         [Description("轻功")]
-        QingGong = 105,
+        // 修复：原为 105 与 Skill 冲突（重复值导致数字路由歧义），改为 112 唯一值。
+        // 注意：这是对旧式 Header.MessageType 数字路由的兼容性变更，需随客户端同步升级。
+        QingGong = 112,
 
         /// <summary>
         /// 内功

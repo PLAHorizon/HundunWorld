@@ -1,0 +1,43 @@
+# GameplayGoldenTrace v1 — 玩法确定性金轨迹（MMORPG 开发计划 M5.1）。
+# 这是移动金轨迹之外的**第二个对拍域**：移动只覆盖 MovementFormula，玩法（刷怪/AI/战斗）此前无对拍资产。
+# AiVersion = 1
+# SpawnVersion = 1
+# CombatVersion = 1
+# TicksPerSecond = 60
+#
+# 场景：2 个刷怪点（模板 100 / 101），1 名玩家站在刷怪点 1 正前方。
+#       玩家每 20 tick 攻击一次刷怪点 1 的 0 号槽位，直至击杀；怪物按 5 秒延迟重生。
+# 覆盖：确定性刷怪 → 怪物 AI（待机/巡逻/追击/攻击/脱战）→ 玩家攻击（命中/暴击/死亡）
+#       → 掉落掷骰 → 槽位重生；同时覆盖怪物反击玩家（仇恨与射程）。
+#
+# 实体 ID 约定（与 SpawnDirectorCore.ComputeEntityId 一致）：monsterId = (SpawnPointId << 32) | (slotIndex + 1)
+#   spawnPoint 1 slot 0 → 4294967297
+#   spawnPoint 2 slot 0 → 8589934593
+#
+# 格式（管道分隔，float 用 R 往返格式，解析须按 IEEE-754 正确舍入）：
+#   SPAWN|spawnPointId|x|y|maxAlive|templateId|maxHp|attackPower|moveSpeed|aggro|leash|wander|respawnSeconds
+#   PLAYER|entityId|x|y|maxHp
+#   ACTION|serverTick|attackerId|targetId|skillId|yaw
+#   TICKS|ticks
+#
+# 重新生成后必须同步 GameplayGoldenTrace.GoldenFingerprint 与 GameplayGoldenTraceTests 的期望指纹。
+SPAWN|1|0|0|2|100|30|10|4|20|50|6|5
+SPAWN|2|40|0|1|101|40|12|4|20|50|6|5
+PLAYER|2001|-5|0|100
+ACTION|5|2001|4294967297|0|0
+ACTION|25|2001|4294967297|0|0
+ACTION|45|2001|4294967297|0|0
+ACTION|65|2001|4294967297|0|0
+ACTION|85|2001|4294967297|0|0
+ACTION|105|2001|4294967297|0|0
+ACTION|125|2001|4294967297|0|0
+ACTION|145|2001|4294967297|0|0
+ACTION|165|2001|4294967297|0|0
+ACTION|185|2001|4294967297|0|0
+ACTION|205|2001|4294967297|0|0
+ACTION|225|2001|4294967297|0|0
+ACTION|245|2001|4294967297|0|0
+ACTION|265|2001|4294967297|0|0
+ACTION|285|2001|4294967297|0|0
+ACTION|305|2001|4294967297|0|0
+TICKS|600

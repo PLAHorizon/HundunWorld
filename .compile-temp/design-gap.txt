@@ -1,0 +1,290 @@
+设计页 | C#文件 | 区分性文案数 | 命中 | 覆盖率 | 真实文案缺口 | 示例数据缺口
+
+reward-map-unlock            cov= 78.6%  11/14  真实缺口=0  示例数据=3  Ink/Pages/RewardPages.cs
+    dom-ids: back-hud, link-reward-level-up, unlockTitle
+    真实缺口文案(0): 
+    示例数据(3): ×3000 | ×1000 | ×100
+
+photo-mode                   cov= 88.9%  16/18  真实缺口=0  示例数据=2  Ink/Pages/PhotoMode/PhotoModePage.cs
+    dom-ids: back-hud, btn-album, btn-angle, btn-shutter, filter-bright, filter-dark, filter-ink, filter-original, filter-vintage, flashLayer, link-settings-audio, param-exposure-value, param-focal-value, param-fov-value, viewfinder
+    真实缺口文案(0): 
+    示例数据(2): +0.5 | 35mm
+
+reward-achievement           cov= 88.9%  8/9  真实缺口=0  示例数据=1  Ink/Pages/RewardPages.cs
+    dom-ids: achievement-modal, achievement-overlay, achievementTitle, back-hud, link-reward-teleport
+    真实缺口文案(0): 
+    示例数据(1): ×2000
+
+menu-quests                  cov= 97.8%  44/45  真实缺口=0  示例数据=1  Ink/Pages/MenuQuestsPage.cs
+    dom-ids: back-hud, btn-abandon-quest, btn-mobile-menu, btn-share-quest, btn-track-quest, nav-bestiary, quest-item-1, quest-item-2, quest-item-3, quest-item-4, quest-item-5, quest-item-6, tab-daily, tab-main, tab-side, tab-world
+    真实缺口文案(0): 
+    示例数据(1): 100%
+
+settings                     cov= 98.1%  52/53  真实缺口=0  示例数据=1  Ink/Pages/SettingsPage.cs
+    dom-ids: back-hud, shortcut-popup-bestiary
+    真实缺口文案(0): 
+    示例数据(1): 60 fps
+
+cc-face-customize            cov=100.0%  8/8  真实缺口=0  示例数据=0  Ink/Pages/CharacterCreation/CharacterFaceCustomizePage.cs
+    dom-ids: cta-enter-game
+    真实缺口文案(0): 
+    示例数据(0): 
+
+cc-naming                    cov=100.0%  13/13  真实缺口=0  示例数据=0  Ink/Pages/CharacterCreation/CharacterNamingPage.cs
+    dom-ids: cta-next, name-count
+    真实缺口文案(0): 
+    示例数据(0): 
+
+combat-hud                   cov=100.0%  3/3  真实缺口=0  示例数据=0  Ink/Pages/CombatHudPage.cs,Ink/Pages/Combat/CombatHudTraditionalPage.cs
+    dom-ids: link-guide-hud, nav-bestiary-popup, nav-casual, nav-character, nav-photo, nav-quests, nav-reward, nav-settings, page-combat-hud
+    真实缺口文案(0): 
+    示例数据(0): 
+
+combat-hud-v2                cov=100.0%  29/29  真实缺口=0  示例数据=0  Ink/Pages/Combat/CombatHudV2Page.cs
+    dom-ids: back-hud
+    真实缺口文案(0): 
+    示例数据(0): 
+
+dialogue-confirm             cov=100.0%  4/4  真实缺口=0  示例数据=0  Ink/Pages/Social/DialogueConfirmPage.cs
+    dom-ids: back-hud, opt-accept, opt-decline, opt-inquire, page-dialogue-confirm
+    真实缺口文案(0): 
+    示例数据(0): 
+
+guide-hud                    cov=100.0%  4/4  真实缺口=0  示例数据=0  Ink/Pages/Guide/GuideHudPage.cs
+    dom-ids: back-hud, inkArrowBlur, inkArrowGrad, link-element-vision, page-guide-hud
+    真实缺口文案(0): 
+    示例数据(0): 
+
+ink-anim-ref-1               cov=100.0%  31/31  真实缺口=0  示例数据=0  Ink/Pages/InkAnim/InkAnimationRefPages.cs,Ink/Data/InkAnimationSpecs.cs
+    dom-ids: 
+    真实缺口文案(0): 
+    示例数据(0): 
+
+ink-anim-ref-2               cov=100.0%  36/36  真实缺口=0  示例数据=0  Ink/Pages/InkAnim/InkAnimationRefPages.cs,Ink/Data/InkAnimationSpecs.cs
+    dom-ids: 
+    真实缺口文案(0): 
+    示例数据(0): 
+
+loading-1                    cov=100.0%  7/7  真实缺口=0  示例数据=0  Ink/Pages/LoadingPages.cs
+    dom-ids: loading-bar, loading-pct, loading-tip-text
+    真实缺口文案(0): 
+    示例数据(0): 
+
+loading-2                    cov=100.0%  9/9  真实缺口=0  示例数据=0  Ink/Pages/LoadingPages.cs
+    dom-ids: auto-advance, continue-hint, loading-bar, loading-pct, loading-tip-text
+    真实缺口文案(0): 
+    示例数据(0): 
+
+menu-activities              cov=100.0%  45/45  真实缺口=0  示例数据=0  Ink/Pages/Activities/MenuActivitiesPage.cs
+    dom-ids: back-hud, nav-battle-pass
+    真实缺口文案(0): 
+    示例数据(0): 
+
+menu-martial-record          cov=100.0%  41/41  真实缺口=0  示例数据=0  Ink/Pages/MartialRecord/MenuMartialRecordPage.cs
+    dom-ids: back-hud, marker-jiangnan, marker-luoyang, marker-mobei, marker-nanjiang, marker-tianshan, marker-xiaoyao, nav-bestiary, nav-character, nav-equipment, nav-livelihood, nav-mail, nav-martial-record, nav-quests, nav-settings, nav-shop, nav-team
+    真实缺口文案(0): 
+    示例数据(0): 
+
+menu-personal-info           cov=100.0%  25/25  真实缺口=0  示例数据=0  Ink/Pages/Personal/MenuPersonalInfoPage.cs
+    dom-ids: back-hud, nav-appearance, nav-battle-prep, nav-character, nav-codex, nav-equipment, nav-livelihood, nav-mail, nav-martial, nav-personal-info, nav-quest, nav-sect, nav-settings, nav-shop, nav-team, nav-time, tab-battle, tab-explore, tab-overview, tab-social
+    真实缺口文案(0): 
+    示例数据(0): 
+
+mini-game-complete           cov=100.0%  12/12  真实缺口=0  示例数据=0  Ink/Pages/MiniGameCompletePage.cs
+    dom-ids: back-hud, grade-label, link-guide-action, mini-game-complete-modal, modal-title, overlay-backdrop, rewards-label, score-label
+    真实缺口文案(0): 
+    示例数据(0): 
+
+popup-item-acquired          cov=100.0%  5/5  真实缺口=0  示例数据=0  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, itemModal, itemOverlay, itemTitleLabel, link-popup-skill-realization, page-popup-item-acquired
+    真实缺口文案(0): 
+    示例数据(0): 
+
+reward-teleport-unlock       cov=100.0%  7/7  真实缺口=0  示例数据=0  Ink/Pages/RewardPages.cs
+    dom-ids: back-hud, link-reward-map, teleportTitle
+    真实缺口文案(0): 
+    示例数据(0): 
+
+reward-level-up              cov= 40.0%  8/20  真实缺口=1  示例数据=11  Ink/Pages/Reward/RewardLevelUpPage.cs
+    dom-ids: back-hud, level-up-overlay, levelNumber, levelUpTitle, link-reward-congratulations
+    真实缺口文案(1): 经验值
+      其中已在其他页面实现: 经验值
+    示例数据(11): 13,200 | 3,280 | 3,450 | +170 | 2,150 | 2,280 | +130 | 2,000 | 2,200 | +200 | 0 / 5,000
+
+menu-char-attributes-v2      cov= 63.6%  28/44  真实缺口=1  示例数据=15  Ink/Pages/Character/MenuCharAttributesV2Page.cs
+    dom-ids: back-hud, nav-shop-rare-items
+    真实缺口文案(1): 青城派 · 内门弟子
+    示例数据(15): 52,840 | 12,450 | 3,280 | 2,150 | 28.5 | 1,580 | 1,240 | 18.2 | 95.8 | Lv. 15 | 8,520 | Lv. 12 | 6,180 | Lv. 10 | 5,340
+
+menu-livelihood              cov= 63.6%  28/44  真实缺口=1  示例数据=15  Ink/Pages/Livelihood/MenuLivelihoodPage.cs
+    dom-ids: back-hud, btn-repair, nav-bestiary, nav-char-info, nav-equipment, nav-friends, nav-livelihood, nav-mail, nav-martial, nav-quests, nav-settings, nav-shop, nav-skills, nav-team
+    真实缺口文案(1): 技能总数
+    示例数据(15): Lv.8 | 2400/3200 | Lv.5 | 1800/3000 | Lv.3 | 800/2000 | Lv.6 | 2160/3000 | Lv.4 | 1000/2000 | Lv.2 | 250/1000 | 2,400 / 3,200 | 4 / 6 | 85/100
+
+qte                          cov= 75.0%  3/4  真实缺口=1  示例数据=0  Ink/Pages/Combat/QtePage.cs
+    dom-ids: back-hud, link-acupoint, page-qte
+    真实缺口文案(1): 键发动破招
+    示例数据(0): 
+
+death-screen                 cov= 80.0%  4/5  真实缺口=1  示例数据=0  Ink/Pages/Combat/DeathScreenPage.cs
+    dom-ids: back-hud, link-qte, page-death-screen
+    真实缺口文案(1): 损失银两 ×500，经验 ×200
+    示例数据(0): 
+
+reward-congratulations       cov= 90.9%  10/11  真实缺口=1  示例数据=0  Ink/Pages/RewardPages.cs
+    dom-ids: back-hud, link-reward-quest-complete
+    真实缺口文案(1): 总价值
+    示例数据(0): 
+
+menu-bestiary                cov= 92.3%  24/26  真实缺口=1  示例数据=1  Ink/Pages/Bestiary/MenuBestiaryPage.cs
+    dom-ids: back-hud, btn-mobile-menu, card-daylily, card-dendrobium, card-gentian, card-orchid, card-snow-chrysanthemum, card-snow-lotus, card-spirit-mushroom, card-unknown-1, card-unknown-2, card-unknown-3, card-unknown-4, card-winter-plum, detail-panel, nav-livelihood, nav-mail, nav-martial-record, nav-quest, nav-shop, nav-team, tab-artifact, tab-avian, tab-beast, tab-fish-insect, tab-flora, tab-ore
+    真实缺口文案(1): 已收录 56 株，继续探索可解锁更多记录
+    示例数据(1): 56/120
+
+popup-verification           cov= 92.9%  13/14  真实缺口=1  示例数据=0  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, sealStamp, shortcut-reward-achievement, verificationModal, verificationOverlay
+    真实缺口文案(1): 查看成就奖励
+    示例数据(0): 
+
+menu-shop                    cov= 93.3%  28/30  真实缺口=1  示例数据=1  Ink/Pages/MenuShopPage.cs
+    dom-ids: back-hud, buy-dye-set, buy-equipment-box, buy-exp-pill, buy-fine-weapon, buy-mystery-box, buy-newbie-pack, buy-repair-hammer, buy-return-scroll, buy-stamina-pill, cancel-purchase, card-dye-set, card-equipment-box, card-exp-pill, card-fine-weapon, card-mystery-box, card-newbie-pack, card-repair-hammer, card-return-scroll, card-stamina-pill, confirm-purchase, nav-bestiary, nav-character, nav-equipment, nav-livelihood, nav-mail, nav-martial-record, nav-quests, nav-settings, nav-shop, nav-team, qty-decrease, qty-increase, shortcut-casual-mode, tab-appearance, tab-bundle, tab-consumable, tab-equipment, tab-material, tab-recommend
+    真实缺口文案(1): 返回战场
+      其中已在其他页面实现: 返回战场
+    示例数据(1): ×500
+
+menu-battle-prep             cov= 94.5%  52/55  真实缺口=1  示例数据=2  Ink/Pages/Combat/MenuBattlePrepPage.cs
+    dom-ids: back-hud, nav-sect
+    真实缺口文案(1): 达成率 83% · 建议提升装备品阶
+    示例数据(2): 12,450 | 15,000
+
+menu-appearance              cov= 95.2%  20/21  真实缺口=1  示例数据=0  Ink/Pages/Appearance/MenuAppearancePage.cs
+    dom-ids: back-hud, btn-apply-dye, btn-reset-dye, btn-reset-view, btn-rotate-left, btn-rotate-right, btn-zoom-in, btn-zoom-out, card-set-1, card-set-2, card-set-3, card-set-4, card-set-5, card-set-6, dye-accent-1, dye-accent-2, dye-accent-3, dye-accent-4, dye-accent-5, dye-accent-6, dye-accent-7, dye-accent-8, dye-primary-1, dye-primary-2, dye-primary-3, dye-primary-4, dye-primary-5, dye-primary-6, dye-primary-7, dye-primary-8, dye-secondary-1, dye-secondary-2, dye-secondary-3, dye-secondary-4, dye-secondary-5, dye-secondary-6, dye-secondary-7, dye-secondary-8, nav-appearance, nav-battle-prep, nav-bestiary, nav-character, nav-equipment, nav-livelihood, nav-mail, nav-martial, nav-personal-info, nav-quest, nav-sect, nav-settings, nav-shop, nav-team, nav-time, tab-cape, tab-costume, tab-headwear, tab-mount, tab-weapon-skin
+    真实缺口文案(1): 应用染色
+    示例数据(0): 
+
+popup-bestiary-side          cov= 96.3%  26/27  真实缺口=1  示例数据=0  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, bestiary-capture, bestiary-favorite, bestiary-overlay, bestiary-panel, link-popup-message
+    真实缺口文案(1): 古籍有载："麟之趾，振振公子，于嗟麟兮。"世人以见麒麟为祥瑞之兆，然墨麒麟行踪诡秘，非常人所能遇也。
+    示例数据(0): 
+
+element-vision               cov= 50.0%  6/12  真实缺口=2  示例数据=4  Ink/Pages/ElementVision/ElementVisionPage.cs
+    dom-ids: back-hud, link-death-screen, page-element-vision
+    真实缺口文案(2): 视野已激活 | 退出视野
+    示例数据(4): 12.4m | 8.7m | 15.2m | 5.3m
+
+reward-quest-complete        cov= 81.2%  13/16  真实缺口=2  示例数据=1  Ink/Pages/RewardPages.cs
+    dom-ids: back-hud, shortcut-photo-mode
+    真实缺口文案(2): 墨麒麟鳞片 | 青城派
+      其中已在其他页面实现: 青城派
+    示例数据(1): +100
+
+popup-martial-detail         cov= 83.3%  30/36  真实缺口=2  示例数据=4  Ink/Pages/PopupPages.cs
+    dom-ids: attr-heading, back-hud, btn-cultivate, btn-equip, combo-heading, combo-node-1, combo-node-2, combo-node-3, cult-heading, link-popup-guide-side, martial-detail-modal, martial-move-icon, martial-move-name, mat-1, mat-2, mat-3, mat-4, mat-heading
+    真实缺口文案(2): 连招需在8秒内依次释放，中断后需重新起手。终式命中可触发"青莲剑意"增益。 | 下一阶
+    示例数据(4): Lv. 15 | Lv. 16 | 7,500 | 10,000
+
+menu-time                    cov= 87.5%  21/24  真实缺口=2  示例数据=1  Ink/Pages/Time/MenuTimePage.cs
+    dom-ids: back-hud, btn-wait-1shichen, btn-wait-dawn, btn-wait-dusk, centerGlow, dialFace, pointerGlow, shortcut-quests
+    真实缺口文案(2): 其他时辰 | 外圈活动
+    示例数据(1): 12,450
+
+menu-gacha                   cov= 89.5%  34/38  真实缺口=2  示例数据=2  Ink/Pages/Gacha/MenuGachaPage.cs
+    dom-ids: back-hud, nav-activities
+    真实缺口文案(2): 已祈愿 | 距离保底还有
+    示例数据(2): 元宝 × 160 | 元宝 × 1600
+
+popup-skill-realization      cov= 90.0%  18/20  真实缺口=2  示例数据=0  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, link-popup-verification, realization-title, skill-confirm, skill-modal, skill-overlay
+    真实缺口文案(2): 领悟等级 | 心法验证
+    示例数据(0): 
+
+popup-martial-arts           cov= 92.5%  37/40  真实缺口=2  示例数据=1  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, link-popup-item-acquired, martial-modal, martial-skill-name
+    真实缺口文案(2): 当前修为 | 缺少 2 种材料
+    示例数据(1): 180 / 300
+
+settings-audio               cov= 94.9%  37/39  真实缺口=2  示例数据=0  Ink/Pages/Settings/SettingsAudioPage.cs
+    dom-ids: action-info-text, back-hud, link-mini-game-complete
+    真实缺口文案(2): 小游戏 | 设置分类
+      其中已在其他页面实现: 设置分类
+    示例数据(0): 
+
+chapter-transition           cov= 62.5%  5/8  真实缺口=3  示例数据=0  Ink/Pages/ChapterTransition/ChapterTransitionPage.cs
+    dom-ids: cta-enter-world
+    真实缺口文案(3): 天地混沌初开，江湖风起云涌。 | 少年仗剑而出，踏入这烽烟四起的乱世。 | 前路未知，刀光剑影间，且看你如何书写自己的传奇。
+    示例数据(0): 
+
+guide-action                 cov= 66.7%  6/9  真实缺口=3  示例数据=0  Ink/Pages/Guide/GuideActionPage.cs
+    dom-ids: back-hud, guideOverlay, guideTitle, link-guide-martial
+    真实缺口文案(3): 键控制角色移动方向，按住 | 键可进入疾跑状态，按 | 键跳跃。
+    示例数据(0): 
+
+menu-battle-pass             cov= 79.0%  83/105  真实缺口=4  示例数据=18  Ink/Pages/BattlePass/MenuBattlePassPage.cs
+    dom-ids: back-hud, nav-char-attributes-v2, trackNext, trackPrev
+    真实缺口文案(4): 返回战斗 | 已领取: | 可领取: | 未解锁:
+      其中已在其他页面实现: 返回战斗
+    示例数据(18): Lv. 42 | 12,450 | Lv.20 | Lv.21 | Lv.22 | Lv.23 | Lv.24 | Lv.25 | Lv.26 | Lv.27 | Lv.28 | Lv.29 | / 10 | Lv. 10 | Lv. 20 | Lv. 30 | Lv. 40 | Lv. 50
+
+shop-rare-items              cov= 79.2%  42/53  真实缺口=4  示例数据=7  Ink/Pages/Shop/ShopRareItemsPage.cs
+    dom-ids: back-hud, itemGrid, itemModal, modalAttrGrid, modalAttrSection, modalBackdrop, modalBuyBtn, modalCancelBtn, modalCloseBtn, modalCountdown, modalCountdownArea, modalDesc, modalIcon, modalIconGlow, modalItemName, modalItemType, modalPanel, modalPriceCurrency, modalPriceIcon, modalPriceNumber, modalQualityBadge, modalSkillBox, modalSkillSection, modalSkillText, nav-settings, refreshCountdown
+    真实缺口文案(4): 品质筛选 | 件珍品 | 武器 · 长剑 | 上古名剑，锋利无比。
+    示例数据(7): 6480 | 3280 | 2680 | 1280 | 1880 | 1080 | 5000
+
+menu-mail                    cov= 82.6%  38/46  真实缺口=4  示例数据=4  Ink/Pages/Mail/MenuMailPage.cs
+    dom-ids: attach-1, attach-2, attach-3, back-hud, btn-claim-all, btn-claim-selected, btn-delete-mail, mail-item-1, mail-item-2, mail-item-3, mail-item-4, mail-item-5, mail-item-6, nav-bestiary, nav-character, nav-equipment, nav-inventory, nav-livelihood, nav-mail, nav-martial-record, nav-quests, nav-settings, nav-shop, nav-skills, nav-team, tab-all, tab-system, tab-unread
+    真实缺口文案(4): 侠士道鉴： | 自侠士踏入江湖以来，已有七日之久。江湖路远，风波险恶，侠士能坚持至此，实属不易。今特备薄礼一份，以表心意。 | 铜钱五千，聊作盘缠之用；精良装备箱一具，以助行侠仗义之事；经验丹三枚，望修为精进，武艺日增。 | 愿侠士此后行侠仗义，名扬四海，不负这一身武艺。江湖路漫漫，且行且珍重。
+    示例数据(4): 2封未读 | 3个附件 | 1个附件 | x 5000
+
+guide-martial                cov= 64.3%  9/14  真实缺口=5  示例数据=0  Ink/Pages/Guide/GuideMartialPage.cs
+    dom-ids: back-hud, gm-modal-title, guide-martial-practice, link-multiplayer
+    真实缺口文案(5): 键释放遁地术，潜入地下。 | 键保持潜行状态，可躲避敌人视线。 | 键跃出地面，对周围敌人造成突袭伤害。 | 敌人攻击时 | 释放遁地术，可避开伤害并反击。
+    示例数据(0): 
+
+menu-team                    cov= 82.4%  28/34  真实缺口=5  示例数据=1  Ink/Pages/Team/MenuTeamPage.cs
+    dom-ids: back-hud, btn-leave-team, invite-btn-1, invite-btn-2, invite-btn-3, invite-friend-1, invite-friend-2, invite-friend-3, invite-slot-1, invite-slot-2, loot-free, loot-leader, loot-round, member-1, member-2, member-3, nav-bestiary, nav-character, nav-equipment, nav-livelihood, nav-mail, nav-martial-record, nav-quests, nav-settings, nav-shop, nav-team, search-button, slider-min-level, tab-dungeon, tab-elite, tab-normal, toggle-auto-accept
+    真实缺口文案(5): 快捷邀请 | 队伍类型 | 自动接受申请 | 最低等级 | 掉落分配
+    示例数据(1): Lv.30
+
+popup-guide-side             cov= 60.9%  14/23  真实缺口=6  示例数据=3  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, guide-next, guide-prev, guide-skip, guideTitle, link-popup-martial-arts
+    真实缺口文案(6): 键进入疾跑状态 | 在疾跑中按 | 键起跳 | 空中再次按 | 键施展二段跳 | 可进行墙面奔跑
+    示例数据(3): 第 3 步 | 共 8 步 | 37.5
+
+multiplayer                  cov= 81.8%  36/44  真实缺口=6  示例数据=2  Ink/Pages/Multiplayer/MultiplayerPage.cs
+    dom-ids: back-hud, btn-load-more, btn-refresh, filter-mode-1v1, filter-mode-3v3, filter-mode-5v5, filter-mode-all, filter-mode-free, filter-status-all, filter-status-playing, filter-status-waiting, link-combat-hud-v2, mode-clan, mode-create-room, mode-friends, mode-join-room, mode-quick-match, room1-spectate, room2-join, room3-join, room4-join, room5-spectate, room6-join, sort-name, sort-players
+    真实缺口文案(6): 房主: 独孤求败 | 房主: 丐帮帮主 | 房主: 风清扬 | 房主: 摸金校尉 | 房主: 东方不败 | 房主: 明教教主
+    示例数据(2): Lv. 42 | 共 6 个房间
+
+menu-casual-mode             cov= 83.9%  52/62  真实缺口=6  示例数据=4  Ink/Pages/Casual/MenuCasualModePage.cs
+    dom-ids: back-hud, btn-chess, btn-fishing, btn-music, btn-poetry, btn-reward-detail, btn-signin, btn-stroll, card-chess, card-fishing, card-music, card-poetry, card-signin, card-stroll, nav-activities, nav-attributes, nav-battlepass, nav-casual, nav-gacha, nav-settings, nav-shop, tab-all, tab-daily, tab-recommend, tab-weekly
+    真实缺口文案(6): 燕雲十六聲 | 不肝 · 休闲模式 | 轻松游玩，奖励不落 | 今日活动 | 散步进度 | 今日排名
+    示例数据(4): /180 | / 500 | 4 / 10 分钟 | 第 8 名
+
+popup-message                cov= 33.3%  4/12  真实缺口=8  示例数据=0  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, favoriteBtn, letterContent, link-popup-martial-detail, messageModal
+    真实缺口文案(8): 近日昆仑山中异象频生，墨麒麟出没，恐有大变。山中灵气紊乱，飞禽走兽皆不安其位，草木枯荣失序，此乃天地示警之兆。 | 老夫已派弟子前往探查，望少侠亦能相助。江湖之中，能辨此异象者寥寥，少侠身负天命，或可窥见其中端倪。 | 此事关系江湖安危，切不可等闲视之。若任其蔓延，恐殃及无辜苍生，届时悔之晚矣。 | 若有发现，速来报知。青城掌门 顿首。 | 青城派掌门 玄真子 | 庚子年 暮秋 | 青城山 · 上清宫 | 昆仑异象 · 主线
+    示例数据(0): 
+
+acupoint                     cov= 52.9%  9/17  真实缺口=8  示例数据=0  Ink/Pages/Combat/AcupointPage.cs
+    dom-ids: acupoint-baihui, acupoint-danzhong, acupoint-fengchi, acupoint-guanyuan, acupoint-hegu, acupoint-shenque, acupoint-taiyang, acupoint-yongquan, back-hud, link-dialogue-confirm, page-acupoint
+    真实缺口文案(8): 百会穴 | 太阳穴 | 风池穴 | 膻中穴 | 神阙穴 | 合谷穴 | 关元穴 | 涌泉穴
+      其中已在其他页面实现: 太阳穴
+    示例数据(0): 
+
+menu-sect                    cov= 85.0%  68/80  真实缺口=8  示例数据=4  Ink/Pages/Sect/MenuSectPage.cs
+    dom-ids: back-hud, nav-personal-info
+    真实缺口文案(8): 混沌世界 | 个人信息 | 门派列表 | 内门弟子 · 贡献 3200 | 不得以门派武学欺凌弱小，违者逐出师门。 | 每月须完成三件门派日常，否则扣减贡献度。 | 同门之间切磋武艺，点到为止，不可伤及性命。 | 门派秘籍不可外传，违者废除武功，逐出门墙。
+      其中已在其他页面实现: 混沌世界 | 个人信息
+    示例数据(4): 已加入 1 / 8 | 已学 3 / 4 | 已学 2 / 4 | 已学 1 / 4
+
+menu-char-attributes         cov=  5.6%  1/18  真实缺口=13  示例数据=4  Ink/Pages/MenuCharAttributesPage.cs
+    dom-ids: back-hud, btn-mobile-menu, nav-appearance, nav-battle-prep, nav-char-attributes, nav-equipment, nav-personal-info, nav-sect, nav-time
+    真实缺口文案(13): 个人信息 | 博物志 | 武林录 | 无名侠 | 逍遥派 | 逍遥派 · 内功修为 | 无名侠 · 逍遥派 | 基础属性 | 进阶属性 | 属性说明 | 基础属性决定角色核心能力。气血影响生存，内力决定武学释放频率。筋骨主攻伐，根骨司体魄，气海蕴真元，身法判轻重。进阶属性由基础属性与装备加成共同计算，暴击与命中影响战斗输出效率。 | 混沌世界 v1.2.0 | 逍遥盛世 · 32ms
+      其中已在其他页面实现: 个人信息 | 博物志 | 武林录 | 无名侠 | 逍遥派 | 基础属性 | 进阶属性
+    示例数据(4): Lv.42 | 12,450 | 3200/3200 | 1800/1800
+
+menu-equipment               cov= 41.7%  20/48  真实缺口=20  示例数据=8  Ink/Pages/Character/MenuEquipmentPage.cs
+    dom-ids: back-hud, btn-equip-swap, btn-mobile-menu, eq-item-1, eq-item-2, eq-item-3, eq-item-4, eq-item-5, eq-item-6, eq-item-7, eq-item-8, nav-appearance, nav-battle-prep, nav-char-attributes, nav-equipment, nav-personal-info, nav-sect, nav-time, slot-accessory-1, slot-accessory-2, slot-chest, slot-feet, slot-head, slot-legs, slot-shoulder, slot-waist, slot-weapon-main, slot-weapon-sub, slot-wrist-l, slot-wrist-r, sort-level, sort-quality, sort-type
+    真实缺口文案(20): 个人信息 | 博物志 | 武林录 | 无名侠 | 逍遥派 | Lv.40 · 长刀 | Lv.38 · 胸甲 | Lv.35 · 长剑 | Lv.32 · 副武器 | Lv.30 · 长枪 | Lv.28 · 短刃 | Lv.15 · 护腕 | 主武器 | 饰品一 | 饰品二 | 龙纹之力 | 当前·鱼肠剑 | 候选·赤焰刀 | 混沌世界 v1.2.0 | 逍遥盛世 · 32ms
+      其中已在其他页面实现: 个人信息 | 博物志 | 武林录 | 无名侠 | 逍遥派
+    示例数据(8): Lv.42 | 12,450 | 8/24 | Lv.12 · 靴 | 9/11 | 套装 2/4 | +186 | +210

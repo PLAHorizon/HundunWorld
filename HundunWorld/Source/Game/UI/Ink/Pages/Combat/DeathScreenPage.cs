@@ -60,6 +60,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// <summary>殒命标题文本（Display 样式，朱红色）</summary>
         private InkTextBlock _titleText;
 
+        /// <summary>竖排书法标题（设计稿 殒命 竖排大字）</summary>
+        private InkVerticalTitle _verticalTitle;
+
+        /// <summary>副标题（汝之武途，至此终结）</summary>
+        private InkTextBlock _subtitleText;
+
+        /// <summary>原地复活按钮冷却提示（15秒）</summary>
+        private InkTextBlock _reviveCooldownText;
+
         /// <summary>损失信息文本（Body 样式）</summary>
         private InkTextBlock _lossText;
 
@@ -141,15 +150,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// </summary>
         private void BuildTitleText()
         {
-            _titleText = new InkTextBlock(InkTextStyle.Display)
+            // 竖排书法大字（设计稿 .ink-vertical-title death-title）
+            _verticalTitle = new InkVerticalTitle
             {
                 Text = "殒命",
+                FontSize = 72f,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(TitleWidth, TitleHeight),
-                HorizontalAlignment = TextAlignment.Center,
-                TextColor = InkWashTheme.VermilionBright,
+                Size = new Float2(TitleHeight, TitleWidth * 0.5f),
             };
-            AddChild(_titleText);
+            AddChild(_verticalTitle);
+
+            // 副标题（设计稿 .death-subtitle：汝之武途，至此终结）
+            _subtitleText = new InkTextBlock(InkTextStyle.Subheading)
+            {
+                Text = "汝之武途，至此终结",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(TitleWidth, 28f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.PaperAged,
+            };
+            AddChild(_subtitleText);
         }
 
         /// <summary>
@@ -161,7 +181,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         {
             _lossText = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = $"经验损失 {_expLoss} / 铜钱损失 {_coinLoss}",
+                Text = $"损失银两 ×{_expLoss}，经验 ×{_coinLoss}",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(LossWidth, LossHeight),
                 HorizontalAlignment = TextAlignment.Center,
@@ -182,12 +202,23 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             {
                 Variant = InkButtonVariant.Vermilion,
                 ButtonSize = InkButtonSize.Lg,
-                Text = "破招",
+                Text = "原地复活",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(ButtonWidth, ButtonHeight),
             };
             _reviveButton.ButtonClicked += OnReviveButtonClicked;
             AddChild(_reviveButton);
+
+            // 冷却提示（设计稿 .death-cooldown「15秒」）
+            _reviveCooldownText = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "15秒",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(60f, 18f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.TextFaint,
+            };
+            AddChild(_reviveCooldownText);
         }
 
         /// <summary>
@@ -203,7 +234,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Lg,
-                Text = "返回",
+                Text = "返回最近的城镇",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(ButtonWidth, ButtonHeight),
             };
@@ -274,20 +305,29 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             float screenWidth = _screenSize.X;
             float screenHeight = _screenSize.Y;
 
-            // 标题：水平居中，垂直位于屏幕上 1/3 处
-            if (_titleText != null)
+            // 竖排标题：水平居中，垂直位于屏幕上 1/3 处
+            float titleY = screenHeight * TitleVerticalRatio;
+            if (_verticalTitle != null)
             {
-                _titleText.Location = new Float2(
-                    (screenWidth - TitleWidth) * 0.5f,
-                    screenHeight * TitleVerticalRatio);
+                _verticalTitle.Location = new Float2(
+                    (screenWidth - _verticalTitle.Width) * 0.5f,
+                    titleY);
             }
 
-            // 损失信息：水平居中，紧随标题下方
-            if (_lossText != null && _titleText != null)
+            // 副标题：紧随竖排标题下方居中
+            if (_subtitleText != null)
+            {
+                _subtitleText.Location = new Float2(
+                    (screenWidth - TitleWidth) * 0.5f,
+                    titleY + (_verticalTitle != null ? _verticalTitle.Height : 0f) + LossMarginTop);
+            }
+
+            // 损失信息：水平居中，紧随副标题下方
+            if (_lossText != null && _subtitleText != null)
             {
                 _lossText.Location = new Float2(
                     (screenWidth - LossWidth) * 0.5f,
-                    _titleText.Location.Y + TitleHeight + LossMarginTop);
+                    _subtitleText.Location.Y + LossHeight + LossMarginTop);
             }
 
             // 按钮组：底部水平居中并排
@@ -298,6 +338,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             if (_reviveButton != null)
             {
                 _reviveButton.Location = new Float2(buttonsLeft, buttonY);
+            }
+
+            if (_reviveCooldownText != null && _reviveButton != null)
+            {
+                _reviveCooldownText.Location = new Float2(
+                    _reviveButton.Location.X + (ButtonWidth - 60f) * 0.5f,
+                    _reviveButton.Location.Y + ButtonHeight + 4f);
             }
 
             if (_returnButton != null)

@@ -24,7 +24,7 @@ namespace Horizon.Game.Gateway.Services
     /// 洪水淹没，保证最新状态优先流动，而非卡死 grain；丢弃计数通过 <see cref="DroppedByBackpressureCount"/>
     /// 暴露供 <c>SyncMetrics</c> 汇报。
     /// </remarks>
-    public sealed class GatewayZoneShardFanoutSource : IZoneShardFanoutObserver, IZoneShardFanoutSource, IAsyncDisposable
+    public sealed class GatewayZoneShardFanoutSource : IZoneShardFanoutObserver, IZoneShardFanoutSource, IDsDownlinkSink, IAsyncDisposable
     {
         private readonly Channel<FanoutEvent> _channel;
         private readonly int _capacity;
@@ -35,6 +35,13 @@ namespace Horizon.Game.Gateway.Services
 
         /// <summary>因队列满被丢弃的旧事件数（反压指标）。</summary>
         public long DroppedByBackpressureCount { get; private set; }
+
+        /// <summary>
+        /// 累计从 **UE5 DS 上行通道**注入的事件数（与 grain 推送的
+        /// <see cref="ReceivedEventCount"/> 分开计数）。
+        /// <para>灰度期指标：DS 通道与 Orleans 通道的吞吐/丢弃对比，是"灰度是否健康"的一手证据。</para>
+        /// </summary>
+        public long DownlinkEventCount { get; private set; }
 
         /// <summary>当前排队中的事件数（诊断）。</summary>
         public int PendingCount => _channel.Reader.Count;
@@ -141,6 +148,53 @@ namespace Horizon.Game.Gateway.Services
                 return null;
             }
             return reader.TryRead(out evt) ? evt : null;
+        }
+
+        // --- IDsDownlinkSink（UE5 DS 上行快照注入，MMORPG 开发计划 M2.3） ---
+
+        /// <summary>
+        /// MMORPG 开发计划 M2.3：把 **UE5 DS 上报的下行事件**注入同一条分发管线。
+        /// <para>
+        /// 设计要点——复用而非另造：
+        /// DS 快照与 Orleans grain 推送在语义上是同一种东西（"权威状态 + 受众集合"），
+        /// 因此共用 <see cref="GatewaySyncDispatcher"/> 的带宽守门、兴趣分级、并行分发与
+        /// 背压丢弃策略。若为 DS 单开一条通道，这些治理逻辑会立刻出现两份实现并逐渐漂移。
+        /// </para>
+        /// <para>
+        /// 计数与 grain 推送分开（<see cref="ReceivedDownlinkEventCount"/>），
+        /// 使灰度期可以直接对比"DS 通道吞吐 vs Orleans 通道吞吐"（灰度对比面板的数据源）。
+        /// </para>
+        /// <para>
+        /// 返回值为 <see cref="BoundedChannelFullMode.DropOldest"/> 语义下的"是否入队尝试成功"：
+        /// DropOldest 模式下 <c>TryWrite</c> 恒为 true（旧项被静默挤掉），
+        /// 因此背压通过 <see cref="DroppedByBackpressureCount"/> 与队列使用率告警暴露，
+        /// 与既有 grain 推送路径**完全一致**，不引入第二套背压语义。
+        /// </para>
+        /// </summary>
+        public bool TryEnqueue(FanoutEvent evt)
+        {
+            if (evt?.Packet is null) return false;
+            if (evt.TargetSessionIds is null || evt.TargetSessionIds.Count == 0) return false;
+
+            var packet = evt.Packet;
+            DownlinkEventCount++;
+
+            var ok = _channel.Writer.TryWrite(evt);
+            if (!ok)
+            {
+                DroppedByBackpressureCount++;
+                _logger?.LogWarning("GatewayZoneShardFanoutSource：DS 下行事件写入失败（反压），Pending={Count}", PendingCount);
+            }
+
+            var pending = PendingCount;
+            if (pending > _capacity * 0.8 && DownlinkEventCount % 60 == 1)
+            {
+                _logger?.LogWarning(
+                    "[FanoutBackpressure]（DS 下行）队列使用率过高：Pending={Pending}/{Capacity} ({Pct:F1}%), Downlink={Downlink}, Dropped={Dropped}",
+                    pending, _capacity, (double)pending / _capacity * 100, DownlinkEventCount, DroppedByBackpressureCount);
+            }
+
+            return ok;
         }
 
         public ValueTask DisposeAsync()

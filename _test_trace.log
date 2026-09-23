@@ -1,0 +1,20 @@
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\bin\Debug\net10.0\Horizon.Game.Gateway.Tests.dll (.NETCoreApp,Version=v10.0)的测试运行
+总共 1 个测试文件与指定模式相匹配。
+[xUnit.net 00:00:02.16]     Horizon.Game.Gateway.Tests.TraceRegenerationValidationTests.SingleEntityTrace_Regenerates_ByteIdentical_ToEmbedded [FAIL]
+[xUnit.net 00:00:02.20]     Horizon.Game.Gateway.Tests.TraceRegenerationValidationTests.MultiEntityTrace_Regenerates_ByteIdentical_ToEmbedded [FAIL]
+  失败 Horizon.Game.Gateway.Tests.TraceRegenerationValidationTests.SingleEntityTrace_Regenerates_ByteIdentical_ToEmbedded [191 ms]
+  错误消息:
+   单实体轨迹与生成器漂移：公式/生成器变更后必须重新生成轨迹（.freebuff/Verify --trace）并提交，否则对拍指纹不代表当前公式。
+  堆栈跟踪:
+     at Horizon.Game.Gateway.Tests.TraceRegenerationValidationTests.SingleEntityTrace_Regenerates_ByteIdentical_ToEmbedded() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\TraceRegenerationValidationTests.cs:line 72
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  失败 Horizon.Game.Gateway.Tests.TraceRegenerationValidationTests.MultiEntityTrace_Regenerates_ByteIdentical_ToEmbedded [48 ms]
+  错误消息:
+   多实体轨迹与生成器漂移：公式/生成器变更后必须重新生成轨迹（.freebuff/Verify --multi-trace）并提交。
+  堆栈跟踪:
+     at Horizon.Game.Gateway.Tests.TraceRegenerationValidationTests.MultiEntityTrace_Regenerates_ByteIdentical_ToEmbedded() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\TraceRegenerationValidationTests.cs:line 83
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+失败!  - 失败:     2，通过:     2，已跳过:     0，总计:     4，持续时间: 274 ms - Horizon.Game.Gateway.Tests.dll (net10.0)

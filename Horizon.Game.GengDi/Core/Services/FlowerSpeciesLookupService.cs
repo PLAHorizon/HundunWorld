@@ -19,13 +19,34 @@ namespace Horizon.Game.GengDi.Core.Services
         private bool _isLoading;
         private readonly object _lock = new();
 
+        /// <summary>
+        /// 离线兜底品种目录：与后端 FlowerSpeciesCatalog（22 品种，2001~2022）完全对齐，
+        /// /FlowerSpecies/list 请求失败时使用，保证发布表单始终有正确的品种可选。
+        /// </summary>
         private static readonly Dictionary<int, string> DefaultSpecies = new()
         {
-            { 1, "红玫瑰" },
-            { 2, "百合" },
-            { 3, "康乃馨" },
-            { 4, "混合花束" },
-            { 5, "红绿搭配" }
+            { 2001, "白菊" },
+            { 2002, "白玫瑰" },
+            { 2003, "粉玫瑰" },
+            { 2004, "扶郎" },
+            { 2005, "红豆" },
+            { 2006, "红玫瑰" },
+            { 2007, "桔梗" },
+            { 2008, "康乃馨(多头)" },
+            { 2009, "康乃馨(红色单头)" },
+            { 2010, "蓝星花" },
+            { 2011, "龙竹(60公分)" },
+            { 2012, "满天星(白色)" },
+            { 2013, "乒乓菊" },
+            { 2014, "双头白百合" },
+            { 2015, "双头粉百合" },
+            { 2016, "双头黄百合" },
+            { 2017, "勿忘我" },
+            { 2018, "向日葵" },
+            { 2019, "小雏菊" },
+            { 2020, "绣球花" },
+            { 2021, "洋甘菊" },
+            { 2022, "紫罗兰" }
         };
 
         private static readonly JsonSerializerOptions JsonOptions = new()
@@ -57,7 +78,9 @@ namespace Horizon.Game.GengDi.Core.Services
                     var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var result = JsonSerializer.Deserialize<FlowerSpeciesListResult>(json, JsonOptions);
 
-                    if (result?.IsSuccess == true && result.Data != null)
+                    // 注意：空列表也视为失败——旧版服务端会返回 200+空数组（行情 Grain 未播种时），
+                    // 若当作有效结果会清空缓存且跳过兜底，导致发布表单品种下拉为空。
+                    if (result?.IsSuccess == true && result.Data is { Count: > 0 })
                     {
                         lock (_lock)
                         {

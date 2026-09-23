@@ -58,10 +58,54 @@ public static class SystemRegistry
         return all;
     }
 
+    /// <summary>
+    /// 默认构造工厂：优先真·无参构造；否则回退到"全部参数均可选"的最少参数构造
+    /// （以 <see cref="Type.Missing"/> 触发默认值绑定）。
+    /// <para>
+    /// ⚠ 不能用"带可选参数的构造"冒充无参构造：<see cref="Type.GetConstructor(Type)"/> 只匹配
+    /// 真正的无参签名，全可选参数构造会被漏掉。历史上 <c>SnapshotApplySystem</c> 正因此被
+    /// **静默跳过**，导致客户端快照不被应用、多客户端互相不可见（2026-09 事故）。
+    /// </para>
+    /// <para>
+    /// 无法构造的系统**抛异常而非返回 null**：带 <see cref="ArchSystemAttribute"/> 的系统没有
+    /// 可用构造是编程错误，静默跳过只会让"少注册一个系统"难以察觉。
+    /// </para>
+    /// </summary>
     private static IArchSystem? DefaultFactory(Type type)
     {
-        var ctor = type.GetConstructor(Type.EmptyTypes);
-        if (ctor == null) return null;
-        return (IArchSystem?)ctor.Invoke(null);
+        var parameterless = type.GetConstructor(Type.EmptyTypes);
+        if (parameterless != null)
+        {
+            return (IArchSystem?)parameterless.Invoke(null);
+        }
+
+        // 回退：全部参数带默认值的构造（最少参数者优先），以 Type.Missing 绑定默认值。
+        ConstructorInfo? optionalCtor = null;
+        foreach (var ctor in type.GetConstructors())
+        {
+            var parameters = ctor.GetParameters();
+            if (parameters.Length == 0) continue;
+            var allOptional = true;
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                if (!parameters[i].IsOptional) { allOptional = false; break; }
+            }
+            if (!allOptional) continue;
+            if (optionalCtor == null || parameters.Length < optionalCtor.GetParameters().Length)
+            {
+                optionalCtor = ctor;
+            }
+        }
+
+        if (optionalCtor != null)
+        {
+            var args = new object?[optionalCtor.GetParameters().Length];
+            for (var i = 0; i < args.Length; i++) args[i] = Type.Missing;
+            return (IArchSystem?)optionalCtor.Invoke(args);
+        }
+
+        throw new InvalidOperationException(
+            $"Arch 系统 '{type.FullName}' 没有可用的构造函数：需提供无参构造，或全部参数带默认值的构造。" +
+            "反射注册器不允许静默跳过系统。");
     }
 }

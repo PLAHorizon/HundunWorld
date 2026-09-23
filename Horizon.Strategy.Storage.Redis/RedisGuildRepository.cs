@@ -2,7 +2,6 @@ using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 using StackExchange.Redis;
-using Horizon.Game.Message;
 
 namespace Horizon.Strategy.Storage.Redis
 {

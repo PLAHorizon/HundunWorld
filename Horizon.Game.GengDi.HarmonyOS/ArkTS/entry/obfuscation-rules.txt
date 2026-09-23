@@ -1,0 +1,8 @@
+# HarmonyOS ArkTS 混淆规则
+# 保留 EntryAbility 入口类
+-keep class EntryAbility
+# 保留 ArkUI 页面结构体
+-keep struct Index
+-keep struct WebViewPage
+# 保留模型接口和导出常量
+-keep class TabConfig

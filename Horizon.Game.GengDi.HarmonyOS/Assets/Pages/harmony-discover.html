@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙发现 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen relative">
+
+        <!-- ========== 鸿蒙导航栏 磨砂玻璃（发现 + 搜索） ========== -->
+        <div class="sticky top-0 z-30 backdrop-blur-2xl bg-background/55 border-b border-white/[0.04]">
+            <div class="flex items-center justify-between px-4" style="height:52px;">
+                <h1 class="text-[20px] font-bold tracking-tight">发现</h1>
+                <div class="flex items-center gap-1">
+                    <button class="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/10 transition-colors min-w-[44px] min-h-[44px]" aria-label="搜索">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </button>
+                    <button class="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/10 transition-colors min-w-[44px] min-h-[44px]" aria-label="扫码">
+                        <i data-lucide="scan-line" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- 鸿蒙 Tab 胶囊形选中指示 -->
+            <div class="px-4 pb-3">
+                <div class="flex items-center gap-1 p-1 rounded-full bg-card/45 backdrop-blur-xl border border-white/[0.06]">
+                    <button class="flex-1 py-2 rounded-full text-sm text-muted-foreground min-h-[40px] transition-colors">关注</button>
+                    <button class="flex-1 py-2 rounded-full text-sm font-semibold text-primary min-h-[40px] transition-colors" style="background-color: rgba(41,98,255,0.15);">
+                        推荐
+                    </button>
+                    <button class="flex-1 py-2 rounded-full text-sm text-muted-foreground min-h-[40px] transition-colors">附近</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 内容区 ========== -->
+        <div class="px-4 pt-4 pb-44 space-y-5">
+
+            <!-- ----- 热门话题 横向滚动 ----- -->
+            <section>
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1 h-4 rounded-full bg-primary"></div>
+                        <h2 class="text-sm font-semibold">热门话题</h2>
+                    </div>
+                    <button class="flex items-center gap-0.5 text-xs text-muted-foreground min-h-[36px]">
+                        更多 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4">
+                    <!-- 话题 1 -->
+                    <button class="flex-shrink-0 flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full backdrop-blur-xl bg-card/45 border border-white/[0.06] min-h-[40px] active:bg-white/10 transition-colors">
+                        <span class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(239,83,80,0.16);">
+                            <i data-lucide="flame" class="w-3.5 h-3.5" style="color:#c47070;"></i>
+                        </span>
+                        <span class="text-[13px] font-medium whitespace-nowrap">#玫瑰行情</span>
+                    </button>
+                    <!-- 话题 2 -->
+                    <button class="flex-shrink-0 flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full backdrop-blur-xl bg-card/45 border border-white/[0.06] min-h-[40px] active:bg-white/10 transition-colors">
+                        <span class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(236,72,153,0.16);">
+                            <i data-lucide="heart" class="w-3.5 h-3.5" style="color:#ec4899;"></i>
+                        </span>
+                        <span class="text-[13px] font-medium whitespace-nowrap">#情人节备货</span>
+                    </button>
+                    <!-- 话题 3 -->
+                    <button class="flex-shrink-0 flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full backdrop-blur-xl bg-card/45 border border-white/[0.06] min-h-[40px] active:bg-white/10 transition-colors">
+                        <span class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(41,98,255,0.16);">
+                            <i data-lucide="palette" class="w-3.5 h-3.5 text-primary"></i>
+                        </span>
+                        <span class="text-[13px] font-medium whitespace-nowrap">#花艺教程</span>
+                    </button>
+                    <!-- 话题 4 -->
+                    <button class="flex-shrink-0 flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full backdrop-blur-xl bg-card/45 border border-white/[0.06] min-h-[40px] active:bg-white/10 transition-colors">
+                        <span class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(38,166,154,0.16);">
+                            <i data-lucide="leaf" class="w-3.5 h-3.5 text-up"></i>
+                        </span>
+                        <span class="text-[13px] font-medium whitespace-nowrap">#病虫害防治</span>
+                    </button>
+                    <!-- 话题 5 -->
+                    <button class="flex-shrink-0 flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full backdrop-blur-xl bg-card/45 border border-white/[0.06] min-h-[40px] active:bg-white/10 transition-colors">
+                        <span class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(255,152,0,0.16);">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5" style="color:#c4956a;"></i>
+                        </span>
+                        <span class="text-[13px] font-medium whitespace-nowrap">#新品种发布</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ----- IM 聊天入口 磨砂玻璃卡片 ----- -->
+            <section>
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1 h-4 rounded-full bg-primary"></div>
+                        <h2 class="text-sm font-semibold">消息</h2>
+                        <span class="px-1.5 py-0.5 rounded-full text-[10px] font-medium" style="background-color: rgba(239,83,80,0.16); color:#c47070;">3 条未读</span>
+                    </div>
+                    <button class="flex items-center gap-0.5 text-xs text-muted-foreground min-h-[36px]">
+                        查看全部 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div class="rounded-3xl backdrop-blur-2xl bg-card/45 border border-white/[0.06] p-2 shadow-xl relative overflow-hidden">
+                    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+                    <!-- 对话 1 云南花农小王 未读2 -->
+                    <button class="w-full flex items-center gap-3 px-2.5 py-3 rounded-2xl active:bg-white/5 transition-colors min-h-[56px] text-left">
+                        <div class="relative flex-shrink-0">
+                            <div class="w-11 h-11 rounded-full flex items-center justify-center text-white text-[15px] font-semibold" style="background: linear-gradient(135deg, #26a69a 0%, #1d7a70 100%);">王</div>
+                            <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-card">2</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[14px] font-medium truncate">云南花农小王</span>
+                                <span class="text-[11px] text-muted-foreground flex-shrink-0 font-mono">10:23</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <i data-lucide="image" class="w-3 h-3 text-muted-foreground flex-shrink-0"></i>
+                                <span class="text-[12px] text-muted-foreground truncate">这批玫瑰质量很好</span>
+                            </div>
+                        </div>
+                    </button>
+                    <!-- 胶囊分隔 -->
+                    <div class="flex justify-center"><div class="w-8 h-0.5 rounded-full bg-white/[0.05]"></div></div>
+
+                    <!-- 对话 2 昆明花卉批发 -->
+                    <button class="w-full flex items-center gap-3 px-2.5 py-3 rounded-2xl active:bg-white/5 transition-colors min-h-[56px] text-left">
+                        <div class="relative flex-shrink-0">
+                            <div class="w-11 h-11 rounded-full flex items-center justify-center text-white text-[15px] font-semibold" style="background: linear-gradient(135deg, #3a78ff 0%, #1f4fd6 100%);">昆</div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[14px] font-medium truncate">昆明花卉批发</span>
+                                <span class="text-[11px] text-muted-foreground flex-shrink-0 font-mono">09:15</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <i data-lucide="trending-up" class="w-3 h-3 text-up flex-shrink-0"></i>
+                                <span class="text-[12px] text-muted-foreground truncate">今日百合价格已更新</span>
+                            </div>
+                        </div>
+                    </button>
+                    <!-- 胶囊分隔 -->
+                    <div class="flex justify-center"><div class="w-8 h-0.5 rounded-full bg-white/[0.05]"></div></div>
+
+                    <!-- 对话 3 花艺师李姐 未读1 -->
+                    <button class="w-full flex items-center gap-3 px-2.5 py-3 rounded-2xl active:bg-white/5 transition-colors min-h-[56px] text-left">
+                        <div class="relative flex-shrink-0">
+                            <div class="w-11 h-11 rounded-full flex items-center justify-center text-white text-[15px] font-semibold" style="background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);">李</div>
+                            <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-card">1</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[14px] font-medium truncate">花艺师李姐</span>
+                                <span class="text-[11px] text-muted-foreground flex-shrink-0 font-mono">昨天</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <i data-lucide="shopping-bag" class="w-3 h-3 text-muted-foreground flex-shrink-0"></i>
+                                <span class="text-[12px] text-muted-foreground truncate">求购向日葵500扎</span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ----- 社交动态 ----- -->
+            <section>
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1 h-4 rounded-full bg-primary"></div>
+                        <h2 class="text-sm font-semibold">推荐动态</h2>
+                    </div>
+                    <button class="flex items-center gap-0.5 text-xs text-muted-foreground min-h-[36px]">
+                        全部 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+
+                    <!-- 动态 1 云南花农小王 红玫瑰 -->
+                    <article class="rounded-3xl backdrop-blur-2xl bg-card/45 border border-white/[0.06] p-4 shadow-xl relative overflow-hidden">
+                        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                        <header class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[14px] font-semibold flex-shrink-0" style="background: linear-gradient(135deg, #26a69a 0%, #1d7a70 100%);">王</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[14px] font-semibold truncate">云南花农小王</span>
+                                    <span class="px-1.5 py-0.5 rounded-full text-[9px] flex items-center gap-0.5 flex-shrink-0" style="background-color: rgba(38,166,154,0.16); color:#26a69a;">
+                                        <i data-lucide="badge-check" class="w-2.5 h-2.5"></i>认证花农
+                                    </span>
+                                </div>
+                                <span class="text-[11px] text-muted-foreground">2 小时前 · 云南</span>
+                            </div>
+                            <button class="w-8 h-8 rounded-full flex items-center justify-center active:bg-white/10 transition-colors min-w-[44px] min-h-[44px] -mr-1" aria-label="更多">
+                                <i data-lucide="ellipsis" class="w-4 h-4 text-muted-foreground"></i>
+                            </button>
+                        </header>
+                        <p class="text-[14px] leading-relaxed mt-3">今年这批红玫瑰长势喜人，花苞饱满、茎秆粗壮，预计下周可大量上市，欢迎各位老板提前预定。</p>
+                        <div class="mt-3 h-40 rounded-2xl relative overflow-hidden" style="background: linear-gradient(135deg, #e11d48 0%, #be123c 50%, #881337 100%);">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                            <div class="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-black/35 backdrop-blur-sm text-white text-[10px] flex items-center gap-1">
+                                <i data-lucide="map-pin" class="w-2.5 h-2.5"></i>玫瑰种植基地
+                            </div>
+                            <div class="absolute bottom-3 left-3 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white/70"></span>
+                                <span class="text-white text-[11px] opacity-90">A级 · 3.85 元/支</span>
+                            </div>
+                        </div>
+                        <footer class="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.05]">
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                                <span class="text-[12px]">128</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                <span class="text-[12px]">36</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="share-2" class="w-4 h-4"></i>
+                                <span class="text-[12px]">12</span>
+                            </div>
+                            <button class="w-8 h-8 rounded-full flex items-center justify-center active:bg-white/10 transition-colors min-w-[44px] min-h-[44px]" aria-label="收藏">
+                                <i data-lucide="bookmark" class="w-4 h-4 text-muted-foreground"></i>
+                            </button>
+                        </footer>
+                    </article>
+
+                    <!-- 动态 2 花艺师李姐 情人节花束 -->
+                    <article class="rounded-3xl backdrop-blur-2xl bg-card/45 border border-white/[0.06] p-4 shadow-xl relative overflow-hidden">
+                        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                        <header class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[14px] font-semibold flex-shrink-0" style="background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);">李</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[14px] font-semibold truncate">花艺师李姐</span>
+                                    <span class="px-1.5 py-0.5 rounded-full text-[9px] flex items-center gap-0.5 flex-shrink-0" style="background-color: rgba(236,72,153,0.16); color:#ec4899;">
+                                        <i data-lucide="flower-2" class="w-2.5 h-2.5"></i>花艺师
+                                    </span>
+                                </div>
+                                <span class="text-[11px] text-muted-foreground">5 小时前 · 昆明</span>
+                            </div>
+                            <button class="px-3 py-1.5 rounded-full text-[12px] font-medium text-primary active:scale-95 transition-transform min-h-[36px]" style="background-color: rgba(41,98,255,0.15);">
+                                + 关注
+                            </button>
+                        </header>
+                        <p class="text-[14px] leading-relaxed mt-3">情人节花束设计方案新鲜出炉，以红玫瑰为主花，搭配满天星与尤加利叶，浪漫又不失高级感，可接定制订单。</p>
+                        <div class="mt-3 h-40 rounded-2xl relative overflow-hidden" style="background: linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #be185d 100%);">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                            <div class="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-black/35 backdrop-blur-sm text-white text-[10px] flex items-center gap-1">
+                                <i data-lucide="sparkles" class="w-2.5 h-2.5"></i>原创设计
+                            </div>
+                            <div class="absolute bottom-3 left-3 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white/70"></span>
+                                <span class="text-white text-[11px] opacity-90">定制款 · 268 元起</span>
+                            </div>
+                        </div>
+                        <footer class="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.05]">
+                            <div class="flex items-center gap-1.5" style="color:#ec4899;">
+                                <i data-lucide="heart" class="w-4 h-4" fill="currentColor"></i>
+                                <span class="text-[12px]">256</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                <span class="text-[12px]">48</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="share-2" class="w-4 h-4"></i>
+                                <span class="text-[12px]">29</span>
+                            </div>
+                            <button class="w-8 h-8 rounded-full flex items-center justify-center active:bg-white/10 transition-colors min-w-[44px] min-h-[44px]" aria-label="收藏">
+                                <i data-lucide="bookmark" class="w-4 h-4 text-primary" fill="currentColor"></i>
+                            </button>
+                        </footer>
+                    </article>
+
+                    <!-- 动态 3 昆明花卉批发 A级百合 -->
+                    <article class="rounded-3xl backdrop-blur-2xl bg-card/45 border border-white/[0.06] p-4 shadow-xl relative overflow-hidden">
+                        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                        <header class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[14px] font-semibold flex-shrink-0" style="background: linear-gradient(135deg, #3a78ff 0%, #1f4fd6 100%);">昆</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[14px] font-semibold truncate">昆明花卉批发</span>
+                                    <span class="px-1.5 py-0.5 rounded-full text-[9px] flex items-center gap-0.5 flex-shrink-0" style="background-color: rgba(41,98,255,0.16); color:#2962ff;">
+                                        <i data-lucide="store" class="w-2.5 h-2.5"></i>批发商
+                                    </span>
+                                </div>
+                                <span class="text-[11px] text-muted-foreground">昨天 16:40 · 斗南</span>
+                            </div>
+                            <button class="w-8 h-8 rounded-full flex items-center justify-center active:bg-white/10 transition-colors min-w-[44px] min-h-[44px] -mr-1" aria-label="更多">
+                                <i data-lucide="ellipsis" class="w-4 h-4 text-muted-foreground"></i>
+                            </button>
+                        </header>
+                        <p class="text-[14px] leading-relaxed mt-3">新到一批 A 级百合，花头大、无损伤、瓶插期长，现货 2000 扎，量大从优，支持全国冷链直达。</p>
+                        <div class="mt-3 h-40 rounded-2xl relative overflow-hidden" style="background: linear-gradient(135deg, #fde68a 0%, #fbbf24 50%, #b45309 100%);">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                            <div class="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-black/30 backdrop-blur-sm text-white text-[10px] flex items-center gap-1">
+                                <i data-lucide="package" class="w-2.5 h-2.5"></i>现货 2000 扎
+                            </div>
+                            <div class="absolute bottom-3 left-3 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white/80"></span>
+                                <span class="text-white text-[11px] opacity-90">A 级 · 5.62 元/支</span>
+                            </div>
+                        </div>
+                        <footer class="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.05]">
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                                <span class="text-[12px]">87</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                <span class="text-[12px]">22</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="share-2" class="w-4 h-4"></i>
+                                <span class="text-[12px]">8</span>
+                            </div>
+                            <button class="w-8 h-8 rounded-full flex items-center justify-center active:bg-white/10 transition-colors min-w-[44px] min-h-[44px]" aria-label="收藏">
+                                <i data-lucide="bookmark" class="w-4 h-4 text-muted-foreground"></i>
+                            </button>
+                        </footer>
+                    </article>
+
+                    <!-- 动态 4 种植专家张教授 病虫害防治 -->
+                    <article class="rounded-3xl backdrop-blur-2xl bg-card/45 border border-white/[0.06] p-4 shadow-xl relative overflow-hidden">
+                        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                        <header class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[14px] font-semibold flex-shrink-0" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);">张</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[14px] font-semibold truncate">种植专家张教授</span>
+                                    <span class="px-1.5 py-0.5 rounded-full text-[9px] flex items-center gap-0.5 flex-shrink-0" style="background-color: rgba(168,85,247,0.16); color:#a855f7;">
+                                        <i data-lucide="graduation-cap" class="w-2.5 h-2.5"></i>专家
+                                    </span>
+                                </div>
+                                <span class="text-[11px] text-muted-foreground">昨天 09:12</span>
+                            </div>
+                            <button class="px-3 py-1.5 rounded-full text-[12px] font-medium text-primary active:scale-95 transition-transform min-h-[36px]" style="background-color: rgba(41,98,255,0.15);">
+                                + 关注
+                            </button>
+                        </header>
+                        <p class="text-[14px] leading-relaxed mt-3">夏季病虫害防治要点：定期巡查叶背，及时清除病叶；优先采用生物防治，科学用药、交替轮换，避免抗药性产生。</p>
+                        <div class="mt-3 h-40 rounded-2xl relative overflow-hidden" style="background: linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #15803d 100%);">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent"></div>
+                            <div class="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-black/35 backdrop-blur-sm text-white text-[10px] flex items-center gap-1">
+                                <i data-lucide="book-open" class="w-2.5 h-2.5"></i>技术科普
+                            </div>
+                            <div class="absolute bottom-3 left-3 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white/80"></span>
+                                <span class="text-white text-[11px] opacity-90">第 3 期 · 防治指南</span>
+                            </div>
+                        </div>
+                        <footer class="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.05]">
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                                <span class="text-[12px]">412</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                <span class="text-[12px]">96</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                <i data-lucide="share-2" class="w-4 h-4"></i>
+                                <span class="text-[12px]">57</span>
+                            </div>
+                            <button class="w-8 h-8 rounded-full flex items-center justify-center active:bg-white/10 transition-colors min-w-[44px] min-h-[44px]" aria-label="收藏">
+                                <i data-lucide="bookmark" class="w-4 h-4 text-muted-foreground"></i>
+                            </button>
+                        </footer>
+                    </article>
+
+                </div>
+            </section>
+
+            <!-- ----- 推荐商家 横向滚动 ----- -->
+            <section>
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1 h-4 rounded-full bg-primary"></div>
+                        <h2 class="text-sm font-semibold">推荐商家</h2>
+                    </div>
+                    <button class="flex items-center gap-0.5 text-xs text-muted-foreground min-h-[36px]">
+                        全部 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
+
+                    <!-- 商家 1 斗南花卉直供 -->
+                    <div class="flex-shrink-0 w-[150px] rounded-3xl overflow-hidden backdrop-blur-xl bg-card/45 border border-white/[0.06] shadow-lg">
+                        <div class="h-16 relative" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                            <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-black/35 backdrop-blur-sm text-white text-[9px] flex items-center gap-0.5">
+                                <i data-lucide="star" class="w-2.5 h-2.5" fill="currentColor"></i>4.9
+                            </div>
+                        </div>
+                        <div class="p-3 -mt-5 relative">
+                            <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-[14px] font-semibold mb-2 border-2 border-card" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">斗</div>
+                            <div class="text-[13px] font-semibold truncate">斗南花卉直供</div>
+                            <div class="flex items-center gap-1 mt-1">
+                                <span class="px-1.5 py-0.5 rounded text-[9px]" style="background-color: rgba(41,98,255,0.16); color:#2962ff;">批发</span>
+                                <span class="text-[10px] text-muted-foreground">成交通1000+</span>
+                            </div>
+                            <button class="w-full mt-2.5 py-1.5 rounded-full text-[11px] font-medium text-primary-foreground min-h-[36px]" style="background: linear-gradient(90deg, #3a78ff, #2962ff);">
+                                进店
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 商家 2 花田优选 -->
+                    <div class="flex-shrink-0 w-[150px] rounded-3xl overflow-hidden backdrop-blur-xl bg-card/45 border border-white/[0.06] shadow-lg">
+                        <div class="h-16 relative" style="background: linear-gradient(135deg, #26a69a 0%, #15803d 100%);">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                            <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-black/35 backdrop-blur-sm text-white text-[9px] flex items-center gap-0.5">
+                                <i data-lucide="star" class="w-2.5 h-2.5" fill="currentColor"></i>4.8
+                            </div>
+                        </div>
+                        <div class="p-3 -mt-5 relative">
+                            <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-[14px] font-semibold mb-2 border-2 border-card" style="background: linear-gradient(135deg, #26a69a, #15803d);">花</div>
+                            <div class="text-[13px] font-semibold truncate">花田优选</div>
+                            <div class="flex items-center gap-1 mt-1">
+                                <span class="px-1.5 py-0.5 rounded text-[9px]" style="background-color: rgba(38,166,154,0.16); color:#26a69a;">零售</span>
+                                <span class="text-[10px] text-muted-foreground">好评 98%</span>
+                            </div>
+                            <button class="w-full mt-2.5 py-1.5 rounded-full text-[11px] font-medium text-primary-foreground min-h-[36px]" style="background: linear-gradient(90deg, #3a78ff, #2962ff);">
+                                进店
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 商家 3 昆明鲜切花 -->
+                    <div class="flex-shrink-0 w-[150px] rounded-3xl overflow-hidden backdrop-blur-xl bg-card/45 border border-white/[0.06] shadow-lg">
+                        <div class="h-16 relative" style="background: linear-gradient(135deg, #3a78ff 0%, #1f4fd6 100%);">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                            <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-black/35 backdrop-blur-sm text-white text-[9px] flex items-center gap-0.5">
+                                <i data-lucide="star" class="w-2.5 h-2.5" fill="currentColor"></i>4.7
+                            </div>
+                        </div>
+                        <div class="p-3 -mt-5 relative">
+                            <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-[14px] font-semibold mb-2 border-2 border-card" style="background: linear-gradient(135deg, #3a78ff, #1f4fd6);">昆</div>
+                            <div class="text-[13px] font-semibold truncate">昆明鲜切花</div>
+                            <div class="flex items-center gap-1 mt-1">
+                                <span class="px-1.5 py-0.5 rounded text-[9px]" style="background-color: rgba(41,98,255,0.16); color:#2962ff;">批发</span>
+                                <span class="text-[10px] text-muted-foreground">冷链直达</span>
+                            </div>
+                            <button class="w-full mt-2.5 py-1.5 rounded-full text-[11px] font-medium text-primary-foreground min-h-[36px]" style="background: linear-gradient(90deg, #3a78ff, #2962ff);">
+                                进店
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 商家 4 花艺工坊 -->
+                    <div class="flex-shrink-0 w-[150px] rounded-3xl overflow-hidden backdrop-blur-xl bg-card/45 border border-white/[0.06] shadow-lg">
+                        <div class="h-16 relative" style="background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                            <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-black/35 backdrop-blur-sm text-white text-[9px] flex items-center gap-0.5">
+                                <i data-lucide="star" class="w-2.5 h-2.5" fill="currentColor"></i>5.0
+                            </div>
+                        </div>
+                        <div class="p-3 -mt-5 relative">
+                            <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-[14px] font-semibold mb-2 border-2 border-card" style="background: linear-gradient(135deg, #ec4899, #be185d);">艺</div>
+                            <div class="text-[13px] font-semibold truncate">花艺工坊</div>
+                            <div class="flex items-center gap-1 mt-1">
+                                <span class="px-1.5 py-0.5 rounded text-[9px]" style="background-color: rgba(236,72,153,0.16); color:#ec4899;">花艺</span>
+                                <span class="text-[10px] text-muted-foreground">原创设计</span>
+                            </div>
+                            <button class="w-full mt-2.5 py-1.5 rounded-full text-[11px] font-medium text-primary-foreground min-h-[36px]" style="background: linear-gradient(90deg, #3a78ff, #2962ff);">
+                                进店
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div><!-- /内容区 -->
+
+        <!-- ========== 鸿蒙底部导航 胶囊形选中指示器 ========== -->
+        <div class="fixed bottom-0 left-0 right-0 z-40">
+            <div class="max-w-[390px] mx-auto">
+                <nav class="backdrop-blur-2xl border-t border-white/[0.05]" style="background: rgba(10,14,23,0.82);">
+                    <div class="flex items-center justify-around px-2 pt-2 pb-2" style="padding-bottom: max(0.5rem, env(safe-area-inset-bottom));">
+                        <button class="flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-full min-h-[44px]">
+                            <i data-lucide="home" class="w-5 h-5 text-muted-foreground"></i>
+                            <span class="text-[10px] text-muted-foreground">首页</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-full min-h-[44px]">
+                            <i data-lucide="cloud-sun" class="w-5 h-5 text-muted-foreground"></i>
+                            <span class="text-[10px] text-muted-foreground">天气</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-full min-h-[44px]">
+                            <i data-lucide="candlestick-chart" class="w-5 h-5 text-muted-foreground"></i>
+                            <span class="text-[10px] text-muted-foreground">市场</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-full min-h-[44px]" style="background: rgba(41,98,255,0.15);">
+                            <i data-lucide="compass" class="w-5 h-5 text-primary"></i>
+                            <span class="text-[10px] text-primary font-medium">发现</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-full min-h-[44px]">
+                            <i data-lucide="user" class="w-5 h-5 text-muted-foreground"></i>
+                            <span class="text-[10px] text-muted-foreground">我的</span>
+                        </button>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

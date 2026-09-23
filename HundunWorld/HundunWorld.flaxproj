@@ -5,6 +5,7 @@
 	"Copyright": "",
 	"GameTarget": "GameTarget",
 	"EditorTarget": "GameEditorTarget",
+	"ServerTarget": "ServerTarget",
 	"References": [
 		{
 			"Name": "$(EnginePath)/Flax.flaxproj"
@@ -14,6 +15,9 @@
 		},
 		{
 			"Name": "$(ProjectPath)/Plugins/HundunAgent/HundunAgent.flaxproj"
+		},
+		{
+			"Name": "$(ProjectPath)/Plugins/PCG/PCG.flaxproj"
 		}
 	],
 	"DefaultScene": "dc72848f4b0f90ee2df186a728f14858",

@@ -109,6 +109,8 @@ namespace Horizon.Game.GengDi.Core.Services.Call
                 (CallState.OutgoingRinging, IMCallSignalType.Busy) => true,
                 (CallState.OutgoingRinging, IMCallSignalType.Timeout) => true,
                 (CallState.OutgoingRinging, IMCallSignalType.Cancel) => true,
+                // 容忍乱序：对端接听后其 MediaReady 可能先于 Accept 到达，此时也应受理
+                (CallState.OutgoingRinging, IMCallSignalType.MediaReady) => true,
 
                 (CallState.IncomingRinging, IMCallSignalType.Cancel) => true,
                 (CallState.IncomingRinging, IMCallSignalType.Timeout) => true,

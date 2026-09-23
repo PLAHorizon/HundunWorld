@@ -114,6 +114,12 @@ namespace HundunWorld.Game.UI
         private float _unloadTimeoutTimer = 0f;
         private const float UnloadTimeout = 5.0f;
 
+        // 切换卡死看门狗：记录本次切换开始时的引擎时间（秒）。
+        // 若 _isTransitioning 长时间未闭环（完成事件丢失 / 异常中断），后续所有 TransitionTo
+        // 都会被「场景正在切换中」永久拒绝，表现为「角色列表已拿到但角色选择界面永不显示」。
+        private float _transitionStartTime = -1f;
+        private const float TransitionStuckTimeout = 8.0f;
+
         private float _currentLoadingProgress = 0f;
         private float _targetLoadingProgress = 0f;
         private float _loadingTimer = 0f;
@@ -203,7 +209,7 @@ namespace HundunWorld.Game.UI
                         for (int i = 0; i < Level.ScenesCount; i++)
                         {
                             var scene = Level.GetScene(i);
-                            if (scene != null && scene != _rootScene && !IsTransitionScene(scene))
+                            if (IsUnloadableSubScene(scene))
                             {
                                 _currentSubScene = scene;
                                 Debug.Log($"[GameSceneManager] 超时强制: 找到目标场景 {scene.Name}");
@@ -420,7 +426,7 @@ namespace HundunWorld.Game.UI
                 for (int i = 0; i < Level.ScenesCount; i++)
                 {
                     var scene = Level.GetScene(i);
-                    if (scene != null && scene != _rootScene && !IsTransitionScene(scene))
+                    if (IsUnloadableSubScene(scene))
                     {
                         _currentSubScene = scene;
                         Debug.Log($"[GameSceneManager] 轮询发现目标场景: {scene.Name}");
@@ -610,10 +616,26 @@ namespace HundunWorld.Game.UI
         {
             Debug.Log($"[GameSceneManager] TransitionTo: {_currentSceneType} -> {targetScene}");
 
+            // 兜底解析 RootScene：实例可能在非主线程被创建（网络 await 续体不在主线程，
+            // Flax 禁止在主线程外 SpawnActor），此时 OnAwake/FindRootScene 不会执行，
+            // _rootScene 一直是 null —— 使所有 "scene != _rootScene" 判断失效，
+            // RootScene 被误判为子场景卸载，整条切换链路随之被摧毁。
+            EnsureRootSceneResolved();
+
             if (_isTransitioning)
             {
-                Debug.LogWarning($"[GameSceneManager] 场景正在切换中，忽略请求: {targetScene}");
-                return false;
+                // 卡死看门狗：超时则强制复位状态机并让本次请求继续，而不是直接拒绝请求。
+                float stuckSeconds = _transitionStartTime > 0f ? (float)(Time.GameTime - _transitionStartTime) : -1f;
+                if (stuckSeconds >= TransitionStuckTimeout)
+                {
+                    Debug.LogWarning($"[GameSceneManager] 检测到场景切换卡死 {stuckSeconds:F1}s（阈值 {TransitionStuckTimeout}s），强制复位状态机后继续: {targetScene}");
+                    ResetTransitionStateInternal("切换卡死看门狗");
+                }
+                else
+                {
+                    Debug.LogWarning($"[GameSceneManager] 场景正在切换中，忽略请求: {targetScene}");
+                    return false;
+                }
             }
 
             if (_currentSceneType == targetScene)
@@ -635,7 +657,7 @@ namespace HundunWorld.Game.UI
                 for (int i = 0; i < Level.ScenesCount; i++)
                 {
                     var scene = Level.GetScene(i);
-                    if (scene != null && scene != _rootScene && !IsTransitionScene(scene))
+                    if (IsUnloadableSubScene(scene))
                     {
                         _currentSubScene = scene;
                         Debug.Log($"[GameSceneManager] 追踪到当前子场景: {scene.Name}");
@@ -645,6 +667,7 @@ namespace HundunWorld.Game.UI
             }
 
             _isTransitioning = true;
+            _transitionStartTime = (float)Time.GameTime;
             _pendingSceneType = targetScene;
             _previousSceneType = _currentSceneType;
             _pendingTargetPath = targetPath;
@@ -774,7 +797,7 @@ namespace HundunWorld.Game.UI
             LoadProgress?.Invoke(0.3f);
 
             // 卸载当前子场景（绝不能卸载RootScene）
-            if (_currentSubScene != null && _currentSubScene != _rootScene && _currentSubScene != _transitionScene)
+            if (IsUnloadableSubScene(_currentSubScene))
             {
                 Debug.Log($"[GameSceneManager] 卸载旧场景: {_currentSubScene.Name}");
                 var sceneToUnload = _currentSubScene;
@@ -1009,6 +1032,7 @@ namespace HundunWorld.Game.UI
 
             _currentSceneType = targetScene;
             _isTransitioning = false;
+            _transitionStartTime = -1f;
             _pendingSceneType = null;
             _pendingTargetPath = null;
             _transitionSceneId = Guid.Empty;
@@ -1134,6 +1158,75 @@ namespace HundunWorld.Game.UI
         }
 
         /// <summary>
+        /// 惰性解析 RootScene。
+        /// 修复「角色列表拿到了但角色选择界面不显示」的根因：GameSceneManager 若在网络回调
+        /// （非主线程）中被首次创建，OnAwake/FindRootScene 不会执行，_rootScene 保持为 null，
+        /// 于是 "scene != _rootScene" 这类判断全部失效，RootScene 会被当作普通子场景卸载。
+        /// </summary>
+        private bool EnsureRootSceneResolved()
+        {
+            if (_rootScene != null) return true;
+
+            _rootScene = Actor?.Scene;
+            if (_rootScene != null)
+            {
+                Debug.LogWarning($"[GameSceneManager] 惰性解析 RootScene(脚本所在场景): {_rootScene.Name}");
+                return true;
+            }
+
+            Debug.LogError("[GameSceneManager] EnsureRootSceneResolved: 无法解析 RootScene（Actor 未就绪或实例创建于非主线程）");
+            return false;
+        }
+
+        /// <summary>
+        /// 是否为「可安全卸载的子场景」。
+        /// 统一排除三类场景：RootScene、承载本脚本 Actor 的场景、过渡场景。
+        /// 所有遍历场景列表挑选子场景/卸载目标的代码都必须走这里，
+        /// 避免在 _rootScene 未解析时把 RootScene 当成子场景。
+        /// </summary>
+        private bool IsUnloadableSubScene(FlaxEngine.Scene scene)
+        {
+            if (scene == null) return false;
+            if (scene == _rootScene) return false;
+            if (IsTransitionScene(scene)) return false;
+
+            // 承载 GameSceneManager 本体的场景绝不能卸载（_rootScene 解析失败时的第二道防线）
+            var hostScene = Actor?.Scene;
+            if (hostScene != null && scene == hostScene) return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 复位切换状态机（不触发任何事件），用于看门狗强制解锁与外部兜底。
+        /// </summary>
+        private void ResetTransitionStateInternal(string reason)
+        {
+            _isTransitioning = false;
+            _transitionState = TransitionState.Idle;
+            _pendingSceneType = null;
+            _pendingTargetPath = null;
+            _waitingForTransitionUnload = false;
+            _unloadTimeoutTimer = 0f;
+            _transitionSceneId = Guid.Empty;
+            _targetSceneId = Guid.Empty;
+            _transitionStartTime = -1f;
+            _forceCompleteTimer = 0f;
+            _staleTransitionCheckTimer = 0f;
+            _staleTransitionRetryCount = 0;
+            Debug.LogWarning($"[GameSceneManager] 切换状态机已复位: {reason}");
+        }
+
+        /// <summary>
+        /// 外部强制复位接口：当调用方确认切换已无法自行闭环（例如切换到角色选择场景被
+        /// 残留状态拒绝）时调用，随后可重试 TransitionTo。
+        /// </summary>
+        public void ForceResetTransition(string reason)
+        {
+            ResetTransitionStateInternal(string.IsNullOrEmpty(reason) ? "外部强制复位" : reason);
+        }
+
+        /// <summary>
         /// 修复：安全的场景卸载方法。统一防御 RootScene 被误卸载。
         /// 所有需要卸载场景的地方都应调用此方法，而不是直接调用 Level.UnloadSceneAsync。
         /// </summary>
@@ -1145,9 +1238,27 @@ namespace HundunWorld.Game.UI
                 return;
             }
 
+            // 保护 1：RootScene 绝不卸载
             if (scene == _rootScene)
             {
                 Debug.LogError($"[GameSceneManager] SafeUnloadScene: 拒绝卸载 RootScene！scene.Name={scene.Name}, 调用栈:\n{System.Environment.StackTrace}");
+                return;
+            }
+
+            // 保护 2：承载本脚本 Actor 的场景绝不卸载（_rootScene 解析失败时的兜底）
+            var hostScene = Actor?.Scene;
+            if (hostScene != null && scene == hostScene)
+            {
+                Debug.LogError($"[GameSceneManager] SafeUnloadScene: 拒绝卸载承载 GameSceneManager 的场景！scene.Name={scene.Name}");
+                if (_rootScene == null) _rootScene = hostScene;
+                return;
+            }
+
+            // 保护 3：RootScene 未解析时采取保守策略 —— 宁可跳过卸载，也不能误伤根场景。
+            // （历史上正是这里在 _rootScene == null 时卸载了 RootScene，导致切换链路永久卡死）
+            if (_rootScene == null)
+            {
+                Debug.LogError($"[GameSceneManager] SafeUnloadScene: _rootScene 尚未解析，保守拒绝卸载 {scene.Name}（避免误卸载根场景）");
                 return;
             }
 
@@ -1162,8 +1273,9 @@ namespace HundunWorld.Game.UI
         {
             Debug.Log("[GameSceneManager] 直接加载目标场景（无过渡效果）");
 
-            // 卸载当前子场景
-            if (_currentSubScene != null && _currentSubScene != _rootScene)
+            // 卸载当前子场景（统一走 IsUnloadableSubScene 保护，避免误卸载 RootScene）
+            EnsureRootSceneResolved();
+            if (IsUnloadableSubScene(_currentSubScene))
             {
                 var sceneToUnload = _currentSubScene;
                 _currentSubScene = null;
@@ -1182,8 +1294,11 @@ namespace HundunWorld.Game.UI
                     _targetSceneId = sceneAsset.ID;
                     _transitionState = TransitionState.LoadingTargetScene;
                     Debug.Log($"[GameSceneManager] 直接模式: 开始异步加载目标场景, ID: {_targetSceneId}");
-                   // Level.LoadSceneAsync(_targetSceneId);
-                    Task.Factory.StartNew(async () => Level.LoadSceneAsync(_targetSceneId));
+                    // 修复：LoadSceneAsync 是引擎 API，必须在主线程调用。
+                    // 原实现经 Task.Factory.StartNew 投递到线程池，属跨线程调用引擎，
+                    // 会触发 "Editing scene hierarchy is only allowed on a main thread"。
+                    // 这里直接在主线程发起异步加载，由 OnSceneLoaded / 看门狗推进完成。
+                    Level.LoadSceneAsync(_targetSceneId);
                     // 等待 OnSceneLoaded 触发 CompleteTransition
                 }
                 else
@@ -1208,6 +1323,7 @@ namespace HundunWorld.Game.UI
             }
 
             _isTransitioning = false;
+            _transitionStartTime = -1f;
             _transitionState = TransitionState.Idle;
             _pendingSceneType = null;
             _waitingForTransitionUnload = false;
@@ -1253,8 +1369,8 @@ namespace HundunWorld.Game.UI
             }
 
             // 关键修复：使用更宽松的条件匹配目标场景
-            // 只要不是RootScene且不是过渡场景，就认为是目标子场景
-            if (scene != null && scene != _rootScene && !IsTransitionScene(scene))
+            // 只要不是 RootScene、不是承载本脚本的场景、也不是过渡场景，就认为是目标子场景
+            if (IsUnloadableSubScene(scene))
             {
                 _currentSubScene = scene;
                 Debug.Log($"[GameSceneManager] OnSceneLoaded: _currentSubScene 设为 {scene.Name}, sceneId={sceneId}, _targetSceneId={_targetSceneId}, 当前状态: {_transitionState}");
@@ -1403,7 +1519,8 @@ namespace HundunWorld.Game.UI
                 }
             }
 
-            if (_currentSubScene != null && _currentSubScene != _rootScene)
+            EnsureRootSceneResolved();
+            if (IsUnloadableSubScene(_currentSubScene))
             {
                 SafeUnloadScene(_currentSubScene);
                 _currentSubScene = null;
@@ -1411,6 +1528,7 @@ namespace HundunWorld.Game.UI
 
             _currentSceneType = SceneType.Start;
             _isTransitioning = false;
+            _transitionStartTime = -1f;
             _transitionState = TransitionState.Idle;
             _pendingSceneType = null;
             _pendingTargetPath = null;

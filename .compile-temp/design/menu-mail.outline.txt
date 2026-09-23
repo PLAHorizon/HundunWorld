@@ -1,0 +1,194 @@
+## page: menu-mail
+## dom-ids: attach-1, attach-2, attach-3, back-hud, btn-claim-all, btn-claim-selected, btn-delete-mail, mail-item-1, mail-item-2, mail-item-3, mail-item-4, mail-item-5, mail-item-6, nav-bestiary, nav-character, nav-equipment, nav-inventory, nav-livelihood, nav-mail, nav-martial-record, nav-quests, nav-settings, nav-shop, nav-skills, nav-team, tab-all, tab-system, tab-unread
+  div
+    div
+      div
+      div
+      div
+    div
+    div
+      div
+        aside .flex-col
+          div .items-center justify-center
+            span | 混沌世界
+          nav
+            div
+              p | 主菜单
+            a #nav-quests .nav-item
+              span | 任务
+            a #nav-bestiary .nav-item
+              span | 博物志
+            a #nav-martial-record .nav-item
+              span | 武林录
+            a #nav-livelihood .nav-item
+              span | 营生
+            a #nav-team .nav-item
+              span | 组队
+            a #nav-mail .nav-item
+              span | 邮箱
+            a #nav-shop .nav-item
+              span | 商店
+            div
+            div
+              p | 角色
+            a #nav-character .nav-item
+              span | 角色
+            a #nav-equipment .nav-item
+              span | 装备
+            a #nav-skills .nav-item
+              span | 技能
+            a #nav-inventory .nav-item
+              span | 背包
+          div
+            a #nav-settings .nav-item
+              span | 设置
+        div .flex-col
+          header .items-center
+            div .items-center
+              button #back-hud .ink-btn ink-btn-ghost ink-btn-sm
+                span | 返回
+              div .items-center justify-center
+              div .items-center
+                span | 无名侠
+                span .ink-tag ink-tag-brand | Lv.42
+                span | 逍遥派
+            div .items-center
+              div .items-center
+                span | 12,450
+              div .items-center
+                span | 328
+              div .items-center
+                span | 8,920
+          main .flex-col lg:flex-row
+            section .flex-col ink-panel
+              span
+              span
+              span
+              span
+              div .items-center
+                button #tab-all .mail-tab | 全部
+                button #tab-unread .mail-tab | 未读
+                button #tab-system .mail-tab | 系统
+                div
+                span | 2封未读
+              div
+                div #mail-item-1 .mail-item
+                  div .items-center
+                    div .items-center
+                      span .ink-tag ink-tag-vermilion | 系统奖励
+                    span
+                  h4 | 登录七日奖励
+                  div .items-center
+                    span | 发件人：系统
+                  div .items-center
+                    span | 今日 10:30
+                    span .items-center
+                      span | 3个附件
+                div #mail-item-2 .mail-item
+                  div .items-center
+                    div .items-center
+                      span .ink-tag | 好友来信
+                    span
+                  h4 | 剑随风的信
+                  div .items-center
+                    span | 发件人：剑随风
+                  div .items-center
+                    span | 今日 09:15
+                    span | 无附件
+                div #mail-item-3 .mail-item
+                  div .items-center
+                    div .items-center
+                      span .ink-tag | 系统
+                  h4 | 月卡每日奖励
+                  div .items-center
+                    span | 发件人：系统
+                  div .items-center
+                    span | 昨日 06:00
+                    span .items-center
+                      span | 1个附件
+                div #mail-item-4 .mail-item
+                  div .items-center
+                    div .items-center
+                      span .ink-tag ink-tag-brand | 门派通知
+                  h4 | 逍遥派周报
+                  div .items-center
+                    span | 发件人：逍遥派
+                  div .items-center
+                    span | 7月8日
+                    span | 无附件
+                div #mail-item-5 .mail-item
+                  div .items-center
+                    div .items-center
+                      span .ink-tag ink-tag-vermilion | 活动推送
+                  h4 | 限时活动开启
+                  div .items-center
+                    span | 发件人：系统
+                  div .items-center
+                    span | 7月7日
+                    span | 无附件
+                div #mail-item-6 .mail-item
+                  div .items-center
+                    div .items-center
+                      span .ink-tag | 系统
+                  h4 | 版本更新公告
+                  div .items-center
+                    span | 发件人：系统
+                  div .items-center
+                    span | 7月5日
+                    span | 无附件
+            section .flex-col ink-paper-panel
+              span
+              span
+              span
+              span
+              div
+                div
+                  div .items-start
+                    div
+                      h2 | 登录七日奖励
+                      div .items-center
+                        span | 发件人：系统
+                        span | 2026年7月15日
+                    span .ink-tag ink-tag-vermilion | 系统邮件
+                  div
+                    p | 侠士道鉴：
+                    p | 自侠士踏入江湖以来，已有七日之久。江湖路远，风波险恶，侠士能坚持至此，实属不易。今特备薄礼一份，以表心意。
+                    p | 铜钱五千，聊作盘缠之用；精良装备箱一具，以助行侠仗义之事；经验丹三枚，望修为精进，武艺日增。
+                    p | 愿侠士此后行侠仗义，名扬四海，不负这一身武艺。江湖路漫漫，且行且珍重。
+                    p | —— 系统敬上
+                  div
+                  div
+                    div .items-center
+                      h3 | 附件
+                      span | 共3件
+                    div .grid grid-cols-1 sm:grid-cols-3
+                      div #attach-1 .attachment-item
+                        div
+                        div .items-center
+                          div .attach-icon-wrap
+                          div
+                            p | 铜钱
+                            p | x 5000
+                      div #attach-2 .attachment-item
+                        div
+                        div .items-center
+                          div .attach-icon-wrap
+                          div
+                            p | 精良装备箱
+                            p | x 1
+                      div #attach-3 .attachment-item
+                        div
+                        div .items-center
+                          div .attach-icon-wrap
+                          div
+                            p | 经验丹
+                            p | x 3
+                  div .items-center
+                    button #btn-delete-mail .letter-btn-delete
+                      span | 删除邮件
+                    div
+                      button #btn-claim-selected .letter-btn-secondary | 领取选中
+                      button #btn-claim-all .letter-btn-primary | 领取全部
+
+## COPY (62)
+混沌世界 | 主菜单 | 任务 | 博物志 | 武林录 | 营生 | 组队 | 邮箱 | 商店 | 角色 | 装备 | 技能 | 背包 | 设置 | 返回 | 无名侠 | Lv.42 | 逍遥派 | 12,450 | 8,920 | 全部 | 未读 | 系统 | 2封未读 | 系统奖励 | 登录七日奖励 | 发件人：系统 | 今日 10:30 | 3个附件 | 好友来信 | 剑随风的信 | 发件人：剑随风 | 今日 09:15 | 无附件 | 月卡每日奖励 | 昨日 06:00 | 1个附件 | 门派通知 | 逍遥派周报 | 发件人：逍遥派 | 7月8日 | 活动推送 | 限时活动开启 | 7月7日 | 版本更新公告 | 7月5日 | 2026年7月15日 | 系统邮件 | 侠士道鉴： | 自侠士踏入江湖以来，已有七日之久。江湖路远，风波险恶，侠士能坚持至此，实属不易。今特备薄礼一份，以表心意。 | 铜钱五千，聊作盘缠之用；精良装备箱一具，以助行侠仗义之事；经验丹三枚，望修为精进，武艺日增。 | 愿侠士此后行侠仗义，名扬四海，不负这一身武艺。江湖路漫漫，且行且珍重。 | —— 系统敬上 | 附件 | 共3件 | 铜钱 | x 5000 | 精良装备箱 | 经验丹 | 删除邮件 | 领取选中 | 领取全部

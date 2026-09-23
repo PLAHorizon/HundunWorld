@@ -1,0 +1,113 @@
+## page: reward-level-up
+## dom-ids: back-hud, level-up-overlay, levelNumber, levelUpTitle, link-reward-congratulations
+  main
+    div
+      div
+      div
+      div
+      div
+      button #back-hud .ink-back-btn [aria="返回战斗"]
+      div #level-up-overlay
+        div
+          span
+          span
+          span
+          span
+          span
+          span
+          span
+          span
+          span
+          span
+        div .level-up-modal
+          span
+          span
+          span
+          span
+          div | 升
+          div .modal-content
+            div .title-section
+              div .title-decoration left
+              h1 #levelUpTitle .modal-title | 等级提升
+              div .title-decoration right
+              div .level-display-section
+                div
+                div
+                div
+                div
+                div .golden-ring
+                div .golden-ring-inner
+                div
+                div
+                  span | Lv.
+                  span #levelNumber | 0
+                div .section attr-section
+                  h2 .section-title
+                    i .section-icon
+                    span | 属性变化
+                  div .attr-list
+                    div .attr-row
+                      div .attr-name-wrapper
+                        i .attr-name-icon
+                        span .attr-name | 气血
+                      div .attr-values
+                        span .attr-old | 12,450
+                        i .attr-arrow
+                        span .attr-new | 13,200
+                      span .attr-change | +750
+                    div .attr-row
+                      div .attr-name-wrapper
+                        i .attr-name-icon
+                        span .attr-name | 攻击
+                      div .attr-values
+                        span .attr-old | 3,280
+                        i .attr-arrow
+                        span .attr-new | 3,450
+                      span .attr-change | +170
+                    div .attr-row
+                      div .attr-name-wrapper
+                        i .attr-name-icon
+                        span .attr-name | 防御
+                      div .attr-values
+                        span .attr-old | 2,150
+                        i .attr-arrow
+                        span .attr-new | 2,280
+                      span .attr-change | +130
+                    div .attr-row
+                      div .attr-name-wrapper
+                        i .attr-name-icon
+                        span .attr-name | 内力
+                      div .attr-values
+                        span .attr-old | 2,000
+                        i .attr-arrow
+                        span .attr-new | 2,200
+                      span .attr-change | +200
+                  div .section unlock-section
+                    h2 .section-title
+                      i .section-icon
+                      span | 解锁内容
+                    div .unlock-list
+                      div .unlock-item
+                        div .unlock-icon-wrapper
+                        span | 新武学槽位已解锁
+                        i
+                      div .unlock-item
+                        div .unlock-icon-wrapper
+                        span | 新任务“雪山之巅”已开放
+                        i
+                  div .section exp-section
+                    div .exp-header
+                      div .exp-label-wrapper
+                        i .exp-icon
+                        span .exp-label | 经验值
+                      span .exp-value | 0 / 5,000
+                    div .ink-bar
+                      div .ink-bar-fill exp-bar
+                    p | 新等级经验已重置
+                  div .confirm-section
+                    button #link-reward-congratulations .ink-btn ink-btn-primary confirm-btn
+                      i .confirm-icon
+                      span | 继续
+
+## COPY (26)
+升 | 等级提升 | 属性变化 | 气血 | 12,450 | 13,200 | +750 | 攻击 | 3,280 | 3,450 | +170 | 防御 | 2,150 | 2,280 | +130 | 内力 | 2,000 | 2,200 | +200 | 解锁内容 | 新武学槽位已解锁 | 新任务“雪山之巅”已开放 | 经验值 | 0 / 5,000 | 新等级经验已重置 | 继续

@@ -29,6 +29,13 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private string _currentNavigationTag;
         // 进入音乐播放器前的导航标签，用于从播放器返回原入口页面
         private string _prePlayerNavigationTag;
+        // ===== 全局导航历史（返回上一页 / 前进下一页，浏览器式双栈） =====
+        // 使用 List 当栈：Add=Push，RemoveAt(Count-1)=Pop，便于按 MaxHistoryEntries 裁剪最旧记录
+        private readonly List<string> _backHistory = new();
+        private readonly List<string> _forwardHistory = new();
+        // 返回/前进内部导航标记：避免历史导航本身被再次记入后退栈
+        private bool _isHistoryNavigation;
+        private const int MaxHistoryEntries = 50;
         private string _gameStatus = "Ready";
 
         public MainViewModel(GameService gameService, NavigationService navigationService, string initialTag = "Home")
@@ -144,6 +151,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             NavigateToFlowerProfileCommand = new RelayCommand(NavigateToFlowerProfile);
             NavigateToFlowerDataScreenCommand = new RelayCommand(NavigateToFlowerDataScreen);
             LogoutCommand = new RelayCommand(Logout);
+            GoBackCommand = new RelayCommand(GoBack);
+            GoForwardCommand = new RelayCommand(GoForward);
 
             SetSystemThemeCommand = new RelayCommand(SetSystemTheme);
             SetLightThemeCommand = new RelayCommand(SetLightTheme);
@@ -166,6 +175,22 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             get => _currentNavigationTag;
             private set => SetProperty(ref _currentNavigationTag, value);
         }
+
+        /// <summary>是否可返回上一页（后退栈非空）。</summary>
+        public bool CanGoBack => _backHistory.Count > 0;
+
+        /// <summary>是否可前进下一页（前进栈非空）。</summary>
+        public bool CanGoForward => _forwardHistory.Count > 0;
+
+        /// <summary>返回按钮提示（含目标页名称）。</summary>
+        public string GoBackToolTip => TryPeekHistory(_backHistory, out var backTag)
+            ? $"返回到「{GetNavigationTitle(backTag)}」"
+            : "返回上一页";
+
+        /// <summary>前进按钮提示（含目标页名称）。</summary>
+        public string GoForwardToolTip => TryPeekHistory(_forwardHistory, out var forwardTag)
+            ? $"前进到「{GetNavigationTitle(forwardTag)}」"
+            : "前进下一页";
 
         public IReadOnlyList<NavigationSearchItem> SearchItems { get; }
 
@@ -276,6 +301,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public ICommand NavigateToFlowerProfileCommand { get; }
         public ICommand NavigateToFlowerDataScreenCommand { get; }
         public ICommand LogoutCommand { get; }
+        public ICommand GoBackCommand { get; }
+        public ICommand GoForwardCommand { get; }
         public ICommand SetSystemThemeCommand { get; }
         public ICommand SetLightThemeCommand { get; }
         public ICommand SetDarkThemeCommand { get; }
@@ -287,6 +314,27 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             {
                 DiagLog.Log($"[MainVM] NavigateTo tag not found: {tag}");
                 return false;
+            }
+
+            // ===== 全局导航历史记录（返回/前进功能，浏览器式双栈） =====
+            // 返回/前进触发的内部导航（_isHistoryNavigation=true）不重复记录；
+            // 相同 tag 原地重建也不产生历史，避免后退栈被无意义重复项填满。
+            var previousTag = _currentNavigationTag;
+            if (!_isHistoryNavigation)
+            {
+                if (string.IsNullOrEmpty(previousTag))
+                {
+                    // 初始导航：清空历史
+                    _backHistory.Clear();
+                    _forwardHistory.Clear();
+                }
+                else if (!string.Equals(previousTag, tag, StringComparison.OrdinalIgnoreCase))
+                {
+                    _backHistory.Add(previousTag);
+                    if (_backHistory.Count > MaxHistoryEntries)
+                        _backHistory.RemoveAt(0); // 裁掉最旧记录，限制内存
+                    _forwardHistory.Clear();
+                }
             }
 
             // 关键修复：取消前一页面 ViewModel 的后台任务。
@@ -305,8 +353,100 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             DiagLog.Log($"[MainVM] before factory() tag={tag}");
             CurrentView = factory();
             DiagLog.Log($"[MainVM] after factory() tag={tag}, CurrentView={CurrentView?.GetType().Name}");
+
+            RaiseHistoryStateChanged();
             return true;
         }
+
+        /// <summary>返回上一页（后退栈非空时）。</summary>
+        public void GoBack()
+        {
+            if (_backHistory.Count == 0) return;
+            var tag = _backHistory[^1];
+            _backHistory.RemoveAt(_backHistory.Count - 1);
+            if (!string.IsNullOrEmpty(_currentNavigationTag))
+                _forwardHistory.Add(_currentNavigationTag);
+            NavigateHistoryTo(tag, nameof(GoBack));
+        }
+
+        /// <summary>前进下一页（前进栈非空时，仅在返回过之后可用）。</summary>
+        public void GoForward()
+        {
+            if (_forwardHistory.Count == 0) return;
+            var tag = _forwardHistory[^1];
+            _forwardHistory.RemoveAt(_forwardHistory.Count - 1);
+            if (!string.IsNullOrEmpty(_currentNavigationTag))
+                _backHistory.Add(_currentNavigationTag);
+            NavigateHistoryTo(tag, nameof(GoForward));
+        }
+
+        /// <summary>
+        /// 按历史栈执行导航：标记 _isHistoryNavigation 避免 NavigateTo 重复记录历史，
+        /// 并重放目标页的后初始化钩子（SetUserId 等）。
+        /// </summary>
+        private void NavigateHistoryTo(string tag, string source)
+        {
+            _isHistoryNavigation = true;
+            try
+            {
+                if (NavigateTo(tag))
+                {
+                    ApplyPostNavigationActions(tag);
+                    DiagLog.Log($"[MainVM] {source} -> {tag} (back={_backHistory.Count}, forward={_forwardHistory.Count})");
+                }
+            }
+            finally
+            {
+                _isHistoryNavigation = false;
+            }
+        }
+
+        /// <summary>
+        /// 应用导航后的页面初始化钩子（原本散落在各 NavigateToXxx 包装方法中）。
+        /// 返回/前进按 tag 重放导航时也必须执行同样钩子，否则相关页面缺少初始化参数。
+        /// </summary>
+        private void ApplyPostNavigationActions(string tag)
+        {
+            switch (tag)
+            {
+                case "FlowerOrderCenter":
+                    if (CurrentView is FlowerOrderCenterView orderView &&
+                        orderView.DataContext is FlowerOrderCenterViewModel orderVm)
+                        orderVm.SetUserId(App.CurrentUser.UserId);
+                    break;
+                case "FlowerCart":
+                    if (CurrentView is FlowerCartView cartView &&
+                        cartView.DataContext is FlowerCartViewModel cartVm)
+                        cartVm.SetUserId(App.CurrentUser.UserId);
+                    break;
+                case "FlowerAddress":
+                    if (CurrentView is FlowerAddressView addressView)
+                        addressView.SetUserId(App.CurrentUser.UserId);
+                    break;
+            }
+        }
+
+        private void RaiseHistoryStateChanged()
+        {
+            OnPropertyChanged(nameof(CanGoBack));
+            OnPropertyChanged(nameof(CanGoForward));
+            OnPropertyChanged(nameof(GoBackToolTip));
+            OnPropertyChanged(nameof(GoForwardToolTip));
+        }
+
+        private static bool TryPeekHistory(List<string> history, out string tag)
+        {
+            if (history.Count > 0)
+            {
+                tag = history[history.Count - 1];
+                return true;
+            }
+            tag = null;
+            return false;
+        }
+
+        private string GetNavigationTitle(string tag) =>
+            SearchItems.FirstOrDefault(i => string.Equals(i.Tag, tag, StringComparison.OrdinalIgnoreCase))?.Title ?? tag;
 
         /// <summary>
         /// 取消前一页面 ViewModel 的后台任务（如果其实现了 ICancelableViewModel）。
@@ -463,10 +603,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public void NavigateToFlowerOrderCenter()
         {
             NavigateTo("FlowerOrderCenter");
-            if (CurrentView is FlowerOrderCenterView view && view.DataContext is FlowerOrderCenterViewModel vm)
-            {
-                vm.SetUserId(App.CurrentUser.UserId);
-            }
+            ApplyPostNavigationActions("FlowerOrderCenter");
         }
 
         public void NavigateToFlowerAlertCenter()
@@ -482,11 +619,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public void NavigateToFlowerCart()
         {
             NavigateTo("FlowerCart");
-            if (CurrentView is FlowerCartView view && view.DataContext is FlowerCartViewModel vm)
-            {
-               
-                vm.SetUserId(App.CurrentUser.UserId);
-            }
+            ApplyPostNavigationActions("FlowerCart");
         }
 
         public void NavigateToFlowerMerchant()
@@ -497,10 +630,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public void NavigateToFlowerAddress()
         {
             NavigateTo("FlowerAddress");
-            if (CurrentView is FlowerAddressView view)
-            {
-                view.SetUserId(App.CurrentUser.UserId);
-            }
+            ApplyPostNavigationActions("FlowerAddress");
         }
 
         public void NavigateToFlowerDashboard()

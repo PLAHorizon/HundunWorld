@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +16,7 @@ namespace Horizon.Core.Helper
     public class AesHelper
     {
         private const string IV = "K834KSONV61LSAJV";
+        // 遗留兼容密钥（与 Long_Aes 同源），严禁修改——变更将破坏历史加密数据解密。
         public const string AesKey = "zLKrO8fjzLKrO8fjzLKrO8fj";
         #region 字段
         /// <summary>

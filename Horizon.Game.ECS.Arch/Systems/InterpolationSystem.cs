@@ -1,6 +1,7 @@
 using System;
 using Arch.Core;
 using Horizon.Game.ECS.Arch.Components;
+using Horizon.Game.ECS.Arch.Configuration;
 using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.Message.Sync.Components;
@@ -132,6 +133,21 @@ public sealed class InterpolationSystem : ArchSystemBase
     /// 诊断事件汇（可选）。由游戏层 DI 注入，null 时不输出诊断日志，保证零开销。
     /// </summary>
     public ISyncDiagnosticsSink? Diagnostics { get; set; }
+
+    /// <summary>
+    /// 阶段 5.3.2：从 <see cref="RemoteSyncThresholdOptions"/> 注入传送分档与前向预测阈值
+    /// （经 <see cref="RemoteSyncThresholdValidator"/> 校验，非法值回退默认并输出诊断事件）。
+    /// 由游戏层在启动装配时调用一次；未调用时各属性默认值与历史硬编码一致（兜底）。
+    /// </summary>
+    /// <param name="options">阈值配置（可为 null 或含非法值，均由校验器兜底）。</param>
+    public void ApplyOptions(RemoteSyncThresholdOptions? options)
+    {
+        var o = RemoteSyncThresholdValidator.Validate(options, Diagnostics);
+        TeleportThresholdMeters = o.SmoothThresholdMeters;
+        HardSnapThresholdMeters = o.HardSnapThresholdMeters;
+        TeleportBlendDurationSeconds = o.BlendDurationSeconds;
+        DeadReckoningMaxExtrapolationSeconds = o.DeadReckoningMaxExtrapolationSeconds;
+    }
 
     /// <summary>
     /// Dead Reckoning 速度衰减系数（每秒衰减比例）。

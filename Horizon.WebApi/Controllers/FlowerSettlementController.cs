@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -34,14 +37,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{settlementId}")]
-        public async Task<ResultVM<SettlementState>> GetSettlementAsync(long settlementId)
+        public async Task<ResultVM<SettlementDto>> GetSettlementAsync(long settlementId)
         {
-            var result = new ResultVM<SettlementState>();
+            var result = new ResultVM<SettlementDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ISettlementGrain>(settlementId);
-                result.Data = await grain.GetSettlementAsync();
+                var state = await grain.GetSettlementAsync();
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -91,15 +95,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{merchantId}/account")]
-        public async Task<ResultVM<SettlementAccountState>> GetSettlementAccountAsync(long merchantId)
+        public async Task<ResultVM<SettlementAccountDto>> GetSettlementAccountAsync(long merchantId)
         {
-            var result = new ResultVM<SettlementAccountState>();
+            var result = new ResultVM<SettlementAccountDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ISettlementGrain>(merchantId);
-                result.Data = await grain.GetSettlementAccountAsync(merchantId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetSettlementAccountAsync(merchantId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -129,15 +134,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{merchantId}/bills")]
-        public async Task<ResultVM<List<SettlementState>>> GetSettlementBillsAsync(long merchantId, [FromQuery] int pageNo = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<SettlementDto>>> GetSettlementBillsAsync(long merchantId, [FromQuery] int pageNo = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<SettlementState>>();
+            var result = new ResultVM<List<SettlementDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ISettlementGrain>(merchantId);
                 var skip = (pageNo - 1) * pageSize;
-                result.Data = await grain.GetSettlementBillsAsync(merchantId, skip, pageSize);
+                var bills = await grain.GetSettlementBillsAsync(merchantId, skip, pageSize);
+                result.Data = bills?.Select(b => FlowerDtoMapper.ToDto(b)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -176,14 +182,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{settlementBillId}/details")]
-        public async Task<ResultVM<List<SettlementDetailState>>> GetSettlementDetailsAsync(long settlementBillId)
+        public async Task<ResultVM<List<SettlementDetailDto>>> GetSettlementDetailsAsync(long settlementBillId)
         {
-            var result = new ResultVM<List<SettlementDetailState>>();
+            var result = new ResultVM<List<SettlementDetailDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ISettlementGrain>(settlementBillId);
-                result.Data = await grain.GetSettlementDetailsAsync(settlementBillId);
+                var details = await grain.GetSettlementDetailsAsync(settlementBillId);
+                result.Data = details?.Select(d => FlowerDtoMapper.ToDto(d)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -195,15 +202,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("account/{merchantId}/summary")]
-        public async Task<ResultVM<SettlementAccountSummaryState>> GetAccountSummaryAsync(long merchantId)
+        public async Task<ResultVM<SettlementAccountSummaryDto>> GetAccountSummaryAsync(long merchantId)
         {
-            var result = new ResultVM<SettlementAccountSummaryState>();
+            var result = new ResultVM<SettlementAccountSummaryDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ISettlementGrain>(merchantId);
-                result.Data = await grain.GetAccountSummaryAsync(merchantId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetAccountSummaryAsync(merchantId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {

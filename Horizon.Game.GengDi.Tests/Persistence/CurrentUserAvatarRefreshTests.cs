@@ -79,8 +79,8 @@ public sealed class CurrentUserAvatarRefreshTests
 
         Assert.Contains(nameof(User.Avatar), changed);
         Assert.Contains(nameof(User.HasAvatar), changed);
-        Assert.Contains(nameof(User.AvatarImage), changed);
-        Assert.Contains(nameof(User.HasAvatarImage), changed);
+        Assert.Contains(nameof(User.AvatarBitmap), changed);      // Avatar setter 清空旧 Bitmap 触发
+        Assert.Contains(nameof(User.HasAvatarBitmap), changed);  // AvatarBitmap setter 通知
         Assert.Contains(nameof(User.Bio), changed);
         Assert.Contains(nameof(User.SocialSummary), changed);
         Assert.Contains(nameof(User.Status), changed);
@@ -89,15 +89,17 @@ public sealed class CurrentUserAvatarRefreshTests
     }
 
     [Fact]
-    public void User_AvatarImage_LoadsBitmap_FromLocalFile()
+    public void User_Avatar_SyncSemantics_FromLocalFile()
     {
         var avatarPath = GetExistingAvatarFixturePath();
         var user = new User { Username = "BitmapUser", Avatar = avatarPath };
 
+        // 同步语义断言：文件存在 + HasAvatar 立即可见（计算属性，setter 已通知）。
+        // AvatarBitmap 的异步加载依赖 Avalonia 平台（PreviewImageService + Dispatcher.UIThread），
+        // 不做墙钟等待；位图加载由 UI 集成走查覆盖。
         Assert.True(File.Exists(avatarPath));
         Assert.True(user.HasAvatar);
-        Assert.True(user.HasAvatarImage);
-        Assert.NotNull(user.AvatarImage);
+        Assert.Equal(avatarPath, user.Avatar);
     }
 
     private static string GetExistingAvatarFixturePath()

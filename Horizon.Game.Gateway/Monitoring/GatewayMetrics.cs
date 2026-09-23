@@ -100,6 +100,20 @@ namespace Horizon.Game.Gateway.Monitoring
             "hundunworld.gateway.orleans.call_errors.total",
             description: "Orleans Grain调用失败总数");
 
+        // ========== UE5 DS 路由表指标（阶段 2.5） ==========
+
+        /// <summary>当前心跳有效的 UE5 DS 数（gauge；由 DSRegistryMaintenanceHostedService 周期性上报）。</summary>
+        public static readonly UpDownCounter<long> ActiveDsServers = Meter.CreateUpDownCounter<long>(
+            "hundunworld.gateway.ds.servers.alive",
+            unit: "{servers}",
+            description: "当前已注册且心跳有效的 UE5 DS 数");
+
+        /// <summary>累计摘除的过期 DS 数（自愈闭环：PruneStale 命中数）。</summary>
+        public static readonly Counter<long> DsServersPrunedTotal = Meter.CreateCounter<long>(
+            "hundunworld.gateway.ds.servers.pruned.total",
+            unit: "{servers}",
+            description: "累计因心跳过期被摘除的 DS 数");
+
         // ========== 分布式追踪辅助方法 ==========
 
         /// <summary>

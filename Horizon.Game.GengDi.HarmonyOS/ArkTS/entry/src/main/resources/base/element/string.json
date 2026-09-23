@@ -1,0 +1,36 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "耕地移动客户端"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "耕地入口"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "耕地"
+    },
+    {
+      "name": "reason_internet",
+      "value": "WebView 需要访问网络加载 CDN 资源（Tailwind / Lucide / Chart.js）"
+    },
+    {
+      "name": "reason_microphone",
+      "value": "语音/视频通话时采集本端声音发送给对方"
+    },
+    {
+      "name": "reason_camera",
+      "value": "视频通话时采集本端画面发送给对方"
+    },
+    {
+      "name": "reason_wifi_info",
+      "value": "通话建立时获取本机局域网地址用于音视频直连"
+    },
+    {
+      "name": "reason_location",
+      "value": "聊天中发送位置消息时获取当前所在位置"
+    }
+  ]
+}

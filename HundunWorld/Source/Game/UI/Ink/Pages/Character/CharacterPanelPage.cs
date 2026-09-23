@@ -61,6 +61,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private InkScrollArea _rightPanel;
         private ContainerControl _rightScroll;
         private readonly List<ContainerControl> _cards = new List<ContainerControl>();
+        // 物品详情弹窗（浮层 + 遮罩；不固定在界面内，点击行囊物品时弹出）
+        private ContainerControl _itemDetailCard;
+        private ContainerControl _detailOverlay;
         private readonly List<Label> _headerSubtitles = new List<Label>();
         private readonly List<Control> _centeredControls = new List<Control>();
         private readonly List<ContainerControl> _fullWidthHairlines = new List<ContainerControl>();
@@ -100,6 +103,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             BuildTopBar();
             BuildLeftColumn();
             BuildRightColumn();
+            BuildItemDetailPopup();   // 物品详情弹窗浮层（根节点上层，独立于卡片流）
             if (_slotTooltip != null) AddChild(_slotTooltip);   // Tooltip 挂页面根节点（最上层绘制，不被左右栏裁剪）
         }
 
@@ -534,15 +538,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             _cards.Add(BuildAttrOverviewCard());   // 2. 属性总览（五维/五行并排）
             _cards.Add(BuildCombatCard());         // 3. 战斗属性
             _cards.Add(BuildInventoryCard());      // 4. 行囊
-            _cards.Add(BuildItemDetailCard());     // 5. 物品详情（含宝石槽）
-            _cards.Add(BuildTiaoLvCard());         // 6. 调律
-            _cards.Add(BuildDingYinCard());        // 7. 定音
-            _cards.Add(BuildDieYinCard());         // 8. 叠音
+            _cards.Add(BuildTiaoLvCard());         // 5. 调律
+            _cards.Add(BuildDingYinCard());        // 6. 定音
+            _cards.Add(BuildDieYinCard());         // 7. 叠音
 
             foreach (var card in _cards)
                 _rightScroll.AddChild(card);
 
-            SelectInvCell(0);
+            // 物品详情：改为浮层弹窗承载（不占卡片流；点击行囊物品时弹出，见 BuildItemDetailPopup）
+            _itemDetailCard = BuildItemDetailCard();
+
+            // 初始化首格高亮与数据（不弹窗）
+            ApplyInvSelection(0);
         }
 
         // ===================================================================
@@ -1233,6 +1240,88 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 _invFilterChips[i].IsActive = (i == index);
         }
 
+        /// <summary>构建物品详情弹窗浮层：全屏半透明遮罩（点击关闭）+ 详情卡 + 右上角关闭钮。</summary>
+        private void BuildItemDetailPopup()
+        {
+            _detailOverlay = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                Visible = false,
+                AutoFocus = false,
+            };
+            AddChild(_detailOverlay);
+
+            var backdrop = new DetailBackdrop();
+            backdrop.AnchorPreset = AnchorPresets.StretchAll;
+            backdrop.Offsets = Margin.Zero;
+            backdrop.Clicked += HideItemDetailPopup;
+            _detailOverlay.AddChild(backdrop);
+
+            if (_itemDetailCard != null)
+            {
+                // 弹窗宽度固定（不再随右栏），位置由 ShowItemDetailPopup 居中计算
+                _itemDetailCard.Size = new Float2(520f, _itemDetailCard.Height);
+
+                // 右上角关闭按钮（TopRight 锚点，与卡片宽度解耦）
+                var closeButton = new InkButton
+                {
+                    Variant = InkButtonVariant.Ghost,
+                    ButtonSize = InkButtonSize.Sm,
+                    Text = "×",
+                    AnchorPreset = AnchorPresets.TopRight,
+                    Location = new Float2(-12f, 10f),
+                    Size = new Float2(30f, 30f),
+                };
+                closeButton.Clicked += HideItemDetailPopup;
+                _itemDetailCard.AddChild(closeButton);
+
+                _detailOverlay.AddChild(_itemDetailCard);
+            }
+        }
+
+        /// <summary>显示物品详情弹窗并居中（以当前页面尺寸计算）。</summary>
+        private void ShowItemDetailPopup()
+        {
+            if (_detailOverlay == null || _itemDetailCard == null) return;
+            _detailOverlay.Visible = true;
+
+            float pw = Width > 0f ? Width : 1920f;
+            float ph = Height > 0f ? Height : 1080f;
+            _itemDetailCard.Location = new Float2(
+                (pw - _itemDetailCard.Width) * 0.5f,
+                Mathf.Max((ph - _itemDetailCard.Height) * 0.5f, 12f));
+        }
+
+        /// <summary>隐藏物品详情弹窗。</summary>
+        private void HideItemDetailPopup()
+        {
+            if (_detailOverlay != null)
+                _detailOverlay.Visible = false;
+        }
+
+        /// <summary>弹窗遮罩：半透明暗底，点击任意处关闭。</summary>
+        private class DetailBackdrop : ContainerControl
+        {
+            public event Action Clicked;
+
+            public DetailBackdrop()
+            {
+                BackgroundColor = WithAlpha(InkWashTheme.Void, 0.55f);
+                ClipChildren = false;
+            }
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                try
+                {
+                    Clicked?.Invoke();
+                }
+                catch { }
+                return true;
+            }
+        }
+
         private void OnInvCellClicked(int index)
         {
             if (_invCellData != null && index >= 0 && index < _invCellData.Length && _invCellData[index].HasItem)
@@ -1240,6 +1329,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         }
 
         private void SelectInvCell(int index)
+        {
+            ApplyInvSelection(index);
+            // 物品详情以弹窗呈现（不固定在界面中）
+            ShowItemDetailPopup();
+        }
+
+        /// <summary>仅应用选中高亮与详情数据填充（不弹出弹窗，供初始化使用）。</summary>
+        private void ApplyInvSelection(int index)
         {
             if (_invCells == null) return;
             for (int i = 0; i < _invCells.Length; i++)

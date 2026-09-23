@@ -14,6 +14,7 @@ using System.Diagnostics;
 
 namespace Horizon.IM.Gateway.Tests;
 
+[Collection("OrleansCluster")]
 public sealed class IMGatewayPushServiceTests : IAsyncLifetime
 {
     private readonly FakeConnectionManager _connectionManager = new();
@@ -26,6 +27,7 @@ public sealed class IMGatewayPushServiceTests : IAsyncLifetime
     {
         var builder = new TestClusterBuilder();
         builder.AddSiloBuilderConfigurator<IMGatewayTestSiloConfigurator>();
+        builder.AddClientBuilderConfigurator<IMGatewayTestClientConfigurator>();
 
         _cluster = builder.Build();
         await _cluster.DeployAsync();
@@ -106,12 +108,9 @@ public sealed class IMGatewayPushServiceTests : IAsyncLifetime
 
         Assert.False(string.IsNullOrWhiteSpace(serverMessageId));
 
-        var push = await _connectionManager.WaitForPushAsync(receiverId, TimeSpan.FromSeconds(5));
-        Assert.NotNull(push);
-        Assert.Equal(receiverId, push.UserId);
-
-        var packet = ParsePacket(push.Payload);
-        Assert.Equal(IMMessageType.PrivateChatNotify, packet.Header.MessageType);
+        // 用类型谓词等待，跳过 MakeFriendsAsync 里 fire-and-forget 的「已加入」系统通知
+        //（其异步送达可能晚于 _connectionManager.Clear()，避免断言到陈旧通知）。
+        var packet = await WaitForPacketAsync(receiverId, IMMessageType.PrivateChatNotify, TimeSpan.FromSeconds(5));
 
         var notify = Assert.IsType<IMPrivateChatNotifyMessage>(packet.Body);
         Assert.Equal(senderId, notify.SenderId);
@@ -572,13 +571,64 @@ public sealed class IMGatewayPushServiceTests : IAsyncLifetime
 
         Assert.True(response.Success);
 
-        var packet = await WaitForSystemNotificationAsync(receiverId, "好友列表已更新", TimeSpan.FromSeconds(5));
+        var packet = await WaitForSystemNotificationAsync(receiverId, "好友列表已更新", TimeSpan.FromSeconds(5), "已移除");
         Assert.Equal(IMMessageType.SystemNotification, packet.Header.MessageType);
 
         var notify = Assert.IsType<IMSystemNotificationMessage>(packet.Body);
         Assert.Equal(receiverId, notify.TargetUserId);
         Assert.Equal("好友列表已更新", notify.Title);
         Assert.Contains("已移除", notify.Content);
+    }
+
+    /// <summary>
+    /// 并发回归：EnsureUserSessionAsync 会被 TouchSocket 接收回调**同时**进入
+    /// （IMNetworkServer.OnDataReceived → 每条消息每个连接一次，跑在线程池上）。
+    /// 修复前的实现用普通 HashSet&lt;ulong&gt; 存订阅用户，并发 Add/Remove 会抛
+    /// <c>InvalidOperationException: Operations that change non-concurrent collections must have
+    /// exclusive access ...</c>（2026-09-20 线上栈：IMGatewayPushService.cs 第 113 行）。
+    ///
+    /// 本用例不追求"必然复现"（并发缺陷本质是概率性的），而是作为**回归护栏**：
+    /// 修复后永远不会失败；若有人把 ConcurrentDictionary 改回普通集合，风暴下极易由红。
+    /// </summary>
+    [Fact]
+    public async Task EnsureUserSessionAsync_IsSafeUnderConcurrentInvocation()
+    {
+        Assert.NotNull(_pushService);
+
+        const int userCount = 64;
+        const int repeatsPerUser = 3;
+
+        var userIds = new ulong[userCount];
+        for (var i = 0; i < userCount; i++)
+        {
+            userIds[i] = IMGrainKey.NewUInt64Id();
+        }
+
+        // 并发发起（不套 Task.Run）：
+        //   每个调用会同步跑到第一个 await（grain 调用）再让出，因此 192 个调用几乎同时
+        //   进入方法体，并在两次 grain 往返之后**自然交错**到同一段临界区
+        //   （即 _subscribedUsers 的写入）。这既贴近 TouchSocket 回调的真实并发形态，
+        //   又不会额外占用线程池线程（套 Task.Run 反而可能造成线程饥饿）。
+        var tasks = new List<Task>(userIds.Length * repeatsPerUser);
+
+        foreach (var userId in userIds)
+        {
+            for (var repeat = 0; repeat < repeatsPerUser; repeat++)
+            {
+                tasks.Add(_pushService!.EnsureUserSessionAsync(
+                    userId, "Concurrent", string.Empty, IMOnlineStatus.Online));
+            }
+        }
+
+        // 修复前：并发 HashSet.Add 抛 InvalidOperationException。
+        await Task.WhenAll(tasks);
+
+        // 风暴后集合必须仍然可用：再走一次 订阅 → 断开 的完整往返
+        //（断开走 TryRemove + 遍历快照路径，能暴露集合内部结构被损坏的情况）。
+        var probeUser = userIds[0];
+        await _pushService!.EnsureUserSessionAsync(
+            probeUser, "Probe", string.Empty, IMOnlineStatus.Online);
+        await _pushService.HandleUserDisconnectedAsync(probeUser);
     }
 
     private static async Task MakeFriendsAsync(
@@ -637,7 +687,7 @@ public sealed class IMGatewayPushServiceTests : IAsyncLifetime
         return ParsePacket(push.Payload);
     }
 
-    private async Task<IMMessagePacket> WaitForSystemNotificationAsync(ulong userId, string title, TimeSpan timeout)
+    private async Task<IMMessagePacket> WaitForSystemNotificationAsync(ulong userId, string title, TimeSpan timeout, string? contentContains = null)
     {
         var push = await _connectionManager.WaitForPushAsync(
             userId,
@@ -646,7 +696,8 @@ public sealed class IMGatewayPushServiceTests : IAsyncLifetime
                 var packet = ParsePacket(candidate.Payload);
                 return packet.Header.MessageType == IMMessageType.SystemNotification
                     && packet.Body is IMSystemNotificationMessage notify
-                    && string.Equals(notify.Title, title, StringComparison.Ordinal);
+                    && string.Equals(notify.Title, title, StringComparison.Ordinal)
+                    && (contentContains == null || notify.Content.Contains(contentContains, StringComparison.Ordinal));
             },
             timeout);
 
@@ -683,6 +734,16 @@ public sealed class IMGatewayPushServiceTests : IAsyncLifetime
         public IMConnection? GetConnectionByUser(ulong userId)
         {
             return null;
+        }
+
+        public IReadOnlyList<IMConnection> GetConnectionsByUser(ulong userId)
+        {
+            return Array.Empty<IMConnection>();
+        }
+
+        public bool HasConnections(ulong userId)
+        {
+            return false;
         }
 
         public Task<bool> SendToUserAsync(ulong userId, byte[] message)

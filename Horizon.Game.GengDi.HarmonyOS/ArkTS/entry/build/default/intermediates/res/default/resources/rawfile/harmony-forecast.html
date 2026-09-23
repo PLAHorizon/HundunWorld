@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙花卉市场预报 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      .animate-spin-slow { animation: spin 1s linear infinite; }
+      #toast { transition: opacity 0.3s, transform 0.3s; }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen bg-background">
+        <!-- ========== 鸿蒙导航栏 返回+市场预报+filter 磨砂玻璃 ========== -->
+        <div class="sticky top-0 z-40 backdrop-blur-xl border-b border-white/[0.06]" style="background:rgba(10,14,23,0.7);">
+            <div class="relative flex items-center h-14 px-4">
+                <button class="flex items-center justify-center w-11 h-11 -ml-2 rounded-full active:bg-white/10 transition-colors" aria-label="返回">
+                    <i data-lucide="arrow-left" class="w-5 h-5 text-foreground"></i>
+                </button>
+                <h1 class="absolute left-1/2 -translate-x-1/2 text-[17px] font-semibold text-foreground">市场预报</h1>
+                <button class="ml-auto flex items-center justify-center w-11 h-11 -mr-2 rounded-full active:bg-white/10 transition-colors" aria-label="筛选">
+                    <i data-lucide="sliders-horizontal" class="w-5 h-5 text-foreground"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ========== Loading 遮罩 ========== -->
+        <div id="loadingOverlay" class="fixed inset-0 z-[100] hidden items-center justify-center" style="background:rgba(10,14,23,0.7); backdrop-filter:blur(4px);">
+            <div class="flex flex-col items-center gap-3">
+                <div class="w-10 h-10 border-2 border-white/20 rounded-full animate-spin" style="border-top-color: var(--gd-primary);"></div>
+                <p class="text-xs text-muted-foreground">数据刷新中...</p>
+            </div>
+        </div>
+
+        <!-- ========== Toast 提示 ========== -->
+        <div id="toast" class="fixed bottom-28 left-1/2 -translate-x-1/2 z-[100] hidden px-4 py-2 rounded-full shadow-lg" style="background: var(--gd-popover); border: 1px solid var(--gd-border); opacity:0; transform:translate(-50%, 10px);">
+            <p id="toastText" class="text-xs text-foreground whitespace-nowrap"></p>
+        </div>
+
+        <!-- ========== 内容区 ========== -->
+        <div class="px-4 pt-4 pb-6 space-y-4">
+
+            <!-- ----- 预报概览 78分 上涨趋势 7天 + 刷新按钮 ----- -->
+            <section class="relative overflow-hidden rounded-3xl backdrop-blur-xl border border-white/[0.1] p-5" style="background:linear-gradient(135deg, rgba(38,166,154,0.18) 0%, rgba(19,23,34,0.65) 55%);">
+                <div class="absolute -top-8 -right-6 w-32 h-32 rounded-full blur-3xl opacity-20" style="background:var(--gd-state-success);"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-muted-foreground">市场预报指数</span>
+                            <span id="trendBadge" class="px-2 py-0.5 rounded-full bg-up-surface text-up text-[10px] font-medium flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-up animate-pulse"></span>7天预报
+                            </span>
+                        </div>
+                        <button id="refreshBtn" class="flex items-center justify-center w-8 h-8 rounded-full active:bg-white/10 transition-colors" aria-label="刷新数据">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 text-muted-foreground" id="refreshIcon"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-end justify-between mt-2">
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="forecastIndex" class="text-[56px] leading-none font-bold text-foreground font-mono">78</span>
+                            <span class="text-sm text-muted-foreground">分</span>
+                        </div>
+                        <div class="flex flex-col items-end gap-1.5 pb-1">
+                            <span id="trendLabel" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-up-surface text-up text-[11px] font-medium">
+                                <i data-lucide="trending-up" class="w-3 h-3"></i>上涨趋势
+                            </span>
+                            <span id="trendLevel" class="text-[11px] text-muted-foreground">中等偏高</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-white/[0.1]">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] text-muted-foreground">预报周期进度</span>
+                            <span id="cycleProgress" class="text-[11px] font-mono text-foreground">第3天 / 7天</span>
+                        </div>
+                        <div class="h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
+                            <div id="cycleBar" class="h-full rounded-full transition-all duration-500" style="width:43%; background:var(--gd-primary);"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ----- 鸿蒙Tab 种植预报(选中)/交易预报 胶囊形 ----- -->
+            <div class="flex items-center gap-1 p-1 rounded-full bg-white/[0.06]">
+                <button id="tabPlanting" class="tab-btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-primary text-[13px] font-medium text-primary-foreground active:scale-95 transition-all min-h-[44px]" data-tab="planting">
+                    <i data-lucide="sprout" class="w-4 h-4"></i>种植预报
+                </button>
+                <button id="tabTrading" class="tab-btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-[13px] text-muted-foreground active:scale-95 transition-all min-h-[44px]" data-tab="trading">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i>交易预报
+                </button>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- ========== 种植预报面板 ========== -->
+            <!-- ============================================== -->
+            <div id="plantingPanel" class="space-y-4">
+
+                <!-- ----- 种植雷达图 Chart.js 5维度 暗色 ----- -->
+                <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background:var(--gd-state-info-surface);">
+                                <i data-lucide="radar" class="w-4 h-4 text-primary"></i>
+                            </div>
+                            <h2 class="text-[15px] font-semibold text-foreground">种植环境雷达</h2>
+                        </div>
+                        <span class="text-[11px] text-muted-foreground">5维度评估</span>
+                    </div>
+                    <div class="h-56">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <!-- 5个环境指标卡片 -->
+                    <div id="sensorCards" class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/[0.05]"></div>
+                </section>
+
+                <!-- ----- 品种筛选 chips ----- -->
+                <section>
+                    <div class="flex items-center gap-2 mb-3 px-1">
+                        <div class="w-1 h-4 rounded-full bg-primary"></div>
+                        <h2 class="text-sm font-semibold text-foreground">品种筛选</h2>
+                    </div>
+                    <div id="filterChips" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4"></div>
+                </section>
+
+                <!-- ----- 种植建议列表 ----- -->
+                <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full bg-up-surface">
+                                <i data-lucide="lightbulb" class="w-4 h-4 text-up"></i>
+                            </div>
+                            <h2 class="text-[15px] font-semibold text-foreground">种植建议</h2>
+                        </div>
+                        <span id="adviceCount" class="text-[11px] text-muted-foreground">4条建议</span>
+                    </div>
+                    <div id="adviceList" class="space-y-3"></div>
+                </section>
+
+                <!-- ----- 收获时机建议 ----- -->
+                <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background:var(--gd-state-success-surface);">
+                                <i data-lucide="package-check" class="w-4 h-4 text-up"></i>
+                            </div>
+                            <h2 class="text-[15px] font-semibold text-foreground">收获时机</h2>
+                        </div>
+                        <span class="text-[11px] text-muted-foreground">3个品种</span>
+                    </div>
+                    <div id="harvestList" class="space-y-2.5"></div>
+                </section>
+
+            </div><!-- /种植预报面板 -->
+
+            <!-- ============================================== -->
+            <!-- ========== 交易预报面板 ========== -->
+            <!-- ============================================== -->
+            <div id="tradingPanel" class="space-y-4" style="display:none;">
+
+                <!-- ----- 市场概览 3卡片 ----- -->
+                <section class="grid grid-cols-3 gap-3">
+                    <div class="p-3 rounded-2xl bg-card border border-white/[0.06]">
+                        <p class="text-[10px] text-muted-foreground mb-1">均价</p>
+                        <p id="marketAvgPrice" class="text-base font-bold text-foreground font-mono">¥12.50</p>
+                        <p id="marketChangeAbs" class="text-[10px] font-mono mt-0.5 text-up">+¥0.28</p>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-card border border-white/[0.06]">
+                        <p class="text-[10px] text-muted-foreground mb-1">涨跌</p>
+                        <p id="marketChange" class="text-base font-bold font-mono text-up">+2.34%</p>
+                        <p class="text-[10px] text-muted-foreground mt-0.5">较昨日</p>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-card border border-white/[0.06]">
+                        <p class="text-[10px] text-muted-foreground mb-1">预警</p>
+                        <p id="marketAlertCount" class="text-base font-bold text-foreground font-mono">5</p>
+                        <p class="text-[10px] text-muted-foreground mt-0.5">待处理</p>
+                    </div>
+                </section>
+
+                <!-- ----- 价格预测 Chart.js 折线图 实际+预测虚线 ----- -->
+                <section id="priceChartSection" class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background:var(--gd-state-info-surface);">
+                                <i data-lucide="line-chart" class="w-4 h-4 text-primary"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-[15px] font-semibold text-foreground"><span id="priceChartSpeciesName">红玫瑰</span> 价格预测</h2>
+                                <p class="text-[10px] text-muted-foreground">当前 <span id="priceChartCurrentPrice" class="font-mono text-foreground">¥8.50</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 品种切换按钮 -->
+                    <div id="speciesButtons" class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-3 -mx-1 px-1"></div>
+                    <!-- 图例 -->
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="flex items-center gap-1.5">
+                            <svg width="16" height="3" class="flex-shrink-0"><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="var(--gd-state-success)" stroke-width="2"/></svg>
+                            <span class="text-[11px] text-muted-foreground">实际价格</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <svg width="16" height="3" class="flex-shrink-0"><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="var(--gd-brand-300)" stroke-width="2" stroke-dasharray="4,3"/></svg>
+                            <span class="text-[11px] text-muted-foreground">预测价格</span>
+                        </div>
+                    </div>
+                    <div class="h-44">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- ----- 品种价格排行榜 ----- -->
+                <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background:var(--gd-state-info-surface);">
+                                <i data-lucide="bar-chart-3" class="w-4 h-4 text-primary"></i>
+                            </div>
+                            <h2 class="text-[15px] font-semibold text-foreground">品种价格排行</h2>
+                        </div>
+                        <span class="text-[11px] text-muted-foreground">5个品种</span>
+                    </div>
+                    <div id="speciesRanking" class="space-y-2.5"></div>
+                </section>
+
+            </div><!-- /交易预报面板 -->
+
+            <!-- ----- 预警提醒 3条 警告橙/信息蓝/严重红 ----- -->
+            <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background:var(--gd-state-warning-surface);">
+                        <i data-lucide="bell-ring" class="w-4 h-4" style="color:var(--gd-state-warning);"></i>
+                    </div>
+                    <h2 class="text-[15px] font-semibold text-foreground">预警提醒</h2>
+                </div>
+                <div class="space-y-2.5">
+                    <!-- 警告 橙 -->
+                    <div class="flex items-start gap-3 p-3 rounded-2xl" style="background:var(--gd-state-warning-surface);">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0" style="background:var(--gd-state-warning);">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <p class="text-[13px] font-medium text-foreground">霜冻预警</p>
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-medium text-white" style="background:var(--gd-state-warning);">警告</span>
+                            </div>
+                            <p class="text-[12px] text-muted-foreground mt-0.5">本周夜间气温将降至5°C以下，注意防寒保温</p>
+                        </div>
+                        <span class="text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">2h前</span>
+                    </div>
+                    <!-- 信息 蓝 -->
+                    <div class="flex items-start gap-3 p-3 rounded-2xl" style="background:var(--gd-state-info-surface);">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0" style="background:var(--gd-state-info);">
+                            <i data-lucide="info" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <p class="text-[13px] font-medium text-foreground">行情更新</p>
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-medium text-white" style="background:var(--gd-state-info);">信息</span>
+                            </div>
+                            <p class="text-[12px] text-muted-foreground mt-0.5">百合类花卉出口需求增加，建议关注价格走势</p>
+                        </div>
+                        <span class="text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">5h前</span>
+                    </div>
+                    <!-- 严重 红 -->
+                    <div class="flex items-start gap-3 p-3 rounded-2xl" style="background:var(--gd-state-error-surface);">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0" style="background:var(--gd-state-error);">
+                            <i data-lucide="alert-octagon" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <p class="text-[13px] font-medium text-foreground">病虫害爆发</p>
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-medium text-white" style="background:var(--gd-state-error);">严重</span>
+                            </div>
+                            <p class="text-[12px] text-muted-foreground mt-0.5">云南部分地区发现蚜虫灾害，请及时防治</p>
+                        </div>
+                        <span class="text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">1d前</span>
+                    </div>
+                </div>
+            </section>
+
+        </div><!-- /内容区 -->
+
+    </main>
+    <script>lucide.createIcons();</script>
+    <script>
+        // ================================================================
+        // ===== 模拟数据集 =====
+        // ================================================================
+        const mockData = {
+            forecastIndex: 78,
+            trend: 'up',
+            cycleDay: 3,
+            cycleTotal: 7,
+            sensors: [
+                { key: 'temperature', label: '温度', value: 85, display: '24', unit: '°C', icon: 'thermometer', status: '适宜' },
+                { key: 'humidity', label: '湿度', value: 72, display: '65', unit: '%', icon: 'droplets', status: '良好' },
+                { key: 'light', label: '光照', value: 90, display: '45', unit: 'k lux', icon: 'sun', status: '优秀' },
+                { key: 'precipitation', label: '降水', value: 65, display: '45', unit: 'mm', icon: 'cloud-rain', status: '适中' },
+                { key: 'pest', label: '虫害', value: 40, display: '15', unit: '%', icon: 'bug', status: '注意' }
+            ],
+            species: [
+                { id: 1, name: '红玫瑰', icon: '🌹', price: 8.50, changePercent: 3.2, forecastTrend: 'Up',
+                  history: [7.8, 8.0, 7.9, 8.2, 8.3, 8.4, 8.5],
+                  forecast: [8.5, 8.7, 8.9, 9.1, 9.0, 9.3, 9.5] },
+                { id: 2, name: '百合', icon: '🌷', price: 15.20, changePercent: -1.5, forecastTrend: 'Down',
+                  history: [15.8, 15.6, 15.5, 15.7, 15.4, 15.3, 15.2],
+                  forecast: [15.2, 15.0, 14.8, 14.6, 14.5, 14.3, 14.0] },
+                { id: 3, name: '康乃馨', icon: '🌸', price: 6.80, changePercent: 0.8, forecastTrend: 'Stable',
+                  history: [6.5, 6.6, 6.7, 6.6, 6.8, 6.7, 6.8],
+                  forecast: [6.8, 6.9, 7.0, 6.9, 7.1, 7.0, 7.2] },
+                { id: 4, name: '向日葵', icon: '🌻', price: 12.00, changePercent: 4.5, forecastTrend: 'Up',
+                  history: [11.0, 11.2, 11.5, 11.6, 11.8, 11.9, 12.0],
+                  forecast: [12.0, 12.3, 12.5, 12.8, 13.0, 13.2, 13.5] },
+                { id: 5, name: '混合花束', icon: '💐', price: 25.00, changePercent: 5.6, forecastTrend: 'Up',
+                  history: [22.5, 23.0, 23.5, 24.0, 24.2, 24.5, 25.0],
+                  forecast: [25.0, 25.5, 26.0, 26.5, 27.0, 27.5, 28.0] }
+            ],
+            advices: [
+                { id: 1, species: '红玫瑰', type: '浇水', title: '增加灌溉频率', description: '当前土壤湿度偏低，建议每日早晚各浇水一次，保持土壤湿润度在60%-70%之间。', priority: 'high', priorityLabel: '高', icon: 'droplets' },
+                { id: 2, species: '百合', type: '施肥', title: '追施磷钾肥', description: '百合进入花芽分化期，需补充磷钾肥促进花芽发育，建议每亩施用复合肥15kg。', priority: 'medium', priorityLabel: '中', icon: 'sprout' },
+                { id: 3, species: '康乃馨', type: '防虫', title: '蚜虫防治', description: '检测到蚜虫活动迹象，建议喷洒生物农药进行防治，注意喷洒叶背部位。', priority: 'high', priorityLabel: '高', icon: 'bug' },
+                { id: 4, species: '向日葵', type: '修剪', title: '及时摘心打顶', description: '向日葵生长旺盛，建议在株高30cm时摘心促进侧枝发育，提高单株产量。', priority: 'low', priorityLabel: '低', icon: 'scissors' }
+            ],
+            harvestAdvices: [
+                { species: '红玫瑰', action: '建议采收', profit: '¥3,200', daysLeft: 3, icon: 'flower', color: '#e11d48' },
+                { species: '百合', action: '延后采收', profit: '¥2,800', daysLeft: 7, icon: 'flower', color: '#fbbf24' },
+                { species: '混合花束', action: '立即采收', profit: '¥5,200', daysLeft: 0, icon: 'flower-2', color: '#ec4899' }
+            ],
+            marketOverview: {
+                avgPrice: 12.50,
+                changePercent: 2.34,
+                changeAbsolute: 0.28,
+                alertCount: 5
+            },
+            filterChips: ['全部', '红玫瑰', '百合', '康乃馨', '向日葵', '混合花束']
+        };
+
+        // ================================================================
+        // ===== 状态变量 =====
+        // ================================================================
+        let radarChart = null;
+        let priceChart = null;
+        let currentTab = 'planting';
+        let currentSpeciesId = 1;
+        let currentFilter = '全部';
+        let isLoading = false;
+
+        // ================================================================
+        // ===== 辅助函数 =====
+        // ================================================================
+        function getScoreColor(score) {
+            if (score >= 80) return 'var(--gd-state-success)';
+            if (score >= 60) return 'var(--gd-primary)';
+            if (score >= 40) return 'var(--gd-state-warning)';
+            return 'var(--gd-state-error)';
+        }
+
+        function getScoreSurface(score) {
+            if (score >= 80) return 'var(--gd-state-success-surface)';
+            if (score >= 60) return 'var(--gd-state-info-surface)';
+            if (score >= 40) return 'var(--gd-state-warning-surface)';
+            return 'var(--gd-state-error-surface)';
+        }
+
+        function getTrendIcon(trend) {
+            return trend === 'Up' ? 'trending-up' : trend === 'Down' ? 'trending-down' : 'minus';
+        }
+
+        function getTrendArrow(trend) {
+            return trend === 'Up' ? '↑' : trend === 'Down' ? '↓' : '→';
+        }
+
+        function getTrendColor(trend) {
+            return trend === 'Up' ? 'var(--gd-up)' : trend === 'Down' ? 'var(--gd-down)' : 'var(--gd-muted-foreground)';
+        }
+
+        function getTrendLabel(trend) {
+            return trend === 'Up' ? '看涨' : trend === 'Down' ? '看跌' : '平稳';
+        }
+
+        function getPriorityColor(priority) {
+            return priority === 'high' ? 'var(--gd-state-error)'
+                 : priority === 'medium' ? 'var(--gd-state-warning)'
+                 : 'var(--gd-state-info)';
+        }
+
+        function getPrioritySurface(priority) {
+            return priority === 'high' ? 'var(--gd-state-error-surface)'
+                 : priority === 'medium' ? 'var(--gd-state-warning-surface)'
+                 : 'var(--gd-state-info-surface)';
+        }
+
+        function getActionColor(action) {
+            return action === '立即采收' ? 'var(--gd-state-success)'
+                 : action === '建议采收' ? 'var(--gd-state-info)'
+                 : 'var(--gd-state-warning)';
+        }
+
+        // ================================================================
+        // ===== Toast 提示 =====
+        // ================================================================
+        let toastTimer = null;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toastText');
+            toastText.textContent = message;
+            toast.classList.remove('hidden');
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, 0px)';
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 10px)';
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 2000);
+        }
+
+        // ================================================================
+        // ===== Tab 切换 =====
+        // ================================================================
+        function switchTab(tab) {
+            currentTab = tab;
+            const tabPlanting = document.getElementById('tabPlanting');
+            const tabTrading = document.getElementById('tabTrading');
+            const plantingPanel = document.getElementById('plantingPanel');
+            const tradingPanel = document.getElementById('tradingPanel');
+
+            if (tab === 'planting') {
+                tabPlanting.className = 'tab-btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-primary text-[13px] font-medium text-primary-foreground active:scale-95 transition-all min-h-[44px]';
+                tabTrading.className = 'tab-btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-[13px] text-muted-foreground active:scale-95 transition-all min-h-[44px]';
+                plantingPanel.style.display = '';
+                tradingPanel.style.display = 'none';
+                if (radarChart) setTimeout(() => radarChart.resize(), 50);
+            } else {
+                tabTrading.className = 'tab-btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-primary text-[13px] font-medium text-primary-foreground active:scale-95 transition-all min-h-[44px]';
+                tabPlanting.className = 'tab-btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-[13px] text-muted-foreground active:scale-95 transition-all min-h-[44px]';
+                plantingPanel.style.display = 'none';
+                tradingPanel.style.display = '';
+                if (priceChart) setTimeout(() => priceChart.resize(), 50);
+            }
+        }
+
+        // ================================================================
+        // ===== 渲染：预报概览 =====
+        // ================================================================
+        function updateForecastOverview() {
+            document.getElementById('forecastIndex').textContent = mockData.forecastIndex;
+
+            const trendLabel = document.getElementById('trendLabel');
+            const trendBadge = document.getElementById('trendBadge');
+            const trendLevel = document.getElementById('trendLevel');
+
+            if (mockData.trend === 'up') {
+                trendLabel.innerHTML = '<i data-lucide="trending-up" class="w-3 h-3"></i>上涨趋势';
+                trendLabel.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-up-surface text-up text-[11px] font-medium';
+                trendBadge.className = 'px-2 py-0.5 rounded-full bg-up-surface text-up text-[10px] font-medium flex items-center gap-1';
+                trendBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-up animate-pulse"></span>7天预报';
+                trendLevel.textContent = mockData.forecastIndex >= 85 ? '优秀' : mockData.forecastIndex >= 70 ? '中等偏高' : '中等';
+            } else if (mockData.trend === 'down') {
+                trendLabel.innerHTML = '<i data-lucide="trending-down" class="w-3 h-3"></i>下跌趋势';
+                trendLabel.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-down-surface text-down text-[11px] font-medium';
+                trendBadge.className = 'px-2 py-0.5 rounded-full bg-down-surface text-down text-[10px] font-medium flex items-center gap-1';
+                trendBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-down animate-pulse"></span>7天预报';
+                trendLevel.textContent = mockData.forecastIndex < 50 ? '偏低' : '中等偏下';
+            } else {
+                trendLabel.innerHTML = '<i data-lucide="minus" class="w-3 h-3"></i>平稳趋势';
+                trendLabel.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium';
+                trendLabel.style.background = 'var(--gd-state-info-surface)';
+                trendLabel.style.color = 'var(--gd-state-info)';
+                trendBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1';
+                trendBadge.style.background = 'var(--gd-state-info-surface)';
+                trendBadge.style.color = 'var(--gd-state-info)';
+                trendBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background:var(--gd-state-info);"></span>7天预报';
+                trendLevel.textContent = '中等';
+            }
+
+            const progress = (mockData.cycleDay / mockData.cycleTotal) * 100;
+            document.getElementById('cycleBar').style.width = progress + '%';
+            document.getElementById('cycleProgress').textContent = '第' + mockData.cycleDay + '天 / ' + mockData.cycleTotal + '天';
+
+            lucide.createIcons();
+        }
+
+        // ================================================================
+        // ===== 渲染：环境指标卡片 =====
+        // ================================================================
+        function renderSensorCards() {
+            const container = document.getElementById('sensorCards');
+            container.innerHTML = mockData.sensors.map(function(s, i) {
+                const color = getScoreColor(s.value);
+                const surface = getScoreSurface(s.value);
+                const isLast = i === mockData.sensors.length - 1;
+                if (isLast) {
+                    return '<div class="col-span-2 p-3 rounded-2xl bg-white/[0.04]">' +
+                        '<div class="flex items-center gap-3">' +
+                            '<div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0" style="background:' + surface + ';">' +
+                                '<i data-lucide="' + s.icon + '" class="w-4 h-4" style="color:' + color + ';"></i>' +
+                            '</div>' +
+                            '<div class="flex-shrink-0">' +
+                                '<p class="text-[10px] text-muted-foreground">' + s.label + '</p>' +
+                                '<div class="flex items-baseline gap-1">' +
+                                    '<span class="text-lg font-bold font-mono text-foreground">' + s.display + '</span>' +
+                                    '<span class="text-[10px] text-muted-foreground">' + s.unit + '</span>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="flex-1 ml-2">' +
+                                '<div class="h-2 rounded-full bg-white/[0.06] overflow-hidden">' +
+                                    '<div class="h-full rounded-full transition-all duration-500" style="width:' + s.value + '%; background:' + color + ';"></div>' +
+                                '</div>' +
+                            '</div>' +
+                            '<span class="text-[10px] text-muted-foreground flex-shrink-0">' + s.status + '</span>' +
+                        '</div>' +
+                    '</div>';
+                }
+                return '<div class="p-3 rounded-2xl bg-white/[0.04]">' +
+                    '<div class="flex items-center justify-between mb-2">' +
+                        '<div class="flex items-center gap-2">' +
+                            '<div class="flex items-center justify-center w-7 h-7 rounded-full" style="background:' + surface + ';">' +
+                                '<i data-lucide="' + s.icon + '" class="w-3.5 h-3.5" style="color:' + color + ';"></i>' +
+                            '</div>' +
+                            '<span class="text-xs text-muted-foreground">' + s.label + '</span>' +
+                        '</div>' +
+                        '<span class="text-[10px] text-muted-foreground">' + s.status + '</span>' +
+                    '</div>' +
+                    '<div class="flex items-baseline gap-1">' +
+                        '<span class="text-xl font-bold font-mono text-foreground">' + s.display + '</span>' +
+                        '<span class="text-[10px] text-muted-foreground">' + s.unit + '</span>' +
+                    '</div>' +
+                    '<div class="mt-2 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">' +
+                        '<div class="h-full rounded-full transition-all duration-500" style="width:' + s.value + '%; background:' + color + ';"></div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // ================================================================
+        // ===== 渲染：品种筛选 chips =====
+        // ================================================================
+        function renderFilterChips() {
+            const container = document.getElementById('filterChips');
+            container.innerHTML = mockData.filterChips.map(function(chip) {
+                const isActive = chip === currentFilter;
+                const cls = isActive
+                    ? 'flex-shrink-0 px-4 py-2 rounded-full bg-primary text-[12px] font-medium text-primary-foreground active:scale-95 transition-transform min-h-[44px]'
+                    : 'flex-shrink-0 px-4 py-2 rounded-full bg-white/[0.06] text-[12px] text-muted-foreground active:scale-95 transition-transform min-h-[44px]';
+                return '<button class="' + cls + '" onclick="filterAdvices(\'' + chip + '\')">' + chip + '</button>';
+            }).join('');
+        }
+
+        // ================================================================
+        // ===== 渲染：种植建议列表 =====
+        // ================================================================
+        function renderAdviceList() {
+            const container = document.getElementById('adviceList');
+            const filtered = currentFilter === '全部'
+                ? mockData.advices
+                : mockData.advices.filter(function(a) { return a.species === currentFilter; });
+
+            document.getElementById('adviceCount').textContent = filtered.length + '条建议';
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-muted-foreground">' +
+                    '<i data-lucide="search-x" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>' +
+                    '<p class="text-sm">暂无"' + currentFilter + '"的种植建议</p>' +
+                '</div>';
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filtered.map(function(a) {
+                const pColor = getPriorityColor(a.priority);
+                const pSurface = getPrioritySurface(a.priority);
+                return '<div class="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.04]">' +
+                    '<div class="flex items-start gap-3">' +
+                        '<div class="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0" style="background:' + pSurface + ';">' +
+                            '<i data-lucide="' + a.icon + '" class="w-5 h-5" style="color:' + pColor + ';"></i>' +
+                        '</div>' +
+                        '<div class="flex-1 min-w-0">' +
+                            '<div class="flex items-center gap-2 mb-1">' +
+                                '<p class="text-sm font-medium text-foreground">' + a.title + '</p>' +
+                                '<span class="px-1.5 py-0.5 rounded text-[9px] font-medium text-white" style="background:' + pColor + ';">' + a.priorityLabel + '</span>' +
+                            '</div>' +
+                            '<p class="text-xs text-muted-foreground mb-2 leading-relaxed">' + a.description + '</p>' +
+                            '<div class="flex items-center justify-between">' +
+                                '<span class="text-[10px] text-muted-foreground">' + a.species + ' · ' + a.type + '</span>' +
+                                '<button class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium active:scale-95 transition-transform min-h-[32px]" style="background:var(--gd-state-info-surface); color:var(--gd-primary);" onclick="handleAdviceAction(' + a.id + ')">' +
+                                    '执行 <i data-lucide="chevron-right" class="w-3 h-3"></i>' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // ================================================================
+        // ===== 渲染：收获时机建议 =====
+        // ================================================================
+        function renderHarvestAdvices() {
+            const container = document.getElementById('harvestList');
+            container.innerHTML = mockData.harvestAdvices.map(function(h) {
+                const actionColor = getActionColor(h.action);
+                const daysText = h.daysLeft === 0 ? '今日成熟' : h.daysLeft + '天后成熟';
+                return '<div class="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.04]">' +
+                    '<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg, ' + h.color + ', ' + h.color + 'dd);">' +
+                        '<i data-lucide="' + h.icon + '" class="w-5 h-5 text-white"></i>' +
+                    '</div>' +
+                    '<div class="flex-1 min-w-0">' +
+                        '<p class="text-sm font-medium text-foreground">' + h.species + '</p>' +
+                        '<p class="text-[11px] text-muted-foreground">' + daysText + '</p>' +
+                    '</div>' +
+                    '<div class="text-right">' +
+                        '<p class="text-sm font-bold text-up font-mono">' + h.profit + '</p>' +
+                        '<p class="text-[10px] mt-0.5" style="color:' + actionColor + ';">' + h.action + '</p>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // ================================================================
+        // ===== 渲染：品种切换按钮 =====
+        // ================================================================
+        function renderSpeciesButtons() {
+            const container = document.getElementById('speciesButtons');
+            container.innerHTML = mockData.species.map(function(s) {
+                const isActive = s.id === currentSpeciesId;
+                const cls = isActive
+                    ? 'species-btn flex-shrink-0 px-3 py-2 rounded-full bg-primary text-[11px] font-medium text-primary-foreground active:scale-95 transition-transform min-h-[36px]'
+                    : 'species-btn flex-shrink-0 px-3 py-2 rounded-full bg-white/[0.06] text-[11px] text-muted-foreground active:scale-95 transition-transform min-h-[36px]';
+                return '<button class="' + cls + '" onclick="updatePriceChart(' + s.id + ')">' + s.icon + ' ' + s.name + '</button>';
+            }).join('');
+        }
+
+        // ================================================================
+        // ===== 渲染：品种价格排行榜 =====
+        // ================================================================
+        function renderSpeciesRanking() {
+            const container = document.getElementById('speciesRanking');
+            const sorted = mockData.species.slice().sort(function(a, b) {
+                return Math.abs(b.changePercent) - Math.abs(a.changePercent);
+            });
+            container.innerHTML = sorted.map(function(s, i) {
+                const isPositive = s.changePercent >= 0;
+                const changeColor = isPositive ? 'var(--gd-up)' : 'var(--gd-down)';
+                const tIcon = getTrendIcon(s.forecastTrend);
+                const tColor = getTrendColor(s.forecastTrend);
+                const tLabel = getTrendLabel(s.forecastTrend);
+                return '<div class="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.04] active:bg-white/[0.08] transition-colors" onclick="selectSpecies(' + s.id + ')">' +
+                    '<span class="text-[11px] font-mono text-muted-foreground w-4 text-center">' + (i + 1) + '</span>' +
+                    '<div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-white/[0.06]" style="font-size:18px;">' + s.icon + '</div>' +
+                    '<div class="flex-1 min-w-0">' +
+                        '<p class="text-sm font-medium text-foreground">' + s.name + '</p>' +
+                        '<div class="flex items-center gap-1 mt-0.5">' +
+                            '<i data-lucide="' + tIcon + '" class="w-3 h-3" style="color:' + tColor + ';"></i>' +
+                            '<span class="text-[10px]" style="color:' + tColor + ';">' + tLabel + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="text-right">' +
+                        '<p class="text-sm font-bold text-foreground font-mono">¥' + s.price.toFixed(2) + '</p>' +
+                        '<p class="text-[11px] font-mono mt-0.5" style="color:' + changeColor + ';">' + (isPositive ? '+' : '') + s.changePercent.toFixed(1) + '%</p>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // ================================================================
+        // ===== 渲染：市场概览 =====
+        // ================================================================
+        function renderMarketOverview() {
+            const m = mockData.marketOverview;
+            const isPositive = m.changePercent >= 0;
+            const changeColor = isPositive ? 'var(--gd-up)' : 'var(--gd-down)';
+            document.getElementById('marketAvgPrice').textContent = '¥' + m.avgPrice.toFixed(2);
+            const changeEl = document.getElementById('marketChange');
+            changeEl.textContent = (isPositive ? '+' : '') + m.changePercent.toFixed(2) + '%';
+            changeEl.style.color = changeColor;
+            const changeAbsEl = document.getElementById('marketChangeAbs');
+            changeAbsEl.textContent = (isPositive ? '+¥' : '-¥') + Math.abs(m.changeAbsolute).toFixed(2);
+            changeAbsEl.style.color = changeColor;
+            document.getElementById('marketAlertCount').textContent = m.alertCount;
+        }
+
+        // ================================================================
+        // ===== Chart.js 雷达图 =====
+        // ================================================================
+        function initRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: mockData.sensors.map(function(s) { return s.label; }),
+                    datasets: [{
+                        data: mockData.sensors.map(function(s) { return s.value; }),
+                        backgroundColor: 'rgba(41, 98, 255, 0.2)',
+                        borderColor: '#2962ff',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#2962ff',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1a1f2e',
+                            titleColor: '#e0e6ed',
+                            bodyColor: '#e0e6ed',
+                            borderColor: '#2a2e39',
+                            borderWidth: 1,
+                            cornerRadius: 12,
+                            padding: 10,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            grid: { color: 'rgba(255,255,255,0.08)' },
+                            angleLines: { color: 'rgba(255,255,255,0.08)' },
+                            pointLabels: { color: '#e0e6ed', font: { size: 12, weight: '500' } },
+                            ticks: { display: false, stepSize: 20 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRadarChart() {
+            if (radarChart) {
+                radarChart.data.datasets[0].data = mockData.sensors.map(function(s) { return s.value; });
+                radarChart.update();
+            }
+        }
+
+        // ================================================================
+        // ===== Chart.js 价格预测折线图 =====
+        // ================================================================
+        const forecastLinePlugin = {
+            id: 'forecastLine',
+            afterDraw: function(chart) {
+                const xScale = chart.scales.x;
+                const yScale = chart.scales.y;
+                if (!xScale || !yScale) return;
+                const x1 = xScale.getPixelForValue(6);
+                const x2 = xScale.getPixelForValue(7);
+                const xMid = (x1 + x2) / 2;
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.beginPath();
+                ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 1;
+                ctx.moveTo(xMid, yScale.top);
+                ctx.lineTo(xMid, yScale.bottom);
+                ctx.stroke();
+                ctx.fillStyle = '#787b86';
+                ctx.font = '10px sans-serif';
+                ctx.fillText('预测', xMid + 4, yScale.top + 12);
+                ctx.restore();
+            }
+        };
+
+        function initPriceChart() {
+            const species = mockData.species.find(function(s) { return s.id === currentSpeciesId; });
+            const labels = [];
+            for (var i = 1; i <= 14; i++) labels.push('D' + i);
+
+            var actualData = species.history.slice();
+            while (actualData.length < 14) actualData.push(null);
+
+            var forecastData = [];
+            for (var j = 0; j < 6; j++) forecastData.push(null);
+            forecastData.push(species.history[6]);
+            for (var k = 1; k < species.forecast.length; k++) forecastData.push(species.forecast[k]);
+            while (forecastData.length < 14) forecastData.push(null);
+
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '实际',
+                            data: actualData,
+                            borderColor: '#26a69a',
+                            backgroundColor: 'rgba(38, 166, 154, 0.08)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            pointHoverBackgroundColor: '#26a69a',
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 2
+                        },
+                        {
+                            label: '预测',
+                            data: forecastData,
+                            borderColor: '#5a90ff',
+                            borderWidth: 2,
+                            borderDash: [6, 4],
+                            tension: 0.4,
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            pointHoverBackgroundColor: '#5a90ff',
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1a1f2e',
+                            titleColor: '#787b86',
+                            bodyColor: '#e0e6ed',
+                            borderColor: '#2a2e39',
+                            borderWidth: 1,
+                            cornerRadius: 12,
+                            padding: 10,
+                            displayColors: true,
+                            callbacks: { label: function(c) { return c.dataset.label + ': ¥' + c.parsed.y.toFixed(2); } }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: { color: '#787b86', font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            border: { display: false },
+                            ticks: { color: '#787b86', font: { size: 10 }, callback: function(v) { return '¥' + v; } }
+                        }
+                    }
+                },
+                plugins: [forecastLinePlugin]
+            });
+        }
+
+        function updatePriceChart(speciesId) {
+            currentSpeciesId = speciesId;
+            var species = mockData.species.find(function(s) { return s.id === speciesId; });
+            if (!species || !priceChart) return;
+
+            // 更新品种按钮状态
+            var btns = document.querySelectorAll('.species-btn');
+            btns.forEach(function(btn) {
+                var sid = parseInt(btn.getAttribute('onclick').match(/\d+/)[0]);
+                if (sid === speciesId) {
+                    btn.className = 'species-btn flex-shrink-0 px-3 py-2 rounded-full bg-primary text-[11px] font-medium text-primary-foreground active:scale-95 transition-transform min-h-[36px]';
+                } else {
+                    btn.className = 'species-btn flex-shrink-0 px-3 py-2 rounded-full bg-white/[0.06] text-[11px] text-muted-foreground active:scale-95 transition-transform min-h-[36px]';
+                }
+            });
+
+            // 更新图表数据
+            var actualData = species.history.slice();
+            while (actualData.length < 14) actualData.push(null);
+
+            var forecastData = [];
+            for (var j = 0; j < 6; j++) forecastData.push(null);
+            forecastData.push(species.history[6]);
+            for (var k = 1; k < species.forecast.length; k++) forecastData.push(species.forecast[k]);
+            while (forecastData.length < 14) forecastData.push(null);
+
+            priceChart.data.datasets[0].data = actualData;
+            priceChart.data.datasets[1].data = forecastData;
+            priceChart.update();
+
+            // 更新标题
+            document.getElementById('priceChartSpeciesName').textContent = species.name;
+            document.getElementById('priceChartCurrentPrice').textContent = '¥' + species.price.toFixed(2);
+        }
+
+        // ================================================================
+        // ===== 交互处理函数 =====
+        // ================================================================
+        function filterAdvices(chip) {
+            currentFilter = chip;
+            renderFilterChips();
+            renderAdviceList();
+        }
+
+        function handleAdviceAction(id) {
+            var advice = mockData.advices.find(function(a) { return a.id === id; });
+            if (advice) {
+                showToast('已执行: ' + advice.title);
+            }
+        }
+
+        function selectSpecies(id) {
+            updatePriceChart(id);
+            var section = document.getElementById('priceChartSection');
+            if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // ================================================================
+        // ===== 数据刷新 =====
+        // ================================================================
+        function refreshData() {
+            if (isLoading) return;
+            isLoading = true;
+
+            // 显示 loading
+            var overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            var refreshIcon = document.getElementById('refreshIcon');
+            if (refreshIcon) refreshIcon.classList.add('animate-spin-slow');
+
+            setTimeout(function() {
+                // 随机调整预报指数 (±5)
+                mockData.forecastIndex = Math.max(50, Math.min(95, mockData.forecastIndex + Math.floor(Math.random() * 11) - 5));
+                mockData.trend = mockData.forecastIndex >= 65 ? 'up' : mockData.forecastIndex >= 50 ? 'stable' : 'down';
+
+                // 随机调整传感器数据 (±5)
+                mockData.sensors.forEach(function(s) {
+                    s.value = Math.max(10, Math.min(100, s.value + Math.floor(Math.random() * 11) - 5));
+                    // 更新显示值
+                    if (s.key === 'temperature') s.display = String(Math.floor(s.value * 0.3 + 5));
+                    else if (s.key === 'humidity') s.display = String(Math.floor(s.value * 0.9));
+                    else if (s.key === 'light') s.display = String(Math.floor(s.value * 0.5));
+                    else if (s.key === 'precipitation') s.display = String(Math.floor(s.value * 0.7));
+                    else if (s.key === 'pest') s.display = String(Math.floor(s.value * 0.4));
+                    // 更新状态
+                    if (s.key === 'pest') {
+                        s.status = s.value < 30 ? '安全' : s.value < 50 ? '注意' : s.value < 70 ? '警告' : '严重';
+                    } else {
+                        s.status = s.value >= 80 ? '优秀' : s.value >= 60 ? '良好' : s.value >= 40 ? '适中' : '偏低';
+                    }
+                });
+
+                // 随机调整品种价格 (±2%)
+                mockData.species.forEach(function(s) {
+                    var change = (Math.random() - 0.5) * 0.04;
+                    s.price = Math.max(0.5, s.price * (1 + change));
+                    s.changePercent = s.changePercent + (Math.random() - 0.5) * 2;
+                    // 更新趋势
+                    if (s.changePercent > 3) s.forecastTrend = 'Up';
+                    else if (s.changePercent < -3) s.forecastTrend = 'Down';
+                    else s.forecastTrend = 'Stable';
+                    // 更新历史数据
+                    s.history.shift();
+                    s.history.push(parseFloat(s.price.toFixed(2)));
+                    // 更新预测数据
+                    var lastPrice = s.history[s.history.length - 1];
+                    s.forecast = s.forecast.map(function(p, idx) {
+                        var trend = s.forecastTrend === 'Up' ? 1.01 : s.forecastTrend === 'Down' ? 0.99 : 1;
+                        return parseFloat((lastPrice * Math.pow(trend, idx + 1) * (1 + (Math.random() - 0.5) * 0.05)).toFixed(2));
+                    });
+                    s.forecast[0] = lastPrice;
+                });
+
+                // 随机调整市场概览
+                mockData.marketOverview.avgPrice = Math.max(1, mockData.marketOverview.avgPrice + (Math.random() - 0.5) * 0.5);
+                mockData.marketOverview.changePercent = mockData.marketOverview.changePercent + (Math.random() - 0.5) * 1.5;
+                mockData.marketOverview.changeAbsolute = mockData.marketOverview.avgPrice * mockData.marketOverview.changePercent / 100;
+                mockData.marketOverview.alertCount = Math.max(0, mockData.marketOverview.alertCount + Math.floor(Math.random() * 3) - 1);
+
+                // 重新渲染所有 UI
+                updateForecastOverview();
+                renderSensorCards();
+                renderAdviceList();
+                renderHarvestAdvices();
+                renderSpeciesButtons();
+                renderSpeciesRanking();
+                renderMarketOverview();
+                updateRadarChart();
+                updatePriceChart(currentSpeciesId);
+
+                // 隐藏 loading
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+                if (refreshIcon) refreshIcon.classList.remove('animate-spin-slow');
+                isLoading = false;
+
+                showToast('数据已更新');
+            }, 800);
+        }
+
+        // ================================================================
+        // ===== 事件绑定 =====
+        // ================================================================
+        function bindEvents() {
+            // Tab 切换
+            document.getElementById('tabPlanting').addEventListener('click', function() { switchTab('planting'); });
+            document.getElementById('tabTrading').addEventListener('click', function() { switchTab('trading'); });
+            // 刷新按钮
+            document.getElementById('refreshBtn').addEventListener('click', refreshData);
+        }
+
+        // ================================================================
+        // ===== 实际数据加载（通过 ArkTS javaScriptProxy 调用后端API）=====
+        // ================================================================
+
+        /** 品种图标映射 */
+        var SPECIES_ICONS = {1:'🌹',2:'🌷',3:'🌸',4:'🌻',5:'💐',6:'🪴'};
+        var SPECIES_NAMES = {1:'红玫瑰',2:'百合',3:'康乃馨',4:'向日葵',5:'混合花束',6:'绿植'};
+
+        /** 安全解析JSON */
+        function safeParse(jsonStr) {
+            if (!jsonStr || typeof jsonStr !== 'string' || jsonStr.length === 0) return null;
+            try { return JSON.parse(jsonStr); } catch(e) { return null; }
+        }
+
+        /** 检查 flowerApi 是否可用 */
+        function hasApi() {
+            return typeof window.flowerApi !== 'undefined' && window.flowerApi !== null;
+        }
+
+        /** 加载市场概览数据 */
+        async function loadMarketOverview() {
+            if (!hasApi()) return;
+            var raw = await window.flowerApi.getMarketOverview();
+            var res = safeParse(raw);
+            if (!res || !res.isSuccess || !res.data) return;
+
+            var d = res.data;
+            mockData.marketOverview.avgPrice = d.avgPrice || mockData.marketOverview.avgPrice;
+            mockData.marketOverview.changePercent = d.priceChange !== undefined ? d.priceChange : mockData.marketOverview.changePercent;
+            mockData.marketOverview.changeAbsolute = Math.abs(d.avgPrice * (d.priceChange || 0) / 100);
+            mockData.marketOverview.alertCount = d.alertCount !== undefined ? d.alertCount : mockData.marketOverview.alertCount;
+
+            // 从快照更新品种价格
+            if (d.snapshots && d.snapshots.length > 0) {
+                var grouped = {};
+                d.snapshots.forEach(function(s) {
+                    if (!grouped[s.speciesId]) grouped[s.speciesId] = [];
+                    grouped[s.speciesId].push(s);
+                });
+                Object.keys(grouped).forEach(function(sid) {
+                    var snaps = grouped[sid].sort(function(a,b) { return new Date(a.snapshotTime) - new Date(b.snapshotTime); });
+                    var latest = snaps[snaps.length - 1];
+                    var prev = snaps.length > 1 ? snaps[snaps.length - 2] : null;
+                    var change = prev ? (latest.avgPrice - prev.avgPrice) / prev.avgPrice * 100 : 0;
+                    var species = mockData.species.find(function(s) { return s.id == sid; });
+                    if (species) {
+                        species.price = latest.avgPrice;
+                        species.changePercent = change;
+                        species.forecastTrend = change > 5 ? 'Up' : change < -5 ? 'Down' : 'Stable';
+                    }
+                });
+            }
+            updateForecastOverview();
+            renderMarketOverview();
+            renderSpeciesRanking();
+        }
+
+        /** 加载品种列表 */
+        async function loadSpeciesList() {
+            if (!hasApi()) return;
+            var raw = await window.flowerApi.getSpeciesList();
+            var res = safeParse(raw);
+            if (!res || !res.isSuccess || !res.data || res.data.length === 0) return;
+
+            res.data.forEach(function(item) {
+                SPECIES_NAMES[item.id] = item.name;
+                var species = mockData.species.find(function(s) { return s.id == item.id; });
+                if (species) species.name = item.name;
+            });
+            mockData.filterChips = ['全部'].concat(res.data.map(function(s) { return s.name; }));
+            renderFilterChips();
+            renderSpeciesButtons();
+        }
+
+        /** 加载品种价格预测 */
+        async function loadPriceForecast(speciesId) {
+            if (!hasApi()) return;
+            var raw = await window.flowerApi.getPriceForecast(speciesId, 7);
+            var res = safeParse(raw);
+            if (!res || !res.isSuccess || !res.data) return;
+
+            var species = mockData.species.find(function(s) { return s.id == speciesId; });
+            if (!species) return;
+
+            if (res.data.predictedPrices && res.data.predictedPrices.length > 0) {
+                species.forecast = res.data.predictedPrices.map(function(p) { return p.predictedPrice; });
+            }
+            if (res.data.historicalPrices && res.data.historicalPrices.length > 0) {
+                species.history = res.data.historicalPrices.map(function(p) { return p.avgPrice || p.price; });
+            }
+            // 更新图表
+            if (priceChart && currentSpeciesId == speciesId) {
+                updatePriceChart(species);
+            }
+        }
+
+        /** 加载仪表盘统计 */
+        async function loadDashboardStats() {
+            if (!hasApi()) return;
+            var raw = await window.flowerApi.getDashboardStats();
+            var res = safeParse(raw);
+            if (!res || !res.isSuccess || !res.data) return;
+            // 用交易量等数据更新预报指数
+            var d = res.data;
+            if (d.activeSpeciesCount) {
+                mockData.forecastIndex = Math.min(95, 50 + Math.round(d.activeSpeciesCount * 5));
+                var el = document.getElementById('forecastIndex');
+                if (el) el.textContent = mockData.forecastIndex;
+            }
+        }
+
+        /** 加载种植建议 */
+        async function loadPlantingAdvice() {
+            if (!hasApi()) return;
+            // 尝试获取种植批次
+            var batchRaw = await window.flowerApi.getPlantingBatches('default');
+            var batchRes = safeParse(batchRaw);
+            if (batchRes && batchRes.isSuccess && batchRes.data && batchRes.data.length > 0) {
+                // 更新传感器卡片数据
+                var batches = batchRes.data.filter(function(b) { return b.status === 'Planted' || b.status === 'Growing'; });
+                if (batches.length > 0) {
+                    // 获取第一个批次的传感器数据
+                    var sensorRaw = await window.flowerApi.getSensorData(batches[0].id);
+                    var sensorRes = safeParse(sensorRaw);
+                    if (sensorRes && sensorRes.isSuccess && sensorRes.data) {
+                        updateSensorData(sensorRes.data);
+                    }
+                }
+                // 获取种植建议
+                var adviceRaw = await window.flowerApi.getActiveAdvice(batches[0].id);
+                var adviceRes = safeParse(adviceRaw);
+                if (adviceRes && adviceRes.isSuccess && adviceRes.data && adviceRes.data.length > 0) {
+                    mockData.advices = adviceRes.data.filter(function(a) { return a.status === 'Pending'; }).slice(0, 4).map(function(a) {
+                        return {
+                            id: a.id,
+                            species: SPECIES_NAMES[a.speciesId] || a.speciesName || '未知',
+                            type: a.adviceType || '建议',
+                            title: a.title || '',
+                            description: a.description || '',
+                            priority: a.priority === 'High' ? 'high' : a.priority === 'Medium' ? 'medium' : 'low',
+                            priorityLabel: a.priority === 'High' ? '高' : a.priority === 'Medium' ? '中' : '低',
+                            icon: a.adviceType === '浇水' ? 'droplets' : a.adviceType === '施肥' ? 'sprout' : a.adviceType === '防虫' ? 'bug' : 'scissors'
+                        };
+                    });
+                    renderAdviceList();
+                }
+            }
+        }
+
+        /** 更新传感器数据 */
+        function updateSensorData(data) {
+            if (!data) return;
+            // 更新雷达图数据
+            if (data.temperature !== undefined || data.soilMoisture !== undefined) {
+                var radarData = [
+                    data.temperature || 25,
+                    data.soilMoisture || 65,
+                    data.lightIntensity || 70,
+                    data.airHumidity || 55,
+                    data.soilPh || 6.5,
+                    data.windSpeed || 3
+                ];
+                if (radarChart) {
+                    radarChart.data.datasets[0].data = radarData;
+                    radarChart.update();
+                }
+            }
+        }
+
+        /** 加载所有实际数据 */
+        async function loadRealData() {
+            if (!hasApi()) return;
+            try {
+                await Promise.all([
+                    loadMarketOverview(),
+                    loadSpeciesList(),
+                    loadDashboardStats(),
+                    loadPlantingAdvice()
+                ]);
+                // 加载当前选中品种的预测数据
+                await loadPriceForecast(currentSpeciesId);
+            } catch(e) {
+                console.log('数据加载异常:', e);
+            }
+        }
+
+        // ================================================================
+        // ===== 初始化 =====
+        // ================================================================
+        function init() {
+            // 渲染所有动态内容（先渲染模拟数据）
+            updateForecastOverview();
+            renderSensorCards();
+            renderFilterChips();
+            renderAdviceList();
+            renderHarvestAdvices();
+            renderSpeciesButtons();
+            renderSpeciesRanking();
+            renderMarketOverview();
+            // 初始化图表
+            initRadarChart();
+            initPriceChart();
+            // 绑定事件
+            bindEvents();
+            // 渲染图标
+            lucide.createIcons();
+            // 异步加载实际API数据（成功则覆盖模拟数据）
+            loadRealData();
+        }
+
+        // DOM 就绪后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

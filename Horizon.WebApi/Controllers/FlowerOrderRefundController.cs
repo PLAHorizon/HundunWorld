@@ -3,6 +3,8 @@ using Horizon.Core.Options;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,6 +13,7 @@ using Orleans;
 using Orleans.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Horizon.WebApi.Controllers
@@ -34,15 +37,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{refundId}")]
-        public async Task<ResultVM<OrderRefundState>> GetRefund(long refundId)
+        public async Task<ResultVM<OrderRefundDto>> GetRefund(long refundId)
         {
-            var result = new ResultVM<OrderRefundState>();
+            var result = new ResultVM<OrderRefundDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IOrderRefundGrain>(0);
-                result.Data = await grain.GetRefundAsync(refundId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetRefundAsync(refundId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -91,14 +95,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("merchant/{merchantId}")]
-        public async Task<ResultVM<List<OrderRefundState>>> GetMerchantRefunds(long merchantId, [FromQuery] int? status)
+        public async Task<ResultVM<List<OrderRefundDto>>> GetMerchantRefunds(long merchantId, [FromQuery] int? status)
         {
-            var result = new ResultVM<List<OrderRefundState>>();
+            var result = new ResultVM<List<OrderRefundDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IOrderRefundGrain>(0);
-                result.Data = await grain.GetMerchantRefundsAsync(merchantId, status);
+                var refunds = await grain.GetMerchantRefundsAsync(merchantId, status);
+                result.Data = refunds?.Select(r => FlowerDtoMapper.ToDto(r)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -110,14 +115,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("buyer/{buyerId}")]
-        public async Task<ResultVM<List<OrderRefundState>>> GetBuyerRefunds(Guid buyerId)
+        public async Task<ResultVM<List<OrderRefundDto>>> GetBuyerRefunds(Guid buyerId)
         {
-            var result = new ResultVM<List<OrderRefundState>>();
+            var result = new ResultVM<List<OrderRefundDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IOrderRefundGrain>(0);
-                result.Data = await grain.GetBuyerRefundsAsync(buyerId);
+                var refunds = await grain.GetBuyerRefundsAsync(buyerId);
+                result.Data = refunds?.Select(r => FlowerDtoMapper.ToDto(r)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

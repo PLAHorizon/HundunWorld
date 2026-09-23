@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苹果音乐播放器 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen bg-background flex flex-col relative overflow-hidden">
+        <!-- 环境光氛围 -->
+        <div class="pointer-events-none absolute -top-32 -left-32 w-80 h-80 rounded-full opacity-25 blur-3xl" style="background: radial-gradient(circle, var(--gd-brand-600), transparent 70%);"></div>
+        <div class="pointer-events-none absolute top-40 -right-32 w-80 h-80 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, var(--gd-brand-400), transparent 70%);"></div>
+
+        <!-- iOS 导航栏 (毛玻璃 44px) -->
+        <nav class="sticky top-0 z-30 flex items-center justify-between px-2 h-11 backdrop-blur-xl bg-background/70 border-b border-border/40 shrink-0">
+            <button class="flex items-center min-h-[44px] px-1 text-primary" aria-label="返回">
+                <i data-lucide="chevron-back" class="w-7 h-7"></i>
+                <span class="text-[17px] -ml-1">返回</span>
+            </button>
+            <span class="text-[17px] font-semibold text-foreground">正在播放</span>
+            <button class="flex items-center justify-center min-w-[44px] min-h-[44px] text-foreground" aria-label="播放列表">
+                <i data-lucide="list-music" class="w-6 h-6"></i>
+            </button>
+        </nav>
+
+        <!-- 主内容区 -->
+        <div class="relative flex-1 flex flex-col px-6 pt-6 pb-4 gap-6 overflow-y-auto no-scrollbar">
+
+            <!-- 专辑封面 + 光晕 -->
+            <div class="relative flex justify-center items-center pt-2 pb-2">
+                <!-- 光晕 -->
+                <div class="absolute w-64 h-64 rounded-3xl blur-3xl opacity-50 scale-110" style="background: linear-gradient(135deg, var(--gd-brand-500), var(--gd-brand-700));"></div>
+                <!-- 封面 -->
+                <div class="relative w-64 h-64 rounded-2xl overflow-hidden shadow-2xl" style="background: linear-gradient(135deg, var(--gd-brand-600), var(--gd-brand-500));">
+                    <!-- 旋转层（黑胶唱片纹理） -->
+                    <div class="absolute inset-0 flex items-center justify-center album-spin">
+                        <div class="absolute w-56 h-56 rounded-full border border-white/10">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/50"></div>
+                        </div>
+                        <div class="absolute w-44 h-44 rounded-full border border-white/15">
+                            <div class="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-white/40"></div>
+                        </div>
+                        <div class="absolute w-32 h-32 rounded-full border border-white/20"></div>
+                        <div class="absolute w-5 h-5 rounded-full bg-black/30 border-2 border-white/40"></div>
+                    </div>
+                    <!-- 固定音符 -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <i data-lucide="music-2" class="w-16 h-16 text-white/90 drop-shadow-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 歌曲信息 + 收藏 -->
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-2xl font-bold text-foreground truncate">花间一壶酒</h1>
+                    <p class="text-[15px] text-muted-foreground mt-1 truncate">花语乐队</p>
+                </div>
+                <button class="flex items-center justify-center min-w-[44px] min-h-[44px] text-primary shrink-0" aria-label="收藏" id="heartBtn">
+                    <i data-lucide="heart" class="w-7 h-7" style="fill: currentColor"></i>
+                </button>
+            </div>
+
+            <!-- 波形可视化 -->
+            <div class="flex items-end justify-center gap-[3px] h-10" id="waveform"></div>
+
+            <!-- iOS Slider 进度条 -->
+            <div class="space-y-1.5">
+                <div class="relative h-1.5 rounded-full bg-muted">
+                    <div class="absolute inset-y-0 left-0 rounded-full" style="width: 34%; background: var(--gd-brand-500);"></div>
+                    <div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-md" style="left: 34%;"></div>
+                </div>
+                <div class="flex justify-between text-[11px] text-muted-foreground font-mono">
+                    <span>1:23</span>
+                    <span>4:05</span>
+                </div>
+            </div>
+
+            <!-- 播放控制 -->
+            <div class="flex items-center justify-between px-2">
+                <button class="flex items-center justify-center min-w-[44px] min-h-[44px] text-muted-foreground" aria-label="随机播放">
+                    <i data-lucide="shuffle" class="w-6 h-6"></i>
+                </button>
+                <button class="flex items-center justify-center min-w-[44px] min-h-[44px] text-foreground" aria-label="上一首">
+                    <i data-lucide="skip-back" class="w-8 h-8" style="fill: currentColor"></i>
+                </button>
+                <button class="flex items-center justify-center w-16 h-16 rounded-full text-white shadow-xl shadow-primary/30" style="background: var(--gd-brand-500);" aria-label="播放/暂停" id="playBtn">
+                    <i data-lucide="pause" class="w-8 h-8" style="fill: currentColor"></i>
+                </button>
+                <button class="flex items-center justify-center min-w-[44px] min-h-[44px] text-foreground" aria-label="下一首">
+                    <i data-lucide="skip-forward" class="w-8 h-8" style="fill: currentColor"></i>
+                </button>
+                <button class="flex items-center justify-center min-w-[44px] min-h-[44px] text-muted-foreground" aria-label="重复">
+                    <i data-lucide="repeat" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- 底部功能 -->
+            <div class="grid grid-cols-4 gap-1 pt-1">
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[44px] py-2 text-muted-foreground">
+                    <i data-lucide="list-music" class="w-5 h-5"></i>
+                    <span class="text-[10px]">播放列表</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[44px] py-2 text-muted-foreground">
+                    <i data-lucide="timer" class="w-5 h-5"></i>
+                    <span class="text-[10px]">定时</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[44px] py-2 text-muted-foreground">
+                    <i data-lucide="audio-waveform" class="w-5 h-5"></i>
+                    <span class="text-[10px]">音质</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[44px] py-2 text-muted-foreground">
+                    <i data-lucide="share" class="w-5 h-5"></i>
+                    <span class="text-[10px]">分享</span>
+                </button>
+            </div>
+
+            <!-- 迷你播放列表 -->
+            <div class="bg-card rounded-2xl p-4 mt-2 border border-border/40">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-foreground">待播列表</h2>
+                    <span class="text-[11px] text-muted-foreground">3 首</span>
+                </div>
+                <div class="space-y-1">
+                    <!-- 当前播放 -->
+                    <div class="flex items-center gap-3 p-2 rounded-xl bg-primary/10">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background: linear-gradient(135deg, var(--gd-brand-600), var(--gd-brand-500));">
+                            <i data-lucide="music-2" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-primary truncate">花间一壶酒</p>
+                            <p class="text-[11px] text-muted-foreground truncate">花语乐队</p>
+                        </div>
+                        <div class="flex items-end gap-[2px] h-4 mr-1">
+                            <span class="mini-bar" style="animation-delay: 0s"></span>
+                            <span class="mini-bar" style="animation-delay: 0.2s"></span>
+                            <span class="mini-bar" style="animation-delay: 0.4s"></span>
+                        </div>
+                    </div>
+                    <!-- 其他歌曲 -->
+                    <div class="flex items-center gap-3 p-2 rounded-xl">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-secondary">
+                            <i data-lucide="music-2" class="w-5 h-5 text-muted-foreground"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-foreground truncate">春暖花开</p>
+                            <p class="text-[11px] text-muted-foreground truncate">绿叶组合</p>
+                        </div>
+                        <span class="text-[11px] text-muted-foreground font-mono">3:28</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 rounded-xl">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-secondary">
+                            <i data-lucide="music-2" class="w-5 h-5 text-muted-foreground"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-foreground truncate">花开富贵</p>
+                            <p class="text-[11px] text-muted-foreground truncate">民乐坊</p>
+                        </div>
+                        <span class="text-[11px] text-muted-foreground font-mono">4:12</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="flex justify-center pb-2 pt-1 shrink-0">
+            <div class="w-32 h-1 rounded-full bg-foreground/30"></div>
+        </div>
+    </main>
+    <style>
+        /* 波形动画 */
+        @keyframes wave-bounce {
+            0%, 100% { transform: scaleY(0.2); }
+            50% { transform: scaleY(1); }
+        }
+        .wave-bar {
+            display: block;
+            width: 3px;
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(to top, var(--gd-brand-600), var(--gd-brand-300));
+            transform-origin: bottom center;
+            animation: wave-bounce 1s ease-in-out infinite;
+        }
+
+        /* 专辑封面旋转（黑胶唱片） */
+        @keyframes album-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .album-spin {
+            animation: album-spin 20s linear infinite;
+        }
+
+        /* 迷你播放指示器 */
+        @keyframes mini-bounce {
+            0%, 100% { transform: scaleY(0.3); }
+            50% { transform: scaleY(1); }
+        }
+        .mini-bar {
+            display: block;
+            width: 2px;
+            height: 100%;
+            border-radius: 9999px;
+            background: var(--gd-brand-500);
+            transform-origin: bottom center;
+            animation: mini-bounce 1s ease-in-out infinite;
+        }
+    </style>
+    <script>
+        lucide.createIcons();
+
+        // 波形可视化：动态生成 36 根竖条
+        (function () {
+            const waveform = document.getElementById('waveform');
+            if (!waveform) return;
+            const barCount = 36;
+            for (let i = 0; i < barCount; i++) {
+                const bar = document.createElement('span');
+                bar.className = 'wave-bar';
+                bar.style.animationDelay = (i * 0.04).toFixed(2) + 's';
+                bar.style.animationDuration = (0.7 + Math.random() * 0.6).toFixed(2) + 's';
+                waveform.appendChild(bar);
+            }
+        })();
+
+        // 播放/暂停切换
+        (function () {
+            const btn = document.getElementById('playBtn');
+            if (!btn) return;
+            let playing = true;
+            btn.addEventListener('click', function () {
+                playing = !playing;
+                const icon = btn.querySelector('[data-lucide]');
+                if (icon) {
+                    icon.setAttribute('data-lucide', playing ? 'pause' : 'play');
+                    icon.style.fill = 'currentColor';
+                    lucide.createIcons();
+                }
+                document.querySelectorAll('.wave-bar, .mini-bar, .album-spin').forEach(function (el) {
+                    el.style.animationPlayState = playing ? 'running' : 'paused';
+                });
+            });
+        })();
+
+        // 收藏切换
+        (function () {
+            const btn = document.getElementById('heartBtn');
+            if (!btn) return;
+            let liked = true;
+            btn.addEventListener('click', function () {
+                liked = !liked;
+                const icon = btn.querySelector('[data-lucide]');
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'heart');
+                    icon.style.fill = liked ? 'currentColor' : 'none';
+                    btn.classList.toggle('text-primary', liked);
+                    btn.classList.toggle('text-muted-foreground', !liked);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -97,6 +97,105 @@ public static class RemoteSyncThresholdValidator
             result.UltraScaleEntityCap = 5000;
         }
 
+        // ── 阶段 5.3.1 — SnapshotApplySystem 阈值 ──
+
+        // 单帧消费上限：>= 1
+        if (result.MaxSnapshotsPerFrame < 1)
+        {
+            Notify(diagnostics, "MaxSnapshotsPerFrame", result.MaxSnapshotsPerFrame, 32);
+            result.MaxSnapshotsPerFrame = 32;
+        }
+
+        // 远程实体超时清理阈值：> 0
+        if (result.StaleEntityTimeoutSeconds <= 0f)
+        {
+            Notify(diagnostics, "StaleEntityTimeoutSeconds", result.StaleEntityTimeoutSeconds, 90f);
+            result.StaleEntityTimeoutSeconds = 90f;
+        }
+
+        // 自适应插值延迟下限：> 0
+        if (result.AdaptiveDelayMinSeconds <= 0f)
+        {
+            Notify(diagnostics, "AdaptiveDelayMinSeconds", result.AdaptiveDelayMinSeconds, 0.1f);
+            result.AdaptiveDelayMinSeconds = 0.1f;
+        }
+
+        // 自适应插值延迟上限：>= 下限（Math.Clamp 要求 min <= max，否则运行时抛异常）
+        if (result.AdaptiveDelayMaxSeconds < result.AdaptiveDelayMinSeconds)
+        {
+            Notify(diagnostics, "AdaptiveDelayMaxSeconds", result.AdaptiveDelayMaxSeconds, 0.2f);
+            result.AdaptiveDelayMaxSeconds = Math.Max(0.2f, result.AdaptiveDelayMinSeconds);
+        }
+
+        // 固定插值延迟：> 0
+        if (result.FixedInterpolationDelaySeconds <= 0f)
+        {
+            Notify(diagnostics, "FixedInterpolationDelaySeconds", result.FixedInterpolationDelaySeconds, 0.1f);
+            result.FixedInterpolationDelaySeconds = 0.1f;
+        }
+
+        // 平滑延迟变化速率：> 0
+        if (result.MaxDelayChangePerSecond <= 0f)
+        {
+            Notify(diagnostics, "MaxDelayChangePerSecond", result.MaxDelayChangePerSecond, 0.3f);
+            result.MaxDelayChangePerSecond = 0.3f;
+        }
+
+        // EWMA 平滑因子：必须在 (0, 1)
+        if (result.RttEwmaAlpha <= 0f || result.RttEwmaAlpha >= 1f)
+        {
+            Notify(diagnostics, "RttEwmaAlpha", result.RttEwmaAlpha, 0.125f);
+            result.RttEwmaAlpha = 0.125f;
+        }
+        if (result.RttJitterBeta <= 0f || result.RttJitterBeta >= 1f)
+        {
+            Notify(diagnostics, "RttJitterBeta", result.RttJitterBeta, 0.25f);
+            result.RttJitterBeta = 0.25f;
+        }
+        if (result.SnapshotArrivalEwmaAlpha <= 0f || result.SnapshotArrivalEwmaAlpha >= 1f)
+        {
+            Notify(diagnostics, "SnapshotArrivalEwmaAlpha", result.SnapshotArrivalEwmaAlpha, 0.2f);
+            result.SnapshotArrivalEwmaAlpha = 0.2f;
+        }
+        if (result.SnapshotArrivalJitterBeta <= 0f || result.SnapshotArrivalJitterBeta >= 1f)
+        {
+            Notify(diagnostics, "SnapshotArrivalJitterBeta", result.SnapshotArrivalJitterBeta, 0.25f);
+            result.SnapshotArrivalJitterBeta = 0.25f;
+        }
+
+        // 停止判定阈值：> 0
+        if (result.StopDisplacementThreshold <= 0f)
+        {
+            Notify(diagnostics, "StopDisplacementThreshold", result.StopDisplacementThreshold, 0.05f);
+            result.StopDisplacementThreshold = 0.05f;
+        }
+        if (result.StopVelocityThreshold <= 0f)
+        {
+            Notify(diagnostics, "StopVelocityThreshold", result.StopVelocityThreshold, 0.5f);
+            result.StopVelocityThreshold = 0.5f;
+        }
+
+        // 清理扫描间隔：>= 1
+        if (result.OrphanCleanupInterval < 1)
+        {
+            Notify(diagnostics, "OrphanCleanupInterval", result.OrphanCleanupInterval, 300);
+            result.OrphanCleanupInterval = 300;
+        }
+        if (result.StaleEntityCleanupInterval < 1)
+        {
+            Notify(diagnostics, "StaleEntityCleanupInterval", result.StaleEntityCleanupInterval, 60);
+            result.StaleEntityCleanupInterval = 60;
+        }
+
+        // ── 阶段 5.3.2 — InterpolationSystem 阈值 ──
+
+        // 前向预测最大外推时间：> 0
+        if (result.DeadReckoningMaxExtrapolationSeconds <= 0f)
+        {
+            Notify(diagnostics, "DeadReckoningMaxExtrapolationSeconds", result.DeadReckoningMaxExtrapolationSeconds, 0.25f);
+            result.DeadReckoningMaxExtrapolationSeconds = 0.25f;
+        }
+
         return result;
     }
 

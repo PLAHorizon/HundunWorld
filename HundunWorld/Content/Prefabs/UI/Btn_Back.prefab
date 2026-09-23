@@ -1,0 +1,73 @@
+{
+	"ID": "d47980a049214490b539798b996c347f",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "d1c1b7784f7cd42ee86859b559088750",
+		"TypeName": "FlaxEngine.UIControl",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "Btn_Back",
+		"Transform": {
+			"Orientation": {
+				"X": -1.0,
+				"Y": -4.3711388286737935e-8,
+				"Z": -4.3711388286737935e-8,
+				"W": 1.910685465164705e-15
+			}
+		},
+		"Control": "HundunWorld.Game.UI.Ink.InkBackButton",
+		"Data": {
+			"ClipChildren": false,
+			"CullChildren": true,
+			"AnchorMin": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"AnchorMax": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Offsets": {
+				"Left": 0.0,
+				"Right": 40.0,
+				"Top": 0.0,
+				"Bottom": 40.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0
+			},
+			"Pivot": {
+				"X": 0.5,
+				"Y": 0.5
+			},
+			"Shear": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Rotation": 0.0,
+			"BackgroundColor": {
+				"R": 0.078431375,
+				"G": 0.09019608,
+				"B": 0.11764706,
+				"A": 0.85
+			},
+			"BackgroundBrush": null,
+			"Enabled": true,
+			"Visible": true,
+			"AutoFocus": true
+		}
+	},
+	{
+		"ID": "f6d5400a4cf77bd2211eb3a7d7d687f6",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.GenericControlProfile",
+		"ParentID": "d1c1b7784f7cd42ee86859b559088750",
+		"V": {
+			"ControlTypeName": "InkBackButton",
+			"Width": 40.0,
+			"Height": 40.0
+		}
+	}
+]
+}

@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(0, Enums.ServiceType.Account)]
     public partial class LoginRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -63,6 +64,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(1, Enums.ServiceType.Account)]
     public partial class LoginResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -158,6 +160,7 @@ namespace Horizon.Game.Message.Network
 
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(171, Enums.ServiceType.Account)]
     public partial class TokenLoginRequest : MessageUnion, INetworkMessage
     {
         [MemoryPackOrder(0)] [Id(0)] public string AuthToken { get; set; } = "";
@@ -170,6 +173,7 @@ namespace Horizon.Game.Message.Network
 
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(172, Enums.ServiceType.Account)]
     public partial class TokenLoginResponse : MessageUnion, INetworkMessage
     {
         [MemoryPackOrder(0)] [Id(0)] public bool IsSuccess { get; set; }
@@ -191,6 +195,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(2, Enums.ServiceType.Account)]
     public partial class RegisterRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -284,6 +289,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(3, Enums.ServiceType.Account)]
     public partial class RegisterResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -338,6 +344,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(4, Enums.ServiceType.Game)]
     public partial class CharacterInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -446,6 +453,20 @@ namespace Horizon.Game.Message.Network
         public DateTime CreatedTime { get; set; }
 
         /// <summary>
+        /// 防御力（受击裁决：物理/内功/环境伤害按此减免，见 CharacterGrain.RequestHpChangeAsync）。
+        /// </summary>
+        [MemoryPackOrder(20)]
+        [Id(20)]
+        public float Defense { get; set; }
+
+        /// <summary>
+        /// 减伤 Buff 聚合值（0~1，与防御减免叠加）。
+        /// </summary>
+        [MemoryPackOrder(21)]
+        [Id(21)]
+        public float DamageReduction { get; set; }
+
+        /// <summary>
         /// 最后受伤时间
         /// </summary>
         [MemoryPackOrder(12)]
@@ -479,6 +500,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(5, Enums.ServiceType.Game)]
     public partial class Position : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -522,6 +544,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(6, Enums.ServiceType.Game)]
     public partial class AppearanceInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -572,6 +595,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(7, Enums.ServiceType.Game)]
     public partial class CreateCharacterRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -636,6 +660,14 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(9)]
         [Id(9)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
+
+        /// <summary>
+        /// 幂等键（协议层载体为 <see cref="MessageHeader.IdempotencyKey"/>，服务端在处理器中从请求头拷入本字段，
+        /// 供角色管理器按键去重——在途断线重试（同 key）不会重复创建角色）。
+        /// </summary>
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public string IdempotencyKey { get; set; } = "";
     }
 
     /// <summary>
@@ -643,6 +675,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(8, Enums.ServiceType.Game)]
     public partial class CreateCharacterResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -679,6 +712,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(9, Enums.ServiceType.Game)]
     public partial class EnterGameRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -708,6 +742,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(10, Enums.ServiceType.Game)]
     public partial class EnterGameResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -765,6 +800,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(11, Enums.ServiceType.Game)]
     public partial class DeleteCharacterRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -794,6 +830,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(12, Enums.ServiceType.Game)]
     public partial class DeleteCharacterResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -826,6 +863,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(13, Enums.ServiceType.Game)]
     public partial class MoveRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -889,6 +927,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(14, Enums.ServiceType.Game)]
     public partial class MoveResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -951,6 +990,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(15, Enums.ServiceType.Game)]
     public partial class ServerInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1033,6 +1073,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(19, Enums.ServiceType.Account)]
     public partial class SessionInfoMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1137,6 +1178,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(20, Enums.ServiceType.Game)]
     public partial class CharacterListRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1166,6 +1208,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(21, Enums.ServiceType.Game)]
     public partial class CharacterListResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1209,6 +1252,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(22, Enums.ServiceType.Game)]
     public partial class ValidateCharacterNameRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1229,6 +1273,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(23, Enums.ServiceType.Game)]
     public partial class ValidateCharacterNameResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1276,6 +1321,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(24, Enums.ServiceType.Account)]
     public partial class AuthenticationError : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1326,6 +1372,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(25, Enums.ServiceType.Game)]
     public partial class ZoneAndServerInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1355,6 +1402,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(26, Enums.ServiceType.Game)]
     public partial class ZoneInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1410,6 +1458,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(167, Enums.ServiceType.Account)]
     public partial class BuildGameUserRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1460,6 +1509,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(168, Enums.ServiceType.Account)]
     public partial class BuildGameUserResponse : MessageUnion, INetworkMessage
     {
         /// <summary>

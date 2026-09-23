@@ -1,0 +1,235 @@
+## page: menu-gacha
+## dom-ids: back-hud, nav-activities
+  main
+    div
+    div
+    div
+    div
+    div
+    div
+      span
+      span
+      span
+      span
+      span
+      span
+    header .gacha-topbar
+      div .topbar-left
+        button #back-hud .topbar-back-btn [aria="返回战斗"]
+          i .icon-sm
+        div .topbar-title-group
+          h1 .gacha-title | 祈愿
+          span .gacha-title-en | Wishing Ceremony
+        div .topbar-divider
+        span .topbar-pool-name | 名侠祈愿 · 青莲剑仙
+      div .topbar-right
+        div
+          span .currency-icon currency-icon-gold
+            i .icon-xs
+          div
+            span .currency-label | 元宝
+            span .currency-value | 328
+          button .currency-add-btn [aria="充值"]
+            i .icon-xs
+        div .topbar-currency-divider
+        div
+          span .currency-icon currency-icon-star
+            i .icon-xs
+          div
+            span .currency-label | 命星
+            span .currency-value | 5
+    nav [aria="卡池选择"]
+      div .pool-selector-header
+        i .icon-sm
+        span .pool-selector-title | 卡池列表
+      div .pool-tabs
+        button .pool-tab pool-tab-active
+          div .pool-tab-content
+            span .pool-tab-name | 名侠祈愿
+            span .pool-tab-desc | 限定名侠 · 概率UP
+          div .pool-tab-indicator
+        button .pool-tab
+          div .pool-tab-content
+            span .pool-tab-name | 武器祈愿
+            span .pool-tab-desc | 限定神兵 · 概率UP
+          div .pool-tab-indicator
+        button .pool-tab
+          div .pool-tab-content
+            span .pool-tab-name | 常驻祈愿
+            span .pool-tab-desc | 名侠神兵 · 常驻开放
+          div .pool-tab-indicator
+        button .pool-tab
+          div .pool-tab-content
+            span .pool-tab-name | 新手祈愿
+            span .pool-tab-desc | 新手限定 · 首抽折扣
+          span .ink-tag ink-tag-brand pool-tab-badge | 新手
+          div .pool-tab-indicator
+      div
+        div .pool-countdown-header
+          i .icon-xs
+          span .pool-countdown-label | 卡池剩余
+        div
+          span | 12
+          span | 天
+          span | 07
+          span | 时
+          span | 23
+          span | 分
+    section .center-stage
+      div .pity-counter-panel ink-panel
+        span
+        span
+        span
+        span
+        div .pity-counter-header
+          i .icon-xs
+          span .pity-counter-title | 保底计数
+        div .pity-item pity-item-great
+          div .pity-item-row
+            span .pity-item-label | 大保底
+            span .pity-item-value
+              span | 0
+              span | /
+              span | 90
+          div .ink-bar ink-bar-thin pity-progress
+            div .ink-bar-fill ink-bar-fill-vermilion
+        div .pity-item pity-item-small
+          div .pity-item-row
+            span .pity-item-label | 小保底
+            span .pity-item-value
+              span | 47
+              span | /
+              span | 90
+          div .ink-bar ink-bar-thin pity-progress
+            div .ink-bar-fill
+      div
+        div .showcase-glow-ring
+        div .showcase-glow-ring showcase-glow-ring-2
+        div
+          div
+            div
+            div
+              span | 名侠
+              span | ·
+              span | 李白
+            div .character-title-text | 青莲剑仙
+          div .ink-vertical-title
+            span | 天
+            span | 生
+            span | 我
+            span | 材
+        div .showcase-footer
+          div .showcase-footer-left
+            h2 | 青莲剑仙
+            p | 概率UP · 限定名侠
+          div .showcase-footer-right
+            span .ink-tag ink-tag-brand showcase-up-badge
+              i .icon-xs | UP
+            span .ink-tag ink-tag-vermilion showcase-quality-badge
+              i .icon-xs | 传说
+      div .pool-overview-panel ink-panel
+        span
+        span
+        span
+        span
+        div .pool-overview-header
+          i .icon-sm
+          span .pool-overview-title | 概率概览
+        div .pool-overview-list
+          div .overview-item
+            span
+            span | 传说名侠
+            span | 1.20%
+          div .overview-item
+            span
+            span | 史诗名侠
+            span | 8.80%
+          div .overview-item
+            span
+            span | 稀有名侠
+            span | 30.00%
+          div .overview-item
+            span
+            span | 精良名侠
+            span | 60.00%
+          div
+            div .guarantee-item
+              i .icon-xs
+              span | 90抽必得传说名侠
+            div .guarantee-item
+              i .icon-xs
+              span | 10抽必得精良以上
+    footer
+      div .draw-buttons
+        button .ink-btn ink-btn-ghost draw-btn draw-btn-single
+          div .draw-btn-content
+            div .draw-btn-icon
+              i .icon-sm
+            div .draw-btn-text
+              span .draw-btn-label | 祈愿一次
+              span .draw-btn-cost
+                i .icon-xs | 元宝 × 160
+        button .ink-btn ink-btn-primary draw-btn draw-btn-ten
+          div .draw-btn-content
+            div .draw-btn-icon
+              i .icon-sm
+            div .draw-btn-text
+              span .draw-btn-label | 祈愿十次
+              span .draw-btn-cost
+                i .icon-xs | 元宝 × 1600
+          span .ink-tag ink-tag-vermilion draw-btn-save-badge | 节省160元宝
+      div .draw-progress-section
+        div .draw-progress-info
+          span .draw-progress-text
+            i .icon-xs | 已祈愿
+            span .draw-progress-count | 47 | 次
+          span .draw-progress-pity | 距离保底还有
+            span .draw-progress-remaining | 3 | 次
+        div .ink-bar draw-progress-bar-container
+          div .ink-bar-fill draw-progress-bar
+    nav [aria="抽卡相关"]
+      button #nav-activities .gacha-link-btn
+        i .icon-sm
+        span | 活动
+      button .gacha-link-btn
+        i .icon-sm
+        span | 祈愿记录
+      button .gacha-link-btn
+        i .icon-sm
+        span | 概率公示
+      button .gacha-link-btn
+        i .icon-sm
+        span | 详情规则
+    aside .up-preview-panel ink-panel
+      span
+      span
+      span
+      span
+      div .up-preview-header
+        i .icon-sm
+        span .up-preview-title | UP名侠
+      div .up-preview-list
+        div .up-preview-item
+          div .up-preview-avatar
+            span | 李
+          div
+            span | 李白
+            span .up-preview-tag | 青莲剑仙
+          span .ink-tag ink-tag-vermilion | UP
+        div .up-preview-item
+          div .up-preview-avatar
+            span | 杜
+          div
+            span | 杜甫
+            span .up-preview-tag | 诗圣
+          span .ink-tag ink-tag-brand | UP
+        div .up-preview-item
+          div .up-preview-avatar
+            span | 王
+          div
+            span | 王维
+            span .up-preview-tag | 诗佛
+          span .ink-tag ink-tag-brand | UP
+
+## COPY (61)
+祈愿 | Wishing Ceremony | 名侠祈愿 · 青莲剑仙 | 元宝 | 命星 | 卡池列表 | 名侠祈愿 | 限定名侠 · 概率UP | 武器祈愿 | 限定神兵 · 概率UP | 常驻祈愿 | 名侠神兵 · 常驻开放 | 新手祈愿 | 新手限定 · 首抽折扣 | 新手 | 卡池剩余 | 天 | 时 | 分 | 保底计数 | 大保底 | 小保底 | 名侠 | 李白 | 青莲剑仙 | 生 | 我 | 材 | 概率UP · 限定名侠 | 传说 | 概率概览 | 传说名侠 | 1.20% | 史诗名侠 | 8.80% | 稀有名侠 | 30.00% | 精良名侠 | 60.00% | 90抽必得传说名侠 | 10抽必得精良以上 | 祈愿一次 | 元宝 × 160 | 祈愿十次 | 元宝 × 1600 | 节省160元宝 | 已祈愿 | 次 | 距离保底还有 | 活动 | 祈愿记录 | 概率公示 | 详情规则 | UP名侠 | 李 | 杜 | 杜甫 | 诗圣 | 王 | 王维 | 诗佛

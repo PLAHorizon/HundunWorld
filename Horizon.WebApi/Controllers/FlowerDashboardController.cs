@@ -32,6 +32,7 @@ namespace Horizon.WebApi.Controllers
             _logger = logger;
         }
 
+        [AllowAnonymous]
         [HttpGet("overview")]
         public async Task<ResultVM<DashboardOverview>> GetOverviewAsync()
         {
@@ -51,6 +52,7 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        [AllowAnonymous]
         [HttpGet("regional-heatmap")]
         public async Task<ResultVM<List<RegionalHeatmapEntry>>> GetRegionalHeatmapAsync()
         {
@@ -70,6 +72,7 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        [AllowAnonymous]
         [HttpGet("supply-demand-stats")]
         public async Task<ResultVM<List<SupplyDemandEntry>>> GetSupplyDemandAsync()
         {
@@ -89,6 +92,7 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        [AllowAnonymous]
         [HttpGet("price-trend/{speciesId}")]
         public async Task<ResultVM<List<PriceTrendEntry>>> GetPriceTrendAsync(int speciesId, [FromQuery] int days = 30)
         {
@@ -108,6 +112,7 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        [AllowAnonymous]
         [HttpGet("ai-summary")]
         public async Task<ResultVM<string>> GetAIMarketSummaryAsync()
         {
@@ -127,6 +132,7 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        [AllowAnonymous]
         [HttpGet("stats")]
         public async Task<ResultVM<DashboardStats>> GetStatsAsync()
         {
@@ -146,6 +152,7 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        [AllowAnonymous]
         [HttpGet("regional")]
         public async Task<ResultVM<List<RegionalTradeData>>> GetRegionalAsync()
         {
@@ -165,6 +172,7 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        [AllowAnonymous]
         [HttpGet("supply-demand")]
         public async Task<ResultVM<List<SupplyDemandData>>> GetSupplyDemandDataAsync()
         {
@@ -184,6 +192,7 @@ namespace Horizon.WebApi.Controllers
             return result;
         }
 
+        [AllowAnonymous]
         [HttpGet("transactions")]
         public async Task<ResultVM<List<RecentTransaction>>> GetTransactionsAsync()
         {

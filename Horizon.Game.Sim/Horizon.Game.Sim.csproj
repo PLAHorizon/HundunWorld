@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- 确定性库：不启用 SIMD 路径，保证跨运行时按位一致 -->
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MemoryPack.Core" />
+    <PackageReference Include="MemoryPack.Generator" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 引用协议库以复用 SyncPacket / InputPacket 等确定性类型；不依赖 Orleans 运行时与 UE -->
+    <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+  </ItemGroup>
+
+  <!-- 与 Horizon.Game.ECS.Arch.csproj 同款分发：把本程序集复制到 Flax 引擎托管工具目录，
+       供 MMORPG 客户端（Game.csproj 的 <Reference> 与 Game.Build.cs 的 dlls[]）编译期/运行期解析。
+       MovementFormula.FormulaVersion 是握手硬校验值——Tools 目录陈旧副本（历史教训：8/11 的 v2 副本）
+       会被编译期内联/运行期抢先加载，必须随构建自动同步。
+       - FlaxToolsDir / CopyToFlax 均可在命令行覆盖（-p:CopyToFlax=false 关闭分发）；
+       - 仅当目标目录存在时才执行，避免未装 Flax 的 CI 报错；
+       - 写入 Program Files 需管理员权限，失败按警告处理（ContinueOnError），不阻断编译。 -->
+  <PropertyGroup>
+    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
+    <CopyToFlax Condition="'$(CopyToFlax)' == ''">true</CopyToFlax>
+  </PropertyGroup>
+
+  <Target Name="CopyToFlax" AfterTargets="Build"
+          Condition="'$(CopyToFlax)' == 'true' And Exists('$(FlaxToolsDir)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+          Condition="Exists('$(TargetDir)$(TargetName).pdb')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).xml"
+          Condition="Exists('$(TargetDir)$(TargetName).xml')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Message Importance="high" Text="[CopyToFlax] $(TargetFileName) -&gt; $(FlaxToolsDir)" />
+  </Target>
+
+</Project>

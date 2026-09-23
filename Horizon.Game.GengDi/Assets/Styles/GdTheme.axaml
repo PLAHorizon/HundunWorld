@@ -46,6 +46,7 @@
     <FontFamily x:Key="GdFontMono">JetBrains Mono, Cascadia Code, ui-monospace, monospace</FontFamily>
 
     <!-- ==== gd 品牌色阶 Brush（两种模式共用，供按钮 hover/pressed 状态使用） ==== -->
+    <SolidColorBrush x:Key="GdBrand300Brush" Color="{StaticResource GdBrand300}" />
     <SolidColorBrush x:Key="GdBrand400Brush" Color="{StaticResource GdBrand400}" />
     <SolidColorBrush x:Key="GdBrand500Brush" Color="{StaticResource GdBrand500}" />
     <SolidColorBrush x:Key="GdBrand600Brush" Color="{StaticResource GdBrand600}" />
@@ -63,6 +64,35 @@
     <SolidColorBrush x:Key="GdWarningSurfaceBrush" Color="{StaticResource GdWarningSurface}" />
     <SolidColorBrush x:Key="GdErrorSurfaceBrush" Color="{StaticResource GdErrorSurface}" />
     <SolidColorBrush x:Key="GdInfoSurfaceBrush" Color="{StaticResource GdInfoSurface}" />
+
+    <!-- ==== gd 扩展圆角（商品大卡 / 面板，18px） ==== -->
+    <CornerRadius x:Key="GdRadiusXl">18</CornerRadius>
+
+    <!-- ==== gd 花卉品种色板（两种模式共用：无图降级封面 + 品种标签） ==== -->
+    <Color x:Key="GdSpeciesRose">#FFE8617D</Color>
+    <Color x:Key="GdSpeciesRoseDeep">#FFC2435E</Color>
+    <Color x:Key="GdSpeciesLily">#FFD98CB8</Color>
+    <Color x:Key="GdSpeciesLilyDeep">#FFA85F8C</Color>
+    <Color x:Key="GdSpeciesCarnation">#FFF08A5D</Color>
+    <Color x:Key="GdSpeciesCarnationDeep">#FFC25F33</Color>
+    <Color x:Key="GdSpeciesFoliage">#FF3FA37A</Color>
+    <Color x:Key="GdSpeciesFoliageDeep">#FF26735A</Color>
+    <Color x:Key="GdSpeciesTulip">#FFC86BE8</Color>
+    <Color x:Key="GdSpeciesTulipDeep">#FF8E44AD</Color>
+    <Color x:Key="GdSpeciesSunflower">#FFF2B33D</Color>
+    <Color x:Key="GdSpeciesSunflowerDeep">#FFC98A16</Color>
+    <Color x:Key="GdSpeciesDefault">#FF5A90FF</Color>
+    <Color x:Key="GdSpeciesDefaultDeep">#FF1F4FD6</Color>
+
+    <!-- ==== gd 行情趋势色（国内习惯：涨红跌绿） ====
+         注意：GdUp / GdDown 为项目早期定义（涨绿跌红，欧美习惯），
+         商城页统一改用本组趋势色，避免与国际/国内习惯混用。 -->
+    <Color x:Key="GdTrendUp">#FFFF4D4F</Color>
+    <Color x:Key="GdTrendDown">#FF26A69A</Color>
+    <Color x:Key="GdTrendFlat">#FF8A93A6</Color>
+    <SolidColorBrush x:Key="GdTrendUpBrush" Color="{StaticResource GdTrendUp}" />
+    <SolidColorBrush x:Key="GdTrendDownBrush" Color="{StaticResource GdTrendDown}" />
+    <SolidColorBrush x:Key="GdTrendFlatBrush" Color="{StaticResource GdTrendFlat}" />
 
     <!-- ================================================================
          ThemeDictionaries — 暗色/浅色模式各自的面板色与画刷
@@ -94,6 +124,7 @@
             <Color x:Key="GdBorder">#FF2A2E39</Color>
             <Color x:Key="GdInput">#FF2A2E39</Color>
             <Color x:Key="GdRing">#FF2962FF</Color>
+            <SolidColorBrush x:Key="GdRingBrush" Color="{StaticResource GdRing}" />
 
             <!-- Dark alpha 辅助色 -->
             <Color x:Key="GdForegroundMuted">#99E0E6ED</Color>
@@ -115,6 +146,20 @@
             <SolidColorBrush x:Key="GdForegroundMutedBrush" Color="{StaticResource GdForegroundMuted}" />
             <SolidColorBrush x:Key="GdBorderSubtleBrush" Color="{StaticResource GdBorderSubtle}" />
             <SolidColorBrush x:Key="GdOverlayBrush" Color="{StaticResource GdOverlay}" />
+            <!-- 价格与营销专用色（与 GdError 语义分离） -->
+            <Color x:Key="GdPrice">#FFFF595E</Color>
+            <Color x:Key="GdPriceSurface">#26FF595E</Color>
+            <!-- 花卉商城：优惠券 chip / 热搜 tag -->
+            <Color x:Key="GdCoupon">#FF152243</Color>
+            <Color x:Key="GdCouponText">#FF7EA7FF</Color>
+            <Color x:Key="GdHotTagBg">#FF1F1720</Color>
+            <Color x:Key="GdHotTagText">#FFF0A7B5</Color>
+            <SolidColorBrush x:Key="GdPriceBrush" Color="{StaticResource GdPrice}" />
+            <SolidColorBrush x:Key="GdPriceSurfaceBrush" Color="{StaticResource GdPriceSurface}" />
+            <SolidColorBrush x:Key="GdCouponBrush" Color="{StaticResource GdCoupon}" />
+            <SolidColorBrush x:Key="GdCouponTextBrush" Color="{StaticResource GdCouponText}" />
+            <SolidColorBrush x:Key="GdHotTagBgBrush" Color="{StaticResource GdHotTagBg}" />
+            <SolidColorBrush x:Key="GdHotTagTextBrush" Color="{StaticResource GdHotTagText}" />
         </ResourceDictionary>
 
         <!-- ════════════════════════════════════════════════════════════
@@ -162,6 +207,20 @@
             <SolidColorBrush x:Key="GdForegroundMutedBrush" Color="{StaticResource GdForegroundMuted}" />
             <SolidColorBrush x:Key="GdBorderSubtleBrush" Color="{StaticResource GdBorderSubtle}" />
             <SolidColorBrush x:Key="GdOverlayBrush" Color="{StaticResource GdOverlay}" />
+            <!-- 价格与营销专用色（与 GdError 语义分离） -->
+            <Color x:Key="GdPrice">#FFE03E45</Color>
+            <Color x:Key="GdPriceSurface">#1AE03E45</Color>
+            <!-- 花卉商城：优惠券 chip / 热搜 tag（浅色模式淡色变体） -->
+            <Color x:Key="GdCoupon">#FFE8F0FF</Color>
+            <Color x:Key="GdCouponText">#FF2962FF</Color>
+            <Color x:Key="GdHotTagBg">#FFFDF0F1</Color>
+            <Color x:Key="GdHotTagText">#FFD64550</Color>
+            <SolidColorBrush x:Key="GdPriceBrush" Color="{StaticResource GdPrice}" />
+            <SolidColorBrush x:Key="GdPriceSurfaceBrush" Color="{StaticResource GdPriceSurface}" />
+            <SolidColorBrush x:Key="GdCouponBrush" Color="{StaticResource GdCoupon}" />
+            <SolidColorBrush x:Key="GdCouponTextBrush" Color="{StaticResource GdCouponText}" />
+            <SolidColorBrush x:Key="GdHotTagBgBrush" Color="{StaticResource GdHotTagBg}" />
+            <SolidColorBrush x:Key="GdHotTagTextBrush" Color="{StaticResource GdHotTagText}" />
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>
@@ -223,6 +282,8 @@
     <ui:SymbolIconSource x:Key="AddressIcon" Symbol="MapPin" />
     <ui:SymbolIconSource x:Key="BellIcon" Symbol="Alert" />
     <ui:SymbolIconSource x:Key="MoonIcon" Symbol="DarkTheme" />
+    <ui:SymbolIconSource x:Key="NavBackIcon" Symbol="Back" />
+    <ui:SymbolIconSource x:Key="NavForwardIcon" Symbol="Forward" />
 
     <!-- ==== 下载任务图标渐变背景（4种，对应设计稿每个任务不同渐变） ==== -->
     <LinearGradientBrush x:Key="GdDlGradient0" StartPoint="0%,0%" EndPoint="100%,100%">

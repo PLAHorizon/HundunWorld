@@ -172,6 +172,13 @@ namespace Horizon.IM.Message.Network
         [Id(9)]
         public Dictionary<string, string> ExtData { get; set; } = new();
 
+        /// <summary>
+        /// 客户端消息ID（用于多端同步时发送方其他设备匹配乐观上屏消息）
+        /// </summary>
+        [MemoryPackOrder(12)]
+        [Id(12)]
+        public string ClientMessageId { get; set; } = "";
+
         [MemoryPackOrder(10)]
         [Id(10)]
         public new IMMessageType Type { get; set; } = IMMessageType.PrivateChatNotify;

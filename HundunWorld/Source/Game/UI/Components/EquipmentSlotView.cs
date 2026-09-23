@@ -40,6 +40,12 @@ namespace HundunWorld.Game.UI.Components
         {
         }
 
+        /// <summary>无参构造（Prefab/编辑器实例化用，默认槽位与尺寸）</summary>
+        public EquipmentSlotView()
+            : this(default, new Float2(64f, 80f))
+        {
+        }
+
         public EquipmentSlotView(EquipmentSlot slot, Float2 size)
         {
             Slot = slot;

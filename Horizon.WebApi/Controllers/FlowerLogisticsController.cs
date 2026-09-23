@@ -8,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -37,9 +39,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{orderId}")]
-        public async Task<ResultVM<LogisticsTrackState>> GetTrack(long orderId)
+        public async Task<ResultVM<LogisticsTrackDto>> GetTrack(long orderId)
         {
-            var result = new ResultVM<LogisticsTrackState>();
+            var result = new ResultVM<LogisticsTrackDto>();
             try
             {
                 var client = await OrleansConnectClient();
@@ -51,7 +53,8 @@ namespace Horizon.WebApi.Controllers
                     return result;
                 }
                 var logisticsGrain = client.GetGrain<ILogisticsGrain>(orderId);
-                result.Data = await logisticsGrain.QueryTrackAsync(orderId, order.ExpressCompanyName ?? "", order.ShipOrderNumber ?? "");
+                var state = await logisticsGrain.QueryTrackAsync(orderId, order.ExpressCompanyName ?? "", order.ShipOrderNumber ?? "");
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -128,14 +131,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{orderId}/history")]
-        public async Task<ResultVM<List<LogisticsTrackState>>> GetTrackHistory(long orderId)
+        public async Task<ResultVM<List<LogisticsTrackDto>>> GetTrackHistory(long orderId)
         {
-            var result = new ResultVM<List<LogisticsTrackState>>();
+            var result = new ResultVM<List<LogisticsTrackDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var logisticsGrain = client.GetGrain<ILogisticsGrain>(orderId);
-                result.Data = await logisticsGrain.GetTrackHistoryAsync(orderId);
+                var tracks = await logisticsGrain.GetTrackHistoryAsync(orderId);
+                result.Data = tracks?.Select(t => FlowerDtoMapper.ToDto(t)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -147,14 +151,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("return/{refundId}")]
-        public async Task<ResultVM<LogisticsTrackState>> GetReturnTrack(long refundId, [FromQuery] string expressCompanyName, [FromQuery] string shipOrderNumber)
+        public async Task<ResultVM<LogisticsTrackDto>> GetReturnTrack(long refundId, [FromQuery] string expressCompanyName, [FromQuery] string shipOrderNumber)
         {
-            var result = new ResultVM<LogisticsTrackState>();
+            var result = new ResultVM<LogisticsTrackDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var logisticsGrain = client.GetGrain<ILogisticsGrain>(refundId);
-                result.Data = await logisticsGrain.QueryReturnTrackAsync(refundId, expressCompanyName ?? "", shipOrderNumber ?? "");
+                var state = await logisticsGrain.QueryReturnTrackAsync(refundId, expressCompanyName ?? "", shipOrderNumber ?? "");
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
                 result.IsSuccess = true;
             }
             catch (Exception ex)

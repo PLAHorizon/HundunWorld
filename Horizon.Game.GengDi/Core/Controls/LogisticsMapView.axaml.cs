@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -8,7 +8,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Horizon.Game.GengDi.Core.Services;
+#if DESKTOP
 using WebViewControl;
+#endif
 
 namespace Horizon.Game.GengDi.Core.Controls
 {
@@ -21,7 +23,11 @@ namespace Horizon.Game.GengDi.Core.Controls
     {
         private static bool _webViewUnavailable;
         private ContentControl _mapHost;
+#if DESKTOP
         private WebView _webView;
+#else
+        private object? _webView;
+#endif
 
         public static readonly DirectProperty<LogisticsMapView, LogisticsMapDataInfo> MapDataProperty =
             AvaloniaProperty.RegisterDirect<LogisticsMapView, LogisticsMapDataInfo>(
@@ -108,6 +114,7 @@ namespace Horizon.Game.GengDi.Core.Controls
             var tempPath = Path.Combine(Path.GetTempPath(), $"logistics_map_{_mapData.OrderId}.html");
             File.WriteAllText(tempPath, html);
 
+#if DESKTOP
             if (_webViewUnavailable)
             {
                 return;
@@ -133,6 +140,9 @@ namespace Horizon.Game.GengDi.Core.Controls
                 _webViewUnavailable = true;
                 _mapHost.Content = null;
             }
+#else
+            _webViewUnavailable = true;
+#endif
         }
 
         private static string GenerateMapHtml(List<LogisticsMapNodeInfo> nodes, LogisticsMapDataInfo data)

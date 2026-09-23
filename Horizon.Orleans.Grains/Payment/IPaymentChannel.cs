@@ -24,6 +24,8 @@ namespace Horizon.Orleans.Grains.Payment
         public string PrepayId { get; set; } = "";
         public string PayUrl { get; set; } = "";
         public string ErrorMessage { get; set; } = "";
+        /// <summary>客户端拉起支付参数（JSON：微信=二次签名参数集，支付宝=orderInfo 签名串）</summary>
+        public string PayParams { get; set; } = "";
     }
 
     public class PaymentCallbackResult

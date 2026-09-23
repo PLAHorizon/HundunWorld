@@ -40,6 +40,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         private const float TargetAvatarSize = 32f;
         private const float TargetHeight = 58f;
 
+        // --- 顶部中央：方位与地图标记指示条（罗盘带） ---
+        private const float CompassWidth = 640f;
+        private const float CompassHeight = 30f;
+        private const float CompassGapBelowTarget = 6f;
+        /// <summary>罗盘带距屏幕顶部边距（整体置顶）。</summary>
+        private const float CompassTop = 10f;
+
         // --- 左上：角色面板 ---
         private const float CharWidth = 300f;
         private const float CharPadding = 10f;
@@ -109,6 +116,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         private InkPanel _targetPanel;
         private InkBar _targetHpBar;
         private Label _targetHpValueLabel;
+        private CompassBar _compassBar;
 
         private InkPanel _charPanel;
         private InkCircle _charAvatar;
@@ -242,6 +250,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             try
             {
                 BuildTargetInfo();
+                BuildCompassBar();
                 BuildCharacterPanel();
                 BuildPartyPanel();
                 BuildMinimap();
@@ -581,6 +590,145 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 InkWashTheme.TextTertiary, 9f, InkWashTheme.FontRole.Body, TextAlignment.Far));
 
             AddChild(_targetPanel);
+        }
+
+        // ===================================================================
+        // 区域构造：顶部中央方位与地图标记指示条（罗盘带）
+        // ===================================================================
+
+        /// <summary>
+        /// 顶部中央罗盘带：八方位标签 + 度数刻度 + 地图标记，随玩家朝向横向滚动。
+        /// 位置：目标信息面板下方居中；朝向由 <see cref="MinimapPlayerYaw"/> 每帧驱动。
+        /// </summary>
+        private void BuildCompassBar()
+        {
+            _compassBar = new CompassBar
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(CompassWidth, CompassHeight),
+            };
+            // 地图标记（mock 方位，与本页其余 mock 数据一致；随朝向滚动）。
+            _compassBar.Markers = new (float Bearing, string Glyph, Color Color)[]
+            {
+                (35f, "任", InkWashTheme.GoldBright),
+                (120f, "城", InkWashTheme.JadeBright),
+                (210f, "肆", InkWashTheme.VermilionBright),
+                (305f, "友", InkWashTheme.PaperAged),
+            };
+            AddChild(_compassBar);
+        }
+
+        /// <summary>
+        /// 方位与地图标记指示条：按 <see cref="PlayerYaw"/> 绘制的横向罗盘带。
+        /// 上带为地图标记（彩色三角 + 字形），中带为八方位标签，底部为度数刻度与中央朝向指针。
+        /// </summary>
+        private sealed class CompassBar : ContainerControl
+        {
+            /// <summary>玩家朝向（角度制 0~360，0=北）。</summary>
+            public float PlayerYaw;
+
+            /// <summary>地图标记：方位角 + 字形 + 颜色。</summary>
+            public (float Bearing, string Glyph, Color Color)[] Markers = System.Array.Empty<(float, string, Color)>();
+
+            /// <summary>可视总跨度（度）。</summary>
+            private const float DegSpan = 150f;
+
+            private static readonly (float Angle, string Label, bool Cardinal)[] Dirs =
+            {
+                (0f, "北", true), (45f, "东北", false), (90f, "东", true), (135f, "东南", false),
+                (180f, "南", true), (225f, "西南", false), (270f, "西", true), (315f, "西北", false),
+            };
+
+            public CompassBar()
+            {
+                BackgroundColor = Color.Transparent;
+                ClipChildren = true;
+            }
+
+            /// <summary>将方位角差归一化到 [-180,180)。</summary>
+            private static float Delta(float bearing, float yaw)
+            {
+                return ((bearing - yaw + 540f) % 360f) - 180f;
+            }
+
+            public override void Draw()
+            {
+                if (Width <= 0f || Height <= 0f)
+                {
+                    base.Draw();
+                    return;
+                }
+
+                var rect = new Rectangle(0f, 0f, Width, Height);
+                InkRenderHelper.FillRoundedRectangle(rect, InkWashTheme.RadiusMd, InkWashTheme.Scrim);
+                InkRenderHelper.DrawRoundedRectangle(rect, InkWashTheme.RadiusMd, InkWashTheme.BorderGoldSubtle, 1f);
+
+                float cx = Width * 0.5f;
+                float pxPerDeg = Width / DegSpan;
+                float half = DegSpan * 0.5f;
+
+                // 底部度数刻度（每 15° 小刻度，45° 大刻度）
+                for (float a = 0f; a < 360f; a += 15f)
+                {
+                    float d = Delta(a, PlayerYaw);
+                    if (Mathf.Abs(d) > half) continue;
+                    float x = cx + d * pxPerDeg;
+                    bool major = a % 45f < 0.01f;
+                    float th = major ? 7f : 4f;
+                    Render2D.DrawLine(new Float2(x, Height - 3f), new Float2(x, Height - 3f - th),
+                        major ? InkWashTheme.GoldDeep : InkWashTheme.TextTertiary, 1f);
+                }
+
+                // 中带：八方位标签（主方位金亮大字，隅方位纸色小字）
+                foreach (var dir in Dirs)
+                {
+                    float d = Delta(dir.Angle, PlayerYaw);
+                    if (Mathf.Abs(d) > half) continue;
+                    float x = cx + d * pxPerDeg;
+                    float size = dir.Cardinal ? 14f : 11f;
+                    var color = dir.Cardinal ? InkWashTheme.GoldBright : InkWashTheme.PaperAged;
+                    var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, size).GetFont();
+                    if (font != null)
+                        Render2D.DrawText(font, dir.Label, new Rectangle(x - 30f, 13f, 60f, 14f),
+                            color, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                }
+
+                // 上带：地图标记（彩色向下三角 + 字形）
+                if (Markers != null)
+                {
+                    foreach (var m in Markers)
+                    {
+                        float d = Delta(m.Bearing, PlayerYaw);
+                        if (Mathf.Abs(d) > half) continue;
+                        float x = cx + d * pxPerDeg;
+                        Render2D.DrawLine(new Float2(x - 4f, 1f), new Float2(x, 6f), m.Color, 1.5f);
+                        Render2D.DrawLine(new Float2(x, 6f), new Float2(x + 4f, 1f), m.Color, 1.5f);
+                        var mf = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f).GetFont();
+                        if (mf != null)
+                            Render2D.DrawText(mf, m.Glyph, new Rectangle(x - 14f, 4f, 28f, 11f),
+                                m.Color, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                    }
+                }
+
+                // 中央朝向指针（金色倒三角）
+                Render2D.DrawLine(new Float2(cx - 5f, Height - 2f), new Float2(cx, Height - 7f), InkWashTheme.GoldPrimary, 2f);
+                Render2D.DrawLine(new Float2(cx, Height - 7f), new Float2(cx + 5f, Height - 2f), InkWashTheme.GoldPrimary, 2f);
+
+                // 半透明遮罩：水平中心全透明，两端约 0.2 透明度（内容向边缘渐隐）
+                const int MaskSlices = 24;
+                float sliceW = Width / MaskSlices;
+                var veil = InkWashTheme.BaseDefault;
+                for (int i = 0; i < MaskSlices; i++)
+                {
+                    float x0 = i * sliceW;
+                    float t = Mathf.Abs(x0 + sliceW * 0.5f - cx) / (Width * 0.5f);
+                    float alpha = 0.2f * t;
+                    if (alpha <= 0.001f) continue;
+                    Render2D.FillRectangle(new Rectangle(x0, 0f, sliceW + 1f, Height), new Color(veil.R, veil.G, veil.B, alpha));
+                }
+
+                base.Draw();
+            }
         }
 
         // ===================================================================
@@ -1246,8 +1394,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             float sw = _screenSize.X;
             float sh = _screenSize.Y;
 
+            if (_compassBar != null)
+                _compassBar.Location = new Float2(sw * 0.5f - CompassWidth * 0.5f, CompassTop);
+
             if (_targetPanel != null)
-                _targetPanel.Location = new Float2(sw * 0.5f - TargetWidth * 0.5f, Edge);
+                _targetPanel.Location = new Float2(sw * 0.5f - TargetWidth * 0.5f, CompassTop + CompassHeight + CompassGapBelowTarget);
 
             if (_charPanel != null)
                 _charPanel.Location = new Float2(Edge, Edge);
@@ -1282,6 +1433,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 RefreshBoundCharacterDisplay();
             if (_minimap != null)
                 _minimap.PlayerYaw = _minimapPlayerYaw;
+            if (_compassBar != null)
+                _compassBar.PlayerYaw = _minimapPlayerYaw;
         }
 
         /// <summary>重新计算布局（IInkPage 契约，屏幕尺寸变化时由路由器调用）。</summary>

@@ -21,6 +21,7 @@ public sealed class IMGroupGrainRebuildTests : IAsyncLifetime
     {
         var builder = new TestClusterBuilder();
         builder.AddSiloBuilderConfigurator<IMGatewayTestSiloConfigurator>();
+        builder.AddClientBuilderConfigurator<IMGatewayTestClientConfigurator>();
 
         _cluster = builder.Build();
         await _cluster.DeployAsync();

@@ -1,0 +1,72 @@
+## page: reward-map-unlock
+## dom-ids: back-hud, link-reward-level-up, unlockTitle
+  main
+    div
+      div
+        span
+        span
+        span
+      section .mu-modal
+        span
+        span
+        span
+        span
+        button #back-hud [aria="返回战斗"]
+        div
+          h2 #unlockTitle .mu-title
+            span .mu-title-icon
+            span | 新区域解锁
+          div
+            span
+            span
+            span
+          div
+            span .s-top
+            span .s-left
+            span .s-right
+            span | 启
+            div | 昆仑雪山
+            div | 雪域秘境
+          p | 终年积雪的高山之地，传说有上古异兽栖息于此。寒风凛冽，需备足御寒之物方可深入探索。
+          div [aria="区域预览图"]
+            span
+            span
+            span | 雪
+            span | 区域预览图
+          div
+            h3 .mu-rewards-title
+              span .r-icon
+              span | 探索奖励
+            div .mu-rewards-list
+              div .mu-reward-row
+                span .mu-reward-icon
+                span .mu-reward-label | 首次进入
+                span
+                span .mu-reward-value
+                  span .v-icon
+                  span | 经验
+                  span | ×3000
+              div .mu-reward-row
+                span .mu-reward-icon
+                span .mu-reward-label | 探索度十成
+                span
+                span .mu-reward-value
+                  span .v-icon
+                  span | 铜钱
+                  span | ×1000
+              div .mu-reward-row
+                span .mu-reward-icon
+                span .mu-reward-label | 发现秘境
+                span
+                span .mu-reward-value
+                  span .v-icon
+                  span | 元宝
+                  span | ×100
+          div
+            button .ink-btn ink-btn-primary ink-btn-lg mu-btn-primary
+              span | 前往探索
+            button #link-reward-level-up .ink-btn ink-btn-ghost ink-btn-lg mu-btn-link
+              span | 升级奖励
+
+## COPY (19)
+新区域解锁 | 启 | 昆仑雪山 | 雪域秘境 | 终年积雪的高山之地，传说有上古异兽栖息于此。寒风凛冽，需备足御寒之物方可深入探索。 | 雪 | 区域预览图 | 探索奖励 | 首次进入 | 经验 | ×3000 | 探索度十成 | 铜钱 | ×1000 | 发现秘境 | 元宝 | ×100 | 前往探索 | 升级奖励

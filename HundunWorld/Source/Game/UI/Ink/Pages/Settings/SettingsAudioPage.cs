@@ -40,6 +40,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
         };
         private bool[] _toggleValues = { true, false };
 
+        /// <summary>
+        /// 标准导航事件（对齐 Ink 页面契约，由工厂挂钩后经路由器跳转）。
+        /// </summary>
+        public event Action<string> NavigationRequested;
+
         public SettingsAudioPage()
         {
             _screenSize = FlaxEngine.Screen.Size;
@@ -85,6 +90,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                 BackgroundColor = InkWashTheme.BaseDefault,
                 Parent = this
             };
+            // 返回战斗 HUD（设计隐藏出口 back-hud）
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
         }
 
         private void BuildLeftNav()
@@ -115,6 +122,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
 
             string[] navItems = { "任务", "抽卡", "通行证", "角色", "博物志", "奇珍阁", "设置" };
 
+            // 左侧导航即设计链路：任务→抽卡→通行证→角色→博物志→奇珍阁→设置
+            string[] navTargets =
+            {
+                InkPageDomIds.NavQuests,
+                InkPageDomIds.NavGacha,
+                InkPageDomIds.NavBattlePass,
+                InkPageDomIds.NavCharacterV2,
+                InkPageDomIds.NavBestiary,
+                InkPageDomIds.NavShopRare,
+                InkPageDomIds.NavSettings,
+            };
+
             for (int i = 0; i < navItems.Length; i++)
             {
                 var navItem = new InkButton
@@ -138,6 +157,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                     navItem.Variant = InkButtonVariant.Ghost;
                     navItem.TextColor = InkWashTheme.PaperAged;
                 }
+
+                // 左栏项直达对应菜单（设计链路）
+                int navIndex = i;
+                navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
             }
 
             var footerDivider = new InkDivider
@@ -176,6 +199,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                 TextColor = InkWashTheme.TextSecondary,
                 Parent = _topBar
             };
+            // 返回战斗 HUD（设计隐藏出口 back-hud）
+            backHudBtn.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
 
             var avatarCircle = new ContainerControl
             {
@@ -282,6 +307,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
             }
         }
 
+        /// <summary>顶栏「音频系统」标签（设计稿 .ink-tag-brand）</summary>
+        private InkTag _systemTag;
+
         private void BuildSettingsList()
         {
             var headerTitle = new Label
@@ -291,6 +319,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _contentArea
             };
+
+            // 设计稿顶栏标签「音频系统」（.ink-tag-brand）
+            var systemTag = new InkTag
+            {
+                Text = "音频系统",
+                TagVariant = InkTagVariant.Brand,
+                Width = 76f,
+                Height = 22f,
+                Parent = _contentArea
+            };
+            _systemTag = systemTag;
 
             var headerSubtitle = new Label
             {
@@ -550,6 +589,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
             {
                 _actionBar.Size = new Float2(sw - 240f, 60f);
                 _actionBar.Location = new Float2(240f, sh - 60f);
+            }
+
+            // 顶栏「音频系统」标签：内容区右上角
+            if (_systemTag != null)
+            {
+                _systemTag.Location = new Float2(Mathf.Max(240f, sw - 140f), 74f);
             }
         }
 

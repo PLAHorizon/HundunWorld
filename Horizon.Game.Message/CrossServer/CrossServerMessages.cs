@@ -1,4 +1,4 @@
-﻿using Horizon.Game.Message.Enums;
+using Horizon.Game.Message.Enums;
 using MemoryPack;
 using Orleans;
 
@@ -6,6 +6,7 @@ namespace Horizon.Game.Message.CrossServer
 {
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(165, Enums.ServiceType.CrossServer)]
     public partial class CrossServerTransferRequest : MessageUnion, INetworkMessage
     {
         [MemoryPackIgnore]
@@ -24,6 +25,7 @@ namespace Horizon.Game.Message.CrossServer
 
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(166, Enums.ServiceType.CrossServer)]
     public partial class CrossServerTransferResponse : MessageUnion, INetworkMessage
     {
         [MemoryPackIgnore]

@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(122, Enums.ServiceType.Game)]
     public partial class PlayerSyncMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -163,6 +164,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(123, Enums.ServiceType.Game)]
     public partial class WorldStateSyncMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -288,6 +290,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(124, Enums.ServiceType.Game)]
     public partial class WorldEvent : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -415,6 +418,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(125, Enums.ServiceType.Game)]
     public partial class NpcSyncMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -612,6 +616,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(126, Enums.ServiceType.Game)]
     public partial class ItemDropMessage : MessageUnion, INetworkMessage
     {
         /// <summary>

@@ -51,6 +51,26 @@ namespace Horizon.Orleans.Silo
         private static DatabaseOptions? _database;
         private static HorizonTimeoutConfiguration? _timeoutConfig;
 
+        /// <summary>
+        /// 解析支付宝密钥：支持 "base64:..." 前缀（PEM 多行经 base64 单行存储，防 .env 按行解析损坏），否则原样返回。
+        /// </summary>
+        private static string DecodeKey(string value)
+        {
+            if (!string.IsNullOrEmpty(value) && value.StartsWith("base64:", StringComparison.Ordinal))
+            {
+                try
+                {
+                    return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(value.Substring("base64:".Length)));
+                }
+                catch (FormatException)
+                {
+                    // base64 解码失败时退回原始值，后续由 SDK 签名阶段报出明确错误
+                    return value;
+                }
+            }
+            return value;
+        }
+
         public static async Task<int> Main(string[] args)
         {
             try
@@ -180,10 +200,43 @@ namespace Horizon.Orleans.Silo
                             siloBuilder.ApplyHorizonTimeoutConfiguration(_timeoutConfig);
                             siloBuilder.ValidateAndLogTimeoutConfiguration(_timeoutConfig, _logger!);
                             
-                            var advertisedIP = oco != null && !string.IsNullOrEmpty(oco.OrleansSiloHost) &&
-                                           oco.OrleansSiloHost != "localhost"
-                                ? IPAddress.Parse(oco.OrleansSiloHost)
-                                : IPAddress.Loopback;
+                            var advertisedIP = IPAddress.Loopback;
+                            if (oco != null && !string.IsNullOrEmpty(oco.OrleansSiloHost) &&
+                                oco.OrleansSiloHost != "localhost")
+                            {
+                                // 容错：ORLEANS_SILO_HOST 环境变量缺失时，EnvironmentPlaceholderResolver
+                                // 会保留 "${ORLEANS_SILO_HOST}" 字面量（而非替换为空），导致 IPAddress.TryParse
+                                // 失败并误报"不是有效的 IP 地址"。此处兜底直接从环境变量解析占位符。
+                                var siloHost = oco.OrleansSiloHost;
+                                if (siloHost.StartsWith("${", StringComparison.Ordinal) &&
+                                    siloHost.EndsWith("}", StringComparison.Ordinal))
+                                {
+                                    var varName = siloHost.Substring(2, siloHost.Length - 3);
+                                    var envValue = Environment.GetEnvironmentVariable(varName);
+                                    if (string.IsNullOrWhiteSpace(envValue))
+                                    {
+                                        _logger?.LogInformation(
+                                            "环境变量 {VarName} 未设置（配置值为占位符 {Placeholder}），Silo 广播地址回退使用 IPAddress.Loopback。",
+                                            varName, siloHost);
+                                    }
+                                    else
+                                    {
+                                        siloHost = envValue;
+                                        _logger?.LogInformation("已从环境变量 {VarName} 解析 Silo 广播地址: {SiloHost}", varName, siloHost);
+                                    }
+                                }
+
+                                if (siloHost != "localhost" && IPAddress.TryParse(siloHost, out var parsedIP))
+                                {
+                                    advertisedIP = parsedIP;
+                                }
+                                else if (!siloHost.StartsWith("${", StringComparison.Ordinal) && siloHost != "localhost")
+                                {
+                                    _logger?.LogWarning(
+                                        "配置 ClusteringSiloOptions:OrleansSiloHost 值 '{SiloHost}' 不是有效的 IP 地址，已回退使用 IPAddress.Loopback。请将环境变量 ORLEANS_SILO_HOST 设置为有效的 IP 地址。",
+                                        siloHost);
+                                }
+                            }
 
                             siloBuilder.ApplyOptimizedEndpointConfiguration(_timeoutConfig, siloPort, gatewayPort, advertisedIP);
                             siloBuilder.ApplyPerformanceOptimizations(_timeoutConfig);
@@ -242,9 +295,17 @@ namespace Horizon.Orleans.Silo
                         services.AddSingleton<FlowerUserDataSyncService>();
                         services.AddHostedService<FlowerUserSyncStartupService>();
 
-                        // 注册OpenTelemetry监控（APM + Prometheus指标导出）
+                        // 注册OpenTelemetry监控（APM + Prometheus指标导出 + OTLP 推送）
+                        // 阶段 6.3 P2⑩+：配置 Monitoring:Otlp:Endpoint 时，horizon.sync.corrections / input.lag
+                        // 等同步指标经 OTLP/HTTP 推送到 collector，与网关 horizon.sync.gray.window.* 汇入同一
+                        // 时序库（跨进程对比面板数据闭环）；未配置零行为变化（仅 Prometheus scrape）。
                         var prometheusPort = context.Configuration.GetValue<int>("Monitoring:PrometheusPort", 9464);
-                        services.AddHorizonOpenTelemetry(prometheusPort: prometheusPort);
+                        var otlpEndpoint = context.Configuration.GetValue<string>("Monitoring:Otlp:Endpoint");
+                        var otlpInterval = context.Configuration.GetValue<int>("Monitoring:Otlp:ExportIntervalSeconds", 60);
+                        services.AddHorizonOpenTelemetry(
+                            prometheusPort: prometheusPort,
+                            otlpEndpoint: otlpEndpoint,
+                            otlpExportIntervalSeconds: otlpInterval);
 
                         services.Configure<MqttBrokerOptions>(context.Configuration.GetSection(MqttBrokerOptions.SectionName));
                         services.AddSingleton<MqttConnectionValidator>();
@@ -257,6 +318,18 @@ namespace Horizon.Orleans.Silo
 
                         // 注册订单超时定时任务激活服务
                         services.AddHostedService<OrderTimeoutStartupService>();
+
+                        // 阶段 6.3 P2：修正计数跨进程汇聚（Silo→Redis→网关自动回滚门修正率信号）。
+                        // 与 Clustering/存储共用同一 Redis 实例（Redis:ConnectionString）；
+                        // 未配置连接串则跳过（修正率信号缺位，网关侧以回退率+延迟双信号运行）。
+                        var correctionsRedis = context.Configuration.GetSection("Redis:ConnectionString").Value;
+                        if (!string.IsNullOrWhiteSpace(correctionsRedis))
+                        {
+                            var clusterId = context.Configuration.GetValue("ClusterOptions:ClusterId", "dev");
+                            services.AddSingleton<Horizon.Game.Core.Observability.ICorrectionCounterStore>(_ =>
+                                new Horizon.Strategy.Storage.Redis.RedisCorrectionCounterStore(correctionsRedis, clusterId));
+                            services.AddHostedService<Services.CorrectionPublisherHostedService>();
+                        }
                     })
                     .ConfigureLogging((context, logging) =>
                     {
@@ -331,9 +404,10 @@ namespace Horizon.Orleans.Silo
         private static void ConfigureOrleansCluster(ISiloBuilder siloBuilder, DbInfo? sql, OrleansClusteringDbOptions? oco, int siloPort, int gatewayPort)
         {
             // ===== Redis 集群配置（主方案） =====
-            // 从配置读取 Redis 连接字符串，默认连接本地 Redis
-            var redisConnectionStr = _config?.GetSection("Redis:ConnectionString").Value
-                ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+            // 阶段 0.1：配置必需——删除 127.0.0.1 本地默认回退，缺失抛清晰错误。
+            var redisConnectionStr = Horizon.Game.Message.Configuration.ConnectionStrings.Require(
+                _config?.GetSection("Redis:ConnectionString").Value,
+                "Redis:ConnectionString", "Orleans Silo Redis 集群", "SILO_REDIS_CONNECTION_STRING");
             var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
             _logger?.LogInformation("使用 Redis 集群存储: {Endpoint}", redisConfigOptions.ToString());
             siloBuilder.UseRedisClustering(options =>
@@ -380,9 +454,10 @@ namespace Horizon.Orleans.Silo
             siloBuilder.AddMemoryStreams(OrleansConst.CommonMessageStreamProvider);
 
             // ===== Redis 存储配置（主方案） =====
-            // 从配置读取 Redis 连接字符串（与 Clustering 共用同一 Redis 实例）
-            var redisConnectionStr = _config?.GetSection("Redis:ConnectionString").Value
-                ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+            // 阶段 0.1：配置必需——删除 127.0.0.1 本地默认回退，缺失抛清晰错误。
+            var redisConnectionStr = Horizon.Game.Message.Configuration.ConnectionStrings.Require(
+                _config?.GetSection("Redis:ConnectionString").Value,
+                "Redis:ConnectionString", "Orleans Silo Reminders/GrainStorage Redis", "SILO_REDIS_CONNECTION_STRING");
             var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
             _logger?.LogInformation("使用 Redis 存储（Reminders + GrainStorage）: {Endpoint}", redisConfigOptions.ToString());
 
@@ -595,7 +670,7 @@ namespace Horizon.Orleans.Silo
                     var redisMaster = _config?.GetSection("DataBase:RedisMasters").GetChildren().FirstOrDefault();
                     var host = redisMaster?["Host"] ?? "127.0.0.1";
                     var port = redisMaster?["Port"] ?? "9379";
-                    var password = redisMaster?["Password"] ?? "DB65F7F9C";
+                    var password = redisMaster?["Password"] ?? Environment.GetEnvironmentVariable("REDIS_PASSWORD") ?? string.Empty;
                     // StackExchange.Redis 标准格式：端点在前，password 作为 key-value 参数
                     connStr = $"{host}:{port},password={password},abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
                 }
@@ -633,10 +708,6 @@ namespace Horizon.Orleans.Silo
             // Configure event publisher (Orleans Stream事件驱动架构)
             services.AddSingleton<IGameEventPublisher, GameEventPublisher>();
 
-            // P1.1：注册角色状态桥接服务（ZoneShard 空间权威 ↔ CharacterGrain RPG 权威）。
-            services.AddSingleton<Horizon.Orleans.Interface.World.ICharacterStateBridge,
-                Horizon.Orleans.Grains.World.CharacterStateBridge>();
-
             // Configure options
             services.ConfigureOptions();
 
@@ -648,11 +719,14 @@ namespace Horizon.Orleans.Silo
             {
                 var config = sp.GetRequiredService<IConfiguration>();
                 var section = config.GetSection("AlipaySettings");
+                // ALIPAY_PRIVATE_KEY/ALIPAY_PUBLIC_KEY 支持 base64: 前缀（多行 PEM 经 .env 按行解析会损坏，故 base64 单行存储后此处还原）
+                var privKey = Environment.GetEnvironmentVariable("ALIPAY_PRIVATE_KEY") ?? section["PrivateKey"] ?? "";
+                var pubKey = Environment.GetEnvironmentVariable("ALIPAY_PUBLIC_KEY") ?? section["AlipayPublicKey"] ?? "";
                 return new AlipaySettings
                 {
                     AppId = Environment.GetEnvironmentVariable("ALIPAY_APP_ID") ?? section["AppId"] ?? "",
-                    PrivateKey = Environment.GetEnvironmentVariable("ALIPAY_PRIVATE_KEY") ?? section["PrivateKey"] ?? "",
-                    AlipayPublicKey = Environment.GetEnvironmentVariable("ALIPAY_PUBLIC_KEY") ?? section["AlipayPublicKey"] ?? "",
+                    PrivateKey = DecodeKey(privKey),
+                    AlipayPublicKey = DecodeKey(pubKey),
                     NotifyUrl = Environment.GetEnvironmentVariable("ALIPAY_NOTIFY_URL") ?? section["NotifyUrl"] ?? "",
                     ReturnUrl = Environment.GetEnvironmentVariable("ALIPAY_RETURN_URL") ?? section["ReturnUrl"] ?? "",
                     IsSandbox = section.GetValue<bool>("IsSandbox", true)

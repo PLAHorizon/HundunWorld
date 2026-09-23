@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安卓花卉市场预报 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen bg-background text-foreground">
+        <!-- Material应用栏 -->
+        <header class="flex items-center px-2 h-14 bg-background sticky top-7 z-20">
+            <button class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-muted/50 transition-colors" aria-label="返回">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            <h1 class="text-xl font-medium flex-1 ml-1">市场预报</h1>
+            <button class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-muted/50 transition-colors" aria-label="筛选">
+                <i data-lucide="filter" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <!-- 预报概览 -->
+        <section class="px-4 pt-4 pb-3">
+            <div class="bg-card rounded-xl p-4">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-xs text-muted-foreground mb-1">综合指数</p>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-4xl font-bold tracking-tight">78</span>
+                            <span class="text-sm text-muted-foreground">分</span>
+                        </div>
+                        <div class="inline-flex items-center px-2 py-0.5 rounded-full mt-2" style="background: var(--gd-state-warning-surface);">
+                            <span class="text-xs font-medium" style="color: var(--gd-state-warning);">中等偏好</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="inline-flex items-center gap-1 px-2 py-1 rounded-full" style="background: var(--gd-state-success-surface);">
+                            <i data-lucide="trending-up" class="w-3.5 h-3.5 text-up"></i>
+                            <span class="text-xs font-medium text-up">上涨趋势</span>
+                        </div>
+                        <p class="text-xs text-muted-foreground mt-2">未来7天</p>
+                        <p class="text-xs text-muted-foreground mt-0.5">较上周 <span class="text-up font-medium">+5.2%</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- M3 Tab -->
+        <div class="px-4">
+            <div class="flex">
+                <button class="flex-1 min-h-[48px] relative flex flex-col items-center justify-center">
+                    <span class="text-sm font-medium text-primary">种植预报</span>
+                    <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-primary"></span>
+                </button>
+                <button class="flex-1 min-h-[48px] relative flex flex-col items-center justify-center">
+                    <span class="text-sm font-medium text-muted-foreground">交易预报</span>
+                </button>
+            </div>
+        </div>
+        <div class="h-px bg-border mx-4"></div>
+
+        <!-- 种植适宜度雷达图 -->
+        <section class="px-4 pt-4">
+            <div class="flex items-center gap-1.5 mb-2">
+                <i data-lucide="target" class="w-4 h-4 text-primary"></i>
+                <h2 class="text-sm font-semibold">种植适宜度雷达图</h2>
+            </div>
+            <div class="bg-card rounded-xl p-4">
+                <div class="h-60">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div class="grid grid-cols-5 gap-1 mt-3 pt-3 border-t border-border">
+                    <div class="text-center">
+                        <p class="text-[10px] text-muted-foreground">温度</p>
+                        <p class="text-sm font-bold" style="color: var(--gd-state-success);">85</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[10px] text-muted-foreground">湿度</p>
+                        <p class="text-sm font-bold" style="color: var(--gd-state-success);">72</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[10px] text-muted-foreground">光照</p>
+                        <p class="text-sm font-bold" style="color: var(--gd-state-success);">90</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[10px] text-muted-foreground">降水</p>
+                        <p class="text-sm font-bold" style="color: var(--gd-state-warning);">65</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[10px] text-muted-foreground">虫害</p>
+                        <p class="text-sm font-bold" style="color: var(--gd-state-error);">40</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 推荐种植品种 -->
+        <section class="px-4 pt-4">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1.5">
+                    <i data-lucide="sprout" class="w-4 h-4 text-primary"></i>
+                    <h2 class="text-sm font-semibold">推荐种植品种</h2>
+                </div>
+                <button class="text-xs text-primary min-h-[40px] px-2">查看全部</button>
+            </div>
+            <div class="space-y-2">
+                <!-- 红玫瑰 92% -->
+                <div class="bg-card rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background: var(--gd-state-error-surface);">
+                                <i data-lucide="flower-2" class="w-5 h-5" style="color: var(--gd-state-error);"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-sm">红玫瑰</p>
+                                <p class="text-xs text-muted-foreground">45天周期 · 推荐种植</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold">¥3,200</p>
+                            <p class="text-[10px] text-muted-foreground">/亩</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-muted-foreground min-w-[40px]">适宜度</span>
+                        <div class="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div class="h-full rounded-full" style="width: 92%; background: var(--gd-primary);"></div>
+                        </div>
+                        <span class="text-xs font-bold text-up min-w-[36px] text-right">92%</span>
+                    </div>
+                </div>
+                <!-- 百合 78% -->
+                <div class="bg-card rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background: var(--gd-state-warning-surface);">
+                                <i data-lucide="flower" class="w-5 h-5" style="color: var(--gd-state-warning);"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-sm">百合</p>
+                                <p class="text-xs text-muted-foreground">60天周期 · 适合种植</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold">¥2,800</p>
+                            <p class="text-[10px] text-muted-foreground">/亩</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-muted-foreground min-w-[40px]">适宜度</span>
+                        <div class="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div class="h-full rounded-full" style="width: 78%; background: var(--gd-primary);"></div>
+                        </div>
+                        <span class="text-xs font-bold min-w-[36px] text-right" style="color: var(--gd-state-warning);">78%</span>
+                    </div>
+                </div>
+                <!-- 康乃馨 85% -->
+                <div class="bg-card rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background: var(--gd-state-info-surface);">
+                                <i data-lucide="flower-2" class="w-5 h-5 text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-sm">康乃馨</p>
+                                <p class="text-xs text-muted-foreground">50天周期 · 推荐种植</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold">¥2,500</p>
+                            <p class="text-[10px] text-muted-foreground">/亩</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-muted-foreground min-w-[40px]">适宜度</span>
+                        <div class="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div class="h-full rounded-full" style="width: 85%; background: var(--gd-primary);"></div>
+                        </div>
+                        <span class="text-xs font-bold text-up min-w-[36px] text-right">85%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 市场热力图 -->
+        <section class="px-4 pt-4">
+            <div class="flex items-center gap-1.5 mb-2">
+                <i data-lucide="grid-3x3" class="w-4 h-4 text-primary"></i>
+                <h2 class="text-sm font-semibold">市场热力图</h2>
+            </div>
+            <div class="bg-card rounded-xl p-3">
+                <div class="grid gap-1" style="grid-template-columns: 48px repeat(4, 1fr);">
+                    <!-- 表头 -->
+                    <div></div>
+                    <div class="text-[10px] text-center text-muted-foreground py-1">云南</div>
+                    <div class="text-[10px] text-center text-muted-foreground py-1">四川</div>
+                    <div class="text-[10px] text-center text-muted-foreground py-1">海南</div>
+                    <div class="text-[10px] text-center text-muted-foreground py-1">福建</div>
+
+                    <!-- 红玫瑰 -->
+                    <div class="text-[10px] text-muted-foreground flex items-center justify-end pr-1">红玫瑰</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-error);">95</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-error); opacity: 0.75;">82</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-warning);">68</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-success);">55</div>
+
+                    <!-- 百合 -->
+                    <div class="text-[10px] text-muted-foreground flex items-center justify-end pr-1">百合</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-warning);">72</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-error); opacity: 0.85;">88</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-error);">91</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-warning); opacity: 0.85;">65</div>
+
+                    <!-- 康乃馨 -->
+                    <div class="text-[10px] text-muted-foreground flex items-center justify-end pr-1">康乃馨</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-success);">58</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-warning);">70</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-error); opacity: 0.75;">80</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-error);">85</div>
+
+                    <!-- 郁金香 -->
+                    <div class="text-[10px] text-muted-foreground flex items-center justify-end pr-1">郁金香</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-brand-300);">42</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-success);">55</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-warning);">68</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-warning); opacity: 0.85;">63</div>
+
+                    <!-- 向日葵 -->
+                    <div class="text-[10px] text-muted-foreground flex items-center justify-end pr-1">向日葵</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-warning);">65</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-success);">52</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-brand-300);">45</div>
+                    <div class="aspect-square rounded flex items-center justify-center text-[10px] font-bold text-white" style="background: var(--gd-state-warning); opacity: 0.85;">60</div>
+                </div>
+                <!-- 图例 -->
+                <div class="flex items-center justify-between mt-3 pt-2 border-t border-border">
+                    <span class="text-[10px] text-muted-foreground">需求低</span>
+                    <div class="flex-1 h-2 mx-2 rounded-full" style="background: linear-gradient(to right, var(--gd-brand-300), var(--gd-state-success), var(--gd-state-warning), var(--gd-state-error));"></div>
+                    <span class="text-[10px] text-muted-foreground">需求高</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 价格走势预测 -->
+        <section class="px-4 pt-4">
+            <div class="flex items-center gap-1.5 mb-2">
+                <i data-lucide="line-chart" class="w-4 h-4 text-primary"></i>
+                <h2 class="text-sm font-semibold">价格走势预测</h2>
+            </div>
+            <div class="bg-card rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <p class="text-xs text-muted-foreground">红玫瑰批发价</p>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-xl font-bold">¥3.2</span>
+                            <span class="text-xs text-muted-foreground">/支</span>
+                            <span class="text-xs text-up ml-1">+3.2%</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 text-[10px]">
+                        <div class="flex items-center gap-1">
+                            <span class="w-3 h-0.5 bg-primary"></span>
+                            <span class="text-muted-foreground">实际</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="w-3 border-t border-dashed border-primary"></span>
+                            <span class="text-muted-foreground">预测</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="h-52">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- 地域筛选 -->
+        <section class="pt-4">
+            <div class="flex items-center gap-1.5 mb-2 px-4">
+                <i data-lucide="map-pin" class="w-4 h-4 text-primary"></i>
+                <h2 class="text-sm font-semibold">地域筛选</h2>
+            </div>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar px-4 pb-1">
+                <button class="min-h-[40px] px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    全部
+                </button>
+                <button class="min-h-[40px] px-4 rounded-full bg-muted text-foreground text-sm whitespace-nowrap">云南</button>
+                <button class="min-h-[40px] px-4 rounded-full bg-muted text-foreground text-sm whitespace-nowrap">四川</button>
+                <button class="min-h-[40px] px-4 rounded-full bg-muted text-foreground text-sm whitespace-nowrap">海南</button>
+                <button class="min-h-[40px] px-4 rounded-full bg-muted text-foreground text-sm whitespace-nowrap">福建</button>
+                <button class="min-h-[40px] px-4 rounded-full bg-muted text-foreground text-sm whitespace-nowrap">广东</button>
+            </div>
+        </section>
+
+        <!-- 预警提醒 -->
+        <section class="px-4 pt-4 pb-6">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1.5">
+                    <i data-lucide="bell-ring" class="w-4 h-4 text-primary"></i>
+                    <h2 class="text-sm font-semibold">预警提醒</h2>
+                </div>
+                <span class="text-xs text-muted-foreground">3条</span>
+            </div>
+            <div class="space-y-2">
+                <!-- 警告橙色 -->
+                <div class="bg-card rounded-xl p-3 flex gap-3" style="border-left: 3px solid var(--gd-state-warning);">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background: var(--gd-state-warning-surface);">
+                        <i data-lucide="alert-triangle" class="w-4 h-4" style="color: var(--gd-state-warning);"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-medium" style="color: var(--gd-state-warning);">气象预警</p>
+                            <span class="text-[10px] text-muted-foreground whitespace-nowrap">2小时前</span>
+                        </div>
+                        <p class="text-xs text-muted-foreground mt-1">云南部分地区未来3天有强降雨，建议提前做好排水防涝措施。</p>
+                    </div>
+                </div>
+                <!-- 信息蓝色 -->
+                <div class="bg-card rounded-xl p-3 flex gap-3" style="border-left: 3px solid var(--gd-state-info);">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background: var(--gd-state-info-surface);">
+                        <i data-lucide="info" class="w-4 h-4" style="color: var(--gd-state-info);"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-medium" style="color: var(--gd-state-info);">市场情报</p>
+                            <span class="text-[10px] text-muted-foreground whitespace-nowrap">5小时前</span>
+                        </div>
+                        <p class="text-xs text-muted-foreground mt-1">情人节临近，红玫瑰需求量预计增长120%，建议提前备货。</p>
+                    </div>
+                </div>
+                <!-- 严重红色 -->
+                <div class="bg-card rounded-xl p-3 flex gap-3" style="border-left: 3px solid var(--gd-state-error);">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background: var(--gd-state-error-surface);">
+                        <i data-lucide="alert-circle" class="w-4 h-4" style="color: var(--gd-state-error);"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-medium" style="color: var(--gd-state-error);">虫害警报</p>
+                            <span class="text-[10px] text-muted-foreground whitespace-nowrap">1天前</span>
+                        </div>
+                        <p class="text-xs text-muted-foreground mt-1">海南地区检测到蚜虫高发风险，请立即检查百合种植区并采取防治措施。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Material底部导航栏 -->
+        <nav class="sticky bottom-0 bg-card border-t border-border z-20">
+            <div class="grid grid-cols-5 h-16">
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[48px]">
+                    <i data-lucide="home" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground">首页</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[48px] relative">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-primary"></i>
+                    <span class="text-[10px] text-primary font-medium">市场</span>
+                    <span class="absolute top-0 w-8 h-0.5 rounded-full bg-primary"></span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[48px]">
+                    <i data-lucide="cloud-sun" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground">预报</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[48px]">
+                    <i data-lucide="shopping-bag" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground">交易</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 min-h-[48px]">
+                    <i data-lucide="user" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground">我的</span>
+                </button>
+            </div>
+        </nav>
+    </main>
+    <script>
+        // 读取CSS变量(暗色主题)
+        function getCssVar(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+        function hexToRgba(hex, alpha) {
+            hex = hex.replace('#', '');
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+        }
+
+        const primaryColor = getCssVar('--gd-primary');
+        const cardColor = getCssVar('--gd-card');
+        const foregroundColor = getCssVar('--gd-foreground');
+        const borderColor = getCssVar('--gd-border');
+        const mutedForeground = getCssVar('--gd-muted-foreground');
+
+        // Chart.js 暗色主题默认
+        Chart.defaults.color = mutedForeground;
+        Chart.defaults.borderColor = borderColor;
+        Chart.defaults.font.family = getCssVar('--gd-font-sans');
+
+        // 种植适宜度雷达图
+        const radarCtx = document.getElementById('radarChart').getContext('2d');
+        new Chart(radarCtx, {
+            type: 'radar',
+            data: {
+                labels: ['温度', '湿度', '光照', '降水', '虫害'],
+                datasets: [{
+                    label: '适宜度',
+                    data: [85, 72, 90, 65, 40],
+                    backgroundColor: hexToRgba(primaryColor, 0.2),
+                    borderColor: primaryColor,
+                    borderWidth: 2,
+                    pointBackgroundColor: primaryColor,
+                    pointBorderColor: cardColor,
+                    pointHoverBackgroundColor: cardColor,
+                    pointHoverBorderColor: primaryColor,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: cardColor,
+                        titleColor: foregroundColor,
+                        bodyColor: foregroundColor,
+                        borderColor: borderColor,
+                        borderWidth: 1,
+                        padding: 8,
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed.r + '分';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { display: false, stepSize: 20 },
+                        grid: { color: hexToRgba(mutedForeground, 0.15) },
+                        angleLines: { color: hexToRgba(mutedForeground, 0.15) },
+                        pointLabels: {
+                            color: foregroundColor,
+                            font: { size: 11, weight: '500' }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 价格走势预测图(实际实线 + 预测虚线)
+        const priceCtx = document.getElementById('priceChart').getContext('2d');
+        new Chart(priceCtx, {
+            type: 'line',
+            data: {
+                labels: ['1日', '2日', '3日', '4日', '5日', '6日', '7日', '8日', '9日', '10日', '11日', '12日'],
+                datasets: [
+                    {
+                        label: '实际价格',
+                        data: [2.8, 2.9, 3.0, 3.1, 3.0, 3.2, 3.2, null, null, null, null, null],
+                        borderColor: primaryColor,
+                        backgroundColor: hexToRgba(primaryColor, 0.08),
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: primaryColor,
+                        pointBorderColor: cardColor
+                    },
+                    {
+                        label: '预测价格',
+                        data: [null, null, null, null, null, null, 3.2, 3.4, 3.5, 3.3, 3.6, 3.8],
+                        borderColor: primaryColor,
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: primaryColor,
+                        pointBorderColor: cardColor,
+                        pointStyle: 'rectRot'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: cardColor,
+                        titleColor: foregroundColor,
+                        bodyColor: foregroundColor,
+                        borderColor: borderColor,
+                        borderWidth: 1,
+                        padding: 8,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ¥' + context.parsed.y + '/支';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: hexToRgba(mutedForeground, 0.1) },
+                        ticks: { color: mutedForeground, font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { color: hexToRgba(mutedForeground, 0.1) },
+                        ticks: {
+                            color: mutedForeground,
+                            font: { size: 10 },
+                            callback: function(value) { return '¥' + value; }
+                        }
+                    }
+                }
+            }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -9,8 +9,20 @@ using Horizon.Game.Message.Sync.Components;
 namespace Horizon.Game.Gateway.Tests;
 
 /// <summary>
+/// 共享 SnapshotApplySystem 静态状态的插值测试集合（串行隔离）。
+/// SnapshotApplySystem 的静态字段（_effectiveDelaySeconds/_adaptiveAvgInterval/_adaptiveJitter 等）
+/// 被多个插值测试类读写；xUnit 并行运行不同类会竞争这些静态字段，导致断言随机失败。
+/// 归入同一 Collection 串行执行，消除静态竞争（此问题在基线即存在）。
+/// </summary>
+[CollectionDefinition("InterpolationStaticState", DisableParallelization = true)]
+public class InterpolationStaticStateCollection
+{
+}
+
+/// <summary>
 /// Phase C4 验证：自适应插值延迟收敛 + Dead Reckoning 速度衰减。
 /// </summary>
+[Collection("InterpolationStaticState")]
 public class AdaptiveInterpolationTests : IDisposable
 {
     public AdaptiveInterpolationTests()
@@ -80,33 +92,41 @@ public class AdaptiveInterpolationTests : IDisposable
     [Fact]
     public void AdaptiveDelay_ClampedTo_Min100ms_Max200ms()
     {
+        // 隔离静态状态：AdaptiveInterpolationDelaySeconds 的平滑生效值（_effectiveDelaySeconds）
+        // 跨测试/跨调用持续，直接设置 avgInterval 前必须重置，否则上一次的生效值残留。
+        SnapshotApplySystem.ResetAdaptiveDelayStats();
+
         // 直接设置极端 avgInterval 值来测试 clamp
         var avgField = typeof(SnapshotApplySystem)
             .GetField("_adaptiveAvgInterval", BindingFlags.NonPublic | BindingFlags.Static);
         var jitterField = typeof(SnapshotApplySystem)
             .GetField("_adaptiveJitter", BindingFlags.NonPublic | BindingFlags.Static);
 
-        // 极低间隔 → 应 clamp 到 100ms
+        // 极低间隔 → 应 clamp 到 100ms（reset 后首次 getter 直接吸附目标）
         avgField?.SetValue(null, 0.01f); // 10ms
         jitterField?.SetValue(null, 0f);
         Assert.Equal(0.1f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
 
-        // 极高间隔 → 应 clamp 到 200ms（生产上限 AdaptiveDelayMaxSeconds=0.2f，
-        // 从 0.4s 有意下调修复"远端角色不动"，见 SnapshotApplySystem 配置注释）
+        // 极高间隔 → 目标 200ms，diff=0.1 ≥ 0.05 触发"大幅跳变直接吸附"；
+        // 时间门控需 ≥1/60s 才步进，短暂等待一帧。
         avgField?.SetValue(null, 0.5f); // 500ms
         jitterField?.SetValue(null, 0f);
+        Thread.Sleep(25);
         Assert.Equal(0.2f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
     }
 
     [Fact]
     public void AdaptiveDelay_HighJitter_IncreasesDelay()
     {
+        // 隔离静态状态（同 ClampedTo 测试）。
+        SnapshotApplySystem.ResetAdaptiveDelayStats();
+
         var avgField = typeof(SnapshotApplySystem)
             .GetField("_adaptiveAvgInterval", BindingFlags.NonPublic | BindingFlags.Static);
         var jitterField = typeof(SnapshotApplySystem)
             .GetField("_adaptiveJitter", BindingFlags.NonPublic | BindingFlags.Static);
 
-        // avg=50ms, jitter=30ms → target = 50 + 2*30 = 110ms
+        // avg=50ms, jitter=30ms → target = 50 + 2*30 = 110ms（reset 后首次 getter 吸附）
         avgField?.SetValue(null, 0.05f);
         jitterField?.SetValue(null, 0.03f);
         var delay = SnapshotApplySystem.AdaptiveInterpolationDelaySeconds;
@@ -117,6 +137,7 @@ public class AdaptiveInterpolationTests : IDisposable
 /// <summary>
 /// Lerp 平滑追赶插值系统测试（替代原 Dead Reckoning 测试）。
 /// </summary>
+[Collection("InterpolationStaticState")]
 public class LerpInterpolationTests
 {
     private World CreateWorldWithEntity(out Entity entity, float targetX, float targetY, float targetZ)

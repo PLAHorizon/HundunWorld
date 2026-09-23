@@ -4,6 +4,13 @@ namespace Horizon.IM.Core.Utilities;
 
 public static class LZ4Pickler
 {
+    /// <summary>
+    /// 解压输出长度上限（默认 8MB）。长度前缀来自远端数据，必须在分配输出缓冲区
+    /// 之前拒绝超限值，否则单个 ≤1MB 压缩帧即可触发最高 ~2GB 分配（解压炸弹）。
+    /// 与 SyncPacketCodec.Decode 的上限防护对齐。
+    /// </summary>
+    public const int MaxDecompressedLength = 8 * 1024 * 1024;
+
     public static byte[] Pickle(byte[] input)
     {
         if (input == null || input.Length == 0)
@@ -39,11 +46,19 @@ public static class LZ4Pickler
         }
         catch
         {
-            return input;
+            // 修复（BUG，与 Horizon.Game.Message.Utilities.LZ4Pickler 对齐）：
+            // 原实现直接返回无长度前缀的 input，而 Unpickle 恒按
+            // 「[4 字节 int32 原长][数据]」解析，会把原始数据前 4 字节误读成长度，
+            // 导致 Pickle→Unpickle 无法往返（解压失败 → 整包被丢弃）。
+            // 与「压缩无益」分支保持一致，补上长度前缀。
+            var fallback = new byte[input.Length + 4];
+            BitConverter.GetBytes(input.Length).CopyTo(fallback, 0);
+            input.CopyTo(fallback, 4);
+            return fallback;
         }
     }
 
-    public static byte[]? Unpickle(ReadOnlySpan<byte> input)
+    public static byte[]? Unpickle(ReadOnlySpan<byte> input, int maxDecompressedLength = MaxDecompressedLength)
     {
         if (input.Length < 4)
         {
@@ -54,7 +69,8 @@ public static class LZ4Pickler
         {
             var raw = input.ToArray();
             var originalLength = BitConverter.ToInt32(raw, 0);
-            if (originalLength <= 0)
+            // 解压炸弹防护：长度前缀完全由对端控制，超限直接拒绝（先于任何分配）。
+            if (originalLength <= 0 || originalLength > maxDecompressedLength)
             {
                 return null;
             }

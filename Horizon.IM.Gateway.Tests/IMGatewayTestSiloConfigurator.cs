@@ -34,6 +34,12 @@ public sealed class IMGatewayTestSiloConfigurator : ISiloConfigurator
                 {
                     serializerBuilder.AddAssembly(typeof(HorizonMessagePacket).Assembly);
                     serializerBuilder.AddAssembly(typeof(IMGroupChatNotifyMessage).Assembly);
+                    // 与生产 Silo（Horizon.Orleans.Silo/Program.cs ConfigureOrleansServices）对齐：
+                    // Horizon.Share DTO（如 GameInfoDto）走程序集编解码 + NewtonsoftJson 兜底。
+                    // 缺此注册时 TestCluster 抛 Orleans.Serialization.CodecNotFoundException（如 GameInfoDto）。
+                    serializerBuilder.AddAssembly(typeof(Horizon.Share.VMs.ResultVM<>).Assembly);
+                    serializerBuilder.AddNewtonsoftJsonSerializer(
+                        isSupported: type => type.Namespace != null && type.Namespace.StartsWith("Horizon.Share"));
                 });
 
                 services.AddDbContextPool<IMEntityContext>(options =>
@@ -87,5 +93,27 @@ public sealed class IMGatewayTestSiloConfigurator : ISiloConfigurator
         }
         .Select(Path.GetFullPath)
         .Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+}
+
+/// <summary>
+/// TestCluster 客户端侧序列化配置：与 Silo 侧（<see cref="IMGatewayTestSiloConfigurator"/>）对齐。
+/// Orleans 序列化器验证器在 Client 与 Silo 两侧都会运行，缺一即抛 CodecNotFoundException（如 GameInfoDto）。
+/// </summary>
+public sealed class IMGatewayTestClientConfigurator : IClientBuilderConfigurator
+{
+    public void Configure(IConfiguration configuration, IClientBuilder clientBuilder)
+    {
+        clientBuilder.ConfigureServices(services =>
+        {
+            services.AddSerializer(serializerBuilder =>
+            {
+                serializerBuilder.AddAssembly(typeof(HorizonMessagePacket).Assembly);
+                serializerBuilder.AddAssembly(typeof(IMGroupChatNotifyMessage).Assembly);
+                serializerBuilder.AddAssembly(typeof(Horizon.Share.VMs.ResultVM<>).Assembly);
+                serializerBuilder.AddNewtonsoftJsonSerializer(
+                    isSupported: type => type.Namespace != null && type.Namespace.StartsWith("Horizon.Share"));
+            });
+        });
     }
 }

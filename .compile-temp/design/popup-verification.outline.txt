@@ -1,0 +1,83 @@
+## page: popup-verification
+## dom-ids: back-hud, sealStamp, shortcut-reward-achievement, verificationModal, verificationOverlay
+  main .popup-verification-page
+    div #verificationOverlay
+      div #verificationModal .verification-modal ink-panel
+        div
+        div
+        span
+        span
+        span
+        span
+        div .modal-top-band
+          span
+          i .band-icon
+          span
+        section [aria="验讫印章"]
+          div
+            span
+            span
+            span
+            span
+            span
+            span
+            span
+            span
+            span
+            span
+          div
+          div #sealStamp
+            div .seal-outer-ring
+            div
+              div
+                span .seal-char-top | 验
+                span .seal-char-bottom | 讫
+            div
+            div
+          div
+        header .verification-title-section
+          h2 .verification-title | 任务验证完成
+          p .verification-subtitle | 官方验讫 · 已备案存档
+          section .verification-summary-section ink-paper-panel [aria="验证内容摘要"]
+            div .summary-subtitle
+              i .summary-subtitle-icon
+              span | 验证内容
+            div .summary-list
+              div .summary-item
+                span .summary-label
+                  i .summary-label-icon | 任务名称
+                span .summary-value | 昆仑山异兽调查
+              div .summary-item
+                span .summary-label
+                  i .summary-label-icon | 完成时间
+                span .summary-value | 2026.07.11 戌时
+              div .summary-item
+                span .summary-label
+                  i .summary-label-icon | 验证编号
+                span .summary-value | YY-2026-0711-0342
+              div .summary-item
+                span .summary-label
+                  i .summary-label-icon | 验证状态
+                span .summary-value
+                  span .status-badge status-jade
+                    i .status-badge-icon | 已通过
+          div .timestamp-section
+            i .timestamp-icon
+            span | 验讫时间：2026年7月11日 戌时三刻
+            footer .confirm-section
+              button #back-hud .ink-btn ink-btn-ghost confirm-btn
+                i .btn-icon
+                span | 确认
+              p
+                i .note-icon | 此验证已记录入册
+              a #shortcut-reward-achievement
+                i .reward-link-icon
+                span | 查看成就奖励
+                i .reward-link-arrow
+            div .modal-bottom-band
+              span
+              span
+              span
+
+## COPY (17)
+验 | 讫 | 任务验证完成 | 官方验讫 · 已备案存档 | 验证内容 | 任务名称 | 昆仑山异兽调查 | 完成时间 | 2026.07.11 戌时 | 验证编号 | YY-2026-0711-0342 | 验证状态 | 已通过 | 验讫时间：2026年7月11日 戌时三刻 | 确认 | 此验证已记录入册 | 查看成就奖励

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -34,15 +37,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ResultVM<BusinessCategoryState>> GetBusinessCategoryAsync(long id)
+        public async Task<ResultVM<BusinessCategoryDto>> GetBusinessCategoryAsync(long id)
         {
-            var result = new ResultVM<BusinessCategoryState>();
+            var result = new ResultVM<BusinessCategoryDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IBusinessCategoryGrain>(0);
-                result.Data = await grain.GetBusinessCategoryAsync(id);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetBusinessCategoryAsync(id);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -53,14 +57,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("shop/{shopId}")]
-        public async Task<ResultVM<List<BusinessCategoryState>>> GetShopBusinessCategoriesAsync(long shopId)
+        public async Task<ResultVM<List<BusinessCategoryDto>>> GetShopBusinessCategoriesAsync(long shopId)
         {
-            var result = new ResultVM<List<BusinessCategoryState>>();
+            var result = new ResultVM<List<BusinessCategoryDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IBusinessCategoryGrain>(0);
-                result.Data = await grain.GetShopBusinessCategoriesAsync(shopId);
+                var categories = await grain.GetShopBusinessCategoriesAsync(shopId);
+                result.Data = categories?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

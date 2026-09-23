@@ -25,6 +25,11 @@ public class Game : GameModule
                 "Horizon.Game.ECS.dll",
                 "Horizon.Game.Core.dll",
                 "Horizon.Game.ECS.Arch.dll",
+                // 握手 FormulaVersion 单点来源（协议 v9 硬校验）：NetworkManager.SendSyncHandshakeAsync 引用
+                "Horizon.Game.Sim.dll",
+                // ECS.Arch 的 LocalSimulationSystem 运行期调用 WorldCoord.ToChunkMortonKey：
+                // 不列入引用清单会导致运行期 FileNotFoundException（客户端 ECS Tick 异常）
+                "Horizon.Game.World.dll",
                 "Horizon.Core.Abstract.dll",
             "Microsoft.Extensions.ObjectPool.dll",
             "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
@@ -69,6 +74,8 @@ public class Game : GameModule
 
         options.ScriptingAPI.SystemReferences.Add("System.Text.Json");
         options.ScriptingAPI.SystemReferences.Add("System.Net.Http");
+        // DevTlsTrustPolicy 使用 SslPolicyErrors（TLS 证书校验回调），缺失该引用会编译失败
+        options.ScriptingAPI.SystemReferences.Add("System.Net.Security");
         options.ScriptingAPI.SystemReferences.Add("System.Net.HttpListener");
         options.ScriptingAPI.SystemReferences.Add("System.Net.Sockets");
         options.ScriptingAPI.SystemReferences.Add("System.Net.Ping");

@@ -1,11 +1,13 @@
-using System;
+﻿using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Horizon.Game.GengDi.Core.ViewModels;
+#if DESKTOP
 using WebViewControl;
+#endif
 
 namespace Horizon.Game.GengDi.Core.Controls
 {
@@ -147,6 +149,7 @@ namespace Horizon.Game.GengDi.Core.Controls
                 return false;
             }
 
+#if DESKTOP
             if (_playbackHost.Content is WebView existingWebView)
             {
                 existingWebView.Address = address;
@@ -169,6 +172,10 @@ namespace Horizon.Game.GengDi.Core.Controls
                 _playbackHost.Content = null;
                 return false;
             }
+#else
+            _webViewUnavailable = true;
+            return false;
+#endif
         }
     }
 }

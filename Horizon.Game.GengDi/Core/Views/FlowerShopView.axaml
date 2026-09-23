@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
@@ -6,159 +6,621 @@
              x:DataType="vm:FlowerShopViewModel"
              KeyDown="OnKeyDown">
 
-    <controls:GalleryPage Title="花卉商城"
-                          Subtitle="Horizon.Game.GengDi.FlowerShop"
-                          Description="浏览和购买优质花卉。"
+    <!-- ================================================================
+         花卉商城 PC 端（按《耕地 · 花卉商城 PC 端改版》设计稿 1:1 落地）
+         数值与 flower-shop-app/index.html 同源，逐项来自画布节点：
+         主底 #0A0E17 / 卡面 #131722 / 胶囊面 #1A1F2E / 控件深底 #0F1420
+         边框 #212938 / #2A2F45 / #242B3D / 分隔线 #232A3A
+         强调 #2962FF / 价格 #FF5A5F / 涨 #FF4D4F(标签字 #FF8A8A)
+         平稳 #B8C0D0 / 阶梯价字 #7FA8FF / 进度底 #1F2534
+         圆角：卡 18 / 按钮 10 / 胶囊 18 / 控件 20 / 徽标 12
+         ================================================================ -->
+
+    <UserControl.Resources>
+        <FontFamily x:Key="ShopCnFont">Noto Sans SC, Microsoft YaHei, PingFang SC, sans-serif</FontFamily>
+        <FontFamily x:Key="ShopNumFont">Inter, Segoe UI, Helvetica Neue, Arial, sans-serif</FontFamily>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- ===== 分类筛选胶囊（设计稿 2:56：h36 r18 px18，激活蓝底白字） ===== -->
+        <Style Selector="Button.GdCatPill">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="18 0" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Background" Value="#1A1F2E" />
+            <Setter Property="BorderBrush" Value="#2A2F45" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#A8B2C4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="FontFamily" Value="{StaticResource ShopCnFont}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.GdCatPill:pointerover">
+            <Setter Property="BorderBrush" Value="#2962FF" />
+            <Setter Property="Foreground" Value="#E8ECEC" />
+        </Style>
+        <Style Selector="Button.GdCatPill.GdPillActive">
+            <Setter Property="Background" Value="#2962FF" />
+            <Setter Property="BorderBrush" Value="#2962FF" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+
+        <!-- ===== 视图切换分段（设计稿 2:49：容器 r20 深底，段 64/64/76 h32 r16） ===== -->
+        <Style Selector="Button.GdSeg">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#8A93A6" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="FontFamily" Value="{StaticResource ShopCnFont}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.GdSeg:pointerover">
+            <Setter Property="Foreground" Value="#E8ECEC" />
+        </Style>
+        <Style Selector="Button.GdSeg.GdSegActive">
+            <Setter Property="Background" Value="#2962FF" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+
+        <!-- ===== 热搜 / 快捷品类胶囊（设计稿 2:30：h36 r18 px16） ===== -->
+        <Style Selector="Button.GdHotTag">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="16 0" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Background" Value="#1A1F2E" />
+            <Setter Property="BorderBrush" Value="#2A2F45" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#C7D0E0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="FontFamily" Value="{StaticResource ShopCnFont}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.GdHotTag:pointerover">
+            <Setter Property="BorderBrush" Value="#2962FF" />
+        </Style>
+        <!-- 高亮款「昆明玫瑰」（设计稿 2:31：底 #1F1720 描边 #E8617D 66% 字 #F0A8B6） -->
+        <Style Selector="Button.GdHotTag.GdHotTagAccent">
+            <Setter Property="Background" Value="#1F1720" />
+            <Setter Property="BorderBrush" Value="#66E8617D" />
+            <Setter Property="Foreground" Value="#F0A8B6" />
+        </Style>
+
+        <!-- ===== 阶梯价胶囊（设计稿 2:86：h20 r10 px8 字11 #7FA8FF 底 #2962FF 16%） ===== -->
+        <Style Selector="Border.GdCouponChip">
+            <Setter Property="Height" Value="20" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="8 0" />
+            <Setter Property="Background" Value="#292962FF" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.GdCouponChip TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="FontFamily" Value="{StaticResource ShopCnFont}" />
+            <Setter Property="Foreground" Value="#7FA8FF" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- ===== 商品卡（设计稿 2:71：r18 描边 #212938 阴影 0 8 24 35%） ===== -->
+        <Style Selector="Border.GdShopCard">
+            <Setter Property="Background" Value="{DynamicResource GdCardBrush}" />
+            <Setter Property="BorderBrush" Value="#212938" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="BoxShadow" Value="0 8 24 0 #59000000" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- hover / 键盘高亮（设计稿 2:258：蓝描边 90% + 阴影 0 16 40 55%） -->
+        <Style Selector="Border.GdShopCard:pointerover">
+            <Setter Property="BorderBrush" Value="#E62962FF" />
+            <Setter Property="BoxShadow" Value="0 16 40 0 #8C000000" />
+        </Style>
+        <Style Selector="Border.GdShopCard.GdShopCardSelected">
+            <Setter Property="BorderBrush" Value="#E62962FF" />
+            <Setter Property="BoxShadow" Value="0 16 40 0 #8C000000" />
+        </Style>
+
+        <!-- ===== 趋势徽标（设计稿 2:75：h24 r12 px10 纯黑底） ===== -->
+        <Style Selector="Border.GdTrendChip">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="10 0" />
+            <Setter Property="Background" Value="#FF000000" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <!-- hover 态锁定黑底：主题 Border:pointerover 样式会盖成蓝底（截图实测） -->
+        <Style Selector="Border.GdTrendChip:pointerover">
+            <Setter Property="Background" Value="#FF000000" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <!-- ===== 库存进度条（设计稿 2:90：h4 r2 底 #1F2534 填充 #2962FF） ===== -->
+        <!-- 已弃用 ProgressBar（主题模板吃圆角与最小高度，4px 不可见）。改用 Border 手绘。 -->
+        <Style Selector="Border.GdSalesBar">
+            <Setter Property="Height" Value="4" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="Background" Value="#1F2534" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Border.GdSalesBarFill">
+            <Setter Property="Height" Value="4" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="Background" Value="#2962FF" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+
+        <!-- ===== 页头购物车胶囊（设计稿 2:10：h36 r18 px16） ===== -->
+        <Style Selector="Button.GdCartPill">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="16 0" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Background" Value="#1A1F2E" />
+            <Setter Property="BorderBrush" Value="#2A2F45" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#C7D0E0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="FontFamily" Value="{StaticResource ShopCnFont}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.GdCartPill:pointerover">
+            <Setter Property="BorderBrush" Value="#2962FF" />
+            <Setter Property="Foreground" Value="#E8ECEC" />
+        </Style>
+
+        <!-- ===== 收藏按钮（设计稿 2:77：32x32 r16 纯黑底，心形居中） ===== -->
+        <!-- 自定义模板：主题 Button 模板会覆盖 Background，导致底色不对 -->
+        <Style Selector="Button.GdFavBtn">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Background" Value="#FF000000" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- hover 态：黑底微亮（此前误设蓝色 #E62962FF，悬停时整颗按钮变蓝） -->
+        <Style Selector="Button.GdFavBtn:pointerover /template/ Border">
+            <Setter Property="Background" Value="#1AFFFFFF" />
+        </Style>
+
+        <!-- ===== 行情条统计数字（设计稿 2:21 Inter SemiBold 20 / 标签 12） ===== -->
+        <Style Selector="TextBlock.GdStatValue">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontFamily" Value="{StaticResource ShopNumFont}" />
+            <Setter Property="Foreground" Value="#E8ECEC" />
+        </Style>
+        <Style Selector="TextBlock.GdStatLabel">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontFamily" Value="{StaticResource ShopCnFont}" />
+            <Setter Property="Foreground" Value="#8A93A6" />
+            <Setter Property="Margin" Value="0 6 0 0" />
+        </Style>
+
+        <!-- ===== 排序下拉（设计稿 2:44：深底 #0F1420）=====
+             主题 ComboBox 模板内部 Border 用主题资源色（截图呈亮蓝），
+             用 /template/ 选择器在本视图局部强制深底，不影响其他页面。 -->
+        <Style Selector="ComboBox /template/ Border">
+            <Setter Property="Background" Value="#0F1420" />
+        </Style>
+        <!-- 修复：h40 胶囊内「综合排序」文字偏上 —— 强制内容垂直居中 -->
+        <Style Selector="ComboBox">
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="ComboBox /template/ ContentPresenter">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- 页头标题字号（设计稿 2:7：32 SemiBold；GalleryPage 模板默认 22） -->
+        <Style Selector="controls|GalleryPage /template/ StackPanel > TextBlock:nth-child(1)">
+            <Setter Property="FontSize" Value="32" />
+        </Style>
+    </UserControl.Styles>
+
+    <controls:GalleryPage x:Name="ShopPage" Title="花卉商城"
+                          Description="{Binding HeaderMetaText}"
                           IconSource="{StaticResource HomeIcon}">
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <StackPanel Spacing="16" Margin="0 0 0 24">
+        <!-- 页头右侧操作区（设计稿 2:10 购物车胶囊：h36 r18，点击跳转购物车页） -->
+        <controls:GalleryPage.HeaderActionContent>
+            <Button Classes="GdCartPill"
+                    Content="{Binding CartCountText}"
+                    Click="OnCartClick" />
+        </controls:GalleryPage.HeaderActionContent>
 
-                <!-- ============ 搜索栏（搜索框 + 搜索按钮 + 排序下拉 + 批量采购切换） ============ -->
-                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-                    <!-- 搜索输入容器（muted bg + border + 搜索图标 + TextBox） -->
-                    <Border Background="{DynamicResource GdMutedBrush}"
-                            BorderBrush="{DynamicResource GdBorderBrush}"
+        <StackPanel x:Name="ContentHost" Spacing="20" Margin="0 0 0 24">
+
+            <!-- ============ 1. 行情运营条（设计稿 2:3：h136 r18 padding24 阴影 0 10 28 40%） ============ -->
+            <Border Background="{DynamicResource GdCardBrush}"
+                    BorderBrush="#212938"
+                    BorderThickness="1"
+                    CornerRadius="18"
+                    BoxShadow="0 10 28 0 #66000000"
+                    Height="136"
+                    Padding="24">
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                    <!-- 今日均价 -->
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="8">
+                        <TextBlock Text="今日均价"
+                                   FontSize="13"
+                                   FontFamily="{StaticResource ShopCnFont}"
+                                   Foreground="#8A93A6" />
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding AvgPriceText}"
+                                       FontSize="30"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource ShopNumFont}"
+                                       Foreground="#E8ECEC" />
+                            <TextBlock Text="{Binding PriceChangeText}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource ShopNumFont}"
+                                       Foreground="#FF4D4F"
+                                       VerticalAlignment="Center"
+                                       IsVisible="{Binding IsPriceUp}" />
+                            <TextBlock Text="{Binding PriceChangeText}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource ShopNumFont}"
+                                       Foreground="#26A69A"
+                                       VerticalAlignment="Center"
+                                       IsVisible="{Binding !IsPriceUp}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding UpdatedAtText}"
+                                   FontSize="12"
+                                   FontFamily="{StaticResource ShopCnFont}"
+                                   Foreground="#6B7488"
+                                   IsVisible="{Binding UpdatedAtText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+
+                    <!-- 竖分隔线（设计稿 2:18：1x72 #232A3A，左右各 24 留白） -->
+                    <Border Grid.Column="1"
+                            Width="1"
+                            Height="72"
+                            Background="#232A3A"
+                            VerticalAlignment="Center"
+                            Margin="24 0" />
+
+                    <!-- 今日成交 / 在售商户 / 冷链在途（gap 72） -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="72" VerticalAlignment="Center">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="GdStatValue" Text="{Binding TotalSalesText}" />
+                            <TextBlock Classes="GdStatLabel" Text="今日成交" />
+                        </StackPanel>
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="GdStatValue" Text="{Binding MerchantCountText}" />
+                            <TextBlock Classes="GdStatLabel" Text="在售商户" />
+                        </StackPanel>
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="GdStatValue" Text="{Binding InTransitText}" />
+                            <TextBlock Classes="GdStatLabel" Text="冷链在途" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 快捷品类（设计稿 2:30） -->
+                    <ItemsControl Grid.Column="3"
+                                  ItemsSource="{Binding HotSearchItems}"
+                                  VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="10" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Classes="GdHotTag"
+                                        Classes.GdHotTagAccent="{Binding IsAccent}"
+                                        Content="{Binding Text}"
+                                        Command="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).HotSearchCommand}"
+                                        CommandParameter="{Binding Text}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
+            <!-- ============ 2. 吸顶筛选工具条（设计稿 2:4：h64 r18 玻璃底 padding12 gap12） ============ -->
+            <Border Height="64"
+                    CornerRadius="18"
+                    Background="#B81C2435"
+                    BorderBrush="#1AFFFFFF"
+                    BorderThickness="1"
+                    BoxShadow="0 6 20 0 #4D000000"
+                    Padding="12">
+                <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="12">
+                    <!-- 搜索框（设计稿 2:37：420x40 r20 底 #0F1420 边框 #242B3D padding14） -->
+                    <Border Grid.Column="0"
+                            Width="420"
+                            Height="40"
+                            CornerRadius="20"
+                            Background="#0F1420"
+                            BorderBrush="#242B3D"
                             BorderThickness="1"
-                            CornerRadius="{DynamicResource GdRadiusMd}"
-                            Padding="10 0"
-                            MinWidth="240">
-                        <Grid ColumnDefinitions="Auto,*">
+                            Padding="14 0">
+                        <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
                             <Path Grid.Column="0"
                                   Data="{StaticResource LucideSearchGeometry}"
                                   Classes="GdLucideIcon"
                                   Width="16" Height="16"
                                   VerticalAlignment="Center"
-                                  Stroke="{DynamicResource GdMutedForegroundBrush}" />
+                                  Stroke="#8A93A6" />
                             <TextBox Grid.Column="1"
                                      x:Name="SearchBox"
                                      Text="{Binding SearchText}"
-                                     Watermark="搜索花卉品种、商户、产地..."
+                                     Watermark="搜索花卉品种、商户、产地"
                                      Background="Transparent"
                                      BorderThickness="0"
-                                     Padding="6 8"
-                                     Foreground="{DynamicResource GdForegroundBrush}" />
+                                     Padding="10 0"
+                                     VerticalContentAlignment="Center"
+                                     FontSize="14"
+                                     FontFamily="{StaticResource ShopCnFont}"
+                                     Foreground="#E8ECEC" />
                         </Grid>
                     </Border>
 
-                    <!-- 搜索按钮 -->
+                    <!-- 搜索按钮（设计稿 2:42：h40 r20 px22 #2962FF 字14） -->
                     <Button Grid.Column="1"
                             Classes="GdPrimary"
-                            Command="{Binding SearchCommand}"
-                            Padding="16 8"
-                            CornerRadius="{DynamicResource GdRadiusMd}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Path Data="{StaticResource LucideSearchGeometry}"
-                                  Classes="GdLucideIcon"
-                                  Width="14" Height="14" />
-                            <TextBlock Text="搜索" />
-                        </StackPanel>
+                            Height="40"
+                            Padding="22 0"
+                            CornerRadius="20"
+                            FontSize="14"
+                            Command="{Binding SearchCommand}">
+                        <TextBlock Text="搜索" />
                     </Button>
 
-                    <!-- 排序下拉 -->
+                    <!-- 排序下拉（设计稿 2:44：h40 r20 px18 底 #0F1420） -->
                     <ComboBox Grid.Column="2"
                               ItemsSource="{Binding SortModes}"
                               SelectedIndex="{Binding SortMode}"
-                              PlaceholderText="排序"
-                              MinWidth="120"
-                              Padding="8 6">
+                              Height="40"
+                              MinWidth="128"
+                              Padding="18 0"
+                              CornerRadius="20"
+                              Background="#0F1420"
+                              BorderBrush="#242B3D"
+                              BorderThickness="1"
+                              Foreground="#C7D0E0"
+                              FontSize="13"
+                              FontFamily="{StaticResource ShopCnFont}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding DisplayName}" FontSize="12" />
+                                <TextBlock Text="{Binding DisplayName}" FontSize="13" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <!-- 批量采购切换 -->
-                    <ToggleButton Grid.Column="3"
-                                  IsChecked="{Binding IsBatchMode}"
-                                  Classes="GdGhost"
-                                  Padding="16 8"
-                                  CornerRadius="{DynamicResource GdRadiusMd}"
-                                  FontSize="13">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Path Data="M16.5 9.4l-9-5.19 M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12"
-                                  Classes="GdLucideIcon"
-                                  Width="14" Height="14" />
-                            <TextBlock Text="批量采购" />
+                    <!-- 视图切换分段（设计稿 2:49：容器 r20 深底 padding4 gap4） -->
+                    <Border Grid.Column="4"
+                            Height="40"
+                            CornerRadius="20"
+                            Background="#0F1420"
+                            BorderBrush="#242B3D"
+                            BorderThickness="1"
+                            Padding="4">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Button Classes="GdSeg" Width="64"
+                                    Classes.GdSegActive="{Binding IsGridView}"
+                                    Content="网格"
+                                    Command="{Binding SetViewModeCommand}"
+                                    CommandParameter="0" />
+                            <Button Classes="GdSeg" Width="64"
+                                    Classes.GdSegActive="{Binding IsListSegActive}"
+                                    Content="列表"
+                                    Command="{Binding SetViewModeCommand}"
+                                    CommandParameter="1" />
+                            <Button Classes="GdSeg" Width="76"
+                                    Classes.GdSegActive="{Binding IsBatchMode}"
+                                    Content="批量采购"
+                                    Command="{Binding ToggleBatchModeCommand}" />
                         </StackPanel>
-                    </ToggleButton>
+                    </Border>
                 </Grid>
+            </Border>
 
-                <!-- ============ 分类筛选 pill 标签 ============ -->
-                <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                              VerticalScrollBarVisibility="Disabled">
-                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="4 0">
-                        <Button Content="全部" Classes="GdPill GdPillActive" Click="OnSpeciesFilterClick" Tag="0" />
-                        <Button Content="红玫瑰" Classes="GdPill" Click="OnSpeciesFilterClick" Tag="1" />
-                        <Button Content="百合" Classes="GdPill" Click="OnSpeciesFilterClick" Tag="2" />
-                        <Button Content="康乃馨" Classes="GdPill" Click="OnSpeciesFilterClick" Tag="3" />
-                        <Button Content="混合花束" Classes="GdPill" Click="OnSpeciesFilterClick" Tag="4" />
-                        <Button Content="红绿搭配" Classes="GdPill" Click="OnSpeciesFilterClick" Tag="5" />
-                    </StackPanel>
-                </ScrollViewer>
-
-                <!-- ============ 卡片视图（WrapPanel, 每卡片 300px 宽） ============ -->
-                <ItemsControl ItemsSource="{Binding FilteredProducts}" IsVisible="{Binding IsCardView}">
+            <!-- ============ 3. 分类筛选行（设计稿 2:5：gap10 + 右端清除筛选） ============ -->
+            <Grid ColumnDefinitions="*,Auto">
+                <ItemsControl Grid.Column="0" ItemsSource="{Binding SpeciesFilters}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" ItemWidth="316" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Classes="GdCard"
-                                    Width="300"
-                                    Margin="0 0 16 16"
-                                    Padding="0"
-                                    CornerRadius="{DynamicResource GdRadiusLg}"
-                                    ClipToBounds="True"
-                                    Cursor="Hand"
-                                    Tapped="OnProductTapped">
+                            <Button Classes="GdCatPill"
+                                    Classes.GdPillActive="{Binding IsSelected}"
+                                    Content="{Binding DisplayText}"
+                                    Command="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).SelectSpeciesCommand}"
+                                    CommandParameter="{Binding SpeciesId}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Grid.Column="1"
+                        Content="清除筛选"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="#6B7488"
+                        FontSize="13"
+                        FontFamily="{StaticResource ShopCnFont}"
+                        Cursor="Hand"
+                        Command="{Binding ClearFiltersCommand}" />
+            </Grid>
+
+            <!-- ============ 4. 骨架屏（设计稿 2:306：封面 200 #1A1F2E，信息骨架 gap12） ============ -->
+            <ItemsControl ItemsSource="{Binding}" IsVisible="{Binding IsLoading}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" ItemWidth="341" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="321"
+                                Margin="0 0 20 20"
+                                Background="{DynamicResource GdCardBrush}"
+                                BorderBrush="#212938"
+                                BorderThickness="1"
+                                CornerRadius="18">
+                            <StackPanel>
+                                <Border Height="200" Background="#1A1F2E" />
+                                <StackPanel Spacing="12" Margin="16">
+                                    <Border Height="14" Background="#1F2534" CornerRadius="4" />
+                                    <Border Height="12" Width="140" HorizontalAlignment="Left"
+                                            Background="#1A1F2E" CornerRadius="4" />
+                                    <Border Height="20" Width="104" HorizontalAlignment="Left"
+                                            Background="#1F2534" CornerRadius="4" />
+                                    <Border Height="38" Background="#1A1F2E" CornerRadius="10" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- ============ 5. 商品网格（设计稿 2:6：wrap gap20，卡 321） ============ -->
+            <ItemsControl ItemsSource="{Binding FilteredProducts}" IsVisible="{Binding IsGridView}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" ItemWidth="341" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Classes="GdShopCard"
+                                Classes.GdShopCardSelected="{Binding IsHighlighted}"
+                                Width="321"
+                                HorizontalAlignment="Left"
+                                Margin="0 0 20 20"
+                                Tapped="OnProductTapped">
+                            <Panel>
                                 <StackPanel>
-                                    <!-- 顶部 180px 渐变封面区域（brand-600 -> brand-400 渐变 + emoji + 品种名标签 + 趋势标签） -->
-                                    <Border Height="180">
-                                        <Border.Background>
-                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
-                                                <GradientStop Color="{DynamicResource GdBrand400}" Offset="1" />
-                                            </LinearGradientBrush>
-                                        </Border.Background>
-                                        <Grid>
-                                            <!-- Emoji 居中 -->
-                                            <TextBlock Text="🌸"
-                                                       FontSize="56"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center" />
-                                            <!-- 右上角品种名 + 趋势标签 -->
-                                            <Border Background="{DynamicResource GdOverlayBrush}"
-                                                    CornerRadius="{DynamicResource GdRadiusSm}"
-                                                    Padding="8 3"
+                                    <!-- 封面（h200）：真实图优先，无图走品种色渐变降级 -->
+                                    <Border Height="200" ClipToBounds="True">
+                                        <Panel>
+                                            <Border>
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                        <GradientStop Color="{Binding SpeciesColor}" Offset="0" />
+                                                        <GradientStop Color="{Binding SpeciesColorDeep}" Offset="1" />
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+                                            <Image Source="{Binding ImageBitmap}"
+                                                   Stretch="UniformToFill"
+                                                   IsVisible="{Binding HasImage}" />
+
+                                            <!-- 底部遮罩（设计稿 2:73：h50 渐变→黑 75%，产地时效 12 白字） -->
+                                            <Border Height="50" VerticalAlignment="Bottom">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                                        <GradientStop Color="#00000000" Offset="0" />
+                                                        <GradientStop Color="#BF000000" Offset="1" />
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <TextBlock Text="{Binding OriginEtaText}"
+                                                           FontSize="12"
+                                                           FontWeight="Medium"
+                                                           FontFamily="{StaticResource ShopCnFont}"
+                                                           Foreground="#FFFFFF"
+                                                           Margin="14 0 14 11"
+                                                           VerticalAlignment="Bottom" />
+                                            </Border>
+
+                                            <!-- 左上趋势徽标（12,12） -->
+                                            <Border Classes="GdTrendChip"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Margin="12">
+                                                <TextBlock Text="{Binding TrendLabel}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           FontFamily="{StaticResource ShopCnFont}"
+                                                           Foreground="{Binding TrendBrush}"
+                                                           VerticalAlignment="Center" />
+                                            </Border>
+
+                                            <!-- 右上收藏（top12 right14） -->
+                                            <Button Classes="GdFavBtn"
                                                     HorizontalAlignment="Right"
                                                     VerticalAlignment="Top"
-                                                    Margin="10">
-                                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                                    <TextBlock Text="{Binding SpeciesName}"
-                                                               FontSize="11"
-                                                               Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
-                                                    <TextBlock Text="{Binding ForecastTrend}"
-                                                               FontSize="11"
-                                                               FontWeight="Bold"
-                                                               Foreground="{Binding TrendColor}" />
-                                                </StackPanel>
-                                            </Border>
-                                        </Grid>
+                                                    Margin="0 12 14 0"
+                                                    Command="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).ToggleFavoriteCommand}"
+                                                    CommandParameter="{Binding ProductId}"
+                                                    Tapped="OnFavoriteTapped">
+                                                <Path Data="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                                                      Width="15" Height="15"
+                                                      Stretch="Uniform"
+                                                      Fill="{Binding FavoriteBrush}"
+                                                      Stroke="{Binding FavoriteBrush}"
+                                                      StrokeThickness="1.4"
+                                                      StrokeLineCap="Round"
+                                                      StrokeJoin="Round" />
+                                            </Button>
+                                        </Panel>
                                     </Border>
 
-                                    <!-- 底部信息区 -->
-                                    <StackPanel Spacing="6" Margin="14">
-                                        <!-- 商品名 + 预售 badge -->
+                                    <!-- 信息区（设计稿 2:80：padding16 gap8） -->
+                                    <StackPanel Spacing="8" Margin="16">
+                                        <!-- 商品名 15 SemiBold（+ 预售 badge） -->
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBlock Text="{Binding ProductName}"
                                                        FontSize="15"
                                                        FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                                       FontFamily="{StaticResource ShopCnFont}"
+                                                       Foreground="#E8ECEC"
                                                        TextWrapping="Wrap"
                                                        MaxLines="2"
                                                        VerticalAlignment="Center" />
@@ -169,137 +631,286 @@
                                                 <TextBlock Text="预售" />
                                             </Border>
                                         </Grid>
-
-                                        <!-- 预售发货日期 -->
                                         <TextBlock Text="{Binding PresaleDeliveryDateText}"
-                                                   FontSize="10"
+                                                   FontSize="11"
+                                                   FontFamily="{StaticResource ShopCnFont}"
                                                    Foreground="{DynamicResource GdWarningBrush}"
                                                    IsVisible="{Binding IsPresale}" />
 
-                                        <!-- 商户名 -->
+                                        <!-- 商户 12 #8A93A6 -->
                                         <TextBlock Text="{Binding MerchantName}"
-                                                   FontSize="11"
-                                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                   FontSize="12"
+                                                   FontFamily="{StaticResource ShopCnFont}"
+                                                   Foreground="#8A93A6" />
 
-                                        <!-- 价格 + 原价划线 + 阶梯价提示 -->
-                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <!-- 价格行：现价 22 Inter / 原价 12 删除线 / 阶梯价胶囊 -->
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}"
-                                                       FontSize="20"
+                                                       FontSize="22"
                                                        FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource GdErrorBrush}"
+                                                       FontFamily="{StaticResource ShopNumFont}"
+                                                       Foreground="#FF5A5F"
                                                        VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding MarketPriceDisplay}"
-                                                       FontSize="11"
-                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       FontSize="12"
+                                                       FontFamily="{StaticResource ShopNumFont}"
+                                                       Foreground="#6B7488"
                                                        TextDecorations="Strikethrough"
                                                        VerticalAlignment="Center"
                                                        IsVisible="{Binding HasMarketPrice}" />
-                                            <TextBlock Text="{Binding LadderPriceHint}"
-                                                       FontSize="10"
-                                                       Foreground="{DynamicResource GdPrimaryBrush}"
-                                                       VerticalAlignment="Center"
-                                                       IsVisible="{Binding LadderPriceHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            <Border Classes="GdCouponChip"
+                                                    IsVisible="{Binding LadderPriceHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                <TextBlock Text="{Binding LadderPriceHint}" />
+                                            </Border>
                                         </StackPanel>
 
-                                        <!-- 加入购物车按钮 + 库存 -->
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <Button Grid.Column="0"
-                                                    Classes="GdGhost"
-                                                    Padding="12 6"
-                                                    FontSize="12"
-                                                    CornerRadius="{DynamicResource GdRadiusMd}"
-                                                    HorizontalAlignment="Left"
-                                                    Command="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).AddToCartCommand}"
-                                                    CommandParameter="{Binding ProductId}">
-                                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                                    <Path Data="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0"
-                                                          Classes="GdLucideIcon"
-                                                          Width="13" Height="13" />
-                                                    <TextBlock Text="加入购物车" />
-                                                </StackPanel>
-                                            </Button>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding Stock, StringFormat='库存 {0:N0}'}"
-                                                       FontSize="10"
-                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                                       VerticalAlignment="Center" />
-                                        </Grid>
+                                        <!-- 已售/库存 11 + 进度条 h4（gap6） -->
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{Binding SaleStockText}"
+                                                       FontSize="11"
+                                                       FontFamily="{StaticResource ShopCnFont}"
+                                                       Foreground="#6B7488" />
+                                            <Border Classes="GdSalesBar">
+                                                <Border Classes="GdSalesBarFill"
+                                                        Width="{Binding SalesBarWidth}" />
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- 加入购物车（h38 r10 #2962FF 字14） -->
+                                        <Button Classes="GdPrimary"
+                                                Height="38"
+                                                CornerRadius="10"
+                                                FontSize="14"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                IsEnabled="{Binding IsAvailable}"
+                                                Tapped="OnInnerControlTapped"
+                                                Command="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).AddToCartCommand}"
+                                                CommandParameter="{Binding ProductId}">
+                                            <TextBlock Text="加入购物车" />
+                                        </Button>
                                     </StackPanel>
                                 </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
 
-                <!-- ============ 批量采购 DataGrid 视图 ============ -->
-                <Border Classes="GdCard"
-                        Margin="0"
-                        Padding="12"
-                        IsVisible="{Binding IsBatchView}"
-                        CornerRadius="{DynamicResource GdRadiusLg}">
-                    <StackPanel Spacing="12">
-                        <DataGrid ItemsSource="{Binding FilteredProducts}"
-                                  AutoGenerateColumns="False"
-                                  CanUserResizeColumns="True"
-                                  CanUserSortColumns="True"
-                                  IsReadOnly="False"
-                                  GridLinesVisibility="Horizontal"
-                                  BorderThickness="0"
-                                  Background="Transparent"
-                                  MinHeight="300">
-                            <DataGrid.Columns>
-                                <DataGridCheckBoxColumn Header="选择" Binding="{Binding IsSelected}" Width="60" />
-                                <DataGridTextColumn Header="品种" Binding="{Binding SpeciesName}" Width="80" IsReadOnly="True" />
-                                <DataGridTextColumn Header="商品名称" Binding="{Binding ProductName}" Width="*" IsReadOnly="True" />
-                                <DataGridTextColumn Header="商户" Binding="{Binding MerchantName}" Width="100" IsReadOnly="True" />
-                                <DataGridTextColumn Header="价格" Binding="{Binding Price, StringFormat='¥{0:F2}'}" Width="90" IsReadOnly="True" />
-                                <DataGridTextColumn Header="库存" Binding="{Binding Stock}" Width="70" IsReadOnly="True" />
-                                <DataGridTemplateColumn Header="数量" Width="100">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <NumericUpDown Value="{Binding BatchQuantity, Mode=TwoWay}"
-                                                           Minimum="1" Maximum="9999"
-                                                           Padding="4 2" FontSize="12" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="趋势" Binding="{Binding ForecastTrend}" Width="50" IsReadOnly="True" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <Button Content="批量加入购物车"
-                                Classes="GdPrimary"
-                                HorizontalAlignment="Right"
-                                Padding="24 10"
-                                CornerRadius="{DynamicResource GdRadiusMd}"
-                                Command="{Binding BatchAddToCartCommand}" />
+                                <!-- 售罄遮罩（设计稿 2:304：整卡覆盖 + 居中文案） -->
+                                <Border Background="#B80A0E17"
+                                        CornerRadius="18"
+                                        IsVisible="{Binding IsSoldOut}">
+                                    <TextBlock Text="暂时缺货 · 到货提醒"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               FontFamily="{StaticResource ShopCnFont}"
+                                               Foreground="#8A93A6"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+                            </Panel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- ============ 6. 列表视图（设计稿 2:340：660x136，缩略图 136，操作区 180） ============ -->
+            <ItemsControl ItemsSource="{Binding FilteredProducts}" IsVisible="{Binding IsListView}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Classes="GdShopCard"
+                                Classes.GdShopCardSelected="{Binding IsHighlighted}"
+                                Width="660"
+                                HorizontalAlignment="Left"
+                                Margin="0 0 0 12"
+                                Padding="0"
+                                Tapped="OnProductTapped">
+                            <Grid ColumnDefinitions="136,*,180" Height="136">
+                                <!-- 缩略图（贴左满高） -->
+                                <Border Grid.Column="0" ClipToBounds="True">
+                                    <Panel>
+                                        <Border>
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                    <GradientStop Color="{Binding SpeciesColor}" Offset="0" />
+                                                    <GradientStop Color="{Binding SpeciesColorDeep}" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                        </Border>
+                                        <Image Source="{Binding ImageBitmap}"
+                                               Stretch="UniformToFill"
+                                               IsVisible="{Binding HasImage}" />
+                                    </Panel>
+                                </Border>
+
+                                <!-- 信息区（padding16 gap8，垂直居中） -->
+                                <StackPanel Grid.Column="1" Margin="16 0" Spacing="8" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding ProductName}"
+                                                   FontSize="15"
+                                                   FontWeight="SemiBold"
+                                                   FontFamily="{StaticResource ShopCnFont}"
+                                                   Foreground="#E8ECEC"
+                                                   MaxLines="1"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <Border Classes="GdTrendChip">
+                                            <TextBlock Text="{Binding TrendLabel}"
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"
+                                                       FontFamily="{StaticResource ShopCnFont}"
+                                                       Foreground="{Binding TrendBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding MerchantOriginText}"
+                                               FontSize="12"
+                                               FontFamily="{StaticResource ShopCnFont}"
+                                               Foreground="#8A93A6" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}"
+                                                   FontSize="20"
+                                                   FontWeight="SemiBold"
+                                                   FontFamily="{StaticResource ShopNumFont}"
+                                                   Foreground="#FF5A5F"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding MarketPriceDisplay}"
+                                                   FontSize="12"
+                                                   FontFamily="{StaticResource ShopNumFont}"
+                                                   Foreground="#6B7488"
+                                                   TextDecorations="Strikethrough"
+                                                   VerticalAlignment="Center"
+                                                   IsVisible="{Binding HasMarketPrice}" />
+                                        <Border Classes="GdCouponChip"
+                                                IsVisible="{Binding LadderPriceHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                            <TextBlock Text="{Binding LadderPriceHint}" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- 操作区（设计稿 2:346：加购 h36 r10 + 库存 11） -->
+                                <StackPanel Grid.Column="2" Margin="16" Spacing="8" VerticalAlignment="Center">
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              VerticalAlignment="Center"
+                                              Tapped="OnInnerControlTapped"
+                                              IsVisible="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).IsBatchMode}">
+                                        <TextBlock Text="选择" FontSize="12" Foreground="#8A93A6" />
+                                    </CheckBox>
+                                    <NumericUpDown Value="{Binding BatchQuantity, Mode=TwoWay}"
+                                                   Minimum="1" Maximum="9999"
+                                                   HorizontalAlignment="Stretch"
+                                                   VerticalAlignment="Center"
+                                                   Tapped="OnInnerControlTapped"
+                                                   IsVisible="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).IsBatchMode}" />
+                                    <Button Classes="GdPrimary"
+                                            Height="36"
+                                            CornerRadius="10"
+                                            FontSize="13"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center"
+                                            IsEnabled="{Binding IsAvailable}"
+                                            Tapped="OnInnerControlTapped"
+                                            Command="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).AddToCartCommand}"
+                                            CommandParameter="{Binding ProductId}">
+                                        <TextBlock Text="加入购物车" />
+                                    </Button>
+                                    <TextBlock Text="{Binding SaleStockText}"
+                                               FontSize="11"
+                                               FontFamily="{StaticResource ShopCnFont}"
+                                               Foreground="#6B7488"
+                                               HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- ============ 7. 批量采购结算条（设计稿 2:330：h72 r18 蓝描边 55% 阴影 0 12 32 45%） ============ -->
+            <Border Background="{DynamicResource GdCardBrush}"
+                    BorderBrush="#8C2962FF"
+                    BorderThickness="1"
+                    CornerRadius="18"
+                    BoxShadow="0 12 32 0 #73000000"
+                    Height="72"
+                    Padding="20"
+                    IsVisible="{Binding HasSelection}">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding BatchSummaryText}"
+                                   FontSize="13"
+                                   FontFamily="{StaticResource ShopCnFont}"
+                                   Foreground="#8A93A6"
+                                   IsVisible="{Binding BatchSummaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="合计"
+                                       FontSize="13"
+                                       FontFamily="{StaticResource ShopCnFont}"
+                                       Foreground="#8A93A6"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding BatchTotalText}"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource ShopNumFont}"
+                                       Foreground="#E8ECEC" />
+                        </StackPanel>
                     </StackPanel>
-                </Border>
+                    <Button Grid.Column="1"
+                            Classes="GdGhost"
+                            Content="清空"
+                            Height="40"
+                            Padding="20 0"
+                            CornerRadius="10"
+                            Command="{Binding ClearSelectionCommand}" />
+                    <Button Grid.Column="2"
+                            Classes="GdPrimary"
+                            Content="批量加入购物车"
+                            Height="40"
+                            Padding="24 0"
+                            CornerRadius="10"
+                            Command="{Binding BatchAddToCartCommand}" />
+                </Grid>
+            </Border>
 
-                <!-- ============ 加载更多 ============ -->
-                <Button Content="加载更多商品"
-                        Classes="GdGhost"
-                        HorizontalAlignment="Center"
-                        Padding="24 10"
-                        CornerRadius="{DynamicResource GdRadiusMd}"
-                        Command="{Binding LoadMoreCommand}"
-                        IsVisible="{Binding HasMoreProducts}" />
+            <!-- ============ 8. 空状态（设计稿 2:313：图标56 / 主文案15 / 辅助12 / 按钮 h38 r10） ============ -->
+            <Border Background="{DynamicResource GdCardBrush}"
+                    BorderBrush="#212938"
+                    BorderThickness="1"
+                    CornerRadius="18"
+                    Padding="48 56"
+                    IsVisible="{Binding IsEmpty}">
+                <StackPanel HorizontalAlignment="Center" Spacing="14">
+                    <Border Width="56" Height="56">
+                        <Path Data="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0"
+                              Classes="GdLucideIcon"
+                              Width="42" Height="42"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Stroke="#2A3040" />
+                    </Border>
+                    <TextBlock Text="没有找到匹配的商品"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               FontFamily="{StaticResource ShopCnFont}"
+                               Foreground="#C7D0E0"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="换个品种或清空筛选条件试试"
+                               FontSize="12"
+                               FontFamily="{StaticResource ShopCnFont}"
+                               Foreground="#6B7488"
+                               HorizontalAlignment="Center" />
+                    <Button Content="清除筛选条件"
+                            Height="38"
+                            Padding="22 0"
+                            CornerRadius="10"
+                            Background="#1A1F2E"
+                            BorderBrush="#802962FF"
+                            BorderThickness="1"
+                            Foreground="#7FA8FF"
+                            FontSize="13"
+                            FontWeight="Medium"
+                            FontFamily="{StaticResource ShopCnFont}"
+                            HorizontalAlignment="Center"
+                            Cursor="Hand"
+                            Command="{Binding ClearFiltersCommand}" />
+                </StackPanel>
+            </Border>
 
-                <!-- ============ 空状态 ============ -->
-                <Border Classes="GdCard"
-                        Margin="0"
-                        Padding="40"
-                        IsVisible="{Binding IsEmpty}"
-                        CornerRadius="{DynamicResource GdRadiusLg}">
-                    <StackPanel HorizontalAlignment="Center" Spacing="12">
-                        <TextBlock Text="🛒" FontSize="32" HorizontalAlignment="Center" />
-                        <TextBlock Text="暂无商品"
-                                   FontSize="14"
-                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                   HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Border>
-
-            </StackPanel>
-        </ScrollViewer>
+        </StackPanel>
     </controls:GalleryPage>
 </UserControl>

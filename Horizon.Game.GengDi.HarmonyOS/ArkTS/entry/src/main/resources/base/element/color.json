@@ -1,0 +1,44 @@
+{
+  "color": [
+    {
+      "name": "start_window_background",
+      "value": "#0a0e17"
+    },
+    {
+      "name": "tab_bar_background",
+      "value": "#131722"
+    },
+    {
+      "name": "tab_bar_border",
+      "value": "#2a2e39"
+    },
+    {
+      "name": "tab_active",
+      "value": "#2962ff"
+    },
+    {
+      "name": "tab_inactive",
+      "value": "#787b86"
+    },
+    {
+      "name": "app_background",
+      "value": "#0a0e17"
+    },
+    {
+      "name": "surface",
+      "value": "#131722"
+    },
+    {
+      "name": "surface_variant",
+      "value": "#1a1f2e"
+    },
+    {
+      "name": "text_primary",
+      "value": "#e0e6ed"
+    },
+    {
+      "name": "text_secondary",
+      "value": "#787b86"
+    }
+  ]
+}

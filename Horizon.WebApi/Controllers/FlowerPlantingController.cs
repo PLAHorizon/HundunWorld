@@ -3,6 +3,8 @@ using Horizon.Core.Options;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.WebApi.Configs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -460,9 +462,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("batches/{greenhouseId}")]
-        public async Task<ResultVM<List<PlantingBatchState>>> ListBatchesAsync(string greenhouseId, [FromQuery] string status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<PlantingBatchDto>>> ListBatchesAsync(string greenhouseId, [FromQuery] string status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<PlantingBatchState>>();
+            var result = new ResultVM<List<PlantingBatchDto>>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -475,7 +477,7 @@ namespace Horizon.WebApi.Controllers
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IFlowerDataPoolGrain>(0);
                 var allBatches = await grain.ListPlantingBatchesAsync(_passportCurrent.PassportId, status ?? "", (page - 1) * pageSize, pageSize);
-                result.Data = allBatches.Where(b => b.UserId == userId).ToList();
+                result.Data = allBatches.Where(b => b.UserId == userId).Select(b => FlowerDtoMapper.ToDto(b)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -700,9 +702,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("records/{batchId}")]
-        public async Task<ResultVM<List<CostRecordState>>> GetCostRecordsAsync(long batchId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<CostRecordDto>>> GetCostRecordsAsync(long batchId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<CostRecordState>>();
+            var result = new ResultVM<List<CostRecordDto>>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -722,7 +724,8 @@ namespace Horizon.WebApi.Controllers
                 }
 
                 var grain = client.GetGrain<IFlowerDataPoolGrain>(0);
-                result.Data = await grain.GetCostRecordsAsync(batchId, (page - 1) * pageSize, pageSize);
+                var records = await grain.GetCostRecordsAsync(batchId, (page - 1) * pageSize, pageSize);
+                result.Data = records?.Select(r => FlowerDtoMapper.ToDto(r)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -891,9 +894,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("records/{batchId}")]
-        public async Task<ResultVM<List<YieldRecordState>>> GetYieldRecordsAsync(long batchId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<YieldRecordDto>>> GetYieldRecordsAsync(long batchId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<YieldRecordState>>();
+            var result = new ResultVM<List<YieldRecordDto>>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -913,7 +916,8 @@ namespace Horizon.WebApi.Controllers
                 }
 
                 var grain = client.GetGrain<IFlowerDataPoolGrain>(0);
-                result.Data = await grain.GetYieldRecordsAsync(batchId, (page - 1) * pageSize, pageSize);
+                var records = await grain.GetYieldRecordsAsync(batchId, (page - 1) * pageSize, pageSize);
+                result.Data = records?.Select(r => FlowerDtoMapper.ToDto(r)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

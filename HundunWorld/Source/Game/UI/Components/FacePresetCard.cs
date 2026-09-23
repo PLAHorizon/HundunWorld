@@ -106,6 +106,12 @@ namespace HundunWorld.Game.UI.Components
         /// 创建预设卡片
         /// </summary>
         /// <param name="presetData">预设数据</param>
+        /// <summary>无参构造（Prefab/编辑器实例化用，默认空预设）</summary>
+        public FacePresetCard()
+            : this(new FacePresetData())
+        {
+        }
+
         public FacePresetCard(FacePresetData presetData)
         {
             PresetData = presetData;

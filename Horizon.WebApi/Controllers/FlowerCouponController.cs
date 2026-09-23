@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -53,15 +56,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{couponId}")]
-        public async Task<ResultVM<CouponState>> GetCouponAsync(long couponId)
+        public async Task<ResultVM<CouponDto>> GetCouponAsync(long couponId)
         {
-            var result = new ResultVM<CouponState>();
+            var result = new ResultVM<CouponDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ICouponGrain>(0);
-                result.Data = await grain.GetCouponAsync(couponId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetCouponAsync(couponId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -72,14 +76,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("shop/{shopId}")]
-        public async Task<ResultVM<List<CouponState>>> GetShopCouponsAsync(long shopId)
+        public async Task<ResultVM<List<CouponDto>>> GetShopCouponsAsync(long shopId)
         {
-            var result = new ResultVM<List<CouponState>>();
+            var result = new ResultVM<List<CouponDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ICouponGrain>(0);
-                result.Data = await grain.GetShopCouponsAsync(shopId);
+                var coupons = await grain.GetShopCouponsAsync(shopId);
+                result.Data = coupons?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -129,14 +134,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("user/{userId}")]
-        public async Task<ResultVM<List<CouponRecordState>>> GetUserCouponsAsync(Guid userId)
+        public async Task<ResultVM<List<CouponRecordDto>>> GetUserCouponsAsync(Guid userId)
         {
-            var result = new ResultVM<List<CouponRecordState>>();
+            var result = new ResultVM<List<CouponRecordDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ICouponGrain>(0);
-                result.Data = await grain.GetUserCouponsAsync(userId);
+                var records = await grain.GetUserCouponsAsync(userId);
+                result.Data = records?.Select(r => FlowerDtoMapper.ToDto(r)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

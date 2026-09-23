@@ -154,8 +154,8 @@
 		"TypeName": "FlaxEngine.AnimatedModel",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
 		"Name": "Running",
-		"SkinnedModel": "c7c70820409088e4d96db396a43c410f",
-		"AnimationGraph": "ceded67f4bb2623f40b4dcb493b0d419",
+		"SkinnedModel": "b0823a8576cb47cb9932f5af61aa1ef7",
+		"AnimationGraph": "ceded67f623f4bb2b4dcb44019d4b093",
 		"ShadowsMode": 1,
 		"RootMotionTarget": "dd0db16a49ae6f0c671a95ace472df12",
 		"Buffer": {

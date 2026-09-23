@@ -73,6 +73,46 @@ namespace Horizon.Orleans.Grains
             return synced;
         }
 
+        /// <summary>
+        /// <c>Flower_User.Phone</c> 的列宽（varchar(20)，见迁移 20260519104322_FlowerInit）。
+        /// </summary>
+        private const int FlowerPhoneMaxLength = 20;
+
+        /// <summary>
+        /// <c>Flower_User.DisplayName</c> 的列宽（varchar(64)）。
+        /// </summary>
+        private const int FlowerDisplayNameMaxLength = 64;
+
+        /// <summary>
+        /// 按目标列宽安全截断，避免 SQL Server 2628「字符串或二进制数据将被截断」。
+        /// </summary>
+        private static string TruncateTo(string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            return value.Length <= maxLength
+                ? value
+                : value.Substring(0, maxLength);
+        }
+
+        /// <summary>
+        /// 归一化手机号，保证不超出 <c>Flower_User.Phone</c> 的列宽。
+        /// <para>
+        /// 背景：源表 <c>UserEntity.Phone</c> 为 <c>varchar(100)</c>，实际存在非手机号脏数据
+        /// （例如 32 位 GUID，如 f02e5504493646ec9014…）。直接搬运会触发 SQL Server 2628，
+        /// 导致整批用户同步失败。这里按目标列宽安全截断，保证同步流程不中断。
+        /// </para>
+        /// <para>
+        /// 若业务上需要保留完整原值，应把 <c>Flower_User.Phone</c> 扩到与源表一致的
+        /// <c>varchar(100)</c>（需改模型 + 生成迁移），届时可移除本方法。
+        /// </para>
+        /// </summary>
+        private static string NormalizePhone(string phone)
+            => TruncateTo(phone, FlowerPhoneMaxLength);
+
         private async Task SyncSingleUserAsync(User basicUser)
         {
             var existing = await _flowerContext.FlowerUsers
@@ -80,8 +120,8 @@ namespace Horizon.Orleans.Grains
 
             if (existing != null)
             {
-                existing.DisplayName = basicUser.NickName ?? basicUser.Name ?? "用户";
-                existing.Phone = basicUser.Phone ?? "";
+                existing.DisplayName = TruncateTo(basicUser.NickName ?? basicUser.Name ?? "用户", FlowerDisplayNameMaxLength);
+                existing.Phone = NormalizePhone(basicUser.Phone);
                 existing.ModifyTime = DateTime.Now;
                 existing.ModifyPassport = "SYSTEM_SYNC";
             }
@@ -92,8 +132,8 @@ namespace Horizon.Orleans.Grains
                     Passport = basicUser.PassportId,
                     UserId = basicUser.Id,
                     UserType = (int)FlowerUserType.Normal,
-                    DisplayName = basicUser.NickName ?? basicUser.Name ?? "用户",
-                    Phone = basicUser.Phone ?? "",
+                    DisplayName = TruncateTo(basicUser.NickName ?? basicUser.Name ?? "用户", FlowerDisplayNameMaxLength),
+                    Phone = NormalizePhone(basicUser.Phone),
                     Region = "默认",
                     SubscriptionLevel = (int)SubscriptionLevel.Free,
                     IsValid = true,

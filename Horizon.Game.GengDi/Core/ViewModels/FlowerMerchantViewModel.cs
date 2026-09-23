@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Horizon.Game.GengDi.Core.Controls;
 using Horizon.Game.GengDi.Core.Helpers;
@@ -430,6 +431,86 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             set => SetProperty(ref _lowStockProductNames, value);
         }
 
+        // ===== 页头 meta 与统计 delta（真实数据优先，缺对比数据时中性占位） =====
+
+        private string _headerMetaText = "";
+        /// <summary>页头副标题：在售件数 / 待发货单数 / 今日营收，由概览数据实时计算。</summary>
+        public string HeaderMetaText
+        {
+            get => _headerMetaText;
+            private set => SetProperty(ref _headerMetaText, value);
+        }
+
+        private string _todayOrdersDelta = "较昨日 —";
+        /// <summary>今日订单较昨日变化；无昨日数据时显示中性占位，不再编造数字。</summary>
+        public string TodayOrdersDelta
+        {
+            get => _todayOrdersDelta;
+            private set => SetProperty(ref _todayOrdersDelta, value);
+        }
+
+        private bool _hasOrdersDelta;
+        /// <summary>是否有真实昨日对比（驱动 delta 颜色：绿=升/红=降/灰=无数据）。</summary>
+        public bool HasOrdersDelta
+        {
+            get => _hasOrdersDelta;
+            private set => SetProperty(ref _hasOrdersDelta, value);
+        }
+
+        private string _todayRevenueDelta = "较昨日 —";
+        public string TodayRevenueDelta
+        {
+            get => _todayRevenueDelta;
+            private set => SetProperty(ref _todayRevenueDelta, value);
+        }
+
+        /// <summary>由当前订单集合刷新页头 meta 与昨日对比 delta。</summary>
+        private void RefreshHeaderMetaAndDeltas()
+        {
+            var activeProducts = _products?.Count(p => p.IsActive) ?? 0;
+            var today = DateTime.Today;
+            var yesterday = today.AddDays(-1);
+
+            HeaderMetaText = $"在售 {activeProducts} 件 · 待发货 {PendingShipCount} 单 · 今日营收 ¥{TodayRevenue:F0}";
+
+            // 昨日对比 delta（真实计算，无昨日数据时中性占位）
+            var todayCount = _orders.Count(o => o.CreatedAt.Date == today);
+            var yesterdayCount = _orders.Count(o => o.CreatedAt.Date == yesterday);
+            if (yesterdayCount > 0 || _orders.Any(o => o.CreatedAt.Date == today))
+            {
+                HasOrdersDelta = true;
+                var diff = todayCount - yesterdayCount;
+                TodayOrdersDelta = diff >= 0 ? $"较昨日 +{diff}" : $"较昨日 {diff}";
+            }
+            else
+            {
+                HasOrdersDelta = false;
+                TodayOrdersDelta = "较昨日 —";
+            }
+
+            var todayRevenue = _orders.Where(o => o.CreatedAt.Date == today).Sum(o => o.TotalAmount);
+            var yesterdayRevenue = _orders.Where(o => o.CreatedAt.Date == yesterday).Sum(o => o.TotalAmount);
+            if (yesterdayRevenue > 0)
+            {
+                var pct = (todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100m;
+                TodayRevenueDelta = $"较昨日 {(pct >= 0 ? "+" : "")}{pct:F1}%";
+            }
+            else
+            {
+                TodayRevenueDelta = "较昨日 —";
+            }
+
+            OnPropertyChanged(nameof(TotalSettledText));
+        }
+
+        // ===== 结算摘要（设计稿 Tab 结算：可提现/冻结中/累计已结） =====
+        // 可提现与冻结金额依赖结算服务，暂无数据源 → 中性占位，不编数字。
+        public string WithdrawableText => "—";
+        public string FrozenSettlementText => "—";
+
+        /// <summary>累计已结算：以有效订单累计营收为准（真实数据）。</summary>
+        public string TotalSettledText => $"¥ {TotalRevenue:F2}";
+
         public string SearchKeyword
         {
             get => _searchKeyword;
@@ -508,6 +589,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     _newProductImageList.Add(url);
             }
             OnPropertyChanged(nameof(NewProductImageList));
+            UpdateImagePreviewList();
         }
 
         public void AddImage(string imagePath)
@@ -525,6 +607,67 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             var images = _newProductImages.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(u => u.Trim()).Where(u => u != imagePath).ToList();
             NewProductImages = string.Join(",", images);
+        }
+
+        /// <summary>设为封面：把该图移到图片列表首位（首图即封面）。</summary>
+        public void SetCoverImage(string imagePath)
+        {
+            if (string.IsNullOrWhiteSpace(imagePath) || string.IsNullOrWhiteSpace(_newProductImages)) return;
+            var images = _newProductImages.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(u => u.Trim()).Where(u => u != imagePath).ToList();
+            NewProductImages = string.Join(",", new[] { imagePath }.Concat(images));
+        }
+
+        // ===== 图片预览（设计稿发布表单：88 缩略图 + 封面角标 + 删除） =====
+
+        private ObservableCollection<ProductImagePreview> _imagePreviewList = new();
+        /// <summary>图片预览列表（含缩略图 Bitmap），由 NewProductImages 同步重建。</summary>
+        public ObservableCollection<ProductImagePreview> ImagePreviewList
+        {
+            get => _imagePreviewList;
+            private set => SetProperty(ref _imagePreviewList, value);
+        }
+
+        private void UpdateImagePreviewList()
+        {
+            ImagePreviewList.Clear();
+            var paths = string.IsNullOrWhiteSpace(_newProductImages)
+                ? Array.Empty<string>()
+                : _newProductImages.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(u => u.Trim()).ToArray();
+
+            for (var i = 0; i < paths.Length; i++)
+            {
+                var preview = new ProductImagePreview { Path = paths[i], IsCover = i == 0 };
+                ImagePreviewList.Add(preview);
+                _ = LoadPreviewBitmapAsync(preview);
+            }
+            OnPropertyChanged(nameof(ImagePreviewList));
+        }
+
+        private static async Task LoadPreviewBitmapAsync(ProductImagePreview preview)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(preview.Path)) return;
+
+                Bitmap? bitmap = null;
+                if (File.Exists(preview.Path))
+                {
+                    // 本地文件：后台解码，避免 UI 卡顿
+                    var bytes = await File.ReadAllBytesAsync(preview.Path).ConfigureAwait(false);
+                    using var ms = new MemoryStream(bytes);
+                    bitmap = new Bitmap(ms);
+                }
+                else if (preview.Path.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 远程图：复用商城图缓存
+                    bitmap = await WebImageCache.GetAsync(preview.Path).ConfigureAwait(false);
+                }
+
+                if (bitmap != null)
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => preview.Bitmap = bitmap);
+            }
+            catch { /* 解码失败保持占位 */ }
         }
 
         public bool IsOpenLadder
@@ -906,11 +1049,20 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public SpeciesFilterItem SelectedSpeciesFilter
         {
             get => _selectedSpeciesFilter;
-            set => SetProperty(ref _selectedSpeciesFilter, value);
+            set
+            {
+                if (SetProperty(ref _selectedSpeciesFilter, value))
+                {
+                    // 同步品种ID：驱动建议价联动（LoadSuggestedPriceAsync）与发布时的品种落库
+                    SelectedSpeciesId = value?.SpeciesId ?? 0;
+                }
+            }
         }
 
         public ICommand LoadMerchantCommand { get; }
         public ICommand SwitchTabCommand { get; }
+        public ICommand RemoveImageCommand { get; }
+        public ICommand SetCoverCommand { get; }
         public ICommand CreateProductCommand { get; }
         public ICommand ToggleProductActiveCommand { get; }
         public ICommand DeleteProductCommand { get; }
@@ -961,6 +1113,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
             LoadMerchantCommand = new AsyncCommand(LoadMerchantAsync);
             SwitchTabCommand = new RelayCommand<int>(t => CurrentTab = t);
+            RemoveImageCommand = new RelayCommand<string>(p => { if (!string.IsNullOrEmpty(p)) RemoveImage(p); });
+            SetCoverCommand = new RelayCommand<string>(p => { if (!string.IsNullOrEmpty(p)) SetCoverImage(p); });
             CreateProductCommand = new AsyncCommand(CreateProductAsync);
             ToggleProductActiveCommand = new AsyncCommand<RelatedProduct>(ToggleProductActiveAsync);
             DeleteProductCommand = new AsyncCommand<RelatedProduct>(DeleteProductAsync);
@@ -1052,12 +1206,48 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             catch (ObjectDisposedException) { }
         }
 
+        /// <summary>
+        /// 加载花卉品种选项（修复「商品发布-花卉品种」下拉为空）：
+        /// 构造函数里 SpeciesOptions 是从品种缓存同步构建的，而缓存要等 EnsureLoadedAsync()
+        /// 拉取 /FlowerSpecies/list 后才有数据——商家页往往是首个使用者，构造时缓存为空，
+        /// 且集合是一次性构建，之后加载完成也不会刷新。本方法先确保缓存加载完成，
+        /// 再在 UI 线程重建 SpeciesOptions（保留原选择，无原选择时默认选中第一项）。
+        /// </summary>
+        private async Task LoadSpeciesOptionsAsync()
+        {
+            try
+            {
+                DiagLog.Log("[FlowerMerchantVM] LoadSpeciesOptionsAsync START");
+                await _speciesLookup.EnsureLoadedAsync().ConfigureAwait(false);
+                var species = _speciesLookup.GetAllSpecies();
+                var previousId = _selectedSpeciesFilter?.SpeciesId ?? 0;
+                await RunOnUiThreadAsync(() =>
+                {
+                    SpeciesOptions.Clear();
+                    foreach (var kv in species.OrderBy(kv => kv.Key))
+                        SpeciesOptions.Add(new SpeciesFilterItem { SpeciesId = kv.Key, DisplayName = kv.Value });
+
+                    SelectedSpeciesFilter = SpeciesOptions.FirstOrDefault(x => x.SpeciesId == previousId)
+                        ?? SpeciesOptions.FirstOrDefault();
+                    DiagLog.Log($"[FlowerMerchantVM] SpeciesOptions reloaded count={SpeciesOptions.Count}");
+                });
+            }
+            catch (Exception ex)
+            {
+                // 品种加载失败不阻断商户页初始化；EnsureLoadedAsync 内部已有内置目录兜底
+                DiagLog.Log($"[FlowerMerchantVM] LoadSpeciesOptionsAsync failed: {ex.Message}");
+            }
+        }
+
         private async Task InitializeAsync()
         {
             DiagLog.Log($"[FlowerMerchantVM] InitializeAsync START");
             IsLoading = true;
             try
             {
+                // 品种目录与商户信息并行加载（发布表单的「花卉品种」下拉依赖它，方法内部自带异常兜底）
+                _ = LoadSpeciesOptionsAsync();
+
                 DiagLog.Log("[FlowerMerchantVM] before GetMyMerchantAsync");
                 var info = await _merchantService.GetMyMerchantAsync().ConfigureAwait(false);
                 DiagLog.Log($"[FlowerMerchantVM] after GetMyMerchantAsync info={info != null}");
@@ -1236,6 +1426,17 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 var orderCollection = orders != null
                     ? new ObservableCollection<OrderDisplay>(orders)
                     : new ObservableCollection<OrderDisplay>();
+
+                // 惰性关闭超时未支付订单（后端拒绝时无效果，不影响列表）
+                if (orders != null && orders.Count > 0)
+                {
+                    var closedIds = await _orderService.CloseExpiredUnpaidOrdersAsync(orders).ConfigureAwait(false);
+                    if (closedIds.Count > 0)
+                    {
+                        foreach (var o in orderCollection.Where(o => closedIds.Contains(o.OrderId)))
+                            o.Status = FlowerOrderService.OrderStatusCancelled;
+                    }
+                }
 
                 await RunOnUiThreadAsync(() =>
                 {
@@ -1420,6 +1621,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             OnPropertyChanged(nameof(LowStockProductNames));
             OnPropertyChanged(nameof(MerchantTypeDisplay));
             OnPropertyChanged(nameof(ShopGradeDisplay));
+            RefreshHeaderMetaAndDeltas();
         }
 
         private async Task SearchProductsAsync()
@@ -1472,12 +1674,15 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             ToastService.Instance.Info("正在发布...");
             try
             {
-                Console.WriteLine($"[FlowerMerchant] Calling CreateProductAsync API with merchantId={_merchantId}");
+                // 发布落库使用实际选中的花卉品种（未选到时回退 1，保持旧行为兼容）
+                var publishSpeciesId = SelectedSpeciesFilter?.SpeciesId > 0 ? SelectedSpeciesFilter.SpeciesId : 1;
+
+                Console.WriteLine($"[FlowerMerchant] Calling CreateProductAsync API with merchantId={_merchantId}, speciesId={publishSpeciesId}");
                 bool success;
                 if (_isPresale)
                 {
                     success = await _marketService.CreatePresaleProductAsync(
-                        _merchantId, 1, NewProductName,
+                        _merchantId, publishSpeciesId, NewProductName,
                         NewProductDescription, NewProductPrice, NewProductStock,
                         NewProductUnit, NewProductImages,
                         relatedBatchId: _presaleRelatedBatchId,
@@ -1486,7 +1691,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 else
                 {
                     success = await _shopService.CreateProductAsync(
-                        _merchantId, 1, NewProductName,
+                        _merchantId, publishSpeciesId, NewProductName,
                         NewProductDescription, NewProductPrice, NewProductStock);
                 }
                 Console.WriteLine($"[FlowerMerchant] CreateProductAsync result: {success}");
@@ -2377,6 +2582,36 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             {
                 AvailableBatches = new ObservableCollection<PlantingBatchInfo>();
             }
+        }
+    }
+
+    /// <summary>发布表单图片预览项（设计稿：88 缩略图 + 封面角标 + 删除）。</summary>
+    public class ProductImagePreview : ViewModelBase
+    {
+        private Bitmap? _bitmap;
+        private bool _isCover;
+
+        /// <summary>图片路径（本地或 URL）。</summary>
+        public string Path { get; set; } = "";
+
+        /// <summary>缩略图（后台解码，失败保持 null 走占位）。</summary>
+        public Bitmap? Bitmap
+        {
+            get => _bitmap;
+            set
+            {
+                if (SetProperty(ref _bitmap, value))
+                    OnPropertyChanged(nameof(HasBitmap));
+            }
+        }
+
+        public bool HasBitmap => Bitmap != null;
+
+        /// <summary>是否封面（列表首图）。</summary>
+        public bool IsCover
+        {
+            get => _isCover;
+            set => SetProperty(ref _isCover, value);
         }
     }
 }

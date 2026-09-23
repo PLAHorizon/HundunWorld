@@ -19,6 +19,7 @@ public class HandleInteractionIntentTests
         var clusterClient = new Mock<IClusterClient>();
         var zoneShardMock = new Mock<IZoneShardGrain>();
         clusterClient.Setup(c => c.GetGrain<IZoneShardGrain>(0L, It.IsAny<string>())).Returns(zoneShardMock.Object);
+        zoneShardMock.Setup(z => z.HasEntityAsync(It.IsAny<ulong>())).ReturnsAsync(true);
         zoneShardMock.Setup(z => z.GenerateInteractionSync(It.IsAny<int>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<byte>(), It.IsAny<long>())).Returns(Task.CompletedTask);
         var handler = new SyncPacketHandler(NullLogger<MessageHandlerBase>.Instance, clusterClient.Object, adapter);
         return (handler, zoneShardMock);
@@ -119,6 +120,7 @@ public class HandleInteractionIntentTests
         var clusterClient = new Mock<IClusterClient>();
         var zoneShardMock = new Mock<IZoneShardGrain>();
         clusterClient.Setup(c => c.GetGrain<IZoneShardGrain>(0L, It.IsAny<string>())).Returns(zoneShardMock.Object);
+        zoneShardMock.Setup(z => z.HasEntityAsync(It.IsAny<ulong>())).ReturnsAsync(true);
         zoneShardMock.Setup(z => z.GenerateInteractionSync(It.IsAny<int>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<byte>(), It.IsAny<long>())).ThrowsAsync(new InvalidOperationException("grain unavailable"));
         var handler = new SyncPacketHandler(NullLogger<MessageHandlerBase>.Instance, clusterClient.Object, adapter);
         var result = await handler.HandleInteractionIntent(100L, 200L, 1, SyncEventKind.InteractStart);

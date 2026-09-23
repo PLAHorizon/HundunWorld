@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(27, Enums.ServiceType.System)]
     public partial class HeartbeatMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -49,6 +50,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(28, Enums.ServiceType.System)]
     public partial class HeartbeatResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -89,6 +91,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(111, Enums.ServiceType.System)]
     public partial class SystemNotificationMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -176,6 +179,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(112, Enums.ServiceType.System)]
     public partial class SystemAnnouncementMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -289,6 +293,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(113, Enums.ServiceType.System)]
     public partial class ErrorMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -353,6 +358,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(114, Enums.ServiceType.System)]
     public partial class ServerStatusMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -466,6 +472,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(115, Enums.ServiceType.System)]
     public partial class ConfigUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -516,6 +523,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(116, Enums.ServiceType.System)]
     public partial class VersionUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -577,6 +585,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(117, Enums.ServiceType.System)]
     public partial class LogMessage : MessageUnion, INetworkMessage
     {
         /// <summary>

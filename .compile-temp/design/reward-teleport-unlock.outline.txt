@@ -1,0 +1,64 @@
+## page: reward-teleport-unlock
+## dom-ids: back-hud, link-reward-map, teleportTitle
+  main
+    div
+      div
+      div
+      div
+        div
+        div
+        div
+        div .teleport-modal
+          div .modal-splash modal-splash-1
+          div .modal-splash modal-splash-2
+          button #back-hud .modal-close [aria="关闭"]
+          span
+          span
+          span
+          span
+          div .modal-body
+            div .modal-header
+              span .header-ornament header-ornament-left
+              h1 #teleportTitle .modal-title | 传送点已解锁
+              span .header-ornament header-ornament-right
+              div .teleport-icon-section
+                div .teleport-icon-outer-ring
+                div .teleport-icon-inner-ring
+                div .teleport-icon
+                  span | 阵
+                div .teleport-icon-pulse
+                div .teleport-icon-pulse teleport-icon-pulse-delayed
+              h2 | 青城山脚
+              div
+                i .location-icon
+                span | 青城山 · 山脚村落
+              div #link-reward-map [aria="点击查看大地图"]
+                div
+                div
+                div
+                div .map-grid
+                  div .map-grid-line map-grid-h1
+                  div .map-grid-line map-grid-h2
+                  div .map-grid-line map-grid-v1
+                  div .map-grid-line map-grid-v2
+                div
+                div
+                div
+                  div
+                  div
+                div
+                  i .map-content-icon
+                  span .map-content-label | 地图缩略图
+                div
+                  i .map-hint-icon
+                  span | 点击查看大地图
+                p | 已解锁快速传送功能，可随时通过地图传送至此处。
+                div .button-group
+                  button #back-hud .ink-btn ink-btn-ghost confirm-btn
+                    span | 确认
+                  button #link-reward-map .ink-btn ink-btn-primary map-open-btn
+                    i .btn-icon
+                    span | 打开地图
+
+## COPY (9)
+传送点已解锁 | 阵 | 青城山脚 | 青城山 · 山脚村落 | 地图缩略图 | 点击查看大地图 | 已解锁快速传送功能，可随时通过地图传送至此处。 | 确认 | 打开地图

@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(16, Enums.ServiceType.Combat)]
     public partial class AttackMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -91,6 +92,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(17, Enums.ServiceType.Combat)]
     public partial class SkillCastMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -197,6 +199,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(18, Enums.ServiceType.Combat)]
     public partial class DamageMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -275,6 +278,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(34, Enums.ServiceType.Combat)]
     public partial class DeathMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -318,6 +322,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(35, Enums.ServiceType.Combat)]
     public partial class ResurrectMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -372,6 +377,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(36, Enums.ServiceType.Game)]
     public partial class QingGongMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -422,6 +428,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(37, Enums.ServiceType.Game)]
     public partial class NeiGongMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -476,6 +483,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(38, Enums.ServiceType.Combat)]
     public partial class ComboAttackMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -530,6 +538,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(39, Enums.ServiceType.Combat)]
     public partial class DefenseMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -584,6 +593,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(40, Enums.ServiceType.Game)]
     public partial class AttributeUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -624,6 +634,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(120, Enums.ServiceType.Game)]
     public partial class MapPlayer : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -751,6 +762,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(173, Enums.ServiceType.Game)]
     public partial class EntitySpawnMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -816,6 +828,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(174, Enums.ServiceType.Game)]
     public partial class EntityDespawnMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -902,6 +915,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(175, Enums.ServiceType.Combat)]
     public partial class EffectSyncMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -985,6 +999,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(176, Enums.ServiceType.Game)]
     public partial class AoiUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1090,6 +1105,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(177, Enums.ServiceType.Game)]
     public partial class MovementSpeedValidationMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1171,6 +1187,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(178, Enums.ServiceType.Combat)]
     public partial class SkillInterruptMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1263,6 +1280,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(179, Enums.ServiceType.Social)]
     public partial class FriendListMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1300,6 +1318,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(180, Enums.ServiceType.Social)]
     public partial class FriendOperationMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1433,6 +1452,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(181, Enums.ServiceType.Game)]
     public partial class TeleportPointMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1463,6 +1483,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(182, Enums.ServiceType.Game)]
     public partial class MinimapMarkerMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1523,6 +1544,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(183, Enums.ServiceType.Social)]
     public partial class ChatSendMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1584,6 +1606,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(170, Enums.ServiceType.Game)]
     public partial class NarrativeProHorizonMessage : MessageUnion,INetworkMessage
     {
         [MemoryPackOrder(0)]

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Horizon.Game.Core.Utilities;
+using Horizon.Game.Message.Utilities;
 using Horizon.Game.Core.World.ChunkCell;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.World;

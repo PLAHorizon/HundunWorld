@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Horizon.Core.Abstract.Enums;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -43,6 +44,12 @@ namespace Horizon.WebApi.Controllers
         public async Task<ResultVM<MerchantState>> AuditMerchantAsync(long merchantId, [FromBody] AuditMerchantRequest request)
         {
             var result = new ResultVM<MerchantState>();
+            if (!CheckAdmin())
+            {
+                result.ErrorMessage = "无权限访问";
+                HttpContext.Response.StatusCode = 401;
+                return result;
+            }
             try
             {
                 var client = await OrleansConnectClient();
@@ -62,6 +69,12 @@ namespace Horizon.WebApi.Controllers
         public async Task<ResultVM<bool>> FreezeMerchantAsync(long merchantId)
         {
             var result = new ResultVM<bool>();
+            if (!CheckAdmin())
+            {
+                result.ErrorMessage = "无权限访问";
+                HttpContext.Response.StatusCode = 401;
+                return result;
+            }
             try
             {
                 var client = await OrleansConnectClient();
@@ -81,6 +94,12 @@ namespace Horizon.WebApi.Controllers
         public async Task<ResultVM<bool>> UnfreezeMerchantAsync(long merchantId)
         {
             var result = new ResultVM<bool>();
+            if (!CheckAdmin())
+            {
+                result.ErrorMessage = "无权限访问";
+                HttpContext.Response.StatusCode = 401;
+                return result;
+            }
             try
             {
                 var client = await OrleansConnectClient();
@@ -100,6 +119,12 @@ namespace Horizon.WebApi.Controllers
         public async Task<ResultVM<ProductState>> AuditProductAsync(long productId, [FromBody] AuditProductRequest request)
         {
             var result = new ResultVM<ProductState>();
+            if (!CheckAdmin())
+            {
+                result.ErrorMessage = "无权限访问";
+                HttpContext.Response.StatusCode = 401;
+                return result;
+            }
             try
             {
                 var client = await OrleansConnectClient();
@@ -119,6 +144,12 @@ namespace Horizon.WebApi.Controllers
         public async Task<ResultVM<OrderRefundState>> PlatformAuditRefundAsync(long refundId, [FromBody] PlatformAuditRefundRequest request)
         {
             var result = new ResultVM<OrderRefundState>();
+            if (!CheckAdmin())
+            {
+                result.ErrorMessage = "无权限访问";
+                HttpContext.Response.StatusCode = 401;
+                return result;
+            }
             try
             {
                 var client = await OrleansConnectClient();
@@ -138,6 +169,12 @@ namespace Horizon.WebApi.Controllers
         public async Task<ResultVM<AdminStatisticsState>> GetStatisticsAsync()
         {
             var result = new ResultVM<AdminStatisticsState>();
+            if (!CheckAdmin())
+            {
+                result.ErrorMessage = "无权限访问";
+                HttpContext.Response.StatusCode = 401;
+                return result;
+            }
             try
             {
                 var client = await OrleansConnectClient();
@@ -178,9 +215,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("merchants")]
-        public async Task<ResultVM<List<MerchantState>>> GetMerchantsAsync()
+        public async Task<ResultVM<List<MerchantDto>>> GetMerchantsAsync()
         {
-            var result = new ResultVM<List<MerchantState>>();
+            var result = new ResultVM<List<MerchantDto>>();
             try
             {
                 if (!CheckAdmin())
@@ -191,7 +228,7 @@ namespace Horizon.WebApi.Controllers
                 }
 
                 // TODO: IFlowerQueryGrain 缺少 QueryAllMerchantsAsync 方法，后续需要添加
-                result.Data = new List<MerchantState>();
+                result.Data = new List<MerchantDto>();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -203,9 +240,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("orders")]
-        public async Task<ResultVM<List<OrderState>>> GetOrdersAsync([FromQuery] int? status = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<OrderDto>>> GetOrdersAsync([FromQuery] int? status = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<OrderState>>();
+            var result = new ResultVM<List<OrderDto>>();
             try
             {
                 if (!CheckAdmin())
@@ -216,7 +253,7 @@ namespace Horizon.WebApi.Controllers
                 }
 
                 // TODO: IFlowerQueryGrain 缺少 QueryAllOrdersAsync 方法，后续需要添加
-                result.Data = new List<OrderState>();
+                result.Data = new List<OrderDto>();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -253,9 +290,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("refunds")]
-        public async Task<ResultVM<List<OrderRefundState>>> GetRefundsAsync()
+        public async Task<ResultVM<List<OrderRefundDto>>> GetRefundsAsync()
         {
-            var result = new ResultVM<List<OrderRefundState>>();
+            var result = new ResultVM<List<OrderRefundDto>>();
             try
             {
                 if (!CheckAdmin())
@@ -266,7 +303,7 @@ namespace Horizon.WebApi.Controllers
                 }
 
                 // TODO: IOrderRefundGrain 缺少 ListAllRefundsAsync 方法，后续需要添加
-                result.Data = new List<OrderRefundState>();
+                result.Data = new List<OrderRefundDto>();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

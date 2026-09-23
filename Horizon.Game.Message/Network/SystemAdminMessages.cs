@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(127, Enums.ServiceType.System)]
     public partial class SystemCommandMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -77,6 +78,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(128, Enums.ServiceType.System)]
     public partial class SystemCommandResultMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -127,6 +129,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(129, Enums.ServiceType.System)]
     public partial class ServerManagementMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -243,6 +246,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(130, Enums.ServiceType.System)]
     public partial class PlayerManagementMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -371,6 +375,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(131, Enums.ServiceType.Game)]
     public partial class GameEventMessage : MessageUnion, INetworkMessage
     {
         /// <summary>

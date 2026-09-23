@@ -122,91 +122,10 @@
 			"V": {}
 		},
 		{
-			"ID": "37044bfd42f7d4eb6470b0b2b33cb8b2",
-			"TypeName": "Game.Network.NetworkSyncManager",
-			"ParentID": "5ccec44d43311662598c04b45e5cd8a8",
-			"V": {
-	"ShowDebug": true,
-	"ShowPredictionPath": true
-}
-		},
-		{
-			"ID": "a67e45dc463deb8806c5d0b753be6e59",
-			"TypeName": "HundunWorld.Game.Network.Sync.NetworkSyncIntegration",
-			"ParentID": "5ccec44d43311662598c04b45e5cd8a8",
-			"V": {
-	"EnableAutoTest": true
-}
-		},
-		{
 			"ID": "6ab54ed7483fd3db29b9bb9d376c1143",
 			"TypeName": "HundunWorld.WorldSceneInitializer",
 			"ParentID": "5ccec44d43311662598c04b45e5cd8a8",
 			"V": {}
-		},
-		{
-			"ID": "5f2e578142c5edd484cf11a249ea1c79",
-			"TypeName": "FlaxEngine.UICanvas",
-			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
-			"IsActive": false,
-			"Name": "UICanvas",
-			"Transform": {
-				"Orientation": {
-					"X": 1.0,
-					"Y": 4.371138828673793e-8,
-					"Z": 4.371138828673793e-8,
-					"W": 1.910685465164705e-15
-				}
-			},
-			"V": {}
-		},
-		{
-			"ID": "f5f6c5724eeb0a8989aa8f83c085666f",
-			"TypeName": "FlaxEngine.UIControl",
-			"ParentID": "5f2e578142c5edd484cf11a249ea1c79",
-			"Name": "Canvas Scalar",
-			"Control": "HundunWorld.Game.UI.Kungfu.KungfuSystemUI",
-			"Data": {
-	"ClipChildren": true,
-	"CullChildren": true,
-	"AnchorMin": {
-		"X": 0.0,
-		"Y": 0.0
-	},
-	"AnchorMax": {
-		"X": 1.0,
-		"Y": 1.0
-	},
-	"Offsets": {
-		"Left": 0.0,
-		"Right": 0.0,
-		"Top": 0.0,
-		"Bottom": 0.0
-	},
-	"Scale": {
-		"X": 1.0,
-		"Y": 1.0
-	},
-	"Pivot": {
-		"X": 0.5,
-		"Y": 0.5
-	},
-	"Shear": {
-		"X": 0.0,
-		"Y": 0.0
-	},
-	"Rotation": 0.0,
-	"BackgroundColor": {
-		"R": 0.047,
-		"G": 0.047,
-		"B": 0.047,
-		"A": 1.0
-	},
-	"BackgroundBrush": null,
-	"Enabled": true,
-	"Visible": true,
-	"AutoFocus": false
-}
 		},
 		{
 			"ID": "22c5bcd24271f83c472785986935c924",

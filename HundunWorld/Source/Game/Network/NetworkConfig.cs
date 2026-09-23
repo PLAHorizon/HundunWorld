@@ -24,6 +24,20 @@ namespace HundunWorld.Game.Network
         /// 重连间隔（毫秒）
         /// </summary>
         public int ReconnectInterval { get; set; } = 5000;
+
+        /// <summary>
+        /// WebApi 基础地址（可选，需以 / 结尾）。
+        /// 留空时按网关列表首项推导 https://{IP}:5101/，配置后可切换开发/灰度环境后端。
+        /// </summary>
+        public string WebApiBaseUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 开发环境：是否显式跳过 HTTPS 证书校验（仅用于自签名证书的局域网开发服务器）。
+        /// 未配置（null）：系统校验 + 锁定证书 + 回环/私有网段自动放行；
+        /// true：任意证书全部放行（仅限开发调试环境）；
+        /// false：严格模式，仅系统信任证书与锁定证书放行。
+        /// </summary>
+        public bool? AllowInsecureSsl { get; set; }
     }
 
     /// <summary>

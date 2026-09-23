@@ -241,9 +241,16 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 QingGongMessage qingGongMessage = message.Body as QingGongMessage;
-                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>((long)qingGongMessage.CharacterId);
-                var result = await characterGrain.UseQingGongAsync(qingGongMessage);
-                var tem = CreateHorizonMessage(result);
+                // 轻功消息直接回显（确定性移动由 Sim 层 MovementFormulaStepper 处理，此处仅确认技能使用）。
+                var response = new QingGongMessage
+                {
+                    CharacterId = qingGongMessage.CharacterId,
+                    QingGongSkillId = qingGongMessage.QingGongSkillId,
+                    StartPosition = qingGongMessage.StartPosition,
+                    TargetPosition = qingGongMessage.TargetPosition,
+                    PathPoints = qingGongMessage.PathPoints
+                };
+                var tem = CreateHorizonMessage(response);
                 return (true, tem);
             }
             catch (Exception ex)

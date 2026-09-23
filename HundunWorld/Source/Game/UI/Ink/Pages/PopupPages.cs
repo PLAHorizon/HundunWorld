@@ -581,6 +581,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkTextBlock _senderName;
         private InkTextBlock _senderDate;
         private InkPanel _senderDivider;
+        private InkTag _senderBadge;
 
         private InkPanel _titleLineLeft;
         private InkTextBlock _titleText;
@@ -594,6 +595,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkPanel _metadataBar;
         private InkTextBlock _metadataSource;
         private InkTextBlock _metadataTime;
+        private InkTextBlock _metadataUrgent;
 
         private InkButton _replyButton;
         private InkButton _favoriteButton;
@@ -682,7 +684,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             InkTextBlock avatarText = new InkTextBlock(InkTextStyle.Display)
             {
-                Text = "云",
+                Text = "青",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,
                 Size = new Float2(48f, 48f),
@@ -695,7 +697,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _senderName = new InkTextBlock(InkTextStyle.Heading)
             {
-                Text = "云游客",
+                Text = "青城派 · 掌门",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(88f, 28f),
                 Size = new Float2(120f, 24f),
@@ -706,7 +708,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _senderDate = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "甲辰年·孟秋",
+                Text = "三日之前 · 辰时",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(88f, 56f),
                 Size = new Float2(120f, 16f),
@@ -722,6 +724,17 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 BackgroundColor = InkWashTheme.PaperDark,
             };
             _panel.AddChild(_senderDivider);
+
+            // 书信标签（设计稿 .sender-badge：鎏金底书信徽记）
+            _senderBadge = new InkTag
+            {
+                Text = "书信",
+                TagVariant = InkTagVariant.Brand,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PanelWidth - 32f - 56f, 34f),
+                Size = new Float2(56f, 22f),
+            };
+            _panel.AddChild(_senderBadge);
         }
 
         private void BuildTitleSection()
@@ -737,7 +750,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _titleText = new InkTextBlock(InkTextStyle.Heading)
             {
-                Text = "江湖来信",
+                Text = "少侠台鉴：",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(80f, 90f),
                 Size = new Float2(260f, 32f),
@@ -761,7 +774,11 @@ namespace HundunWorld.Game.UI.Ink.Pages
         {
             _contentText = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = "少侠亲启：\n\n江湖路远，风波不定。闻君近日于洛阳城内除恶扬善，名声鹊起，实为可喜。\n\n某不才，愿赠君一言：行走江湖，以义为先，以仁为怀。遇不平则鸣，逢危难则援，方为侠者本色。\n\n他日有缘，当于江南烟雨之中，共品茗茶，再叙江湖。\n\n云游客 顿首",
+                Text = "近日昆仑山中异象频生，墨麒麟出没，恐有大变。山中灵气紊乱，飞禽走兽皆不安其位，草木枯荣失序，此乃天地示警之兆。\n\n"
+                    + "老夫已派弟子前往探查，望少侠亦能相助。江湖之中，能辨此异象者寥寥，少侠身负天命，或可窥见其中端倪。\n\n"
+                    + "此事关系江湖安危，切不可等闲视之。若任其蔓延，恐殃及无辜苍生，届时悔之晚矣。\n\n"
+                    + "若有发现，速来报知。青城掌门 顿首。\n\n"
+                    + "青城派掌门 玄真子\n庚子年 暮秋",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, 136f),
                 Size = new Float2(PanelWidth - 64f, ContentSectionHeight - 40f),
@@ -787,7 +804,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _sealText = new InkTextBlock(InkTextStyle.Display)
             {
-                Text = "印",
+                Text = "真",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,
                 Size = new Float2(48f, 48f),
@@ -812,7 +829,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _metadataSource = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "来源：江湖传闻",
+                Text = "来源 青城山 · 上清宫",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, 8f),
                 Size = new Float2(150f, 16f),
@@ -822,14 +839,26 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _metadataTime = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "辰时送达",
+                Text = "关联 昆仑异象 · 主线",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(PanelWidth - 100f, 8f),
-                Size = new Float2(68f, 16f),
+                Location = new Float2(PanelWidth - 190f, 8f),
+                Size = new Float2(180f, 16f),
                 HorizontalAlignment = TextAlignment.Far,
                 TextColor = InkWashTheme.PaperDark,
             };
             _metadataBar.AddChild(_metadataTime);
+
+            // 紧急标记（设计稿 .meta-value-urgent：朱红加急）
+            _metadataUrgent = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "紧急 加急",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PanelWidth - 78f, 8f),
+                Size = new Float2(46f, 16f),
+                HorizontalAlignment = TextAlignment.Far,
+                TextColor = InkWashTheme.TextVermilion,
+            };
+            _metadataBar.AddChild(_metadataUrgent);
         }
 
         private void BuildActions()
@@ -876,10 +905,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _footerHint = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "按 ESC 关闭",
+                Text = "第 一 封 / 共 三 封",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2((PanelWidth - 100f) * 0.5f, actionsY + 48f),
-                Size = new Float2(100f, 16f),
+                Location = new Float2((PanelWidth - 140f) * 0.5f, actionsY + 48f),
+                Size = new Float2(140f, 16f),
                 HorizontalAlignment = TextAlignment.Center,
                 TextColor = InkWashTheme.PaperDark,
             };
@@ -913,7 +942,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         // 公共 API
         // =======================================================================
 
-        public void SetMessage(string title, string content, string senderName = "云游客", string senderDate = "甲辰年·孟秋")
+        public void SetMessage(string title, string content, string senderName = "青城派 · 掌门", string senderDate = "三日之前 · 辰时")
         {
             if (_titleText != null)
                 _titleText.Text = title ?? string.Empty;
@@ -928,7 +957,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _senderDate.Text = senderDate ?? string.Empty;
         }
 
-        public void ShowMessage(string title, string content, string senderName = "云游客", string senderDate = "甲辰年·孟秋")
+        public void ShowMessage(string title, string content, string senderName = "青城派 · 掌门", string senderDate = "三日之前 · 辰时")
         {
             SetMessage(title, content, senderName, senderDate);
         }
@@ -2436,7 +2465,22 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
         private const float ComboY = 350f;
 
-        private const float ActionY = 520f;
+        /// <summary>修炼进度区起始 Y（设计稿「修炼进度」section）</summary>
+        private const float CultivationY = 470f;
+
+        /// <summary>修炼所需材料区起始 Y（设计稿 .materials-section）</summary>
+        private const float MaterialsY = 580f;
+
+        private const float ActionY = 810f;
+
+        /// <summary>修炼经验当前值（设计稿 .cult-exp-current）</summary>
+        private const int CultivationExpCurrent = 7500;
+
+        /// <summary>修炼经验上限（设计稿 .cult-exp-total）</summary>
+        private const int CultivationExpTotal = 10000;
+
+        /// <summary>修炼经验进度（设计稿 .cult-progress width: 75%）</summary>
+        private static readonly float CultivationExpRatio = (float)CultivationExpCurrent / CultivationExpTotal;
 
         private InkPanelElevated _panel;
         private InkButton _closeButton;
@@ -2448,6 +2492,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
         private InkPanel[] _attrCells;
         private InkTextBlock[] _attrLabels;
+
+        private InkTextBlock _materialsTitle;
+        private InkButton _guideLink;
+        private InkTextBlock[] _materialNames;
+        private InkTextBlock[] _materialCounts;
+        private InkTextBlock[] _materialStatuses;
+        private InkTextBlock _materialsSummary;
         private InkTextBlock[] _attrValues;
 
         private InkPanel[] _comboNodes;
@@ -2459,7 +2510,76 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkButton _practiceButton;
         private InkButton _closeBtnBottom;
 
+        // 头部可绑定元素（供外部注入真实武学数据，替换设计稿静态占位）
+        private InkTag _qualityTag;
+        private InkTag _typeTag;
+        private InkTextBlock _levelText;
+
         private Float2 _screenSize;
+
+        /// <summary>
+        /// 武学详情弹窗的数据契约。由来源页面（如武学心法面板）在触发导航时填充，
+        /// 弹窗创建后通过 <see cref="BindMartial"/> 注入，替换设计稿中的静态示例内容。
+        /// </summary>
+        public struct MartialDetailInfo
+        {
+            public string Glyph;
+            public string Name;
+            public string Sect;
+            public string Grade;
+            public InkWashTheme.InkQuality Quality;
+        }
+
+        /// <summary>基于既有主题 token 派生指定透明度的颜色（避免硬编码色值）。</summary>
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            return new Color(color.R, color.G, color.B, alpha);
+        }
+
+        /// <summary>
+        /// 注入真实武学数据（名称/品阶/门派/熟练度/品质色），覆盖设计稿示例占位。
+        /// 空字段保持示例值不动，保证仅覆盖有来源数据的项。
+        /// </summary>
+        public void BindMartial(in MartialDetailInfo info)
+        {
+            if (!string.IsNullOrEmpty(info.Glyph))
+                _moveIconChar.Text = info.Glyph.Substring(0, 1);
+            if (!string.IsNullOrEmpty(info.Name))
+                _moveName.Text = info.Name;
+            if (!string.IsNullOrEmpty(info.Sect))
+                _typeTag.Text = info.Sect;
+            if (!string.IsNullOrEmpty(info.Grade))
+                _levelText.Text = info.Grade;
+            _qualityTag.Text = QualityName(info.Quality);
+            _qualityTag.TagVariant = QualityTagVariant(info.Quality);
+        }
+
+        /// <summary>品质 → 设计稿五阶品名（凡/良/珍/史/传）。</summary>
+        private static string QualityName(InkWashTheme.InkQuality q)
+        {
+            switch (q)
+            {
+                case InkWashTheme.InkQuality.Legendary: return "传世";
+                case InkWashTheme.InkQuality.Epic: return "史传";
+                case InkWashTheme.InkQuality.Rare: return "珍品";
+                case InkWashTheme.InkQuality.Uncommon: return "良品";
+                default: return "凡品";
+            }
+        }
+
+        /// <summary>品质 → 标签变体（珍品及以上鎏金品牌，其余默认弱金）。</summary>
+        private static InkTagVariant QualityTagVariant(InkWashTheme.InkQuality q)
+        {
+            switch (q)
+            {
+                case InkWashTheme.InkQuality.Legendary:
+                case InkWashTheme.InkQuality.Epic:
+                case InkWashTheme.InkQuality.Rare:
+                    return InkTagVariant.Brand;
+                default:
+                    return InkTagVariant.Default;
+            }
+        }
 
         public PopupMartialDetail()
         {
@@ -2488,6 +2608,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 BuildHeader();
                 BuildAttributes();
                 BuildComboPath();
+                BuildCultivation();
+                BuildMaterials();
                 BuildActions();
 
                 ApplyLayout();
@@ -2554,6 +2676,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 Size = new Float2(60f, 22f),
             };
             _panel.AddChild(tag1);
+            _qualityTag = tag1;
 
             InkTag tag2 = new InkTag
             {
@@ -2564,6 +2687,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 Size = new Float2(96f, 22f),
             };
             _panel.AddChild(tag2);
+            _typeTag = tag2;
 
             InkTextBlock levelText = new InkTextBlock(InkTextStyle.Body)
             {
@@ -2574,6 +2698,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 TextColor = InkWashTheme.GoldBright,
             };
             _panel.AddChild(levelText);
+            _levelText = levelText;
 
             _moveFlavor = new InkTextBlock(InkTextStyle.Body)
             {
@@ -2767,6 +2892,212 @@ namespace HundunWorld.Game.UI.Ink.Pages
             _panel.AddChild(comboHint);
         }
 
+        /// <summary>
+        /// 修炼进度区（设计稿 popup-martial-detail.html「修炼进度」section）：
+        /// 小节标题 + 修炼指引链接、当前 / 下一阶等级与提升预览、朱红经验进度条、
+        /// 经验值行（7,500 / 10,000 与 75%）。
+        /// </summary>
+        private void BuildCultivation()
+        {
+            float y = CultivationY;
+
+            InkTextBlock cultTitle = new InkTextBlock(InkTextStyle.Subheading)
+            {
+                Text = "修炼进度",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, y),
+                Size = new Float2(140f, 24f),
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _panel.AddChild(cultTitle);
+
+            // 修炼指引链接（设计稿 .guide-link 位于本区小节标题右侧）
+            _guideLink = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "修炼指引",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PanelWidth - 32f - 96f, y - 2f),
+                Size = new Float2(96f, 28f),
+            };
+            _guideLink.ButtonClicked += OnGuideLinkClicked;
+            _panel.AddChild(_guideLink);
+
+            // 当前 → 下一阶 与提升预览（设计稿 .cultivation-level-row）
+            InkTextBlock currentLevel = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "当前 Lv. 15",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, y + 32f),
+                Size = new Float2(110f, 20f),
+                TextColor = InkWashTheme.PaperBright,
+            };
+            _panel.AddChild(currentLevel);
+
+            InkTextBlock levelArrow = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "→",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(148f, y + 32f),
+                Size = new Float2(24f, 20f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.TextTertiary,
+            };
+            _panel.AddChild(levelArrow);
+
+            InkTextBlock nextLevel = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "下一阶 Lv. 16",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(176f, y + 32f),
+                Size = new Float2(120f, 20f),
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _panel.AddChild(nextLevel);
+
+            InkTextBlock levelBonus = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "伤害 +260 · 破防 +80",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(304f, y + 34f),
+                Size = new Float2(220f, 18f),
+                TextColor = InkWashTheme.JadeBright,
+            };
+            _panel.AddChild(levelBonus);
+
+            // 经验进度条（设计稿 .cult-progress：朱红填充 75%）
+            InkBar cultBar = new InkBar
+            {
+                FillVariant = InkBarFillVariant.Vermilion,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, y + 60f),
+                Size = new Float2(PanelWidth - 64f, 8f),
+            };
+            cultBar.Value = CultivationExpRatio;
+            _panel.AddChild(cultBar);
+
+            // 经验值行（设计稿 .cult-exp-row）
+            InkTextBlock expLabel = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "经验值",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, y + 78f),
+                Size = new Float2(60f, 18f),
+                TextColor = InkWashTheme.PaperAged,
+            };
+            _panel.AddChild(expLabel);
+
+            InkTextBlock expValue = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = $"{CultivationExpCurrent.ToString("N0")} / {CultivationExpTotal.ToString("N0")}",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(92f, y + 78f),
+                Size = new Float2(180f, 18f),
+                HorizontalAlignment = TextAlignment.Near,
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _panel.AddChild(expValue);
+
+            InkTextBlock expPercent = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "75%",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PanelWidth - 92f, y + 78f),
+                Size = new Float2(60f, 18f),
+                HorizontalAlignment = TextAlignment.Far,
+                TextColor = InkWashTheme.VermilionBright,
+            };
+            _panel.AddChild(expPercent);
+        }
+
+        /// <summary>
+        /// 修炼所需材料区（设计稿 popup-martial-detail.html .materials-section）：
+        /// 4 项材料（剑意残片 / 灵石 / 铜钱 / 青莲剑谱，含 已有/需要 与 充足/不足 状态）+ 汇总提示。
+        /// </summary>
+        private void BuildMaterials()
+        {
+            float y = MaterialsY;
+
+            _materialsTitle = new InkTextBlock(InkTextStyle.Subheading)
+            {
+                Text = "修炼所需",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, y),
+                Size = new Float2(140f, 24f),
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _panel.AddChild(_materialsTitle);
+
+            string[] names = { "剑意残片", "灵石", "铜钱", "青莲剑谱" };
+            string[] haves = { "15", "85", "12,450", "1" };
+            string[] needs = { "20", "100", "5,000", "1" };
+            bool[] enough = { false, false, true, true };
+
+            _materialNames = new InkTextBlock[names.Length];
+            _materialCounts = new InkTextBlock[names.Length];
+            _materialStatuses = new InkTextBlock[names.Length];
+
+            float rowHeight = 30f;
+            float startY = y + 30f;
+            for (int i = 0; i < names.Length; i++)
+            {
+                Color statusColor = enough[i] ? InkWashTheme.JadeBright : InkWashTheme.VermilionBright;
+
+                InkPanel row = new InkPanel
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(32f, startY + i * rowHeight),
+                    Size = new Float2(PanelWidth - 64f, rowHeight - 6f),
+                    Radius = InkWashTheme.RadiusMd,
+                    BackgroundColor = WithAlpha(statusColor, 0.08f),
+                };
+                _panel.AddChild(row);
+
+                _materialNames[i] = new InkTextBlock(InkTextStyle.Body)
+                {
+                    Text = names[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(12f, 4f),
+                    Size = new Float2(160f, 20f),
+                    TextColor = InkWashTheme.PaperBright,
+                };
+                row.AddChild(_materialNames[i]);
+
+                _materialCounts[i] = new InkTextBlock(InkTextStyle.Number)
+                {
+                    Text = $"{haves[i]} / {needs[i]}",
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(180f, 4f),
+                    Size = new Float2(180f, 20f),
+                    HorizontalAlignment = TextAlignment.Near,
+                    TextColor = statusColor,
+                };
+                row.AddChild(_materialCounts[i]);
+
+                _materialStatuses[i] = new InkTextBlock(InkTextStyle.Caption)
+                {
+                    Text = enough[i] ? "充足" : "不足",
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(PanelWidth - 64f - 60f, 6f),
+                    Size = new Float2(48f, 18f),
+                    HorizontalAlignment = TextAlignment.Far,
+                    TextColor = statusColor,
+                };
+                row.AddChild(_materialStatuses[i]);
+            }
+
+            _materialsSummary = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "2种材料不足，无法修炼。请先收集所需材料。",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, startY + names.Length * rowHeight + 4f),
+                Size = new Float2(PanelWidth - 64f, 18f),
+                TextColor = InkWashTheme.TextVermilion,
+            };
+            _panel.AddChild(_materialsSummary);
+        }
+
         private void BuildActions()
         {
             _practiceButton = new InkButton
@@ -2796,6 +3127,21 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
         public event Action Practiced;
         public event Action Closed;
+
+        /// <summary>「修炼指引」链接点击事件（设计稿 .guide-link）。</summary>
+        public event Action GuideRequested;
+
+        private void OnGuideLinkClicked(Button button)
+        {
+            try
+            {
+                GuideRequested?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[PopupMartialDetail] GuideRequested 触发失败: {ex.Message}");
+            }
+        }
 
         private void OnPracticeButtonClicked(Button button)
         {
@@ -2849,9 +3195,12 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
         private const float HeaderY = 24f;
 
-        private const float StepY = 80f;
+        private const float StepY = 112f;
 
-        private const float RewardY = 380f;
+        private const float RewardY = 412f;
+
+        /// <summary>引导进度（设计稿 .ink-bar width: 37.5%，即第 3 步 / 共 8 步）</summary>
+        private const float GuideProgress = 0.375f;
 
         private InkPanelElevated _panel;
         private InkButton _closeButton;
@@ -2859,6 +3208,12 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkTextBlock _guideTitle;
         private InkTextBlock _guideSubtitle;
         private InkTextBlock _stepNumber;
+
+        /// <summary>引导进度条（设计稿 .progress-bar-wrap 的 ink-bar-thin）</summary>
+        private InkBar _progressBar;
+
+        /// <summary>进度百分比文本（设计稿 .progress-percent）</summary>
+        private InkTextBlock _progressPercent;
 
         private InkPanel[] _stepItems;
         private InkTextBlock[] _stepTitles;
@@ -2870,7 +3225,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkTextBlock[] _rewardCounts;
 
         private InkButton _startButton;
+        private InkButton _previousButton;
+        private InkButton _martialArtsLink;
         private InkButton _skipButton;
+
+        private InkPanel _diagramPanel;
+        private InkTextBlock _diagramKeys;
+        private InkTextBlock _diagramLabel;
 
         private Float2 _screenSize;
 
@@ -2938,31 +3299,53 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _guideSubtitle = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "NEWBIE GUIDE",
+                Text = "请按引导提示操作",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, HeaderY + 36f),
-                Size = new Float2(100f, 16f),
+                Size = new Float2(200f, 16f),
                 TextColor = new Color(InkWashTheme.GoldBright.R, InkWashTheme.GoldBright.G, InkWashTheme.GoldBright.B, 0.5f),
             };
             _panel.AddChild(_guideSubtitle);
 
             _stepNumber = new InkTextBlock(InkTextStyle.Number)
             {
-                Text = "01 / 05",
+                Text = "第 3 步 / 共 8 步",
                 AnchorPreset = AnchorPresets.TopRight,
-                Location = new Float2(PanelWidth - 100f, HeaderY + 38f),
-                Size = new Float2(68f, 16f),
+                Location = new Float2(PanelWidth - 172f, HeaderY + 38f),
+                Size = new Float2(140f, 16f),
                 HorizontalAlignment = TextAlignment.Far,
                 TextColor = InkWashTheme.PaperFaded,
             };
             _panel.AddChild(_stepNumber);
+
+            // 引导进度条（设计稿 .progress-bar-wrap：ink-bar-thin 37.5%）
+            _progressBar = new InkBar
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, HeaderY + 60f),
+                Size = new Float2(PanelWidth - 64f - 56f, 4f),
+            };
+            _progressBar.Value = GuideProgress;
+            _panel.AddChild(_progressBar);
+
+            // 进度百分比（设计稿 .progress-percent：37.5%）
+            _progressPercent = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "37.5%",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PanelWidth - 92f, HeaderY + 54f),
+                Size = new Float2(60f, 16f),
+                HorizontalAlignment = TextAlignment.Far,
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _panel.AddChild(_progressPercent);
         }
 
         private void BuildSteps()
         {
             InkTextBlock stepTitle = new InkTextBlock(InkTextStyle.Subheading)
             {
-                Text = "任务目标",
+                Text = "当前步骤",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, StepY),
                 Size = new Float2(100f, 24f),
@@ -2972,7 +3355,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             InkTextBlock stepName = new InkTextBlock(InkTextStyle.Heading)
             {
-                Text = "初识江湖",
+                Text = "学习轻功",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, StepY + 32f),
                 Size = new Float2(200f, 32f),
@@ -2980,23 +3363,58 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _panel.AddChild(stepName);
 
+            // 当前步骤类别标签（设计稿 .ink-tag-brand「操作引导」）
+            InkTag stepTag = new InkTag
+            {
+                Text = "操作引导",
+                TagVariant = InkTagVariant.Brand,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PanelWidth - 32f - 72f, StepY + 38f),
+                Size = new Float2(72f, 22f),
+            };
+            _panel.AddChild(stepTag);
+
             InkTextBlock stepDesc = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = "在新手村找到村长，领取你的第一把武器，开启江湖之旅。",
+                Text = "掌握基础身法，踏风而行",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, StepY + 72f),
-                Size = new Float2(PanelWidth - 64f, 48f),
+                Size = new Float2(PanelWidth - 64f, 24f),
                 TextColor = InkWashTheme.PaperAged,
             };
             _panel.AddChild(stepDesc);
 
-            string[] steps = { "与村长对话", "领取新手武器", "学习基础招式", "击败野猪试练" };
+            // 可见出口：前往武学弹窗（设计稿 .martial-arts-link）
+            _martialArtsLink = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "前往武学弹窗",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, StepY + 100f),
+                Size = new Float2(140f, 28f),
+            };
+            _martialArtsLink.ButtonClicked += OnStartButtonClicked;
+            _panel.AddChild(_martialArtsLink);
+
+            // 操作说明小节标题（设计稿 .section-subtitle「操作说明」）
+            InkTextBlock operationTitle = new InkTextBlock(InkTextStyle.Subheading)
+            {
+                Text = "操作说明",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, StepY + 138f),
+                Size = new Float2(120f, 22f),
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _panel.AddChild(operationTitle);
+
+            string[] steps = { "按住 Shift 键进入疾跑状态", "在疾跑中按 Space 键起跳", "空中再次按 Space 键施展二段跳", "按住 W+Space 可进行墙面奔跑" };
             _stepItems = new InkPanel[steps.Length];
             _stepTitles = new InkTextBlock[steps.Length];
             _stepDescriptions = new InkTextBlock[steps.Length];
 
-            float stepItemY = StepY + 136f;
-            float stepItemHeight = 48f;
+            float stepItemY = StepY + 168f;
+            float stepItemHeight = 44f;
 
             for (int i = 0; i < steps.Length; i++)
             {
@@ -3029,6 +3447,39 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 };
                 _stepItems[i].AddChild(_stepTitles[i]);
             }
+
+            // 操作示意图（设计稿 .diagram-area：键位示意 + 示意图标签）
+            float diagramY = stepItemY + steps.Length * stepItemHeight + 10f;
+            _diagramPanel = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, diagramY),
+                Size = new Float2(PanelWidth - 64f, 62f),
+                BackgroundColor = InkWashTheme.PanelSolid,
+            };
+            _panel.AddChild(_diagramPanel);
+
+            _diagramKeys = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "Shift + Space",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 10f),
+                Size = new Float2(PanelWidth - 64f, 22f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _diagramPanel.AddChild(_diagramKeys);
+
+            _diagramLabel = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "操作示意图",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 34f),
+                Size = new Float2(PanelWidth - 64f, 18f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.PaperDark,
+            };
+            _diagramPanel.AddChild(_diagramLabel);
         }
 
         private void BuildRewards()
@@ -3043,8 +3494,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _panel.AddChild(_rewardTitle);
 
-            string[] rewardNames = { "新手长剑", "铜钱 x500", "经验 x1,000", "回城符 x3" };
-            string[] rewardCounts = { "", "", "", "" };
+            string[] rewardNames = { "经验", "铜钱", "轻功残页" };
+            string[] rewardCounts = { "×2000", "×500", "×1" };
 
             _rewardItems = new InkPanel[rewardNames.Length];
             _rewardNames = new InkTextBlock[rewardNames.Length];
@@ -3078,25 +3529,48 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     Text = rewardNames[i],
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(44f, 10f),
-                    Size = new Float2(PanelWidth - 120f, 20f),
+                    Size = new Float2(PanelWidth - 160f, 20f),
                     TextColor = InkWashTheme.PaperBright,
                 };
                 _rewardItems[i].AddChild(_rewardNames[i]);
+
+                _rewardCounts[i] = new InkTextBlock(InkTextStyle.Number)
+                {
+                    Text = rewardCounts[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(PanelWidth - 148f, 10f),
+                    Size = new Float2(84f, 20f),
+                    HorizontalAlignment = TextAlignment.Far,
+                    TextColor = InkWashTheme.GoldBright,
+                };
+                _rewardItems[i].AddChild(_rewardCounts[i]);
             }
         }
 
         private void BuildActions()
         {
-            float actionY = RewardY + 200f;
+            float actionY = RewardY + 160f;
+
+            _previousButton = new InkButton
+            {
+                Variant = InkButtonVariant.Secondary,
+                ButtonSize = InkButtonSize.Lg,
+                Text = "上一步",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, actionY),
+                Size = new Float2((PanelWidth - 72f) * 0.5f, 44f),
+            };
+            _previousButton.ButtonClicked += OnPreviousButtonClicked;
+            _panel.AddChild(_previousButton);
 
             _startButton = new InkButton
             {
                 Variant = InkButtonVariant.Primary,
                 ButtonSize = InkButtonSize.Lg,
-                Text = "开始任务",
+                Text = "下一步",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(32f, actionY),
-                Size = new Float2(PanelWidth - 64f, 44f),
+                Location = new Float2(32f + (PanelWidth - 72f) * 0.5f + 8f, actionY),
+                Size = new Float2((PanelWidth - 72f) * 0.5f, 44f),
             };
             _startButton.ButtonClicked += OnStartButtonClicked;
             _panel.AddChild(_startButton);
@@ -3115,12 +3589,18 @@ namespace HundunWorld.Game.UI.Ink.Pages
         }
 
         public event Action Started;
+        public event Action PreviousRequested;
         public event Action Skipped;
         public event Action Closed;
 
         private void OnStartButtonClicked(Button button)
         {
             Started?.Invoke();
+        }
+
+        private void OnPreviousButtonClicked(Button button)
+        {
+            PreviousRequested?.Invoke();
         }
 
         private void OnSkipButtonClicked(Button button)
@@ -3200,7 +3680,21 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkButton _huntButton;
         private InkButton _trackButton;
 
+        private InkTextBlock _dropsTitle;
+        private InkTextBlock[] _dropNames;
+        private InkTextBlock[] _dropRates;
+        private InkTextBlock _actionsHint;
+
         private Float2 _screenSize;
+
+        /// <summary>掉落预览区起始 Y（设计稿 .drops-section）</summary>
+        private const float DropsSectionY = IllustrationHeight + 640f;
+
+        /// <summary>基于既有主题 token 派生指定透明度的颜色（避免硬编码色值）。</summary>
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            return new Color(color.R, color.G, color.B, alpha);
+        }
 
         public PopupBestiarySide()
         {
@@ -3232,7 +3726,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 BuildDescription();
                 BuildAttributes();
                 BuildAcquisition();
+                BuildDrops();
                 BuildActions();
+                BuildSideButtons();
 
                 ApplyLayout();
             }
@@ -3515,9 +4011,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _panel.AddChild(acqTitle);
 
-            string[] indices = { "壹", "贰" };
-            string[] titles = { "昆仑山巅 · 限时出现", "参与「异兽狩猎」活动" };
-            string[] descs = { "春雷时节，辰时方显踪迹", "每周五、六限时开放" };
+            string[] indices = { "壹", "贰", "叁" };
+            string[] titles = { "昆仑山巅 · 限时出现", "参与「异兽狩猎」活动", "使用「麒麟引」道具召唤" };
+            string[] descs = { "春雷时节，辰时方显踪迹", "每周五、六限时开放", "藏宝阁兑换或奇遇获取" };
 
             _acqIndices = new InkTextBlock[indices.Length];
             _acqTitles = new InkTextBlock[indices.Length];
@@ -3569,15 +4065,94 @@ namespace HundunWorld.Game.UI.Ink.Pages
             }
         }
 
+        /// <summary>
+        /// 掉落预览区（设计稿 popup-bestiary-side.html .drops-section：「掉落」+ 四项掉落物与掉率）。
+        /// </summary>
+        private void BuildDrops()
+        {
+            float y = DropsSectionY;
+
+            _dropsTitle = new InkTextBlock(InkTextStyle.Subheading)
+            {
+                Text = "掉落",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, y),
+                Size = new Float2(120f, 24f),
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _panel.AddChild(_dropsTitle);
+
+            string[] dropNames = { "墨麟之角", "墨麟甲片", "灵草精粹", "云海灵石" };
+            string[] dropRates = { "12%", "35%", "58%", "80%" };
+            InkWashTheme.InkQuality[] dropQualities =
+            {
+                InkWashTheme.InkQuality.Legendary,
+                InkWashTheme.InkQuality.Epic,
+                InkWashTheme.InkQuality.Rare,
+                InkWashTheme.InkQuality.Uncommon,
+            };
+
+            _dropNames = new InkTextBlock[dropNames.Length];
+            _dropRates = new InkTextBlock[dropNames.Length];
+
+            float rowHeight = 30f;
+            float startY = y + 30f;
+            for (int i = 0; i < dropNames.Length; i++)
+            {
+                Color qualityColor = InkWashTheme.QualityTextColor(dropQualities[i]);
+
+                InkPanel dropRow = new InkPanel
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(32f, startY + i * rowHeight),
+                    Size = new Float2(PanelWidth - 64f, rowHeight - 6f),
+                    Radius = InkWashTheme.RadiusMd,
+                    BackgroundColor = WithAlpha(qualityColor, 0.08f),
+                };
+                _panel.AddChild(dropRow);
+
+                // 品质色左边条
+                var qualityBar = new Control
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = Float2.Zero,
+                    Size = new Float2(2f, rowHeight - 6f),
+                    BackgroundColor = qualityColor,
+                };
+                dropRow.AddChild(qualityBar);
+
+                _dropNames[i] = new InkTextBlock(InkTextStyle.Body)
+                {
+                    Text = dropNames[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(12f, 4f),
+                    Size = new Float2(PanelWidth - 140f, 20f),
+                    TextColor = InkWashTheme.PaperBright,
+                };
+                dropRow.AddChild(_dropNames[i]);
+
+                _dropRates[i] = new InkTextBlock(InkTextStyle.Number)
+                {
+                    Text = dropRates[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(PanelWidth - 32f - 72f, 4f),
+                    Size = new Float2(72f, 20f),
+                    HorizontalAlignment = TextAlignment.Far,
+                    TextColor = qualityColor,
+                };
+                dropRow.AddChild(_dropRates[i]);
+            }
+        }
+
         private void BuildActions()
         {
-            float actionY = IllustrationHeight + 520f;
+            float actionY = IllustrationHeight + 700f;
 
             _huntButton = new InkButton
             {
-                Variant = InkButtonVariant.Primary,
+                Variant = InkButtonVariant.Vermilion,
                 ButtonSize = InkButtonSize.Lg,
-                Text = "前往狩猎",
+                Text = "前往捕获",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, actionY),
                 Size = new Float2(PanelWidth - 64f, 44f),
@@ -3589,18 +4164,69 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "追踪位置",
+                Text = "收藏条目",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2((PanelWidth - 120f) * 0.5f, actionY + 56f),
                 Size = new Float2(120f, 28f),
             };
             _trackButton.ButtonClicked += OnTrackButtonClicked;
             _panel.AddChild(_trackButton);
+
+            // 设计稿 .panel-actions-hint：捕获需组队提示
+            _actionsHint = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "捕获需组队前往，建议3人以上",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(32f, actionY + 92f),
+                Size = new Float2(PanelWidth - 64f, 18f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.TextTertiary,
+            };
+            _panel.AddChild(_actionsHint);
         }
 
         public event Action Hunt;
         public event Action Track;
         public event Action Closed;
+
+        /// <summary>设计稿 .panel-msg-btn：消息/留言 → popup-message。</summary>
+        public event Action MessageClicked;
+
+        /// <summary>
+        /// 构建右上角图标按钮（关闭 X + 留言），对应设计稿 .panel-msg-btn 与关闭按钮。
+        /// 位于插画区顶层，_panel 子控件后添加故渲染在上层。
+        /// </summary>
+        private void BuildSideButtons()
+        {
+            _msgButton = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "✉",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PanelWidth - 84f, 12f),
+                Size = new Float2(32f, 32f),
+            };
+            _msgButton.ButtonClicked += OnMessageButtonClicked;
+            _panel.AddChild(_msgButton);
+
+            _closeButton = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "✕",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PanelWidth - 44f, 12f),
+                Size = new Float2(32f, 32f),
+            };
+            _closeButton.ButtonClicked += OnCloseButtonClicked;
+            _panel.AddChild(_closeButton);
+        }
+
+        private void OnMessageButtonClicked(Button button)
+        {
+            MessageClicked?.Invoke();
+        }
 
         private void OnHuntButtonClicked(Button button)
         {

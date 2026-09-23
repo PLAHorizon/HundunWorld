@@ -88,6 +88,17 @@ namespace Horizon.Orleans.Grains.Payment
         {
             try
             {
+                // 商户配置完整性校验：密钥缺失时给出明确错误（而非底层签名异常）
+                if (string.IsNullOrEmpty(_merchantId) || string.IsNullOrEmpty(_privateKey)
+                    || string.IsNullOrEmpty(_certSerialNumber) || string.IsNullOrEmpty(_appId))
+                {
+                    return new PrepayResult
+                    {
+                        Success = false,
+                        ErrorMessage = "微信支付商户配置缺失（MerchantId/AppId/证书序列号/商户私钥），请检查 Silo 端 WechatPaySettings 配置"
+                    };
+                }
+
                 var client = GetClient();
                 var totalFen = (int)Math.Round(amount * 100m);
 
@@ -172,10 +183,23 @@ namespace Horizon.Orleans.Grains.Payment
                         var response = await client.ExecuteCreatePayTransactionAppAsync(request);
                         if (response.IsSuccessful())
                         {
+                            var prepayId = response.PrepayId ?? "";
+                            if (string.IsNullOrEmpty(prepayId))
+                            {
+                                return new PrepayResult
+                                {
+                                    Success = false,
+                                    ErrorMessage = "微信 App 下单成功但未返回 prepayId"
+                                };
+                            }
+
+                            // 生成客户端 SDK 拉起参数（微信 v3 App 支付规范：服务端 RSA-SHA256 二次签名）
+                            var payParams = BuildAppPayParams(prepayId);
                             return new PrepayResult
                             {
                                 Success = true,
-                                PrepayId = response.PrepayId ?? ""
+                                PrepayId = prepayId,
+                                PayParams = payParams
                             };
                         }
                         return new PrepayResult
@@ -410,6 +434,50 @@ namespace Horizon.Orleans.Grains.Payment
                     ErrorMessage = ex.Message
                 };
             }
+        }
+        /// <summary>
+        /// 生成微信 App 支付客户端拉起参数（JSON）。
+        /// 签名规范（微信支付 v3）：SHA256withRSA(appId\ntimeStamp\nnonceStr\nprepayId\n)，商户私钥签名。
+        /// </summary>
+        private string BuildAppPayParams(string prepayId)
+        {
+            var timeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            var nonceStr = Guid.NewGuid().ToString("N").Substring(0, 16);
+            var message = $"{_appId}\n{timeStamp}\n{nonceStr}\n{prepayId}\n";
+            var sign = SignWithMerchantPrivateKey(message);
+
+            // 转义 JSON 特殊字符后手工拼装（避免额外 JSON 依赖）
+            return $"{{\"appId\":\"{EscapeJson(_appId)}\",\"partnerId\":\"{EscapeJson(_merchantId)}\","
+                 + $"\"prepayId\":\"{EscapeJson(prepayId)}\",\"nonceStr\":\"{EscapeJson(nonceStr)}\","
+                 + $"\"timeStamp\":\"{timeStamp}\",\"package\":\"Sign=WXPay\","
+                 + $"\"sign\":\"{EscapeJson(sign)}\",\"signType\":\"RSA\"}}";
+        }
+
+        /// <summary>商户私钥 SHA256withRSA 签名（Base64）。私钥支持 PEM（含头尾）与纯 Base64（PKCS#8）两种配置格式。</summary>
+        private string SignWithMerchantPrivateKey(string message)
+        {
+            using var rsa = System.Security.Cryptography.RSA.Create();
+            var key = _privateKey.Trim();
+            if (key.Contains("BEGIN"))
+            {
+                rsa.ImportFromPem(key);
+            }
+            else
+            {
+                // 纯 Base64 PKCS#8：补 PEM 头尾后导入
+                var pem = "-----BEGIN PRIVATE KEY-----\n" + key + "\n-----END PRIVATE KEY-----";
+                rsa.ImportFromPem(pem);
+            }
+            var data = System.Text.Encoding.UTF8.GetBytes(message);
+            var signature = rsa.SignData(data,
+                System.Security.Cryptography.HashAlgorithmName.SHA256,
+                System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+            return Convert.ToBase64String(signature);
+        }
+
+        private static string EscapeJson(string value)
+        {
+            return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
     }
 }

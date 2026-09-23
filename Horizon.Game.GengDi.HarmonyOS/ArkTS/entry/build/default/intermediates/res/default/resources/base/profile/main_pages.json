@@ -1,0 +1,20 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/LoginPage",
+    "pages/RegisterPage",
+    "pages/WebViewPage",
+    "pages/ChatListPage",
+    "pages/ChatDetailPage",
+    "pages/ContactsPage",
+    "pages/ContactProfilePage",
+    "pages/ForecastPage",
+    "pages/AddressManagePage",
+    "pages/AddressEditPage",
+    "pages/OrderConfirmPage",
+    "pages/OrderPayPage",
+    "pages/OrderListPage",
+    "pages/OrderDetailPage",
+    "pages/CartPage"
+  ]
+}

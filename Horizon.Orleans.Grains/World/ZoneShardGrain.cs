@@ -9,9 +9,10 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
 using Horizon.Game.Core.Configuration;
+using Horizon.Game.Core.Observability;
 using Horizon.Game.Core.Persistence;
-using Horizon.Game.Core.Sim;
 using Horizon.Game.Core.Sim.Server;
+using Horizon.Game.Sim;
 using Horizon.Game.Core.World;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Components;
@@ -33,7 +34,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     // Task 12：observer 快照缓存，避免每次广播 ToArray 分配。订阅/退订时置 null 失效。
     private KeyValuePair<Guid, IZoneShardFanoutObserver>[]? _observerSnapshot;
     private int _interactionSyncObserverFailures;
-    private readonly MovementValidator _movementValidator;
+
+    // 阶段 1.4：确定性模拟心脏 — 输入排队 / 批量回放 / 校验全部委托 SimWorld，
+    // 与未来 UE5 DS 共用同一驱动（灰度切换 = 同一套模拟换宿主）。
+    private readonly SimWorld _simWorld;
 
     /// <summary>实体位置持久化状态（Orleans Storage）。</summary>
     private readonly IPersistentState<ZoneShardState> _zoneState;
@@ -48,7 +52,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     private long _tickCount;
     private int _processedInputs;
     private int _correctionsIssued;
-    private IDisposable? _tickTimer;
+    // 阶段 3.4：固定步长 tick 循环抽象（生产 = Orleans 定时器；测试可注入手动驱动 fake）。
+    private ITickLoop? _tickLoop;
+    private bool _ownsTickLoop;
     // P-F5：实体位置落库独立定时器（不阻塞 tick）。
     private IDisposable? _entityPersistTimer;
     private TimeSpan _tickInterval = TimeSpan.FromSeconds(1.0 / 60.0);
@@ -175,7 +181,6 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     public int SnapshotBroadcastIntervalTicks { get; set; } = 3;
 
     // 移动公式固定步长（秒），与 MovementFormula / MovementValidator 保持一致。
-    private const float MovementFormulaStepDt = 1f / 60f;
 
     // ===== 实体租约机制 =====
     // 方案5（plan.md §5）：缩短租约与孤儿检测间隔，加速残留/孤儿实体清理，减少 N 虚高。
@@ -184,6 +189,13 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     // 孤儿检测 3s 一次，最长 ~30s 清理，显著缩短残留窗口。
     private static readonly TimeSpan EntityLeaseDuration = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan OrphanCheckInterval = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// 会话订阅租约时长（2026-08）：边界分片"纯订阅会话"（无实体）的兜底过期。
+    /// 网关每 20s 经 <c>RenewSessionLeaseAsync</c> 续约（5 分钟 ≈ 15 个续约周期，
+    /// 容忍瞬时失败）；过期且本分片无实体的订阅由孤儿清理定时器驱逐。
+    /// </summary>
+    private static readonly TimeSpan SessionSubscriptionLease = TimeSpan.FromMinutes(5);
     // 修复 BUG：实体 Despawn 广播失败（无 fanout observer）时，孤儿清理会重试，但若 fanout
     // 订阅永久无法恢复，实体将永久残留。此常量定义最大重试次数（10 次 × 3 秒 = 30 秒，方案5 调整后），
     // 超过后强制从 _simulatedEntities 中移除实体，即使无法广播 Despawn delta。
@@ -220,13 +232,17 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         ILogger<ZoneShardGrain> logger,
         [PersistentState("zoneshard", "GameStore")] IPersistentState<ZoneShardState> zoneState,
         ISceneObjectPersistenceStore? sceneObjectPersistence = null,
-        ISyncInterestGradeStrategy? interestGradeStrategy = null)
+        ISyncInterestGradeStrategy? interestGradeStrategy = null,
+        ITickLoop? tickLoop = null)
     {
         _logger = logger;
         _zoneState = zoneState;
         _sceneObjectPersistence = sceneObjectPersistence;
         _interestGradeStrategy = interestGradeStrategy;
-        _movementValidator = new MovementValidator(new MovementValidator.Options
+        // 阶段 3.4：外部注入优先；未注入时在激活时创建默认 Orleans 定时器实现（_ownsTickLoop=true）。
+        _tickLoop = tickLoop;
+        _ownsTickLoop = tickLoop == null;
+        _simWorld = new SimWorld(new MovementValidator.Options
         {
             PositionEpsilon = MovementValidator.DefaultPositionEpsilon,
             HardSpeedCap = MovementValidator.DefaultHardSpeedCap,
@@ -251,6 +267,21 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 foreach (var kv in state.Entities)
                 {
                     var es = kv.Value;
+                    // 阶段 1.4：恢复时把权威移动状态注册进 SimWorld（位置/速度/朝向/接地）。
+                    _simWorld.AddOrUpdateEntity(kv.Key, es.X, es.Y, es.Z, es.MaxSpeed);
+                    var restoredWorldEntity = _simWorld.GetEntity(kv.Key);
+                    if (restoredWorldEntity is not null)
+                    {
+                        restoredWorldEntity.Vz = es.Vz;
+                        restoredWorldEntity.Yaw = es.Yaw;
+                        restoredWorldEntity.IsGrounded = es.IsGrounded;
+                        restoredWorldEntity.JumpCount = es.JumpCount;
+                        restoredWorldEntity.PrevX = es.X;
+                        restoredWorldEntity.PrevY = es.Y;
+                        restoredWorldEntity.PrevZ = es.Z;
+                        restoredWorldEntity.PrevVz = es.Vz;
+                    }
+
                     _simulatedEntities[kv.Key] = new SimulatedEntity
                     {
                         X = es.X,
@@ -275,20 +306,16 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                         LeaseExpiry = DateTime.UtcNow + EntityLeaseDuration,
 
                         // 修复（Grain 空闲回收后角色回到起点 — 根因修复）：
-                        // 持久化状态（SimulatedEntityState）不包含 ReportedEndX/Y/Z、LastProcessedClientTick、
-                        // PrevX/Y/Z 等瞬态字段。恢复后这些字段为默认值 0，导致：
-                        // 1) ReportedEndX/Y/Z=0：SubmitInputAsync 输入间隙检测触发时，位置对齐到 (0,0,0) → 角色回起点
+                        // 持久化状态（SimulatedEntityState）不包含 ReportedEndX/Y/Z、LastProcessedClientTick
+                        // 等瞬态字段。恢复后这些字段为默认值 0，导致：
+                        // 1) ReportedEndX/Y/Z=0：首输入对齐时位置对齐到 (0,0,0) → 角色回起点
                         // 2) LastProcessedClientTick=0：客户端首个输入的 ClientTick（时间戳，很大）> 0+1 → 误触发输入间隙检测
-                        // 3) PrevX/Y/Z=0：CheckAcceleration 计算从 (0,0,0) 到当前位置的加速度 → 误判瞬移
                         //
                         // 修复：用持久化的权威位置填充这些瞬态字段，确保恢复后位置自洽。
+                        // 权威 Prev/LastInputValidatedTick/RTT 等由 SimWorld 持有（恢复时已回填）。
                         ReportedEndX = es.X,
                         ReportedEndY = es.Y,
                         ReportedEndZ = es.Z,
-                        PrevX = es.X,
-                        PrevY = es.Y,
-                        PrevZ = es.Z,
-                        PrevVz = es.Vz,
                         PrevIsGrounded = es.IsGrounded,
                         // LastUpdateBroadcastTick 设为当前 tick，避免恢复后立即触发心跳（虽触发也无害）。
                         LastUpdateBroadcastTick = state.TickCount,
@@ -307,21 +334,21 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             _logger.LogError(ex, "ZoneShard {ShardId}: 恢复持久化状态失败，将以空状态启动。", this.GetPrimaryKeyLong());
         }
 
-        _tickTimer = RegisterTimer(
-            async _ =>
-            {
-                try
-                {
-                    await TickAsync(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "ZoneShard {ShardId}: 定时器 TickAsync 异常。", this.GetPrimaryKeyLong());
-                }
-            },
-            null,
-            _tickInterval,
-            _tickInterval);
+        // 修复（HP 双源 / 陈旧 HP 复活）：持久化的 RPG 属性（HP/Level 等）可能相对 CharacterGrain
+        // 权威值已过时，空闲回收后按旧快照恢复会导致陈旧 HP 复活。激活时对每个恢复实体
+        // fire-and-forget 向 CharacterGrain 重新拉取权威属性，立即纠正；失败则保留持久化兜底值（与旧行为一致），不阻塞激活。
+        foreach (var entityId in _simulatedEntities.Keys.ToList())
+        {
+            _ = RefreshAttributesFromAuthorityAsync(entityId);
+        }
+
+        // 阶段 3.4：tick 循环经 ITickLoop 抽象驱动——生产 = Orleans 定时器（异常隔离在循环层），
+        // 测试可注入手动驱动 fake 以精确控制 tick 时机。
+        _tickLoop ??= new OrleansTimerTickLoop(
+            (callback, state, dueTime, period) => RegisterTimer(callback, state, dueTime, period),
+            _logger,
+            this.GetPrimaryKeyLong().ToString());
+        _tickLoop.Start(async serverTime => await TickAsync(serverTime), _tickInterval);
 
         // P-F5：实体位置落库从 TickAsync 内移出到独立定时器。
         // 原实现在 TickAsync 内 await PersistEntityStateAsync（Orleans Storage/Redis 写入），
@@ -416,8 +443,12 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
     public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken cancellationToken)
     {
-        _tickTimer?.Dispose();
-        _tickTimer = null;
+        // 阶段 3.4：停止 tick 循环（幂等；注入的循环由外部管理，仅在自建时释放）。
+        _tickLoop?.Stop();
+        if (_ownsTickLoop)
+        {
+            _tickLoop = null;
+        }
 
         // P-F5：停用独立落库定时器（下方仍有最终落盘）。
         _entityPersistTimer?.Dispose();
@@ -527,6 +558,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// <inheritdoc />
     public Task<int> UpdateSessionPositionAsync(long sessionId, float x, float y, float z)
     {
+        // 位置更新即活跃信号：刷新会话订阅租约（视口变更引发的 Subscribe/Unsubscribe 也会刷新，
+        // 但静止玩家视口不变时不产生订阅增减，此处兜底）。
+        _aoi.TouchSession(sessionId);
+
         // Flax Y-up（X=左右, Y=上下, Z=前后）→ ECS Z-up（X=左右, Y=前后, Z=上下）：Y/Z 互换。
         // 与 BroadcastSnapshotAsync 中 WorldCoord.ToChunkMortonKey(t.X, t.Z, t.Y) 的坐标系转换一致。
 
@@ -568,13 +603,13 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// <inheritdoc />
     public Task<int> RemoveSessionAsync(long sessionId)
     {
-        // 诊断日志（Despawn 丢失 BUG）：记录 RemoveSession 调用前的订阅者列表，
-        // 便于确认是否在 B 还在线时错误移除了 B 的 session。
+        // 阶段 3.4 降噪：Despawn 丢失 BUG 已修复，RemoveSession 调用前的订阅者列表改 Debug 级
+        //（保留内容用于排查，不再污染 Warning 通道）。
         var subscribersBeforeRemove = _aoi.GetAllSubscribers();
         var removed = _aoi.RemoveSession(sessionId);
         // 清理该 session 的下行节流追踪记录（session 已断开，其"最近下行发送 tick"追踪不再需要）。
         _gradeLastSentTickBySession.Remove(sessionId);
-        _logger.LogWarning(
+        _logger.LogDebug(
             "ZoneShard {ShardId}: [RemoveSession诊断] sessionId={SessionId}, removed={Removed}, " +
             "SessionCount={SessionCount}, ChunkCount={ChunkCount}, " +
             "SubscribersBeforeRemove=[{Before}], SubscribersAfterRemove=[{After}]",
@@ -633,7 +668,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             SessionCount = _aoi.SessionCount,
             ChunkCount = _aoi.ChunkCount,
             LastTickDurationMs = Interlocked.Read(ref _lastTickDurationMs),
-            PendingInputsCount = _simulatedEntities.Values.Sum(e => e.PendingInputs.Count),
+            PendingInputsCount = _simWorld.PendingInputCount,
             TickCount = _tickCount,
         };
         return Task.FromResult(metrics);
@@ -877,144 +912,82 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         // 输入处理/移动模拟仍每 tick 执行，仅 delta 收集与广播按 20Hz 节奏。
         bool broadcastDueThisTick = forceFullThisTick || (_tickCount % SnapshotBroadcastIntervalTicks) == 0;
 
+        // 阶段 1.4：模拟心脏委托 SimWorld — 输入回放/间隙吸附/校验/修正/速度与移动模式派生
+        // 全部在 _simWorld.Step 内完成（与 UE5 DS 共用同一驱动）。广播逻辑保留在本 tick 循环。
+        var stepResults = _simWorld.Step(_tickCount);
+
+        // entityId → step 结果查找表（广播循环用 StartPosition/StartYaw 做变化检测）。
+        Dictionary<ulong, SimWorld.StepResult> stepResultsByEntity = new(stepResults.Count);
+        foreach (var step in stepResults)
+        {
+            stepResultsByEntity[step.EntityId] = step;
+        }
+
+        // 同步 SimWorld 权威结果到 grain 实体镜像，并收集修正/InputAck/输入计数。
+        foreach (var step in stepResults)
+        {
+            var entityId = step.EntityId;
+            if (!_simulatedEntities.TryGetValue(entityId, out var simEntity))
+            {
+                continue;
+            }
+
+            var worldEntity = _simWorld.GetEntity(entityId);
+            if (worldEntity is null)
+            {
+                continue;
+            }
+
+            simEntity.X = worldEntity.X;
+            simEntity.Y = worldEntity.Y;
+            simEntity.Z = worldEntity.Z;
+            simEntity.Vz = worldEntity.Vz;
+            simEntity.Yaw = worldEntity.Yaw;
+            simEntity.IsGrounded = worldEntity.IsGrounded;
+            simEntity.JumpCount = worldEntity.JumpCount;
+            simEntity.MovementMode = worldEntity.MovementMode;
+            simEntity.VelocityXZ_X = worldEntity.VelocityXZ_X;
+            simEntity.VelocityXZ_Y = worldEntity.VelocityXZ_Y;
+            simEntity.LastSyncTick = worldEntity.LastSyncTick;
+            simEntity.LastProcessedClientTick = worldEntity.LastProcessedClientTick;
+            simEntity.HadInputThisTick = step.HadInput;
+            _simulatedEntities[entityId] = simEntity;
+
+            if (step.Correction is not null)
+            {
+                corrections.Add(step.Correction);
+                _correctionsIssued++;
+                // 阶段 6.3：服务端 Correction 率（按 reason 维度，灰度放量「修正率优于基线」的数据源）。
+                SyncMetrics.Corrections.Add(1,
+                    new KeyValuePair<string, object?>("reason", step.Correction.Reason.ToString()));
+                RecordCorrectionAndCheckStorm(entityId);
+            }
+
+            if (step.HadInput)
+            {
+                _inputAckBuffer.Add((entityId, step.LastProcessedClientTick));
+                _processedInputs += Math.Max(1, worldEntity.LastStepReplayedInputCount);
+                processedEntityCount++;
+            }
+        }
+
         foreach (var kv in _simulatedEntities)
         {
             var entityId = kv.Key;
             var entity = kv.Value;
 
-            // 失效点 #2 修复：静止实体（PendingInputs 为空）不再 continue 跳过。
+            // 失效点 #2 修复：静止实体（无输入）不 continue 跳过。
             // 改为：有输入时跑权威校验+移动；无输入时仍产当前位置的 Update delta，
             // 保证其他客户端能持续看到该实体（否则其他玩家看不到静止角色）。
+            // 权威位置/速度/移动模式由 SimWorld 产出并已同步到 entity（上方 sync 循环）。
+            // 变化检测基准 = SimWorld 记录的本 tick 起始位置/朝向（Step 前的权威状态）。
+            var step = stepResultsByEntity.TryGetValue(entityId, out var sr) ? sr : default;
+            var startPos = step.EntityId == entityId ? step.StartPosition : new WorldPosition(entity.X, entity.Y, entity.Z);
+            var startYaw = step.EntityId == entityId ? step.StartYaw : entity.Yaw;
 
-            var startPos = new WorldPosition(entity.X, entity.Y, entity.Z);
-            // P-F12：回放起点（间隙吸附后可能与 startPos 不同），速度计算同样以此为准，
-            // 避免把间隙吸附的距离误算成单 tick 速度。
-            var replayStartPos = startPos;
-            // P-F13：本 tick 实际回放的输入帧数（无输入为 0），速度按真实回放时长归一。
-            var replayedFrameCount = 0;
-            var startYaw = entity.Yaw;
-
-            float latestYaw = entity.Yaw;
-            if (entity.PendingInputs.Count > 0)
-            {
-                var lastInput = entity.PendingInputs[entity.PendingInputs.Count - 1];
-                latestYaw = lastInput.LookYaw;
-            }
-            entity.Yaw = latestYaw;
-
-            if (entity.PendingInputs.Count > 0)
-            {
-                // Task 10.3：复用 per-entity 输入缓冲，避免每次 tick ToArray 分配
-                entity.PendingInputBuffer ??= new InputPacket[entity.PendingInputs.Count];
-                if (entity.PendingInputBuffer.Length < entity.PendingInputs.Count)
-                {
-                    entity.PendingInputBuffer = new InputPacket[entity.PendingInputs.Count];
-                }
-                entity.PendingInputs.CopyTo(entity.PendingInputBuffer, 0);
-                ReadOnlySpan<InputPacket> inputs = new(entity.PendingInputBuffer, 0, entity.PendingInputs.Count);
-
-                // P-F12 输入间隙回放起点修复（从 SubmitInputAsync 迁移至此）：
-                // 原实现在 SubmitInputAsync 逐包吸附到 entity.ReportedEnd，但 TickAsync 批量回放
-                // 全部积压输入——当多个输入在 tick 间隙积压时（网络批处理/tick 延迟），吸附目标
-                // 被覆写为最新输入终点，回放却从该点再叠加全部输入位移 → 双倍位移过冲
-                // （N 个积压输入过冲 N×step，>0.5m 即触发 Correction，表现为移动抽搐/被拉前）。
-                // 正确语义：间隙后吸附到首个缺失间隙输入的 PredictedEnd（其位移已含在终点内），
-                // 回放跳过首个输入只重放其余 → 权威终点 = 客户端最后上报终点，零过冲。
-                var replayInputs = inputs;
-                if (entity.LastProcessedClientTick > 0 && inputs.Length > 0
-                    && inputs[0].ClientTick > entity.LastProcessedClientTick + 1)
-                {
-                    entity.X = inputs[0].PredictedEndX;
-                    entity.Y = inputs[0].PredictedEndY;
-                    entity.Z = inputs[0].PredictedEndZ;
-                    entity.Vz = 0f;
-                    replayInputs = inputs.Slice(1);
-                }
-
-                replayedFrameCount = replayInputs.Length;
-                replayStartPos = new WorldPosition(entity.X, entity.Y, entity.Z);
-                var clientEnd = new WorldPosition(entity.ReportedEndX, entity.ReportedEndY, entity.ReportedEndZ);
-
-                var validationResult = _movementValidator.Validate(
-                    entityId,
-                    replayStartPos,
-                    entity.Vz,
-                    replayInputs,
-                    clientEnd,
-                    _tickCount,
-                    entity.EstimatedRttMs);
-
-                if (validationResult.NeedsCorrection)
-                {
-                    corrections.Add(validationResult.Correction!);
-                    entity.X = validationResult.AuthoritativeEnd.X;
-                    entity.Y = validationResult.AuthoritativeEnd.Y;
-                    entity.Z = validationResult.AuthoritativeEnd.Z;
-                    entity.Vz = validationResult.AuthoritativeVz;
-
-                    _correctionsIssued++;
-                    RecordCorrectionAndCheckStorm(validationResult.Correction!.EntityId);
-                }
-                else
-                {
-                    entity.X = validationResult.AuthoritativeEnd.X;
-                    entity.Y = validationResult.AuthoritativeEnd.Y;
-                    entity.Z = validationResult.AuthoritativeEnd.Z;
-                    entity.Vz = validationResult.AuthoritativeVz;
-                }
-
-                entity.PendingInputs.Clear();
-                entity.LastSyncTick = _tickCount;
-                entity.HadInputThisTick = true;
-
-                // 收集本 tick 处理到的最大 ClientTick，广播阶段下发 InputAck 给该 session。
-                // inputs 按 ClientTick 升序，最后一个即为本 tick 处理到的最新客户端 tick。
-                // 客户端据此清理 InputHistoryBuffer + 推进 _lastAckedClientTick，避免冗余重传每帧触发。
-                _inputAckBuffer.Add((entityId, inputs[inputs.Length - 1].ClientTick));
-
-                // 记录最后处理的客户端 tick，供 SubmitInputAsync 检测输入间隙使用。
-                entity.LastProcessedClientTick = inputs[inputs.Length - 1].ClientTick;
-
-                // 修复（下坡时isGrounded误判）：原检测用 |Vz| < 0.01 判断接地，
-                // 但修改1中下坡/跳跃场景保留了重力Vz（非零），导致isGrounded=false。
-                // 改为综合判断：Vz≈0 或 MovementValidator显式标记isGrounded时判定为接地。
-                var isGrounded = MathF.Abs(validationResult.AuthoritativeVz) < 0.01f
-                    || validationResult.IsGrounded;
-                entity.IsGrounded = isGrounded;
-                entity.JumpCount = isGrounded ? 0 : entity.JumpCount;
-
-                _processedInputs += inputs.Length;
-                processedEntityCount++;
-            }
-
-            // 计算本 tick 实际水平速度（米/秒），用于 MovementStateAuthComponent。
-            // 注意：使用 FixedDtSeconds（1/60）与 MovementFormula 一致。
-            // 无输入的静止实体速度为 0。P-F12：以回放起点（含间隙吸附后）为基准。
-            // P-F13 速度归一修复：一个 tick 可能回放多个积压输入（客户端 10Hz 打包上行/网络批处理），
-            // 原实现把 N 帧位移除以单帧 dt → 速度被放大 N 倍（如 12/18 m/s），相邻 tick 批量大小
-            // 变化时速度在 6→12→6 之间震荡，加速度检测把合法匀速移动误判为 AccelerationExceeded，
-            // 触发 Correction 风暴（移动中抽搐/被拉）。改为除以真实回放帧数×dt，匀速移动速度恒定。
-            var replaySeconds = Math.Max(1, replayedFrameCount) * MovementFormulaStepDt;
-            var velX = (entity.X - replayStartPos.X) / replaySeconds;
-            var velY = (entity.Y - replayStartPos.Y) / replaySeconds;
-
-            // 根据速度推导移动模式：区分 Jump（上升）与 Fall（下降）。
-            // 修复 #15：原实现仅根据 IsGrounded 分 Fall/非坠落，无法区分跳跃上升与自由落体阶段，
-            // 客户端动画状态机无法据此切换 Jump→Fall 过渡。
-            var speedSq = velX * velX + velY * velY;
-            MovementMode derivedMovementMode;
-            if (!entity.IsGrounded)
-            {
-                derivedMovementMode = entity.Vz > 0f ? MovementMode.Jump : MovementMode.Fall;
-            }
-            else if (speedSq > 0.1f)
-            {
-                derivedMovementMode = MovementMode.Run;
-            }
-            else
-            {
-                derivedMovementMode = MovementMode.Walk;
-            }
+            var velX = entity.VelocityXZ_X;
+            var velY = entity.VelocityXZ_Y;
+            var derivedMovementMode = entity.MovementMode;
 
             bool hasPositionChanged = MathF.Abs(entity.X - startPos.X) > 0.001f
                 || MathF.Abs(entity.Y - startPos.Y) > 0.001f
@@ -1045,62 +1018,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             // 确保周期性全量快照（每 60 tick）也包含所有实体。
             bool includeInSnapshot = shouldBroadcast || forceFullThisTick;
 
-            // P2.6：加速度/瞬移检测（CheckAcceleration）
-            // 仅对"本 tick 有输入"的实体做检测，避免静止实体因速度归零触发误报。
-            if (entity.HadInputThisTick)
-            {
-                var prevPos = new WorldPosition(entity.PrevX, entity.PrevY, entity.PrevZ);
-                var curPos = new WorldPosition(entity.X, entity.Y, entity.Z);
-                var prevSpeed = MathF.Sqrt(entity.PrevVelocityXZ_X * entity.PrevVelocityXZ_X
-                    + entity.PrevVelocityXZ_Y * entity.PrevVelocityXZ_Y);
-                var curSpeed = MathF.Sqrt(velX * velX + velY * velY);
-                // P-F11 静止→移动回弹根因修复：原实现固定用 MovementFormulaStepDt（1/60s）计算
-                // 两次校验间的加速度。客户端静止时无输入（prevSpeed 衰减为 0），恢复移动时速度
-                // 0→MaxSpeed 的合法突变在 1/60s 内被算成 ~360 m/s²，远超 MaxAcceleration（50），
-                // 每次"静止→移动"都触发 AccelerationExceeded Correction → 客户端被回弹/拉回。
-                // 修复：用距上次输入校验的真实 tick 数×dt 作为时间窗（静止期计入窗口，速度变化
-                // 在长时间跨度内完全合法）；首次校验（无历史）跳过加速度判定，仅保留瞬移距离检测。
-                //
-                // P-F14 起停瞬变豁免：本项目移动模型为瞬时加减速（无加速斜坡），任何合法的
-                // 起步/停止都会在相邻两次校验间产生 0↔MaxSpeed 的速度阶跃（即使时间窗正确，
-                // 相邻校验间隔仅 1 tick 时仍达 ~360 m/s²）。因此当任一侧速度≈ 0（起步/停止/
-                // 无输入 tick 后的首次校验）时豁免加速度判定；持续非零速度间的异常加速仍会被
-                // 捕获，瞬移由距离检测兼顾，超速由 HardSpeedCap 校验兜底，反作弊能力不受损。
-                var accelDtSeconds = MovementFormulaStepDt;
-                var skipAccelerationCheck = entity.LastInputValidatedTick <= 0
-                    || prevSpeed < 0.01f
-                    || curSpeed < 0.01f;
-                if (!skipAccelerationCheck)
-                {
-                    var ticksSinceLastValidation = _tickCount - entity.LastInputValidatedTick;
-                    accelDtSeconds = Math.Max(1, ticksSinceLastValidation) * MovementFormulaStepDt;
-                }
-                var accelResult = _movementValidator.CheckAcceleration(
-                    prevPos, curPos, prevSpeed,
-                    skipAccelerationCheck ? prevSpeed : curSpeed,
-                    accelDtSeconds);
-                entity.LastInputValidatedTick = _tickCount;
-                if (!accelResult.IsValid)
-                {
-                    corrections.Add(new CorrectionPacket
-                    {
-                        EntityId = entityId,
-                        ServerTick = _tickCount,
-                        CorrectedX = entity.X,
-                        CorrectedY = entity.Y,
-                        CorrectedZ = entity.Z,
-                        CorrectedVz = entity.Vz,
-                        DriftMeters = accelResult.DistanceTraveled,
-                        Reason = accelResult.Violation == MovementValidator.AccelerationViolation.TeleportDetected
-                            ? CorrectionReason.TeleportDetected
-                            : CorrectionReason.AccelerationExceeded,
-                        LastProcessedClientTick = entity.LastSyncTick,
-                    });
-                    _correctionsIssued++;
-
-                    RecordCorrectionAndCheckStorm(entityId);
-                }
-            }
+            // P2.6 加速度/瞬移检测已迁入 SimWorld.Step（权威回放的一部分），
+            // 修正包经 step.Correction 汇入 corrections（上方 sync 循环）。
 
             if (includeInSnapshot && broadcastDueThisTick)
             {
@@ -1196,10 +1115,6 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             entity.PrevIsGrounded = entity.IsGrounded;
             entity.PrevVelocityXZ_X = velX;
             entity.PrevVelocityXZ_Y = velY;
-            entity.PrevX = entity.X;
-            entity.PrevY = entity.Y;
-            entity.PrevZ = entity.Z;
-            entity.PrevVz = entity.Vz;
             entity.HadInputThisTick = false;
 
             _simulatedEntities[entityId] = entity;
@@ -1219,13 +1134,13 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             }
         }
 
-        // 诊断：前 5 次 TickAsync 输出实体表状态，定位"实体未注册导致 deltas 为空"问题
+        // 阶段 3.4 降噪：前 5 次 TickAsync 实体表状态诊断（定位"实体未注册"问题）改 Debug 级。
         _tickDiagCount++;
         if (_tickDiagCount <= 5)
         {
-            _logger.LogWarning(
+            _logger.LogDebug(
                 "[ZoneShardGrain 诊断#{N}] TickAsync：Tick={Tick}, Entities={EntityCount}, Deltas={DeltaCount}, Corrections={CorrectionCount}, PendingInputs={PendingInputs}, Sessions={SessionCount}, Observers={ObserverCount}",
-                _tickDiagCount, _tickCount, _simulatedEntities.Count, deltas.Count, corrections.Count, _simulatedEntities.Values.Sum(e => e.PendingInputs.Count), _aoi.SessionCount, _fanoutObservers.Count);
+                _tickDiagCount, _tickCount, _simulatedEntities.Count, deltas.Count, corrections.Count, _simWorld.PendingInputCount, _aoi.SessionCount, _fanoutObservers.Count);
         }
 
         // 复用循环前已计算的 broadcastDueThisTick（= forceFullThisTick || _tickCount % SnapshotBroadcastIntervalTicks == 0）。
@@ -1395,6 +1310,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     var ecsY = initialZ;   // 前后（Flax Z → ECS Y）
     var ecsZ = initialY;   // 上下（Flax Y → ECS Z）
 
+        // 阶段 1.4：SimWorld 拥有权威移动状态（位置/速度/朝向/输入队列）。
+        _simWorld.AddOrUpdateEntity(entityId, ecsX, ecsY, ecsZ, maxSpeed);
+
         _simulatedEntities[entityId] = new SimulatedEntity
         {
             X = ecsX,
@@ -1406,10 +1324,6 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             PendingInputs = new List<InputPacket>(),
             LastSyncTick = 0,
             LeaseExpiry = DateTime.UtcNow + EntityLeaseDuration,
-            PrevX = ecsX,
-            PrevY = ecsY,
-            PrevZ = ecsZ,
-            PrevVz = 0f,
         };
 
         _logger.LogInformation(
@@ -1479,6 +1393,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             var ecsX2 = initialX;   // 左右（不变）
             var ecsY2 = initialZ;   // 前后（Flax Z → ECS Y）
             var ecsZ2 = initialY;   // 上下（Flax Y → ECS Z）
+            // 阶段 1.4：SimWorld 拥有权威位置（含 ReportedEnd/Prev 基准），重连对齐走 SetPosition。
+            _simWorld.SetPosition(entityId, ecsX2, ecsY2, ecsZ2);
+
             var existingEntity = _simulatedEntities[entityId];
             existingEntity.X = ecsX2;
             existingEntity.Y = ecsY2;
@@ -1487,10 +1404,6 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             existingEntity.ReportedEndX = ecsX2;
             existingEntity.ReportedEndY = ecsY2;
             existingEntity.ReportedEndZ = ecsZ2;
-            existingEntity.PrevX = ecsX2;
-            existingEntity.PrevY = ecsY2;
-            existingEntity.PrevZ = ecsZ2;
-            existingEntity.PrevVz = 0f;
             _simulatedEntities[entityId] = existingEntity;
 
             // 先移除旧 AOI 订阅（sessionId = characterId = entityId，新旧 session 使用相同 ID）
@@ -1501,7 +1414,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             // 强制下一次广播全量快照，确保新订阅的 session 收到所有实体的完整状态
             _forceFullSnapshotNextTick = true;
 
-            _logger.LogWarning(
+            // 阶段 3.4 降噪：重连诊断改 Debug 级。
+            _logger.LogDebug(
                 "ZoneShard {ShardId}: [EnterWorld诊断-重连] sessionId={SessionId}, entityId={EntityId}, " +
                 "initialSubscriptions={Added}, ChunkCount={ChunkCount}, AllSubscribers=[{AllSubs}], TotalSubscriberCount={SubCount}",
                 this.GetPrimaryKeyLong(), sessionId, entityId, added, initialInterestChunks.Length,
@@ -1511,9 +1425,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         }
 
         var addedNew = _aoi.Subscribe(sessionId, initialInterestChunks);
-        // 诊断日志（Despawn 丢失 BUG）：记录 B 进入游戏时订阅的 chunk 列表和当前所有订阅者，
-        // 便于确认 B 的 AOI 订阅是否正确建立，以及 A 是否在订阅者列表中。
-        _logger.LogWarning(
+        // 阶段 3.4 降噪：Despawn 丢失 BUG 已修复，进入世界订阅诊断改 Debug 级。
+        _logger.LogDebug(
             "ZoneShard {ShardId}: [EnterWorld诊断] sessionId={SessionId}, entityId={EntityId}, " +
             "initialSubscriptions={Added}, ChunkCount={ChunkCount}, InitialChunks=[{Chunks}], " +
             "AllSubscribersAfterSubscribe=[{AllSubs}], TotalSubscriberCount={SubCount}",
@@ -1599,6 +1512,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             //     （SnapshotApplySystem 会在实体长时间无更新时自动清理）
             // 同时保留失败计数器用于诊断，但不再用于决定是否移除实体。
             _simulatedEntities.Remove(entityId);
+            _simWorld.RemoveEntity(entityId);
 
             // 清理该实体在所有 session 的下行节流追踪条目（已注销实体的残留记录不应累积）。
             // 内层字典变空的 session 一并移除，避免保留空字典。
@@ -1696,6 +1610,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     // 失败计数只在 UnregisterEntityAsync 中广播成功时重置（第 806 行），
                     // 因为只有广播成功才证明 Despawn 已完成，失败计数不再需要。
                     renewed++;
+                    // 实体续约同时刷新其会话订阅租约（主分片路径；边界分片走 RenewSessionLeaseAsync）。
+                    _aoi.TouchSession((long)entityId);
                 }
             }
 
@@ -1707,6 +1623,14 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         }
 
         return Task.FromResult(renewed);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> RenewSessionLeaseAsync(long sessionId)
+    {
+        // 边界分片纯订阅会话的租约续约（网关每 20s 按其跟踪的边界分片集合调用）。
+        // 仅刷新已存在的订阅，不为未知会话创建租约条目。
+        return Task.FromResult(_aoi.TryTouchSession(sessionId));
     }
 
     /// <inheritdoc />
@@ -1735,8 +1659,24 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// </summary>
     private async Task CleanupOrphanEntitiesAsync()
     {
-        if (_simulatedEntities.Count == 0) return;
+        // ── 第一段：孤儿实体清理（原有逻辑） ──
+        if (_simulatedEntities.Count > 0)
+        {
+            await CleanupOrphanEntitiesCoreAsync().ConfigureAwait(false);
+        }
 
+        // ── 第二段：过期订阅会话驱逐（2026-08） ──
+        // 边界分片上的"纯订阅会话"（无实体）没有任何实体租约清理路径覆盖：网关 Despawn
+        // 被跳过（角色映射缺失）或网关重启丢失边界分片记录时，订阅永久残留，广播 tick
+        // 持续向死会话扇出（Gateway dispatcher session offline 丢包风暴）。
+        // 此处驱逐超过 SessionSubscriptionLease 未续约且本分片无实体的订阅。
+        // （注：不能在无实体时提前 return——边界分片常态就是零实体、纯订阅。）
+        await CleanupStaleSessionsAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>孤儿实体清理主体（<see cref="CleanupOrphanEntitiesAsync"/> 第一段）。</summary>
+    private async Task CleanupOrphanEntitiesCoreAsync()
+    {
         var now = DateTime.UtcNow;
         var orphans = new List<ulong>();
 
@@ -1787,6 +1727,27 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         _logger.LogInformation(
             "ZoneShard {ShardId}: 孤儿实体清理完成，共清理 {Count} 个。",
             this.GetPrimaryKeyLong(), orphans.Count);
+    }
+
+    /// <summary>过期订阅会话驱逐（<see cref="CleanupOrphanEntitiesAsync"/> 第二段）。</summary>
+    private Task CleanupStaleSessionsAsync()
+    {
+        // 豁免：本分片仍有实体的会话——实体有自己的租约续约/孤儿清理路径，
+        // 实体在线期间其订阅必须保留（实体续约会同步刷新会话租约，正常不会命中过期分支）。
+        var evicted = _aoi.RemoveStaleSessions(
+            DateTime.UtcNow,
+            SessionSubscriptionLease,
+            sessionId => _simulatedEntities.ContainsKey((ulong)sessionId));
+
+        foreach (var sessionId in evicted)
+        {
+            _gradeLastSentTickBySession.Remove(sessionId);
+            _logger.LogWarning(
+                "ZoneShard {ShardId}: 驱逐过期订阅会话 {SessionId}（无实体且超过 {Lease} 未续约，疑似 Despawn 丢失/网关重启残留）。",
+                this.GetPrimaryKeyLong(), sessionId, SessionSubscriptionLease);
+        }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -1865,9 +1826,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             var allOtherSessionIds = allSubscribersBeforeFilter
                 .Where(s => (ulong)s != entityId)
                 .ToArray();
-            // 诊断日志（Despawn 丢失 BUG）：记录全广播的目标 session 列表，便于确认 B 是否在订阅列表中。
-            // 如果 allOtherSessionIds 不包含 B 的 characterId，说明 B 的 AOI 订阅在 A 离线时已丢失。
-            _logger.LogWarning(
+            // 阶段 3.4 降噪：Despawn 丢失 BUG 已修复，全广播目标列表诊断改 Debug 级。
+            _logger.LogDebug(
                 "ZoneShard {ShardId}: [Despawn诊断] {Kind} 全广播。EntityId={EntityId}, TriggerChunk={ChunkKey}, " +
                 "AllSubscribers=[{AllSubs}], FilteredTargets=[{Targets}], ObserverCount={ObserverCount}",
                 this.GetPrimaryKeyLong(), kind, entityId, triggerChunkKey,
@@ -1900,7 +1860,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             else
             {
                 // 仅 Spawn 可能走到这里：当前无其他玩家，但新玩家自己的 Spawn 通过 includeNewSession 分支补发。
-                _logger.LogWarning(
+                _logger.LogDebug(
                     "ZoneShard {ShardId}: [Spawn诊断] Spawn 全广播目标为空。EntityId={EntityId}, " +
                     "AllSubscribersCount={AllSubsCount}。当前场景无其他玩家在线。",
                     this.GetPrimaryKeyLong(), entityId, allSubscribersBeforeFilter.Count);
@@ -2044,20 +2004,24 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// <inheritdoc />
     public Task SubmitInputAsync(ulong entityId, InputPacket input, float reportedEndX, float reportedEndY, float reportedEndZ)
     {
-        if (!_simulatedEntities.TryGetValue(entityId, out var entity))
+        // P-F9 未知实体自愈重注册 + 首输入对齐 + 输入入队 + RTT 估计全部委托 SimWorld.SubmitInput
+        //（SimWorld 与未来 UE5 DS 共用同一驱动；语义与原实现一致，见 SimWorld.SubmitInput 注释）。
+        // RTT 估计在宿主层计算，作为显式参数传入——既保留"高延迟放宽校验阈值"功能，
+        // 又使 SimWorld 核心不含墙钟（确定性）。注意：ClientTick 语义不统一（ECS 客户端为帧序号、
+        // 部分旧客户端为 Unix 毫秒时间戳），此处按时间戳估算；帧序号时 nowMs-ClientTick 数值巨大，
+        // 会被 SimWorld 的 <5000ms 守卫忽略（no-op），两种语义下均安全、不会误放宽阈值。
+        var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var rttMs = input != null ? (float)(nowMs - input.ClientTick) : 0f;
+
+        var autoRegistered = _simWorld.SubmitInput(entityId, input, reportedEndX, reportedEndY, reportedEndZ, rttMs);
+
+        if (autoRegistered)
         {
-            // P-F9 未知实体自愈重注册：实体可能因租约到期孤儿清理、Grain 重建未恢复、
-            // 或注销竞态而从模拟表移除，但客户端连接与输入流仍然存活。
-            // 原实现直接忽略输入 → 权威模拟永久停摆：客户端移动后与服务端分歧持续增大，
-            // 表现为“静止一段时间后移动被回弹/拉回”且其他客户端看不到该角色正确位置。
-            // 修复：以客户端上报的 PredictedEnd 作为位置自动重注册（信任客户端当前位置，
-            // 后续 tick 的 MovementValidator 仍会逐帧校验合法性），并强制全量快照让所有
-            // 客户端重建视野；LastSyncTick=0 使下方首输入分支将本帧位移置零（位移已体现
-            // 在 reportedEnd 中），避免双倍位移。
             _logger.LogWarning(
                 "ZoneShard {ShardId}: 提交输入到未知实体 {EntityId}，触发 P-F9 自愈重注册（ClientTick={ClientTick}, Pos=({X:F2},{Y:F2},{Z:F2})）。",
                 this.GetPrimaryKeyLong(), entityId, input?.ClientTick ?? -1, reportedEndX, reportedEndY, reportedEndZ);
 
+            // SimWorld 已用客户端上报终点重注册；同步到 grain 实体镜像（广播/持久化用）。
             _simulatedEntities[entityId] = new SimulatedEntity
             {
                 X = reportedEndX,
@@ -2069,92 +2033,27 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 PendingInputs = new List<InputPacket>(),
                 LastSyncTick = 0,
                 LeaseExpiry = DateTime.UtcNow + EntityLeaseDuration,
-                PrevX = reportedEndX,
-                PrevY = reportedEndY,
-                PrevZ = reportedEndZ,
             };
             // 强制下一 tick 全量快照（含 Spawn Kind，配合 P-F6），让各客户端重建该实体视野。
             _forceFullSnapshotNextTick = true;
-
-            entity = _simulatedEntities[entityId];
         }
-
-        // 修复（角色被吸附回初始位置 — 服务端为何下发最初位置）：
-        // 场景1：Orleans Grain 被空闲回收后重新激活、或服务端重连重新注册实体时，
-        // entity.X/Y/Z 为注册时的初始位置（握手坐标），而客户端已经移动了很远。
-        // 场景2：Grain 从持久化状态恢复后，LastSyncTick 非 0 但 LastProcessedClientTick 为 0
-        // （瞬态字段未持久化），客户端在 Grain 回收期间已移动很远。
-        // 两种场景下，第一个输入的 PredictedEnd 距离服务端 startPos 巨大，
-        // MovementValidator 从旧位置回放得到接近旧位置的结果，
-        // drift 远超 0.5m 阈值，触发 Correction 将客户端拉回旧位置。
-        //
-        // 修复策略：当实体尚未被 TickAsync 同步过（LastSyncTick==0），
-        // 或 Grain 刚从持久化状态恢复（LastSyncTick>0 但 LastProcessedClientTick==0）时，
-        // 以客户端报告的 PredictedEnd 作为实体当前位置（信任客户端预测），
-        // 并将该输入加入 PendingInputs 供下一次 TickAsync 处理。
-        // 注意：TickAsync 回放时会从 reportedEnd 开始应用输入，
-        // 而 reportedEnd 已包含该输入的位移，因此回放结果 = reportedEnd + 输入位移。
-        // 为避免双倍位移，回放起点应为 reportedEnd 减去本帧位移。
-        // 简化处理：直接将实体位置设为 reportedEnd，并将输入的 MoveX/MoveY 置零
-        // （因为位移已体现在 reportedEnd 中），仅保留 LookYaw/InputBits 等非位移信息。
-        // 反作弊保障：后续 tick 的 MovementValidator 仍会校验每帧位移合法性。
-        var isGrainRecoveryFirstInput = entity.LastSyncTick > 0
-            && entity.LastProcessedClientTick == 0;
-        if (entity.LastSyncTick == 0 || isGrainRecoveryFirstInput)
+        else if (_simulatedEntities.TryGetValue(entityId, out var existing))
         {
-            entity.X = reportedEndX;
-            entity.Y = reportedEndY;
-            entity.Z = reportedEndZ;
-            entity.Vz = 0f;
-            // 将本帧输入的移动分量置零（位移已体现在 reportedEnd 中），避免 TickAsync 回放时双倍应用。
-            input = new InputPacket
+            // 首输入对齐（位置吸附到 reportedEnd）后，同步镜像的权威位置。
+            var worldEntity = _simWorld.GetEntity(entityId);
+            if (worldEntity is not null)
             {
-                ClientTick = input.ClientTick,
-                InputBits = input.InputBits,
-                LookYaw = input.LookYaw,
-                LookPitch = input.LookPitch,
-                MoveX = 0f,
-                MoveY = 0f,
-                CharacterId = input.CharacterId,
-                PredictedEndX = input.PredictedEndX,
-                PredictedEndY = input.PredictedEndY,
-                PredictedEndZ = input.PredictedEndZ,
-                MaxSpeed = input.MaxSpeed,
-            };
-            _logger.LogInformation(
-                "ZoneShard {ShardId}: 实体 {EntityId} {Mode}，位置对齐到客户端报告位置 ({X:F2},{Y:F2},{Z:F2})。",
-                this.GetPrimaryKeyLong(), entityId,
-                isGrainRecoveryFirstInput ? "Grain恢复后首个输入" : "首次输入",
-                reportedEndX, reportedEndY, reportedEndZ);
+                existing.X = worldEntity.X;
+                existing.Y = worldEntity.Y;
+                existing.Z = worldEntity.Z;
+                existing.Vz = worldEntity.Vz;
+                existing.Yaw = worldEntity.Yaw;
+                existing.ReportedEndX = reportedEndX;
+                existing.ReportedEndY = reportedEndY;
+                existing.ReportedEndZ = reportedEndZ;
+                _simulatedEntities[entityId] = existing;
+            }
         }
-
-        entity.PendingInputs.Add(input);
-
-        // P-F12：输入间隙（乱序旧包被去重拒绝导致的序列空洞）的回放起点处理已迁移到
-        // TickAsync 批量回放前统一执行（吸附到首个间隙输入的 PredictedEnd + 跳过首个输入重放其余），
-        // 消除原逐包吸附在多输入积压时的双倍位移过冲。此处不再逐包吸附。
-        // 修复（坐标系不匹配）：InputSendSystem 发送的 PredictedEndX/Y/Z 来自
-        // PredictedTransformComponent（ECS Z-up：X=左右, Y=前后, Z=上下），
-        // 与 MovementValidator.Validate 的 clientEnd 参数坐标系一致，无需转换。
-        // 原实现误以为是 Flax Y-up 坐标并做了 Y/Z 交换，导致 ReportedEnd 的前后/上下被颠倒，
-        // drift 检测持续超阈值触发 Correction 风暴，客户端频繁被校正导致卡顿。
-        entity.ReportedEndX = reportedEndX;
-        entity.ReportedEndY = reportedEndY;
-        entity.ReportedEndZ = reportedEndZ;
-
-        // §12.2 动态 RTT 阈值：从 ClientTick（Unix 毫秒时间戳）估算单向网络延迟，
-        // 使用指数移动平均（EMA α=0.3）平滑抖动，供 TickAsync 中 MovementValidator 动态放宽校验阈值。
-        var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var oneWayMs = (float)(nowMs - input.ClientTick);
-        if (oneWayMs > 0f && oneWayMs < 5000f) // 过滤异常值（时钟偏移/首包）
-        {
-            const float alpha = 0.3f;
-            entity.EstimatedRttMs = entity.EstimatedRttMs <= 0f
-                ? oneWayMs
-                : entity.EstimatedRttMs + alpha * (oneWayMs - entity.EstimatedRttMs);
-        }
-
-        _simulatedEntities[entityId] = entity;
 
         return Task.CompletedTask;
     }
@@ -2287,7 +2186,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     firstDeltaTransform = $"X={t0.X:F2},Y={t0.Y:F2},Z={t0.Z:F2}";
                 }
             }
-            _logger.LogWarning(
+            // 阶段 3.4 降噪：fanout 断点定位诊断改 Debug 级（保留前 5 次限频语义）。
+            _logger.LogDebug(
                 "[ZoneShardGrain 诊断#{N}] BroadcastSnapshot 入口：Tick={Tick}, BypassAoi={BypassAoi}, Deltas={DeltaCount}, Observers={ObserverCount}, Sessions={SessionCount}, Chunks={ChunkCount}, Entities={EntityCount}, FirstDeltaEntity={EntityId}, FirstDeltaChunkKey=0x{ChunkKey:X16}, FirstDeltaTransform={Transform}, ZSamples={ZSamples}",
                 _broadcastDiagCount, _tickCount, bypassAoiFilter, snapshot.Deltas.Length, _fanoutObservers.Count, _aoi.SessionCount, _aoi.ChunkCount, _simulatedEntities.Count, firstDeltaEntityId, firstDeltaChunkKey, firstDeltaTransform, zSamples);
         }
@@ -2300,11 +2200,11 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         var observers = GetObserversSnapshot();
 
-        // 诊断：每 60 tick（约 1 秒）输出一次广播状态，确认链路联通
+        // 阶段 3.4 降噪：每 60 tick 链路联通诊断改 Debug 级（可观测性由 horizon.sync.* 指标承担）。
         var isDiagnosticTick = _tickCount % 60 == 0;
         if (isDiagnosticTick)
         {
-            _logger.LogInformation(
+            _logger.LogDebug(
                 "ZoneShard {ShardId}: BroadcastSnapshot 诊断 — Deltas={DeltaCount}, Observers={ObserverCount}, Sessions={SessionCount}, Chunks={ChunkCount}, Entities={EntityCount}",
                 this.GetPrimaryKeyLong(), snapshot.Deltas.Length, observers.Length, _aoi.SessionCount, _aoi.ChunkCount, _simulatedEntities.Count);
         }
@@ -2363,7 +2263,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             {
                 if (_broadcastDiagCount <= 5)
                 {
-                    _logger.LogWarning(
+                    _logger.LogDebug(
                         "[ZoneShardGrain 诊断#{N}] BroadcastSnapshot 回退广播到全部订阅者 — ChunkKey=0x{ChunkKey:X16}",
                         _broadcastDiagCount, effectiveChunkKey);
                 }
@@ -2372,11 +2272,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
             if (sessionIds.Count == 0)
             {
-                // 诊断：仅前 5 次无条件输出，定位 AOI 无订阅者问题；稳态下静默跳过（原每 60 tick 一条的
-                // LogWarning 已移除，避免高频广播下的日志开销）。
+                // 阶段 3.4 降噪：前 5 次无条件输出定位 AOI 无订阅者问题；稳态下静默跳过。
                 if (_broadcastDiagCount <= 5)
                 {
-                    _logger.LogWarning(
+                    _logger.LogDebug(
                         "[ZoneShardGrain 诊断#{N}] BroadcastSnapshot 跳过 chunk — ChunkKey=0x{ChunkKey:X16}, 无 AOI 订阅者（Sessions={SessionCount}, Chunks={ChunkCount}）",
                         _broadcastDiagCount, effectiveChunkKey, _aoi.SessionCount, _aoi.ChunkCount);
                 }
@@ -2482,12 +2381,12 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         // P-F1：本轮快照的全部条目（delta + correction）合并为单条消息推给每个 observer。
         await FlushFanoutBatchAsync().ConfigureAwait(false);
 
-        // 诊断：输出广播执行时间。正常应在 16.7ms（60Hz 单 tick）内完成；
-        // 仅前 10 次或慢广播（>16.7ms）时告警，稳态正常广播不再产生日志开销。
+        // 阶段 3.4 降噪：广播执行时间诊断。前 10 次输出改 Debug 级；
+        // 慢广播（>16.7ms，真实性能告警）保留 Warning——单 tick 超预算会引发 tick 堆积/跳过，是运维必盯信号。
         var broadcastElapsedMs = (Stopwatch.GetTimestamp() - broadcastSw) * 1000.0 / Stopwatch.Frequency;
         if (_broadcastDiagCount <= 10)
         {
-            _logger.LogWarning(
+            _logger.LogDebug(
                 "[ZoneShardGrain 诊断#{N}] BroadcastSnapshot 完成：耗时={ElapsedMs:F2}ms, Tick={Tick}, Deltas={DeltaCount}, Corrections={CorrectionCount}, BypassAoi={BypassAoi}",
                 _broadcastDiagCount, broadcastElapsedMs, _tickCount, snapshot.Deltas.Length, corrections.Count, bypassAoiFilter);
         }
@@ -2860,6 +2759,27 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         _simulatedEntities[entityId] = entity;
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 激活恢复后，从 CharacterGrain（RPG 权威）重新拉取实体权威属性，纠正持久化快照中的陈旧 HP/Level 等。
+    /// 复用 <see cref="ICharacterGrain.OnEnterZoneAsync"/>（推送权威属性 + 记录所在 shard）。
+    /// </summary>
+    private async Task RefreshAttributesFromAuthorityAsync(ulong entityId)
+    {
+        try
+        {
+            await GrainFactory
+                .GetGrain<ICharacterGrain>((long)entityId)
+                .OnEnterZoneAsync(this.GetPrimaryKeyLong())
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex,
+                "ZoneShard {ShardId}: 激活时从 CharacterGrain 刷新实体 {EntityId} 属性失败（保留持久化兜底值）。",
+                this.GetPrimaryKeyLong(), entityId);
+        }
     }
 
     /// <summary>
@@ -3328,12 +3248,6 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         public InputPacket[]? PendingInputBuffer;
         /// <summary>最后一次同步的服务器 tick。</summary>
         public long LastSyncTick;
-        /// <summary>
-        /// P-F11：上次执行加速度校验的服务器 tick。
-        /// 用于以真实经过时间（含静止无输入期间）计算加速度，避免静止→移动的合法
-        /// 速度突变（0→MaxSpeed）在固定 1/60s dt 下被误判为加速外挂。
-        /// </summary>
-        public long LastInputValidatedTick;
         /// <summary>最后处理的客户端 tick（用于检测输入间隙，与 LastSyncTick 服务端 tick 语义不同）。</summary>
         public long LastProcessedClientTick;
         /// <summary>
@@ -3387,14 +3301,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         public bool PrevIsGrounded;
         public float PrevVelocityXZ_X;
         public float PrevVelocityXZ_Y;
-        /// <summary>上一 tick 权威位置 X（用于 CheckAcceleration 瞬移/加速度检测）。</summary>
-        public float PrevX;
-        /// <summary>上一 tick 权威位置 Y。</summary>
-        public float PrevY;
-        /// <summary>上一 tick 权威位置 Z。</summary>
-        public float PrevZ;
-        /// <summary>上一 tick Z 方向速度。</summary>
-        public float PrevVz;
+        // 权威 Prev 位置/Vz 由 SimWorld 持有（加速度/瞬移检测在 SimWorld.Step 内）。
         public int PrevMana;
         public int PrevLevel;
         public long PrevExp;
@@ -3411,11 +3318,5 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         /// <summary>待下发的动画事件队列（Montage 触发/结束）。null 表示无待下发事件。</summary>
         public Queue<AnimationStateAuthComponent>? PendingAnimationEvents;
-
-        /// <summary>
-        /// 估算的客户端→服务端单向延迟（毫秒），由 SubmitInputAsync 通过 EMA 平滑更新。<br/>
-        /// MovementValidator 据此动态放宽位置校验阈值，避免高延迟玩家被误判为作弊。
-        /// </summary>
-        public float EstimatedRttMs;
     }
 }

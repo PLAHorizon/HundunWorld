@@ -21,18 +21,17 @@ namespace Horizon.Game.Gateway.Tests;
 /// </summary>
 public class BaselineResyncE2ETests : IDisposable
 {
+    /// <summary>每测试独立的接收队列：注入每个系统实例，消除并行测试对静态单例的串扰（阶段 6.4）。</summary>
+    private readonly SnapshotReceiveBuffer _buffer = new();
+
     public BaselineResyncE2ETests()
     {
-        // 清理静态状态
-        SnapshotReceiveBuffer.Instance.ClearQueue();
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
         SnapshotApplySystem.Diagnostics = null;
     }
 
     public void Dispose()
     {
-        SnapshotReceiveBuffer.Instance.ClearQueue();
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
+        _buffer.ClearQueue();
     }
 
     // ─── 客户端侧：缺失 baseline 收到 delta → 入队重传请求 ───
@@ -41,7 +40,7 @@ public class BaselineResyncE2ETests : IDisposable
     public void Client_MissingBaseline_ReceivesDelta_EnqueuesResyncRequest()
     {
         // 客户端无 baseline（_lastAppliedSnapshot = null），收到 delta（BaselineTick=100）
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
+        var system = CreateSystem();
 
         var delta = new SnapshotPacket
         {
@@ -49,11 +48,10 @@ public class BaselineResyncE2ETests : IDisposable
             BaselineTick = 100, // 期望客户端持有 baseline tick=100，但客户端无 baseline
             Deltas = Array.Empty<EntityDelta>(),
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(delta);
+        _buffer.Enqueue(delta);
 
         // 运行 SnapshotApplySystem.Update 消费快照
         var world = World.Create();
-        var system = new SnapshotApplySystem();
         try
         {
             system.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
@@ -64,7 +62,7 @@ public class BaselineResyncE2ETests : IDisposable
         }
 
         // 应入队 BaselineResyncRequestPacket
-        var request = SnapshotApplySystem.TakePendingResyncRequest();
+        var request = system.TakePendingResyncRequest();
         Assert.NotNull(request);
         Assert.Equal(100L, request!.ExpectedBaselineTick);
         Assert.Equal(0L, request.ClientLastAppliedTick); // 客户端无 baseline → 0
@@ -74,13 +72,14 @@ public class BaselineResyncE2ETests : IDisposable
     public void Client_MismatchedBaseline_ReceivesDelta_EnqueuesResyncRequestWithLastAppliedTick()
     {
         // 客户端持有 baseline tick=50，收到 delta 期望 baseline tick=100
+        var system = CreateSystem();
         var existingBaseline = new SnapshotPacket
         {
             ServerTick = 50,
             BaselineTick = 0,
             Deltas = Array.Empty<EntityDelta>(),
         };
-        SnapshotApplySystem.OnFullSnapshotApplied(existingBaseline);
+        system.OnFullSnapshotApplied(existingBaseline);
 
         var delta = new SnapshotPacket
         {
@@ -88,10 +87,9 @@ public class BaselineResyncE2ETests : IDisposable
             BaselineTick = 100, // 期望 100，客户端持有 50 → 不匹配
             Deltas = Array.Empty<EntityDelta>(),
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(delta);
+        _buffer.Enqueue(delta);
 
         var world = World.Create();
-        var system = new SnapshotApplySystem();
         try
         {
             system.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
@@ -101,7 +99,7 @@ public class BaselineResyncE2ETests : IDisposable
             World.Destroy(world);
         }
 
-        var request = SnapshotApplySystem.TakePendingResyncRequest();
+        var request = system.TakePendingResyncRequest();
         Assert.NotNull(request);
         Assert.Equal(100L, request!.ExpectedBaselineTick);
         Assert.Equal(50L, request.ClientLastAppliedTick); // 客户端持有 50
@@ -111,13 +109,14 @@ public class BaselineResyncE2ETests : IDisposable
     public void Client_MatchedBaseline_ReceivesDelta_NoResyncRequest()
     {
         // 客户端持有 baseline tick=100，收到 delta 期望 baseline tick=100 → 匹配，不请求重传
+        var system = CreateSystem();
         var existingBaseline = new SnapshotPacket
         {
             ServerTick = 100,
             BaselineTick = 0,
             Deltas = Array.Empty<EntityDelta>(),
         };
-        SnapshotApplySystem.OnFullSnapshotApplied(existingBaseline);
+        system.OnFullSnapshotApplied(existingBaseline);
 
         var delta = new SnapshotPacket
         {
@@ -125,10 +124,9 @@ public class BaselineResyncE2ETests : IDisposable
             BaselineTick = 100, // 匹配
             Deltas = Array.Empty<EntityDelta>(),
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(delta);
+        _buffer.Enqueue(delta);
 
         var world = World.Create();
-        var system = new SnapshotApplySystem();
         try
         {
             system.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
@@ -138,7 +136,7 @@ public class BaselineResyncE2ETests : IDisposable
             World.Destroy(world);
         }
 
-        var request = SnapshotApplySystem.TakePendingResyncRequest();
+        var request = system.TakePendingResyncRequest();
         Assert.Null(request); // 匹配 → 无重传请求
     }
 
@@ -168,18 +166,17 @@ public class BaselineResyncE2ETests : IDisposable
     public async Task E2E_ClientResyncRequest_ServerForceFull_ClientRecovers()
     {
         // === 1. 客户端缺失 baseline，收到 delta → 入队重传请求 ===
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
-
+        // 同一测试内多个系统实例共享同一 buffer（模拟同一客户端连接的状态连续性）。
+        var clientSystem = CreateSystem();
         var delta = new SnapshotPacket
         {
             ServerTick = 200,
             BaselineTick = 100,
             Deltas = Array.Empty<EntityDelta>(),
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(delta);
+        _buffer.Enqueue(delta);
 
         var world = World.Create();
-        var clientSystem = new SnapshotApplySystem();
         try
         {
             clientSystem.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
@@ -189,7 +186,7 @@ public class BaselineResyncE2ETests : IDisposable
             World.Destroy(world);
         }
 
-        var request = SnapshotApplySystem.TakePendingResyncRequest();
+        var request = clientSystem.TakePendingResyncRequest();
         Assert.NotNull(request);
         Assert.Equal(100L, request!.ExpectedBaselineTick);
 
@@ -208,13 +205,12 @@ public class BaselineResyncE2ETests : IDisposable
             Deltas = Array.Empty<EntityDelta>(),
         };
 
-        // === 4. 客户端收到全量快照 → 恢复同步 ===
-        SnapshotReceiveBuffer.Instance.Enqueue(fullSnapshot);
+        // === 4. 客户端收到全量快照 → 恢复同步（同一客户端系统实例应用全量，保持 baseline 状态）===
+        _buffer.Enqueue(fullSnapshot);
         var world2 = World.Create();
-        var clientSystem2 = new SnapshotApplySystem();
         try
         {
-            clientSystem2.Update(world2, TimeSpan.FromSeconds(1.0 / 60.0));
+            clientSystem.Update(world2, TimeSpan.FromSeconds(1.0 / 60.0));
         }
         finally
         {
@@ -229,20 +225,19 @@ public class BaselineResyncE2ETests : IDisposable
             BaselineTick = 201, // 匹配刚应用的全量快照
             Deltas = Array.Empty<EntityDelta>(),
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(followUpDelta);
+        _buffer.Enqueue(followUpDelta);
 
         var world3 = World.Create();
-        var clientSystem3 = new SnapshotApplySystem();
         try
         {
-            clientSystem3.Update(world3, TimeSpan.FromSeconds(1.0 / 60.0));
+            clientSystem.Update(world3, TimeSpan.FromSeconds(1.0 / 60.0));
         }
         finally
         {
             World.Destroy(world3);
         }
 
-        var noMoreRequest = SnapshotApplySystem.TakePendingResyncRequest();
+        var noMoreRequest = clientSystem.TakePendingResyncRequest();
         Assert.Null(noMoreRequest); // 恢复同步，不再请求重传
     }
 
@@ -252,7 +247,7 @@ public class BaselineResyncE2ETests : IDisposable
     public void Client_ResyncRequestQueue_LimitedTo16()
     {
         // 队列上限 16，超过不再入队（避免队列爆炸）
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
+        var system = CreateSystem();
 
         // 入队 20 个不匹配的 delta
         for (int i = 0; i < 20; i++)
@@ -263,10 +258,9 @@ public class BaselineResyncE2ETests : IDisposable
                 BaselineTick = 100 + i, // 都不匹配
                 Deltas = Array.Empty<EntityDelta>(),
             };
-            SnapshotReceiveBuffer.Instance.Enqueue(delta);
+            _buffer.Enqueue(delta);
 
             var world = World.Create();
-            var system = new SnapshotApplySystem();
             try
             {
                 system.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
@@ -279,7 +273,7 @@ public class BaselineResyncE2ETests : IDisposable
 
         // 应最多取出 16 个请求
         int count = 0;
-        while (SnapshotApplySystem.TakePendingResyncRequest() != null)
+        while (system.TakePendingResyncRequest() != null)
         {
             count++;
         }
@@ -290,6 +284,9 @@ public class BaselineResyncE2ETests : IDisposable
 
     // ─── 辅助方法 ───
 
+    /// <summary>创建注入本测试独立 buffer 的系统实例（消除共享静态串扰）。</summary>
+    private SnapshotApplySystem CreateSystem() => new(_buffer);
+
     private static ZoneShardGrain CreateGrain()
     {
         var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
@@ -298,12 +295,7 @@ public class BaselineResyncE2ETests : IDisposable
         var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
 
         // 注入 mock IGrainContext 使 GetPrimaryKeyLong() 不抛异常
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         return grain;
     }

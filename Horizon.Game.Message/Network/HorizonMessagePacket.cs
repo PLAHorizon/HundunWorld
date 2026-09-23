@@ -1,10 +1,10 @@
 using Horizon.Game.Message.Enums;
-using K4os.Compression.LZ4;
+// 安全审查 2026-08：改用本项目带解压上限防护的 LZ4Pickler 副本（K4os 库版无长度上限，存在解压炸弹风险）。
+using LZ4Pickler = Horizon.Game.Message.Utilities.LZ4Pickler;
 using MemoryPack;
+using Microsoft.Extensions.Logging;
 using Orleans;
 using System;
-using System.Buffers;
-using System.Linq;
 using TouchSocket.Core;
 
 namespace Horizon.Game.Message.Network
@@ -85,6 +85,14 @@ namespace Horizon.Game.Message.Network
         private ushort _expectedChecksum;
 
         /// <summary>
+        /// 最近一次成功解析的原始 8 字节头（按小端读入 ulong）与有效标志。
+        /// 仅用于协议不匹配时打印十六进制，便于判断对端帧格式是否与本端一致；
+        /// 存为值类型，热路径不产生任何分配。
+        /// </summary>
+        private ulong _rawHeader;
+        private bool _hasRawHeader;
+
+        /// <summary>
         /// 消息体长度（等于载荷字节数，不含8字节头）
         /// </summary>
         [MemoryPackOrder(0)]
@@ -109,6 +117,15 @@ namespace Horizon.Game.Message.Network
         public int MaxLength => 1024 * 1024;
 
         /// <summary>
+        /// 阶段 5.4.1 — 注入的日志器（可选，静态）。由宿主进程（网关/客户端）启动时设置，
+        /// 类别建议 <c>"HorizonMessageInfo"</c>；null 时不输出任何日志（零开销）。<br/>
+        /// 替换协议头/体解析失败路径的原 <c>Console.WriteLine</c> 直接打印
+        /// （解析失败属协议异常，按 Error 级输出，可接入统一日志管线与监控告警）。
+        /// </summary>
+        [MemoryPackIgnore]
+        public static ILogger? Log { get; set; }
+
+        /// <summary>
         /// 构造函数
         /// </summary>
         [MemoryPackConstructor]
@@ -131,157 +148,19 @@ namespace Horizon.Game.Message.Network
             }
         }
 
-        /// <summary>
-        /// 尝试构建请求信息
-        /// </summary>
-        /// <param name="buffer">数据缓冲区</param>
-        /// <param name="length">数据长度</param>
-        /// <param name="requestInfo">输出的请求信息</param>
-        /// <returns>是否成功构建</returns>
-        public bool TryBuild(ReadOnlySequence<byte> buffer, int length, out IRequestInfo requestInfo)
-        {
-            requestInfo = null;
-            
-            try
-            {
-                if (buffer.Length < 4) // 至少需要4字节来读取长度
-                {
-                    return false;
-                }
-
-                var reader = new SequenceReader<byte>(buffer);
-                
-                // 读取消息长度
-                if (!reader.TryReadLittleEndian(out int messageLength))
-                {
-                    return false;
-                }
-
-                // 检查是否有足够的数据
-                if (buffer.Length < messageLength + 4)
-                {
-                    return false;
-                }
-
-                // 读取消息体数据
-                var bodyData = new byte[messageLength];
-                if (!reader.TryCopyTo(bodyData))
-                {
-                    return false;
-                }
-
-                // 反序列化消息包
-                var packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(bodyData);
-                if (packet == null)
-                {
-                    return false;
-                }
-
-                packet.RawData = bodyData;
-
-                // 创建请求信息
-                requestInfo = new HorizonMessageInfo(packet)
-                {
-                    BodyLength = messageLength,
-                    Body = bodyData
-                };
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 尝试构建请求信息
-        /// </summary>
-        /// <param name="buffer">数据缓冲区</param>
-        /// <param name="requestInfo">输出的请求信息</param>
-        /// <returns>是否成功构建</returns>
-        public bool TryBuild(ReadOnlySequence<byte> buffer, out IRequestInfo requestInfo)
-        {
-            return TryBuild(buffer, (int)buffer.Length, out requestInfo);
-        }
-
-        /// <summary>
-        /// 将消息包序列化为字节数组
-        /// </summary>
-        /// <returns>序列化后的字节数组</returns>
-        public byte[] ToBytes()
-        {
-            if (Packet == null)
-            {
-                return Array.Empty<byte>();
-            }
-
-            try
-            {
-                var bodyData = MemoryPackSerializer.Serialize(Packet);
-                var lengthBytes = BitConverter.GetBytes(bodyData.Length);
-                
-                var result = new byte[lengthBytes.Length + bodyData.Length];
-                Array.Copy(lengthBytes, 0, result, 0, lengthBytes.Length);
-                Array.Copy(bodyData, 0, result, lengthBytes.Length, bodyData.Length);
-                
-                return result;
-            }
-            catch
-            {
-                return Array.Empty<byte>();
-            }
-        }
-
-        /// <summary>
-        /// 从字节数组创建消息信息
-        /// </summary>
-        /// <param name="data">字节数组</param>
-        /// <returns>消息信息对象</returns>
-        public static HorizonMessageInfo? FromBytes(byte[] data)
-        {
-            if (data == null || data.Length < 4)
-            {
-                return null;
-            }
-
-            try
-            {
-                var messageLength = BitConverter.ToInt32(data, 0);
-                if (data.Length < messageLength + 4)
-                {
-                    return null;
-                }
-
-                var bodyData = new byte[messageLength];
-                Array.Copy(data, 4, bodyData, 0, messageLength);
-
-                var packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(bodyData);
-                if (packet == null)
-                {
-                    return null;
-                }
-
-                packet.RawData = bodyData;
-
-                return new HorizonMessageInfo(packet)
-                {
-                    BodyLength = messageLength,
-                    Body = bodyData
-                };
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        // 已删除 TryBuild()/ToBytes()/FromBytes()：它们编码的是「4 字节长度前缀 + MemoryPack 体」的
+        // 旧线格式（无消息类型/压缩标志/校验和），与规范 8 字节头格式（见 OnParsingHeader/
+        // OnParsingBody 与 HorizonMessageAdapter.WrapPacket）冲突。全仓无调用方，属死代码。
 
         public bool OnParsingHeader(ReadOnlySpan<byte> header)
         {
+            // 每帧重置：确保后续诊断打印的是"本帧"的头，而不是上一帧的残留。
+            _hasRawHeader = false;
+
             // 完整协议头为 8 字节：[0-3] 载荷长度, [4] 消息类型, [5] 压缩标志, [6-7] 校验和
             if (header.Length < 8)
             {
-                Console.WriteLine($"HorizonMessageInfo.OnParsingHeader: header too short, length={header.Length}");
+                Log?.LogError($"HorizonMessageInfo.OnParsingHeader: header too short, length={header.Length}");
                 return false;
             }
 
@@ -292,10 +171,12 @@ namespace Horizon.Game.Message.Network
                 var bodyLength = BitConverter.ToInt32(header);
                 if (bodyLength <= 0 || bodyLength > MaxLength)
                 {
-                    Console.WriteLine($"HorizonMessageInfo.OnParsingHeader: invalid bodyLength={bodyLength}, MaxLength={MaxLength}");
+                    Log?.LogError($"HorizonMessageInfo.OnParsingHeader: invalid bodyLength={bodyLength}, MaxLength={MaxLength}");
                     return false;
                 }
 
+                _rawHeader = System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(header);
+                _hasRawHeader = true;
                 BodyLength = bodyLength;
                 _isCompressed = header[5] != 0;
                 _expectedChecksum = BitConverter.ToUInt16(header.Slice(6, 2));
@@ -303,7 +184,7 @@ namespace Horizon.Game.Message.Network
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"HorizonMessageInfo.OnParsingHeader: exception={ex.Message}");
+                Log?.LogError($"HorizonMessageInfo.OnParsingHeader: exception={ex.Message}");
                 return false;
             }
         }
@@ -312,7 +193,7 @@ namespace Horizon.Game.Message.Network
         {
             if (body.Length != BodyLength)
             {
-                Console.WriteLine($"HorizonMessageInfo.OnParsingBody: body length mismatch, expected={BodyLength}, actual={body.Length}");
+                Log?.LogError($"HorizonMessageInfo.OnParsingBody: body length mismatch, expected={BodyLength}, actual={body.Length}");
                 return false;
             }
 
@@ -322,7 +203,12 @@ namespace Horizon.Game.Message.Network
                 var actualChecksum = CalculateChecksum(body);
                 if (actualChecksum != _expectedChecksum)
                 {
-                    Console.WriteLine($"HorizonMessageInfo.OnParsingBody: checksum mismatch, expected={_expectedChecksum}, actual={actualChecksum}");
+                    // 附带原始头与载荷头部十六进制：若对端按非 8 字节头（如旧版 4 字节长度前缀）成帧，
+                    // 这里能直接看出 [4]/[5]/[6-7] 位置上放的是载荷字节而非 类型/压缩标志/校验和，
+                    // 从而把"checksum mismatch"一步定位到成帧格式不一致，而不是靠猜。
+                    Log?.LogError(
+                        $"HorizonMessageInfo.OnParsingBody: checksum mismatch, expected={_expectedChecksum}, actual={actualChecksum}, " +
+                        $"bodyLength={body.Length}, compressed={_isCompressed}, header=[{FormatHeaderHex()}], bodyHead=[{FormatHex(body, 32)}]");
                     return false;
                 }
 
@@ -330,16 +216,24 @@ namespace Horizon.Game.Message.Network
 
                 var finalBody = _isCompressed ? LZ4Pickler.Unpickle(body) : Body;
 
+                // Unpickle 对畸形/超限输入返回 null（而非抛异常），必须显式判空，
+                // 否则 NRE 会掩盖真实的协议违规分类（解压失败/超限 vs 反序列化失败）。
+                if (finalBody is null || finalBody.Length == 0)
+                {
+                    Log?.LogError($"HorizonMessageInfo.OnParsingBody: decompression failed (malformed or exceeds {LZ4Pickler.MaxDecompressedLength} bytes), compressed={_isCompressed}, wireSize={body.Length}");
+                    return false;
+                }
+
                 if (finalBody.Length > MaxLength)
                 {
-                    Console.WriteLine($"HorizonMessageInfo.OnParsingBody: decompressed size exceeds limit, size={finalBody.Length}, MaxLength={MaxLength}");
+                    Log?.LogError($"HorizonMessageInfo.OnParsingBody: decompressed size exceeds limit, size={finalBody.Length}, MaxLength={MaxLength}");
                     return false;
                 }
 
                 Packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(finalBody);
                 if (Packet == null)
                 {
-                    Console.WriteLine("HorizonMessageInfo.OnParsingBody: MemoryPack deserialization returned null");
+                    Log?.LogError("HorizonMessageInfo.OnParsingBody: MemoryPack deserialization returned null");
                     return false;
                 }
 
@@ -348,7 +242,7 @@ namespace Horizon.Game.Message.Network
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"HorizonMessageInfo.OnParsingBody: exception={ex.Message}");
+                Log?.LogError($"HorizonMessageInfo.OnParsingBody: exception={ex.Message}");
                 return false;
             }
         }
@@ -359,9 +253,62 @@ namespace Horizon.Game.Message.Network
         private static ushort CalculateChecksum(ReadOnlySpan<byte> data) =>
             HorizonProtocol.CalculateChecksum(data);
 
+        /// <summary>
+        /// 把缓冲区前 <paramref name="maxBytes"/> 字节格式化为十六进制串（仅故障诊断路径调用，热路径零开销）。
+        /// </summary>
+        private static string FormatHex(ReadOnlySpan<byte> data, int maxBytes)
+        {
+            var count = Math.Min(maxBytes, data.Length);
+            if (count <= 0)
+            {
+                return "(empty)";
+            }
+
+            const string digits = "0123456789abcdef";
+            var chars = new char[count * 2];
+            for (var i = 0; i < count; i++)
+            {
+                chars[i * 2] = digits[data[i] >> 4];
+                chars[i * 2 + 1] = digits[data[i] & 0x0F];
+            }
+            return new string(chars);
+        }
+
+        /// <summary>
+        /// 本帧原始 8 字节头的小端字节序十六进制表示。
+        /// </summary>
+        private string FormatHeaderHex()
+        {
+            if (!_hasRawHeader)
+            {
+                return "(none)";
+            }
+
+            Span<byte> bytes = stackalloc byte[HorizonProtocol.HeaderLength];
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = (byte)(_rawHeader >> (8 * i));
+            }
+            return FormatHex(bytes, bytes.Length);
+        }
+
+        /// <summary>
+        /// 以规范 8 字节线路头写出本帧：4 字节载荷长度 + 1 字节消息类型 + 1 字节压缩标志 + 2 字节校验和。
+        /// </summary>
+        /// <remarks>
+        /// 修复：原实现写的是「4 字节长度前缀 + MemoryPack 体」的旧线格式（无消息类型/压缩标志/校验和），
+        /// 与 <see cref="OnParsingHeader"/> / <see cref="HorizonMessageAdapter.WrapPacket"/> 的 8 字节头规范冲突。
+        /// <para>
+        /// 该类通过 <c>CustomFixedHeaderDataHandlingAdapter</c> 注册为<b>可发送</b>的请求信息
+        /// （客户端适配器 <c>CanSendRequestInfo = true</c>），一旦走 TouchSocket 强类型发送路径，
+        /// 对端按 8 字节头解析时会把载荷前几字节误当作 类型/压缩标志/校验和，
+        /// 表现为「expected 恒定、actual 随载荷变化」的 checksum mismatch —— 与本次线上现象一致。
+        /// </para>
+        /// 现在与 <c>HorizonMessageAdapter.WrapPacket</c> / <c>SyncHandshakeWire.Wrap</c> 逐字节同构。
+        /// </remarks>
         public void Build<TByteBlock>(ref TByteBlock byteBlock) where TByteBlock : IByteBlock
         {
-            if (Packet == null)
+            if (Packet?.Header == null)
             {
                 return;
             }
@@ -369,10 +316,17 @@ namespace Horizon.Game.Message.Network
             try
             {
                 var bodyData = MemoryPackSerializer.Serialize(Packet);
-                var lengthBytes = BitConverter.GetBytes(bodyData.Length);
+                var frame = new byte[HorizonProtocol.HeaderLength + bodyData.Length];
+                var span = frame.AsSpan();
 
-                byteBlock.Write(lengthBytes);
-                byteBlock.Write(bodyData);
+                BitConverter.TryWriteBytes(span.Slice(0, 4), bodyData.Length);
+                // MessageType 可 > byte 上限，按低位截断（与各写入方 span[4] = (byte)type 一致）。
+                span[4] = unchecked((byte)Packet.Header.MessageType);
+                span[5] = 0; // Build 无压缩入参，固定发未压缩帧（压缩标志 0 语义明确）
+                BitConverter.TryWriteBytes(span.Slice(6, 2), HorizonProtocol.CalculateChecksum(bodyData));
+                bodyData.AsSpan().CopyTo(span.Slice(HorizonProtocol.HeaderLength));
+
+                byteBlock.Write(frame);
             }
             catch
             {

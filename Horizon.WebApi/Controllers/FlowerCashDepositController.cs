@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -34,15 +37,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{depositId}")]
-        public async Task<ResultVM<CashDepositState>> GetCashDepositAsync(long depositId)
+        public async Task<ResultVM<CashDepositDto>> GetCashDepositAsync(long depositId)
         {
-            var result = new ResultVM<CashDepositState>();
+            var result = new ResultVM<CashDepositDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ICashDepositGrain>(0);
-                result.Data = await grain.GetCashDepositAsync(depositId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetCashDepositAsync(depositId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -53,14 +57,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("shop/{shopId}")]
-        public async Task<ResultVM<List<CashDepositState>>> GetShopCashDepositsAsync(long shopId)
+        public async Task<ResultVM<List<CashDepositDto>>> GetShopCashDepositsAsync(long shopId)
         {
-            var result = new ResultVM<List<CashDepositState>>();
+            var result = new ResultVM<List<CashDepositDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ICashDepositGrain>(0);
-                result.Data = await grain.GetShopCashDepositsAsync(shopId);
+                var deposits = await grain.GetShopCashDepositsAsync(shopId);
+                result.Data = deposits?.Select(d => FlowerDtoMapper.ToDto(d)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

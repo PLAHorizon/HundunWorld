@@ -3,6 +3,8 @@ using Horizon.Core.Options;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,6 +13,7 @@ using Orleans;
 using Orleans.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Horizon.WebApi.Controllers
@@ -33,14 +36,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("merchant/{merchantId}")]
-        public async Task<ResultVM<List<FreightTemplateState>>> GetMerchantTemplates(long merchantId)
+        public async Task<ResultVM<List<FreightTemplateDto>>> GetMerchantTemplates(long merchantId)
         {
-            var result = new ResultVM<List<FreightTemplateState>>();
+            var result = new ResultVM<List<FreightTemplateDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IFreightTemplateGrain>(0);
-                result.Data = await grain.GetMerchantTemplatesAsync(merchantId);
+                var templates = await grain.GetMerchantTemplatesAsync(merchantId);
+                result.Data = templates?.Select(t => FlowerDtoMapper.ToDto(t)).ToList();
                 result.IsSuccess = true;
             }
             catch (System.Exception ex)
@@ -52,15 +56,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{templateId}")]
-        public async Task<ResultVM<FreightTemplateState>> GetTemplate(long templateId)
+        public async Task<ResultVM<FreightTemplateDto>> GetTemplate(long templateId)
         {
-            var result = new ResultVM<FreightTemplateState>();
+            var result = new ResultVM<FreightTemplateDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IFreightTemplateGrain>(0);
-                result.Data = await grain.GetTemplateAsync(templateId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetTemplateAsync(templateId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (System.Exception ex)
             {

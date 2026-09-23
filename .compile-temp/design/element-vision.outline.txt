@@ -1,0 +1,69 @@
+## page: element-vision
+## dom-ids: back-hud, link-death-screen, page-element-vision
+  main #page-element-vision
+    div
+    div
+    div
+    div .top-8 left-1/2 flex-col items-center
+      div .vision-ring [aria="元素视野剩余时间 23 秒"]
+        span .vision-ring-num | 23
+      div .vision-title | 元素视野
+    div .top-8 left-8 flex-col
+      div .vision-status
+        span | 视野已激活
+        span .vision-status-sep | ·
+        span .vision-status-mode | 洞察
+      a #link-death-screen [aria="前往阵亡界面"]
+        span | 阵亡
+    div [aria="高亮目标 残影刺客 传说品质"]
+      div
+      div
+      div .vision-marker-line-right
+      div .vision-marker-label vision-marker-label-right
+        span | 残影刺客
+        span .ink-tag ink-tag-vermilion | 传说
+    div [aria="高亮物品 寒铁剑胚 史诗品质"]
+      div
+      div
+      div .vision-marker-line-right
+      div .vision-marker-label vision-marker-label-right
+        span | 寒铁剑胚
+        span .ink-tag ink-tag-brand | 史诗
+    div [aria="高亮资源 千年灵芝 罕见品质"]
+      div
+      div
+      div .vision-marker-line-left
+      div .vision-marker-label vision-marker-label-left
+        span .ink-tag ink-tag-jade | 罕见
+        span | 千年灵芝
+    div [aria="高亮线索 古碑残片 稀有品质"]
+      div
+      div
+      div .vision-marker-line-bottom
+      div .vision-marker-label vision-marker-label-bottom
+        span | 古碑残片
+        span .ink-tag ink-tag-common | 稀有
+    div .bottom-8 right-8
+      div .vision-list-panel
+        div .vision-list-header
+          span | 感知到 4 处异象
+        div .vision-list-items
+          div .vision-list-item [aria="定位 残影刺客 距离 12.4 米"]
+            span .vision-list-name | 残影刺客
+            span .vision-list-dist | 12.4m
+          div .vision-list-item [aria="定位 寒铁剑胚 距离 8.7 米"]
+            span .vision-list-name | 寒铁剑胚
+            span .vision-list-dist | 8.7m
+          div .vision-list-item [aria="定位 千年灵芝 距离 15.2 米"]
+            span .vision-list-name | 千年灵芝
+            span .vision-list-dist | 15.2m
+          div .vision-list-item [aria="定位 古碑残片 距离 5.3 米"]
+            span .vision-list-name | 古碑残片
+            span .vision-list-dist | 5.3m
+    div .bottom-8 left-8
+      button #back-hud [aria="退出元素视野，返回战斗界面"]
+        kbd | V
+        span | 退出视野
+
+## COPY (18)
+元素视野 | 视野已激活 | 洞察 | 阵亡 | 残影刺客 | 传说 | 寒铁剑胚 | 史诗 | 罕见 | 千年灵芝 | 古碑残片 | 稀有 | 感知到 4 处异象 | 12.4m | 8.7m | 15.2m | 5.3m | 退出视野

@@ -37,6 +37,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private ContainerControl _leftCol;
         private SkillListItem[] _skillItems;
 
+        /// <summary>与 <see cref="_skillItems"/> 同索引的武学元数据，供详情弹窗读取。</summary>
+        private PopupMartialDetail.MartialDetailInfo[] _skillMeta;
+        private int _selectedSkillIndex = -1;
+
+        /// <summary>当前选中的武学概要，供 <c>popup-martial-detail</c> 页面间数据传递。</summary>
+        public PopupMartialDetail.MartialDetailInfo CurrentSkill { get; private set; }
+
         // 右列
         private ContainerControl _rightCol;
         private TalentTreeCanvas _talentCanvas;
@@ -46,6 +53,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private InkButton _btnUnequip;
         private InkButton _btnEquip;
         private InkButton _btnUpgrade;
+        private InkButton _btnDetail;
 
         public void BindCharacter(CharacterAttributesComponent component)
         {
@@ -243,6 +251,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             int totalSkills = 0;
             foreach (var g in groups) totalSkills += g.skills.Length;
             _skillItems = new SkillListItem[totalSkills];
+            _skillMeta = new PopupMartialDetail.MartialDetailInfo[totalSkills];
             int idx = 0;
 
             foreach (var g in groups)
@@ -272,11 +281,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     int captured = idx;
                     item.Clicked += () => OnSkillClicked(captured);
                     _skillItems[idx] = item;
+                    _skillMeta[idx] = new PopupMartialDetail.MartialDetailInfo
+                    {
+                        Glyph = s.glyph,
+                        Name = s.name,
+                        Sect = s.affix,
+                        Grade = s.grade,
+                        Quality = s.q,
+                    };
                     _leftCol.AddChild(item);
                     cursorY += 64f + 6f;
                     idx++;
                 }
                 cursorY += 10f;
+            }
+
+            // 默认预选首个招式（设计稿默认选中态），保证详情弹窗始终有真实数据。
+            if (totalSkills > 0)
+            {
+                _selectedSkillIndex = 0;
+                CurrentSkill = _skillMeta[0];
             }
         }
 
@@ -684,6 +708,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             };
             _btnUpgrade.Clicked += () => EmitGoldAtButton(_btnUpgrade);
             _bottomBar.AddChild(_btnUpgrade);
+
+            // 查看详情：将选中武学概要传入 popup-martial-detail（导航入口串联）。
+            const float detailW = 84f;
+            float detailX = MainPanelSize.X - Padding - 72f - 8f - 72f - 8f - 84f - 8f - detailW;
+            _btnDetail = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "查看详情",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(detailX, btnY),
+                Size = new Float2(detailW, 32f),
+            };
+            _btnDetail.Clicked += () =>
+            {
+                EmitGoldAtButton(_btnDetail);
+                NavigationRequested?.Invoke(InkPageDomIds.PopupMartialDetail);
+            };
+            _bottomBar.AddChild(_btnDetail);
         }
 
         // ===================================================================
@@ -705,7 +748,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             for (int i = 0; i < _skillItems.Length; i++)
                 _skillItems[i].IsSelected = (i == index);
             if (index >= 0 && index < _skillItems.Length)
+            {
+                _selectedSkillIndex = index;
+                if (_skillMeta != null)
+                    CurrentSkill = _skillMeta[index];
                 EmitGoldAtButton(_skillItems[index]);
+            }
         }
 
         private void OnCloseClicked()

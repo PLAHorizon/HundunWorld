@@ -4,6 +4,7 @@ using Horizon.Game.Message.Network;
 using HundunWorld.Game.Network.Security;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -376,19 +377,30 @@ namespace HundunWorld.Game.Network.Handlers
         private readonly Dictionary<MessageType, List<long>> _processingTimes = new Dictionary<MessageType, List<long>>();
         private readonly object _lock = new object();
 
+        /// <summary>
+        /// ExtensionData（<c>Dictionary&lt;string, string&gt;</c>）中记录处理起始时间的键。
+        /// 该字典会被 MemoryPack/Orleans 序列化，因此只存字符串，不存 object。
+        /// </summary>
+        private const string StartTimeKey = "StartTime";
+
         public override async Task OnPreProcess(HorizonMessagePacket message, string sessionId, string clientIp)
         {
-            message.Header.ExtensionData["StartTime"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            // 按不变文化转字符串：避免区域性数字格式导致回读解析失败
+            message.Header.ExtensionData[StartTimeKey] =
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
             await base.OnPreProcess(message, sessionId, clientIp);
         }
 
         public override async Task OnPostProcess(HorizonMessagePacket message, ProcessingResult result, string sessionId, string clientIp)
         {
-            if (message.Header.ExtensionData.ContainsKey("StartTime"))
+            if (message.Header.ExtensionData.TryGetValue(StartTimeKey, out var rawStartTime)
+                && long.TryParse(rawStartTime, NumberStyles.Integer, CultureInfo.InvariantCulture, out var startTime))
             {
-                var startTime = (long)message.Header.ExtensionData["StartTime"];
                 var endTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 var processingTime = endTime - startTime;
+
+                // 消费后立即移除：纯本地埋点数据不应随包头序列化外发
+                message.Header.ExtensionData.Remove(StartTimeKey);
 
                 lock (_lock)
                 {

@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙商家预警 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+      .alert-card-enter { animation: cardFadeIn 0.25s ease-out; }
+      @keyframes cardFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      .toast-show { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen relative">
+
+        <!-- ========== 鸿蒙导航栏 (磨砂玻璃) ========== -->
+        <div class="sticky top-0 z-30 backdrop-blur-2xl bg-background/55 border-b border-white/[0.04]">
+            <div class="flex items-center justify-between px-4" style="height:52px;">
+                <button class="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/10 transition-colors" aria-label="返回">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <h1 class="text-[17px] font-semibold tracking-wide">商家预警</h1>
+                <button class="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/10 transition-colors" aria-label="设置">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ========== 内容区 ========== -->
+        <div class="px-4 pt-4 pb-44 space-y-5">
+
+            <!-- ========== 鸿蒙Tab 角色切换 (胶囊形选中指示) ========== -->
+            <div class="flex p-1 rounded-full backdrop-blur-xl border border-white/[0.06]" style="background-color: rgba(19,23,34,0.45);">
+                <button data-role="grower" class="role-tab flex-1 py-2 min-h-[40px] text-[13px] font-medium rounded-full transition-colors active:scale-95" style="background-color: var(--gd-primary); color: var(--gd-primary-foreground); box-shadow: 0 2px 8px rgba(41,98,255,0.3);">种植户</button>
+                <button data-role="wholesaler" class="role-tab flex-1 py-2 min-h-[40px] text-[13px] font-medium rounded-full text-muted-foreground active:bg-white/5 transition-colors">批发商</button>
+                <button data-role="retailer" class="role-tab flex-1 py-2 min-h-[40px] text-[13px] font-medium rounded-full text-muted-foreground active:bg-white/5 transition-colors">零售商</button>
+            </div>
+
+            <!-- ========== 预警统计概览 (磨砂玻璃卡片) ========== -->
+            <section class="rounded-3xl backdrop-blur-2xl border border-white/[0.06] p-5 shadow-xl relative overflow-hidden" style="background-color: rgba(19,23,34,0.45);">
+                <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                <div class="relative">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-muted-foreground">今日预警总数</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1" style="background-color: var(--gd-state-error-surface); color: var(--gd-state-error);">
+                                    <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background-color: var(--gd-state-error);"></span>实时
+                                </span>
+                            </div>
+                            <div class="flex items-baseline gap-2 mt-1.5">
+                                <span class="text-[32px] font-bold font-mono tracking-tight leading-none" id="stat-total">7</span>
+                                <span class="text-[14px] text-muted-foreground">条</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-error-surface);">
+                            <i data-lucide="bell-ring" class="w-6 h-6" style="color: var(--gd-state-error);"></i>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5" id="stat-cards">
+                        <!-- 4 张统计卡片由 JS 动态渲染 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== 预警趋势图表 (Chart.js 堆叠柱状图) ========== -->
+            <section>
+                <div class="flex items-center gap-2 mb-3 px-1">
+                    <div class="w-1 h-4 rounded-full bg-primary"></div>
+                    <h2 class="text-sm font-semibold">预警趋势</h2>
+                    <span class="text-xs text-muted-foreground">近 7 日</span>
+                </div>
+                <div class="rounded-3xl backdrop-blur-2xl border border-white/[0.06] p-4 shadow-xl" style="background-color: rgba(19,23,34,0.45);">
+                    <div style="height: 180px; position: relative;">
+                        <canvas id="trend-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== 品种筛选 (横向滚动 chips) ========== -->
+            <section>
+                <div class="flex items-center gap-2 mb-3 px-1">
+                    <div class="w-1 h-4 rounded-full bg-primary"></div>
+                    <h2 class="text-sm font-semibold">品种筛选</h2>
+                </div>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4" id="species-filter">
+                    <!-- chips 由 JS 动态渲染 -->
+                </div>
+            </section>
+
+            <!-- ========== 预警等级筛选 Tab ========== -->
+            <section>
+                <div class="flex items-center gap-2 mb-3 px-1">
+                    <div class="w-1 h-4 rounded-full bg-primary"></div>
+                    <h2 class="text-sm font-semibold">等级筛选</h2>
+                </div>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4" id="level-tabs">
+                    <!-- Tab 由 JS 动态渲染 -->
+                </div>
+            </section>
+
+            <!-- ========== 预警列表 ========== -->
+            <section>
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1 h-4 rounded-full bg-primary"></div>
+                        <h2 class="text-sm font-semibold">预警列表</h2>
+                        <span class="text-xs text-muted-foreground" id="alert-count">0 条</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button id="refresh-btn" class="w-9 h-9 rounded-full flex items-center justify-center border active:scale-95 transition" style="border-color: var(--gd-border);" aria-label="刷新">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-muted-foreground" id="refresh-icon"></i>
+                        </button>
+                        <button id="mark-all-read" class="flex items-center gap-1 text-xs text-muted-foreground min-h-[36px] px-3 rounded-full border active:scale-95 transition" style="border-color: var(--gd-border);">
+                            <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                            全部已读
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-2.5" id="alert-list">
+                    <!-- 预警卡片由 JS 动态渲染 -->
+                </div>
+            </section>
+
+            <!-- ========== 阈值设置 (磨砂玻璃卡片, 带滑块) ========== -->
+            <section>
+                <div class="flex items-center gap-2 mb-3 px-1">
+                    <div class="w-1 h-4 rounded-full bg-primary"></div>
+                    <h2 class="text-sm font-semibold">阈值设置</h2>
+                </div>
+                <div class="rounded-3xl backdrop-blur-2xl border border-white/[0.06] p-5 shadow-xl space-y-5" style="background-color: rgba(19,23,34,0.45);">
+                    <!-- 价格波动 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-4 h-4 text-muted-foreground"></i>
+                                <span class="text-[14px] text-foreground">价格波动</span>
+                            </div>
+                            <span class="text-[14px] font-semibold font-mono" style="color: var(--gd-primary);">±10%</span>
+                        </div>
+                        <div class="relative h-5">
+                            <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded-full" style="background-color: var(--gd-secondary);"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 left-0 h-1 rounded-full" style="width: 33%; background-color: var(--gd-primary);"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style="left: calc(33% - 8px); background-color: var(--gd-primary-foreground); box-shadow: 0 0 0 4px var(--gd-card), 0 1px 4px rgba(0,0,0,0.5);"></div>
+                        </div>
+                        <div class="flex justify-between mt-1.5">
+                            <span class="text-[10px] text-muted-foreground">0%</span>
+                            <span class="text-[10px] text-muted-foreground">30%</span>
+                        </div>
+                    </div>
+
+                    <!-- 库存预警 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="package" class="w-4 h-4 text-muted-foreground"></i>
+                                <span class="text-[14px] text-foreground">库存预警</span>
+                            </div>
+                            <span class="text-[14px] font-semibold font-mono" style="color: var(--gd-primary);">20%</span>
+                        </div>
+                        <div class="relative h-5">
+                            <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded-full" style="background-color: var(--gd-secondary);"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 left-0 h-1 rounded-full" style="width: 40%; background-color: var(--gd-primary);"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style="left: calc(40% - 8px); background-color: var(--gd-primary-foreground); box-shadow: 0 0 0 4px var(--gd-card), 0 1px 4px rgba(0,0,0,0.5);"></div>
+                        </div>
+                        <div class="flex justify-between mt-1.5">
+                            <span class="text-[10px] text-muted-foreground">0%</span>
+                            <span class="text-[10px] text-muted-foreground">50%</span>
+                        </div>
+                    </div>
+
+                    <!-- 低温阈值 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="thermometer-snowflake" class="w-4 h-4 text-muted-foreground"></i>
+                                <span class="text-[14px] text-foreground">低温阈值</span>
+                            </div>
+                            <span class="text-[14px] font-semibold font-mono" style="color: var(--gd-primary);">5℃</span>
+                        </div>
+                        <div class="relative h-5">
+                            <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded-full" style="background-color: var(--gd-secondary);"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 left-0 h-1 rounded-full" style="width: 60%; background-color: var(--gd-primary);"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style="left: calc(60% - 8px); background-color: var(--gd-primary-foreground); box-shadow: 0 0 0 4px var(--gd-card), 0 1px 4px rgba(0,0,0,0.5);"></div>
+                        </div>
+                        <div class="flex justify-between mt-1.5">
+                            <span class="text-[10px] text-muted-foreground">-10℃</span>
+                            <span class="text-[10px] text-muted-foreground">15℃</span>
+                        </div>
+                    </div>
+
+                    <!-- 高温阈值 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="thermometer-sun" class="w-4 h-4 text-muted-foreground"></i>
+                                <span class="text-[14px] text-foreground">高温阈值</span>
+                            </div>
+                            <span class="text-[14px] font-semibold font-mono" style="color: var(--gd-primary);">35℃</span>
+                        </div>
+                        <div class="relative h-5">
+                            <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded-full" style="background-color: var(--gd-secondary);"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 left-0 h-1 rounded-full" style="width: 60%; background-color: var(--gd-primary);"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style="left: calc(60% - 8px); background-color: var(--gd-primary-foreground); box-shadow: 0 0 0 4px var(--gd-card), 0 1px 4px rgba(0,0,0,0.5);"></div>
+                        </div>
+                        <div class="flex justify-between mt-1.5">
+                            <span class="text-[10px] text-muted-foreground">20℃</span>
+                            <span class="text-[10px] text-muted-foreground">45℃</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="px-4 mt-2 text-[12px] text-muted-foreground">超出阈值将自动触发预警提醒</p>
+            </section>
+
+            <!-- ========== 通知设置 (鸿蒙Toggle) ========== -->
+            <section>
+                <div class="flex items-center gap-2 mb-3 px-1">
+                    <div class="w-1 h-4 rounded-full bg-primary"></div>
+                    <h2 class="text-sm font-semibold">通知设置</h2>
+                </div>
+                <div class="rounded-3xl backdrop-blur-2xl border border-white/[0.06] shadow-xl overflow-hidden" style="background-color: rgba(19,23,34,0.45);">
+                    <!-- 震动 (关) -->
+                    <div class="w-full flex items-center gap-3 px-4 min-h-[56px]">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--gd-secondary);">
+                            <i data-lucide="vibrate" class="w-5 h-5 text-foreground"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[15px] text-foreground">震动提醒</p>
+                            <p class="text-[12px] text-muted-foreground">预警时震动反馈</p>
+                        </div>
+                        <button role="switch" aria-checked="false" class="toggle-switch relative w-[52px] h-[32px] rounded-full transition-colors duration-300 shrink-0" style="background-color: var(--gd-secondary);" aria-label="震动提醒">
+                            <span class="absolute top-[2px] left-[2px] w-[28px] h-[28px] rounded-full transition-transform duration-300" style="background-color: var(--gd-primary-foreground); box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
+                        </button>
+                    </div>
+                    <div class="ml-16 h-px" style="background-color: var(--gd-border); opacity: 0.6;"></div>
+
+                    <!-- 声音 (关) -->
+                    <div class="w-full flex items-center gap-3 px-4 min-h-[56px]">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--gd-secondary);">
+                            <i data-lucide="volume-2" class="w-5 h-5 text-foreground"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[15px] text-foreground">声音提醒</p>
+                            <p class="text-[12px] text-muted-foreground">预警时播放提示音</p>
+                        </div>
+                        <button role="switch" aria-checked="false" class="toggle-switch relative w-[52px] h-[32px] rounded-full transition-colors duration-300 shrink-0" style="background-color: var(--gd-secondary);" aria-label="声音提醒">
+                            <span class="absolute top-[2px] left-[2px] w-[28px] h-[28px] rounded-full transition-transform duration-300" style="background-color: var(--gd-primary-foreground); box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
+                        </button>
+                    </div>
+                    <div class="ml-16 h-px" style="background-color: var(--gd-border); opacity: 0.6;"></div>
+
+                    <!-- 推送 (开) -->
+                    <div class="w-full flex items-center gap-3 px-4 min-h-[56px]">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--gd-state-info-surface);">
+                            <i data-lucide="bell-ring" class="w-5 h-5" style="color: var(--gd-primary);"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[15px] text-foreground">推送通知</p>
+                            <p class="text-[12px] text-muted-foreground">系统通知栏推送</p>
+                        </div>
+                        <button role="switch" aria-checked="true" class="toggle-switch relative w-[52px] h-[32px] rounded-full transition-colors duration-300 shrink-0" style="background-color: var(--gd-primary);" aria-label="推送通知">
+                            <span class="absolute top-[2px] left-[2px] w-[28px] h-[28px] rounded-full transition-transform duration-300" style="background-color: var(--gd-primary-foreground); transform: translateX(20px); box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
+                        </button>
+                    </div>
+                    <div class="ml-16 h-px" style="background-color: var(--gd-border); opacity: 0.6;"></div>
+
+                    <!-- 仅严重 (关) -->
+                    <div class="w-full flex items-center gap-3 px-4 min-h-[56px]">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--gd-state-error-surface);">
+                            <i data-lucide="shield-alert" class="w-5 h-5" style="color: var(--gd-state-error);"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[15px] text-foreground">仅推送严重预警</p>
+                            <p class="text-[12px] text-muted-foreground">过滤警告与提示级别</p>
+                        </div>
+                        <button role="switch" aria-checked="false" class="toggle-switch relative w-[52px] h-[32px] rounded-full transition-colors duration-300 shrink-0" style="background-color: var(--gd-secondary);" aria-label="仅推送严重预警">
+                            <span class="absolute top-[2px] left-[2px] w-[28px] h-[28px] rounded-full transition-transform duration-300" style="background-color: var(--gd-primary-foreground); box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div><!-- /内容区 -->
+
+    </main>
+
+    <!-- ========== Toast 提示 ========== -->
+    <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-8 z-50 px-5 py-2.5 rounded-full text-[13px] font-medium pointer-events-none transition-all duration-300" style="background-color: rgba(38,166,154,0.95); color: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.4); opacity: 0; transform: translateX(-50%) translateY(10px);">
+    </div>
+
+    <script>
+    /* ============================================================
+       鸿蒙商家预警 — 完整交互逻辑
+       参考 PC 版 FlowerAlertCenterViewModel.cs
+       ============================================================ */
+
+    // ===== 全局状态 =====
+    const state = {
+      currentRole: 'grower',      // grower / wholesaler / retailer
+      currentLevel: 'all',        // all / danger / warning / info / low
+      currentSpecies: 0,          // 0 = 全部品种
+      expandedAlertId: null,      // 当前展开的预警 ID
+      isLoading: false,           // 刷新加载状态
+    };
+
+    let trendChart = null;        // Chart.js 实例
+
+    // ===== 等级配置 =====
+    const LEVEL_CONFIG = {
+      danger:  { label: '紧急', icon: '\uD83D\uDD34', color: 'var(--gd-state-error)',   surface: 'var(--gd-state-error-surface)' },
+      warning: { label: '重要', icon: '\uD83D\uDFE1', color: 'var(--gd-state-warning)', surface: 'var(--gd-state-warning-surface)' },
+      info:    { label: '一般', icon: '\uD83D\uDD35', color: 'var(--gd-primary)',       surface: 'var(--gd-state-info-surface)' },
+      low:     { label: '低',   icon: '\uD83D\uDFE2', color: 'var(--gd-state-success)', surface: 'var(--gd-state-success-surface)' },
+    };
+
+    const LEVEL_TABS = [
+      { key: 'all',     label: '全部' },
+      { key: 'danger',  label: '紧急' },
+      { key: 'warning', label: '重要' },
+      { key: 'info',    label: '一般' },
+      { key: 'low',     label: '低' },
+    ];
+
+    // ===== 品种渐变色 =====
+    const SPECIES_GRADIENTS = {
+      '红玫瑰':   'linear-gradient(135deg, #C47070, #8A5050)',
+      '百合':     'linear-gradient(135deg, #D4AB7A, #A07550)',
+      '康乃馨':   'linear-gradient(135deg, #B07A90, #7A5060)',
+      '混合花束': 'linear-gradient(135deg, #AB47BC, #6A1B9A)',
+      '绿植':     'linear-gradient(135deg, #66BB6A, #2E7D32)',
+    };
+
+    function getSpeciesGradient(name) {
+      return SPECIES_GRADIENTS[name] || 'linear-gradient(135deg, #5a90ff, #1f4fd6)';
+    }
+
+    // ===== 模拟数据（3 个角色各自独立数据集） =====
+    const ROLE_DATA = {
+      // ---- 种植户：价格突破 / 库存不足 / 异常波动 ----
+      grower: {
+        label: '种植户',
+        species: ['全部品种', '红玫瑰', '百合', '康乃馨', '混合花束', '绿植'],
+        statCards: [
+          { label: '待处理',   icon: 'clock',          color: 'var(--gd-state-error)',   surface: 'var(--gd-state-error-surface)',   filter: a => !a.isProcessed },
+          { label: '价格突破', icon: 'trending-down',  color: 'var(--gd-state-warning)', surface: 'var(--gd-state-warning-surface)', filter: a => a.alertTypeDisplay === '价格突破' },
+          { label: '库存不足', icon: 'package',        color: 'var(--gd-primary)',       surface: 'var(--gd-state-info-surface)',     filter: a => a.alertTypeDisplay === '库存不足' },
+          { label: '异常波动', icon: 'activity',       color: 'var(--gd-state-success)', surface: 'var(--gd-state-success-surface)',  filter: a => a.alertTypeDisplay === '异常波动' },
+        ],
+        trend: {
+          labels: ['周一','周二','周三','周四','周五','周六','周日'],
+          danger:  [2, 1, 3, 2, 1, 4, 3],
+          warning: [3, 2, 1, 4, 2, 3, 2],
+          info:    [1, 2, 1, 2, 3, 1, 2],
+        },
+        alerts: [
+          { alertId: 1, speciesId: 1, speciesName: '红玫瑰', alertType: 'PriceBelow', alertTypeDisplay: '价格突破', alertIcon: '\uD83D\uDCC9', alertLevel: 'danger',
+            message: '红玫瑰价格跌破预警下限，建议关注补仓时机或调整采购策略。', triggeredValue: 8.20, thresholdValue: 8.50,
+            triggeredValueDisplay: '¥8.20', thresholdValueDisplay: '¥8.50', triggeredValueColor: '#C47070',
+            triggerLabel: '触发值', thresholdLabel: '阈值', timestamp: '14:32:08', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 2, speciesId: 2, speciesName: '百合', alertType: 'PriceBelow', alertTypeDisplay: '库存不足', alertIcon: '\uD83D\uDCE6', alertLevel: 'warning',
+            message: '百合商户库存低于安全水位，预计 2 小时内可能影响订单供应。', triggeredValue: 120, thresholdValue: 500,
+            triggeredValueDisplay: '120', thresholdValueDisplay: '500', triggeredValueColor: '#C4956A',
+            triggerLabel: '当前库存', thresholdLabel: '安全', timestamp: '14:28:51', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 3, speciesId: 4, speciesName: '混合花束', alertType: 'PriceChangeAbove', alertTypeDisplay: '异常波动', alertIcon: '\uD83D\uDCCA', alertLevel: 'danger',
+            message: '混合花束短时涨幅超过 5%，疑似异常交易或刷单行为，请核查。', triggeredValue: 5.6, thresholdValue: 5,
+            triggeredValueDisplay: '+5.6%', thresholdValueDisplay: '5%', triggeredValueColor: '#26A69A',
+            triggerLabel: '波动幅度', thresholdLabel: '阈值', timestamp: '14:25:33', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 4, speciesId: 3, speciesName: '康乃馨', alertType: 'PriceBelow', alertTypeDisplay: '库存不足', alertIcon: '\uD83D\uDCE6', alertLevel: 'warning',
+            message: '康乃馨部分商户库存告急，建议通知商户及时补货。', triggeredValue: 85, thresholdValue: 300,
+            triggeredValueDisplay: '85', thresholdValueDisplay: '300', triggeredValueColor: '#C4956A',
+            triggerLabel: '当前库存', thresholdLabel: '安全', timestamp: '14:18:02', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 5, speciesId: 5, speciesName: '绿植', alertType: 'PriceAbove', alertTypeDisplay: '价格突破', alertIcon: '\uD83D\uDCC8', alertLevel: 'danger',
+            message: '绿植价格突破预警上限，建议关注高位出货时机。', triggeredValue: 18.80, thresholdValue: 18.50,
+            triggeredValueDisplay: '¥18.80', thresholdValueDisplay: '¥18.50', triggeredValueColor: '#26A69A',
+            triggerLabel: '触发值', thresholdLabel: '阈值', timestamp: '14:10:47', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 6, speciesId: 1, speciesName: '红玫瑰', alertType: 'PriceChangeAbove', alertTypeDisplay: '异常波动', alertIcon: '\uD83D\uDCCA', alertLevel: 'info',
+            message: '红玫瑰价格波动幅度接近阈值，请持续关注市场动态。', triggeredValue: 2.1, thresholdValue: 3,
+            triggeredValueDisplay: '+2.1%', thresholdValueDisplay: '3%', triggeredValueColor: '#26A69A',
+            triggerLabel: '波动幅度', thresholdLabel: '阈值', timestamp: '13:55:19', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 7, speciesId: 2, speciesName: '百合', alertType: 'PriceAbove', alertTypeDisplay: '价格突破', alertIcon: '\uD83D\uDCC8', alertLevel: 'low',
+            message: '百合价格小幅高于阈值上限，属正常市场波动范围。', triggeredValue: 12.30, thresholdValue: 12.00,
+            triggeredValueDisplay: '¥12.30', thresholdValueDisplay: '¥12.00', triggeredValueColor: '#26A69A',
+            triggerLabel: '触发值', thresholdLabel: '阈值', timestamp: '13:40:12', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+        ],
+      },
+
+      // ---- 批发商：供应中断 / 价格异常 / 物流延迟 ----
+      wholesaler: {
+        label: '批发商',
+        species: ['全部品种', '红玫瑰', '百合', '康乃馨', '混合花束', '绿植'],
+        statCards: [
+          { label: '待处理',   icon: 'clock',          color: 'var(--gd-state-error)',   surface: 'var(--gd-state-error-surface)',   filter: a => !a.isProcessed },
+          { label: '供应中断', icon: 'package',        color: 'var(--gd-state-warning)', surface: 'var(--gd-state-warning-surface)', filter: a => a.alertTypeDisplay === '供应中断' },
+          { label: '价格异常', icon: 'trending-down',  color: 'var(--gd-primary)',       surface: 'var(--gd-state-info-surface)',     filter: a => a.alertTypeDisplay === '价格异常' },
+          { label: '物流延迟', icon: 'truck',          color: 'var(--gd-state-success)', surface: 'var(--gd-state-success-surface)',  filter: a => a.alertTypeDisplay === '物流延迟' },
+        ],
+        trend: {
+          labels: ['周一','周二','周三','周四','周五','周六','周日'],
+          danger:  [1, 2, 2, 1, 3, 2, 1],
+          warning: [2, 1, 3, 2, 1, 3, 2],
+          info:    [1, 1, 2, 1, 2, 1, 1],
+        },
+        alerts: [
+          { alertId: 1, speciesId: 1, speciesName: '红玫瑰', alertType: 'PriceBelow', alertTypeDisplay: '供应中断', alertIcon: '\uD83D\uDCE6', alertLevel: 'danger',
+            message: '红玫瑰上游供应商断供，当前可用库存为 0，请紧急联系备用供应商。', triggeredValue: 0, thresholdValue: 200,
+            triggeredValueDisplay: '0', thresholdValueDisplay: '200', triggeredValueColor: '#C47070',
+            triggerLabel: '当前供应', thresholdLabel: '安全', timestamp: '14:35:22', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 2, speciesId: 2, speciesName: '百合', alertType: 'PriceAbove', alertTypeDisplay: '价格异常', alertIcon: '\uD83D\uDCC8', alertLevel: 'danger',
+            message: '百合批发价格异常飙升，超出历史均价 17%，疑似囤货炒作。', triggeredValue: 25.80, thresholdValue: 22.00,
+            triggeredValueDisplay: '¥25.80', thresholdValueDisplay: '¥22.00', triggeredValueColor: '#C47070',
+            triggerLabel: '当前价格', thresholdLabel: '均价', timestamp: '14:30:15', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 3, speciesId: 3, speciesName: '康乃馨', alertType: 'PriceChangeAbove', alertTypeDisplay: '物流延迟', alertIcon: '\uD83D\uDE9A', alertLevel: 'warning',
+            message: '康乃馨物流运输延迟 36 小时，影响 3 笔订单交付，请协调配送。', triggeredValue: 36, thresholdValue: 12,
+            triggeredValueDisplay: '36h', thresholdValueDisplay: '12h', triggeredValueColor: '#C4956A',
+            triggerLabel: '延迟时长', thresholdLabel: '容许', timestamp: '14:22:48', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 4, speciesId: 4, speciesName: '混合花束', alertType: 'PriceBelow', alertTypeDisplay: '供应中断', alertIcon: '\uD83D\uDCE6', alertLevel: 'warning',
+            message: '混合花束配件供应不足，当前可用量低于安全库存，影响组装产能。', triggeredValue: 50, thresholdValue: 300,
+            triggeredValueDisplay: '50', thresholdValueDisplay: '300', triggeredValueColor: '#C4956A',
+            triggerLabel: '当前供应', thresholdLabel: '安全', timestamp: '14:15:33', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 5, speciesId: 5, speciesName: '绿植', alertType: 'PriceAbove', alertTypeDisplay: '价格异常', alertIcon: '\uD83D\uDCC8', alertLevel: 'info',
+            message: '绿植批发价小幅高于阈值，属正常季节性波动，建议观察。', triggeredValue: 15.20, thresholdValue: 15.00,
+            triggeredValueDisplay: '¥15.20', thresholdValueDisplay: '¥15.00', triggeredValueColor: '#26A69A',
+            triggerLabel: '当前价格', thresholdLabel: '均价', timestamp: '13:58:07', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 6, speciesId: 1, speciesName: '红玫瑰', alertType: 'PriceChangeAbove', alertTypeDisplay: '物流延迟', alertIcon: '\uD83D\uDE9A', alertLevel: 'low',
+            message: '红玫瑰物流延迟 18 小时，仍在可控范围，已通知收货方。', triggeredValue: 18, thresholdValue: 12,
+            triggeredValueDisplay: '18h', thresholdValueDisplay: '12h', triggeredValueColor: '#26A69A',
+            triggerLabel: '延迟时长', thresholdLabel: '容许', timestamp: '13:42:51', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+        ],
+      },
+
+      // ---- 零售商：库存告急 / 价格波动 / 销售异常 ----
+      retailer: {
+        label: '零售商',
+        species: ['全部品种', '红玫瑰', '百合', '康乃馨', '混合花束', '绿植'],
+        statCards: [
+          { label: '待处理',   icon: 'clock',          color: 'var(--gd-state-error)',   surface: 'var(--gd-state-error-surface)',   filter: a => !a.isProcessed },
+          { label: '库存告急', icon: 'package',        color: 'var(--gd-state-warning)', surface: 'var(--gd-state-warning-surface)', filter: a => a.alertTypeDisplay === '库存告急' },
+          { label: '价格波动', icon: 'trending-up',    color: 'var(--gd-primary)',       surface: 'var(--gd-state-info-surface)',     filter: a => a.alertTypeDisplay === '价格波动' },
+          { label: '销售异常', icon: 'activity',       color: 'var(--gd-state-success)', surface: 'var(--gd-state-success-surface)',  filter: a => a.alertTypeDisplay === '销售异常' },
+        ],
+        trend: {
+          labels: ['周一','周二','周三','周四','周五','周六','周日'],
+          danger:  [2, 1, 1, 3, 2, 1, 2],
+          warning: [1, 2, 2, 1, 3, 2, 1],
+          info:    [2, 1, 1, 2, 1, 2, 1],
+        },
+        alerts: [
+          { alertId: 1, speciesId: 1, speciesName: '红玫瑰', alertType: 'PriceBelow', alertTypeDisplay: '库存告急', alertIcon: '\uD83D\uDCE6', alertLevel: 'danger',
+            message: '红玫瑰门店库存仅剩 15 支，按当前销量 1 小时内将售罄，请紧急补货。', triggeredValue: 15, thresholdValue: 100,
+            triggeredValueDisplay: '15', thresholdValueDisplay: '100', triggeredValueColor: '#C47070',
+            triggerLabel: '当前库存', thresholdLabel: '安全', timestamp: '14:38:05', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 2, speciesId: 2, speciesName: '百合', alertType: 'PriceChangeBelow', alertTypeDisplay: '价格波动', alertIcon: '\uD83D\uDCC9', alertLevel: 'warning',
+            message: '百合零售价跌幅达 8%，低于同行均价，建议调整定价策略。', triggeredValue: -8, thresholdValue: 5,
+            triggeredValueDisplay: '-8%', thresholdValueDisplay: '5%', triggeredValueColor: '#C47070',
+            triggerLabel: '波动幅度', thresholdLabel: '阈值', timestamp: '14:31:42', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 3, speciesId: 3, speciesName: '康乃馨', alertType: 'PriceChangeBelow', alertTypeDisplay: '销售异常', alertIcon: '\uD83D\uDCCA', alertLevel: 'danger',
+            message: '康乃馨日销量同比下降 60%，远超异常阈值，请排查原因。', triggeredValue: -60, thresholdValue: -20,
+            triggeredValueDisplay: '-60%', thresholdValueDisplay: '-20%', triggeredValueColor: '#C47070',
+            triggerLabel: '销量变化', thresholdLabel: '阈值', timestamp: '14:24:18', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 4, speciesId: 4, speciesName: '混合花束', alertType: 'PriceBelow', alertTypeDisplay: '库存告急', alertIcon: '\uD83D\uDCE6', alertLevel: 'warning',
+            message: '混合花束库存低于安全线，周末销售高峰即将到来，建议提前备货。', triggeredValue: 30, thresholdValue: 150,
+            triggeredValueDisplay: '30', thresholdValueDisplay: '150', triggeredValueColor: '#C4956A',
+            triggerLabel: '当前库存', thresholdLabel: '安全', timestamp: '14:16:55', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 5, speciesId: 5, speciesName: '绿植', alertType: 'PriceChangeAbove', alertTypeDisplay: '价格波动', alertIcon: '\uD83D\uDCC8', alertLevel: 'info',
+            message: '绿植零售价小幅上涨 3%，在正常波动范围内，无需干预。', triggeredValue: 3, thresholdValue: 5,
+            triggeredValueDisplay: '+3%', thresholdValueDisplay: '5%', triggeredValueColor: '#26A69A',
+            triggerLabel: '波动幅度', thresholdLabel: '阈值', timestamp: '13:50:33', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+          { alertId: 6, speciesId: 1, speciesName: '红玫瑰', alertType: 'PriceChangeAbove', alertTypeDisplay: '销售异常', alertIcon: '\uD83D\uDCCA', alertLevel: 'low',
+            message: '红玫瑰销量同比增加 40%，超过增长阈值，建议适度增加备货。', triggeredValue: 40, thresholdValue: 30,
+            triggeredValueDisplay: '+40%', thresholdValueDisplay: '+30%', triggeredValueColor: '#26A69A',
+            triggerLabel: '销量变化', thresholdLabel: '阈值', timestamp: '13:35:27', status: 'pending', statusText: '待处理', isRead: false, isProcessed: false },
+        ],
+      },
+    };
+
+    // 深拷贝原始数据，供刷新时还原
+    const ORIGINAL_DATA = JSON.parse(JSON.stringify(ROLE_DATA));
+
+    // ===== 辅助函数 =====
+    function getRoleData() { return ROLE_DATA[state.currentRole]; }
+
+    function findAlert(alertId) {
+      return getRoleData().alerts.find(a => a.alertId === alertId);
+    }
+
+    function getSpeciesFilteredAlerts() {
+      const alerts = getRoleData().alerts;
+      if (state.currentSpecies === 0) return alerts;
+      const speciesName = getRoleData().species[state.currentSpecies];
+      return alerts.filter(a => a.speciesName === speciesName);
+    }
+
+    function getFilteredAlerts() {
+      const alerts = getSpeciesFilteredAlerts();
+      if (state.currentLevel === 'all') return alerts;
+      return alerts.filter(a => a.alertLevel === state.currentLevel);
+    }
+
+    function getLevelCounts() {
+      const alerts = getSpeciesFilteredAlerts();
+      return {
+        all:     alerts.length,
+        danger:  alerts.filter(a => a.alertLevel === 'danger').length,
+        warning: alerts.filter(a => a.alertLevel === 'warning').length,
+        info:    alerts.filter(a => a.alertLevel === 'info').length,
+        low:     alerts.filter(a => a.alertLevel === 'low').length,
+      };
+    }
+
+    // ===== 渲染：统计概览 =====
+    function renderStats() {
+      const roleData = getRoleData();
+      const alerts = roleData.alerts;
+      document.getElementById('stat-total').textContent = alerts.length;
+
+      const container = document.getElementById('stat-cards');
+      container.innerHTML = roleData.statCards.map(card => {
+        const count = alerts.filter(card.filter).length;
+        return `
+          <div class="rounded-2xl p-3 border border-white/[0.04]" style="background-color: ${card.surface};">
+            <div class="flex items-center gap-1.5 mb-1">
+              <i data-lucide="${card.icon}" class="w-3.5 h-3.5" style="color: ${card.color};"></i>
+              <span class="text-[11px] text-muted-foreground">${card.label}</span>
+            </div>
+            <p class="text-[22px] font-semibold font-mono leading-none" style="color: ${card.color};">${count}</p>
+          </div>`;
+      }).join('');
+    }
+
+    // ===== 渲染：品种筛选 chips =====
+    function renderSpeciesFilter() {
+      const roleData = getRoleData();
+      const container = document.getElementById('species-filter');
+      container.innerHTML = roleData.species.map((name, idx) => {
+        const active = state.currentSpecies === idx;
+        if (active) {
+          return `<button class="shrink-0 min-h-[40px] px-4 rounded-full text-[13px] font-medium flex items-center gap-1.5 active:scale-95 transition" style="background-color: var(--gd-primary); color: var(--gd-primary-foreground);" onclick="filterBySpecies(${idx})">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>${name}
+          </button>`;
+        }
+        return `<button class="shrink-0 min-h-[40px] px-4 rounded-full text-[13px] font-medium flex items-center gap-1.5 border text-foreground active:scale-95 transition" style="border-color: var(--gd-border); background-color: var(--gd-card);" onclick="filterBySpecies(${idx})">${name}</button>`;
+      }).join('');
+    }
+
+    // ===== 渲染：等级筛选 Tab =====
+    function renderLevelTabs() {
+      const counts = getLevelCounts();
+      const container = document.getElementById('level-tabs');
+      container.innerHTML = LEVEL_TABS.map(tab => {
+        const active = state.currentLevel === tab.key;
+        const count = counts[tab.key];
+        if (active) {
+          return `<button class="shrink-0 min-h-[40px] px-4 rounded-full text-[13px] font-medium flex items-center gap-1.5 active:scale-95 transition" style="background-color: var(--gd-primary); color: var(--gd-primary-foreground);" onclick="filterByLevel('${tab.key}')">
+            ${tab.label} <span class="opacity-80">${count}</span>
+          </button>`;
+        }
+        return `<button class="shrink-0 min-h-[40px] px-4 rounded-full text-[13px] font-medium flex items-center gap-1.5 border text-foreground active:scale-95 transition" style="border-color: var(--gd-border); background-color: var(--gd-card);" onclick="filterByLevel('${tab.key}')">
+            ${tab.label} <span class="text-muted-foreground">${count}</span>
+          </button>`;
+      }).join('');
+    }
+
+    // ===== 渲染：单条预警卡片 =====
+    function renderAlertCard(alert) {
+      const level = LEVEL_CONFIG[alert.alertLevel];
+      const expanded = state.expandedAlertId === alert.alertId;
+      const isUnread = !alert.isRead;
+      const isProcessed = alert.isProcessed;
+
+      return `
+        <article class="alert-card-enter relative rounded-3xl backdrop-blur-2xl border overflow-hidden shadow-lg transition-all duration-200"
+                 style="background-color: rgba(19,23,34,0.45); border-color: ${expanded ? level.color : 'rgba(255,255,255,0.06)'};"
+                 data-alert-id="${alert.alertId}">
+          <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: ${level.color};"></div>
+          <div class="pl-5 pr-4 py-3.5 cursor-pointer active:bg-white/[0.02]" onclick="toggleAlertExpand(${alert.alertId})">
+            <div class="flex items-start gap-3">
+              <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[18px] shadow-md" style="background: ${getSpeciesGradient(alert.speciesName)};">
+                <span>${alert.alertIcon}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    ${isUnread ? '<span class="w-2 h-2 rounded-full shrink-0 animate-pulse" style="background-color: var(--gd-state-error);"></span>' : ''}
+                    <h3 class="text-[15px] font-semibold text-foreground truncate">${alert.speciesName}</h3>
+                  </div>
+                  <span class="text-[11px] text-muted-foreground shrink-0 font-mono">${alert.timestamp}</span>
+                </div>
+                <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <span class="text-[11px] px-2 py-0.5 rounded-full font-medium" style="background-color: ${level.surface}; color: ${level.color};">${alert.alertTypeDisplay}</span>
+                  <span class="text-[11px] flex items-center gap-0.5" style="color: ${level.color};">${level.icon} ${level.label}</span>
+                  ${isProcessed
+                    ? '<span class="text-[11px] px-2 py-0.5 rounded-full font-medium" style="background-color: var(--gd-state-success-surface); color: var(--gd-state-success);">已处理</span>'
+                    : '<span class="text-[11px] px-2 py-0.5 rounded-full font-medium" style="background-color: var(--gd-state-error-surface); color: var(--gd-state-error);">待处理</span>'}
+                </div>
+              </div>
+              <i data-lucide="chevron-${expanded ? 'up' : 'down'}" class="w-4 h-4 text-muted-foreground shrink-0 mt-1"></i>
+            </div>
+          </div>
+          ${expanded ? `
+            <div class="px-4 pl-5 pb-3.5 space-y-3 border-t border-white/[0.04] pt-3">
+              <p class="text-[13px] text-muted-foreground leading-relaxed">${alert.message}</p>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div class="rounded-2xl p-3 border border-white/[0.04]" style="background-color: rgba(255,255,255,0.02);">
+                  <div class="text-[11px] text-muted-foreground mb-1">${alert.triggerLabel}</div>
+                  <div class="text-[20px] font-bold font-mono leading-none" style="color: ${alert.triggeredValueColor};">${alert.triggeredValueDisplay}</div>
+                </div>
+                <div class="rounded-2xl p-3 border border-white/[0.04]" style="background-color: rgba(255,255,255,0.02);">
+                  <div class="text-[11px] text-muted-foreground mb-1">${alert.thresholdLabel}</div>
+                  <div class="text-[20px] font-bold font-mono leading-none text-foreground">${alert.thresholdValueDisplay}</div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                ${isProcessed
+                  ? '<button class="flex-1 py-2.5 rounded-full text-[13px] font-medium flex items-center justify-center gap-1.5" style="background-color: var(--gd-state-success-surface); color: var(--gd-state-success);"><i data-lucide="check" class="w-4 h-4"></i>已处理</button>'
+                  : '<button class="flex-1 py-2.5 rounded-full text-[13px] font-medium flex items-center justify-center gap-1.5 active:scale-95 transition" style="background-color: var(--gd-primary); color: var(--gd-primary-foreground);" onclick="event.stopPropagation(); processAlert(' + alert.alertId + ')"><i data-lucide="check-check" class="w-4 h-4"></i>处理</button>'}
+                <button class="flex-1 py-2.5 rounded-full text-[13px] font-medium flex items-center justify-center gap-1.5 border active:scale-95 transition" style="border-color: var(--gd-border); color: var(--gd-muted-foreground);" onclick="event.stopPropagation(); dismissAlert(${alert.alertId})">
+                  <i data-lucide="x" class="w-4 h-4"></i>忽略
+                </button>
+              </div>
+            </div>` : ''}
+        </article>`;
+    }
+
+    // ===== 渲染：预警列表 =====
+    function renderAlertList() {
+      const alerts = getFilteredAlerts();
+      const container = document.getElementById('alert-list');
+      document.getElementById('alert-count').textContent = alerts.length + ' 条';
+
+      if (alerts.length === 0) {
+        container.innerHTML = `
+          <div class="rounded-3xl border border-white/[0.06] p-12 text-center" style="background-color: rgba(19,23,34,0.45);">
+            <i data-lucide="bell-off" class="w-10 h-10 mx-auto text-muted-foreground mb-3"></i>
+            <p class="text-sm text-muted-foreground">暂无预警数据</p>
+          </div>`;
+      } else {
+        container.innerHTML = alerts.map(renderAlertCard).join('');
+      }
+    }
+
+    // ===== 渲染：趋势图表 =====
+    function renderChart() {
+      const ctx = document.getElementById('trend-chart');
+      if (!ctx) return;
+      const data = getRoleData().trend;
+
+      if (trendChart) {
+        trendChart.destroy();
+      }
+
+      trendChart = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [
+            { label: '紧急', data: data.danger,  backgroundColor: '#C47070', borderRadius: 3, barPercentage: 0.6, categoryPercentage: 0.7 },
+            { label: '重要', data: data.warning, backgroundColor: '#C4956A', borderRadius: 3, barPercentage: 0.6, categoryPercentage: 0.7 },
+            { label: '一般', data: data.info,    backgroundColor: '#2962FF', borderRadius: 3, barPercentage: 0.6, categoryPercentage: 0.7 },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#787b86', font: { size: 11 }, boxWidth: 10, boxHeight: 10, padding: 12, usePointStyle: true, pointStyle: 'circle' },
+            },
+            tooltip: {
+              backgroundColor: 'rgba(19,23,34,0.95)',
+              titleColor: '#e0e6ed',
+              bodyColor: '#e0e6ed',
+              borderColor: 'rgba(255,255,255,0.08)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              padding: 10,
+              titleFont: { size: 12 },
+              bodyFont: { size: 12 },
+            },
+          },
+          scales: {
+            x: {
+              stacked: true,
+              grid: { display: false },
+              ticks: { color: '#787b86', font: { size: 10 } },
+              border: { color: 'rgba(255,255,255,0.06)' },
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              ticks: { color: '#787b86', font: { size: 10 }, stepSize: 2 },
+              border: { display: false },
+            },
+          },
+        },
+      });
+    }
+
+    // ===== 统一刷新 UI =====
+    function updateAll() {
+      renderStats();
+      renderSpeciesFilter();
+      renderLevelTabs();
+      renderAlertList();
+      lucide.createIcons();
+    }
+
+    // ===== Toast 提示 =====
+    let toastTimer = null;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('toast-show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('toast-show');
+      }, 2000);
+    }
+
+    // ===== 操作：切换角色 =====
+    function switchRole(role) {
+      if (state.currentRole === role) return;
+      state.currentRole = role;
+      state.currentLevel = 'all';
+      state.currentSpecies = 0;
+      state.expandedAlertId = null;
+
+      document.querySelectorAll('.role-tab').forEach(btn => {
+        const active = btn.dataset.role === role;
+        if (active) {
+          btn.className = 'role-tab flex-1 py-2 min-h-[40px] text-[13px] font-medium rounded-full transition-colors active:scale-95';
+          btn.style.backgroundColor = 'var(--gd-primary)';
+          btn.style.color = 'var(--gd-primary-foreground)';
+          btn.style.boxShadow = '0 2px 8px rgba(41,98,255,0.3)';
+        } else {
+          btn.className = 'role-tab flex-1 py-2 min-h-[40px] text-[13px] font-medium rounded-full text-muted-foreground active:bg-white/5 transition-colors';
+          btn.style.backgroundColor = '';
+          btn.style.color = '';
+          btn.style.boxShadow = '';
+        }
+      });
+
+      updateAll();
+      renderChart();
+      showToast('已切换至' + getRoleData().label + '视角');
+    }
+
+    // ===== 操作：按等级筛选 =====
+    function filterByLevel(level) {
+      state.currentLevel = level;
+      state.expandedAlertId = null;
+      updateAll();
+    }
+
+    // ===== 操作：按品种筛选 =====
+    function filterBySpecies(idx) {
+      state.currentSpecies = idx;
+      state.currentLevel = 'all';
+      state.expandedAlertId = null;
+      updateAll();
+    }
+
+    // ===== 操作：展开/收起预警（+ 单条已读）=====
+    function toggleAlertExpand(alertId) {
+      const alert = findAlert(alertId);
+      if (alert && !alert.isRead) {
+        alert.isRead = true;
+        showToast('已标记为已读');
+      }
+      state.expandedAlertId = (state.expandedAlertId === alertId) ? null : alertId;
+      updateAll();
+    }
+
+    // ===== 操作：处理预警 =====
+    function processAlert(alertId) {
+      const alert = findAlert(alertId);
+      if (!alert) return;
+      alert.isProcessed = true;
+      alert.status = 'processed';
+      alert.statusText = '已处理';
+      alert.isRead = true;
+      showToast('预警已处理');
+      updateAll();
+    }
+
+    // ===== 操作：忽略预警 =====
+    function dismissAlert(alertId) {
+      const roleData = getRoleData();
+      roleData.alerts = roleData.alerts.filter(a => a.alertId !== alertId);
+      if (state.expandedAlertId === alertId) state.expandedAlertId = null;
+      showToast('预警已忽略');
+      updateAll();
+    }
+
+    // ===== 操作：全部已读 =====
+    function markAllRead() {
+      const alerts = getRoleData().alerts;
+      let unreadCount = 0;
+      alerts.forEach(a => {
+        if (!a.isRead) { a.isRead = true; unreadCount++; }
+      });
+      if (unreadCount === 0) {
+        showToast('暂无未读预警');
+      } else {
+        showToast('已全部标记为已读');
+      }
+      updateAll();
+    }
+
+    // ===== 操作：刷新 =====
+    function refresh() {
+      if (state.isLoading) return;
+      state.isLoading = true;
+      const icon = document.getElementById('refresh-icon');
+      icon.classList.add('animate-spin');
+
+      setTimeout(async () => {
+        // 先重置为原始模拟数据
+        ROLE_DATA[state.currentRole] = JSON.parse(JSON.stringify(ORIGINAL_DATA[state.currentRole]));
+        state.expandedAlertId = null;
+        state.isLoading = false;
+        icon.classList.remove('animate-spin');
+        updateAll();
+        renderChart();
+        showToast('预警数据已刷新');
+        // 再尝试加载API实际数据
+        await loadRealAlerts();
+      }, 600);
+    }
+
+    // ===== 操作：通知开关切换 =====
+    function initToggleSwitches() {
+      document.querySelectorAll('.toggle-switch').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const checked = this.getAttribute('aria-checked') === 'true';
+          const knob = this.querySelector('span');
+          if (!checked) {
+            this.setAttribute('aria-checked', 'true');
+            this.style.backgroundColor = 'var(--gd-primary)';
+            knob.style.transform = 'translateX(20px)';
+          } else {
+            this.setAttribute('aria-checked', 'false');
+            this.style.backgroundColor = 'var(--gd-secondary)';
+            knob.style.transform = 'translateX(0)';
+          }
+        });
+      });
+    }
+
+    // ===== 实际数据加载（通过 ArkTS javaScriptProxy 调用后端API）=====
+
+    /** 安全解析JSON */
+    function safeParseAlerts(jsonStr) {
+      if (!jsonStr || typeof jsonStr !== 'string' || jsonStr.length === 0) return null;
+      try { return JSON.parse(jsonStr); } catch(e) { return null; }
+    }
+
+    /** 检查 flowerApi 是否可用 */
+    function hasFlowerApi() {
+      return typeof window.flowerApi !== 'undefined' && window.flowerApi !== null;
+    }
+
+    /** 品种名称映射 */
+    var ALERT_SPECIES_NAMES = {1:'红玫瑰',2:'百合',3:'康乃馨',4:'混合花束',5:'绿植'};
+
+    /** 预警类型映射 */
+    function mapAlertType(alertType) {
+      var map = {
+        'PriceAbove':         { display: '价格超上限', level: 'danger',  icon: '📈', triggerLabel: '触发值', thresholdLabel: '阈值', color: '#C47070', isPrice: true },
+        'PriceBelow':         { display: '价格低于下限', level: 'danger',  icon: '📉', triggerLabel: '触发值', thresholdLabel: '阈值', color: '#C47070', isPrice: true },
+        'PriceChangeAbove':   { display: '涨幅超阈值', level: 'warning', icon: '📊', triggerLabel: '波动幅度', thresholdLabel: '阈值', color: '#26A69A', isPercent: true },
+        'PriceChangeBelow':   { display: '跌幅超阈值', level: 'warning', icon: '📊', triggerLabel: '波动幅度', thresholdLabel: '阈值', color: '#C47070', isPercent: true },
+        'LowStock':           { display: '库存不足',   level: 'warning', icon: '📦', triggerLabel: '当前库存', thresholdLabel: '安全', color: '#C4956A', isStock: true },
+        'Anomaly':            { display: '异常波动',   level: 'danger',  icon: '📊', triggerLabel: '波动幅度', thresholdLabel: '阈值', color: '#26A69A', isPercent: true }
+      };
+      return map[alertType] || { display: alertType || '预警', level: 'info', icon: '🔔', triggerLabel: '触发值', thresholdLabel: '阈值', color: '#2962ff' };
+    }
+
+    /** 将API返回的预警数据映射为页面展示格式 */
+    function mapApiAlert(apiAlert, index) {
+      var typeInfo = mapAlertType(apiAlert.alertType);
+      var speciesName = ALERT_SPECIES_NAMES[apiAlert.speciesId] || apiAlert.speciesName || '未知品种';
+      var triggeredDisplay, thresholdDisplay;
+
+      if (typeInfo.isPrice) {
+        triggeredDisplay = '¥' + Number(apiAlert.triggeredValue || 0).toFixed(2);
+        thresholdDisplay = '¥' + Number(apiAlert.thresholdValue || 0).toFixed(2);
+      } else if (typeInfo.isPercent) {
+        triggeredDisplay = (apiAlert.triggeredValue >= 0 ? '+' : '') + Number(apiAlert.triggeredValue || 0).toFixed(1) + '%';
+        thresholdDisplay = Number(apiAlert.thresholdValue || 0).toFixed(0) + '%';
+      } else if (typeInfo.isStock) {
+        triggeredDisplay = String(Math.round(apiAlert.triggeredValue || 0));
+        thresholdDisplay = String(Math.round(apiAlert.thresholdValue || 0));
+      } else {
+        triggeredDisplay = String(apiAlert.triggeredValue || '');
+        thresholdDisplay = String(apiAlert.thresholdValue || '');
+      }
+
+      var timestamp = '';
+      if (apiAlert.createdAt) {
+        try { timestamp = new Date(apiAlert.createdAt).toTimeString().substring(0, 8); } catch(e) { timestamp = ''; }
+      }
+      if (!timestamp) timestamp = new Date(Date.now() - index * 300000).toTimeString().substring(0, 8);
+
+      return {
+        alertId: apiAlert.id || (index + 1),
+        speciesId: apiAlert.speciesId || 0,
+        speciesName: speciesName,
+        alertType: apiAlert.alertType || '',
+        alertTypeDisplay: typeInfo.display,
+        alertIcon: typeInfo.icon,
+        alertLevel: typeInfo.level,
+        message: apiAlert.message || typeInfo.display + '预警',
+        triggeredValue: apiAlert.triggeredValue || 0,
+        thresholdValue: apiAlert.thresholdValue || 0,
+        triggeredValueDisplay: triggeredDisplay,
+        thresholdValueDisplay: thresholdDisplay,
+        triggeredValueColor: typeInfo.color,
+        triggerLabel: typeInfo.triggerLabel,
+        thresholdLabel: typeInfo.thresholdLabel,
+        timestamp: timestamp,
+        status: apiAlert.isRead ? 'processed' : 'pending',
+        statusText: apiAlert.isRead ? '已处理' : '待处理',
+        isRead: apiAlert.isRead || false,
+        isProcessed: apiAlert.isRead || false
+      };
+    }
+
+    /** 加载实际预警数据 */
+    async function loadRealAlerts() {
+      if (!hasFlowerApi()) return;
+      try {
+        var raw = await window.flowerApi.getAlerts(0, 0, 50);
+        var res = safeParseAlerts(raw);
+        if (!res || !res.isSuccess || !res.data || res.data.length === 0) return;
+
+        // 将API预警数据映射为页面格式
+        var apiAlerts = res.data.map(function(a, i) { return mapApiAlert(a, i); });
+
+        // 根据预警类型分配到不同角色
+        var growerAlerts = apiAlerts.filter(function(a) {
+          return a.alertTypeDisplay === '价格超上限' || a.alertTypeDisplay === '价格低于下限' || a.alertTypeDisplay === '异常波动';
+        });
+        var wholesalerAlerts = apiAlerts.filter(function(a) {
+          return a.alertTypeDisplay === '库存不足' || a.alertTypeDisplay === '涨幅超阈值' || a.alertTypeDisplay === '跌幅超阈值';
+        });
+        var retailerAlerts = apiAlerts; // 零售商看到全部预警
+
+        // 更新各角色数据（保留原有statCards和trend配置）
+        if (growerAlerts.length > 0) {
+          ROLE_DATA.grower.alerts = growerAlerts;
+        }
+        if (wholesalerAlerts.length > 0) {
+          ROLE_DATA.wholesaler.alerts = wholesalerAlerts;
+        }
+        if (retailerAlerts.length > 0) {
+          ROLE_DATA.retailer.alerts = retailerAlerts;
+        }
+
+        // 更新原始数据备份
+        ORIGINAL_DATA = JSON.parse(JSON.stringify(ROLE_DATA));
+
+        // 重新渲染
+        state.expandedAlertId = null;
+        updateAll();
+        renderChart();
+      } catch(e) {
+        console.log('预警数据加载异常:', e);
+      }
+    }
+
+    // ===== 初始化 =====
+    function init() {
+      // 角色切换
+      document.querySelectorAll('.role-tab').forEach(btn => {
+        btn.addEventListener('click', () => switchRole(btn.dataset.role));
+      });
+
+      // 刷新按钮
+      document.getElementById('refresh-btn').addEventListener('click', refresh);
+
+      // 全部已读
+      document.getElementById('mark-all-read').addEventListener('click', markAllRead);
+
+      // 通知开关
+      initToggleSwitches();
+
+      // 首次渲染（模拟数据）
+      updateAll();
+      renderChart();
+
+      // 异步加载实际API数据（成功则覆盖模拟数据）
+      loadRealAlerts();
+    }
+
+    // 暴露给 onclick 的全局函数
+    window.filterByLevel = filterByLevel;
+    window.filterBySpecies = filterBySpecies;
+    window.toggleAlertExpand = toggleAlertExpand;
+    window.processAlert = processAlert;
+    window.dismissAlert = dismissAlert;
+
+    window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

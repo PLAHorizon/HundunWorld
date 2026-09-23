@@ -399,36 +399,6 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public Task<MoveResponse> MoveAsync(MoveRequest request)
-        {
-            if (!_isOnline)
-            {
-                return Task.FromResult(new MoveResponse { Success = false });
-            }
-
-            // Update position in state
-
-            _characterState.State.CharacterInfo.Position = new  Position
-            {
-                X = request.TargetX,
-                Y = request.TargetY,
-                Z = request.TargetZ
-            };
-
-            // In a real game, you would not write state for every move.
-            // This would be broadcast to nearby players and persisted periodically or on zone change.
-            // await _characterState.WriteStateAsync();
-
-            return Task.FromResult(new MoveResponse
-            {
-                Success = true,
-                CharacterId = _characterState.State.CharacterInfo.CharacterId,
-                CurrentX = request.TargetX,
-                CurrentY = request.TargetY,
-                CurrentZ = request.TargetZ
-            });
-        }
-
         public async Task<bool> GoOfflineAsync()
         {
             // 关键修复（严重 BUG 根因）：原实现在 CharacterInfo == null 时直接 return false，
@@ -531,34 +501,6 @@ namespace Horizon.Orleans.Grains
             return await _presenceStore.IsOnlineAsync((long)CharacterId);
         }
 
-        public Task<bool> UpdateAttributesAsync(Dictionary<string, object> attributes)
-        {
-            _logger.LogInformation("正在更新角色 {CharacterId} 的属性。", CharacterId);
-            // Placeholder: Implement actual attribute update logic
-            return Task.FromResult(true);
-        }
-
-        public Task<List<EquipmentInfoMessage>> GetEquipmentsAsync()
-        {
-            _logger.LogInformation("正在获取角色 {CharacterId} 的装备。", CharacterId);
-            // Placeholder: Implement logic to retrieve equipment from DB or state
-            return Task.FromResult(new List<EquipmentInfoMessage>());
-        }
-
-        public Task<bool> EquipItemAsync(long itemId, int slot)
-        {
-            _logger.LogInformation("为角色 {CharacterId} 在槽位 {Slot} 装备物品 {ItemId}。", itemId, slot, CharacterId);
-            // Placeholder: Implement item equipping logic
-            return Task.FromResult(true);
-        }
-
-        public Task<bool> UnequipItemAsync(int slot)
-        {
-            _logger.LogInformation("为角色 {CharacterId} 从槽位 {Slot} 卸下装备。", slot, CharacterId);
-            // Placeholder: Implement item unequipping logic
-            return Task.FromResult(true);
-        }
-
         public async Task<List<CharacterInfo>> GetAllCharactersAsync(GameQueryDto gameQueryDto)
         {
             try
@@ -598,448 +540,6 @@ namespace Horizon.Orleans.Grains
                     gameQueryDto.GameUserId, gameQueryDto.GameId);
                 return new List<CharacterInfo>();
             }
-        }
-
-        // 新增的方法实现
-
-        public Task<DamageMessage> AttackAsync(AttackMessage request)
-        {
-            _logger.LogInformation("角色 {AttackerId} 正在攻击目标 {TargetId}。", request.AttackerId, request.TargetId);
-            // Placeholder: Implement actual attack logic
-            var response = new DamageMessage
-            {
-                VictimId = request.TargetId,
-                AttackerId = request.AttackerId,
-                Damage = request.Damage,
-                IsCritical = request.IsCritical,
-                RemainingHealth = 100, // Placeholder value
-                IsDodged = false,
-                IsBlocked = false
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<SkillCastMessage> CastSkillAsync(SkillCastMessage request)
-        {
-            _logger.LogInformation("角色 {CasterId} 正在释放技能 {SkillId}。", request.CasterId, request.SkillId);
-            // Placeholder: Implement actual skill casting logic
-            return Task.FromResult(request);
-        }
-
-        public Task<QingGongMessage> UseQingGongAsync(QingGongMessage request)
-        {
-            _logger.LogInformation("角色 {CharacterId} 正在使用轻功技能 {SkillId}。", request.CharacterId, request.QingGongSkillId);
-            // Placeholder: Implement actual qinggong logic
-            return Task.FromResult(request);
-        }
-
-        public Task<NeiGongMessage> UseNeiGongAsync(NeiGongMessage request)
-        {
-            _logger.LogInformation("角色 {CharacterId} 正在使用内功技能 {SkillId}。", request.CharacterId, request.NeiGongSkillId);
-            // Placeholder: Implement actual neigong logic
-            return Task.FromResult(request);
-        }
-
-        public Task<ComboAttackMessage> ComboAttackAsync(ComboAttackMessage request)
-        {
-            _logger.LogInformation("角色 {AttackerId} 正在发动连击。", request.AttackerId);
-            // Placeholder: Implement actual combo attack logic
-            return Task.FromResult(request);
-        }
-
-        public Task<DefenseMessage> DefendAsync(DefenseMessage request)
-        {
-            _logger.LogInformation("角色 {DefenderId} 正在防御 {AttackerId} 的攻击。", request.DefenderId, request.AttackerId);
-            // Placeholder: Implement actual defense logic
-            return Task.FromResult(request);
-        }
-
-        public Task<JoinSectResponse> JoinSectAsync(JoinSectRequest request)
-        {
-            _logger.LogInformation("角色 {CharacterId} 正在加入门派 {SectId}。", request.CharacterId, request.SectId);
-            // Placeholder: Implement actual sect joining logic
-            var response = new JoinSectResponse
-            {
-                Success = true,
-                Message = "成功加入门派",
-                SectId = request.SectId,
-                Position = "弟子"
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<ReputationUpdateMessage> UpdateReputationAsync(ReputationUpdateMessage request)
-        {
-            _logger.LogInformation("正在更新角色 {CharacterId} 的声望。", request.CharacterId);
-            // Placeholder: Implement actual reputation update logic
-            return Task.FromResult(request);
-        }
-
-        public Task<ChivalryPointUpdateMessage> UpdateChivalryPointAsync(ChivalryPointUpdateMessage request)
-        {
-            _logger.LogInformation("正在更新角色 {CharacterId} 的侠义值。", request.CharacterId);
-            // Placeholder: Implement actual chivalry point update logic
-            return Task.FromResult(request);
-        }
-
-        public Task<DuelResponse> HandleDuelAsync(DuelRequest request)
-        {
-            _logger.LogInformation("角色 {ChallengerId} 正在向 {OpponentId} 发起决斗。", request.ChallengerId, request.OpponentId);
-            // Placeholder: Implement actual duel handling logic
-            var response = new DuelResponse
-            {
-                Accepted = true,
-                Message = "比武切磋请求已接受",
-                DuelId = (ulong)new Random().Next(100000, 999999)
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<SwornBrotherResponse> HandleSwornBrotherAsync(SwornBrotherRequest request)
-        {
-            _logger.LogInformation("角色 {InitiatorId} 正在发起结拜请求。", request.InitiatorId);
-            // Placeholder: Implement actual sworn brother handling logic
-            var response = new SwornBrotherResponse
-            {
-                Agreed = true,
-                Message = "结拜请求已接受",
-                BrotherhoodId = (ulong)new Random().Next(100000, 999999)
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<MasterApprenticeResponse> HandleMasterApprenticeAsync(MasterApprenticeRequest request)
-        {
-            _logger.LogInformation("师徒关系请求：师傅 {MasterId} 与徒弟 {ApprenticeId}。", request.MasterId, request.ApprenticeId);
-            // Placeholder: Implement actual master-apprentice handling logic
-            var response = new MasterApprenticeResponse
-            {
-                Agreed = true,
-                Message = "师徒关系请求已接受",
-                RelationshipId = (ulong)new Random().Next(100000, 999999),
-                RelationshipLevel = 1
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<InventoryUpdateMessage> UpdateInventoryAsync(InventoryUpdateMessage request)
-        {
-            _logger.LogInformation("正在更新角色 {CharacterId} 的背包。", request.CharacterId);
-            // Placeholder: Implement actual inventory update logic
-            return Task.FromResult(request);
-        }
-
-        public Task<WeaponSwitchMessage> SwitchWeaponAsync(WeaponSwitchMessage request)
-        {
-            _logger.LogInformation("角色 {CharacterId} 正在将武器从槽位 {CurrentSlot} 切换到 {TargetSlot}。", request.CharacterId, request.CurrentWeaponSlot, request.TargetWeaponSlot);
-            // Placeholder: Implement actual weapon switching logic
-            return Task.FromResult(request);
-        }
-
-        public Task<UseItemResponse> UseItemAsync(UseItemRequest request)
-        {
-            _logger.LogInformation("角色 {CharacterId} 正在使用物品 {ItemId}。", request.CharacterId, request.ItemId);
-            // Placeholder: Implement actual item usage logic
-            var response = new UseItemResponse
-            {
-                Success = true,
-                Message = "物品使用成功",
-                Effects = new List<ItemEffect>(),
-                RemainingCount = 1
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<EquipmentEnhanceResponse> EnhanceEquipmentAsync(EquipmentEnhanceRequest request)
-        {
-            _logger.LogInformation("正在为角色 {CharacterId} 强化装备 {EquipmentId}。", request.EquipmentId, request.CharacterId);
-            // Placeholder: Implement actual equipment enhancement logic
-            var response = new EquipmentEnhanceResponse
-            {
-                Success = true,
-                Message = "装备强化成功",
-                NewEnhanceLevel = 1,
-                ConsumedMaterials = new List<long>(),
-                ConsumedGold = 100
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<EquipmentRefineResponse> RefineEquipmentAsync(EquipmentRefineRequest request)
-        {
-            _logger.LogInformation("正在为角色 {CharacterId} 精炼装备 {EquipmentId}。", request.EquipmentId, request.CharacterId);
-            // Placeholder: Implement actual equipment refinement logic
-            var response = new EquipmentRefineResponse
-            {
-                Success = true,
-                Message = "装备精炼成功",
-                NewRefineLevel = 1,
-                ConsumedMaterials = new List<long>(),
-                ConsumedRefineStone = 1,
-                ConsumedGold = 100
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<CraftingResponse> CraftItemAsync(CraftingRequest request)
-        {
-            _logger.LogInformation("正在为角色 {CharacterId} 使用配方 {RecipeId} 合成物品。", request.RecipeId, request.CharacterId);
-            // Placeholder: Implement actual crafting logic
-            var response = new CraftingResponse
-            {
-                Success = true,
-                Message = "合成成功",
-                CraftedItems = new List<ItemInfo>(),
-                ConsumedMaterials = new List<long>(),
-                ConsumedGold = 100
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<AttributeInheritanceResponse> InheritAttributesAsync(AttributeInheritanceRequest request)
-        {
-            _logger.LogInformation("正在将属性从装备 {SourceEquipmentId} 继承到 {TargetEquipmentId}。", request.SourceEquipmentId, request.TargetEquipmentId);
-            // Placeholder: Implement actual attribute inheritance logic
-            var response = new AttributeInheritanceResponse
-            {
-                Success = true,
-                Message = "属性继承成功",
-                InheritedAttributes = new Dictionary<string, object>(),
-                ConsumedGold = 100,
-                ConsumedMaterials = new List<long>()
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<WuXingCraftingResponse> WuXingCraftAsync(WuXingCraftingRequest request)
-        {
-            _logger.LogInformation("正在为角色 {CharacterId} 执行五行铸造。", request.CharacterId);
-            // Placeholder: Implement actual WuXing crafting logic
-            var response = new WuXingCraftingResponse
-            {
-                Success = true,
-                Message = "五行合成成功",
-                CraftedItem = new ItemInfo(),
-                ConsumedMaterials = new Dictionary<string, List<long>>(),
-                ConsumedGold = 100
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<LearnSkillResponse> LearnSkillAsync(LearnSkillRequest request)
-        {
-            _logger.LogInformation("角色 {CharacterId} 正在学习技能 {SkillId}。", request.CharacterId, request.SkillId);
-            // Placeholder: Implement actual skill learning logic
-            var response = new LearnSkillResponse
-            {
-                Success = true,
-                Message = "技能学习成功",
-                LearnedSkill = new SkillInfo { SkillId = request.SkillId, Level = 1 },
-                ConsumedGold = 100,
-                ConsumedItems = new List<long>()
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<SkillCooldownQueryResponse> QuerySkillCooldownAsync(SkillCooldownQueryRequest request)
-        {
-            _logger.LogInformation("正在查询角色 {CharacterId} 的技能冷却时间。", request.CharacterId);
-            // Placeholder: Implement actual skill cooldown query logic
-            var response = new SkillCooldownQueryResponse
-            {
-                CharacterId = request.CharacterId,
-                SkillCooldowns = new Dictionary<int, long>()
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<SkillProficiencyQueryResponse> QuerySkillProficiencyAsync(SkillProficiencyQueryRequest request)
-        {
-            _logger.LogInformation("正在查询角色 {CharacterId} 的技能熟练度。", request.CharacterId);
-            // Placeholder: Implement actual skill proficiency query logic
-            var response = new SkillProficiencyQueryResponse
-            {
-                CharacterId = request.CharacterId,
-                SkillProficiencies = new Dictionary<int, int>()
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<UpgradeSkillResponse> UpgradeSkillAsync(UpgradeSkillRequest request)
-        {
-            _logger.LogInformation("正在为角色 {CharacterId} 升级技能 {SkillId}。", request.SkillId, request.CharacterId);
-            // Placeholder: Implement actual skill upgrade logic
-            var response = new UpgradeSkillResponse
-            {
-                Success = true,
-                Message = "技能升级成功",
-                UpgradedSkill = new SkillInfo { SkillId = request.SkillId, Level = 2 },
-                ConsumedGold = 100,
-                ConsumedItems = new List<long>(),
-                ConsumedExperience = 1000
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<ChatMessage> SendChatAsync(ChatMessage request)
-        {
-            // 安全考虑：不在日志中记录聊天内容，避免敏感信息泄露
-            _logger.LogInformation("角色 {SenderId} 正在发送聊天消息。", request.SenderId);
-            // Placeholder: Implement actual chat message handling logic
-            return Task.FromResult(request);
-        }
-
-        public Task<AddFriendResponse> AddFriendAsync(AddFriendRequest request)
-        {
-            _logger.LogInformation("角色 {RequesterId} 正在请求添加 {TargetId} 为好友。", request.RequesterId, request.TargetId);
-            // Placeholder: Implement actual friend adding logic
-            var response = new AddFriendResponse
-            {
-                Success = true,
-                Message = "好友请求已发送",
-                FriendInfo = new FriendInfo { FriendId = request.TargetId }
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<CreateTeamResponse> CreateTeamAsync(CreateTeamRequest request)
-        {
-            _logger.LogInformation("角色 {LeaderId} 正在创建队伍 {TeamName}。", request.LeaderId, request.TeamName);
-            // Placeholder: Implement actual team creation logic
-            var response = new CreateTeamResponse
-            {
-                Success = true,
-                Message = "队伍创建成功",
-                TeamInfo = new TeamInfo { TeamId = (ulong)new Random().Next(100000, 999999), LeaderId = request.LeaderId }
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<JoinTeamResponse> JoinTeamAsync(JoinTeamRequest request)
-        {
-            _logger.LogInformation("角色 {RequesterId} 正在申请加入队伍 {TeamId}。", request.RequesterId, request.TeamId);
-            // Placeholder: Implement actual team joining logic
-            var response = new JoinTeamResponse
-            {
-                Success = true,
-                Message = "加入队伍请求已接受",
-                TeamInfo = new TeamInfo { TeamId = request.TeamId }
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<CreateGuildResponse> CreateGuildAsync(CreateGuildRequest request)
-        {
-            _logger.LogInformation("角色 {CreatorId} 正在创建公会 {GuildName}。", request.CreatorId, request.GuildName);
-            // Placeholder: Implement actual guild creation logic
-            var response = new CreateGuildResponse
-            {
-                Success = true,
-                Message = "帮派创建成功",
-                GuildInfo = new GuildInfo { GuildId = new Random().Next(100000, 999999), LeaderId = request.CreatorId }
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<JoinGuildResponse> JoinGuildAsync(JoinGuildRequest request)
-        {
-            _logger.LogInformation("角色 {RequesterId} 正在申请加入公会 {GuildId}。", request.RequesterId, request.GuildId);
-            // Placeholder: Implement actual guild joining logic
-            var response = new JoinGuildResponse
-            {
-                Success = true,
-                Message = "加入帮派请求已接受",
-                GuildInfo = new GuildInfo { GuildId = request.GuildId }
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<QuestUpdateMessage> UpdateQuestAsync(QuestUpdateMessage request)
-        {
-            _logger.LogInformation("正在更新角色 {CharacterId} 的任务 {QuestId}。", request.QuestId, request.CharacterId);
-            // Placeholder: Implement actual quest update logic
-            return Task.FromResult(request);
-        }
-
-        public Task<AcceptQuestResponse> AcceptQuestAsync(AcceptQuestRequest request)
-        {
-            _logger.LogInformation("角色 {CharacterId} 正在接受任务 {QuestId}。", request.CharacterId, request.QuestId);
-            // Placeholder: Implement actual quest acceptance logic
-            var response = new AcceptQuestResponse
-            {
-                Success = true,
-                Message = "任务接受成功",
-                AcceptedQuest = new QuestInfo { QuestId = request.QuestId }
-            };
-            return Task.FromResult(response);
-        }
-
-        public Task<CompleteQuestResponse> CompleteQuestAsync(CompleteQuestRequest request)
-        {
-            _logger.LogInformation("角色 {CharacterId} 正在完成任务 {QuestId}。", request.CharacterId, request.QuestId);
-            // Placeholder: Implement actual quest completion logic
-            var response = new CompleteQuestResponse
-            {
-                Success = true,
-                Message = "任务完成",
-                Rewards = new Dictionary<string, int>(),
-                CompletedQuestId = request.QuestId
-            };
-            return Task.FromResult(response);
-        }
-
-        public async Task<DamageMessage> TakeDamageAsync(DamageMessage request)
-        {
-            if (_characterState.State.CharacterInfo == null)
-            {
-                _logger.LogWarning("尝试对未加载的角色造成伤害: {CharacterId}", CharacterId);
-                return request;
-            }
-
-            _logger.LogInformation("角色 {CharacterName} 受到伤害: {Damage}", _characterState.State.CharacterInfo.CharacterName, request.Damage);
-
-            // 更新角色血量
-            _characterState.State.CharacterInfo.CurrentHealth = Math.Max(0, 
-                _characterState.State.CharacterInfo.CurrentHealth - request.Damage);
-
-            // 检查是否死亡
-            if (_characterState.State.CharacterInfo.CurrentHealth <= 0)
-            {
-                _characterState.State.CharacterInfo.IsAlive = false;
-                
-                // 触发死亡事件
-                await HandleDeathAsync(new DeathMessage
-                {
-                    DeceasedId = _characterState.State.CharacterInfo.CharacterId,
-                    KillerId = request.AttackerId,
-                    Cause = "战斗死亡",
-                    DeathPosition = new Position { X = request.ImpactPosition.X, Y = request.ImpactPosition.Y, Z = request.ImpactPosition.Z }
-                });
-            }
-
-            // 更新最后受伤时间
-            _characterState.State.CharacterInfo.LastDamageTime = DateTime.Now;
-
-            // 保存状态
-            await _characterState.WriteStateAsync();
-
-            // 返回更新后的伤害消息
-            var response = new DamageMessage
-            {
-                AttackerId = request.AttackerId,
-                VictimId = request.VictimId,
-                Damage = request.Damage,
-                RemainingHealth = (int)_characterState.State.CharacterInfo.CurrentHealth,
-                IsCritical = request.IsCritical,
-                IsDodged = request.IsDodged,
-                IsBlocked = request.IsBlocked,
-                ImpactPosition = request.ImpactPosition,
-                ElementType = request.ElementType
-            };
-
-            _logger.LogInformation("角色 {CharacterName} 剩余血量: {CurrentHealth}", _characterState.State.CharacterInfo.CharacterName, _characterState.State.CharacterInfo.CurrentHealth);
-
-            return response;
         }
 
         public async Task<DeathMessage> HandleDeathAsync(DeathMessage request)
@@ -1328,7 +828,8 @@ namespace Horizon.Orleans.Grains
                 await _characterState.WriteStateAsync();
             }
 
-            // 清除空间标记。
+            // 清除空间标记（语义="已不在任何空间"的哨兵值，非路由到 shard 0；多 Shard 下由
+            // 重新进入世界时按 ZoneBasedShardRouter 重新解析，详见 docs/SHARD_OPERATION.md）。
             _currentZoneShardId = 0;
         }
 
@@ -1344,9 +845,32 @@ namespace Horizon.Orleans.Grains
                 return new HpChangeResult(0, 0, 0, false, true);
             }
 
-            // TODO（Phase 2）：在此处插入防御/减伤/Buff 计算逻辑。
-            // 当前为最简实现：直接应用原始伤害。
+            // Phase 2 裁决：防御/减伤/Buff 计算（HP 变更链路的唯一裁决点）。
+            // 设计约束：CombatGrain 只做命中结算（闪避/暴击/格挡/五行克制/基础伤害），
+            // 不再应用防御减免——防御/减伤/Buff 统一在此处按 DamageType 裁决，避免双重减免。
             var actualDelta = hpDelta;
+            if (actualDelta < 0 && damageType != Horizon.Orleans.Interface.World.DamageType.True)
+            {
+                // 防御减免：defense / (defense + 100)，与 CombatCalculator 公式一致。
+                float defenseReduction = CombatCalculator.CalculateDefenseReduction(info.Defense);
+                float mitigated = actualDelta * (1 - defenseReduction);
+
+                // 减伤 Buff 叠加（0~1）。
+                if (info.DamageReduction > 0)
+                    mitigated *= (1 - info.DamageReduction);
+
+                actualDelta = (int)Math.Round(mitigated);
+
+                // 完全抵抗/免疫：减免后无实际伤害，HP 不变。
+                if (actualDelta == 0)
+                {
+                    _logger.LogInformation(
+                        "CharacterGrain {CharacterId}: 伤害被完全抵抗（来源={SourceId}，类型={DamageType}）。",
+                        CharacterId, sourceId, damageType);
+                    return new HpChangeResult(0, (int)info.CurrentHealth, (int)info.MaxHealth, false, true);
+                }
+            }
+
             var currentHp = (int)info.CurrentHealth;
             var maxHp = (int)info.MaxHealth;
 

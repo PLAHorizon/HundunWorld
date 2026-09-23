@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Horizon.Share.VMs;
 using Horizon.Orleans.Interface;
@@ -17,14 +18,26 @@ namespace Horizon.WebApi.Controllers
     {
         private readonly ILogger<MiniProgramAuthController> _logger;
         private readonly IClusterClient _clusterClient;
+        private readonly IConfiguration _configuration;
 
         public MiniProgramAuthController(
             ILogger<MiniProgramAuthController> logger,
-            IClusterClient clusterClient)
+            IClusterClient clusterClient,
+            IConfiguration configuration)
         {
             _logger = logger;
             _clusterClient = clusterClient;
+            _configuration = configuration;
         }
+
+        // 修复（安全）：微信登录目前是 mock（伪造 wx_mock_/sk_/mp_token_，无真实 jscode2session），
+        // 任何人可借此获得"已登录"身份。改为默认关闭，仅在显式配置 WechatMock:Enabled=true
+        // （开发/测试环境）时开放；生产必须接入真实微信 jscode2session 后再启用。
+        private bool IsWechatMockEnabled()
+            => _configuration.GetValue<bool>("WechatMock:Enabled", false);
+
+        private static string MockDisabledMessage
+            => "微信小程序登录尚未接入真实 jscode2session；mock 仅在配置 WechatMock:Enabled=true 时可用。";
 
         [HttpPost("login")]
         public async Task<ResultVM<MiniProgramLoginResult>> WxLoginAsync([FromBody] WxLoginRequest request)
@@ -32,6 +45,12 @@ namespace Horizon.WebApi.Controllers
             var result = new ResultVM<MiniProgramLoginResult>();
             try
             {
+                if (!IsWechatMockEnabled())
+                {
+                    result.ErrorMessage = MockDisabledMessage;
+                    return result;
+                }
+
                 var jsCode = request.Code;
                 if (string.IsNullOrEmpty(jsCode))
                 {
@@ -74,6 +93,12 @@ namespace Horizon.WebApi.Controllers
             var result = new ResultVM<string>();
             try
             {
+                if (!IsWechatMockEnabled())
+                {
+                    result.ErrorMessage = MockDisabledMessage;
+                    return result;
+                }
+
                 result.Data = "138****8888";
                 result.IsSuccess = true;
             }

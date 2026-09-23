@@ -1,0 +1,165 @@
+{
+	"ID": "68a66bd94e9cd9f408a9399399a45545",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "4bd81bbf4eca4cad5753d8a2607b2c9c",
+		"TypeName": "FlaxEngine.UIControl",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "Btn_InkButton",
+		"Transform": {
+			"Orientation": {
+				"X": -1.0,
+				"Y": -4.3711388286737935e-8,
+				"Z": -4.3711388286737935e-8,
+				"W": 1.910685465164705e-15
+			}
+		},
+		"Control": "HundunWorld.Game.UI.Ink.InkButton",
+		"Data": {
+			"Variant": 0,
+			"ButtonSize": 1,
+			"BackgroundColorHighlighted": {
+				"R": 0.32941177,
+				"G": 0.32941177,
+				"B": 0.36078432,
+				"A": 1.0
+			},
+			"BackgroundColorSelected": {
+				"R": 0.0,
+				"G": 0.47843137,
+				"B": 0.8,
+				"A": 1.0
+			},
+			"HasBorder": true,
+			"BorderThickness": 1.0,
+			"BorderColor": {
+				"R": 0.78431374,
+				"G": 0.65882355,
+				"B": 0.34509805,
+				"A": 1.0
+			},
+			"BorderColorHighlighted": {
+				"R": 0.41568628,
+				"G": 0.41568628,
+				"B": 0.45882353,
+				"A": 1.0
+			},
+			"BorderColorSelected": {
+				"R": 0.10980392,
+				"G": 0.5921569,
+				"B": 0.91764706,
+				"A": 1.0
+			},
+			"Text": "按钮",
+			"CaseOption": 0,
+			"Bold": false,
+			"Italic": false,
+			"TextColor": {
+				"R": 0.101960786,
+				"G": 0.078431375,
+				"B": 0.03137255,
+				"A": 1.0
+			},
+			"TextColorHighlighted": {
+				"R": 1.0,
+				"G": 1.0,
+				"B": 1.0,
+				"A": 1.0
+			},
+			"HorizontalAlignment": 1,
+			"VerticalAlignment": 1,
+			"Wrapping": 0,
+			"BaseLinesGapScale": 1.0,
+			"Font": {
+				"Font": "9c6135344289a9d4261ff882b0e00182",
+				"Size": 13.0
+			},
+			"Material": null,
+			"Margin": {
+				"Left": 0.0,
+				"Right": 0.0,
+				"Top": 0.0,
+				"Bottom": 0.0
+			},
+			"ClipText": false,
+			"AutoWidth": false,
+			"AutoHeight": false,
+			"AutoFitText": false,
+			"AutoFitTextRange": {
+				"X": 0.1,
+				"Y": 100.0
+			},
+			"ClipChildren": true,
+			"CullChildren": true,
+			"AnchorMin": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"AnchorMax": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Offsets": {
+				"Left": 0.0,
+				"Right": 140.0,
+				"Top": 0.0,
+				"Bottom": 36.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0
+			},
+			"Pivot": {
+				"X": 0.5,
+				"Y": 0.5
+			},
+			"Shear": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Rotation": 0.0,
+			"BackgroundColor": {
+				"R": 0.78431374,
+				"G": 0.65882355,
+				"B": 0.34509805,
+				"A": 1.0
+			},
+			"BackgroundBrush": null,
+			"Enabled": true,
+			"Visible": true,
+			"AutoFocus": true
+		}
+	},
+	{
+		"ID": "68f2d76d4a4ffc06c84964a89275c97e",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.InkButtonProfile",
+		"ParentID": "4bd81bbf4eca4cad5753d8a2607b2c9c",
+		"V": {
+			"Variant": 0,
+			"Width": 140.0,
+			"ControlName": "BtnInk"
+		}
+	},
+	{
+		"ID": "a4b0daf345704c5e40449caad5ea39de",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.UIEventBinder",
+		"ParentID": "4bd81bbf4eca4cad5753d8a2607b2c9c",
+		"V": {
+			"TargetNames": [
+				"BtnInk"
+			],
+			"EventNames": [
+				"Clicked"
+			],
+			"Actions": [
+				2
+			],
+			"Messages": [
+				"success:按钮被点击"
+			]
+		}
+	}
+]
+}

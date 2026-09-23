@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Out-of-tree verification harness for the PCG plugin.
+
+    Purpose: compile-check the plugin's runtime C# sources directly with `dotnet build`, without going
+    through the Flax build toolchain. This is much faster than a full engine project generation and gives
+    precise compiler diagnostics, which matters because the Flax build output is terse.
+
+    It is NOT a substitute for building the plugin through Flax: this only proves the code compiles and is
+    self-consistent. Native interop, plugin discovery and asset registration still have to be validated by
+    building the game project in the editor.
+
+    Usage:
+        dotnet build Tools/PCGVerify/PCGVerify.csproj
+
+    The FlaxEngine.CSharp.dll path is pinned to the engine version recorded in
+    docs/PCG_PLUGIN_DESIGN.md (Flax 1.12.6913). Update EngineDir if the engine moves.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>PCGVerify</AssemblyName>
+    <RootNamespace>PCGVerify</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <NoWarn>1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.12</EngineRoot>
+    <PluginRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\PCG\Source\PCG</PluginRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(PluginRoot)\Data\*.cs" />
+    <Compile Include="$(PluginRoot)\Graph\*.cs" />
+    <Compile Include="$(PluginRoot)\Execution\*.cs" />
+    <Compile Include="$(PluginRoot)\Terrain\*.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\*.cs" />
+    <Compile Include="$(PluginRoot)\Runtime\*.cs" />
+    <Compile Include="$(PluginRoot)\Tests\*.cs" />
+  </ItemGroup>
+
+</Project>

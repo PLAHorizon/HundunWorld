@@ -15,6 +15,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
         private VerticalTextControl _verticalText;
         private GuideHintControl _hintControl;
         private InkButton _visionButton;
+        private GuideDimMask _dimMask;
 
         private Float2 _screenSize;
 
@@ -35,12 +36,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
 
             try
             {
-                BuildBackButton();
-                BuildStepPanel();
+                // 子控件添加顺序即 z 序（后加者在上）：暗化遮罩 → 聚光区 → 箭头 → 竖排文字/提示 → 步骤面板/返回
+                BuildDimMask();
                 BuildSpotlight();
                 BuildInkArrow();
                 BuildVerticalText();
                 BuildHintAndVision();
+                BuildStepPanel();
+                BuildBackButton();
 
                 ApplyLayout();
             }
@@ -50,12 +53,29 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
             }
         }
 
+        /// <summary>
+        /// 全屏暗化遮罩（对齐设计 .guide-spotlight 的 box-shadow 0 0 0 9999px rgba(14,16,22,0.65)）：
+        /// 在聚光区域四周绘制四条暗带形成"高亮洞"；不拦截鼠标事件（Enabled=false 仍参与绘制）。
+        /// </summary>
+        private void BuildDimMask()
+        {
+            _dimMask = new GuideDimMask
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                ClipChildren = false,
+                AutoFocus = false,
+                Enabled = false,
+            };
+            AddChild(_dimMask);
+        }
+
         private void BuildBackButton()
         {
             _backButton = new InkBackButton
             {
                 AnchorPreset = AnchorPresets.TopRight,
-                Location = new Float2(-60f, 20f),
+                Location = new Float2(-20f, 20f),
                 Size = new Float2(40f, 40f),
                 Parent = this
             };
@@ -91,7 +111,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
             _inkArrow = new InkArrowControl
             {
                 AnchorPreset = AnchorPresets.BottomLeft,
-                Location = new Float2(270f, -190f),
+                // 设计 bottom:100 left:270（元素高 110 → 底锚偏移 -210）
+                Location = new Float2(270f, -210f),
                 Size = new Float2(160f, 110f),
                 Parent = this
             };
@@ -103,7 +124,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
             {
                 Text = "气血存亡，武者根本",
                 AnchorPreset = AnchorPresets.TopRight,
-                Location = new Float2(-112f, _screenSize.Y * 0.5f - 100f),
+                // 设计 right:72（元素宽 40 → 右锚偏移 -72）
+                Location = new Float2(-72f, _screenSize.Y * 0.5f - 100f),
                 Size = new Float2(40f, 200f),
                 Parent = this
             };
@@ -111,16 +133,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
 
         private void BuildHintAndVision()
         {
-            float hintWidth = 220f;
+            float hintWidth = 200f;
             float hintHeight = 40f;
-            float visionWidth = 100f;
+            float visionWidth = 112f;
             float gap = 16f;
             float totalWidth = hintWidth + gap + visionWidth;
 
             _hintControl = new GuideHintControl
             {
                 AnchorPreset = AnchorPresets.BottomCenter,
-                Location = new Float2(-totalWidth * 0.5f, -50f),
+                // 设计 bottom-10 = 40px
+                Location = new Float2(-totalWidth * 0.5f, -40f),
                 Size = new Float2(hintWidth, hintHeight),
                 Parent = this
             };
@@ -131,24 +154,35 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
                 ButtonSize = InkButtonSize.Sm,
                 Text = "元素视野",
                 AnchorPreset = AnchorPresets.BottomCenter,
-                Location = new Float2(-totalWidth * 0.5f + hintWidth + gap, -50f),
+                Location = new Float2(-totalWidth * 0.5f + hintWidth + gap, -40f),
                 Size = new Float2(visionWidth, hintHeight),
                 Parent = this
             };
             _visionButton.ButtonClicked += OnVisionClicked;
         }
 
+        /// <summary>返回战斗 HUD（兼容旧事件）。</summary>
         public event Action Back;
+
+        /// <summary>进入元素视野（兼容旧事件）。</summary>
         public event Action Vision;
+
+        /// <summary>
+        /// 标准导航事件（对齐其余 Ink 页面契约，由工厂订阅后调用路由器执行跳转）。
+        /// 返回按钮 → back-hud；元素视野按钮 → nav-element-vision。
+        /// </summary>
+        public event Action<string> NavigationRequested;
 
         private void OnBackClicked()
         {
             Back?.Invoke();
+            NavigationRequested?.Invoke(InkPageDomIds.BackHud);
         }
 
         private void OnVisionClicked(Button button)
         {
             Vision?.Invoke();
+            NavigationRequested?.Invoke(InkPageDomIds.NavElementVision);
         }
 
         public void SetStep(int current, int total)
@@ -175,8 +209,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
             }
         }
 
+        /// <summary>
+        /// 依据当前屏幕尺寸刷新与尺寸相关的布局：
+        /// 暗化遮罩的高亮洞（设计 bottom-24 left-24，380x88）。其余子控件均使用锚点偏移（分辨率无关）。
+        /// </summary>
         private void ApplyLayout()
         {
+            float sw = _screenSize.X;
+            float sh = _screenSize.Y;
+
+            if (_dimMask != null)
+            {
+                _dimMask.HoleRect = new Rectangle(24f, sh - 24f - 88f, 380f, 88f);
+            }
         }
 
         public void RefreshLayout()
@@ -198,10 +243,53 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
 
             if (_verticalText != null)
             {
-                _verticalText.Location = new Float2(-112f, _screenSize.Y * 0.5f - 100f);
+                _verticalText.Location = new Float2(-72f, _screenSize.Y * 0.5f - 100f);
             }
 
             ApplyLayout();
+        }
+
+        /// <summary>
+        /// 引导暗化遮罩：在聚光洞四周绘制四条半透明暗带（近似设计 spotlight 的巨型扩散阴影
+        /// box-shadow 0 0 0 9999px），使引导焦点区域"亮起"、其余屏幕变暗。
+        /// 不接收鼠标事件（Enabled=false，仍参与绘制）。
+        /// </summary>
+        private class GuideDimMask : ContainerControl
+        {
+            /// <summary>高亮洞（相对本控件/页面坐标系）。</summary>
+            public Rectangle HoleRect { get; set; } = new Rectangle(0f, 0f, 0f, 0f);
+
+            /// <summary>遮罩色：rgba(14,16,22,0.65)（对齐设计）。</summary>
+            private static readonly Color MaskColor = new Color(14f / 255f, 16f / 255f, 22f / 255f, 0.65f);
+
+            public GuideDimMask()
+            {
+                BackgroundColor = Color.Transparent;
+                ClipChildren = false;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                if (Width <= 0f || Height <= 0f || HoleRect.Width <= 0f || HoleRect.Height <= 0f)
+                    return;
+
+                var hole = HoleRect;
+                float midTop = Mathf.Max(hole.Top, 0f);
+                float midBottom = Mathf.Min(hole.Bottom, Height);
+                float midH = midBottom - midTop;
+
+                // 上带
+                Render2D.FillRectangle(new Rectangle(0f, 0f, Width, midTop), MaskColor);
+                // 下带
+                Render2D.FillRectangle(new Rectangle(0f, midBottom, Width, Height - midBottom), MaskColor);
+                // 左带（仅中段，避免与上下带重叠）
+                Render2D.FillRectangle(new Rectangle(0f, midTop, Mathf.Max(hole.Left, 0f), midH), MaskColor);
+                // 右带
+                float rightLeft = Mathf.Min(hole.Right, Width);
+                Render2D.FillRectangle(new Rectangle(rightLeft, midTop, Width - rightLeft, midH), MaskColor);
+            }
         }
 
         private class GuideStepPanel : ContainerControl
@@ -334,87 +422,99 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
                 if (Width <= 0f || Height <= 0f)
                     return;
 
-                float pulseAlpha = 0.5f + 0.5f * Mathf.Sin(_pulseTime * 1f);
+                float pulseAlpha = 0.5f + 0.5f * Mathf.Sin(_pulseTime * (Mathf.TwoPi / 3f)); // 对齐 3s 脉冲
 
+                // 1. 虚线金色边框（对齐设计 border: 2px dashed，金↔金亮脉冲）
                 Color borderColor = new Color(
                     InkWashTheme.GoldPrimary.R + (InkWashTheme.GoldBright.R - InkWashTheme.GoldPrimary.R) * pulseAlpha,
                     InkWashTheme.GoldPrimary.G + (InkWashTheme.GoldBright.G - InkWashTheme.GoldPrimary.G) * pulseAlpha,
                     InkWashTheme.GoldPrimary.B + (InkWashTheme.GoldBright.B - InkWashTheme.GoldPrimary.B) * pulseAlpha,
                     1f);
-                Render2D.DrawRectangle(new Rectangle(0, 0, Width, Height), borderColor, borderColor, borderColor, borderColor, 2f);
+                DrawDashedRect(new Rectangle(0f, 0f, Width, Height), borderColor, 2f, 10f, 6f);
 
-                float shadowRadius = 30f + pulseAlpha * 10f;
-                Color shadowColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G,
-                    InkWashTheme.GoldPrimary.B, 0.1f + pulseAlpha * 0.1f);
-                Render2D.DrawRectangle(new Rectangle(-shadowRadius, -shadowRadius, Width + shadowRadius * 2f, Height + shadowRadius * 2f),
-                    shadowColor, shadowColor, shadowColor, shadowColor, 0f);
+                // 2. 外侧柔光（近似设计 box-shadow 0 0 28~40px gold）
+                var glowColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G,
+                    InkWashTheme.GoldPrimary.B, 0.08f + pulseAlpha * 0.10f);
+                Render2D.DrawRectangle(new Rectangle(-4f, -4f, Width + 8f, Height + 8f),
+                    glowColor, glowColor, glowColor, glowColor, 4f);
 
-                float hpBarX = 60f;
-                float hpBarY = Height - 40f;
-                float hpBarWidth = Width - 140f;
-                float hpBarHeight = 10f;
-
-                Render2D.FillRectangle(new Rectangle(hpBarX, hpBarY, hpBarWidth, hpBarHeight),
-                    new Color(0f, 0f, 0f, 0.4f));
-                Render2D.DrawRectangle(new Rectangle(hpBarX, hpBarY, hpBarWidth, hpBarHeight),
-                    InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, 1f);
-
-                float hpFill = 0.72f;
-                Render2D.FillRectangle(new Rectangle(hpBarX, hpBarY, hpBarWidth * hpFill, hpBarHeight),
-                    new Color(InkWashTheme.VermilionDeep.R, InkWashTheme.VermilionDeep.G,
-                        InkWashTheme.VermilionDeep.B, 1f));
-
-                var hpLabelFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f).GetFont();
-                if (hpLabelFont != null)
-                {
-                    Render2D.DrawText(hpLabelFont, "气血",
-                        new Rectangle(hpBarX - 40f, hpBarY, 40f, 14f),
-                        InkWashTheme.PaperAged, TextAlignment.Near, TextAlignment.Near, TextWrapping.NoWrap);
-                }
-
-                var hpValueFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f).GetFont();
-                if (hpValueFont != null)
-                {
-                    Render2D.DrawText(hpValueFont, "720",
-                        new Rectangle(hpBarX + hpBarWidth + 8f, hpBarY + 2f, 50f, 14f),
-                        InkWashTheme.PaperDark, TextAlignment.Near, TextAlignment.Near, TextWrapping.NoWrap);
-                }
-
-                float vigorBarY = hpBarY - 18f;
-                float vigorBarHeight = 6f;
-
-                Render2D.FillRectangle(new Rectangle(hpBarX, vigorBarY, hpBarWidth, vigorBarHeight),
-                    new Color(0f, 0f, 0f, 0.4f));
-                Render2D.DrawRectangle(new Rectangle(hpBarX, vigorBarY, hpBarWidth, vigorBarHeight),
-                    InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, 1f);
-
-                float vigorFill = 0.88f;
-                Render2D.FillRectangle(new Rectangle(hpBarX, vigorBarY, hpBarWidth * vigorFill, vigorBarHeight),
-                    new Color(InkWashTheme.JadePrimary.R, InkWashTheme.JadePrimary.G,
-                        InkWashTheme.JadePrimary.B, 1f));
-
-                if (hpLabelFont != null)
-                {
-                    Render2D.DrawText(hpLabelFont, "体魄",
-                        new Rectangle(hpBarX - 40f, vigorBarY, 40f, 14f),
-                        InkWashTheme.PaperAged, TextAlignment.Near, TextAlignment.Near, TextWrapping.NoWrap);
-                }
-
-                if (hpValueFont != null)
-                {
-                    Render2D.DrawText(hpValueFont, "88",
-                        new Rectangle(hpBarX + hpBarWidth + 8f, vigorBarY + 1f, 50f, 14f),
-                        InkWashTheme.PaperDark, TextAlignment.Near, TextAlignment.Near, TextWrapping.NoWrap);
-                }
-
-                float nameX = 8f;
-                float nameY = Height - 20f;
+                // 3. 竖排角色名（对齐设计 .ink-vertical-title 18px 纸白，左侧）
                 var nameFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 18f).GetFont();
                 if (nameFont != null)
                 {
-                    Render2D.DrawText(nameFont, "燕归人",
-                        new Rectangle(nameX, nameY, 80f, 20f),
-                        InkWashTheme.PaperBright, TextAlignment.Near, TextAlignment.Near, TextWrapping.NoWrap);
+                    const string name = "燕归人";
+                    const float nameCharH = 20f;
+                    const float nameX = 14f;
+                    float nameBottomY = Height - 12f;
+                    for (int i = 0; i < name.Length; i++)
+                    {
+                        Render2D.DrawText(nameFont, name[i].ToString(),
+                            new Rectangle(nameX, nameBottomY - (i + 1) * nameCharH, 20f, nameCharH),
+                            InkWashTheme.PaperBright, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                    }
+                }
+
+                // 4. 气血/体魄条（对齐设计：气血 10px 朱红 72%，体魄 6px 玉色 88%）
+                float barsX = 52f;
+                float barsW = Width - barsX - 52f;
+                float hpBarY = Height - 42f;
+                const float hpBarH = 10f;
+                const float vigorBarH = 6f;
+                float vigorBarY = hpBarY - 8f - vigorBarH;
+
+                var labelFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f).GetFont();
+                var valueFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f).GetFont();
+
+                DrawBar(barsX, vigorBarY, barsW, vigorBarH, 0.88f, InkWashTheme.JadePrimary,
+                    labelFont, valueFont, "体魄", "88");
+                DrawBar(barsX, hpBarY, barsW, hpBarH, 0.72f, InkWashTheme.VermilionDeep,
+                    labelFont, valueFont, "气血", "720");
+            }
+
+            /// <summary>绘制一条带标签与数值的气血/体魄条（标签居左、数值居右）。</summary>
+            private static void DrawBar(float x, float y, float w, float h, float fill, Color fillColor,
+                Font labelFont, Font valueFont, string label, string value)
+            {
+                Render2D.FillRectangle(new Rectangle(x, y, w, h), new Color(0f, 0f, 0f, 0.4f));
+                Render2D.DrawRectangle(new Rectangle(x, y, w, h),
+                    InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, InkWashTheme.BorderNeutralL2, 1f);
+                Render2D.FillRectangle(new Rectangle(x, y, w * fill, h), fillColor);
+
+                if (labelFont != null)
+                {
+                    Render2D.DrawText(labelFont, label, new Rectangle(x - 44f, y - 2f, 40f, 16f),
+                        InkWashTheme.PaperAged, TextAlignment.Near, TextAlignment.Near, TextWrapping.NoWrap);
+                }
+                if (valueFont != null)
+                {
+                    Render2D.DrawText(valueFont, value, new Rectangle(x + w + 8f, y - 2f, 40f, 16f),
+                        InkWashTheme.PaperDark, TextAlignment.Near, TextAlignment.Near, TextWrapping.NoWrap);
+                }
+            }
+
+            /// <summary>绘制虚线矩形边框（对齐设计 dashed 边框：2px、10px 划 6px 空）。</summary>
+            private static void DrawDashedRect(Rectangle rect, Color color, float thickness, float dashLen, float gapLen)
+            {
+                DrawDashedLine(new Float2(rect.Left, rect.Top), new Float2(rect.Right, rect.Top), color, thickness, dashLen, gapLen);
+                DrawDashedLine(new Float2(rect.Left, rect.Bottom), new Float2(rect.Right, rect.Bottom), color, thickness, dashLen, gapLen);
+                DrawDashedLine(new Float2(rect.Left, rect.Top), new Float2(rect.Left, rect.Bottom), color, thickness, dashLen, gapLen);
+                DrawDashedLine(new Float2(rect.Right, rect.Top), new Float2(rect.Right, rect.Bottom), color, thickness, dashLen, gapLen);
+            }
+
+            private static void DrawDashedLine(Float2 from, Float2 to, Color color, float thickness, float dashLen, float gapLen)
+            {
+                var dir = to - from;
+                float len = dir.Length;
+                if (len <= 0.01f)
+                    return;
+
+                var unit = dir / len;
+                float pos = 0f;
+                while (pos < len)
+                {
+                    float segEnd = Mathf.Min(pos + dashLen, len);
+                    Render2D.DrawLine(from + unit * pos, from + unit * segEnd, color, thickness);
+                    pos = segEnd + gapLen;
                 }
             }
         }

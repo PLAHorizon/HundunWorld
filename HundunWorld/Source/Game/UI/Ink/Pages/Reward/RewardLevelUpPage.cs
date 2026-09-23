@@ -26,7 +26,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
         private const float PanelWidth = 460f;
 
         /// <summary>居中面板高度（像素）</summary>
-        private const float PanelHeight = 530f;
+        private const float PanelHeight = 648f;
 
         /// <summary>"等级提升"标题 X 坐标（面板内水平居中：(460-380)/2 = 40）</summary>
         private const float TitleX = 40f;
@@ -118,7 +118,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
         /// <summary>新值宽度</summary>
         private const float AttrNewW = 110f;
 
+        /// <summary>变化量（+N）X 坐标（设计稿 .attr-change 贴右）</summary>
+        private const float AttrChangeX = 386f;
+
+        /// <summary>变化量（+N）宽度</summary>
+        private const float AttrChangeW = 64f;
+
         /// <summary>"继续"按钮 X 坐标（面板内水平居中：(460-200)/2 = 130）</summary>
+        /// <summary>解锁内容区起始 Y 坐标（紧随属性行之后）</summary>
+        private const float UnlockSectionY = 452f;
+
+        /// <summary>解锁内容区总高度（含小节标题、两条解锁项与经验重置提示）</summary>
+        private const float UnlockSectionHeight = 118f;
+
         private const float ContinueX = 130f;
 
         /// <summary>"继续"按钮宽度</summary>
@@ -158,8 +170,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
         /// <summary>属性新值文本数组</summary>
         private InkTextBlock[] _attrNewTexts;
 
+        /// <summary>属性变化量（+N）文本控件数组（设计稿 .attr-change）</summary>
+        private InkTextBlock[] _attrChangeTexts;
+
         /// <summary>"继续"按钮</summary>
         private InkButton _continueButton;
+
+        /// <summary>解锁内容小节标题</summary>
+        private InkTextBlock _unlockSectionTitle;
+
+        /// <summary>解锁项文本（新武学槽位已解锁 / 新任务"雪山之巅"已开放）</summary>
+        private InkTextBlock[] _unlockTexts;
+
+        /// <summary>经验重置提示（新等级经验已重置）</summary>
+        private InkTextBlock _expResetHint;
 
         // ===================================================================
         // 屏幕尺寸缓存与动画时间
@@ -219,13 +243,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
             }
 
             // 2. 初始化 mock 数据
+            // 设计稿 reward-level-up.html 的四条属性变化：气血 12,450→13,200 (+750)、
+            // 攻击 3,280→3,450 (+170)、防御 2,150→2,280 (+130)、内力 2,000→2,200 (+200)。
             _mockChanges = new AttributeChange[]
             {
                 new AttributeChange { Name = "气血", OldValue = 12450, NewValue = 13200 },
                 new AttributeChange { Name = "攻击", OldValue = 3280, NewValue = 3450 },
                 new AttributeChange { Name = "防御", OldValue = 2150, NewValue = 2280 },
                 new AttributeChange { Name = "内力", OldValue = 2000, NewValue = 2200 },
-                new AttributeChange { Name = "身法", OldValue = 1800, NewValue = 1950 },
             };
 
             // 3. 外壳：全屏拉伸 + 半透明遮罩 + 不裁剪子控件
@@ -252,6 +277,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
                 BuildLevelText();
                 BuildAttrSectionTitle();
                 BuildAttributeRows();
+                BuildUnlockSection();
                 BuildContinueButton();
 
                 // 6. 应用初始布局（基于屏幕尺寸居中面板）
@@ -360,6 +386,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
             _attrOldTexts = new InkTextBlock[MaxAttrRows];
             _attrArrowTexts = new InkTextBlock[MaxAttrRows];
             _attrNewTexts = new InkTextBlock[MaxAttrRows];
+            _attrChangeTexts = new InkTextBlock[MaxAttrRows];
 
             for (int i = 0; i < MaxAttrRows; i++)
             {
@@ -409,6 +436,59 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
                     Visible = false,
                 };
                 _panel.AddChild(_attrNewTexts[i]);
+
+                // 变化量（设计稿 .attr-change：朱红 "+750"，右对齐）
+                _attrChangeTexts[i] = new InkTextBlock(InkTextStyle.Number)
+                {
+                    Text = string.Empty,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(AttrChangeX, rowY),
+                    Size = new Float2(AttrChangeW, AttrRowHeight),
+                    HorizontalAlignment = TextAlignment.Far,
+                    TextColor = InkWashTheme.VermilionBright,
+                    Visible = false,
+                };
+                _panel.AddChild(_attrChangeTexts[i]);
+            }
+        }
+
+        /// <summary>
+        /// 将一条属性变化填入第 <paramref name="index"/> 行并显示。
+        /// 数值按设计稿带千位分隔符（"12,450"），变化量以朱红 "+N" 呈现（设计稿 .attr-change）。
+        /// </summary>
+        /// <param name="index">属性行索引</param>
+        /// <param name="change">属性变化数据</param>
+        private void ApplyAttributeRow(int index, AttributeChange change)
+        {
+            if (index < 0 || index >= MaxAttrRows)
+                return;
+
+            if (_attrNameTexts[index] != null)
+            {
+                _attrNameTexts[index].Visible = true;
+                _attrNameTexts[index].Text = change.Name ?? string.Empty;
+            }
+
+            if (_attrOldTexts[index] != null)
+            {
+                _attrOldTexts[index].Visible = true;
+                _attrOldTexts[index].Text = change.OldValue.ToString("N0");
+            }
+
+            if (_attrArrowTexts[index] != null)
+                _attrArrowTexts[index].Visible = true;
+
+            if (_attrNewTexts[index] != null)
+            {
+                _attrNewTexts[index].Visible = true;
+                _attrNewTexts[index].Text = change.NewValue.ToString("N0");
+            }
+
+            if (_attrChangeTexts[index] != null)
+            {
+                int delta = change.NewValue - change.OldValue;
+                _attrChangeTexts[index].Visible = true;
+                _attrChangeTexts[index].Text = (delta >= 0 ? "+" : "") + delta.ToString("N0");
             }
         }
 
@@ -418,6 +498,59 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
         /// 水平居中（X=130），点击触发 <see cref="Confirmed"/> 事件。
         /// Y 坐标由 <see cref="ApplyContinueButtonY"/> 根据可见属性行数动态计算。
         /// </summary>
+        /// <summary>
+        /// 解锁内容区（设计稿 reward-level-up.html「解锁内容」）：
+        /// 小节标题 + 两条解锁项（新武学槽位已解锁 / 新任务"雪山之巅"已开放）+ 经验重置提示。
+        /// </summary>
+        private void BuildUnlockSection()
+        {
+            _unlockSectionTitle = new InkTextBlock(InkTextStyle.Heading)
+            {
+                Text = "解锁内容",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(AttrSectionTitleX, UnlockSectionY),
+                Size = new Float2(AttrSectionTitleWidth, 24f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _panel.AddChild(_unlockSectionTitle);
+
+            string[] unlockTexts = { "新武学槽位已解锁", "新任务“雪山之巅”已开放" };
+            _unlockTexts = new InkTextBlock[unlockTexts.Length];
+            for (int i = 0; i < unlockTexts.Length; i++)
+            {
+                var dot = new Control
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(60f, UnlockSectionY + 36f + i * 24f + 7f),
+                    Size = new Float2(6f, 6f),
+                    BackgroundColor = InkWashTheme.GoldBright,
+                };
+                _panel.AddChild(dot);
+
+                _unlockTexts[i] = new InkTextBlock(InkTextStyle.Body)
+                {
+                    Text = unlockTexts[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(76f, UnlockSectionY + 36f + i * 24f),
+                    Size = new Float2(AttrSectionTitleWidth - 40f, 20f),
+                    TextColor = InkWashTheme.TextDefault,
+                };
+                _panel.AddChild(_unlockTexts[i]);
+            }
+
+            _expResetHint = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "新等级经验已重置",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(AttrSectionTitleX, UnlockSectionY + 90f),
+                Size = new Float2(AttrSectionTitleWidth, 18f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.TextTertiary,
+            };
+            _panel.AddChild(_expResetHint);
+        }
+
         private void BuildContinueButton()
         {
             _continueButton = new InkButton
@@ -498,12 +631,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
                 {
                     _attrArrowTexts[i].Visible = visible;
                 }
-                if (_attrNewTexts[i] != null)
+                if (_attrChangeTexts[i] != null)
                 {
-                    _attrNewTexts[i].Visible = visible;
-                    if (visible)
-                        _attrNewTexts[i].Text = changes[i].NewValue.ToString();
+                    // 隐藏态由 ApplyAttributeRow 统一控制，这里仅处理行不可见时的清理
+                    if (!visible)
+                        _attrChangeTexts[i].Visible = false;
                 }
+
+                if (visible)
+                    ApplyAttributeRow(i, changes[i]);
             }
 
             ApplyContinueButtonY(count);
@@ -526,25 +662,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
 
             int count = Math.Min(_mockChanges.Length, MaxAttrRows);
             for (int i = 0; i < count; i++)
-            {
-                if (_attrNameTexts[i] != null)
-                {
-                    _attrNameTexts[i].Visible = true;
-                    _attrNameTexts[i].Text = _mockChanges[i].Name;
-                }
-                if (_attrOldTexts[i] != null)
-                {
-                    _attrOldTexts[i].Visible = true;
-                    _attrOldTexts[i].Text = _mockChanges[i].OldValue.ToString();
-                }
-                if (_attrArrowTexts[i] != null)
-                    _attrArrowTexts[i].Visible = true;
-                if (_attrNewTexts[i] != null)
-                {
-                    _attrNewTexts[i].Visible = true;
-                    _attrNewTexts[i].Text = _mockChanges[i].NewValue.ToString();
-                }
-            }
+                ApplyAttributeRow(i, _mockChanges[i]);
 
             // 隐藏未使用的行
             for (int i = count; i < MaxAttrRows; i++)
@@ -572,7 +690,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
             if (_continueButton == null)
                 return;
 
-            float buttonY = AttrRowStartY + visibleRows * (AttrRowHeight + AttrRowGap) + 16f;
+            float buttonY = AttrRowStartY + visibleRows * (AttrRowHeight + AttrRowGap) + UnlockSectionHeight + 16f;
             _continueButton.Location = new Float2(ContinueX, buttonY);
         }
 

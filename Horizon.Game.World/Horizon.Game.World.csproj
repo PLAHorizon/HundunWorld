@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- 纯 C# 确定性世界库：无 Orleans / UE / Flax 依赖，UE5 DS 与 Orleans 双端共享同一份 AOI 实现 -->
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+
+  <!-- 与 Horizon.Game.Sim.csproj 同款分发：把本程序集复制到 Flax 引擎托管工具目录，
+       供 MMORPG 客户端（Game.Build.cs 的 dlls[]）编译期/运行期解析。
+       LocalSimulationSystem 运行期调用 WorldCoord.ToChunkMortonKey——Tools 目录陈旧副本
+       会导致客户端 ECS Tick 抛 FileNotFoundException，必须随构建自动同步。
+       - FlaxToolsDir / CopyToFlax 均可在命令行覆盖（-p:CopyToFlax=false 关闭分发）；
+       - 仅当目标目录存在时才执行，避免未装 Flax 的 CI 报错；
+       - 写入 Program Files 需管理员权限，失败按警告处理（ContinueOnError），不阻断编译。 -->
+  <PropertyGroup>
+    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
+    <CopyToFlax Condition="'$(CopyToFlax)' == ''">true</CopyToFlax>
+  </PropertyGroup>
+
+  <Target Name="CopyToFlax" AfterTargets="Build"
+          Condition="'$(CopyToFlax)' == 'true' And Exists('$(FlaxToolsDir)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+          Condition="Exists('$(TargetDir)$(TargetName).pdb')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).xml"
+          Condition="Exists('$(TargetDir)$(TargetName).xml')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Message Importance="high" Text="[CopyToFlax] $(TargetFileName) -&gt; $(FlaxToolsDir)" />
+  </Target>
+
+</Project>

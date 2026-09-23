@@ -126,13 +126,29 @@ public abstract class MessageHandlerBase : IMessageHandler
         }
         catch (Exception ex)
         {
-            // 发送失败通常意味着客户端已断开，不再重试发送错误响应
-            // 主动关闭连接以触发 OnClientDisconnected → PlayerDespawnScheduler 链路
-            Logger.LogWarning("消息处理失败，客户端可能已断开。Type={MessageType}, MsgId={MessageId}, Error={Error}",
+            Logger.LogWarning("消息处理失败。Type={MessageType}, MsgId={MessageId}, Error={Error}",
                 message.Header.MessageType, message.Header.MessageId, ex.GetType().Name);
 
-            try { await client.CloseAsync("消息处理异常"); } catch { /* 忽略关闭失败 */ }
-            return (false, null);
+            // 向客户端发送 fallback 错误响应（5.1 收尾修复：CreateUnhandledErrorResponse
+            // 此前定义了但从未接线）。复用 PrepareResponsePacket 保留请求关联与路由头。
+            try
+            {
+                var errorPacket = CreateUnhandledErrorResponse(message, ex);
+                PrepareResponsePacket(errorPacket, message);
+                var errorBuff = _adapter.PackPacket(errorPacket);
+                await client.SendAsync(errorBuff);
+                return (false, errorPacket.Body);
+            }
+            catch (Exception sendEx)
+            {
+                // 发送失败通常意味着客户端已断开：不再重试发送错误响应，
+                // 主动关闭连接以触发 OnClientDisconnected → PlayerDespawnScheduler 链路
+                Logger.LogWarning("发送 fallback 错误响应失败，客户端可能已断开。Type={MessageType}, MsgId={MessageId}, Error={Error}",
+                    message.Header.MessageType, message.Header.MessageId, sendEx.GetType().Name);
+
+                try { await client.CloseAsync("消息处理异常"); } catch { /* 忽略关闭失败 */ }
+                return (false, null);
+            }
         }
     }
 
@@ -170,13 +186,20 @@ public abstract class MessageHandlerBase : IMessageHandler
 
     public abstract Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> RouteHandlerAsync(HorizonMessagePacket message);
     /// <summary>
-    /// 静默检查处理器是否能处理该消息（不输出日志，用于路由分发）
+    /// 静默检查处理器是否能处理该消息（不输出日志，用于路由分发）。
     /// </summary>
+    /// <remarks>
+    /// 收敛（双协议）：路由元数据以反序列化的 <see cref="HorizonMessagePacket.Body"/>（<see cref="INetworkMessage"/>）
+    /// 为准——Body 的具体类型由 union tag 在反序列化时确定，其 <c>Type</c>/<c>ServiceType</c> 是权威值；
+    /// 冗余的 <c>Header.MessageType</c>/<c>ServiceType</c>（客户端可伪造）不再参与路由，仅在 Body 缺失时回退。
+    /// </remarks>
     public virtual bool CanHandle(HorizonMessagePacket message)
     {
-        return message != null
-            && MessageTypes.Contains(message.Header.MessageType)
-            && message.ServiceType == ServiceType;
+        if (message == null) return false;
+        if (message.Body is INetworkMessage body)
+            return MessageTypes.Contains(body.Type) && body.ServiceType == ServiceType;
+        // Body 缺失的退化包（极少）：回退旧式 Header 路由
+        return MessageTypes.Contains(message.Header.MessageType) && message.ServiceType == ServiceType;
     }
     /// <summary>
     /// 验证消息（会输出日志，仅对已匹配的处理器调用）
@@ -189,15 +212,19 @@ public abstract class MessageHandlerBase : IMessageHandler
             return false;
         }
 
-        if (!MessageTypes.Contains(message.Header.MessageType))
+        // 与 CanHandle 一致：以 Body 的权威元数据为准；Body 缺失时回退 Header。
+        var bodyType = message.Body is INetworkMessage body ? body.Type : message.Header.MessageType;
+        var bodyServiceType = message.Body is INetworkMessage b2 ? b2.ServiceType : message.ServiceType;
+
+        if (!MessageTypes.Contains(bodyType))
         {
-            Logger.LogError($"消息类型无效。期望: [{string.Join(", ", MessageTypes)}], 实际: {message.Header.MessageType}");
+            Logger.LogError($"消息类型无效。期望: [{string.Join(", ", MessageTypes)}], 实际: {bodyType}");
             return false;
         }
 
-        if (message.ServiceType != ServiceType)
+        if (bodyServiceType != ServiceType)
         {
-            Logger.LogError($"服务类型无效。期望: {ServiceType}, 实际: {message.ServiceType}");
+            Logger.LogError($"服务类型无效。期望: {ServiceType}, 实际: {bodyServiceType}");
             return false;
         }
 

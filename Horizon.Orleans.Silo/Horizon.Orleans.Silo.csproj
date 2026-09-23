@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- 禁用 Razor 相关的目�?-->
+    <!-- 禁用 Razor 相关的目�?-->
     <EnableDefaultRazorGenerateItems>false</EnableDefaultRazorGenerateItems>
     <EnableDefaultRazorComponentItems>false</EnableDefaultRazorComponentItems>
   </PropertyGroup>
@@ -45,9 +45,10 @@
 	  <!-- OpenTelemetry监控 -->
 	  <PackageReference Include="OpenTelemetry" />
 	  <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
-	  <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
-	  <PackageReference Include="OpenTelemetry.Exporter.Prometheus.HttpListener" />
-	  <PackageReference Include="OpenTelemetry.Exporter.Console" />
+  <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+  <PackageReference Include="OpenTelemetry.Exporter.Prometheus.HttpListener" />
+  <PackageReference Include="OpenTelemetry.Exporter.Console" />
+  <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
   </ItemGroup>
 
   <ItemGroup>

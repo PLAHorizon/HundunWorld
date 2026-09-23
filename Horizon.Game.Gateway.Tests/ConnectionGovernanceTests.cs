@@ -22,6 +22,8 @@ public class ConnectionGovernanceTests
         public string RemoteAddress { get; set; } = "127.0.0.1";
         public DateTime ConnectedTime { get; set; } = DateTime.UtcNow;
         public DateTime LastActiveTime { get; set; } = DateTime.UtcNow;
+        /// <summary>默认视为已收到数据（活连接）；幽灵连接场景由用例显式置 false。</summary>
+        public bool HasReceivedData { get; set; } = true;
         public bool IsConnected { get; set; } = true;
         public bool IsAuthenticated { get; set; }
         public string AuthToken { get; set; } = "";

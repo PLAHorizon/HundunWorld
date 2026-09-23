@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.Message.Sync;
 using Horizon.Orleans.Grains.World;
@@ -35,7 +35,6 @@ public class NetworkSyncHardeningTests
             MaxSpeed = MovementFormula.DefaultMaxSpeed,
             HardSpeedCap = MovementValidator.DefaultHardSpeedCap,
             PositionEpsilon = 0.1f,
-            RttScalingFactor = 0.002f,
             MaxDynamicEpsilon = 2.0f,
         });
 
@@ -65,9 +64,9 @@ public class NetworkSyncHardeningTests
         var resultNoRtt = validator.Validate(1, startPos, 0, inputs, clientEnd, serverTick: 1, rttMs: 0f);
         Assert.True(resultNoRtt.NeedsCorrection, "无 RTT 时 drift=0.12 > epsilon=0.1 应触发修正");
 
-        // RTT=200ms 时 effectiveEpsilon = 0.1 + 0.002*200 = 0.5，drift=0.12 < 0.5 应通过
+        // RTT=200ms 时 effectiveEpsilon = 0.1 + 6×200/1000 = 1.3（按声明速度缩放），drift=0.12 应通过
         var resultHighRtt = validator.Validate(1, startPos, 0, inputs, clientEnd, serverTick: 1, rttMs: 200f);
-        Assert.False(resultHighRtt.NeedsCorrection, "RTT=200ms 时 effectiveEpsilon=0.5 应容纳 drift=0.12");
+        Assert.False(resultHighRtt.NeedsCorrection, "RTT=200ms 时 effectiveEpsilon=1.3 应容纳 drift=0.12");
     }
 
     /// <summary>
@@ -82,7 +81,6 @@ public class NetworkSyncHardeningTests
             MaxSpeed = MovementFormula.DefaultMaxSpeed,
             HardSpeedCap = MovementValidator.DefaultHardSpeedCap,
             PositionEpsilon = 0.1f,
-            RttScalingFactor = 0.002f,
             MaxDynamicEpsilon = 0.5f, // 上限 0.5m
         });
 
@@ -121,15 +119,16 @@ public class NetworkSyncHardeningTests
 
         await grain.SubmitInputAsync(entityId, input, 0.01f, 0, 0);
 
-        // 通过反射读取 SimulatedEntity.EstimatedRttMs
-        var entitiesField = typeof(ZoneShardGrain).GetField("_simulatedEntities", BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.NotNull(entitiesField);
-        var entities = (Dictionary<ulong, ZoneShardGrain.SimulatedEntity>)entitiesField!.GetValue(grain)!;
-        var entity = entities[entityId];
+        // RTT 估计已随权威状态迁入 SimWorld，通过反射读取 SimWorld 实体。
+        var simWorldField = typeof(ZoneShardGrain).GetField("_simWorld", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(simWorldField);
+        var simWorld = (Horizon.Game.Sim.SimWorld)simWorldField!.GetValue(grain)!;
+        var worldEntity = simWorld.GetEntity(entityId);
+        Assert.NotNull(worldEntity);
 
         // EMA 首次赋值应约等于 100ms（允许 ±20ms 误差，因为代码执行有延迟）
-        Assert.True(entity.EstimatedRttMs > 80f && entity.EstimatedRttMs < 150f,
-            $"EstimatedRttMs 应约 100ms，实际={entity.EstimatedRttMs:F1}ms");
+        Assert.True(worldEntity!.EstimatedRttMs > 80f && worldEntity.EstimatedRttMs < 150f,
+            $"EstimatedRttMs 应约 100ms，实际={worldEntity.EstimatedRttMs:F1}ms");
     }
 
     #endregion
@@ -142,9 +141,8 @@ public class NetworkSyncHardeningTests
     [Fact]
     public void SnapshotReceiveBuffer_Overflow_DropsOldest()
     {
-        var buffer = SnapshotReceiveBuffer.Instance;
-        buffer.ClearQueue(); // 确保干净状态
-
+        // 独立实例（阶段 6.4）：不再共享静态单例，并行测试互不串扰。
+        var buffer = new SnapshotReceiveBuffer();
         var originalMax = buffer.MaxQueueSize;
         buffer.MaxQueueSize = 4; // 临时缩小上限
 
@@ -244,16 +242,19 @@ public class NetworkSyncHardeningTests
     [Fact]
     public void DisconnectReset_AllBuffersCleared()
     {
+        // 快照接收缓冲用独立实例（阶段 6.4）：验证断线清空语义，不共享静态单例（并行串扰源）。
+        var snapshotBuffer = new SnapshotReceiveBuffer();
+
         // 填充各缓冲区
-        SnapshotReceiveBuffer.Instance.Enqueue(new SnapshotPacket { ServerTick = 999 });
+        snapshotBuffer.Enqueue(new SnapshotPacket { ServerTick = 999 });
         InputSendQueue.Instance.Enqueue(new InputPacket { ClientTick = 999 });
         EventReceiveBuffer.Instance.Enqueue(new EventPacket { ServerTick = 999 });
         InputHistoryBuffer.Instance.Add(new InputPacket { ClientTick = 999 });
-        CorrectionReceiveBuffer.Instance.Add(new Horizon.Game.Core.Sim.CorrectionPacket { EntityId = 999 });
+        CorrectionReceiveBuffer.Instance.Add(new Horizon.Game.Sim.CorrectionPacket { EntityId = 999 });
         InputAckReceiveBuffer.Instance.Latest = new InputAckPacket { LastProcessedClientTick = 999 };
 
         // 执行断线清空
-        SnapshotReceiveBuffer.Instance.ClearQueue();
+        snapshotBuffer.ClearQueue();
         InputSendQueue.Instance.ClearQueue();
         EventReceiveBuffer.Instance.ClearQueue();
         InputHistoryBuffer.Instance.Clear();
@@ -261,7 +262,7 @@ public class NetworkSyncHardeningTests
         InputAckReceiveBuffer.Instance.Clear();
 
         // 验证全部为空
-        Assert.Equal(0, SnapshotReceiveBuffer.Instance.Count);
+        Assert.Equal(0, snapshotBuffer.Count);
         Assert.Equal(0, InputSendQueue.Instance.Count);
         Assert.Equal(0, EventReceiveBuffer.Instance.Count);
         Assert.Equal(0, InputHistoryBuffer.Instance.Count);
@@ -346,12 +347,13 @@ public class NetworkSyncHardeningTests
         var correctionsIssued = (int)correctionsField!.GetValue(grain)!;
         Assert.Equal(0, correctionsIssued);
 
-        // 验证 RTT 被正确估算（应约 300ms）
-        var entitiesField = typeof(ZoneShardGrain).GetField("_simulatedEntities", BindingFlags.NonPublic | BindingFlags.Instance);
-        var entities = (Dictionary<ulong, ZoneShardGrain.SimulatedEntity>)entitiesField!.GetValue(grain)!;
-        var entity = entities[entityId];
-        Assert.True(entity.EstimatedRttMs > 250f && entity.EstimatedRttMs < 400f,
-            $"EstimatedRttMs 应约 300ms，实际={entity.EstimatedRttMs:F1}ms");
+        // 验证 RTT 被正确估算（应约 300ms）——RTT 估计已随权威状态迁入 SimWorld。
+        var simWorldField = typeof(ZoneShardGrain).GetField("_simWorld", BindingFlags.NonPublic | BindingFlags.Instance);
+        var simWorld = (Horizon.Game.Sim.SimWorld)simWorldField!.GetValue(grain)!;
+        var worldEntity = simWorld.GetEntity(entityId);
+        Assert.NotNull(worldEntity);
+        Assert.True(worldEntity!.EstimatedRttMs > 250f && worldEntity.EstimatedRttMs < 400f,
+            $"EstimatedRttMs 应约 300ms，实际={worldEntity.EstimatedRttMs:F1}ms");
     }
 
     #endregion
@@ -403,10 +405,7 @@ public class NetworkSyncHardeningTests
 
         var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
         var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-        typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         const ulong entityId = 9400;
         await grain.RegisterEntityAsync(entityId, 0, 0, 0);
@@ -500,13 +499,30 @@ public class NetworkSyncHardeningTests
             Stamina = es.Stamina, MaxStamina = es.MaxStamina,
             PendingInputs = new List<InputPacket>(),
             LeaseExpiry = DateTime.UtcNow + TimeSpan.FromSeconds(90),
-            // 修复后的瞬态字段恢复
+            // 修复后的瞬态字段恢复（权威 Prev/RTT 由 SimWorld 持有，见下方 _simWorld 注册）
             ReportedEndX = es.X, ReportedEndY = es.Y, ReportedEndZ = es.Z,
-            PrevX = es.X, PrevY = es.Y, PrevZ = es.Z, PrevVz = es.Vz,
             PrevIsGrounded = es.IsGrounded,
             LastUpdateBroadcastTick = stateObj.TickCount,
             LastAttributeHeartbeatTick = stateObj.TickCount,
         };
+
+        // 阶段 1.4：权威移动状态在 SimWorld 中，恢复时必须同步注册（与 OnActivateAsync 恢复逻辑一致）。
+        var simWorldField2 = typeof(ZoneShardGrain).GetField("_simWorld", BindingFlags.NonPublic | BindingFlags.Instance);
+        var simWorld2 = (Horizon.Game.Sim.SimWorld)simWorldField2!.GetValue(grain2)!;
+        simWorld2.AddOrUpdateEntity(entityId, es.X, es.Y, es.Z, es.MaxSpeed);
+        var restoredSimEntity = simWorld2.GetEntity(entityId);
+        if (restoredSimEntity is not null)
+        {
+            restoredSimEntity.Vz = es.Vz;
+            restoredSimEntity.Yaw = es.Yaw;
+            restoredSimEntity.IsGrounded = es.IsGrounded;
+            restoredSimEntity.JumpCount = es.JumpCount;
+            restoredSimEntity.PrevX = es.X;
+            restoredSimEntity.PrevY = es.Y;
+            restoredSimEntity.PrevZ = es.Z;
+            restoredSimEntity.PrevVz = es.Vz;
+        }
+
         // 设置 _tickCount
         var tickCountField = typeof(ZoneShardGrain).GetField("_tickCount", BindingFlags.NonPublic | BindingFlags.Instance);
         tickCountField!.SetValue(grain2, stateObj.TickCount);
@@ -555,12 +571,7 @@ public class NetworkSyncHardeningTests
         var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
         var grain = new ZoneShardGrain(mockLogger.Object, state);
 
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         grain.SnapshotBroadcastIntervalTicks = 1;
         return grain;
@@ -756,12 +767,7 @@ public class NetworkSyncHardeningTests
         mockState.SetupGet(s => s.State).Returns(new Horizon.Orleans.Grains.World.ZoneShardState());
         var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
 
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         return grain;
     }

@@ -107,7 +107,9 @@ namespace Horizon.Game.GengDi.Core.Services
                 try
                 {
                     var client = await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
-                    var frame = PackPacket(packet);
+                    // 线路帧复用 SyncHandshakeWire.PackPacket（Horizon.Game.Message 共享纯逻辑，
+                    // 与服务端 HorizonMessageAdapter.WrapPacket 逐字节同构；消除本类旧 PackPacket 重复实现）。
+                    var frame = SyncHandshakeWire.PackPacket(packet);
 
                     var timeout = TimeSpan.FromSeconds(RequestTimeoutSeconds);
 
@@ -344,43 +346,6 @@ namespace Horizon.Game.GengDi.Core.Services
             return packet;
         }
 
-        private static byte[] PackPacket(HorizonMessagePacket packet, bool compress = true)
-        {
-            const int headerLength = 8;
-
-            var packetBytes = MemoryPackSerializer.Serialize(packet);
-            byte[] payload = packetBytes;
-            bool isCompressed = false;
-
-            if (compress && packetBytes.Length > 256)
-            {
-                var compressed = K4os.Compression.LZ4.LZ4Pickler.Pickle(packetBytes);
-                if (compressed.Length < packetBytes.Length)
-                {
-                    payload = compressed;
-                    isCompressed = true;
-                }
-            }
-
-            var frame = new byte[headerLength + payload.Length];
-            BitConverter.GetBytes(payload.Length).CopyTo(frame, 0);
-            frame[4] = (byte)packet.Header.MessageType;
-            frame[5] = isCompressed ? (byte)1 : (byte)0;
-            BitConverter.GetBytes(CalculateChecksum(payload)).CopyTo(frame, 6);
-            Array.Copy(payload, 0, frame, headerLength, payload.Length);
-            return frame;
-        }
-
-        private static ushort CalculateChecksum(ReadOnlySpan<byte> data)
-        {
-            uint checksum = 0;
-            foreach (var b in data)
-            {
-                checksum += b;
-            }
-            return (ushort)(checksum & 0xFFFF);
-        }
-
         private static string ResolveHost()
         {
             var discovered = GatewayDiscoveryService.GameGateway;
@@ -482,8 +447,13 @@ namespace Horizon.Game.GengDi.Core.Services
 
                     var payload = buffer.Slice(8, payloadLength).ToArray();
                     var finalPayload = isCompressed
-                        ? K4os.Compression.LZ4.LZ4Pickler.Unpickle(payload)
+                        ? Horizon.Game.Message.Utilities.LZ4Pickler.Unpickle(payload)
                         : payload;
+                    // Unpickle 对畸形/超限输入返回 null，显式判空避免 NRE 掩盖协议错误。
+                    if (finalPayload is null)
+                    {
+                        return false;
+                    }
 
                     var packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(finalPayload);
                     if (packet == null)
@@ -546,7 +516,8 @@ namespace Horizon.Game.GengDi.Core.Services
 
                 try
                 {
-                    var checksum = GameGatewayClient.CalculateChecksum(body);
+                    // 校验和算法与服务端 HorizonMessageAdapter 同源（HorizonProtocol.CalculateChecksum）。
+                    var checksum = HorizonProtocol.CalculateChecksum(body);
                     if (checksum != _expectedChecksum)
                     {
                         return false;
@@ -554,8 +525,13 @@ namespace Horizon.Game.GengDi.Core.Services
 
                     Body = body.ToArray();
                     var finalPayload = _isCompressed
-                        ? K4os.Compression.LZ4.LZ4Pickler.Unpickle(body)
+                        ? Horizon.Game.Message.Utilities.LZ4Pickler.Unpickle(body)
                         : Body;
+                    // Unpickle 对畸形/超限输入返回 null，显式判空避免 NRE 掩盖协议错误。
+                    if (finalPayload is null)
+                    {
+                        return false;
+                    }
 
                     Packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(finalPayload);
                     if (Packet != null)

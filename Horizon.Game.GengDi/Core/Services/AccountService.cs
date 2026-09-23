@@ -175,7 +175,7 @@ namespace Horizon.Game.GengDi.Core.Services
 						GameId = (int)DefaultAppId,
 						ServerId = 1,
 						AreaId = 1,
-						Ip = "192.168.1.78",
+						Ip = Environment.GetEnvironmentVariable("GATEWAY_PUBLIC_IP") ?? "127.0.0.1",
 						PlatformId = Environment.OSVersion.Platform.ToString()
 					},
 					RealName = displayName,
@@ -701,7 +701,11 @@ namespace Horizon.Game.GengDi.Core.Services
                 _accessTokenExpiresAtUtc = loginResult.ExpiresTime == default
                     ? DateTime.UtcNow.AddSeconds(Math.Max(loginResult.ExpiresIn, 60))
                     : loginResult.ExpiresTime.ToUniversalTime();
-                _imAuthToken = loginResult.ImAuthToken ?? string.Empty;
+                // 共享 IM 令牌：响应未回传时保留旧值（刷新接口仅在令牌过期重签时回传）
+                if (!string.IsNullOrWhiteSpace(loginResult.ImAuthToken))
+                {
+                    _imAuthToken = loginResult.ImAuthToken;
+                }
             }
         }
 
@@ -741,7 +745,12 @@ namespace Horizon.Game.GengDi.Core.Services
 
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Post, BuildApiUri("Account/GetRefreshToken"));
+                // 携带当前 IM 令牌：共享令牌过期时服务端复用/重签通行证级共享令牌并回传
+                var expiredImAuthToken = GetImAuthToken();
+                var refreshUri = string.IsNullOrWhiteSpace(expiredImAuthToken)
+                    ? "Account/GetRefreshToken"
+                    : $"Account/GetRefreshToken?expiredImAuthToken={Uri.EscapeDataString(expiredImAuthToken)}";
+                using var request = new HttpRequestMessage(HttpMethod.Post, BuildApiUri(refreshUri));
                 request.Content = new StringContent(refreshToken, Encoding.UTF8, "application/json");
 
                 using var response = await HttpClient.SendAsync(request).ConfigureAwait(false);

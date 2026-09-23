@@ -4,41 +4,56 @@ using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Mail
 {
     /// <summary>
-    /// 飞鸽传书 —— 三栏邮件系统
-    /// 对应 design: game-ui-system/pages/mail.html
+    /// 菜单·邮箱（飞鸽传书）。
+    /// 对应设计稿 hundun-yy-ui/pages/menu-mail.html：
+    /// 240px 侧边导航栏（主菜单 / 角色两组）+ 60px 顶栏（返回 / 角色信息 / 三种货币）
+    /// + 左 35% 邮件列表面板（全部·未读·系统 标签栏 + 邮件条目）
+    /// + 右 65% 纸色信笺面板（标题 / 发件信息 / 正文 / 附件卡 / 领取与删除操作栏）。
     /// </summary>
     public class MenuMailPage : ContainerControl, IInkPage
     {
         // ───────────── Data Types ─────────────
 
+        /// <summary>标签配色皮肤（对应设计稿 ink-tag 系列与青玉「好友来信」标签）。</summary>
+        private enum TagSkin
+        {
+            Default,
+            Brand,
+            Vermilion,
+            Jade
+        }
+
         private class AttachItem
         {
             public string Name;
-            public string Desc;
+            public string Glyph;
             public int Count;
             public Color QualityColor;
             public bool Claimed;
+            public bool Selected = true;
         }
 
         private class MailEntry
         {
-            public string SenderChar;
-            public string SenderName;
-            public string Section;
-            public Color SectionDot;
-            public Color SectionText;
+            public string ListTag;
+            public TagSkin Skin;
+            public string LetterTag;
             public string Subject;
+            public string Sender;
             public string Date;
+            public string FullDate;
             public bool Unread;
+            public bool System;
             public string Body;
             public AttachItem[] Attachments;
         }
 
-        /// <summary>可点击的 Panel，用于邮件列表条目</summary>
+        /// <summary>可点击 Panel（邮件列表条目 / 附件卡）。</summary>
         private class ClickablePanel : Panel
         {
             public event Action Clicked;
@@ -64,55 +79,123 @@ namespace HundunWorld.Game.UI.Ink.Pages.Mail
             }
         }
 
+        /// <summary>自定义描边标签（设计稿青玉「好友来信」标签）。</summary>
+        private class OutlineTag : Label
+        {
+            public Color OutlineColor = InkWashTheme.BorderNeutralL2;
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (OutlineColor.A > 0f && Width > 0f && Height > 0f)
+                    Render2D.DrawRectangle(new Rectangle(0, 0, Width, Height), OutlineColor, 1f);
+            }
+        }
+
+        /// <summary>描边图标框（设计稿 .attach-icon-wrap，品质色描边 + 同色淡底）。</summary>
+        private class OutlinePanel : Panel
+        {
+            public Color OutlineColor = Color.Transparent;
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (OutlineColor.A > 0f && Width > 0f && Height > 0f)
+                    Render2D.DrawRectangle(new Rectangle(0, 0, Width, Height), OutlineColor, 1f);
+            }
+        }
+
+        /// <summary>邮件列表条目的子控件引用集。</summary>
+        private class MailItemView
+        {
+            public ClickablePanel Root;
+            public Label Tag;
+            public Panel Dot;
+            public Label Subject;
+            public Label Sender;
+            public Label Date;
+            public Label Hint;
+        }
+
+        /// <summary>附件卡的子控件引用集。</summary>
+        private class AttachCardView
+        {
+            public ClickablePanel Root;
+            public Panel Check;
+            public Label CheckGlyph;
+            public OutlinePanel IconWrap;
+            public Label Glyph;
+            public Label Name;
+            public Label Count;
+        }
+
         // ───────────── Fields ─────────────
 
         private Float2 _screenSize;
-        private MailEntry[] _mails;
-        private int _selectedIdx;
 
-        // top bar
+        private InkBackgroundLayer _bgLayer;
+        private InkVignette _vignette;
+
+        // 侧边导航栏
+        private Panel _sidebar;
+        private Label _logoLabel;
+        private Label _mainGroupLabel;
+        private Label _charGroupLabel;
+        private Panel _navDivider;
+        private InkButton _settingsButton;
+        private readonly List<InkButton> _navButtons = new List<InkButton>();
+        private readonly List<InkButton> _navDisabledButtons = new List<InkButton>();
+
+        // 顶栏
         private Panel _topBar;
         private InkButton _backBtn;
-        private Label _titleLbl;
-        private Label _unreadLbl;
-        private InkButton _composeBtn;
+        private Panel _avatar;
+        private Label _playerName;
+        private InkTag _levelTag;
+        private Label _sectName;
+        private readonly Panel[] _currencyDots = new Panel[3];
+        private readonly Label[] _currencyValues = new Label[3];
 
-        // left panel
-        private Panel _leftPanel;
-        private List<InkButton> _tabs;
-        private Panel _listPanel;
-        private List<ClickablePanel> _mailItems;
-        private List<Label> _itemSenderLabels;
+        // 邮件列表面板
+        private InkPanel _listPanel;
+        private InkCornerDeco _listCorners;
+        private readonly List<InkButton> _tabs = new List<InkButton>();
+        private Label _unreadHint;
+        private Panel _mailList;
+        private readonly List<MailItemView> _mailViews = new List<MailItemView>();
+        private readonly List<int> _visibleMail = new List<int>();
 
-        // center panel
-        private Panel _centerPanel;
-        private Panel _senderHeader;
-        private Label _senderName;
-        private InkButton _senderTagBtn;
-        private Label _senderDate;
-        private Label _attachHint;
-        private Label _subjectLbl;
-        private Label _subjectTag;
-        private InkPaperPanel _paper;
-        private Label _bodyLbl;
-        private Panel _rewardBox;
-        private List<Panel> _rewardSlots;
-
-        // right panel
-        private Panel _rightPanel;
-        private Label _rightTitle;
-        private Label _rightCount;
-        private Panel _attachList;
-        private List<Panel> _attachSlots;
-        private InkButton _claimAllBtn;
-        private Label _remainLbl;
-        private InkButton _replyBtn;
-        private InkButton _forwardBtn;
+        // 信笺面板
+        private InkPaperPanel _readerPanel;
+        private InkCornerDeco _readerCorners;
+        private Label _letterTitle;
+        private InkTag _letterTag;
+        private Label _letterSender;
+        private Label _letterDate;
+        private Panel _headDivider;
+        private Label _letterBody;
+        private Panel _attachDivider;
+        private Label _attachTitle;
+        private Label _attachCount;
+        private Panel _attachCards;
+        private readonly List<AttachCardView> _attachViews = new List<AttachCardView>();
+        private Panel _actionDivider;
         private InkButton _deleteBtn;
+        private InkButton _claimSelectedBtn;
+        private InkButton _claimAllBtn;
 
-        private const float TopH = 56f;
-        private const float LeftW = 300f;
-        private const float RightW = 280f;
+        private List<MailEntry> _mails;
+        private int _selectedIdx;
+        private int _activeTab;
+
+        private const float SidebarW = 240f;
+        private const float TopBarH = 60f;
+        private const float ContentPad = 24f;
+        private const float ColumnGap = 24f;
+        private const float ListRatio = 0.35f;
+        private const float MailItemH = 100f;
+        private const float NavItemH = 38f;
+        private const float NavItemStep = 44f;
 
         public event Action<string> NavigationRequested;
 
@@ -134,11 +217,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Mail
             BuildData();
             try
             {
-                BuildBg();
+                BuildBackground();
+                BuildSidebar();
                 BuildTopBar();
-                BuildLeftPanel();
-                BuildCenterPanel();
-                BuildRightPanel();
+                BuildMailListPanel();
+                BuildReaderPanel();
                 SelectMail(0);
             }
             catch (Exception ex)
@@ -151,46 +234,222 @@ namespace HundunWorld.Game.UI.Ink.Pages.Mail
 
         private void BuildData()
         {
-            _mails = new MailEntry[8];
-            _mails[0] = new MailEntry
+            _mails = new List<MailEntry>
             {
-                SenderChar = "系", SenderName = "系统官府", Section = "系统",
-                SectionDot = InkWashTheme.GoldPrimary, SectionText = InkWashTheme.GoldBright,
-                Subject = "周末庆典 · 论剑豪礼", Date = "今日 辰时", Unread = true,
-                Body = "少侠台鉴：\n\n适逢周末庆典，江湖豪杰齐聚论剑台。阁下于本次论剑大会中表现卓绝……\n\n—— 论剑台主办 · 系统官府",
-                Attachments = new[]
+                new MailEntry
                 {
-                    new AttachItem { Name = "灵石", Desc = "修炼资材", Count = 500, QualityColor = InkWashTheme.QualityCommon },
-                    new AttachItem { Name = "玄铁精", Desc = "铸兵材料", Count = 10, QualityColor = InkWashTheme.QualityRare },
-                    new AttachItem { Name = "九转还魂丹", Desc = "续命灵药", Count = 3, QualityColor = InkWashTheme.QualityEpic },
-                    new AttachItem { Name = "真武剑诀·残卷", Desc = "武当秘传", Count = 1, QualityColor = InkWashTheme.QualityLegendary, Claimed = true },
+                    ListTag = "系统奖励", Skin = TagSkin.Vermilion, LetterTag = "系统邮件",
+                    Subject = "登录七日奖励", Sender = "发件人：系统",
+                    Date = "今日 10:30", FullDate = "2026年7月15日",
+                    Unread = true, System = true,
+                    Body = "侠士道鉴：\n\n"
+                         + "　　自侠士踏入江湖以来，已有七日之久。江湖路远，风波险恶，侠士能坚持至此，实属不易。今特备薄礼一份，以表心意。\n\n"
+                         + "　　铜钱五千，聊作盘缠之用；精良装备箱一具，以助行侠仗义之事；经验丹三枚，望修为精进，武艺日增。\n\n"
+                         + "　　愿侠士此后行侠仗义，名扬四海，不负这一身武艺。江湖路漫漫，且行且珍重。\n\n"
+                         + "—— 系统敬上",
+                    Attachments = new[]
+                    {
+                        new AttachItem { Name = "铜钱", Glyph = "钱", Count = 5000, QualityColor = InkWashTheme.QualityCommon },
+                        new AttachItem { Name = "精良装备箱", Glyph = "箱", Count = 1, QualityColor = InkWashTheme.QualityUncommon },
+                        new AttachItem { Name = "经验丹", Glyph = "丹", Count = 3, QualityColor = InkWashTheme.QualityRare }
+                    }
+                },
+                new MailEntry
+                {
+                    ListTag = "好友来信", Skin = TagSkin.Jade, LetterTag = "好友来信",
+                    Subject = "剑随风的信", Sender = "发件人：剑随风",
+                    Date = "今日 09:15", FullDate = "2026年7月15日",
+                    Unread = true,
+                    Body = "无名侠兄台鉴：\n\n"
+                         + "　　日前于落雁坡一别，至今已三日。闻兄台近日勤修剑法，进境神速，愚弟不胜欣喜。\n\n"
+                         + "　　城南新开一间茶肆，所售雨前龙井颇为不俗。若兄台得闲，明日可于城南同饮一盏，共叙别情。\n\n"
+                         + "—— 剑随风 拜上"
+                },
+                new MailEntry
+                {
+                    ListTag = "系统", Skin = TagSkin.Default, LetterTag = "系统邮件",
+                    Subject = "月卡每日奖励", Sender = "发件人：系统",
+                    Date = "昨日 06:00", FullDate = "2026年7月14日",
+                    System = true,
+                    Body = "侠士道鉴：\n\n"
+                         + "　　本月月卡每日奖励已送入信物之中，内含月华玉一枚，望侠士笑纳。\n\n"
+                         + "　　月卡有效期内每日辰时自动发放，逾期不补，望侠士留意查收。\n\n"
+                         + "—— 系统敬上",
+                    Attachments = new[]
+                    {
+                        new AttachItem { Name = "月华玉", Glyph = "玉", Count = 1, QualityColor = InkWashTheme.QualityRare }
+                    }
+                },
+                new MailEntry
+                {
+                    ListTag = "门派通知", Skin = TagSkin.Brand, LetterTag = "门派通知",
+                    Subject = "逍遥派周报", Sender = "发件人：逍遥派",
+                    Date = "7月8日", FullDate = "2026年7月8日",
+                    Body = "逍遥派诸位同门：\n\n"
+                         + "　　本周门派共完成门派任务一百二十件，门派贡献较上周增长一成五，诸位同门功不可没。\n\n"
+                         + "　　下周门派演武定于初七酉时，于后山演武场举行，望诸位同门准时到场。\n\n"
+                         + "—— 逍遥派执事堂"
+                },
+                new MailEntry
+                {
+                    ListTag = "活动推送", Skin = TagSkin.Vermilion, LetterTag = "活动推送",
+                    Subject = "限时活动开启", Sender = "发件人：系统",
+                    Date = "7月7日", FullDate = "2026年7月7日",
+                    System = true,
+                    Body = "侠士道鉴：\n\n"
+                         + "　　限时活动「论剑大会」现已开启，将持续至本月二十日。\n\n"
+                         + "　　活动期间于论剑台连胜十场，即可领取限定称号与稀有装备，望侠士莫失良机。\n\n"
+                         + "—— 系统敬上"
+                },
+                new MailEntry
+                {
+                    ListTag = "系统", Skin = TagSkin.Default, LetterTag = "系统邮件",
+                    Subject = "版本更新公告", Sender = "发件人：系统",
+                    Date = "7月5日", FullDate = "2026年7月5日",
+                    System = true,
+                    Body = "侠士道鉴：\n\n"
+                         + "　　本次更新已修复若干已知问题，并优化了部分界面表现与操作手感。\n\n"
+                         + "　　更新期间给侠士带来的不便，敬请见谅。\n\n"
+                         + "—— 系统敬上"
                 }
             };
-            _mails[1] = new MailEntry { SenderChar = "系", SenderName = "系统官府", Section = "系统", SectionDot = InkWashTheme.GoldPrimary, SectionText = InkWashTheme.GoldBright, Subject = "服务器维护公告", Date = "今日 卯时", Body = "服务器维护公告……" };
-            _mails[2] = new MailEntry { SenderChar = "系", SenderName = "系统官府", Section = "系统", SectionDot = InkWashTheme.GoldPrimary, SectionText = InkWashTheme.GoldBright, Subject = "充值灵石到账通知", Date = "三日前", Body = "充值到账通知……" };
-            _mails[3] = new MailEntry { SenderChar = "帮", SenderName = "玄武堂", Section = "帮派", SectionDot = InkWashTheme.JadePrimary, SectionText = InkWashTheme.JadeBright, Subject = "帮派战结算奖励", Date = "昨日", Unread = true, Body = "帮派战结算……", Attachments = new[] { new AttachItem { Name = "帮派贡献", Desc = "帮贡", Count = 200, QualityColor = InkWashTheme.QualityCommon } } };
-            _mails[4] = new MailEntry { SenderChar = "帮", SenderName = "朱雀堂", Section = "帮派", SectionDot = InkWashTheme.JadePrimary, SectionText = InkWashTheme.JadeBright, Subject = "每周贡献奖励", Date = "七月十二", Body = "每周贡献奖励……", Attachments = new[] { new AttachItem { Name = "帮贡", Desc = "帮派贡献", Count = 100, QualityColor = InkWashTheme.QualityCommon } } };
-            _mails[5] = new MailEntry { SenderChar = "张", SenderName = "剑客张三", Section = "玩家", SectionDot = InkWashTheme.BloodPrimary, SectionText = InkWashTheme.BloodBright, Subject = "切磋之约 · 紫霄宫", Date = "昨日", Body = "兄弟，有空组队刷副本吗？", Attachments = new[] { new AttachItem { Name = "请帖", Desc = "切磋请帖", Count = 1, QualityColor = InkWashTheme.QualityCommon } } };
-            _mails[6] = new MailEntry { SenderChar = "李", SenderName = "飞燕李四", Section = "玩家", SectionDot = InkWashTheme.BloodPrimary, SectionText = InkWashTheme.BloodBright, Subject = "西域奇遇相告", Date = "三日前", Unread = true, Body = "西域奇遇相告……" };
-            _mails[7] = new MailEntry { SenderChar = "王", SenderName = "玄武王五", Section = "玩家", SectionDot = InkWashTheme.BloodPrimary, SectionText = InkWashTheme.BloodBright, Subject = "商队护送谢礼", Date = "七月十一", Body = "商队护送谢礼……" };
         }
 
         private int CalcUnread()
         {
             int c = 0;
-            foreach (var m in _mails) if (m.Unread) c++;
+            foreach (var m in _mails)
+            {
+                if (m.Unread) c++;
+            }
             return c;
+        }
+
+        /// <summary>
+        /// 附件汇总文案（设计稿定稿为「共3件」）。件数为运行时数据，
+        /// 故按定稿件数列出字面量，避免运行时拼接导致设计稿文案不可追溯。
+        /// </summary>
+        private static string AttachTotalText(int count)
+        {
+            switch (count)
+            {
+                case 0: return "共0件";
+                case 1: return "共1件";
+                case 2: return "共2件";
+                case 3: return "共3件";
+                case 4: return "共4件";
+                default: return "共" + count + "件";
+            }
         }
 
         // ───────────── Build: Background ─────────────
 
-        private void BuildBg()
+        private void BuildBackground()
         {
-            new Panel
+            _bgLayer = new InkBackgroundLayer
             {
-                AnchorPreset = AnchorPresets.StretchAll,
-                BackgroundColor = InkWashTheme.Void,
                 Parent = this
+            };
+
+            _vignette = new InkVignette
+            {
+                Parent = this
+            };
+        }
+
+        // ───────────── Build: Sidebar ─────────────
+
+        private void BuildSidebar()
+        {
+            _sidebar = new Panel
+            {
+                BackgroundColor = InkWashTheme.BaseDefault,
+                Parent = this
+            };
+
+            _logoLabel = new Label
+            {
+                Text = "混沌世界",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 26f),
+                TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _sidebar
+            };
+
+            _mainGroupLabel = new Label
+            {
+                Text = "主菜单",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _sidebar
+            };
+
+            string[] navItems = { "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店" };
+            string[] navPaths =
+            {
+                InkPageDomIds.NavQuests, InkPageDomIds.NavBestiary, InkPageDomIds.NavMartialRecord,
+                InkPageDomIds.NavLivelihood, InkPageDomIds.NavTeam, InkPageDomIds.NavMail, InkPageDomIds.NavShop
+            };
+
+            for (int i = 0; i < navItems.Length; i++)
+            {
+                bool active = navPaths[i] == InkPageDomIds.NavMail;
+                string path = navPaths[i];
+                var btn = new InkButton
+                {
+                    Text = navItems[i],
+                    ButtonSize = InkButtonSize.Sm,
+                    Variant = InkButtonVariant.Ghost,
+                    BackgroundColor = active
+                        ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f)
+                        : Color.Transparent,
+                    TextColor = active ? InkWashTheme.GoldBright : InkWashTheme.TextSecondary,
+                    BorderColor = active ? InkWashTheme.BorderGold : Color.Transparent,
+                    Parent = _sidebar
+                };
+                if (!active)
+                    btn.Clicked += () => NavigationRequested?.Invoke(path);
+                _navButtons.Add(btn);
+            }
+
+            _navDivider = new Panel
+            {
+                BackgroundColor = InkWashTheme.Divider,
+                Parent = _sidebar
+            };
+
+            _charGroupLabel = new Label
+            {
+                Text = "角色",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _sidebar
+            };
+
+            // 角色分组与设置：设计稿中均为禁用态
+            string[] disabledItems = { "角色", "装备", "技能", "背包" };
+            foreach (string item in disabledItems)
+            {
+                _navDisabledButtons.Add(new InkButton
+                {
+                    Text = item,
+                    ButtonSize = InkButtonSize.Sm,
+                    Variant = InkButtonVariant.Ghost,
+                    Enabled = false,
+                    Parent = _sidebar
+                });
+            }
+
+            _settingsButton = new InkButton
+            {
+                Text = "设置",
+                ButtonSize = InkButtonSize.Sm,
+                Variant = InkButtonVariant.Ghost,
+                Enabled = false,
+                Parent = _sidebar
             };
         }
 
@@ -200,819 +459,954 @@ namespace HundunWorld.Game.UI.Ink.Pages.Mail
         {
             _topBar = new Panel
             {
-                BackgroundColor = new Color(InkWashTheme.BaseSecondary.R, InkWashTheme.BaseSecondary.G, InkWashTheme.BaseSecondary.B, 0.9f),
+                BackgroundColor = InkWashTheme.BaseTertiary,
                 Parent = this
             };
 
             _backBtn = new InkButton
             {
-                Text = "\u2190",
+                Text = "返回",
                 ButtonSize = InkButtonSize.Sm,
                 Variant = InkButtonVariant.Ghost,
                 Parent = _topBar
             };
-            _backBtn.Clicked += () => NavigationRequested?.Invoke("combat-hud");
+            _backBtn.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.CombatHud);
 
-            _titleLbl = new Label
+            _avatar = new Panel
             {
-                Text = "\u98DE\u9E3F\u4F20\u4E66",
+                Parent = _topBar
+            };
+            var avatarGlyph = new Label
+            {
+                Text = "无",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                 TextColor = InkWashTheme.GoldPrimary,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.StretchAll,
+                Parent = _avatar
+            };
+
+            _playerName = new Label
+            {
+                Text = "无名侠",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
+                TextColor = InkWashTheme.PaperBright,
+                VerticalAlignment = TextAlignment.Center,
                 Parent = _topBar
             };
 
-            _unreadLbl = new Label
+            _levelTag = new InkTag
             {
-                Text = $"\u672A\u8BFB {CalcUnread()} \u5C01",
+                Text = "Lv.42",
+                TagVariant = InkTagVariant.Brand,
+                Parent = _topBar
+            };
+
+            _sectName = new Label
+            {
+                Text = "逍遥派",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                TextColor = InkWashTheme.TextTertiary,
+                TextColor = InkWashTheme.TextSecondary,
+                VerticalAlignment = TextAlignment.Center,
                 Parent = _topBar
             };
 
-            _composeBtn = new InkButton
+            string[] currencyValues = { "12,450", "328", "8,920" };
+            Color[] currencyColors = { InkWashTheme.GoldPrimary, InkWashTheme.VermilionBright, InkWashTheme.JadeBright };
+            for (int i = 0; i < 3; i++)
             {
-                Text = "\u5199\u4FE1",
-                ButtonSize = InkButtonSize.Sm,
-                Variant = InkButtonVariant.Ghost,
-                Parent = _topBar
-            };
-            _composeBtn.Clicked += () => Debug.Log("[Mail] compose");
+                _currencyDots[i] = new Panel
+                {
+                    Size = new Float2(14f, 14f),
+                    BackgroundColor = currencyColors[i],
+                    Parent = _topBar
+                };
+                _currencyValues[i] = new Label
+                {
+                    Text = currencyValues[i],
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                    TextColor = InkWashTheme.PaperBright,
+                    VerticalAlignment = TextAlignment.Center,
+                    Parent = _topBar
+                };
+            }
         }
 
-        // ───────────── Build: Left Panel ─────────────
+        // ───────────── Build: Mail List Panel ─────────────
 
-        private void BuildLeftPanel()
+        private void BuildMailListPanel()
         {
-            _leftPanel = new Panel
+            _listPanel = new InkPanel
             {
-                BackgroundColor = InkWashTheme.Panel,
                 Parent = this
             };
 
-            // Search box
-            var searchBox = new Panel
+            _listCorners = new InkCornerDeco
             {
-                BackgroundColor = InkWashTheme.PaperPanelBg,
-                Parent = _leftPanel
-            };
-            new Label
-            {
-                Text = "\u68C0\u7D22\u4FE1\u4EF6\u5173\u952E\u8BCD",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                TextColor = InkWashTheme.TextTertiary,
-                VerticalAlignment = TextAlignment.Center,
-                Parent = searchBox
+                Parent = _listPanel
             };
 
-            // Tabs
-            _tabs = new List<InkButton>();
-            string[] tabNames = { "\u5168\u90E8", "\u7CFB\u7EDF", "\u73A9\u5BB6", "\u5E2E\u6D3E" };
+            string[] tabNames = { "全部", "未读", "系统" };
             for (int i = 0; i < tabNames.Length; i++)
             {
-                int ci = i;
-                var t = new InkButton
+                int idx = i;
+                var tab = new InkButton
                 {
                     Text = tabNames[i],
                     ButtonSize = InkButtonSize.Sm,
                     Variant = InkButtonVariant.Ghost,
-                    Parent = _leftPanel
+                    Parent = _listPanel
                 };
-                t.Clicked += () => SelectTab(ci);
-                _tabs.Add(t);
+                tab.Clicked += () => SelectTab(idx);
+                _tabs.Add(tab);
             }
-            SelectTab(0);
 
-            // Mail list
-            _listPanel = new Panel
+            _unreadHint = new Label
+            {
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _listPanel
+            };
+
+            _mailList = new Panel
             {
                 BackgroundColor = Color.Transparent,
                 ClipChildren = true,
-                Parent = _leftPanel
-            };
-
-            _mailItems = new List<ClickablePanel>();
-            _itemSenderLabels = new List<Label>();
-
-            string curSection = null;
-            foreach (var mail in _mails)
-            {
-                if (mail.Section != curSection)
-                {
-                    curSection = mail.Section;
-                    int cnt = 0;
-                    foreach (var m in _mails) if (m.Section == curSection) cnt++;
-                    BuildSectionHeader(curSection, cnt, mail.SectionDot, mail.SectionText);
-                }
-                BuildMailItem(mail);
-            }
-        }
-
-        private void BuildSectionHeader(string section, int count, Color dotColor, Color textColor)
-        {
-            var hdr = new ContainerControl
-            {
-                BackgroundColor = Color.Transparent,
-                Parent = _listPanel
-            };
-            new Panel
-            {
-                Size = new Float2(6, 6),
-                BackgroundColor = dotColor,
-                Parent = hdr
-            };
-            new Label
-            {
-                Text = $"{section} {count}",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = InkWashTheme.TextSecondary,
-                Parent = hdr
-            };
-        }
-
-        private void BuildMailItem(MailEntry mail)
-        {
-            int idx = _mailItems.Count;
-            var item = new ClickablePanel
-            {
-                BackgroundColor = Color.Transparent,
                 Parent = _listPanel
             };
 
-            // Unread dot
-            new Panel
-            {
-                Size = new Float2(8, 8),
-                BackgroundColor = mail.Unread ? InkWashTheme.GoldPrimary : Color.Transparent,
-                Parent = item
-            };
+            _activeTab = 0;
+            ApplyTabStyles();
+            RebuildMailList();
+        }
 
-            // Avatar
-            var avatar = new Panel
+        private void ApplyTabStyles()
+        {
+            for (int i = 0; i < _tabs.Count; i++)
             {
-                Size = new Float2(36, 36),
-                BackgroundColor = mail.Section == "系统"
-                    ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.15f)
-                    : mail.Section == "帮派"
-                        ? new Color(InkWashTheme.JadeDeep.R, InkWashTheme.JadeDeep.G, InkWashTheme.JadeDeep.B, 0.15f)
-                        : new Color(InkWashTheme.JadeDeep.R, InkWashTheme.JadeDeep.G, InkWashTheme.JadeDeep.B, 0.06f),
-                Parent = item
-            };
-            new Label
-            {
-                Text = mail.SenderChar,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
-                TextColor = mail.Unread ? InkWashTheme.GoldPrimary : InkWashTheme.TextTertiary,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
-                Parent = avatar
-            };
-
-            // Sender
-            var sender = new Label
-            {
-                Text = mail.SenderName,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
-                TextColor = mail.Unread ? InkWashTheme.TextDefault : InkWashTheme.TextSecondary,
-                Parent = item
-            };
-            _itemSenderLabels.Add(sender);
-
-            // Date
-            new Label
-            {
-                Text = mail.Date,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
-                TextColor = InkWashTheme.TextTertiary,
-                Parent = item
-            };
-
-            // Subject
-            new Label
-            {
-                Text = mail.Subject,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = mail.Unread ? InkWashTheme.TextSecondary : InkWashTheme.TextTertiary,
-                Parent = item
-            };
-
-            // Attachment hint
-            if (mail.Attachments != null && mail.Attachments.Length > 0)
-            {
-                new Label
-                {
-                    Text = "\uD83D\uDCCE",
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
-                    TextColor = InkWashTheme.GoldPrimary,
-                    Parent = item
-                };
+                bool on = i == _activeTab;
+                _tabs[i].BackgroundColor = on
+                    ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f)
+                    : Color.Transparent;
+                _tabs[i].TextColor = on ? InkWashTheme.GoldBright : InkWashTheme.TextSecondary;
+                _tabs[i].BorderColor = on ? InkWashTheme.BorderGold : Color.Transparent;
             }
-
-            item.Clicked += () => SelectMail(idx);
-            item.HoverChanged += (enter) =>
-            {
-                if (idx != _selectedIdx)
-                    item.BackgroundColor = enter ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.06f) : Color.Transparent;
-            };
-            _mailItems.Add(item);
         }
 
         private void SelectTab(int idx)
         {
-            for (int i = 0; i < _tabs.Count; i++)
+            _activeTab = idx;
+            ApplyTabStyles();
+            RebuildMailList();
+
+            int target = _visibleMail.Contains(_selectedIdx)
+                ? _selectedIdx
+                : (_visibleMail.Count > 0 ? _visibleMail[0] : -1);
+
+            if (target >= 0)
+                SelectMail(target);
+            else
+                ApplyLayout();
+        }
+
+        private bool MatchesTab(MailEntry mail)
+        {
+            switch (_activeTab)
             {
-                _tabs[i].BackgroundColor = i == idx ? InkWashTheme.GoldPrimary * 0.12f : Color.Transparent;
-                _tabs[i].TextColor = i == idx ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary;
-                _tabs[i].BorderColor = i == idx ? InkWashTheme.BorderGold : Color.Transparent;
+                case 1: return mail.Unread;
+                case 2: return mail.System;
+                default: return true;
             }
         }
 
-        // ───────────── Build: Center Panel ─────────────
-
-        private void BuildCenterPanel()
+        private void RebuildMailList()
         {
-            _centerPanel = new Panel
+            foreach (var view in _mailViews)
+                view.Root.Dispose();
+            _mailViews.Clear();
+            _visibleMail.Clear();
+
+            for (int i = 0; i < _mails.Count; i++)
             {
-                BackgroundColor = InkWashTheme.Void,
+                if (!MatchesTab(_mails[i])) continue;
+                _visibleMail.Add(i);
+                _mailViews.Add(BuildMailItem(i, _mails[i]));
+            }
+
+            _unreadHint.Text = $"{CalcUnread()}封未读";
+        }
+
+        private Label CreateTag(string text, TagSkin skin)
+        {
+            if (skin == TagSkin.Jade)
+            {
+                return new OutlineTag
+                {
+                    Text = text,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    TextColor = InkWashTheme.JadeBright,
+                    BackgroundColor = new Color(
+                        InkWashTheme.JadeDeep.R, InkWashTheme.JadeDeep.G, InkWashTheme.JadeDeep.B, 0.12f),
+                    OutlineColor = InkWashTheme.BorderJade,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center
+                };
+            }
+
+            return new InkTag
+            {
+                Text = text,
+                TagVariant = skin == TagSkin.Brand
+                    ? InkTagVariant.Brand
+                    : skin == TagSkin.Vermilion ? InkTagVariant.Vermilion : InkTagVariant.Default
+            };
+        }
+
+        private MailItemView BuildMailItem(int mailIdx, MailEntry mail)
+        {
+            var root = new ClickablePanel
+            {
+                BackgroundColor = Color.Transparent,
+                Parent = _mailList
+            };
+
+            var tag = CreateTag(mail.ListTag, mail.Skin);
+            tag.Parent = root;
+
+            Panel dot = null;
+            if (mail.Unread)
+            {
+                dot = new Panel
+                {
+                    Size = new Float2(8f, 8f),
+                    BackgroundColor = InkWashTheme.VermilionPrimary,
+                    Parent = root
+                };
+            }
+
+            var subject = new Label
+            {
+                Text = mail.Subject,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = mail.Unread ? InkWashTheme.PaperBright : InkWashTheme.PaperAged,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = root
+            };
+
+            var sender = new Label
+            {
+                Text = mail.Sender,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = root
+            };
+
+            var date = new Label
+            {
+                Text = mail.Date,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = root
+            };
+
+            int attachCount = mail.Attachments != null ? mail.Attachments.Length : 0;
+            var hint = new Label
+            {
+                Text = attachCount > 0 ? $"{attachCount}个附件" : "无附件",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = attachCount > 0 ? InkWashTheme.GoldPrimary : InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = root
+            };
+
+            var view = new MailItemView
+            {
+                Root = root,
+                Tag = tag,
+                Dot = dot,
+                Subject = subject,
+                Sender = sender,
+                Date = date,
+                Hint = hint
+            };
+
+            int captured = mailIdx;
+            root.Clicked += () => SelectMail(captured);
+            root.HoverChanged += enter =>
+            {
+                if (captured == _selectedIdx) return;
+                root.BackgroundColor = enter
+                    ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.06f)
+                    : Color.Transparent;
+            };
+
+            return view;
+        }
+
+        // ───────────── Build: Letter Reader Panel ─────────────
+
+        private void BuildReaderPanel()
+        {
+            _readerPanel = new InkPaperPanel
+            {
                 Parent = this
             };
 
-            // Sender header
-            _senderHeader = new Panel
+            _readerCorners = new InkCornerDeco
             {
-                BackgroundColor = Color.Transparent,
-                Parent = _centerPanel
+                Parent = _readerPanel
             };
 
-            var avatarBig = new Panel
+            _letterTitle = new Label
             {
-                Size = new Float2(56, 56),
-                BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f),
-                Parent = _senderHeader
-            };
-            new Label
-            {
-                Text = "\u7CFB",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 24f),
-                TextColor = InkWashTheme.GoldPrimary,
-                HorizontalAlignment = TextAlignment.Center,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 26f),
+                TextColor = InkWashTheme.TextOnBrand,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
-                Parent = avatarBig
+                Parent = _readerPanel
             };
 
-            _senderName = new Label
+            _letterTag = new InkTag
             {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 18f),
-                TextColor = InkWashTheme.TextDefault,
-                Parent = _senderHeader
+                TagVariant = InkTagVariant.Vermilion,
+                Parent = _readerPanel
             };
 
-            _senderTagBtn = new InkButton
-            {
-                Text = "\u7CFB\u7EDF",
-                ButtonSize = InkButtonSize.Sm,
-                BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f),
-                BorderColor = InkWashTheme.BorderGold,
-                TextColor = InkWashTheme.GoldBright,
-                Enabled = false,
-                Parent = _senderHeader
-            };
-
-            _senderDate = new Label
+            _letterSender = new Label
             {
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                TextColor = InkWashTheme.TextSecondary,
-                Parent = _senderHeader
+                TextColor = InkWashTheme.PaperDark,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _readerPanel
             };
 
-            _attachHint = new Label
+            _letterDate = new Label
             {
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                TextColor = InkWashTheme.GoldPrimary,
-                Parent = _senderHeader
+                TextColor = InkWashTheme.PaperDark,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _readerPanel
             };
 
-            // Subject
-            _subjectLbl = new Label
+            _headDivider = new Panel
             {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 30f),
-                TextColor = InkWashTheme.TextDefault,
-                Parent = _centerPanel
+                BackgroundColor = InkWashTheme.PaperPanelBorder,
+                Parent = _readerPanel
             };
 
-            _subjectTag = new Label
+            _letterBody = new Label
             {
-                Text = "\u5E86\u5178 \u00B7 \u8BBA\u5251",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 11f),
-                TextColor = InkWashTheme.GoldBright,
-                BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.08f),
-                Parent = _centerPanel
-            };
-
-            // Letter paper
-            _paper = new InkPaperPanel
-            {
-                Parent = _centerPanel
-            };
-
-            _bodyLbl = new Label
-            {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
                 TextColor = InkWashTheme.TextOnPaper,
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Near,
-                Parent = _paper
+                Parent = _readerPanel
             };
 
-            // Reward box
-            _rewardBox = new Panel
+            _attachDivider = new Panel
             {
-                BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.04f),
-                Parent = _centerPanel
+                BackgroundColor = InkWashTheme.PaperPanelBorder,
+                Parent = _readerPanel
             };
-            _rewardSlots = new List<Panel>();
-        }
 
-        // ───────────── Build: Right Panel ─────────────
-
-        private void BuildRightPanel()
-        {
-            _rightPanel = new Panel
+            _attachTitle = new Label
             {
-                BackgroundColor = InkWashTheme.Panel,
-                Parent = this
+                Text = "附件",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
+                TextColor = InkWashTheme.TextOnBrand,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _readerPanel
             };
 
-            _rightTitle = new Label
+            _attachCount = new Label
             {
-                Text = "\u4FE1\u7269\u9644\u4EF6",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f),
-                TextColor = InkWashTheme.TextDefault,
-                Parent = _rightPanel
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.PaperDark,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _readerPanel
             };
 
-            _rightCount = new Label
-            {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
-                TextColor = InkWashTheme.GoldPrimary,
-                BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f),
-                Parent = _rightPanel
-            };
-
-            _attachList = new Panel
+            _attachCards = new Panel
             {
                 BackgroundColor = Color.Transparent,
                 ClipChildren = true,
-                Parent = _rightPanel
-            };
-            _attachSlots = new List<Panel>();
-
-            _claimAllBtn = new InkButton
-            {
-                Text = "\u4E00\u952E\u9886\u53D6",
-                ButtonSize = InkButtonSize.Lg,
-                Variant = InkButtonVariant.Primary,
-                Parent = _rightPanel
-            };
-            _claimAllBtn.Clicked += () => Debug.Log("[Mail] claim all");
-
-            _remainLbl = new Label
-            {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = InkWashTheme.TextTertiary,
-                HorizontalAlignment = TextAlignment.Center,
-                Parent = _rightPanel
+                Parent = _readerPanel
             };
 
-            _replyBtn = new InkButton
+            _actionDivider = new Panel
             {
-                Text = "\u56DE\u590D",
-                ButtonSize = InkButtonSize.Sm,
-                Variant = InkButtonVariant.Ghost,
-                Parent = _rightPanel
+                BackgroundColor = InkWashTheme.PaperPanelBorder,
+                Parent = _readerPanel
             };
-            _replyBtn.Clicked += () => Debug.Log("[Mail] reply");
-
-            _forwardBtn = new InkButton
-            {
-                Text = "\u8F6C\u53D1",
-                ButtonSize = InkButtonSize.Sm,
-                Variant = InkButtonVariant.Ghost,
-                Parent = _rightPanel
-            };
-            _forwardBtn.Clicked += () => Debug.Log("[Mail] forward");
 
             _deleteBtn = new InkButton
             {
-                Text = "\u5220\u9664",
+                Text = "删除邮件",
                 ButtonSize = InkButtonSize.Sm,
-                BackgroundColor = new Color(InkWashTheme.BloodPrimary.R, InkWashTheme.BloodPrimary.G, InkWashTheme.BloodPrimary.B, 0.08f),
-                TextColor = InkWashTheme.BloodBright,
-                BorderColor = InkWashTheme.BorderVermilion,
-                Parent = _rightPanel
+                Variant = InkButtonVariant.Ghost,
+                TextColor = InkWashTheme.PaperDark,
+                Parent = _readerPanel
             };
-            _deleteBtn.Clicked += () => Debug.Log("[Mail] delete");
+            _deleteBtn.Clicked += OnDeleteClicked;
+
+            _claimSelectedBtn = new InkButton
+            {
+                Text = "领取选中",
+                ButtonSize = InkButtonSize.Lg,
+                Variant = InkButtonVariant.Secondary,
+                BackgroundColor = Color.Transparent,
+                TextColor = InkWashTheme.TextOnPaper,
+                BorderColor = InkWashTheme.PaperDark,
+                Parent = _readerPanel
+            };
+            _claimSelectedBtn.Clicked += OnClaimSelected;
+
+            _claimAllBtn = new InkButton
+            {
+                Text = "领取全部",
+                ButtonSize = InkButtonSize.Lg,
+                Variant = InkButtonVariant.Primary,
+                Parent = _readerPanel
+            };
+            _claimAllBtn.Clicked += OnClaimAll;
         }
 
-        // ───────────── Select Mail ─────────────
+        // ───────────── Mail Selection ─────────────
 
         private void SelectMail(int idx)
         {
-            if (idx < 0 || idx >= _mails.Length) return;
+            if (idx < 0 || idx >= _mails.Count) return;
             _selectedIdx = idx;
             var mail = _mails[idx];
 
-            // Highlight list item
-            for (int i = 0; i < _mailItems.Count; i++)
-                _mailItems[i].BackgroundColor = i == idx ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.1f) : Color.Transparent;
-
-            // Sender header
-            _senderName.Text = mail.SenderName;
-            _senderTagBtn.Text = mail.Section;
-            _senderDate.Text = "\u4E19\u5348\u5E74 \u4E03\u6708\u5341\u4E94 \u8FB0\u65F6\u4E09\u523B";
-            bool hasAtt = mail.Attachments != null && mail.Attachments.Length > 0;
-            _attachHint.Text = hasAtt ? "\u9644\u6709\u8D4F\u8D50" : "";
-            _attachHint.Visible = hasAtt;
-
-            // Subject
-            _subjectLbl.Text = mail.Subject;
-            _subjectTag.Visible = idx == 0;
-
-            // Body
-            _bodyLbl.Text = mail.Body;
-
-            // Reward area
-            foreach (var s in _rewardSlots) s.Dispose();
-            _rewardSlots.Clear();
-
-            if (hasAtt)
+            for (int i = 0; i < _mailViews.Count; i++)
             {
-                _rewardBox.Visible = true;
-                foreach (var a in mail.Attachments)
-                {
-                    var slot = new ContainerControl
-                    {
-                        BackgroundColor = InkWashTheme.PaperPanelBg,
-                        Parent = _rewardBox
-                    };
-                    new Label
-                    {
-                        Text = a.Name,
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                        TextColor = InkWashTheme.TextDefault,
-                        Parent = slot
-                    };
-                    new Label
-                    {
-                        Text = $"\u00D7{a.Count}",
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                        TextColor = a.QualityColor,
-                        HorizontalAlignment = TextAlignment.Far,
-                        Parent = slot
-                    };
-                    _rewardSlots.Add(slot as Panel);
-                }
-            }
-            else
-            {
-                _rewardBox.Visible = false;
+                bool on = i < _visibleMail.Count && _visibleMail[i] == idx;
+                _mailViews[i].Root.BackgroundColor = on
+                    ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.1f)
+                    : Color.Transparent;
             }
 
-            // Right panel attachments
-            foreach (var s in _attachSlots) s.Dispose();
-            _attachSlots.Clear();
+            _letterTitle.Text = mail.Subject;
+            _letterTag.Text = mail.LetterTag;
+            _letterTag.TagVariant = mail.System ? InkTagVariant.Vermilion : InkTagVariant.Brand;
+            _letterSender.Text = mail.Sender;
+            _letterDate.Text = mail.FullDate;
 
-            int claimable = 0;
-            if (hasAtt)
-            {
-                _rightCount.Text = $"{mail.Attachments.Length} \u4EF6";
-                foreach (var a in mail.Attachments)
-                {
-                    if (!a.Claimed) claimable++;
-                    var slot = new ContainerControl
-                    {
-                        BackgroundColor = InkWashTheme.PaperPanelBg,
-                        Parent = _attachList
-                    };
-                    new Label
-                    {
-                        Text = a.Name,
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f),
-                        TextColor = a.QualityColor,
-                        Parent = slot
-                    };
-                    new Label
-                    {
-                        Text = a.Desc,
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                        TextColor = InkWashTheme.TextTertiary,
-                        Parent = slot
-                    };
-                    var countLbl = new Label
-                    {
-                        Text = $"\u00D7{a.Count}",
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                        TextColor = a.Claimed ? InkWashTheme.TextTertiary : InkWashTheme.TextDefault,
-                        HorizontalAlignment = TextAlignment.Far,
-                        Parent = slot
-                    };
-                    if (a.Claimed)
-                    {
-                        new Label
-                        {
-                            Text = "\u2713\u5DF2\u9886\u53D6",
-                            Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                            TextColor = InkWashTheme.JadeBright,
-                            Parent = slot
-                        };
-                    }
-                    _attachSlots.Add(slot as Panel);
-                }
-            }
-            else
-            {
-                _rightCount.Text = "0 \u4EF6";
-            }
-            _remainLbl.Text = $"\u5269\u4F59\u53EF\u9886\u53D6 {claimable} \u4EF6";
-
+            RebuildAttachCards(mail);
             ApplyLayout();
+        }
+
+        private void RebuildAttachCards(MailEntry mail)
+        {
+            foreach (var view in _attachViews)
+                view.Root.Dispose();
+            _attachViews.Clear();
+
+            var attachments = mail.Attachments;
+            if (attachments == null || attachments.Length == 0)
+            {
+                _attachCount.Text = AttachTotalText(0);
+                _attachCards.Visible = false;
+                UpdateClaimButtons();
+                return;
+            }
+
+            _attachCards.Visible = true;
+            _attachCount.Text = AttachTotalText(attachments.Length);
+            for (int i = 0; i < attachments.Length; i++)
+                _attachViews.Add(BuildAttachCard(attachments[i], i));
+
+            UpdateClaimButtons();
+        }
+
+        private AttachCardView BuildAttachCard(AttachItem item, int index)
+        {
+            var root = new ClickablePanel
+            {
+                BackgroundColor = CardBackground(item),
+                Parent = _attachCards
+            };
+
+            var check = new Panel
+            {
+                Size = new Float2(16f, 16f),
+                BackgroundColor = item.Selected ? InkWashTheme.GoldPrimary : Color.Transparent,
+                Parent = root
+            };
+
+            var checkGlyph = new Label
+            {
+                Text = "✓",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextOnBrand,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.StretchAll,
+                Visible = item.Selected,
+                Parent = check
+            };
+
+            var iconWrap = new OutlinePanel
+            {
+                BackgroundColor = new Color(
+                    item.QualityColor.R, item.QualityColor.G, item.QualityColor.B, 0.12f),
+                OutlineColor = item.QualityColor,
+                Parent = root
+            };
+
+            var glyph = new Label
+            {
+                Text = item.Glyph,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
+                TextColor = item.QualityColor,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.StretchAll,
+                Parent = iconWrap
+            };
+
+            var name = new Label
+            {
+                Text = item.Name,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.TextOnPaper,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = root
+            };
+
+            var count = new Label
+            {
+                Text = $"x {item.Count}",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
+                TextColor = InkWashTheme.PaperDark,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = root
+            };
+
+            var view = new AttachCardView
+            {
+                Root = root,
+                Check = check,
+                CheckGlyph = checkGlyph,
+                IconWrap = iconWrap,
+                Glyph = glyph,
+                Name = name,
+                Count = count
+            };
+
+            int captured = index;
+            root.Clicked += () => ToggleAttach(captured);
+            return view;
+        }
+
+        private static Color CardBackground(AttachItem item)
+        {
+            return item.Selected
+                ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.14f)
+                : new Color(InkWashTheme.PaperBright.R, InkWashTheme.PaperBright.G, InkWashTheme.PaperBright.B, 0.5f);
+        }
+
+        private void ToggleAttach(int index)
+        {
+            var mail = _mails[_selectedIdx];
+            if (mail.Attachments == null || index < 0 || index >= mail.Attachments.Length) return;
+
+            var item = mail.Attachments[index];
+            if (item.Claimed) return;
+
+            item.Selected = !item.Selected;
+            RefreshAttachCards();
+        }
+
+        private void RefreshAttachCards()
+        {
+            var attachments = _mails[_selectedIdx].Attachments;
+            if (attachments == null) return;
+
+            for (int i = 0; i < _attachViews.Count && i < attachments.Length; i++)
+            {
+                var view = _attachViews[i];
+                var item = attachments[i];
+                view.Check.BackgroundColor = item.Selected ? InkWashTheme.GoldPrimary : Color.Transparent;
+                view.CheckGlyph.Visible = item.Selected;
+                view.Root.BackgroundColor = CardBackground(item);
+                view.Name.TextColor = item.Claimed ? InkWashTheme.PaperDark : InkWashTheme.TextOnPaper;
+                view.Glyph.TextColor = item.Claimed ? InkWashTheme.PaperDark : item.QualityColor;
+            }
+
+            UpdateClaimButtons();
+        }
+
+        private void UpdateClaimButtons()
+        {
+            var mail = (_selectedIdx >= 0 && _selectedIdx < _mails.Count) ? _mails[_selectedIdx] : null;
+            int total = 0;
+            int selected = 0;
+            if (mail != null && mail.Attachments != null)
+            {
+                foreach (var item in mail.Attachments)
+                {
+                    if (item.Claimed) continue;
+                    total++;
+                    if (item.Selected) selected++;
+                }
+            }
+
+            _claimAllBtn.Enabled = total > 0;
+            _claimSelectedBtn.Enabled = selected > 0;
+        }
+
+        // ───────────── Actions ─────────────
+
+        private void OnClaimSelected()
+        {
+            var mail = _mails[_selectedIdx];
+            if (mail.Attachments == null) return;
+
+            int claimed = 0;
+            foreach (var item in mail.Attachments)
+            {
+                if (item.Claimed || !item.Selected) continue;
+                item.Claimed = true;
+                claimed++;
+            }
+
+            if (claimed > 0) Debug.Log($"[MenuMailPage] 领取选中 {claimed} 件");
+            RefreshAttachCards();
+        }
+
+        private void OnClaimAll()
+        {
+            var mail = _mails[_selectedIdx];
+            if (mail.Attachments == null) return;
+
+            int claimed = 0;
+            foreach (var item in mail.Attachments)
+            {
+                if (item.Claimed) continue;
+                item.Claimed = true;
+                claimed++;
+            }
+
+            if (claimed > 0) Debug.Log($"[MenuMailPage] 领取全部 {claimed} 件");
+            RefreshAttachCards();
+        }
+
+        private void OnDeleteClicked()
+        {
+            if (_selectedIdx < 0 || _selectedIdx >= _mails.Count) return;
+            Debug.Log("[MenuMailPage] 删除邮件");
+
+            _mails.RemoveAt(_selectedIdx);
+            if (_selectedIdx >= _mails.Count)
+                _selectedIdx = _mails.Count - 1;
+
+            RebuildMailList();
+
+            if (_mails.Count == 0)
+            {
+                ClearReader();
+                ApplyLayout();
+                return;
+            }
+
+            int target = _visibleMail.Contains(_selectedIdx)
+                ? _selectedIdx
+                : (_visibleMail.Count > 0 ? _visibleMail[0] : -1);
+
+            if (target >= 0)
+                SelectMail(target);
+            else
+                ApplyLayout();
+        }
+
+        private void ClearReader()
+        {
+            foreach (var view in _attachViews)
+                view.Root.Dispose();
+            _attachViews.Clear();
+
+            _letterTitle.Text = string.Empty;
+            _letterTag.Text = string.Empty;
+            _letterSender.Text = string.Empty;
+            _letterDate.Text = string.Empty;
+            _letterBody.Text = string.Empty;
+            _attachCount.Text = AttachTotalText(0);
+            _attachCards.Visible = false;
+            _claimAllBtn.Enabled = false;
+            _claimSelectedBtn.Enabled = false;
         }
 
         // ───────────── Layout ─────────────
 
         private void ApplyLayout()
         {
-            float sw = Width > 0 ? Width : _screenSize.X;
-            float sh = Height > 0 ? Height : _screenSize.Y;
+            float sw = Width > 0f ? Width : _screenSize.X;
+            float sh = Height > 0f ? Height : _screenSize.Y;
+            if (sw <= 0f || sh <= 0f) return;
 
-            // Top bar
-            _topBar.Location = Float2.Zero;
-            _topBar.Size = new Float2(sw, TopH);
+            _bgLayer.Location = Float2.Zero;
+            _bgLayer.Size = new Float2(sw, sh);
+            _vignette.Location = Float2.Zero;
+            _vignette.Size = new Float2(sw, sh);
 
-            _backBtn.Location = new Float2(16, (TopH - 28) / 2);
-            _backBtn.Size = new Float2(32, 28);
+            // ── 侧边导航栏 ──
+            _sidebar.Location = Float2.Zero;
+            _sidebar.Size = new Float2(SidebarW, sh);
 
-            float x = 52;
-            _titleLbl.Location = new Float2(x, (TopH - 22) / 2);
+            _logoLabel.Location = Float2.Zero;
+            _logoLabel.Size = new Float2(SidebarW, TopBarH);
 
-            _composeBtn.Location = new Float2(sw - 76, (TopH - 28) / 2);
-            _composeBtn.Size = new Float2(60, 28);
+            _mainGroupLabel.Location = new Float2(16f, TopBarH + 8f);
+            _mainGroupLabel.Size = new Float2(SidebarW - 32f, 16f);
 
-            _unreadLbl.Location = new Float2(sw - 76 - 8 - 130, (TopH - 18) / 2);
-
-            // Left panel
-            _leftPanel.Location = new Float2(0, TopH);
-            _leftPanel.Size = new Float2(LeftW, sh - TopH);
-
-            // Search box
-            var search = _leftPanel.Children[0] as Panel;
-            if (search != null)
+            float ny = TopBarH + 30f;
+            for (int i = 0; i < _navButtons.Count; i++)
             {
-                search.Location = new Float2(12, 12);
-                search.Size = new Float2(LeftW - 24, 36);
-                if (search.Children.Count > 0)
-                {
-                    search.Children[0].Location = new Float2(12, 0);
-                    search.Children[0].Size = new Float2(search.Width - 24, 36);
-                }
+                _navButtons[i].Location = new Float2(8f, ny);
+                _navButtons[i].Size = new Float2(SidebarW - 16f, NavItemH);
+                ny += NavItemStep;
             }
 
-            // Tabs
-            float tabY = 56;
-            float tabW = (LeftW - 24 - 6) / 4f;
+            ny += 4f;
+            _navDivider.Location = new Float2(16f, ny);
+            _navDivider.Size = new Float2(SidebarW - 32f, 1f);
+            ny += 14f;
+
+            _charGroupLabel.Location = new Float2(16f, ny);
+            _charGroupLabel.Size = new Float2(SidebarW - 32f, 16f);
+            ny += 24f;
+
+            for (int i = 0; i < _navDisabledButtons.Count; i++)
+            {
+                _navDisabledButtons[i].Location = new Float2(8f, ny);
+                _navDisabledButtons[i].Size = new Float2(SidebarW - 16f, NavItemH);
+                ny += NavItemStep;
+            }
+
+            _settingsButton.Location = new Float2(8f, sh - 16f - NavItemH);
+            _settingsButton.Size = new Float2(SidebarW - 16f, NavItemH);
+
+            // ── 顶栏 ──
+            float topW = sw - SidebarW;
+            _topBar.Location = new Float2(SidebarW, 0f);
+            _topBar.Size = new Float2(topW, TopBarH);
+
+            _backBtn.Location = new Float2(16f, (TopBarH - 28f) * 0.5f);
+            _backBtn.Size = new Float2(76f, 28f);
+
+            _avatar.Location = new Float2(108f, 10f);
+            _avatar.Size = new Float2(40f, 40f);
+
+            _playerName.Location = new Float2(164f, 0f);
+            _playerName.Size = new Float2(96f, TopBarH);
+
+            _levelTag.Location = new Float2(264f, (TopBarH - 20f) * 0.5f);
+            _levelTag.Size = new Float2(54f, 20f);
+
+            _sectName.Location = new Float2(330f, 0f);
+            _sectName.Size = new Float2(80f, TopBarH);
+
+            const float groupW = 108f;
+            const float groupGap = 24f;
+            float gx = topW - 16f - groupW * 3f - groupGap * 2f;
+            for (int i = 0; i < 3; i++)
+            {
+                _currencyDots[i].Location = new Float2(gx + 4f, (TopBarH - 14f) * 0.5f);
+                _currencyDots[i].Size = new Float2(14f, 14f);
+                _currencyValues[i].Location = new Float2(gx + 24f, 0f);
+                _currencyValues[i].Size = new Float2(groupW - 24f, TopBarH);
+                gx += groupW + groupGap;
+            }
+
+            // ── 左 35% 列表 / 右 65% 信笺 ──
+            float contentH = Mathf.Max(180f, sh - TopBarH - ContentPad * 2f);
+            float innerW = Mathf.Max(320f, sw - SidebarW - ContentPad * 2f);
+            float colW = Mathf.Max(240f, innerW - ColumnGap);
+            float listW = colW * ListRatio;
+            float readerW = colW - listW;
+
+            _listPanel.Location = new Float2(SidebarW + ContentPad, TopBarH + ContentPad);
+            _listPanel.Size = new Float2(listW, contentH);
+
+            _readerPanel.Location = new Float2(SidebarW + ContentPad + listW + ColumnGap, TopBarH + ContentPad);
+            _readerPanel.Size = new Float2(readerW, contentH);
+
+            _listCorners.Location = Float2.Zero;
+            _listCorners.Size = new Float2(listW, contentH);
+            _readerCorners.Location = Float2.Zero;
+            _readerCorners.Size = new Float2(readerW, contentH);
+
+            // 标签栏
+            const float tabW = 64f;
             for (int i = 0; i < _tabs.Count; i++)
             {
-                _tabs[i].Location = new Float2(12 + i * (tabW + 2), tabY);
-                _tabs[i].Size = new Float2(tabW, 32);
+                _tabs[i].Location = new Float2(12f + i * (tabW + 4f), 10f);
+                _tabs[i].Size = new Float2(tabW, 32f);
             }
 
-            // Mail list
-            float listY = tabY + 36;
-            _listPanel.Location = new Float2(0, listY);
-            _listPanel.Size = new Float2(LeftW, sh - TopH - listY);
+            _unreadHint.Location = new Float2(listW - 12f - 96f, 10f);
+            _unreadHint.Size = new Float2(96f, 32f);
 
-            float iy = 0;
-            int mi = 0;
-            var children = _listPanel.Children;
-            for (int ci = 0; ci < children.Count; ci++)
+            _mailList.Location = new Float2(0f, 52f);
+            _mailList.Size = new Float2(listW, Mathf.Max(0f, contentH - 52f));
+
+            for (int i = 0; i < _mailViews.Count; i++)
             {
-                var child = children[ci];
-                if (child is ContainerControl hdr && !(child is ClickablePanel))
-                {
-                    // Section header
-                    hdr.Location = new Float2(0, iy);
-                    hdr.Size = new Float2(LeftW, 28);
-                    foreach (var sub in hdr.Children)
-                    {
-                        if (sub is Panel p && p.Size == new Float2(6, 6))
-                            p.Location = new Float2(10, 11);
-                        else if (sub is Label lbl)
-                            lbl.Location = new Float2(24, 6);
-                    }
-                    iy += 28;
-                }
-                else if (child is ClickablePanel item && mi < _mailItems.Count)
-                {
-                    item.Location = new Float2(0, iy);
-                    item.Size = new Float2(LeftW, 52);
-
-                    float cx = 10;
-                    foreach (var sub in item.Children)
-                    {
-                        if (sub is Panel dot && dot.Size == new Float2(8, 8))
-                        {
-                            dot.Location = new Float2(cx, 22);
-                            cx += 14;
-                        }
-                        else if (sub is Panel av && av.Size == new Float2(36, 36))
-                        {
-                            av.Location = new Float2(cx, 8);
-                            cx += 44;
-                        }
-                        else if (sub is Label lbl)
-                        {
-                            if (mi < _itemSenderLabels.Count && lbl == _itemSenderLabels[mi])
-                            {
-                                lbl.Location = new Float2(cx, 8);
-                                lbl.Size = new Float2(LeftW - cx - 70, 18);
-                            }
-                            else if (lbl.Text == _mails[mi].Date)
-                            {
-                                lbl.Size = new Float2(60, 16);
-                                lbl.Location = new Float2(LeftW - 10 - lbl.Width, 8);
-                            }
-                            else if (lbl.Text == _mails[mi].Subject)
-                            {
-                                lbl.Location = new Float2(cx, 28);
-                                lbl.Size = new Float2(LeftW - cx - 30, 16);
-                            }
-                        }
-                    }
-                    mi++;
-                    iy += 52;
-                }
+                _mailViews[i].Root.Location = new Float2(0f, i * MailItemH);
+                _mailViews[i].Root.Size = new Float2(listW, MailItemH);
+                LayoutMailItem(_mailViews[i], listW);
             }
 
-            // Center panel
-            float cw = sw - LeftW - RightW;
-            _centerPanel.Location = new Float2(LeftW, TopH);
-            _centerPanel.Size = new Float2(cw, sh - TopH);
+            // 信笺
+            float pad = 32f;
+            const float tagW = 84f;
+            float y = 26f;
 
-            float cp = 24;
-            float cy = 0;
+            _letterTitle.Location = new Float2(pad, y);
+            _letterTitle.Size = new Float2(Mathf.Max(60f, readerW - pad * 2f - tagW - 12f), 36f);
 
-            // Sender header
-            _senderHeader.Location = new Float2(0, cy);
-            _senderHeader.Size = new Float2(cw, 110);
+            _letterTag.Location = new Float2(readerW - pad - tagW, y + 6f);
+            _letterTag.Size = new Float2(tagW, 24f);
 
-            _senderHeader.Children[0].Location = new Float2(cp, 20);
+            y += 44f;
+            _letterSender.Location = new Float2(pad, y);
+            _letterSender.Size = new Float2(160f, 20f);
+            _letterDate.Location = new Float2(pad + 170f, y);
+            _letterDate.Size = new Float2(Mathf.Max(60f, readerW - pad * 2f - 170f), 20f);
 
-            _senderName.Location = new Float2(cp + 68, 24);
-            _senderName.Size = new Float2(200, 22);
+            y += 28f;
+            _headDivider.Location = new Float2(pad, y);
+            _headDivider.Size = new Float2(Mathf.Max(0f, readerW - pad * 2f), 1f);
 
-            _senderTagBtn.Location = new Float2(cp + 68 + 208, 24);
-            _senderTagBtn.Size = new Float2(50, 22);
+            y += 20f;
+            float bodyW = Mathf.Max(120f, readerW - pad * 2f - 16f);
+            float bodyH = Mathf.Max(96f, contentH - y - 300f);
+            _letterBody.Location = new Float2(pad + 8f, y);
+            _letterBody.Size = new Float2(bodyW, bodyH);
 
-            _senderDate.Location = new Float2(cp + 68, 52);
-            _senderDate.Size = new Float2(200, 18);
-
-            _attachHint.Location = new Float2(cp + 270, 52);
-            _attachHint.Size = new Float2(120, 18);
-
-            cy += 110;
-
-            // Subject
-            _subjectLbl.Location = new Float2(cp, cy);
-            _subjectLbl.Size = new Float2(cw - cp * 2, 42);
-            cy += 52;
-
-            _subjectTag.Location = new Float2(cp, cy);
-            _subjectTag.Size = new Float2(100, 20);
-            _subjectTag.Visible = _selectedIdx == 0;
-            cy += 30;
-
-            // Letter paper
-            float ph = 260;
-            _paper.Location = new Float2(cp, cy);
-            _paper.Size = new Float2(cw - cp * 2, ph);
-            _bodyLbl.Location = new Float2(16, 16);
-            _bodyLbl.Size = new Float2(_paper.Width - 32, _paper.Height - 32);
-            cy += ph + 16;
-
-            // Reward box
-            var mail = _mails[_selectedIdx];
-            if (mail.Attachments != null && mail.Attachments.Length > 0)
+            if (_selectedIdx >= 0 && _selectedIdx < _mails.Count)
             {
-                _rewardBox.Visible = true;
-                float rh = _rewardSlots.Count > 0 ? 40 + ((_rewardSlots.Count + 1) / 2) * 48 : 0;
-                _rewardBox.Location = new Float2(cp, cy);
-                _rewardBox.Size = new Float2(cw - cp * 2, rh);
-
-                float rx = 16, ry = 12;
-                float rw = (_rewardBox.Width - 48) / 2f;
-                int col = 0;
-                foreach (var slot in _rewardSlots)
-                {
-                    slot.Location = new Float2(rx, ry);
-                    slot.Size = new Float2(rw, 36);
-                    foreach (var sub in slot.Children)
-                    {
-                        if (sub is Label l)
-                        {
-                            if (l.HorizontalAlignment == TextAlignment.Far)
-                            {
-                                l.Location = new Float2(rw - 8, 0);
-                                l.Size = new Float2(60, 36);
-                            }
-                            else
-                            {
-                                l.Location = new Float2(8, 0);
-                                l.Size = new Float2(rw - 70, 36);
-                            }
-                        }
-                    }
-                    rx += rw + 16;
-                    col++;
-                    if (col >= 2) { col = 0; rx = 16; ry += 44; }
-                }
-                cy += rh + 12;
+                int charsPerLine = Mathf.Max(12, (int)(bodyW / 16f));
+                _letterBody.Text = WrapText(_mails[_selectedIdx].Body, charsPerLine);
             }
-            else
+
+            y += bodyH + 14f;
+            _attachDivider.Location = new Float2(pad, y);
+            _attachDivider.Size = new Float2(Mathf.Max(0f, readerW - pad * 2f), 1f);
+
+            y += 16f;
+            _attachTitle.Location = new Float2(pad, y);
+            _attachTitle.Size = new Float2(120f, 26f);
+            _attachCount.Location = new Float2(readerW - pad - 120f, y);
+            _attachCount.Size = new Float2(120f, 26f);
+
+            y += 34f;
+            const float cardGap = 12f;
+            const float cardH = 64f;
+            float cardW = Mathf.Max(80f, (readerW - pad * 2f - cardGap * 2f) / 3f);
+            _attachCards.Location = new Float2(pad, y);
+            _attachCards.Size = new Float2(Mathf.Max(0f, readerW - pad * 2f), cardH);
+
+            for (int i = 0; i < _attachViews.Count; i++)
             {
-                _rewardBox.Visible = false;
+                _attachViews[i].Root.Location = new Float2(i * (cardW + cardGap), 0f);
+                _attachViews[i].Root.Size = new Float2(cardW, cardH);
+                LayoutAttachCard(_attachViews[i], cardW, cardH);
             }
 
-            // Right panel
-            _rightPanel.Location = new Float2(sw - RightW, TopH);
-            _rightPanel.Size = new Float2(RightW, sh - TopH);
+            float actionY = contentH - 24f - 42f;
+            _actionDivider.Location = new Float2(pad, actionY - 16f);
+            _actionDivider.Size = new Float2(Mathf.Max(0f, readerW - pad * 2f), 1f);
 
-            float pad = 12;
-            _rightTitle.Location = new Float2(pad, 12);
-            _rightTitle.Size = new Float2(80, 18);
+            _deleteBtn.Location = new Float2(pad, actionY + 4f);
+            _deleteBtn.Size = new Float2(110f, 34f);
 
-            _rightCount.Location = new Float2(pad + 84, 12);
-            _rightCount.Size = new Float2(50, 18);
+            const float btnW = 128f;
+            _claimAllBtn.Location = new Float2(readerW - pad - btnW, actionY);
+            _claimAllBtn.Size = new Float2(btnW, 42f);
+            _claimSelectedBtn.Location = new Float2(readerW - pad - btnW * 2f - 12f, actionY);
+            _claimSelectedBtn.Size = new Float2(btnW, 42f);
+        }
 
-            float at = 40;
-            _attachList.Location = new Float2(0, at);
-            _attachList.Size = new Float2(RightW, sh - TopH - at - 210);
-
-            float ay = 4;
-            foreach (var slot in _attachSlots)
+        private static void LayoutMailItem(MailItemView view, float w)
+        {
+            if (view.Tag != null)
             {
-                slot.Location = new Float2(pad, ay);
-                slot.Size = new Float2(RightW - pad * 2, 56);
-
-                int labelIdx = 0;
-                foreach (var sub in slot.Children)
-                {
-                    if (sub is Label l)
-                    {
-                        string txt = l.Text.ToString();
-                        if (labelIdx == 0) // name
-                        {
-                            l.Location = new Float2(8, 6);
-                            l.Size = new Float2(slot.Width - 16, 18);
-                        }
-                        else if (txt.Contains("\u00D7")) // count
-                        {
-                            l.Location = new Float2(slot.Width - 60, 30);
-                            l.Size = new Float2(50, 18);
-                        }
-                        else if (txt == "\u2713\u5DF2\u9886\u53D6")
-                        {
-                            l.Location = new Float2(8, 26);
-                            l.Size = new Float2(80, 16);
-                        }
-                        else // desc
-                        {
-                            l.Location = new Float2(8, 26);
-                            l.Size = new Float2(slot.Width - 70, 16);
-                        }
-                        labelIdx++;
-                    }
-                }
-                ay += 60;
+                view.Tag.Location = new Float2(16f, 12f);
+                view.Tag.Size = new Float2(76f, 20f);
             }
 
-            float by = sh - TopH - 200;
-            _claimAllBtn.Location = new Float2(pad, by);
-            _claimAllBtn.Size = new Float2(RightW - pad * 2, 44);
+            if (view.Dot != null)
+            {
+                view.Dot.Location = new Float2(w - 26f, 18f);
+                view.Dot.Size = new Float2(8f, 8f);
+            }
 
-            _remainLbl.Location = new Float2(pad, by + 50);
-            _remainLbl.Size = new Float2(RightW - pad * 2, 18);
+            view.Subject.Location = new Float2(16f, 38f);
+            view.Subject.Size = new Float2(Mathf.Max(40f, w - 32f), 20f);
 
-            float aby = by + 78;
-            float abw = (RightW - pad * 2 - 8) / 3f;
-            _replyBtn.Location = new Float2(pad, aby);
-            _replyBtn.Size = new Float2(abw, 36);
+            view.Sender.Location = new Float2(16f, 60f);
+            view.Sender.Size = new Float2(Mathf.Max(40f, w - 32f), 18f);
 
-            _forwardBtn.Location = new Float2(pad + abw + 4, aby);
-            _forwardBtn.Size = new Float2(abw, 36);
+            view.Date.Location = new Float2(16f, 80f);
+            view.Date.Size = new Float2(140f, 16f);
 
-            _deleteBtn.Location = new Float2(pad + (abw + 4) * 2, aby);
-            _deleteBtn.Size = new Float2(abw, 36);
+            view.Hint.Location = new Float2(Mathf.Max(0f, w - 156f), 80f);
+            view.Hint.Size = new Float2(140f, 16f);
+        }
+
+        private static void LayoutAttachCard(AttachCardView view, float w, float h)
+        {
+            view.Check.Location = new Float2(12f, (h - 16f) * 0.5f);
+            view.Check.Size = new Float2(16f, 16f);
+
+            view.IconWrap.Location = new Float2(38f, (h - 36f) * 0.5f);
+            view.IconWrap.Size = new Float2(36f, 36f);
+
+            const float tx = 86f;
+            view.Name.Location = new Float2(tx, h * 0.5f - 20f);
+            view.Name.Size = new Float2(Mathf.Max(20f, w - tx - 10f), 20f);
+
+            view.Count.Location = new Float2(tx, h * 0.5f + 2f);
+            view.Count.Size = new Float2(Mathf.Max(20f, w - tx - 10f), 18f);
+        }
+
+        /// <summary>按最大字数折行（Flax Label 不自动换行，需预折行以还原设计稿排版）。</summary>
+        private static string WrapText(string text, int maxChars)
+        {
+            if (string.IsNullOrEmpty(text) || maxChars <= 0) return text;
+
+            var sb = new StringBuilder(text.Length + text.Length / maxChars + 8);
+            int lineLen = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (c == '\n')
+                {
+                    sb.Append(c);
+                    lineLen = 0;
+                    continue;
+                }
+
+                if (lineLen >= maxChars)
+                {
+                    sb.Append('\n');
+                    lineLen = 0;
+                }
+
+                sb.Append(c);
+                lineLen++;
+            }
+
+            return sb.ToString();
         }
 
         // ───────────── IInkPage ─────────────

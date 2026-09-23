@@ -3,195 +3,427 @@
         x:Class="Horizon.Game.GengDi.Core.Views.CallWindow"
         Title="通话"
         Width="420"
-        Height="600"
+        Height="620"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="True"
-        Background="#0F172A">
+        FontFamily="{DynamicResource DefaultFontFamily}">
 
-    <Grid RowDefinitions="*,Auto">
-        <!-- 视频/信息区 -->
-        <Grid Background="#111827">
-            <!-- 远端画面 -->
-            <Image x:Name="RemoteVideoImage"
-                   Stretch="Uniform"
-                   IsVisible="False" />
+  <Window.Resources>
+    <!-- 通话相关矢量图标（Material Design，F0 前缀 = NonZero 填充规则） -->
+    <StreamGeometry x:Key="IcoPhoneAccept">F0M6.62,10.79c1.44,2.83 3.76,5.14 6.59,6.59l2.2,-2.2c0.27,-0.27 0.67,-0.36 1.02,-0.24 1.12,0.37 2.33,0.57 3.57,0.57 0.55,0 1,0.45 1,1V20c0,0.55 -0.45,1 -1,1 -9.39,0 -17,-7.61 -17,-17 0,-0.55 0.45,-1 1,-1h3.5c0.55,0 1,0.45 1,1 0,1.25 0.2,2.45 0.57,3.57 0.11,0.35 0.03,0.74 -0.25,1.02l-2.2,2.2z</StreamGeometry>
+    <StreamGeometry x:Key="IcoPhoneDecline">F0M12,9c-1.6,0 -3.15,0.25 -4.6,0.72v3.1c0,0.39 -0.23,0.74 -0.56,0.9 -0.98,0.49 -1.87,1.12 -2.66,1.85 -0.18,0.18 -0.43,0.28 -0.7,0.28 -0.28,0 -0.53,-0.11 -0.71,-0.29L0.29,13.08c-0.18,-0.18 -0.29,-0.43 -0.29,-0.71 0,-0.28 0.11,-0.53 0.29,-0.71C3.34,8.78 7.46,7 12,7s8.66,1.78 11.71,4.66c0.18,0.18 0.29,0.43 0.29,0.71 0,0.28 -0.11,0.53 -0.29,0.71l-2.48,2.48c-0.18,0.18 -0.43,0.29 -0.71,0.29 -0.27,0 -0.52,-0.11 -0.7,-0.28 -0.79,-0.74 -1.69,-1.36 -2.67,-1.85 -0.33,-0.16 -0.56,-0.5 -0.56,-0.9v-3.1C15.15,9.25 13.6,9 12,9z</StreamGeometry>
+    <StreamGeometry x:Key="IcoVideoCam">F0M17,10.5V7c0,-0.55 -0.45,-1 -1,-1H4c-0.55,0 -1,0.45 -1,1v10c0,0.55 0.45,1 1,1h12c0.55,0 1,-0.45 1,-1v-3.5l4,4v-11l-4,4z</StreamGeometry>
+    <StreamGeometry x:Key="IcoMicOn">F0M12,14c1.66,0 2.99,-1.34 2.99,-3L15,5c0,-1.66 -1.34,-3 -3,-3S9,3.34 9,5v6c0,1.66 1.34,3 3,3zm5.3,-3c0,3 -2.54,5.1 -5.3,5.1S6.7,14 6.7,11L5,11c0,3.41 2.72,6.23 6,6.72L11,21h2v-3.28c3.28,-0.48 6,-3.3 6,-6.72h-1.7z</StreamGeometry>
 
-            <!-- 远端摄像头关闭/未连接提示 -->
-            <StackPanel x:Name="RemotePlaceholderPanel"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Spacing="8">
-                <TextBlock x:Name="RemotePlaceholderText"
-                           Text="等待对方画面…"
-                           FontSize="13"
-                           Foreground="#94A3B8"
-                           HorizontalAlignment="Center" />
-            </StackPanel>
+    <LinearGradientBrush x:Key="CallWindowBackground" StartPoint="0%,0%" EndPoint="100%,100%">
+      <GradientStop Color="#101F38" Offset="0" />
+      <GradientStop Color="#0A1526" Offset="0.55" />
+      <GradientStop Color="#060C17" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AvatarGradient" StartPoint="0%,0%" EndPoint="100%,100%">
+      <GradientStop Color="#2DD4BF" Offset="0" />
+      <GradientStop Color="#0E7490" Offset="0.6" />
+      <GradientStop Color="#1D4ED8" Offset="1" />
+    </LinearGradientBrush>
+  </Window.Resources>
 
-            <!-- 本地预览（画中画） -->
-            <Border x:Name="LocalPreviewContainer"
-                    Width="116"
-                    Height="88"
-                    CornerRadius="8"
-                    ClipToBounds="True"
-                    Background="#1F2937"
-                    BorderBrush="#334155"
-                    BorderThickness="1"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Top"
-                    Margin="12"
-                    IsVisible="False">
-                <Grid>
-                    <Image x:Name="LocalPreviewImage"
-                           Stretch="UniformToFill" />
-                    <TextBlock x:Name="LocalCameraOffText"
-                               Text="摄像头已关闭"
-                               FontSize="10"
-                               Foreground="#94A3B8"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               IsVisible="False" />
-                </Grid>
-            </Border>
+  <!-- ============ 圆形操作按钮样式 ============ -->
+  <Window.Styles>
+    <Style Selector="Button.callbtn">
+      <Setter Property="Width" Value="62" />
+      <Setter Property="Height" Value="62" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <!-- 内容对齐规范化：经 ContentAlignment 模板绑定传入，杜绝任何默认值漂移 -->
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Panel Background="Transparent">
+            <Ellipse x:Name="PART_Bg"
+                     Fill="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}" />
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Margin="{TemplateBinding Padding}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Panel>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.callbtn:pointerover /template/ Ellipse#PART_Bg">
+      <Setter Property="Opacity" Value="0.86" />
+    </Style>
+    <Style Selector="Button.callbtn:pressed /template/ Ellipse#PART_Bg">
+      <Setter Property="Opacity" Value="0.68" />
+    </Style>
+    <!-- 悬停/按压的平滑过渡 -->
+    <Style Selector="Button.callbtn /template/ Ellipse#PART_Bg">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
 
-            <!-- 中央信息面板（头像/昵称/状态/计时） -->
-            <StackPanel x:Name="InfoPanel"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Spacing="10">
-                <Border Width="72"
-                        Height="72"
-                        CornerRadius="36"
-                        ClipToBounds="True"
-                        HorizontalAlignment="Center">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                            <GradientStop Offset="0" Color="#22C55E" />
-                            <GradientStop Offset="1" Color="#2563EB" />
-                        </LinearGradientBrush>
-                    </Border.Background>
-                    <TextBlock x:Name="PeerAvatarInitial"
-                               Text="?"
-                               FontSize="26"
-                               FontWeight="Bold"
-                               Foreground="White"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center" />
-                </Border>
+    <!-- 激活态（静音开 / 摄像头关）：青色高亮 -->
+    <Style Selector="Button.callbtn.active">
+      <Setter Property="Background" Value="#2DD4BF" />
+    </Style>
 
-                <TextBlock x:Name="PeerNameText"
-                           Text=""
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="White"
-                           HorizontalAlignment="Center"
-                           TextTrimming="CharacterEllipsis"
-                           MaxWidth="320" />
+    <!-- 操作按钮文字标签 -->
+    <Style Selector="TextBlock.btnlabel">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="#93A7BE" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="LetterSpacing" Value="1" />
+      <Setter Property="Margin" Value="0,8,0,0" />
+    </Style>
 
-                <TextBlock x:Name="CallTypeText"
-                           Text=""
-                           FontSize="12"
-                           Foreground="#94A3B8"
-                           HorizontalAlignment="Center" />
+    <!-- ============ 来电呼吸光环动画（Width/Height 扩散涟漪） ============ -->
+    <Style Selector="Ellipse.ring">
+      <Setter Property="IsVisible" Value="False" />
+      <Setter Property="StrokeThickness" Value="1.6" />
+      <Setter Property="Fill" Value="Transparent" />
+    </Style>
+    <!-- 第一道光环 -->
+    <Style Selector="Ellipse.ringing">
+      <Setter Property="IsVisible" Value="True" />
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE" Easing="CircularEaseOut">
+          <KeyFrame Cue="0%">
+            <Setter Property="Width" Value="112" />
+            <Setter Property="Height" Value="112" />
+            <Setter Property="Opacity" Value="0.55" />
+          </KeyFrame>
+          <KeyFrame Cue="70%">
+            <Setter Property="Opacity" Value="0.12" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Width" Value="192" />
+            <Setter Property="Height" Value="192" />
+            <Setter Property="Opacity" Value="0" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <!-- 第二道光环：延迟半拍，交错涟漪 -->
+    <Style Selector="Ellipse.ringing2">
+      <Setter Property="IsVisible" Value="True" />
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE" Easing="CircularEaseOut">
+          <KeyFrame Cue="0%">
+            <Setter Property="Width" Value="112" />
+            <Setter Property="Height" Value="112" />
+            <Setter Property="Opacity" Value="0" />
+          </KeyFrame>
+          <KeyFrame Cue="50%">
+            <Setter Property="Width" Value="128" />
+            <Setter Property="Height" Value="128" />
+            <Setter Property="Opacity" Value="0" />
+          </KeyFrame>
+          <KeyFrame Cue="60%">
+            <Setter Property="Opacity" Value="0.4" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Width" Value="192" />
+            <Setter Property="Height" Value="192" />
+            <Setter Property="Opacity" Value="0" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
 
-                <TextBlock x:Name="StatusText"
-                           Text=""
-                           FontSize="13"
-                           Foreground="#60A5FA"
-                           HorizontalAlignment="Center" />
+    <!-- 接听按钮呼吸光晕（来电时） -->
+    <Style Selector="Ellipse.acceptglow">
+      <Setter Property="IsVisible" Value="False" />
+      <Setter Property="Fill" Value="#3D16A34A" />
+      <Style.Animations>
+        <Animation Duration="0:0:1.6" IterationCount="INFINITE" Easing="CircularEaseInOut">
+          <KeyFrame Cue="0%">
+            <Setter Property="Width" Value="62" />
+            <Setter Property="Height" Value="62" />
+            <Setter Property="Opacity" Value="0.9" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Width" Value="88" />
+            <Setter Property="Height" Value="88" />
+            <Setter Property="Opacity" Value="0" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </Window.Styles>
 
-                <TextBlock x:Name="ElapsedText"
-                           Text=""
-                           FontSize="15"
-                           FontWeight="Medium"
-                           Foreground="White"
-                           HorizontalAlignment="Center"
-                           IsVisible="False" />
-            </StackPanel>
+  <Window.Background>
+    <StaticResourceExtension ResourceKey="CallWindowBackground" />
+  </Window.Background>
+
+  <Grid RowDefinitions="*,Auto">
+    <!-- ==================== 视频 / 信息区 ==================== -->
+    <Grid Grid.Row="0">
+
+      <!-- 远端画面 -->
+      <Image x:Name="RemoteVideoImage"
+             Stretch="Uniform"
+             IsVisible="False" />
+
+      <!-- 远端占位（无画面 / 摄像头关闭） -->
+      <StackPanel x:Name="RemotePlaceholderPanel"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="10"
+                  IsVisible="True">
+        <Border Width="56" Height="56" CornerRadius="28" Background="#1AFFFFFF" HorizontalAlignment="Center">
+          <Path Data="{StaticResource IcoVideoCam}" Fill="#5B7390" Width="24" Height="24" Stretch="Uniform"
+                HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock x:Name="RemotePlaceholderText"
+                   Text="等待对方画面…"
+                   FontSize="13"
+                   Foreground="#7E93AC"
+                   HorizontalAlignment="Center" />
+      </StackPanel>
+
+      <!-- 顶部通话类型胶囊 -->
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Margin="0,20,0,0"
+              CornerRadius="14"
+              Background="#15000000"
+              BorderBrush="#26FFFFFF"
+              BorderThickness="1"
+              Padding="13,5">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Path x:Name="CallTypeIcon"
+                Data="{StaticResource IcoPhoneAccept}"
+                Fill="#2DD4BF"
+                Width="13" Height="13" Stretch="Uniform"
+                VerticalAlignment="Center" />
+          <TextBlock x:Name="CallTypeText"
+                     Text="语音通话"
+                     FontSize="12"
+                     Foreground="#B9C8DA"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <!-- 对端媒体状态角标（持续显示：对方已静音 / 对方摄像头已关闭） -->
+      <Border x:Name="RemoteMediaStateBadge"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Margin="0,58,0,0"
+              CornerRadius="12"
+              Background="#2EE0B84C"
+              BorderBrush="#4DE0B84C"
+              BorderThickness="1"
+              Padding="11,4"
+              IsVisible="False">
+        <TextBlock x:Name="RemoteMediaStateText"
+                   Text="对方已静音"
+                   FontSize="12"
+                   Foreground="#F5D9A8"
+                   HorizontalAlignment="Center" />
+      </Border>
+
+      <!-- 中央信息面板：头像 + 光环 + 昵称 + 状态 + 计时 -->
+      <StackPanel x:Name="InfoPanel"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="0">
+
+        <!-- 头像 + 来电光环 -->
+        <Grid x:Name="AvatarRingHost" Width="196" Height="196" HorizontalAlignment="Center" Margin="0,0,0,4">
+          <!-- 头像背后径向青色氛围光晕（溢出网格但视觉柔和） -->
+          <Ellipse Width="330" Height="330"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   IsHitTestVisible="False">
+            <Ellipse.Fill>
+              <RadialGradientBrush GradientOrigin="50%,50%" Center="50%,50%" RadiusX="50%" RadiusY="50%">
+                <GradientStop Color="#222DD4BF" Offset="0" />
+                <GradientStop Color="#0D2DD4BF" Offset="0.55" />
+                <GradientStop Color="#002DD4BF" Offset="1" />
+              </RadialGradientBrush>
+            </Ellipse.Fill>
+          </Ellipse>
+          <Ellipse Classes="ring"
+                   x:Name="RingOuter2"
+                   Width="112" Height="112"
+                   Stroke="#662DD4BF"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <Ellipse Classes="ring"
+                   x:Name="RingOuter1"
+                   Width="112" Height="112"
+                   Stroke="#4D2DD4BF"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <Border x:Name="PeerAvatarBorder"
+                  Width="104" Height="104"
+                  CornerRadius="52"
+                  ClipToBounds="True"
+                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                  BoxShadow="0 18 40 -12 #80000000">
+            <Border.Background>
+              <StaticResourceExtension ResourceKey="AvatarGradient" />
+            </Border.Background>
+            <TextBlock x:Name="PeerAvatarInitial"
+                       Text="?"
+                       FontSize="38"
+                       FontWeight="Bold"
+                       Foreground="#F0FDFA"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+          </Border>
         </Grid>
 
-        <!-- 操作区 -->
-        <Border Grid.Row="1"
-                Background="#0F172A"
-                BorderBrush="#1E293B"
-                BorderThickness="0,1,0,0"
-                Padding="20,16">
-            <StackPanel Spacing="12">
-                <!-- 来电：接听/拒绝 -->
-                <Grid x:Name="IncomingActions"
-                      ColumnDefinitions="*,*"
-                      ColumnSpacing="12"
-                      IsVisible="False">
-                    <Button x:Name="RejectButton"
-                            Content="拒绝"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Padding="0,10"
-                            FontSize="14"
-                            Foreground="White"
-                            Background="#DC2626"
-                            CornerRadius="8" />
-                    <Button x:Name="AcceptButton"
-                            Grid.Column="1"
-                            Content="接听"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Padding="0,10"
-                            FontSize="14"
-                            Foreground="White"
-                            Background="#16A34A"
-                            CornerRadius="8" />
-                </Grid>
+        <TextBlock x:Name="PeerNameText"
+                   Text=""
+                   FontSize="21"
+                   FontWeight="SemiBold"
+                   Foreground="#F1F6FC"
+                   HorizontalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   LetterSpacing="0.5"
+                   MaxWidth="320"
+                   Margin="0,6,0,0" />
 
-                <!-- 主叫振铃：取消呼叫 -->
-                <Button x:Name="CancelButton"
-                        Content="取消呼叫"
-                        HorizontalAlignment="Center"
-                        Padding="28,10"
-                        FontSize="14"
-                        Foreground="White"
-                        Background="#DC2626"
-                        CornerRadius="8"
-                        IsVisible="False" />
+        <TextBlock x:Name="StatusText"
+                   Text=""
+                   FontSize="13"
+                   Foreground="#7DD3C8"
+                   HorizontalAlignment="Center"
+                   Margin="0,8,0,0" />
 
-                <!-- 通话中：静音/摄像头/挂断 -->
-                <Grid x:Name="InCallActions"
-                      ColumnDefinitions="*,*,*"
-                      ColumnSpacing="10"
-                      IsVisible="False">
-                    <Button x:Name="MuteButton"
-                            Content="静音"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Padding="0,10"
-                            FontSize="13"
-                            Foreground="White"
-                            Background="#334155"
-                            CornerRadius="8" />
-                    <Button x:Name="CameraButton"
-                            Grid.Column="1"
-                            Content="关闭摄像头"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Padding="0,10"
-                            FontSize="13"
-                            Foreground="White"
-                            Background="#334155"
-                            CornerRadius="8"
-                            IsVisible="False" />
-                    <Button x:Name="HangupButton"
-                            Grid.Column="2"
-                            Content="挂断"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Padding="0,10"
-                            FontSize="13"
-                            Foreground="White"
-                            Background="#DC2626"
-                            CornerRadius="8" />
-                </Grid>
-            </StackPanel>
-        </Border>
+        <TextBlock x:Name="ElapsedText"
+                   Text="00:00"
+                   FontSize="30"
+                   FontWeight="Light"
+                   Foreground="#EAF2FA"
+                   HorizontalAlignment="Center"
+                   Margin="0,14,0,0"
+                   IsVisible="False" />
+      </StackPanel>
+
+      <!-- 本地预览（画中画） -->
+      <Border x:Name="LocalPreviewContainer"
+              Width="128"
+              Height="96"
+              CornerRadius="12"
+              ClipToBounds="True"
+              Background="#141E2E"
+              BorderBrush="#33FFFFFF"
+              BorderThickness="1"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Bottom"
+              Margin="14"
+              BoxShadow="0 10 28 -8 #99000000"
+              IsVisible="False">
+        <Panel>
+          <Image x:Name="LocalPreviewImage"
+                 Stretch="UniformToFill" />
+          <Border x:Name="LocalCameraOffPanel"
+                  Background="#B30E1624"
+                  IsVisible="False">
+            <TextBlock Text="摄像头已关闭"
+                       FontSize="10"
+                       Foreground="#94A3B8"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+          </Border>
+        </Panel>
+      </Border>
     </Grid>
+
+    <!-- ==================== 底部操作区 ==================== -->
+    <Grid Grid.Row="1">
+      <!-- 顶部发光分隔线：左右淡出、中心青色微光 -->
+      <Border Height="1" Width="220"
+              HorizontalAlignment="Center" VerticalAlignment="Top"
+              IsHitTestVisible="False"
+              CornerRadius="0.5">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#002DD4BF" Offset="0" />
+            <GradientStop Color="#592DD4BF" Offset="0.5" />
+            <GradientStop Color="#002DD4BF" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+
+    <Border Background="#E608111F"
+            Padding="28,20,28,26">
+
+      <StackPanel VerticalAlignment="Center">
+
+        <!-- 来电：拒绝 / 接听 -->
+        <Grid x:Name="IncomingActions"
+              ColumnDefinitions="*,Auto,72,Auto,*"
+              IsVisible="False">
+          <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+            <Button x:Name="RejectButton" Classes="callbtn" Background="#E11D48">
+              <Path Data="{StaticResource IcoPhoneDecline}" Fill="White" Width="25" Height="25" Stretch="Uniform"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <TextBlock Classes="btnlabel" Text="拒绝" />
+          </StackPanel>
+          <Grid Grid.Column="3" RowDefinitions="Auto,Auto" HorizontalAlignment="Center">
+            <Panel Grid.Row="0">
+              <Ellipse x:Name="AcceptGlow"
+                       Classes="acceptglow"
+                       Width="62" Height="62"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Button x:Name="AcceptButton" Classes="callbtn" Background="#16A34A">
+                <Path Data="{StaticResource IcoPhoneAccept}" Fill="White" Width="26" Height="26" Stretch="Uniform"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Button>
+            </Panel>
+            <TextBlock Grid.Row="1" Classes="btnlabel" Text="接听" />
+          </Grid>
+        </Grid>
+
+        <!-- 主叫振铃：取消呼叫 -->
+        <StackPanel x:Name="OutgoingActions"
+                    HorizontalAlignment="Center"
+                    IsVisible="False">
+          <Button x:Name="CancelButton" Classes="callbtn" Background="#E11D48" HorizontalAlignment="Center">
+            <Path Data="{StaticResource IcoPhoneDecline}" Fill="White" Width="25" Height="25" Stretch="Uniform"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Button>
+          <TextBlock Classes="btnlabel" Text="取消呼叫" />
+        </StackPanel>
+
+        <!-- 通话中：静音 / 摄像头 / 挂断 -->
+        <StackPanel x:Name="InCallActions"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="34"
+                    IsVisible="False">
+          <StackPanel>
+            <Button x:Name="MuteButton" Classes="callbtn" Background="#22334A">
+              <Path x:Name="MuteIcon" Data="{StaticResource IcoMicOn}" Fill="White" Width="24" Height="24" Stretch="Uniform"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <TextBlock x:Name="MuteLabel" Classes="btnlabel" Text="静音" />
+          </StackPanel>
+          <StackPanel x:Name="CameraButtonPanel">
+            <Button x:Name="CameraButton" Classes="callbtn" Background="#22334A">
+              <Path x:Name="CameraIcon" Data="{StaticResource IcoVideoCam}" Fill="White" Width="24" Height="24" Stretch="Uniform"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <TextBlock x:Name="CameraLabel" Classes="btnlabel" Text="摄像头" />
+          </StackPanel>
+          <StackPanel>
+            <Button x:Name="HangupButton" Classes="callbtn" Background="#E11D48">
+              <Path Data="{StaticResource IcoPhoneDecline}" Fill="White" Width="25" Height="25" Stretch="Uniform"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <TextBlock Classes="btnlabel" Text="挂断" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+    </Grid>
+  </Grid>
 </Window>

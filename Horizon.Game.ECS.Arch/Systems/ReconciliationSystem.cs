@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
 using Arch.Core;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.Message.Sync;
-// MovementFormula 统一使用 Horizon.Game.Core.Sim 版本（原 Message 副本已删除）。
-using MovementFormula = Horizon.Game.Core.Sim.MovementFormula;
+using Microsoft.Extensions.Logging;
+// MovementFormula 统一使用 Horizon.Game.Sim 版本（原 Core.Sim 副本已收敛删除）。
+using MovementFormula = Horizon.Game.Sim.MovementFormula;
 
 namespace Horizon.Game.ECS.Arch.Systems;
 
@@ -48,6 +49,18 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// 默认 15/s（约 4 帧 @60fps 追平）。
     /// </summary>
     public float SmoothCorrectionSpeed { get; set; } = 15f;
+
+    /// <summary>
+    /// 单帧移动推进（阶段 1.3）：三段跳冲量/跳跃计数/公式调用唯一实现，与
+    /// <see cref="LocalSimulationSystem"/>（本地预测）共用同一 stepper，消除重放 vs 预测分叉。
+    /// </summary>
+    public IMovementStepper Stepper { get; set; } = new MovementFormulaStepper();
+
+    /// <summary>
+    /// 重放时间步长（秒）。与 LocalSimulationSystem.FixedDtSeconds 语义一致（默认 1/60）；
+    /// 阶段 1.3 起由 stepper 统一消费，替代重放循环内硬编码的 1f/60f。
+    /// </summary>
+    public float ReplayDtSeconds { get; set; } = 1f / 60f;
 
     /// <summary>
     /// 修正重放的最大输入帧数。Correction 触发时从权威位置重放未确认输入，
@@ -97,7 +110,25 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// 修正风暴检测窗口内允许的最大修正次数。
     /// 超过此次数进入冷却期，跳过后续修正避免角色反复抽搐。
     /// </summary>
-    public int StormThreshold { get; set; } = 5;
+    /// <remarks>
+    /// 修复（BUG）：原为自动属性，环形缓冲 <c>_recentCorrectionTimes</c> 硬编码 <c>new float[5]</c>，
+    /// 而索引用 <c>% StormThreshold</c>——一旦配置阈值 &gt;5 即越界（IndexOutOfRangeException）。
+    /// 改为 setter 内重建缓冲，使缓冲大小始终与阈值一致。
+    /// </remarks>
+    private int _stormThreshold = 5;
+    public int StormThreshold
+    {
+        get => _stormThreshold;
+        set
+        {
+            var clamped = value > 0 ? value : 5;
+            if (clamped == _stormThreshold) return;
+            _stormThreshold = clamped;
+            _recentCorrectionTimes = new float[clamped];
+            _recentCorrectionIndex = 0;
+            _recentCorrectionCount = 0;
+        }
+    }
 
     /// <summary>修正风暴检测窗口（秒）。</summary>
     public float StormWindowSeconds { get; set; } = 2.0f;
@@ -105,8 +136,8 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// <summary>修正风暴冷却时间（秒）。进入风暴模式后跳过修正的时长。</summary>
     public float StormCooldownSeconds { get; set; } = 1.0f;
 
-    /// <summary>最近修正时间戳环形缓冲（用于风暴检测）。</summary>
-    private readonly float[] _recentCorrectionTimes = new float[5];
+    /// <summary>最近修正时间戳环形缓冲（用于风暴检测）。大小随 <see cref="StormThreshold"/> 重建。</summary>
+    private float[] _recentCorrectionTimes = new float[5];
     private int _recentCorrectionIndex;
     private int _recentCorrectionCount;
     private float _stormCooldownUntil; // 基于 Environment.TickCount64 的秒数
@@ -193,8 +224,8 @@ public sealed class ReconciliationSystem : ArchSystemBase
         // Drain 所有待处理的修正包，仅保留最新的一个：
         // 修复 #13：修正包可能比 FixedUpdate 周期密集，CorrectionReceiveBuffer 是覆盖式存储，
         // 过早到达的修正包会被新包覆盖。Drain 到最新一包可避免丢失所有修正。
-        // 全限定名；CorrectionPacket 统一使用 Horizon.Game.Core.Sim 版本。
-        Horizon.Game.Core.Sim.CorrectionPacket? correction = null;
+        // 全限定名；CorrectionPacket 统一使用 Horizon.Game.Sim 版本。
+        Horizon.Game.Sim.CorrectionPacket? correction = null;
         while (CorrectionReceiveBuffer.Instance.TryTake(out var peek) && peek != null)
         {
             correction = peek;
@@ -273,7 +304,7 @@ public sealed class ReconciliationSystem : ArchSystemBase
                     var diagCount = System.Threading.Interlocked.Increment(ref _correctionDiagCount);
                     if (diagCount <= 10 || diagCount % 60 == 1)
                     {
-                        System.Diagnostics.Debug.WriteLine(
+                        Log?.LogDebug(
                             $"[ReconciliationSystem] P-F10 校正#{diagCount}: EntityId={netId.EntityId}, drift={drift:F2}m, " +
                             $"权威=({correction.CorrectedX:F2},{correction.CorrectedY:F2},{correction.CorrectedZ:F2}), " +
                             $"预测=({pred.X:F2},{pred.Y:F2},{pred.Z:F2}), Reason={correction.Reason}, " +
@@ -337,7 +368,7 @@ public sealed class ReconciliationSystem : ArchSystemBase
                     var skip = unconfirmedInputs.Count - MaxReplayInputs;
                     var replaySpan = unconfirmedInputs.GetRange(skip, MaxReplayInputs);
                     _truncatedReplayCount++;
-                    System.Diagnostics.Debug.WriteLine(
+                    Log?.LogDebug(
                         $"[ReconciliationSystem] 重放截断: 未确认={unconfirmedInputs.Count} > 上限={MaxReplayInputs}，" +
                         $"仅重放最近 {MaxReplayInputs} 帧（累计截断 {_truncatedReplayCount} 次）");
                     unconfirmedInputs = replaySpan;
@@ -349,47 +380,34 @@ public sealed class ReconciliationSystem : ArchSystemBase
                     int jumpCount = 0;
                     bool isGrounded = true;
                     const float groundedEpsilon = 0.001f;
-                    const int maxQinggongJumps = 3;
                     foreach (var historyInput in unconfirmedInputs)
                     {
                         var isQinggongJump = (historyInput.InputBits & (1u << 3)) != 0;
                         var isJumpPressed = (historyInput.InputBits & 0x1) != 0;
 
-                        float jumpImpulse;
-                        if (isJumpPressed)
+                        // 阶段 1.3：跳跃状态机 + 公式调用收敛到 IMovementStepper（与 LocalSimulationSystem
+                        // 共用同一实现，消除重放 vs 预测分叉；dt 由 ReplayDtSeconds 统一配置，替代硬编码 1/60）。
+                        var step = Stepper.Step(new MovementStepInput
                         {
-                            if (isQinggongJump)
-                            {
-                                jumpCount++;
-                                jumpImpulse = jumpCount switch
-                                {
-                                    1 => 5.5f,
-                                    2 => 4.5f,
-                                    3 => 3.5f,
-                                    _ => 0f
-                                };
-                                if (jumpCount > maxQinggongJumps)
-                                    jumpImpulse = 0f;
-                            }
-                            else
-                            {
-                                jumpCount = 1;
-                                jumpImpulse = 5.5f;
-                            }
-                        }
-                        else
-                        {
-                            jumpImpulse = 0f;
-                            if (!isQinggongJump)
-                                jumpCount = 0;
-                        }
+                            X = replayX,
+                            Y = replayY,
+                            Z = replayZ,
+                            Vz = replayVz,
+                            MoveX = historyInput.MoveX,
+                            MoveY = historyInput.MoveY,
+                            JumpPressed = isJumpPressed,
+                            IsQinggongJump = isQinggongJump,
+                            JumpCount = jumpCount,
+                            MaxSpeed = historyInput.MaxSpeed,
+                        }, ReplayDtSeconds);
+
+                        jumpCount = step.JumpCount;
 
                         var prevZ = replayZ;
-                        var (nx, ny, nz, nvz) = MovementFormula.Step(
-                            replayX, replayY, replayZ, replayVz,
-                            historyInput.MoveX, historyInput.MoveY, jumpImpulse,
-                            1f / 60f,
-                            maxSpeed: historyInput.MaxSpeed);
+                        var nx = step.X;
+                        var ny = step.Y;
+                        var nz = step.Z;
+                        var nvz = step.Vz;
 
                         // 地面碰撞检测：与 LocalSimulationSystem 一致，重放时也应用地面约束。
                         // 防止从服务端权威位置重放的预测位置穿透 Terrain。

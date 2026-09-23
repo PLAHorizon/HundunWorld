@@ -2,9 +2,68 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:conv="using:Horizon.Game.GengDi.Core.Converters"
              xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerPlantingAdviceView"
              x:DataType="vm:FlowerPlantingAdviceViewModel">
+
+    <UserControl.Resources>
+        <conv:HexToBrushConverter x:Key="HexToBrushConverter" />
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- 农事日历日期格：宽度随容器 7 等分拉伸（同品种推荐卡自适应方式），最小 168×108，
+             容器不够宽时整块横向滚动（见外层 ScrollViewer + ItemsControl 宽度钳制）；
+             悬停有背景色 + 轻微放大动画 -->
+        <Style Selector="Button.GdCalCellBtn">
+            <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusSm}" />
+            <Setter Property="MinWidth" Value="168" />
+            <Setter Property="MinHeight" Value="108" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.GdCalCellBtn /template/ ContentPresenter">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.GdCalCellBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource GdCardBrush}" />
+        </Style>
+        <Style Selector="Button.GdCalCellBtn:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.06)" />
+            <Setter Property="ZIndex" Value="10" />
+        </Style>
+        <Style Selector="Button.GdCalCellBtn.GdCalCellToday">
+            <Setter Property="BorderBrush" Value="{DynamicResource GdPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.GdCalCellBtn.GdCalCellSelected">
+            <Setter Property="BorderBrush" Value="{DynamicResource GdInfoBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <!-- 自动生成的项容器 ContentPresenter 必须撑满 UniformGrid 单元格，否则卡片缩在格子中间 -->
+        <Style Selector="ItemsControl#CalItems > ContentPresenter">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+        </Style>
+    </UserControl.Styles>
+
     <controls:GalleryPage Title="智慧种植"
                           Subtitle="Horizon.Game.GengDi.SmartPlanting"
                           Description="IoT 设备管理、环境监测、历史曲线、成本分析、产量管理与智能建议。"
@@ -67,49 +126,74 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!-- ===== 农事日历 ===== -->
+                    <!-- ===== 农事日历（本地持久化，可切换月份 / 点日期管理任务） ===== -->
                     <Border Classes="GdStatCard">
                         <StackPanel Spacing="6">
                             <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                                <TextBlock Text="农事日历 · 2026 年 7 月" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="农事日历" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding CalendarHeaderText}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdPrimaryBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                                     <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Classes="GdCalDot" Fill="{DynamicResource GdInfoBrush}"/><TextBlock Text="播种" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/></StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Classes="GdCalDot" Fill="{DynamicResource GdSuccessBrush}"/><TextBlock Text="施肥" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/></StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Classes="GdCalDot" Fill="{DynamicResource GdWarningBrush}"/><TextBlock Text="病虫害防治" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/></StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Classes="GdCalDot" Fill="{DynamicResource GdErrorBrush}"/><TextBlock Text="采收" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/></StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Classes="GdCalDot" Fill="{DynamicResource GdMutedForegroundBrush}"/><TextBlock Text="其他" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/></StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="8,0,0,0">
+                                        <Button Classes="GdGhost" Content="◀" FontSize="11" Padding="6 2" Command="{Binding CalendarPrevMonthCommand}"/>
+                                        <Button Classes="GdGhost" Content="今天" FontSize="11" Padding="8 2" Command="{Binding CalendarTodayCommand}"/>
+                                        <Button Classes="GdGhost" Content="▶" FontSize="11" Padding="6 2" Command="{Binding CalendarNextMonthCommand}"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </Grid>
-                            <UniformGrid Columns="7" Rows="1" Margin="0,0,0,6">
-                                <TextBlock Text="一" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="二" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="三" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="四" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="五" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="六" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="日" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                            </UniformGrid>
-                            <ItemsControl ItemsSource="{Binding CalendarDays}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="7" Rows="5"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
+                            <!-- 视口 ≥ 7×(168+6)=1218 时网格撑满自适应；不足时出横向滚动条，卡片保持最小 168×108 -->
+                            <ScrollViewer x:Name="CalScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <StackPanel Width="{Binding #CalScroll.Bounds.Width, Converter={x:Static conv:ClampToMinConverter.Instance}, ConverterParameter=1218}">
+                                    <UniformGrid Columns="7" Rows="1" Margin="0,0,0,6">
+                                        <TextBlock Text="一" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="二" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="三" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="四" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="五" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="六" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="日" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                                    </UniformGrid>
+                                    <ItemsControl x:Name="CalItems" ItemsSource="{Binding CalendarDays}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="7" Rows="6"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Classes="GdCalCell" Classes.GdCalCellToday="{Binding IsToday}" Margin="2">
-                                            <StackPanel Spacing="3" HorizontalAlignment="Center">
-                                                <TextBlock Classes="GdCalDay" Text="{Binding Day}" HorizontalAlignment="Center"/>
-                                                <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Center">
+                                        <Button Classes="GdCalCellBtn"
+                                                Classes.GdCalCellToday="{Binding IsToday}"
+                                                Classes.GdCalCellSelected="{Binding IsSelected}"
+                                                Opacity="{Binding IsCurrentMonth, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
+                                                Margin="3"
+                                                Command="{Binding $parent[ItemsControl].((vm:FlowerPlantingAdviceViewModel)DataContext).SelectCalendarDayCommand}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock Classes="GdCalDay" Text="{Binding DayNumber}" HorizontalAlignment="Center"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center" IsVisible="{Binding HasAnyTask}">
                                                     <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdInfoBrush}" IsVisible="{Binding HasSowing}"/>
                                                     <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdSuccessBrush}" IsVisible="{Binding HasFertilizing}"/>
                                                     <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdWarningBrush}" IsVisible="{Binding HasPestControl}"/>
                                                     <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdErrorBrush}" IsVisible="{Binding HasHarvest}"/>
                                                 </StackPanel>
                                             </StackPanel>
-                                        </Border>
+                                        </Button>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ScrollViewer>
+                            <TextBlock Text="{Binding CalendarStatusMessage}" FontSize="11"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                       IsVisible="{Binding !!CalendarStatusMessage}" Margin="0,2,0,0"/>
+                            <TextBlock Text="点击日期可查看 / 添加农事任务，数据保存在本机。" FontSize="10"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" Opacity="0.7" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Border>
 
@@ -123,7 +207,10 @@
                                         <TextBlock Text="🌡" FontSize="13" VerticalAlignment="Center"/>
                                         <TextBlock Text="土壤温度" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                     </StackPanel>
-                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeSuccess"><TextBlock Text="正常"/></Border>
+                                    <Border Grid.Column="1" Classes="GdBadge"
+                                            Background="{Binding SensorData.TemperatureStatusBrush, Converter={StaticResource HexToBrushConverter}}">
+                                        <TextBlock Text="{Binding SensorData.TemperatureStatusText}"/>
+                                    </Border>
                                 </Grid>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <TextBlock Text="{Binding SensorData.Temperature, StringFormat='{}{0:F1}'}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource GdWarningBrush}"/>
@@ -134,14 +221,13 @@
                                 </Border>
                                 <StackPanel Spacing="4">
                                     <Grid ColumnDefinitions="*,*">
-                                        <TextBlock Text="15℃" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                                        <TextBlock Grid.Column="1" Text="30℃" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="10℃" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        <TextBlock Grid.Column="1" Text="35℃" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Border Classes="GdRangeBar">
-                                        <Grid ColumnDefinitions="49*,51*">
-                                            <Border Grid.Column="0" Classes="GdRangeFill"/>
-                                        </Grid>
-                                    </Border>
+                                    <ProgressBar Minimum="10" Maximum="35" Value="{Binding SensorData.Temperature}"
+                                                 Height="4"
+                                                 Foreground="{Binding SensorData.TemperatureStatusBrush, Converter={StaticResource HexToBrushConverter}}"
+                                                 Background="{DynamicResource GdMutedBrush}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -153,7 +239,10 @@
                                         <TextBlock Text="💧" FontSize="13" VerticalAlignment="Center"/>
                                         <TextBlock Text="土壤湿度" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                     </StackPanel>
-                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeSuccess"><TextBlock Text="正常"/></Border>
+                                    <Border Grid.Column="1" Classes="GdBadge"
+                                            Background="{Binding SensorData.SoilMoistureStatusBrush, Converter={StaticResource HexToBrushConverter}}">
+                                        <TextBlock Text="{Binding SensorData.SoilMoistureStatusText}"/>
+                                    </Border>
                                 </Grid>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <TextBlock Text="{Binding SensorData.SoilMoisture, StringFormat='{}{0:F1}'}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource GdInfoBrush}"/>
@@ -164,14 +253,13 @@
                                 </Border>
                                 <StackPanel Spacing="4">
                                     <Grid ColumnDefinitions="*,*">
-                                        <TextBlock Text="50%" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                                        <TextBlock Grid.Column="1" Text="80%" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="20%" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        <TextBlock Grid.Column="1" Text="90%" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Border Classes="GdRangeBar">
-                                        <Grid ColumnDefinitions="61*,39*">
-                                            <Border Grid.Column="0" Classes="GdRangeFill"/>
-                                        </Grid>
-                                    </Border>
+                                    <ProgressBar Minimum="20" Maximum="90" Value="{Binding SensorData.SoilMoisture}"
+                                                 Height="4"
+                                                 Foreground="{Binding SensorData.SoilMoistureStatusBrush, Converter={StaticResource HexToBrushConverter}}"
+                                                 Background="{DynamicResource GdMutedBrush}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -183,7 +271,10 @@
                                         <TextBlock Text="☀" FontSize="13" VerticalAlignment="Center"/>
                                         <TextBlock Text="光照强度" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                     </StackPanel>
-                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeWarning"><TextBlock Text="偏高"/></Border>
+                                    <Border Grid.Column="1" Classes="GdBadge"
+                                            Background="{Binding SensorData.LightStatusBrush, Converter={StaticResource HexToBrushConverter}}">
+                                        <TextBlock Text="{Binding SensorData.LightStatusText}"/>
+                                    </Border>
                                 </Grid>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <TextBlock Text="{Binding SensorData.LightIntensity, StringFormat='{}{0:F0}'}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource GdWarningBrush}"/>
@@ -194,14 +285,13 @@
                                 </Border>
                                 <StackPanel Spacing="4">
                                     <Grid ColumnDefinitions="*,*">
-                                        <TextBlock Text="20k" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                                        <TextBlock Grid.Column="1" Text="35k" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="0" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        <TextBlock Grid.Column="1" Text="40k" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Border Classes="GdRangeBar">
-                                        <Grid ColumnDefinitions="88*,12*">
-                                            <Border Grid.Column="0" Classes="GdRangeFill" Background="{DynamicResource GdWarningBrush}"/>
-                                        </Grid>
-                                    </Border>
+                                    <ProgressBar Minimum="0" Maximum="40000" Value="{Binding SensorData.LightIntensity}"
+                                                 Height="4"
+                                                 Foreground="{Binding SensorData.LightStatusBrush, Converter={StaticResource HexToBrushConverter}}"
+                                                 Background="{DynamicResource GdMutedBrush}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -213,7 +303,10 @@
                                         <TextBlock Text="🧪" FontSize="13" VerticalAlignment="Center"/>
                                         <TextBlock Text="土壤 PH 值" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                     </StackPanel>
-                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeSuccess"><TextBlock Text="正常"/></Border>
+                                    <Border Grid.Column="1" Classes="GdBadge"
+                                            Background="{Binding SensorData.SoilPhStatusBrush, Converter={StaticResource HexToBrushConverter}}">
+                                        <TextBlock Text="{Binding SensorData.SoilPhStatusText}"/>
+                                    </Border>
                                 </Grid>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <TextBlock Text="{Binding SensorData.SoilPH, StringFormat='{}{0:F1}'}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource GdSuccessBrush}"/>
@@ -224,14 +317,13 @@
                                 </Border>
                                 <StackPanel Spacing="4">
                                     <Grid ColumnDefinitions="*,*">
-                                        <TextBlock Text="5.5" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                                        <TextBlock Grid.Column="1" Text="7.0" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="4.5" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        <TextBlock Grid.Column="1" Text="8.0" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Border Classes="GdRangeBar">
-                                        <Grid ColumnDefinitions="53*,47*">
-                                            <Border Grid.Column="0" Classes="GdRangeFill"/>
-                                        </Grid>
-                                    </Border>
+                                    <ProgressBar Minimum="4.5" Maximum="8.0" Value="{Binding SensorData.SoilPH}"
+                                                 Height="4"
+                                                 Foreground="{Binding SensorData.SoilPhStatusBrush, Converter={StaticResource HexToBrushConverter}}"
+                                                 Background="{DynamicResource GdMutedBrush}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -1013,6 +1105,75 @@
                             <Button Content="取消" Command="{Binding CancelDialogCommand}" CommandParameter="Yield"/>
                             <Button Content="确认记录" Command="{Binding SubmitYieldCommand}" Classes="accent"/>
                         </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- ===== 农事日历当日任务 Popup（相对程序窗口居中） ===== -->
+            <Popup IsOpen="{Binding IsCalendarTaskDialogOpen}" Placement="Center" PlacementTarget="{Binding $parent[Window]}">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="420" MaxHeight="560" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding SelectedCalendarDateDisplay}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="6 2" Command="{Binding CloseCalendarTaskDialogCommand}"/>
+                        </Grid>
+
+                        <!-- 当日任务列表 -->
+                        <ScrollViewer MaxHeight="180" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding SelectedDayTasks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusSm}" Padding="10 8" Margin="0,0,0,6">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdInfoBrush}" IsVisible="{Binding HasSowing}"/>
+                                                    <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdSuccessBrush}" IsVisible="{Binding HasFertilizing}"/>
+                                                    <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdWarningBrush}" IsVisible="{Binding HasPestControl}"/>
+                                                    <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdErrorBrush}" IsVisible="{Binding HasHarvest}"/>
+                                                    <Ellipse Classes="GdCalDot" Fill="{DynamicResource GdMutedForegroundBrush}" IsVisible="{Binding HasOther}"/>
+                                                    <TextBlock Text="{Binding TaskType}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Spacing="2" Margin="8,0,8,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontSize="13" Foreground="{DynamicResource GdForegroundBrush}" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding Note}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" TextWrapping="Wrap"
+                                                               IsVisible="{Binding !!Note}"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="2" Content="{Binding DoneText}" Classes="GdGhost" FontSize="11" Padding="8 2" VerticalAlignment="Center"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerPlantingAdviceViewModel)DataContext).ToggleCalendarTaskDoneCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                                <Button Grid.Column="3" Content="🗑" Classes="GdGhost" FontSize="11" Padding="6 2" VerticalAlignment="Center"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerPlantingAdviceViewModel)DataContext).DeleteCalendarTaskCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <TextBlock Text="当日暂无任务，在下方添加一条。" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                   IsVisible="{Binding !HasSelectedDayTasks}"/>
+
+                        <!-- 新增任务 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusSm}" Padding="12">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="添加任务" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}"/>
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <TextBlock Text="类型" FontSize="13" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding CalendarTaskTypes}" SelectedItem="{Binding NewCalendarTaskType}" HorizontalAlignment="Stretch"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <TextBlock Text="内容" FontSize="13" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBox Grid.Column="1" Text="{Binding NewCalendarTaskTitle}" Watermark="如：月季花后追肥"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <TextBlock Text="备注" FontSize="13" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBox Grid.Column="1" Text="{Binding NewCalendarTaskNote}" Watermark="备注（可选）"/>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                                    <Button Content="添加任务" Classes="accent" Command="{Binding SubmitCalendarTaskCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
             </Popup>

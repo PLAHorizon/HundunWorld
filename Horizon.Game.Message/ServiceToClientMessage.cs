@@ -1,4 +1,4 @@
-﻿using Horizon.Game.Message.Enums;
+using Horizon.Game.Message.Enums;
 using MemoryPack;
 using Orleans;
 using System;
@@ -14,6 +14,7 @@ namespace Horizon.Game.Message
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(225, Enums.ServiceType.Game)]
     public partial class ServiceToClientMessage : MessageUnion, INetworkMessage
     {
         /// <summary>

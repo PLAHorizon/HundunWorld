@@ -9,6 +9,7 @@ namespace Horizon.Game.Message.Network
 {
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(81, Enums.ServiceType.Game)]
     public partial class PlayerAnimationMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -53,6 +54,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(82, Enums.ServiceType.Game)]
     public partial class SystemMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -85,6 +87,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(83, Enums.ServiceType.Game)]
     public partial class ServerListRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -122,6 +125,7 @@ namespace Horizon.Game.Message.Network
     /// 服务器列表响应
     /// </summary>
     [MemoryPackable]
+    [NetworkMessage(224, Enums.ServiceType.Game)]
     public partial class ServerListResponse :MessageUnion, INetworkMessage, IGameHeader
     {
         /// <summary>

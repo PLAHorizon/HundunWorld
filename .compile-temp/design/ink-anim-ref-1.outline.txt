@@ -1,0 +1,80 @@
+## page: ink-anim-ref-1
+## dom-ids: 
+  div
+    div
+    div
+    div
+      div .ref-header
+        div .ref-title-group
+          span .ref-title-num | 01
+          div
+            div .ref-title-main | 水墨晕染
+            div .ref-title-sub | INK SPREAD · 分镜参考 01/02
+        div
+          span .ink-tag ink-tag-brand | 晕染
+          span .ink-tag | 分镜
+          span .ink-tag | 视觉参考
+      div
+        div | 1
+        div .ref-annotation-title | 墨点初现
+        div | 中心浓墨点骤然浮现，半径由 0 扩散至 40px，透明度 0.9 渐入，持续 0.4s
+      div
+        div | 2
+        div .ref-annotation-title | 晕染扩散
+        div | 墨色以不规则边缘向外晕开，blur(8px) → blur(24px) 渐变，模拟宣纸吸墨效果，持续 0.8s
+      div
+        div | 3
+        div .ref-annotation-title | 淡墨层叠
+        div | 第二层淡墨叠加，透明度 0.3，混合模式 multiply，边缘呈现飞白质感，持续 0.6s
+      div .ref-spec-panel ink-panel
+        span
+        span
+        div .ink-panel-title
+          span | 技术参数
+        div
+          div .ref-spec-row
+            span .ref-spec-label | 动画类型
+            span | Spread
+          div .ref-spec-row
+            span .ref-spec-label | 总时长
+            span | 2.4s
+          div .ref-spec-row
+            span .ref-spec-label | 缓动函数
+            span | ease-out
+          div .ref-spec-row
+            span .ref-spec-label | 墨色层级
+            span | 3 层
+          div .ref-spec-row
+            span .ref-spec-label | 混合模式
+            span | multiply
+          div .ref-spec-row
+            span .ref-spec-label | 最大模糊
+            span | 24px
+          div .ref-spec-row
+            span .ref-spec-label | 触发场景
+            span | 章节切换
+        span
+        span
+      div
+        div .ref-timeline-title
+          span | 动画时间轴 · TIMELINE
+        div
+          div
+            div | 0.0s — 0.4s
+            div | 墨点初现
+            div | 浓墨骤现 · opacity 0→0.9
+          div
+            div | 0.4s — 1.2s
+            div | 晕染扩散
+            div | blur 8→24px · 边缘不规则
+          div
+            div | 1.2s — 1.8s
+            div | 淡墨层叠
+            div | 二次叠加 · multiply 混合
+          div
+            div | 1.8s — 2.4s
+            div | 渐隐消散
+            div | opacity 0.9→0 · 收束
+
+## COPY (36)
+水墨晕染 | INK SPREAD · 分镜参考 01/02 | 晕染 | 分镜 | 视觉参考 | 墨点初现 | 中心浓墨点骤然浮现，半径由 0 扩散至 40px，透明度 0.9 渐入，持续 0.4s | 晕染扩散 | 墨色以不规则边缘向外晕开，blur(8px) → blur(24px) 渐变，模拟宣纸吸墨效果，持续 0.8s | 淡墨层叠 | 第二层淡墨叠加，透明度 0.3，混合模式 multiply，边缘呈现飞白质感，持续 0.6s | 技术参数 | 动画类型 | Spread | 总时长 | 2.4s | 缓动函数 | ease-out | 墨色层级 | 3 层 | 混合模式 | multiply | 最大模糊 | 24px | 触发场景 | 章节切换 | 动画时间轴 · TIMELINE | 0.0s — 0.4s | 浓墨骤现 · opacity 0→0.9 | 0.4s — 1.2s | blur 8→24px · 边缘不规则 | 1.2s — 1.8s | 二次叠加 · multiply 混合 | 1.8s — 2.4s | 渐隐消散 | opacity 0.9→0 · 收束

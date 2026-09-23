@@ -175,6 +175,22 @@ namespace Horizon.Game.GengDi.Core.Services
         public DateTime CreatedAt { get; set; }
         public DateTime? SettledAt { get; set; }
         public string Remark { get; set; } = "";
+
+        /// <summary>结算状态中文文案（对齐后端 PendingSettlementStatus；原徽标直接显示数字状态码）。</summary>
+        public string StatusText => Status switch
+        {
+            0 => "待结算",
+            1 => "已结算",
+            _ => "未知"
+        };
+
+        /// <summary>结算状态徽标颜色（十六进制，配合 HexToBrushConverter）。</summary>
+        public string StatusBrushHex => Status switch
+        {
+            0 => "#FFA726",  // 待结算 - 橙
+            1 => "#66BB6A",  // 已结算 - 绿
+            _ => "#888888"
+        };
     }
 
     public class SettlementAccountState

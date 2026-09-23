@@ -11,15 +11,21 @@ using Horizon.Game.Message.Sync.Components;
 namespace Horizon.Game.Gateway.Tests;
 
 /// <summary>
-/// 任务 7.4 — SnapshotApplySystem 异常数据隔离单元测试。
+/// 任务 7.4 ?SnapshotApplySystem 异常数据隔离单元测试?
 /// 验证 HandleUpdate 写入 Target 前对 NaN/Infinity 位置数据的有限值校验：
-/// 非法数据跳过该实体 Target 写入、输出诊断事件与计数，其余角色完全正常、进程不崩溃
-/// （spec 5.3.1 规则 7 的 a、DFX 4.2.4）。
+/// 非法数据跳过该实?Target 写入、输出诊断事件与计数，其余角色完全正常、进程不崩溃
+/// （spec 5.3.1 规则 7 ?a、DFX 4.2.4）?
+/// 归入 InterpolationStaticState 串行集合：本类读写 SnapshotApplySystem 静态字段
+/// （UseAdaptiveDelay/Diagnostics/自适应统计），与插值测试共享静态状态，避免并行竞争。
 /// </summary>
+[Collection("InterpolationStaticState")]
 public class SnapshotApplySystemInvalidDataIsolationTests : IDisposable
 {
     private readonly World _world;
     private readonly SnapshotApplySystem _system;
+
+    /// <summary>每测试独立的接收队列：注入系统实例，消除并行测试对静态单例的串扰（阶段 6.4）。</summary>
+    private readonly SnapshotReceiveBuffer _buffer = new();
 
     private sealed class TestSink : ISyncDiagnosticsSink
     {
@@ -43,8 +49,8 @@ public class SnapshotApplySystemInvalidDataIsolationTests : IDisposable
     {
         ResetState();
         _world = World.Create();
-        _system = new SnapshotApplySystem();
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
+        _system = new SnapshotApplySystem(_buffer); // 注入独立 buffer：各测试互不串扰
+        _system.ResetLastAppliedSnapshot();
         SnapshotApplySystem.ResetAdaptiveDelayStats();
         SnapshotApplySystem.UseAdaptiveDelay = true;
         SnapshotApplySystem.Diagnostics = new TestSink();
@@ -62,11 +68,11 @@ public class SnapshotApplySystemInvalidDataIsolationTests : IDisposable
         SnapshotApplySystem.Diagnostics = null;
     }
 
-    /// <summary>清空快照接收缓冲（避免测试间串扰）。</summary>
+    /// <summary>清空快照接收缓冲（本测试独立实例，无跨测试串扰）。</summary>
     private void DrainQueue()
     {
-        while (SnapshotReceiveBuffer.Instance.TryDequeue(out _)) { }
-        SnapshotReceiveBuffer.Instance.ClearQueue();
+        while (_buffer.TryDequeue(out _)) { }
+        _buffer.ClearQueue();
     }
 
     private static AuthTransformComponent MakeTransform(float x, float y, float z)
@@ -123,8 +129,8 @@ public class SnapshotApplySystemInvalidDataIsolationTests : IDisposable
             BaselineTick = 0,
             Deltas = new[] { MakeSpawnDelta(badId, MakeTransform(20f, 0f, 20f)) },
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(spawnGood);
-        SnapshotReceiveBuffer.Instance.Enqueue(spawnBad);
+        _buffer.Enqueue(spawnGood);
+        _buffer.Enqueue(spawnBad);
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         // 验证两个实体已 Spawn 且 Target 合法
@@ -143,7 +149,7 @@ public class SnapshotApplySystemInvalidDataIsolationTests : IDisposable
             BaselineTick = 0,
             Deltas = new[] { MakeUpdateDelta(badId, MakeTransform(float.NaN, 0f, 0f)) },
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(badUpdate);
+        _buffer.Enqueue(badUpdate);
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         // 坏实体：Target 保持最后合法位置（20m），不被 NaN 污染
@@ -173,7 +179,7 @@ public class SnapshotApplySystemInvalidDataIsolationTests : IDisposable
             BaselineTick = 0,
             Deltas = new[] { MakeSpawnDelta(badId, MakeTransform(5f, 0f, 5f)) },
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(spawn);
+        _buffer.Enqueue(spawn);
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         // 下发 Infinity 位置 Update：进程不崩溃、实体保持最后合法位置
@@ -183,7 +189,7 @@ public class SnapshotApplySystemInvalidDataIsolationTests : IDisposable
             BaselineTick = 0,
             Deltas = new[] { MakeUpdateDelta(badId, MakeTransform(float.PositiveInfinity, 0f, 0f)) },
         };
-        SnapshotReceiveBuffer.Instance.Enqueue(badUpdate);
+        _buffer.Enqueue(badUpdate);
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         var badEntity = FindEntityByNetId(badId);

@@ -13,6 +13,7 @@ namespace Horizon.Game.Gateway.Tests;
 /// Debug.Assert 在 Debug 构建生效（切换点 distSq &lt; 0.01f 断言）。
 /// 被测代码：InterpolationSystem.cs:180-207（切换点断言 + Dead Reckoning 分支）。
 /// </summary>
+[Collection("InterpolationStaticState")]
 public class InterpolationSystemSwitchContinuityTests : IDisposable
 {
     private readonly World _world;

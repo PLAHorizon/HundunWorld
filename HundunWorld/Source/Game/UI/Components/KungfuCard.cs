@@ -43,6 +43,12 @@ namespace HundunWorld.Game.UI.Components
             Size = size;
             BackgroundColor = Color.Transparent;
         }
+
+        /// <summary>无参构造（Prefab/编辑器实例化用，默认卡片尺寸）</summary>
+        public KungfuCard()
+            : this(new Float2(220f, 300f))
+        {
+        }
         
         public void Initialize()
         {

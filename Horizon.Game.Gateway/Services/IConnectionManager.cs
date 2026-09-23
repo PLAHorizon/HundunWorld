@@ -185,6 +185,15 @@ namespace Horizon.Game.Gateway.Services
         DateTime LastActiveTime { get; set; }
 
         /// <summary>
+        /// 是否已收到过客户端数据（幽灵连接判定的权威依据）。<br/>
+        /// 不可用 <c>LastActiveTime - ConnectedTime</c> 的时间差反推：若连接条目是在**首包到达时**
+        /// 才补注册的（<c>ClientPacketPipeline.StageConnectionEnsureAsync</c>），<c>ConnectedTime</c>
+        /// 就等于首包时刻，紧接其后的 <c>LastActiveTime</c> 与之相差不足 1ms，
+        /// 会被误判成"从未收到数据"，进而把一条**正在服务的活连接**当幽灵连接清理掉。
+        /// </summary>
+        bool HasReceivedData { get; set; }
+
+        /// <summary>
         /// 是否已连接
         /// </summary>
         bool IsConnected { get; }

@@ -1,0 +1,73 @@
+using System;
+
+namespace Horizon.Orleans.Interface.World;
+
+/// <summary>
+/// HP 变更结果（由 CharacterGrain 裁决后返回）。
+/// </summary>
+[GenerateSerializer]
+public readonly record struct HpChangeResult(
+    /// <summary>实际 HP 变化量（经防御/减伤/Buff 计算后）。</summary>
+    [property: Id(0)] int ActualDelta,
+    /// <summary>变更后的当前 HP。</summary>
+    [property: Id(1)] int CurrentHp,
+    /// <summary>变更后的最大 HP。</summary>
+    [property: Id(2)] int MaxHp,
+    /// <summary>是否导致死亡。</summary>
+    [property: Id(3)] bool IsDead,
+    /// <summary>是否被完全抵抗/免疫。</summary>
+    [property: Id(4)] bool IsResisted);
+
+/// <summary>
+/// 角色离开空间的原因。
+/// </summary>
+[GenerateSerializer]
+public enum ZoneLeaveReason : byte
+{
+    /// <summary>正常下线（玩家主动退出/断线）。</summary>
+    [Id(0)]
+    NormalLogout = 0,
+
+    /// <summary>孤儿实体清理（租约过期，网关崩溃/断线未清理）。</summary>
+    [Id(1)]
+    OrphanCleanup = 1,
+
+    /// <summary>传送（离开当前 ZoneShard，即将进入另一个）。</summary>
+    [Id(2)]
+    Transfer = 2,
+
+    /// <summary>进入副本（离开开放世界 ZoneShard）。</summary>
+    [Id(3)]
+    EnterInstance = 3,
+
+    /// <summary>被踢出（GM 操作/反作弊封禁）。</summary>
+    [Id(4)]
+    Kicked = 4,
+}
+
+/// <summary>
+/// 伤害类型枚举（角色战斗契约，经 CharacterGrain.RequestHpChangeAsync 裁决）。
+/// </summary>
+[GenerateSerializer]
+public enum DamageType : byte
+{
+    /// <summary>物理伤害。</summary>
+    [Id(0)]
+    Physical = 0,
+
+    /// <summary>内功伤害（魔法）。</summary>
+    [Id(1)]
+    Internal = 1,
+
+    /// <summary>环境伤害（跌落/毒雾/陷阱）。</summary>
+    [Id(2)]
+    Environmental = 3,
+
+    /// <summary>治疗。</summary>
+    [Id(3)]
+    Healing = 4,
+
+    /// <summary>真实伤害（无视防御）。</summary>
+    [Id(4)]
+    True = 5,
+}

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,7 @@ namespace Horizon.Orleans.Grains
         private readonly IDataContext<GameEntityContext, UserEntity, long> _gameUserContext;
         private readonly IDataContext<GameEntityContext, CharacterEntity, long> _gameCharacterContext;
         private readonly IMapper _mapper;
+        private readonly CharacterCreateIdempotencyStore _idempotencyStore;
 
         /// <summary>
         /// 最大角色数量限制
@@ -40,12 +42,16 @@ namespace Horizon.Orleans.Grains
             ILogger<UserCharacterManagerGrain> logger,
             IDataContext<GameEntityContext, UserEntity, long> gameUserContext,
             IDataContext<GameEntityContext, CharacterEntity, long> gameCharacterContext,
-            IMapper mapper)
+            IMapper mapper,
+            IConnectionMultiplexer? redis = null)
         {
             _logger = logger;
             _gameUserContext = gameUserContext;
             _gameCharacterContext = gameCharacterContext;
             _mapper = mapper;
+            // 协议级幂等存储：Redis 为持久去重（Orleans Redis 存储提供程序注入的 IConnectionMultiplexer）；
+            // 未注入（如测试环境）时降级为进程内存表，覆盖客户端重试窗口内的去重。
+            _idempotencyStore = new CharacterCreateIdempotencyStore(redis);
         }
 
         /// <summary>
@@ -62,6 +68,33 @@ namespace Horizon.Orleans.Grains
             {
                 _logger.LogInformation("开始创建角色: 角色名={CharacterName}, 用户ID={UserId}, 游戏ID={GameId}",
                     request.CharacterName, UserId, request.GameId);
+
+                // 0. 协议级幂等去重：客户端在途断线重试携带相同 IdempotencyKey，若首次已创建成功则
+                // 直接返回已创建的角色（避免重复创建）。检查必须位于角色名校验之前——否则重试会误报
+                // 「角色名已存在」。Orleans 按 Grain 串行化调用，重试请求排队在首次之后执行，无并发窗口。
+                var idempotencyKey = request.IdempotencyKey?.Trim() ?? string.Empty;
+                if (idempotencyKey.Length > 0)
+                {
+                    var recordedCharacterId = await _idempotencyStore
+                        .TryGetAsync(UserId, request.GameId, idempotencyKey).ConfigureAwait(false);
+                    if (recordedCharacterId is { } previousId)
+                    {
+                        var previous = await _gameCharacterContext.QueryFirstOrDefaultAsync(
+                            c => c.Id == previousId && c.UserId == UserId && !c.IsDeleted).ConfigureAwait(false);
+                        if (previous != null)
+                        {
+                            _logger.LogInformation(
+                                "创建角色幂等命中（首次已创建）: UserId={UserId}, IdempotencyKey={Key}, CharacterId={CharacterId}，返回已创建角色",
+                                UserId, idempotencyKey, previousId);
+                            return new CreateCharacterResponse
+                            {
+                                IsSuccess = true,
+                                Message = "创建角色成功",
+                                Character = _mapper.Map<CharacterInfo>(previous),
+                            };
+                        }
+                    }
+                }
 
                 // 1. 验证用户状态
                 var gameUser = await _gameUserContext.QueryFirstOrDefaultAsync(
@@ -147,7 +180,14 @@ namespace Horizon.Orleans.Grains
                 _logger.LogInformation("角色创建成功: 角色名={CharacterName}, 角色ID={CharacterId}, 用户ID={UserId}",
                     cleanedName, characterEntity.Id, UserId);
 
-                // 7. 返回成功响应
+                // 7. 记录幂等键（仅成功后记录；失败/被拒的请求不记录，重试会重新评估，不会重复创建）。
+                if (idempotencyKey.Length > 0)
+                {
+                    await _idempotencyStore
+                        .RecordAsync(UserId, request.GameId, idempotencyKey, characterEntity.Id).ConfigureAwait(false);
+                }
+
+                // 8. 返回成功响应
                 return new CreateCharacterResponse
                 {
                     IsSuccess = true,

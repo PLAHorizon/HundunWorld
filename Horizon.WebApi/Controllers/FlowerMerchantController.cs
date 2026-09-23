@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,8 @@ using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
 using Horizon.Share.Dtos;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Orleans;
 using Orleans.Configuration;
 using Horizon.Core.Abstract;
@@ -39,14 +42,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{merchantId}")]
-        public async Task<ResultVM<MerchantState>> GetMerchantAsync(long merchantId)
+        public async Task<ResultVM<MerchantDto>> GetMerchantAsync(long merchantId)
         {
-            var result = new ResultVM<MerchantState>();
+            var result = new ResultVM<MerchantDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IMerchantGrain>(merchantId);
-                result.Data = await grain.GetMerchantAsync();
+                var state = await grain.GetMerchantAsync();
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -72,9 +76,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("my")]
-        public async Task<ResultVM<MerchantState>> GetMyMerchantAsync([FromQuery] string? passportId)
+        public async Task<ResultVM<MerchantDto>> GetMyMerchantAsync([FromQuery] string? passportId)
         {
-            var result = new ResultVM<MerchantState>();
+            var result = new ResultVM<MerchantDto>();
             try
             {
                 var effectivePassportId = _passportCurrent?.PassportId ?? passportId;
@@ -89,12 +93,12 @@ namespace Horizon.WebApi.Controllers
                 var merchantState = await lookupGrain.GetMerchantByPassportAsync(effectivePassportId);
                 if (merchantState != null && merchantState.MerchantId > 0)
                 {
-                    result.Data = merchantState;
+                    result.Data = FlowerDtoMapper.ToDto(merchantState);
                     result.IsSuccess = true;
                 }
                 else
                 {
-                    result.Data = merchantState;
+                    result.Data = merchantState is null ? null : FlowerDtoMapper.ToDto(merchantState);
                     result.IsSuccess = merchantState != null;
                 }
             }
@@ -216,14 +220,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{merchantId}/shippers")]
-        public async Task<ResultVM<List<ShopShipperState>>> GetShippersAsync(long merchantId)
+        public async Task<ResultVM<List<ShopShipperDto>>> GetShippersAsync(long merchantId)
         {
-            var result = new ResultVM<List<ShopShipperState>>();
+            var result = new ResultVM<List<ShopShipperDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IMerchantGrain>(merchantId);
-                result.Data = await grain.GetShippersAsync(merchantId);
+                var shippers = await grain.GetShippersAsync(merchantId);
+                result.Data = shippers?.Select(s => FlowerDtoMapper.ToDto(s)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

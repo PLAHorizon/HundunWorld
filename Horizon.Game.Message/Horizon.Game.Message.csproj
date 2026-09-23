@@ -12,9 +12,18 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- 使用滚动前向(Roll Forward)策略,允许使用较新的运行时版本 -->
     <RollForward>LatestMajor</RollForward>
+    <!-- 源生成器产物落盘到 obj/generated/（与 MemoryPack / Orleans 生成器的落盘约定一致），
+         便于人肉审阅 union 注册块与常量表，也便于排查生成器漂移。 -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Network\UnifiedMessages.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Game.Message.Generator\Horizon.Game.Message.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,33 +55,29 @@
   <!-- Removed FlatSharpSchema ItemGroup -->
   <!-- Removed Target Name="RunFlatSharpPostProcessor" -->
 
-  <!-- 编译后复制文件到 Flax 目录 -->
-  <!-- 编译后复制文件到 Flax 目录(仅复制客户端需要的依赖) -->
-  <Target Name="CopyToFlax" AfterTargets="Build">
-    <PropertyGroup>    
-      <FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
-    </PropertyGroup>
-    
-    <ItemGroup>
-      <!-- 主程序集 -->
-      <FilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
-      <FilesToCopy Include="$(TargetDir)$(AssemblyName).xml" />
-      <FilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
-      
-      <!-- 仅复制客户端需要的 DLL: MemoryPack, LZ4, TouchSocket -->
-      <FilesToCopy Include="$(TargetDir)MemoryPack.Core.dll" />
-      <FilesToCopy Include="$(TargetDir)K4os.Compression.LZ4.dll" />
-      <FilesToCopy Include="$(TargetDir)TouchSocket.dll" />
-      <FilesToCopy Include="$(TargetDir)TouchSocket.Core.dll" />
-    </ItemGroup>
-    
-    <Message Text="正在复制 Horizon.Game.Message 及客户端依赖�?Flax 目录..." Importance="high" />
-    
-    <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="WarnAndContinue">
-      <Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
-    </Copy>
-    
-    <Message Text="成功复制文件�?Flax 目录" Importance="high" />
+  <!-- 解决方案编译后，把本程序集分发到 Flax 引擎托管工具目录，
+       供 MMORPG 客户端（Game.csproj 的 <Reference> 与 Game.Build.cs 的 dlls[]）编译期/构建期解析。
+       - FlaxToolsDir / CopyToFlax 均可在命令行覆盖（-p:CopyToFlax=false 关闭分发）；
+       - 仅当目标目录存在时才执行，避免未装 Flax 的 CI 报错；
+       - 写入 Program Files 需管理员权限，失败按警告处理（ContinueOnError），不阻断编译。 -->
+  <PropertyGroup>
+    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
+    <CopyToFlax Condition="'$(CopyToFlax)' == ''">true</CopyToFlax>
+  </PropertyGroup>
+
+  <Target Name="CopyToFlax" AfterTargets="Build"
+          Condition="'$(CopyToFlax)' == 'true' And Exists('$(FlaxToolsDir)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+          Condition="Exists('$(TargetDir)$(TargetName).pdb')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).xml"
+          Condition="Exists('$(TargetDir)$(TargetName).xml')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Message Importance="high" Text="[CopyToFlax] $(TargetFileName) -&gt; $(FlaxToolsDir)" />
   </Target>
 
 </Project>

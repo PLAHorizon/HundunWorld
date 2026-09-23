@@ -1,0 +1,499 @@
+## page: menu-battle-pass
+## dom-ids: back-hud, nav-char-attributes-v2, trackNext, trackPrev
+  main
+    div
+      div
+      div
+      div
+        div
+          aside .left-nav
+            div .nav-logo
+              div | 混
+              div
+                span .logo-title | 混沌世界
+                span .logo-subtitle | 江湖路远
+              nav .nav-menu
+                a .nav-item
+                  i .nav-icon
+                  span .nav-label | 不肝
+                a .nav-item
+                  i .nav-icon
+                  span .nav-label | 抽卡
+                a .nav-item
+                  i .nav-icon
+                  span .nav-label | 活动
+                a .nav-item
+                  i .nav-icon
+                  span .nav-label | 通行证
+                  span .nav-badge ink-tag ink-tag-vermilion | 热
+                a #nav-char-attributes-v2 .nav-item
+                  i .nav-icon
+                  span .nav-label | 属性
+                a .nav-item
+                  i .nav-icon
+                  span .nav-label | 奇珍阁
+                a .nav-item
+                  i .nav-icon
+                  span .nav-label | 设置
+                div .nav-footer
+                  div
+                    i .season-icon
+                    div
+                      span .season-label | 第三赛季
+                      span | 江湖行
+                  div .season-progress-mini
+                    div .ink-bar
+                      div .ink-bar-fill
+                    span .season-progress-text | Lv.23 / Lv.50
+          header .top-bar
+            div .top-bar-left
+              button #back-hud .top-back-btn ink-btn ink-btn-ghost ink-btn-sm [aria="返回战斗"]
+                i .back-btn-icon
+                span | 返回战斗
+              div .top-bar-divider
+              div .char-avatar
+                span .avatar-text | 客
+                span .avatar-ring
+              div
+                span | 江湖过客
+                span
+                  i .level-icon | Lv. 42
+            div .top-bar-center
+              span .top-bar-season | 第三赛季 · 江湖行
+            div .top-bar-right
+              div .currency-item
+                i .currency-icon
+                span .currency-label | 铜钱
+                span .currency-value | 12,450
+              div
+              div .currency-item
+                i .currency-icon
+                span .currency-label | 元宝
+                span .currency-value | 328
+              div
+              div
+                i .time-icon
+                span | 戌时 三刻
+          section .right-content
+            div .pass-header ink-panel
+              span
+              span
+              span
+              span
+              div
+              div
+              div .pass-header-content
+                div .pass-header-left
+                  div .pass-title-row
+                    h1 .pass-title | 江湖令 · 通行证
+                    span .ink-tag ink-tag-brand pass-season-badge
+                      i .badge-icon | 第三赛季
+                  p .pass-subtitle | 江湖行 · 纵马天涯，行侠仗义
+                  div
+                    div .season-info-item
+                      i .season-info-icon
+                      span .season-info-label | 剩余时间
+                      span .season-info-value | 28天 06:30:00
+                    div .season-info-item
+                      i .season-info-icon
+                      span .season-info-label | 参与人数
+                      span .season-info-value | 1,284,567
+                div .pass-header-center
+                  div
+                    span .current-level-label | 当前等级
+                    span | Lv. 23
+                  div .progress-section
+                    div .progress-info-row
+                      span .progress-label | 升级进度
+                      span .progress-value | EXP 1,950 / 3,000
+                    div .ink-bar pass-progress
+                      div .ink-bar-fill
+                      span .progress-marker | 65%
+                    div .progress-hint
+                      i .hint-icon
+                      span | 再获得 1,050 EXP 即可升至 Lv.24
+                div .pass-header-right
+                  button .ink-btn ink-btn-primary pass-btn-unlock
+                    i .btn-icon
+                    span | 解锁至尊通行证
+                  div
+                    i .price-icon
+                    span .price-value | 680 元宝
+                  button .ink-btn ink-btn-vermilion pass-btn-upgrade
+                    i .btn-icon
+                    span | 立即升级
+                  div
+                    i .price-icon
+                    span .price-value | 90 元宝 / 级
+            div .unlock-banner
+              div .unlock-banner-left
+                i .unlock-icon
+                div
+                  span .unlock-title | 您尚未解锁至尊通行证
+                  span | 解锁后可领取专属奖励，包含名侠碎片、稀有装备、限定外观等
+              div .unlock-banner-right
+                div .unlock-preview-items
+                  div .preview-item
+                    i .preview-icon
+                  div .preview-item
+                    i .preview-icon
+                  div .preview-item
+                    i .preview-icon
+                button .ink-btn ink-btn-primary unlock-btn
+                  i .btn-icon
+                  span | 立即解锁
+            div .level-track-section ink-panel
+              span
+              span
+              div .track-header
+                div .track-title-row
+                  h2 .track-title | 等级轨道
+                  div
+                    div .legend-item
+                      span
+                      span | 至尊奖励
+                    div .legend-item
+                      span
+                      span | 免费奖励
+                    div .legend-item
+                      span
+                      span | 已领取
+                    div .legend-item
+                      span
+                      span | 可领取
+                div .track-nav
+                  button #trackPrev .track-nav-btn [aria="上一段"]
+                    i .nav-btn-icon
+                  span | Lv. 20 — Lv. 29
+                  button #trackNext .track-nav-btn [aria="下一段"]
+                    i .nav-btn-icon
+                div
+                  div .track-row track-row-paid
+                    div .track-row-label
+                      i .row-label-icon
+                      span .row-label-text | 至尊
+                    div
+                      div
+                      div
+                        div | Lv.20
+                        div
+                          i .reward-icon
+                          div .node-status status-claimed
+                            i .status-icon
+                        div | 寒铁剑
+                      div
+                        div | Lv.21
+                        div
+                          i .reward-icon
+                          div .node-status status-claimed
+                            i .status-icon
+                        div | 名侠碎片×3
+                      div
+                        div | Lv.22
+                        div
+                          i .reward-icon
+                          div .node-status status-claimed
+                            i .status-icon
+                        div | 元宝×200
+                      div
+                        div | Lv.23
+                        div
+                          i .reward-icon
+                          div .node-badge | 可领取
+                          div .node-status status-claimable
+                            i .status-icon
+                        div | 名侠碎片×5
+                      div
+                        div | Lv.24
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 玄铁护腕
+                      div
+                        div | Lv.25
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 元宝×300
+                      div
+                        div | Lv.26
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 名侠碎片×5
+                      div
+                        div | Lv.27
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 九转丹×3
+                      div
+                        div | Lv.28
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 武学残卷
+                      div
+                        div | Lv.29
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 元宝×100
+                  div
+                    div
+                    div .level-num-row
+                      span | 20
+                      span | 21
+                      span | 22
+                      span | 23
+                      span | 24
+                      span | 25
+                      span | 26
+                      span | 27
+                      span | 28
+                      span | 29
+                  div .track-row track-row-free
+                    div .track-row-label
+                      i .row-label-icon
+                      span .row-label-text | 免费
+                    div
+                      div
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-claimed
+                            i .status-icon
+                        div | 铜钱×500
+                        div .node-level-bottom | Lv.20
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-claimed
+                            i .status-icon
+                        div | 疗伤丹×2
+                        div .node-level-bottom | Lv.21
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-claimed
+                            i .status-icon
+                        div | 元宝×50
+                        div .node-level-bottom | Lv.22
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-claimed
+                            i .status-icon
+                        div | 铜钱×2000
+                        div .node-level-bottom | Lv.23
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 疗伤丹×5
+                        div .node-level-bottom | Lv.24
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 元宝×80
+                        div .node-level-bottom | Lv.25
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 精铁盾
+                        div .node-level-bottom | Lv.26
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 解毒丹×3
+                        div .node-level-bottom | Lv.27
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 铜钱×1500
+                        div .node-level-bottom | Lv.28
+                      div
+                        div
+                          i .reward-icon
+                          div .node-status status-locked
+                            i .status-icon
+                        div | 元宝×100
+                        div .node-level-bottom | Lv.29
+                div .track-footer
+                  div .track-footer-item
+                    i .footer-icon
+                    span .footer-text | 已领取: | 6 | / 10
+                  div .track-footer-item
+                    i .footer-icon
+                    span .footer-text | 可领取: | 1
+                  div .track-footer-item
+                    i .footer-icon
+                    span .footer-text | 未解锁: | 13
+                  button .ink-btn ink-btn-primary track-claim-all-btn
+                    i .btn-icon
+                    span | 一键领取
+            div .level-detail-panel ink-panel
+              span
+              span
+              div .detail-header
+                div .detail-title-row
+                  h2 .detail-title | Lv. 23 奖励详情
+                  span .ink-tag ink-tag-brand detail-current-badge | 当前等级
+                p | 完成本等级所有奖励领取后，可继续通过获取EXP提升通行证等级
+                div .reward-cards-container
+                  div .reward-card reward-card-free
+                    div .reward-card-header
+                      div .reward-track-label
+                        i .track-label-icon
+                        span | 免费奖励
+                      span .ink-tag reward-status-badge
+                        i .badge-icon | 已领取
+                    div .reward-card-body
+                      div .reward-icon-large
+                        i .large-icon
+                      div
+                        h3 | 铜钱 × 2000
+                        div .reward-attrs
+                          span .reward-attr
+                            span .attr-label | 品质:
+                            span .attr-value | 普通
+                          span .reward-attr
+                            span .attr-label | 类型:
+                            span .attr-value | 货币
+                        p | 江湖通用的铜钱货币，可在各类商铺购买基础物资
+                    div .reward-card-footer
+                      button .ink-btn ink-btn-ghost reward-btn
+                        i .btn-icon
+                        span | 已领取
+                  div .reward-card reward-card-paid
+                    div .reward-card-header
+                      div .reward-track-label
+                        i .track-label-icon
+                        span | 至尊奖励
+                      span .ink-tag ink-tag-brand reward-status-badge
+                        i .badge-icon | 可领取
+                    div .reward-card-body
+                      div .reward-icon-large
+                        i .large-icon
+                        div .icon-glow
+                      div
+                        h3 | 名侠碎片 × 5
+                        div .reward-attrs
+                          span .reward-attr
+                            span .attr-label | 品质:
+                            span .attr-value | 史诗
+                          span .reward-attr
+                            span .attr-label | 类型:
+                            span .attr-value | 碎片
+                        p | 收集名侠碎片可兑换江湖名侠的专属武学残卷，集齐50枚可召唤名侠
+                    div .reward-card-footer
+                      div
+                        i .lock-hint-icon
+                        span | 解锁至尊通行证后可领取
+                      button .ink-btn ink-btn-primary reward-btn
+                        i .btn-icon
+                        span | 领取奖励
+                  div
+                    div .preview-header
+                      div .preview-title-row
+                        h3 .preview-title | Lv. 24 奖励预告
+                        span
+                          i .hint-icon
+                          span | 升至 Lv.24 后解锁
+                      div
+                        span .exp-label | 还需EXP
+                        span .exp-value | 1,050
+                    div .preview-items-grid
+                      div .preview-reward-card
+                        div .preview-track-tag
+                          i .tag-icon
+                          span | 免费
+                        div .preview-reward-icon
+                          i .preview-r-icon
+                        span | 疗伤丹 × 5
+                        span | 稀有
+                      div .preview-reward-card
+                        div .preview-track-tag preview-tag-gold
+                          i .tag-icon
+                          span | 至尊
+                        div .preview-reward-icon
+                          i .preview-r-icon
+                        span | 限定外观
+                        span | 传世
+                      div
+                        div .tips-header
+                          i .tips-icon
+                          span .tips-title | 快速获取EXP
+                        div .tips-list
+                          div .tip-item
+                            i .tip-icon
+                            span | 完成每日江湖历练 (+150 EXP)
+                          div .tip-item
+                            i .tip-icon
+                            span | 参与帮派活动 (+300 EXP)
+                          div .tip-item
+                            i .tip-icon
+                            span | 完成擂台挑战 (+200 EXP)
+                          div .tip-item
+                            i .tip-icon
+                            span | 直接使用元宝升级 (+∞ EXP)
+            div .milestone-section ink-panel
+              span
+              span
+              div .milestone-header
+                h2 .milestone-title | 赛季里程碑
+                span .milestone-subtitle | 达到指定等级解锁专属赛季奖励
+                div .milestone-grid
+                  div .milestone-card
+                    div | Lv. 10
+                    div .milestone-icon
+                      i .m-icon
+                    div | 玄铁盾
+                    div .milestone-status
+                      i .m-status-icon | 已解锁
+                  div .milestone-card
+                    div | Lv. 20
+                    div .milestone-icon
+                      i .m-icon
+                    div | 寒铁剑
+                    div .milestone-status
+                      i .m-status-icon | 已解锁
+                  div .milestone-card
+                    div | Lv. 30
+                    div .milestone-icon
+                      i .m-icon
+                    div | 追风骏马
+                    div .milestone-status
+                      i .m-status-icon | 进行中
+                  div .milestone-card
+                    div | Lv. 40
+                    div .milestone-icon
+                      i .m-icon
+                    div | 墨麟战甲
+                    div .milestone-status
+                      i .m-status-icon | 未解锁
+                  div .milestone-card
+                    div | Lv. 50
+                    div .milestone-icon
+                      i .m-icon
+                    div | 赛季冠军
+                    div .milestone-status
+                      i .m-status-icon | 未解锁
+
+## COPY (123)
+混 | 混沌世界 | 江湖路远 | 不肝 | 抽卡 | 活动 | 通行证 | 热 | 属性 | 奇珍阁 | 设置 | 第三赛季 | 江湖行 | Lv.23 / Lv.50 | 返回战斗 | 客 | 江湖过客 | Lv. 42 | 第三赛季 · 江湖行 | 铜钱 | 12,450 | 元宝 | 戌时 三刻 | 江湖令 · 通行证 | 江湖行 · 纵马天涯，行侠仗义 | 剩余时间 | 28天 06:30:00 | 参与人数 | 1,284,567 | 当前等级 | Lv. 23 | 升级进度 | EXP 1,950 / 3,000 | 再获得 1,050 EXP 即可升至 Lv.24 | 解锁至尊通行证 | 680 元宝 | 立即升级 | 90 元宝 / 级 | 您尚未解锁至尊通行证 | 解锁后可领取专属奖励，包含名侠碎片、稀有装备、限定外观等 | 立即解锁 | 等级轨道 | 至尊奖励 | 免费奖励 | 已领取 | 可领取 | Lv. 20 — Lv. 29 | 至尊 | Lv.20 | 寒铁剑 | Lv.21 | 名侠碎片×3 | Lv.22 | 元宝×200 | Lv.23 | 名侠碎片×5 | Lv.24 | 玄铁护腕 | Lv.25 | 元宝×300 | Lv.26 | Lv.27 | 九转丹×3 | Lv.28 | 武学残卷 | Lv.29 | 元宝×100 | 免费 | 铜钱×500 | 疗伤丹×2 | 元宝×50 | 铜钱×2000 | 疗伤丹×5 | 元宝×80 | 精铁盾 | 解毒丹×3 | 铜钱×1500 | 已领取: | / 10 | 可领取: | 未解锁: | 一键领取 | Lv. 23 奖励详情 | 完成本等级所有奖励领取后，可继续通过获取EXP提升通行证等级 | 铜钱 × 2000 | 品质: | 普通 | 类型: | 货币 | 江湖通用的铜钱货币，可在各类商铺购买基础物资 | 名侠碎片 × 5 | 史诗 | 碎片 | 收集名侠碎片可兑换江湖名侠的专属武学残卷，集齐50枚可召唤名侠 | 解锁至尊通行证后可领取 | 领取奖励 | Lv. 24 奖励预告 | 升至 Lv.24 后解锁 | 还需EXP | 1,050 | 疗伤丹 × 5 | 稀有 | 限定外观 | 传世 | 快速获取EXP | 完成每日江湖历练 (+150 EXP) | 参与帮派活动 (+300 EXP) | 完成擂台挑战 (+200 EXP) | 直接使用元宝升级 (+∞ EXP) | 赛季里程碑 | 达到指定等级解锁专属赛季奖励 | Lv. 10 | 玄铁盾 | 已解锁 | Lv. 20 | Lv. 30 | 追风骏马 | 进行中 | Lv. 40 | 墨麟战甲 | 未解锁 | Lv. 50 | 赛季冠军

@@ -1,4 +1,4 @@
-using Horizon.Game.Core.Sim;
+﻿using Horizon.Game.Sim;
 
 namespace Horizon.Game.ECS.Arch.Network;
 

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Horizon.DsHost —— 独立无头 Dedicated Server 宿主进程（MMORPG 开发计划 P3 / C0′）。
+
+    存在理由（2026-09-11 实证，见 docs/MMORPG_M1-M3_执行报告_20260911.md §缺陷3）：
+      Epic Launcher 安装的 UE5.8 二进制发行版**不支持 TargetType.Server**
+      （UBT: "Server targets are not currently supported from this engine distribution."），
+      而 Game 目标回退又要求 cooked 内容。因此把 DS 基座从"引擎发行版绑定"中解耦：
+      权威模拟本就是纯 C#（Horizon.Game.Sim），本进程直接承载它 + 数据面协议。
+
+    与 UE 宿主的关系：两者共享**完全相同**的 C# 代码
+      Horizon.Game.Core/Sim/Server/{DsWorldSession, DsUplinkClient, DsDataPlaneHost, DsDownlinkEncoder}
+    切换宿主形态不触碰协议与玩法代码——这正是把 DS 逻辑放在 Core 而非宿主项目的原因。
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Horizon.DsHost</AssemblyName>
+    <RootNamespace>Horizon.DsHost</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- 配置文件随构建产物分发：启动时由 DsHostFileConfig 读取（无需命令行参数） -->
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+  </ItemGroup>
+
+</Project>

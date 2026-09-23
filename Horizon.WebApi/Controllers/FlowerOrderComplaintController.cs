@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -53,15 +56,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{complaintId}")]
-        public async Task<ResultVM<OrderComplaintState>> GetComplaintAsync(long complaintId)
+        public async Task<ResultVM<OrderComplaintDto>> GetComplaintAsync(long complaintId)
         {
-            var result = new ResultVM<OrderComplaintState>();
+            var result = new ResultVM<OrderComplaintDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IOrderComplaintGrain>(0);
-                result.Data = await grain.GetComplaintAsync(complaintId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetComplaintAsync(complaintId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -72,15 +76,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("order/{orderId}")]
-        public async Task<ResultVM<OrderComplaintState>> GetOrderComplaintAsync(long orderId)
+        public async Task<ResultVM<OrderComplaintDto>> GetOrderComplaintAsync(long orderId)
         {
-            var result = new ResultVM<OrderComplaintState>();
+            var result = new ResultVM<OrderComplaintDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IOrderComplaintGrain>(0);
-                result.Data = await grain.GetOrderComplaintAsync(orderId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetOrderComplaintAsync(orderId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -110,14 +115,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("shop/{shopId}")]
-        public async Task<ResultVM<List<OrderComplaintState>>> GetShopComplaintsAsync(long shopId)
+        public async Task<ResultVM<List<OrderComplaintDto>>> GetShopComplaintsAsync(long shopId)
         {
-            var result = new ResultVM<List<OrderComplaintState>>();
+            var result = new ResultVM<List<OrderComplaintDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IOrderComplaintGrain>(0);
-                result.Data = await grain.GetShopComplaintsAsync(shopId);
+                var complaints = await grain.GetShopComplaintsAsync(shopId);
+                result.Data = complaints?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -129,14 +135,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("user/{userId}")]
-        public async Task<ResultVM<List<OrderComplaintState>>> GetUserComplaintsAsync(Guid userId)
+        public async Task<ResultVM<List<OrderComplaintDto>>> GetUserComplaintsAsync(Guid userId)
         {
-            var result = new ResultVM<List<OrderComplaintState>>();
+            var result = new ResultVM<List<OrderComplaintDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IOrderComplaintGrain>(0);
-                result.Data = await grain.GetUserComplaintsAsync(userId);
+                var complaints = await grain.GetUserComplaintsAsync(userId);
+                result.Data = complaints?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

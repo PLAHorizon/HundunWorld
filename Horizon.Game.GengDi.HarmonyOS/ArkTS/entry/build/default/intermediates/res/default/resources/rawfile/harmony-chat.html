@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙消息 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      /* ---------- 隐藏滚动条 ---------- */
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* ---------- Lucide 图标默认样式 ---------- */
+      [data-lucide] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+
+      /* ---------- 消息淡入动画 ---------- */
+      @keyframes msgFadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .msg-fade-in { animation: msgFadeIn 0.3s ease-out; }
+
+      /* ---------- 聊天视图布局 ---------- */
+      #chat-view {
+        display: none;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* ---------- 输入框占位符颜色 ---------- */
+      input::placeholder { color: var(--gd-muted-foreground); }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen relative">
+
+        <!-- ================================================================
+             视图1：会话列表（默认显示）
+        ================================================================ -->
+        <div id="list-view">
+
+            <!-- ========== 导航栏：消息 ========== -->
+            <div class="sticky top-0 z-30 backdrop-blur-2xl bg-background/55 border-b border-white/[0.04]">
+                <div class="flex items-center justify-between px-4" style="height:52px;">
+                    <h1 class="text-[20px] font-semibold tracking-wide">消息</h1>
+                    <div class="flex items-center gap-1">
+                        <button class="w-10 h-10 rounded-full flex items-center justify-center active:bg-white/10 transition-colors" aria-label="搜索">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </button>
+                        <button class="w-10 h-10 rounded-full flex items-center justify-center active:bg-white/10 transition-colors" aria-label="添加">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 搜索栏 ========== -->
+            <div class="px-4 py-2.5">
+                <div class="flex items-center gap-2 bg-card rounded-full px-4 py-2.5 border border-white/[0.04]">
+                    <i data-lucide="search" class="w-4 h-4 text-muted-foreground shrink-0"></i>
+                    <input type="text" placeholder="搜索联系人或消息" class="flex-1 bg-transparent text-[14px] text-foreground outline-none">
+                </div>
+            </div>
+
+            <!-- ========== 系统通知卡片 ========== -->
+            <div class="px-2 pt-1 pb-2">
+
+                <!-- 交易通知 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" data-name="交易通知" data-avatar-type="icon" data-avatar-content="shopping-bag" data-avatar-bg="from-blue-500 to-blue-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: var(--gd-state-info-surface);">
+                            <i data-lucide="shopping-bag" class="w-5 h-5" style="color: var(--gd-state-info);"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">交易通知</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">14:20</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">您的订单 #20260810 已发货</span>
+                            <span class="unread-badge min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-medium flex items-center justify-center shrink-0 ml-2">3</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统公告 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" data-name="系统公告" data-avatar-type="icon" data-avatar-content="megaphone" data-avatar-bg="from-amber-500 to-amber-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: var(--gd-state-warning-surface);">
+                            <i data-lucide="megaphone" class="w-5 h-5" style="color: var(--gd-state-warning);"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">系统公告</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">10:00</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">平台夏季花卉交易节即将开启</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========== 分隔线 ========== -->
+            <div class="mx-4 border-t border-white/[0.04]"></div>
+
+            <!-- ========== 会话列表 ========== -->
+            <div class="px-2 py-1">
+
+                <!-- 张明远 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" style="min-height:68px;" data-name="张明远" data-avatar-type="initial" data-avatar-content="张" data-avatar-bg="from-blue-500 to-blue-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-medium text-base">张</div>
+                        <div class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card" style="background: var(--gd-state-success);"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">张明远</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">14:32</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">那批红玫瑰什么时候到？</span>
+                            <span class="unread-badge min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-medium flex items-center justify-center shrink-0 ml-2">2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 花卉供应商群 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" style="min-height:68px;" data-name="花卉供应商群" data-avatar-type="icon" data-avatar-content="users" data-avatar-bg="from-emerald-500 to-emerald-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">花卉供应商群</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">13:15</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">李总：明日康乃馨报价已更新</span>
+                            <span class="unread-badge min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-medium flex items-center justify-center shrink-0 ml-2">5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 王秀芬 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" style="min-height:68px;" data-name="王秀芬" data-avatar-type="initial" data-avatar-content="王" data-avatar-bg="from-purple-500 to-purple-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white font-medium text-base">王</div>
+                        <div class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card" style="background: var(--gd-state-success);"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">王秀芬</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">12:08</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">[图片] 看看这批百合的品相</span>
+                            <span class="unread-badge min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-medium flex items-center justify-center shrink-0 ml-2">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 春晖花艺 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" style="min-height:68px;" data-name="春晖花艺" data-avatar-type="icon" data-avatar-content="flower-2" data-avatar-bg="from-amber-500 to-amber-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white">
+                            <i data-lucide="flower-2" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">春晖花艺</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">11:45</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">好的，已确认订单 #20260810</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 陈大伟 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" style="min-height:68px;" data-name="陈大伟" data-avatar-type="initial" data-avatar-content="陈" data-avatar-bg="from-teal-500 to-teal-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white font-medium text-base">陈</div>
+                        <div class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card" style="background: var(--gd-state-success);"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">陈大伟</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">10:30</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">价格可以再谈谈</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 昆明花卉批发 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" style="min-height:68px;" data-name="昆明花卉批发" data-avatar-type="icon" data-avatar-content="truck" data-avatar-bg="from-rose-500 to-rose-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center text-white">
+                            <i data-lucide="truck" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">昆明花卉批发</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">昨天</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">新到一批蝴蝶兰，有兴趣吗？</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 赵小明 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" style="min-height:68px;" data-name="赵小明" data-avatar-type="initial" data-avatar-content="赵" data-avatar-bg="from-indigo-500 to-indigo-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-medium text-base">赵</div>
+                        <div class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card" style="background: var(--gd-state-success);"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">赵小明</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">昨天</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">收到，明天安排发货</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 花友交流群 -->
+                <div class="conversation-item flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-white/5 transition-colors cursor-pointer" style="min-height:68px;" data-name="花友交流群" data-avatar-type="icon" data-avatar-content="users" data-avatar-bg="from-pink-500 to-pink-700">
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-pink-700 flex items-center justify-center text-white">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[15px] font-medium text-foreground truncate">花友交流群</span>
+                            <span class="text-[11px] text-muted-foreground shrink-0 ml-2">周一</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[13px] text-muted-foreground truncate">这个季节种什么花好？</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 底部留白 -->
+            <div class="h-6"></div>
+
+        </div>
+
+        <!-- ================================================================
+             视图2：聊天详情（点击会话后显示）
+        ================================================================ -->
+        <div id="chat-view">
+
+            <!-- ========== 聊天导航栏 ========== -->
+            <div class="shrink-0 backdrop-blur-2xl bg-background/55 border-b border-white/[0.04]">
+                <div class="flex items-center justify-between px-2" style="height:52px;">
+                    <button id="back-btn" class="w-10 h-10 rounded-full flex items-center justify-center active:bg-white/10 transition-colors" aria-label="返回">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <div class="flex flex-col items-center">
+                        <span id="chat-name" class="text-[16px] font-semibold text-foreground">张明远</span>
+                        <span class="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full" style="background: var(--gd-state-success);"></span>
+                            在线
+                        </span>
+                    </div>
+                    <button class="w-10 h-10 rounded-full flex items-center justify-center active:bg-white/10 transition-colors" aria-label="更多">
+                        <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ========== 聊天消息区域 ========== -->
+            <div id="messages-area" class="flex-1 overflow-y-auto no-scrollbar px-4 py-4">
+                <!-- 消息内容由 JavaScript 动态生成 -->
+            </div>
+
+            <!-- ========== 底部输入栏 ========== -->
+            <div class="shrink-0 backdrop-blur-2xl bg-background/80 border-t border-white/[0.04] px-3 py-2.5">
+                <div class="flex items-center gap-2">
+                    <!-- 语音按钮 -->
+                    <button class="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/10 transition-colors shrink-0" aria-label="语音">
+                        <i data-lucide="mic" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                    <!-- 文本输入框 -->
+                    <div class="flex-1 bg-card rounded-2xl border border-white/[0.04] px-3.5 py-2">
+                        <input id="msg-input" type="text" placeholder="输入消息..." class="w-full bg-transparent text-[14px] text-foreground outline-none">
+                    </div>
+                    <!-- 表情按钮 -->
+                    <button class="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/10 transition-colors shrink-0" aria-label="表情">
+                        <i data-lucide="smile" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                    <!-- 加号按钮（输入为空时显示） -->
+                    <button id="plus-btn" class="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/10 transition-colors shrink-0" aria-label="附件" style="display: flex;">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                    <!-- 发送按钮（输入有内容时显示） -->
+                    <button id="send-btn" class="h-9 px-4 rounded-full bg-primary text-primary-foreground text-[13px] font-medium items-center justify-center shrink-0 active:opacity-80 transition-opacity" style="display: none;">
+                        发送
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+    /* ============================================================
+       IM 聊天交互逻辑
+       ============================================================ */
+    document.addEventListener('DOMContentLoaded', function () {
+        // 初始化 Lucide 图标
+        if (window.lucide) lucide.createIcons();
+
+        // ---------- 元素引用 ----------
+        var listView      = document.getElementById('list-view');
+        var chatView      = document.getElementById('chat-view');
+        var backBtn       = document.getElementById('back-btn');
+        var msgInput      = document.getElementById('msg-input');
+        var sendBtn       = document.getElementById('send-btn');
+        var plusBtn       = document.getElementById('plus-btn');
+        var messagesArea  = document.getElementById('messages-area');
+        var chatName      = document.getElementById('chat-name');
+
+        // 当前联系人信息
+        var currentContact = {
+            name: '',
+            avatarType: '',
+            avatarContent: '',
+            avatarBg: ''
+        };
+
+        // ---------- 生成头像 HTML ----------
+        function getAvatarHtml(size, textSize) {
+            size = size || 'w-8 h-8';
+            textSize = textSize || 'text-[13px]';
+            if (currentContact.avatarType === 'icon') {
+                return '<div class="' + size + ' rounded-full bg-gradient-to-br ' + currentContact.avatarBg +
+                       ' flex items-center justify-center text-white shrink-0">' +
+                       '<i data-lucide="' + currentContact.avatarContent + '" class="w-4 h-4"></i></div>';
+            } else {
+                return '<div class="' + size + ' rounded-full bg-gradient-to-br ' + currentContact.avatarBg +
+                       ' flex items-center justify-center text-white ' + textSize + ' font-medium shrink-0">' +
+                       currentContact.avatarContent + '</div>';
+            }
+        }
+
+        // ---------- 加载聊天消息 ----------
+        function loadMessages() {
+            var avatar = getAvatarHtml();
+            messagesArea.innerHTML =
+                // 时间分隔符
+                '<div class="flex justify-center mb-4 msg-fade-in">' +
+                    '<span class="text-[11px] text-muted-foreground bg-white/[0.04] px-2.5 py-1 rounded-full">今天 14:30</span>' +
+                '</div>' +
+                // 对方消息：文字
+                '<div class="flex justify-start mb-3 gap-2 msg-fade-in">' +
+                    avatar +
+                    '<div class="max-w-[75%] bg-card text-card-foreground rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[14px] leading-relaxed border border-white/[0.04]">' +
+                        '你好，那批红玫瑰什么时候能到？' +
+                    '</div>' +
+                '</div>' +
+                // 我的消息：文字
+                '<div class="flex justify-end mb-3 msg-fade-in">' +
+                    '<div class="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed">' +
+                        '明天下午发货，预计后天上午到达' +
+                    '</div>' +
+                '</div>' +
+                // 对方消息：文字
+                '<div class="flex justify-start mb-3 gap-2 msg-fade-in">' +
+                    avatar +
+                    '<div class="max-w-[75%] bg-card text-card-foreground rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[14px] leading-relaxed border border-white/[0.04]">' +
+                        '好的，价格还是之前谈的 ¥2.8/支' +
+                    '</div>' +
+                '</div>' +
+                // 对方消息：交易订单卡片
+                '<div class="flex justify-start mb-3 gap-2 msg-fade-in">' +
+                    avatar +
+                    '<div class="max-w-[80%] bg-card rounded-2xl rounded-tl-md overflow-hidden border border-white/[0.06]">' +
+                        // 订单头部
+                        '<div class="px-3 py-2 bg-white/[0.03] border-b border-white/[0.04] flex items-center gap-1.5">' +
+                            '<i data-lucide="receipt" class="w-3.5 h-3.5 text-primary"></i>' +
+                            '<span class="text-[12px] font-medium text-foreground">交易订单</span>' +
+                            '<span class="text-[11px] text-muted-foreground ml-auto">#20260810</span>' +
+                        '</div>' +
+                        // 订单内容
+                        '<div class="p-3">' +
+                            '<div class="flex items-center gap-2.5 mb-3">' +
+                                '<div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background: var(--gd-down-surface);">' +
+                                    '<i data-lucide="flower-2" class="w-5 h-5" style="color: #f43f5e;"></i>' +
+                                '</div>' +
+                                '<div class="min-w-0">' +
+                                    '<div class="text-[14px] font-medium text-foreground">红玫瑰 A级</div>' +
+                                    '<div class="text-[12px] text-muted-foreground">数量：100支</div>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="flex items-center justify-between mb-3 pt-2 border-t border-white/[0.04]">' +
+                                '<span class="text-[12px] text-muted-foreground">订单金额</span>' +
+                                '<span class="text-[16px] font-semibold text-primary">¥280.00</span>' +
+                            '</div>' +
+                            '<button class="w-full h-9 rounded-lg bg-primary text-primary-foreground text-[13px] font-medium active:opacity-80 transition-opacity">确认订单</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                // 我的消息：文字
+                '<div class="flex justify-end mb-3 msg-fade-in">' +
+                    '<div class="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed">' +
+                        '好的，我确认了' +
+                    '</div>' +
+                '</div>' +
+                // 对方消息：图片占位
+                '<div class="flex justify-start mb-3 gap-2 msg-fade-in">' +
+                    avatar +
+                    '<div class="rounded-2xl rounded-tl-md overflow-hidden border border-white/[0.04]">' +
+                        '<div class="w-[200px] h-[150px] flex flex-col items-center justify-center gap-2" style="background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(236,72,153,0.15));">' +
+                            '<i data-lucide="image" class="w-8 h-8 text-muted-foreground"></i>' +
+                            '<span class="text-[12px] text-muted-foreground">百合品相照片</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                // 对方消息：文字
+                '<div class="flex justify-start mb-3 gap-2 msg-fade-in">' +
+                    avatar +
+                    '<div class="max-w-[75%] bg-card text-card-foreground rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[14px] leading-relaxed border border-white/[0.04]">' +
+                        '顺便看看这批百合的品相，怎么样？' +
+                    '</div>' +
+                '</div>' +
+                // 我的消息：文字
+                '<div class="flex justify-end mb-3 msg-fade-in">' +
+                    '<div class="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed">' +
+                        '品相不错，我先订50支试试' +
+                    '</div>' +
+                '</div>';
+
+            // 重新渲染图标
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // ---------- 创建我的消息 HTML ----------
+        function createMyMessage(text) {
+            return '<div class="flex justify-end mb-3 msg-fade-in">' +
+                '<div class="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed">' +
+                escapeHtml(text) +
+                '</div>' +
+                '</div>';
+        }
+
+        // ---------- 创建对方消息 HTML ----------
+        function createOtherMessage(text) {
+            return '<div class="flex justify-start mb-3 gap-2 msg-fade-in">' +
+                getAvatarHtml() +
+                '<div class="max-w-[75%] bg-card text-card-foreground rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[14px] leading-relaxed border border-white/[0.04]">' +
+                escapeHtml(text) +
+                '</div>' +
+                '</div>';
+        }
+
+        // ---------- 创建"正在输入"指示器 ----------
+        function createTypingIndicator() {
+            return '<div id="typing-indicator" class="flex justify-start mb-3 gap-2 msg-fade-in">' +
+                getAvatarHtml() +
+                '<div class="bg-card text-card-foreground rounded-2xl rounded-tl-md px-4 py-3 border border-white/[0.04] flex items-center gap-1">' +
+                    '<span class="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style="animation-delay: 0ms;"></span>' +
+                    '<span class="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style="animation-delay: 150ms;"></span>' +
+                    '<span class="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style="animation-delay: 300ms;"></span>' +
+                '</div>' +
+            '</div>';
+        }
+
+        // ---------- 自动回复内容池 ----------
+        var autoReplies = [
+            '好的，我了解了',
+            '这批花质量怎么样？',
+            '价格可以再商量',
+            '明天我给你发货',
+            '收到，谢谢',
+            '没问题，就这么定了',
+            '我看看库存再回复你',
+            '这批花很新鲜，放心吧',
+            '好的，我先下个单',
+            '物流大概需要两天'
+        ];
+
+        function getAutoReply() {
+            return autoReplies[Math.floor(Math.random() * autoReplies.length)];
+        }
+
+        // ---------- HTML 转义 ----------
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ---------- 滚动到底部 ----------
+        function scrollToBottom() {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        // ---------- 会话项点击：切换到聊天详情 ----------
+        document.querySelectorAll('.conversation-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+                // 记录当前联系人信息
+                currentContact.name         = this.dataset.name;
+                currentContact.avatarType   = this.dataset.avatarType;
+                currentContact.avatarContent= this.dataset.avatarContent;
+                currentContact.avatarBg     = this.dataset.avatarBg;
+
+                // 更新聊天标题
+                chatName.textContent = currentContact.name;
+
+                // 清除未读消息数
+                var badge = this.querySelector('.unread-badge');
+                if (badge) badge.remove();
+
+                // 加载消息内容
+                loadMessages();
+
+                // 切换视图
+                listView.style.display = 'none';
+                chatView.style.display = 'flex';
+
+                // 滚动到底部
+                setTimeout(scrollToBottom, 100);
+            });
+        });
+
+        // ---------- 返回按钮：回到会话列表 ----------
+        backBtn.addEventListener('click', function () {
+            chatView.style.display = 'none';
+            listView.style.display = 'block';
+        });
+
+        // ---------- 输入框内容变化：切换发送/加号按钮 ----------
+        msgInput.addEventListener('input', function () {
+            if (this.value.trim()) {
+                plusBtn.style.display = 'none';
+                sendBtn.style.display = 'flex';
+            } else {
+                plusBtn.style.display = 'flex';
+                sendBtn.style.display = 'none';
+            }
+        });
+
+        // ---------- 发送消息 ----------
+        sendBtn.addEventListener('click', function () {
+            var text = msgInput.value.trim();
+            if (!text) return;
+
+            // 添加我的消息到聊天区域
+            messagesArea.insertAdjacentHTML('beforeend', createMyMessage(text));
+            if (window.lucide) lucide.createIcons();
+
+            // 清空输入框并切换按钮
+            msgInput.value = '';
+            plusBtn.style.display = 'flex';
+            sendBtn.style.display = 'none';
+
+            // 滚动到底部
+            scrollToBottom();
+
+            // 模拟对方"正在输入" + 自动回复
+            setTimeout(function () {
+                // 显示"正在输入"指示器
+                messagesArea.insertAdjacentHTML('beforeend', createTypingIndicator());
+                if (window.lucide) lucide.createIcons();
+                scrollToBottom();
+
+                // 1.5 秒后替换为实际回复
+                setTimeout(function () {
+                    var indicator = document.getElementById('typing-indicator');
+                    if (indicator) indicator.remove();
+
+                    messagesArea.insertAdjacentHTML('beforeend', createOtherMessage(getAutoReply()));
+                    if (window.lucide) lucide.createIcons();
+                    scrollToBottom();
+                }, 1500);
+            }, 500);
+        });
+
+        // ---------- 回车键发送 ----------
+        msgInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                sendBtn.click();
+            }
+        });
+
+        // ---------- 订单确认按钮事件委托 ----------
+        messagesArea.addEventListener('click', function (e) {
+            if (e.target && e.target.textContent === '确认订单') {
+                e.target.textContent = '已确认';
+                e.target.style.background = 'var(--gd-state-success)';
+                e.target.style.opacity = '0.8';
+            }
+        });
+
+    });
+    </script>
+</body>
+</html>

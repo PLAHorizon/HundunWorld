@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.Core.Abstract;
@@ -25,14 +28,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("product/{productId}")]
-        public async Task<ResultVM<List<ProductCommentState>>> GetProductComments(long productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<ProductCommentDto>>> GetProductComments(long productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<ProductCommentState>>();
+            var result = new ResultVM<List<ProductCommentDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IProductCommentGrain>(0);
-                result.Data = await grain.GetProductCommentsAsync(productId, page, pageSize);
+                var comments = await grain.GetProductCommentsAsync(productId, page, pageSize);
+                result.Data = comments?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (System.Exception ex)
@@ -82,14 +86,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("merchant/{merchantId}")]
-        public async Task<ResultVM<List<ProductCommentState>>> GetMerchantComments(long merchantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<ProductCommentDto>>> GetMerchantComments(long merchantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<ProductCommentState>>();
+            var result = new ResultVM<List<ProductCommentDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IProductCommentGrain>(0);
-                result.Data = await grain.GetMerchantCommentsAsync(merchantId, page, pageSize);
+                var comments = await grain.GetMerchantCommentsAsync(merchantId, page, pageSize);
+                result.Data = comments?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (System.Exception ex)

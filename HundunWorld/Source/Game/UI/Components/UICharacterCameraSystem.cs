@@ -46,6 +46,18 @@ namespace HundunWorld.Game.UI.Components
         // 如果模型实际尺寸偏大或偏小，可调整此值
         private float _modelScale = 1.0f;
 
+        /// <summary>角色模型最大边的合理下限（单位/cm）：低于此值说明资产导入缩放被写坏，相机在 250 单位外看不到角色</summary>
+        private const float MinSaneCharacterSize = 20f;
+
+        /// <summary>角色模型最大边的合理上限（单位/cm）</summary>
+        private const float MaxSaneCharacterSize = 5000f;
+
+        /// <summary>
+        /// 角色在场景中的目标身高（单位/cm）。相机取景（距离约 250、注视高度 90、near/far 1/1000）
+        /// 与各部位预设都是按该尺寸标定的。
+        /// </summary>
+        private const float TargetCharacterHeight = 180f;
+
         // 平滑过渡
         private float _targetDistance;
         private float _targetHeight;
@@ -252,6 +264,65 @@ namespace HundunWorld.Game.UI.Components
             _cameraPivot.LookAt(new Vector3(0, 90f, 0));
         }
 
+        /// <summary>
+        /// 校验角色模型的实际尺寸是否落在合理区间，避免"资产导入了但相机完全看不到角色"的静默故障。
+        /// <para>
+        /// 背景：相机固定在约 250 单位外、注视 90 单位高度，是按 ~180 单位（cm）身高取景的。
+        /// 若资产导入缩放被写坏（曾出现 `Scale=0.0001`，模型实际只有 0.03 单位），
+        /// 角色会变成一个亚像素点 —— 表现就是"角色选择界面里没有模型"。
+        /// </para>
+        /// </summary>
+        /// <param name="modelAsset">已加载的角色模型资产（<see cref="SkinnedModel"/> 或 <see cref="Model"/>，两者无继承关系）</param>
+        /// <param name="actor">承载模型的 Actor（尺寸异常时用于就地归一化缩放）</param>
+        /// <param name="assetPath">资产路径（用于给出修复动作）</param>
+        private void VerifyCharacterScale(Asset modelAsset, Actor actor, string assetPath)
+        {
+            if (modelAsset == null)
+                return;
+
+            float maxDim;
+            try
+            {
+                BoundingBox box;
+                if (modelAsset is SkinnedModel skinned)
+                    box = skinned.GetBox(0);
+                else if (modelAsset is Model model)
+                    box = model.GetBox(0);
+                else
+                    return; // 非模型资产（如 Prefab），不做尺寸校验
+
+                maxDim = Mathf.Max(box.Size.X, Mathf.Max(box.Size.Y, box.Size.Z));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[UICharacterCameraSystem] 读取模型包围盒失败，跳过尺寸校验: {e.Message}");
+                return;
+            }
+
+            if (maxDim <= 0f)
+                return; // 包围盒不可用，不做判断
+
+            if (maxDim < MinSaneCharacterSize || maxDim > MaxSaneCharacterSize)
+            {
+                // 归一化到目标身高：保证本界面在任何资产尺寸下都能看到角色（并把这个异常大声报出来）
+                float corrected = TargetCharacterHeight / maxDim;
+                _modelScale = corrected;
+                if (actor != null)
+                    actor.Scale = new Vector3(_modelScale, _modelScale, _modelScale);
+
+                Debug.LogError(
+                    $"[UICharacterCameraSystem] **角色模型尺寸异常，已就地归一化**：包围盒最大边={maxDim:F3} 单位" +
+                    $"，期望 {MinSaneCharacterSize}~{MaxSaneCharacterSize}（相机距离约 250、注视高度 90）。" +
+                    $"已把模型缩放改为 {corrected:G6}（目标身高 {TargetCharacterHeight} 单位）以正常取景。" +
+                    $"根因通常是资产导入缩放被写坏（Flax 会自动修复，见 AutoSkinnedModelImportPlugin）；" +
+                    $"彻底修复：在 Flax Editor 中对「{assetPath}」重新导入，Type=SkinnedModel、Scale=1.0、Rotation=Identity。");
+            }
+            else
+            {
+                Debug.Log($"[UICharacterCameraSystem] 角色模型尺寸校验通过：包围盒最大边={maxDim:F1} 单位");
+            }
+        }
+
         public void LoadCharacter(string assetPath)
         {
             if (!_isInitialized)
@@ -330,6 +401,7 @@ namespace HundunWorld.Game.UI.Components
                             Level.SpawnActor(animatedModel);
                         _characterActor = animatedModel;
                         UpdateCameraPosition();
+                        VerifyCharacterScale(skinnedModel, _characterActor, assetPath);
                         OnCharacterLoaded?.Invoke();
                         Debug.Log($"[UICharacterCameraSystem] 角色蒙皮模型加载成功: {assetPath}, 缩放: {_modelScale}, 场景: {targetScene?.Name ?? "默认"}");
                         return;
@@ -351,6 +423,7 @@ namespace HundunWorld.Game.UI.Components
                             Level.SpawnActor(staticModelActor);
                         _characterActor = staticModelActor;
                         UpdateCameraPosition();
+                        VerifyCharacterScale(staticModelAsset, _characterActor, assetPath);
                         OnCharacterLoaded?.Invoke();
                         Debug.Log($"[UICharacterCameraSystem] 角色静态模型加载成功: {assetPath}, 缩放: {_modelScale}, 场景: {targetScene?.Name ?? "默认"}");
                         return;

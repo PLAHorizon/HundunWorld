@@ -51,13 +51,7 @@ public class ZoneShardGrainStormAlertTests
         var spy = new LogSpy();
         var mockState = new Mock<IPersistentState<ZoneShardState>>();
         mockState.SetupGet(s => s.State).Returns(new ZoneShardState());
-        var grain = new ZoneShardGrain(spy, mockState.Object);
-
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        var grain = new ZoneShardGrain(spy, mockState.Object);        GrainTestHarness.AttachGrainContext(grain);
 
         return (grain, spy);
     }

@@ -100,8 +100,9 @@ public class MessageHandlerBaseResponseTests
     }
 
     private static Mock<ITcpSessionClient> CreateClientMock(List<byte[]> sentFrames)
-    {
-        var client = new Mock<ITcpSessionClient>();
+    {        var client = new Mock<ITcpSessionClient>();
+        // Online=true：MessageHandlerBase.HandleAsync 在路由前检查连接在线，mock 缺省 false 会直接短路
+        client.SetupGet(c => c.Online).Returns(true);
         client.Setup(c => c.SendAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<CancellationToken>()))
             .Callback<ReadOnlyMemory<byte>, CancellationToken>((buffer, _) => sentFrames.Add(buffer.ToArray()))
             .Returns(Task.CompletedTask);

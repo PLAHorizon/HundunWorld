@@ -59,9 +59,41 @@ namespace Horizon.Orleans.Grains
             await base.OnActivateAsync(cancellationToken);
         }
 
-        public Task<PaymentState> GetTransactionAsync()
+        public async Task<PaymentState> GetTransactionAsync()
         {
-            return Task.FromResult(_paymentState.State);
+            var state = _paymentState.State;
+            if (state.TransactionId <= 0)
+            {
+                // Grain State 未持久化恢复时（如存储后端为内存/状态丢失），从数据库权威数据回填
+                try
+                {
+                    var key = this.GetPrimaryKeyLong();
+                    var entity = await _dataContext.QueryFirstOrDefaultAsync(t => t.Id == key);
+                    if (entity != null)
+                    {
+                        _paymentState.State = new PaymentState
+                        {
+                            TransactionId = entity.Id,
+                            OrderId = entity.OrderId,
+                            TransactionNo = entity.TransactionNo ?? "",
+                            Channel = (PaymentChannel)entity.Channel,
+                            Amount = entity.Amount,
+                            Status = entity.Status,
+                            PrepayId = entity.PrepayId ?? "",
+                            ChannelTransactionNo = entity.ChannelTransactionNo ?? "",
+                            PaidAt = entity.PaidAt,
+                            ExpiredAt = entity.ExpiredAt,
+                            BuyerId = Guid.Empty
+                        };
+                        // 注意：PayParams 不落库（预下单窗口内有效的拉起参数），此处不回填
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "GetTransactionAsync 数据库回填失败: GrainKey={GrainKey}", this.GetPrimaryKeyLong());
+                }
+            }
+            return _paymentState.State;
         }
 
         public async Task<PaymentState> CreatePrepayAsync(long orderId, PaymentChannel channel, decimal amount, Guid buyerId, string idempotencyKey, PaymentScene scene = PaymentScene.Native)
@@ -107,7 +139,9 @@ namespace Horizon.Orleans.Grains
                     Status = 0,
                     PrepayId = prepayResult.PrepayId ?? string.Empty,
                     ChannelTransactionNo = string.Empty,
-                    ExpiredAt = DateTime.Now.AddMinutes(30)
+                    ExpiredAt = DateTime.Now.AddMinutes(30),
+                    // Flower_PaymentTransaction.Passport 列 NOT NULL（与 FlowerOrderGrain 同规则：买家ID去连字符）
+                    Passport = buyerId.ToString("N")
                 };
 
                 var result = await _dataContext.AddAsync(entity);
@@ -128,7 +162,9 @@ namespace Horizon.Orleans.Grains
                     PrepayId = prepayResult.PrepayId ?? string.Empty,
                     ExpiredAt = entity.ExpiredAt,
                     IdempotencyKey = idempotencyKey ?? "",
-                    BuyerId = buyerId
+                    BuyerId = buyerId,
+                    // 客户端拉起支付参数（微信二次签名参数 / 支付宝 orderString），随 Grain State 持久化到 Redis
+                    PayParams = prepayResult.PayParams ?? string.Empty
                 };
                 await _paymentState.WriteStateAsync();
 

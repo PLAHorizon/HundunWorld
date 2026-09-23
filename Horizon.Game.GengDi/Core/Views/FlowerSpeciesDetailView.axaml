@@ -163,7 +163,7 @@
                                             CommandParameter="{Binding}"
                                             Background="{DynamicResource GdMutedBrush}"
                                             Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                            CornerRadius="{DynamicResource GdRadiusFull}"
+                                            CornerRadius="14"
                                             Padding="12 6" FontSize="12"
                                             BorderThickness="0"
                                             Margin="0 0 8 8" />

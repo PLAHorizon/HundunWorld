@@ -81,6 +81,15 @@ namespace HundunWorld.Game.UI.Authentication
 
         // 认证状态
         private bool _isAuthenticating = false;
+
+        /// <summary>
+        /// 登录后续流程（FinalizeLoginAsync）最近一次开始执行的时间。
+        /// 该流程会「发角色列表请求 + 切换场景」，被重复触发会导致重复请求与重复场景切换
+        /// （日志特征：两次「用户会话已更新」、两次「准备查询角色列表」、两次 TransitionTo，
+        ///  且场景被反复加载/卸载）。此处用短时间窗做重入保护。
+        /// </summary>
+        private DateTime _lastFinalizeLoginUtc = DateTime.MinValue;
+        private static readonly TimeSpan FinalizeLoginReentryWindow = TimeSpan.FromSeconds(3);
         private string _currentUsername = "";
         private bool _rememberPassword = false;
         private TaskCompletionSource<LoginResponse> _loginTcs;
@@ -409,6 +418,19 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         private async Task FinalizeLoginAsync(LoginResponse response)
         {
+            // 重入保护：本流程会「发角色列表请求 + 切换场景」，被重复触发会造成重复请求与
+            // 重复场景切换（场景被反复加载/卸载）。此处按短时间窗拦截重复调用，并打印来源便于定位。
+            var now = DateTime.UtcNow;
+            var sinceLast = now - _lastFinalizeLoginUtc;
+            if (sinceLast < FinalizeLoginReentryWindow)
+            {
+                FlaxEngine.Debug.LogWarning(
+                    $"[AuthenticationManager] 登录后续流程在 {FinalizeLoginReentryWindow.TotalSeconds:0} 秒内被重复调用，跳过本次（距上次 {sinceLast.TotalMilliseconds:0}ms）；" +
+                    $"调用来源:\n{System.Environment.StackTrace}");
+                return;
+            }
+            _lastFinalizeLoginUtc = now;
+
             FlaxEngine.Debug.Log($"[AuthenticationManager] 开始完成登录后续流程: UserId={response.UserId}, PassportId={response.PassportId}");
 
             // 同步到 NetworkManager（供心跳等后台任务使用）
@@ -493,13 +515,26 @@ namespace HundunWorld.Game.UI.Authentication
                             // 确保连接已就绪（ConnectAsync 返回 true 后连接状态可能还未刷新）
                             if (nm.GetConnectionStatus() != ConnectionStatus.Connected)
                             {
-                                FlaxEngine.Debug.Log($"[AuthenticationManager] 连接尚未就绪，等待连接建立... (尝试 {attempt}/{maxRetries})");
-                                var ready = await nm.WaitForConnectionAsync(3000);
-                                if (!ready)
+                                // ★ 必须**主动建连**，不能只等待（2026-09-20 修复「登录后角色列表恒为空」）：
+                                //   重连管理器的 connectFunction **只做可达性探查、不建立真实 TCP 连接**
+                                //   （见 NetworkManager 构造函数注释：为避免玩家未进游戏、服务端首包超时反复关闭
+                                //   连接而陷入无限重连循环）。因此在登录路径上"等待连接就绪"永远等不到——
+                                //   状态机会报 Connected（甚至打印"重连成功"）而 _client 始终为 null，
+                                //   客户端日志特征：`[RaiseReconnectionSucceededSafely] _client 为空`。
+                                //   登录属于**用户主动触发**的场景，正是 ConnectOnDemandAsync 的设计用途
+                                //   （探查 → 真正 ConnectAsync → MarkConnected），故在重试中改用它主动建连。
+                                FlaxEngine.Debug.Log($"[AuthenticationManager] 连接尚未就绪，主动建连后重试... (尝试 {attempt}/{maxRetries})");
+                                var connectedNow = await nm.ConnectOnDemandAsync();
+                                if (!connectedNow)
                                 {
-                                    FlaxEngine.Debug.LogWarning($"[AuthenticationManager] 等待连接超时 (尝试 {attempt}/{maxRetries})");
-                                    if (attempt < maxRetries) { await Task.Delay(500); continue; }
-                                    break;
+                                    // 建连未成功：再短等一下（可能并发的建连路径正在完成），仍失败则退避后重试
+                                    var ready = await nm.WaitForConnectionAsync(3000);
+                                    if (!ready)
+                                    {
+                                        FlaxEngine.Debug.LogWarning($"[AuthenticationManager] 建连与等待连接均失败 (尝试 {attempt}/{maxRetries})");
+                                        if (attempt < maxRetries) { await Task.Delay(500); continue; }
+                                        break;
+                                    }
                                 }
                             }
 
@@ -527,41 +562,14 @@ namespace HundunWorld.Game.UI.Authentication
                     }
 
                     // 3. 切换到角色选择场景
-                    var sceneManager = GameSceneManager.GetOrCreate();
-                    if (sceneManager != null)
-                    {
-                        FlaxEngine.Debug.Log("[AuthenticationManager] 使用GameSceneManager切换场景");
-
-                        void OnTransitionCompleted(SceneType from, SceneType to)
-                        {
-                            sceneManager.TransitionCompleted -= OnTransitionCompleted;
-                            FlaxEngine.Debug.Log($"[AuthenticationManager] 场景切换完成: {from} -> {to}");
-
-                            var sm = UIStateManager.Instance;
-                            if (sm != null && sm.CurrentScene != to)
-                            {
-                                sm.TransitionToScene(to, false);
-                            }
-                        }
-
-                        sceneManager.TransitionCompleted += OnTransitionCompleted;
-
-                        if (!sceneManager.TransitionTo(SceneType.CharacterSelection))
-                        {
-                            sceneManager.TransitionCompleted -= OnTransitionCompleted;
-                            FlaxEngine.Debug.LogError("[AuthenticationManager] 场景切换启动失败");
-                            UIHelper.ShowError("场景切换失败，请重试");
-                        }
-                        else
-                        {
-                            FlaxEngine.Debug.Log("[AuthenticationManager] 场景切换已启动，等待加载完成");
-                        }
-                    }
-                    else
-                    {
-                        FlaxEngine.Debug.LogError("[AuthenticationManager] GameSceneManager未初始化");
-                        UIHelper.ShowError("系统错误，请重启游戏");
-                    }
+                    // ★ 必须回到主线程执行：上方 await（ConnectOnDemandAsync / SendMessageAsync）
+                    //   的续体运行在线程池线程，若 GameSceneManager 恰好在此处被首次创建，
+                    //   就会在非主线程执行 SpawnActor —— Flax 禁止该操作
+                    //   （日志："Editing scene hierarchy is only allowed on a main thread"），
+                    //   结果是实例的 Actor.Scene 为 null、_rootScene 解析失败，
+                    //   进而把 RootScene 当作普通子场景卸载，整条切换链路永久卡死。
+                    //   这正是「角色列表已拿到但角色选择界面不显示」的根因。
+                    FlaxEngine.Scripting.InvokeOnUpdate(StartCharacterSelectionTransition);
                 }
                 catch (Exception ex)
                 {
@@ -576,6 +584,66 @@ namespace HundunWorld.Game.UI.Authentication
 
             await tcs.Task;
             FlaxEngine.Debug.Log($"[AuthenticationManager] 登录后续流程完成: {response.PassportId}");
+        }
+
+        /// <summary>
+        /// 在主线程发起「切换到角色选择场景」。
+        /// 内含残留切换状态兜底复位 + 一次重试，避免玩家因上一次未闭环的切换而永久卡在登录界面。
+        /// </summary>
+        private void StartCharacterSelectionTransition()
+        {
+            try
+            {
+                var sceneManager = GameSceneManager.GetOrCreate();
+                if (sceneManager == null)
+                {
+                    FlaxEngine.Debug.LogError("[AuthenticationManager] GameSceneManager未初始化");
+                    UIHelper.ShowError("系统错误，请重启游戏");
+                    return;
+                }
+
+                FlaxEngine.Debug.Log("[AuthenticationManager] 使用GameSceneManager切换场景");
+
+                void OnTransitionCompleted(SceneType from, SceneType to)
+                {
+                    sceneManager.TransitionCompleted -= OnTransitionCompleted;
+                    FlaxEngine.Debug.Log($"[AuthenticationManager] 场景切换完成: {from} -> {to}");
+
+                    var sm = UIStateManager.Instance;
+                    if (sm != null && sm.CurrentScene != to)
+                    {
+                        sm.TransitionToScene(to, false);
+                    }
+                }
+
+                sceneManager.TransitionCompleted += OnTransitionCompleted;
+
+                if (sceneManager.TransitionTo(SceneType.CharacterSelection))
+                {
+                    FlaxEngine.Debug.Log("[AuthenticationManager] 场景切换已启动，等待加载完成");
+                    return;
+                }
+
+                // 首次启动失败：通常是被上一次未闭环切换留下的残留状态拒绝。
+                // 强制复位状态机后重试一次，避免玩家卡在登录界面。
+                FlaxEngine.Debug.LogWarning("[AuthenticationManager] 场景切换启动失败，强制复位残留切换状态后重试一次");
+                sceneManager.ForceResetTransition("登录后切换角色选择场景失败");
+
+                if (sceneManager.TransitionTo(SceneType.CharacterSelection))
+                {
+                    FlaxEngine.Debug.Log("[AuthenticationManager] 复位后重试成功，场景切换已启动");
+                    return;
+                }
+
+                sceneManager.TransitionCompleted -= OnTransitionCompleted;
+                FlaxEngine.Debug.LogError("[AuthenticationManager] 场景切换启动失败（复位重试后仍失败）");
+                UIHelper.ShowError("场景切换失败，请重试");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[AuthenticationManager] 切换角色选择场景异常: {ex.Message}");
+                UIHelper.ShowError("场景切换失败，请重试");
+            }
         }
 
         /// <summary>

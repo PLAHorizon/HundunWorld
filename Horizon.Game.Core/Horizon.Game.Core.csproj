@@ -45,35 +45,14 @@
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
     <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+    <!-- 阶段 1.5：MortonCodec/WorldCoord/ZoneShardAoi 已抽至纯 C# 共享库（UE5 DS 与 Orleans 共用） -->
+    <ProjectReference Include="..\Horizon.Game.World\Horizon.Game.World.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Common\" />
   </ItemGroup>
-
-  <!-- 编译后将客户端需要的依赖复制�?Flax Tools 目录 -->
-  <Target Name="CopyToFlax" AfterTargets="Build">
-    <PropertyGroup>
-      <FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- 主程序集 -->
-      <FlaxFilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
-      <FlaxFilesToCopy Include="$(TargetDir)$(AssemblyName).xml" />
-      <FlaxFilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
-      <!-- 项目引用与运行时依赖 -->
-      <FlaxFilesToCopy Include="$(TargetDir)*.dll" Exclude="$(TargetDir)Microsoft.CodeAnalysis*.dll" />
-    </ItemGroup>
-
-    <Message Text="正在复制 Horizon.Game.Core 及依赖到 Flax 目录..." Importance="high" />
-
-    <Copy SourceFiles="@(FlaxFilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="WarnAndContinue">
-      <Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
-    </Copy>
-
-    <Message Text="成功复制文件: @(SuccessfullyCopiedFiles)" Importance="high" />
-  </Target>
 
 </Project>

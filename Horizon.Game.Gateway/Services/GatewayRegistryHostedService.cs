@@ -184,7 +184,7 @@ namespace Horizon.Game.Gateway.Services
             }
             catch
             {
-                return "192.168.1.78";
+                return Environment.GetEnvironmentVariable("GATEWAY_PUBLIC_IP") ?? "127.0.0.1";
             }
         }
     }

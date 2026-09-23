@@ -1,0 +1,73 @@
+{
+	"ID": "bb0a6f904fbe2f3b661c0285dd4bd14e",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "5d47f1764f5ce964f6131487a6423ce3",
+		"TypeName": "FlaxEngine.UIControl",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "Divider_H",
+		"Transform": {
+			"Orientation": {
+				"X": -1.0,
+				"Y": -4.3711388286737935e-8,
+				"Z": -4.3711388286737935e-8,
+				"W": 1.910685465164705e-15
+			}
+		},
+		"Control": "HundunWorld.Game.UI.Ink.InkDivider",
+		"Data": {
+			"ClipChildren": false,
+			"CullChildren": true,
+			"AnchorMin": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"AnchorMax": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Offsets": {
+				"Left": 0.0,
+				"Right": 280.0,
+				"Top": 0.0,
+				"Bottom": 1.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0
+			},
+			"Pivot": {
+				"X": 0.5,
+				"Y": 0.5
+			},
+			"Shear": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Rotation": 0.0,
+			"BackgroundColor": {
+				"R": 0.0,
+				"G": 0.0,
+				"B": 0.0,
+				"A": 0.0
+			},
+			"BackgroundBrush": null,
+			"Enabled": true,
+			"Visible": true,
+			"AutoFocus": false
+		}
+	},
+	{
+		"ID": "0a2b75b940952c0743a768b4f1488c6e",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.GenericControlProfile",
+		"ParentID": "5d47f1764f5ce964f6131487a6423ce3",
+		"V": {
+			"ControlTypeName": "InkDivider",
+			"Width": 280.0,
+			"Height": 1.0
+		}
+	}
+]
+}

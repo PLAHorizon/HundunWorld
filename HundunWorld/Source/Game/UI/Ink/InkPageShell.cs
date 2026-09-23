@@ -43,10 +43,37 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>当前挂载的页面（若实现 IInkPage 则缓存引用用于尺寸变化时刷新）</summary>
         private Control _currentPage;
 
+        /// <summary>内容层是否顶部对齐（战斗 HUD 使用，见 <see cref="TopAnchoredContent"/>）</summary>
+        private bool _topAnchoredContent;
+
         /// <summary>
         /// 内容层引用，供 <see cref="InkPageRouter"/> 挂载页面。
         /// </summary>
         public ContainerControl ContentLayer => _contentLayer;
+
+        /// <summary>
+        /// 内容层是否顶部对齐。
+        /// <para>
+        /// 设计空间固定 1920×1080，窗口比例非 16:9 时会多出上下留边：默认上下居中，
+        /// 页面整体会比窗口上边缘低一段（留边高度）。战斗 HUD 需顶部对齐，
+        /// 设计坐标 y=0 才贴合窗口上边缘（罗盘带 10px、边缘边距 12px 才是距屏幕的真实距离）。
+        /// 16:9 及更宽的窗口下无上下留边，此开关无影响。
+        /// </para>
+        /// </summary>
+        public bool TopAnchoredContent
+        {
+            get => _topAnchoredContent;
+            set
+            {
+                if (_topAnchoredContent == value) return;
+                _topAnchoredContent = value;
+                UpdateContentLayout();
+                if (_currentPage is IInkPage inkPage)
+                {
+                    inkPage.RefreshLayout();
+                }
+            }
+        }
 
         /// <summary>
         /// 粒子动效系统引用。
@@ -108,14 +135,17 @@ namespace HundunWorld.Game.UI.Ink
                 AddChild(_vignette);
 
                 // 3. 内容层（z-index 2，页面挂载点，裁剪子控件避免溢出）
+                //    设计坐标系：固定 1920×1080，运行时按窗口等比缩放并居中（随窗口尺寸自适应）——
+                //    与登录页 LoginPanel.LayoutZones 采用同一机制，页面在固定设计空间中布局，
+                //    缩放全部由本层承担。背景/暗角/粒子层仍铺满窗口、不参与缩放。
                 _contentLayer = new ContainerControl
                 {
-                    AnchorPreset = AnchorPresets.StretchAll,
-                    Offsets = Margin.Zero,
                     Visible = true,
                     BackgroundColor = Color.Transparent,
                     ClipChildren = true,
                     AutoFocus = false,
+                    Size = new Float2(UILayout.RefWidth, UILayout.RefHeight),
+                    Pivot = new Float2(0.5f, 0.5f),
                 };
                 AddChild(_contentLayer);
 
@@ -140,6 +170,9 @@ namespace HundunWorld.Game.UI.Ink
                 };
                 AddChild(_backButton);
                 _backButton.Clicked += OnBackButtonClickedInternal;
+
+                // 初始布局：构造期若已有尺寸则立即应用设计坐标系缩放（通常由 OnSizeChanged 在挂载后完成）。
+                UpdateContentLayout();
             }
             catch (Exception ex)
             {
@@ -290,6 +323,70 @@ namespace HundunWorld.Game.UI.Ink
         }
 
         /// <summary>
+        /// 依据外壳当前尺寸更新内容层缩放（设计坐标系 1920×1080 等比缩放并居中）。
+        /// <para>
+        /// 与登录页 <c>LoginPanel.LayoutZones</c> 同一机制：内容层固定设计分辨率、Pivot 居中、
+        /// <c>Scale = min(W/1920, H/1080)</c>；页面在固定设计空间中布局（其 Width/Height 恒为
+        /// 1920×1080），缩放全部由本层承担，保证 UI 随窗口尺寸变化等比缩放。
+        /// 背景/暗角/粒子层保持铺满窗口、不参与缩放（任意窗口比例下全出血）。
+        /// </para>
+        /// </summary>
+        private void UpdateContentLayout()
+        {
+            if (_contentLayer == null) return;
+            float w = Width;
+            float h = Height;
+            if (w <= 0f || h <= 0f) return;
+
+            float designW = UILayout.RefWidth;
+            float designH = UILayout.RefHeight;
+            float s = Mathf.Min(w / designW, h / designH);
+
+            _contentLayer.Size = new Float2(designW, designH);
+            _contentLayer.Pivot = new Float2(0.5f, 0.5f);
+            _contentLayer.Scale = new Float2(s, s);
+
+            // 非 16:9 窗口下缩放后的设计空间与窗口存在上下留边（窗口更高时留边在上、下两侧）。
+            // 默认上下居中；顶部对齐时整体上移一个留边高度，使设计坐标 y=0 贴合窗口上边缘。
+            float verticalSlack = (h - designH * s) * 0.5f;
+            float originY = (h - designH) * 0.5f - (_topAnchoredContent ? verticalSlack : 0f);
+            _contentLayer.Location = new Float2((w - designW) * 0.5f, originY);
+
+            // 返回按钮留在最顶层（粒子层之上）不参与内容层子树，但位置与尺寸跟随设计坐标系缩放。
+            if (_backButton != null)
+            {
+                _backButton.Pivot = Float2.Zero;
+                _backButton.Scale = new Float2(s, s);
+                _backButton.Location = new Float2(
+                    _contentLayer.Location.X + BackButtonMargin * s,
+                    _contentLayer.Location.Y + BackButtonMargin * s);
+            }
+
+            // 同步全局缩放系数（UILayout.S/Font 供页面按需使用）。
+            UILayout.UpdateScale(this);
+        }
+
+        /// <summary>
+        /// 外壳尺寸变化（含窗口分辨率变化）时：重算内容层缩放并刷新当前页面布局。
+        /// </summary>
+        protected override void OnSizeChanged()
+        {
+            base.OnSizeChanged();
+            try
+            {
+                UpdateContentLayout();
+                if (_currentPage is IInkPage inkPage)
+                {
+                    inkPage.RefreshLayout();
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[InkPageShell] OnSizeChanged 处理失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 父容器尺寸变化时，通知当前活动页面刷新布局。
         /// </summary>
         public override void OnParentResized()
@@ -298,7 +395,7 @@ namespace HundunWorld.Game.UI.Ink
 
             try
             {
-                UILayout.UpdateScale(this);
+                UpdateContentLayout();
 
                 if (_currentPage is IInkPage inkPage)
                 {

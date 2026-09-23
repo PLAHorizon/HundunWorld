@@ -64,7 +64,15 @@ namespace Horizon.Game.Gateway.Services
                 ScanIntervalSeconds, HeartbeatTimeout.TotalSeconds);
 
             // 启动延迟，避免与 Silo 初始化竞争
-            await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken).ConfigureAwait(false);
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // 应用在启动延迟期间关闭，正常退出
+                return;
+            }
 
             while (!stoppingToken.IsCancellationRequested)
             {

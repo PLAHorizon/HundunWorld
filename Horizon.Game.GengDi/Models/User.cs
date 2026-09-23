@@ -101,8 +101,13 @@ namespace Horizon.Game.GengDi.Models
                     return;
                 _avatar = normalized;
                 OnPropertyChanged();
-                // 头像地址变更时立即清除旧 Bitmap，再异步加载新的
+                OnPropertyChanged(nameof(HasAvatar));
+                // 头像地址变更时立即清除旧 Bitmap，再异步加载新的。
+                // 显式通知 Bitmap 状态：AvatarBitmap setter 对 null→null 短路（初值即 null），
+                // 但"旧图被清空待加载"是 UI 可见状态变化，必须广播。
                 AvatarBitmap = null;
+                OnPropertyChanged(nameof(AvatarBitmap));
+                OnPropertyChanged(nameof(HasAvatarBitmap));
                 if (!string.IsNullOrWhiteSpace(normalized))
                     _ = LoadAvatarBitmapAsync(normalized);
             }
@@ -133,7 +138,21 @@ namespace Horizon.Game.GengDi.Models
         [Newtonsoft.Json.JsonIgnore]
         public bool HasAvatarBitmap => _avatarBitmap != null;
 
-        public string Bio { get; set; }
+        private string _bio = string.Empty;
+
+        public string Bio
+        {
+            get => _bio;
+            set
+            {
+                if (string.Equals(_bio, value, StringComparison.Ordinal))
+                    return;
+                _bio = value ?? string.Empty;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SocialSummary));
+            }
+        }
+
         public string GroupName { get; set; }
 
         /// <summary>性别（"男"/"女"/"保密"）</summary>

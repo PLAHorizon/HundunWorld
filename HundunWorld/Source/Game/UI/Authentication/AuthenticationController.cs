@@ -457,7 +457,7 @@ public class AuthenticationController : Script
 
         if (response.IsSuccess)
         {
-            _loginPanel.SetStatus("登录成功！正在加载...", UIStyleTokens.StatusSuccess);
+            // 按需求移除"登录成功"提示文案：不再显示状态提示，直接禁用交互等待场景切换。
             _loginPanel.Enabled = false; // 禁用交互，等待场景切换
             _animationManager?.StopAnimations(_loginPanel);
         }

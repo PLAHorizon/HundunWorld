@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -384,6 +384,8 @@ namespace Horizon.Core
     public class Long_Aes
     {
         private const string IV = "LCF52020LCF52020";
+        // 遗留兼容密钥（旧密码系统，供 PassportGrain 校验历史加密密码）。严禁修改此值——
+        // 一旦变更将无法解密历史密码。待全部用户迁移到安全哈希系统后删除本类。
         public const string AesKey = "zLKrO8fjzLKrO8fjzLKrO8fj";
         #region 私有属性
         /// <summary>

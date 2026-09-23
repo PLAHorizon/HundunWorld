@@ -1,0 +1,47 @@
+{
+  "lockVersion": "1.0",
+  "settings": {
+    "resolveConflict": true,
+    "resolveConflictStrict": false,
+    "installAll": true
+  },
+  "overrides": {},
+  "overrideDependencyMap": {},
+  "modules": {
+    ".": {
+      "name": "",
+      "dependencies": {
+        "@tencent/wechat_open_sdk": {
+          "specifier": "^1.0.21",
+          "version": "1.0.21"
+        }
+      },
+      "devDependencies": {},
+      "dynamicDependencies": {},
+      "maskedByOverrideDependencyMap": false
+    },
+    "entry": {
+      "name": "entry",
+      "dependencies": {
+        "@tencent/wechat_open_sdk": {
+          "specifier": "1.0.21",
+          "version": "1.0.21"
+        }
+      },
+      "devDependencies": {},
+      "dynamicDependencies": {},
+      "maskedByOverrideDependencyMap": false
+    }
+  },
+  "packages": {
+    "@tencent/wechat_open_sdk@1.0.21": {
+      "integrity": "sha512-L2j/kcL9xx+sKas696SDHqoK7DGf7pjjWwAi5Dib8rE+xTeeKPinpXtB7l326+8kWA2IFKEyMoNv5cIlSGV35A==",
+      "storePath": "oh_modules/.ohpm/@tencent+wechat_open_sdk@1.0.21",
+      "dependencies": {},
+      "dynamicDependencies": {},
+      "dev": false,
+      "dynamic": false,
+      "maskedByOverrideDependencyMap": false
+    }
+  }
+}

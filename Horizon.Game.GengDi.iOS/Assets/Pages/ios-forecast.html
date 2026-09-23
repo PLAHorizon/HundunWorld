@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苹果花卉市场预报 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen relative">
+        <!-- ============ iOS 导航栏（毛玻璃 sticky） ============ -->
+        <header class="sticky top-0 z-50 backdrop-blur-xl" style="background-color: color-mix(in srgb, var(--gd-card) 72%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--gd-border) 60%, transparent);">
+            <div class="flex items-center justify-between h-11 px-1">
+                <button class="flex items-center gap-0.5 min-h-[44px] px-2 rounded-lg active:opacity-60" style="color: var(--gd-primary);">
+                    <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                    <span class="text-[17px]">返回</span>
+                </button>
+                <h1 class="text-[17px] font-semibold absolute left-1/2 -translate-x-1/2" style="color: var(--gd-foreground);">市场预报</h1>
+                <button class="flex items-center justify-center min-h-[44px] min-w-[44px] px-2 rounded-lg active:opacity-60" style="color: var(--gd-primary);">
+                    <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ============ 页面内容 ============ -->
+        <div class="px-4 pt-3 pb-28 space-y-4">
+
+            <!-- ===== 预报概览 ===== -->
+            <section class="rounded-2xl p-4" style="background-color: var(--gd-card);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-xs" style="color: var(--gd-muted-foreground);">综合预报指数</p>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <span class="text-5xl font-bold tracking-tight" style="color: var(--gd-foreground);">78</span>
+                            <span class="text-sm" style="color: var(--gd-muted-foreground);">分</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full" style="background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning);">中等偏好</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="inline-flex items-center gap-1 px-2 py-1 rounded-lg" style="background-color: var(--gd-state-success-surface); color: var(--gd-state-success);">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span class="text-sm font-semibold">上涨趋势</span>
+                        </div>
+                        <p class="text-xs mt-1.5" style="color: var(--gd-muted-foreground);">未来 7 天</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mt-4 pt-4" style="border-top: 1px solid var(--gd-border);">
+                    <div>
+                        <p class="text-xs" style="color: var(--gd-muted-foreground);">预测品种</p>
+                        <p class="text-lg font-semibold mt-0.5" style="color: var(--gd-foreground);">126</p>
+                    </div>
+                    <div>
+                        <p class="text-xs" style="color: var(--gd-muted-foreground);">上涨占比</p>
+                        <p class="text-lg font-semibold mt-0.5 text-up">68%</p>
+                    </div>
+                    <div>
+                        <p class="text-xs" style="color: var(--gd-muted-foreground);">波动率</p>
+                        <p class="text-lg font-semibold mt-0.5" style="color: var(--gd-state-warning);">12.4</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== iOS Segmented Control ===== -->
+            <div class="flex p-1 rounded-xl" style="background-color: var(--gd-muted);">
+                <button class="flex-1 min-h-[40px] rounded-lg text-sm font-medium transition active:opacity-70" style="background-color: var(--gd-card); color: var(--gd-foreground); box-shadow: var(--gd-shadow-sm);">种植预报</button>
+                <button class="flex-1 min-h-[40px] rounded-lg text-sm font-medium transition active:opacity-70" style="color: var(--gd-muted-foreground);">交易预报</button>
+            </div>
+
+            <!-- ===== 种植雷达图 ===== -->
+            <section class="rounded-2xl p-4" style="background-color: var(--gd-card);">
+                <div class="flex items-center justify-between mb-1">
+                    <h2 class="text-base font-semibold" style="color: var(--gd-foreground);">种植环境雷达</h2>
+                    <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--gd-state-info-surface); color: var(--gd-state-info);">综合 70</span>
+                </div>
+                <p class="text-xs mb-2" style="color: var(--gd-muted-foreground);">五维度环境适配评估</p>
+                <div class="h-60">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </section>
+
+            <!-- ===== 推荐品种 ===== -->
+            <section>
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <h2 class="text-base font-semibold" style="color: var(--gd-foreground);">推荐品种</h2>
+                    <button class="text-xs min-h-[44px] flex items-center gap-0.5 active:opacity-60" style="color: var(--gd-primary);">查看全部 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
+                </div>
+                <div class="space-y-3">
+                    <!-- 红玫瑰 -->
+                    <div class="rounded-2xl p-4 active:opacity-90 transition" style="background-color: var(--gd-card);">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background-color: var(--gd-state-error-surface);">
+                                    <i data-lucide="flower-2" class="w-5 h-5" style="color: var(--gd-state-error);"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold" style="color: var(--gd-foreground);">红玫瑰</p>
+                                    <p class="text-xs" style="color: var(--gd-muted-foreground);">种植周期 45 天</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-base font-semibold" style="color: var(--gd-foreground);">¥3,200</p>
+                                <p class="text-xs text-up">+6.2%</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs" style="color: var(--gd-muted-foreground);">推荐指数</span>
+                                <span class="text-xs font-semibold" style="color: var(--gd-primary);">92%</span>
+                            </div>
+                            <div class="h-2 rounded-full overflow-hidden" style="background-color: var(--gd-muted);">
+                                <div class="h-full rounded-full" style="width: 92%; background-color: var(--gd-primary);"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 百合 -->
+                    <div class="rounded-2xl p-4 active:opacity-90 transition" style="background-color: var(--gd-card);">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background-color: var(--gd-state-info-surface);">
+                                    <i data-lucide="flower" class="w-5 h-5" style="color: var(--gd-state-info);"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold" style="color: var(--gd-foreground);">百合</p>
+                                    <p class="text-xs" style="color: var(--gd-muted-foreground);">种植周期 60 天</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-base font-semibold" style="color: var(--gd-foreground);">¥2,800</p>
+                                <p class="text-xs text-up">+3.8%</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs" style="color: var(--gd-muted-foreground);">推荐指数</span>
+                                <span class="text-xs font-semibold" style="color: var(--gd-primary);">78%</span>
+                            </div>
+                            <div class="h-2 rounded-full overflow-hidden" style="background-color: var(--gd-muted);">
+                                <div class="h-full rounded-full" style="width: 78%; background-color: var(--gd-primary);"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 康乃馨 -->
+                    <div class="rounded-2xl p-4 active:opacity-90 transition" style="background-color: var(--gd-card);">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background-color: var(--gd-state-warning-surface);">
+                                    <i data-lucide="flower" class="w-5 h-5" style="color: var(--gd-state-warning);"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold" style="color: var(--gd-foreground);">康乃馨</p>
+                                    <p class="text-xs" style="color: var(--gd-muted-foreground);">种植周期 50 天</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-base font-semibold" style="color: var(--gd-foreground);">¥2,500</p>
+                                <p class="text-xs text-up">+4.5%</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs" style="color: var(--gd-muted-foreground);">推荐指数</span>
+                                <span class="text-xs font-semibold" style="color: var(--gd-primary);">85%</span>
+                            </div>
+                            <div class="h-2 rounded-full overflow-hidden" style="background-color: var(--gd-muted);">
+                                <div class="h-full rounded-full" style="width: 85%; background-color: var(--gd-primary);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== 市场活跃热力图 ===== -->
+            <section class="rounded-2xl p-4" style="background-color: var(--gd-card);">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-semibold" style="color: var(--gd-foreground);">市场活跃热力图</h2>
+                    <span class="text-xs" style="color: var(--gd-muted-foreground);">近 5 周</span>
+                </div>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="w-10 text-[10px]" style="color: var(--gd-muted-foreground);"></span>
+                    <div class="grid grid-cols-5 gap-1.5 flex-1">
+                        <span class="text-[10px] text-center" style="color: var(--gd-muted-foreground);">W1</span>
+                        <span class="text-[10px] text-center" style="color: var(--gd-muted-foreground);">W2</span>
+                        <span class="text-[10px] text-center" style="color: var(--gd-muted-foreground);">W3</span>
+                        <span class="text-[10px] text-center" style="color: var(--gd-muted-foreground);">W4</span>
+                        <span class="text-[10px] text-center" style="color: var(--gd-muted-foreground);">W5</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="w-10 text-xs" style="color: var(--gd-muted-foreground);">云南</span>
+                    <div class="grid grid-cols-5 gap-1.5 flex-1">
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-state-success) 90%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-state-success) 70%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-brand-300) 90%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: var(--gd-state-success);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-brand-300) 70%, transparent);"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="w-10 text-xs" style="color: var(--gd-muted-foreground);">四川</span>
+                    <div class="grid grid-cols-5 gap-1.5 flex-1">
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-brand-300) 90%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-state-success) 90%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-brand-300) 70%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: var(--gd-brand-300);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-state-success) 70%, transparent);"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="w-10 text-xs" style="color: var(--gd-muted-foreground);">海南</span>
+                    <div class="grid grid-cols-5 gap-1.5 flex-1">
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-state-warning) 90%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: var(--gd-state-error);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-state-warning) 70%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-brand-300) 70%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: var(--gd-state-warning);"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="w-10 text-xs" style="color: var(--gd-muted-foreground);">福建</span>
+                    <div class="grid grid-cols-5 gap-1.5 flex-1">
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-state-success) 90%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-brand-300) 90%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: var(--gd-state-success);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-state-success) 70%, transparent);"></div>
+                        <div class="aspect-square rounded-md" style="background-color: color-mix(in srgb, var(--gd-brand-300) 90%, transparent);"></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-3 text-xs" style="color: var(--gd-muted-foreground);">
+                    <span>低</span>
+                    <div class="flex gap-1">
+                        <span class="w-3 h-3 rounded" style="background-color: var(--gd-state-error);"></span>
+                        <span class="w-3 h-3 rounded" style="background-color: var(--gd-state-warning);"></span>
+                        <span class="w-3 h-3 rounded" style="background-color: var(--gd-brand-300);"></span>
+                        <span class="w-3 h-3 rounded" style="background-color: var(--gd-state-success);"></span>
+                    </div>
+                    <span>高</span>
+                </div>
+            </section>
+
+            <!-- ===== 价格预测 ===== -->
+            <section class="rounded-2xl p-4" style="background-color: var(--gd-card);">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-semibold" style="color: var(--gd-foreground);">价格预测</h2>
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="flex items-center gap-1" style="color: var(--gd-muted-foreground);"><span class="w-2.5 h-2.5 rounded-full" style="background-color: var(--gd-brand-300);"></span>实际</span>
+                        <span class="flex items-center gap-1" style="color: var(--gd-muted-foreground);"><span class="w-2.5 h-2.5 rounded-full" style="background-color: var(--gd-state-warning);"></span>预测</span>
+                    </div>
+                </div>
+                <div class="h-48">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </section>
+
+            <!-- ===== 地域筛选（横向滚动） ===== -->
+            <section>
+                <h2 class="text-base font-semibold mb-3 px-1" style="color: var(--gd-foreground);">地域筛选</h2>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+                    <button class="shrink-0 min-h-[44px] px-5 rounded-full text-sm font-medium active:opacity-70" style="background-color: var(--gd-primary); color: var(--gd-primary-foreground);">全部</button>
+                    <button class="shrink-0 min-h-[44px] px-5 rounded-full text-sm active:opacity-70" style="background-color: var(--gd-muted); color: var(--gd-foreground);">云南</button>
+                    <button class="shrink-0 min-h-[44px] px-5 rounded-full text-sm active:opacity-70" style="background-color: var(--gd-muted); color: var(--gd-foreground);">四川</button>
+                    <button class="shrink-0 min-h-[44px] px-5 rounded-full text-sm active:opacity-70" style="background-color: var(--gd-muted); color: var(--gd-foreground);">海南</button>
+                    <button class="shrink-0 min-h-[44px] px-5 rounded-full text-sm active:opacity-70" style="background-color: var(--gd-muted); color: var(--gd-foreground);">福建</button>
+                    <button class="shrink-0 min-h-[44px] px-5 rounded-full text-sm active:opacity-70" style="background-color: var(--gd-muted); color: var(--gd-foreground);">广东</button>
+                </div>
+            </section>
+
+            <!-- ===== 预警提醒 ===== -->
+            <section>
+                <h2 class="text-base font-semibold mb-3 px-1" style="color: var(--gd-foreground);">预警提醒</h2>
+                <div class="space-y-2.5">
+                    <!-- 警告橙 -->
+                    <div class="rounded-2xl p-3 flex gap-3 active:opacity-90 transition" style="background-color: var(--gd-card); border-left: 3px solid var(--gd-state-warning);">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background-color: var(--gd-state-warning-surface);">
+                            <i data-lucide="alert-triangle" class="w-5 h-5" style="color: var(--gd-state-warning);"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-sm font-semibold" style="color: var(--gd-foreground);">气温骤降预警</p>
+                                <span class="text-xs shrink-0" style="color: var(--gd-muted-foreground);">10 分钟前</span>
+                            </div>
+                            <p class="text-xs mt-1 leading-relaxed" style="color: var(--gd-muted-foreground);">云南昆明未来 48 小时气温下降 8℃，建议加强温室保暖措施。</p>
+                        </div>
+                    </div>
+                    <!-- 信息蓝 -->
+                    <div class="rounded-2xl p-3 flex gap-3 active:opacity-90 transition" style="background-color: var(--gd-card); border-left: 3px solid var(--gd-state-info);">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background-color: var(--gd-state-info-surface);">
+                            <i data-lucide="info" class="w-5 h-5" style="color: var(--gd-state-info);"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-sm font-semibold" style="color: var(--gd-foreground);">种苗入库通知</p>
+                                <span class="text-xs shrink-0" style="color: var(--gd-muted-foreground);">1 小时前</span>
+                            </div>
+                            <p class="text-xs mt-1 leading-relaxed" style="color: var(--gd-muted-foreground);">新一批百合种苗已入库云南基地，可预约下单，库存充足。</p>
+                        </div>
+                    </div>
+                    <!-- 严重红 -->
+                    <div class="rounded-2xl p-3 flex gap-3 active:opacity-90 transition" style="background-color: var(--gd-card); border-left: 3px solid var(--gd-state-error);">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background-color: var(--gd-state-error-surface);">
+                            <i data-lucide="octagon-alert" class="w-5 h-5" style="color: var(--gd-state-error);"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-sm font-semibold" style="color: var(--gd-foreground);">台风严重预警</p>
+                                <span class="text-xs shrink-0" style="color: var(--gd-muted-foreground);">2 小时前</span>
+                            </div>
+                            <p class="text-xs mt-1 leading-relaxed" style="color: var(--gd-muted-foreground);">海南地区台风橙色预警，即日起暂停发货 3 天，请合理安排订单。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ============ iOS Tab Bar（毛玻璃 sticky bottom） ============ -->
+        <nav class="sticky bottom-0 z-50 backdrop-blur-xl" style="background-color: color-mix(in srgb, var(--gd-card) 80%, transparent); border-top: 1px solid color-mix(in srgb, var(--gd-border) 60%, transparent);">
+            <div class="grid grid-cols-5 h-[62px] pb-1">
+                <a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] active:opacity-60" style="color: var(--gd-muted-foreground);">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <span class="text-[10px]">首页</span>
+                </a>
+                <a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] active:opacity-60" style="color: var(--gd-primary);">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span class="text-[10px] font-medium">市场</span>
+                </a>
+                <a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] active:opacity-60" style="color: var(--gd-muted-foreground);">
+                    <i data-lucide="cloud-sun" class="w-5 h-5"></i>
+                    <span class="text-[10px]">预报</span>
+                </a>
+                <a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] active:opacity-60" style="color: var(--gd-muted-foreground);">
+                    <i data-lucide="compass" class="w-5 h-5"></i>
+                    <span class="text-[10px]">发现</span>
+                </a>
+                <a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] active:opacity-60" style="color: var(--gd-muted-foreground);">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                    <span class="text-[10px]">我的</span>
+                </a>
+            </div>
+        </nav>
+    </main>
+
+    <script>
+        // 读取 CSS 变量，保证图表色值与品牌系统一致
+        const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        const gridColor = 'color-mix(in srgb, var(--gd-foreground) 8%, transparent)';
+        const labelColor = cssVar('--gd-muted-foreground');
+
+        // ===== 种植环境雷达图 =====
+        (function () {
+            const ctx = document.getElementById('radarChart');
+            if (!ctx || typeof Chart === 'undefined') return;
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['温度', '湿度', '光照', '降水', '虫害'],
+                    datasets: [{
+                        label: '环境评分',
+                        data: [85, 72, 90, 65, 40],
+                        backgroundColor: 'color-mix(in srgb, var(--gd-brand-500) 22%, transparent)',
+                        borderColor: cssVar('--gd-brand-500'),
+                        borderWidth: 2,
+                        pointBackgroundColor: cssVar('--gd-brand-300'),
+                        pointBorderColor: cssVar('--gd-brand-500'),
+                        pointHoverBackgroundColor: '#ffffff',
+                        pointHoverBorderColor: cssVar('--gd-brand-500'),
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            ticks: { display: false, stepSize: 25 },
+                            grid: { color: gridColor },
+                            angleLines: { color: gridColor },
+                            pointLabels: { color: labelColor, font: { size: 12 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        })();
+
+        // ===== 价格预测折线图（实际 + 预测虚线） =====
+        (function () {
+            const ctx = document.getElementById('priceChart');
+            if (!ctx || typeof Chart === 'undefined') return;
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月'],
+                    datasets: [
+                        {
+                            label: '实际',
+                            data: [2400, 2650, 2580, 2900, 3100, 3050, null, null],
+                            borderColor: cssVar('--gd-brand-300'),
+                            backgroundColor: 'color-mix(in srgb, var(--gd-brand-300) 16%, transparent)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointBackgroundColor: cssVar('--gd-brand-300'),
+                            pointBorderColor: cssVar('--gd-brand-300'),
+                            fill: true,
+                            spanGaps: false
+                        },
+                        {
+                            label: '预测',
+                            data: [null, null, null, null, null, 3050, 3280, 3450],
+                            borderColor: cssVar('--gd-state-warning'),
+                            borderWidth: 2,
+                            borderDash: [5, 4],
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointBackgroundColor: cssVar('--gd-state-warning'),
+                            pointBorderColor: cssVar('--gd-state-warning'),
+                            fill: false,
+                            spanGaps: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    scales: {
+                        x: {
+                            grid: { color: gridColor },
+                            ticks: { color: labelColor, font: { size: 10 } },
+                            border: { display: false }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: labelColor, font: { size: 10 } },
+                            border: { display: false }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        })();
+    </script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -199,6 +199,13 @@ namespace Horizon.IM.Message.Network
         [MemoryPackOrder(13)]
         [Id(13)]
         public new IMServiceType ServiceType { get; set; } = IMServiceType.Group;
+
+        /// <summary>
+        /// 客户端消息ID（用于多端同步时发送方其他设备匹配乐观上屏消息）
+        /// </summary>
+        [MemoryPackOrder(14)]
+        [Id(14)]
+        public string ClientMessageId { get; set; } = "";
     }
 
     /// <summary>

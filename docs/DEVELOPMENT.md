@@ -362,6 +362,21 @@ curl -X POST http://localhost:21901/mcp -H "Content-Type: application/json" -d "
 
 **解决**：检查 `PlayerSessionGrain` 的输入去重逻辑，扩大窗口或排查网络抖动。
 
+### 10.6 发布的游戏在其它电脑报 SSL 错误
+
+**原因**：WebApi（`https://{网关IP}:5101`）使用自签名证书（`Horizon.WebApi/cert.pfx`），
+其它电脑不在信任链内；且发布构建（Development/Release）只定义 `BUILD_DEVELOPMENT`、
+不定义 `DEBUG`，旧版“`#if DEBUG` 才跳过校验”不会生效，登录 / 刷新令牌即报 SSL 连接错误。
+
+**解决**：客户端 TLS 信任策略已收敛到 `DevTlsTrustPolicy`（`HundunWorld/Source/Game/Network/DevTlsTrustPolicy.cs`），
+按以下顺序放行：系统信任证书 → 锁定证书（内置指纹 = `server_cert.pem`，可用游戏目录 `Config/server_cert.pem` 覆盖）
+→ 显式开关 → 回环 / 私有网段地址。可选调控项：
+
+1. 证书轮换：把服务端证书（PEM）放到游戏目录 `Config/server_cert.pem`；
+2. 临时跳过校验：`network_config.json` 设置 `"AllowInsecureSsl": true`，或环境变量 `HUNDUN_FORCE_BYPASS_SSL=1`；
+3. 严格模式（仅系统信任 + 锁定证书）：`network_config.json` 设置 `"AllowInsecureSsl": false`；
+4. 切换后端地址（免重编译）：`network_config.json` 设置 `"WebApiBaseUrl": "https://<ip>:5101/"`。
+
 ---
 
 ## 相关文档

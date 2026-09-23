@@ -61,6 +61,32 @@ public sealed class GatewaySyncDispatcher
     // 带宽预算配置（默认 100kbps 红线，经 BandwidthBudgetValidator 校验兜底）。
     private BandwidthBudgetOptions _bandwidthBudget = new();
 
+    // ── 离线残留会话自愈（2026-08） ────────────────────────────────────────
+    // 背景：连接断开时 ConnectionManager 映射立即移除，但 ZoneShardGrain 侧 AOI 订阅要等
+    // Despawn（15s 宽限）或永远不会清理（Despawn 被跳过 / 网关重启丢失边界分片记录），
+    // 期间 grain 每个广播 tick 仍会向该 sessionId 扇出 → dispatcher 持续丢包（totalDropped 无界增长）。
+    // 自愈：同一会话持续丢包超过 StaleOfflineSessionWindow 仍未恢复投递，触发一次
+    // StaleOfflineSessionDetected 事件，由宿主（网关装配层）触发 Despawn/RemoveSession 清理订阅。
+
+    /// <summary>离线残留判定窗口：持续丢包超过该时长才上报（须大于 15s Despawn 宽限期，
+    /// 避免误杀断线重连场景）。</summary>
+    private static readonly TimeSpan StaleOfflineSessionWindow = TimeSpan.FromSeconds(45);
+
+    /// <summary>检测到疑似离线残留会话（参数：sessionId）。同一会话同一轮丢包只触发一次，
+    /// 直到该会话重新成功投递（tracker 清除）。宿主应据此执行 Despawn/订阅清理。</summary>
+    public event Action<long>? StaleOfflineSessionDetected;
+
+    /// <summary>per-session 离线丢包追踪（key = sessionId）。</summary>
+    private readonly ConcurrentDictionary<long, SessionOfflineDropTracker> _offlineDropTrackers = new();
+
+    private sealed class SessionOfflineDropTracker
+    {
+        public long FirstDropTicks;
+        public long DropCount;
+        // 0 = 未上报；1 = 已上报（Interlocked.CompareExchange 无 bool 重载，用 int）。
+        public int Reported;
+    }
+
     /// <summary>
     /// 服务端带宽预算配置（spec 5.5.1.1）。替换原硬编码 500kbps 阈值默认值。
     /// 为 null 时使用默认预算（100kbps 红线）。赋值时经 <see cref="BandwidthBudgetValidator"/> 校验回退。
@@ -238,6 +264,8 @@ public sealed class GatewaySyncDispatcher
                     SyncMetrics.PacketsDelivered.Add(1);
                     // Task D.4：累计该 session 的下发字节数，并按需触发限流/恢复。
                     RecordSend(sessionId, estimatedBytes);
+                    // 会话恢复投递：清除离线丢包追踪（新一轮判定从头累计）。
+                    _offlineDropTrackers.TryRemove(sessionId, out _);
                 }
                 else
                 {
@@ -245,6 +273,7 @@ public sealed class GatewaySyncDispatcher
                     droppedThisDispatch++;
                     // Phase 4: 补充 PacketsDropped 指标（按 reason 维度）
                     SyncMetrics.PacketsDropped.Add(1, new KeyValuePair<string, object?>("reason", "offline"));
+                    TrackOfflineDrop(sessionId);
                     LogDropWarn(sessionId, evt.Packet.Kind);
                 }
             }
@@ -415,6 +444,42 @@ public sealed class GatewaySyncDispatcher
     }
 
     /// <summary>
+    /// 记录一次离线丢包并判定是否为"离线残留会话"（持续 <see cref="StaleOfflineSessionWindow"/>
+    /// 无法投递）。判定通过时触发一次 <see cref="StaleOfflineSessionDetected"/>（CAS 保证单次）。
+    /// </summary>
+    private void TrackOfflineDrop(long sessionId)
+    {
+        var nowTicks = DateTime.UtcNow.Ticks;
+        var tracker = _offlineDropTrackers.GetOrAdd(
+            sessionId,
+            _ => new SessionOfflineDropTracker { FirstDropTicks = nowTicks });
+
+        Interlocked.Increment(ref tracker.DropCount);
+
+        if (Volatile.Read(ref tracker.Reported) != 0)
+        {
+            return;
+        }
+        if (nowTicks - Volatile.Read(ref tracker.FirstDropTicks) < StaleOfflineSessionWindow.Ticks)
+        {
+            return;
+        }
+        if (Interlocked.CompareExchange(ref tracker.Reported, 1, 0) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            StaleOfflineSessionDetected?.Invoke(sessionId);
+        }
+        catch
+        {
+            // 宿主回调异常不得影响分发主循环。
+        }
+    }
+
+    /// <summary>
     /// 限频输出"包因 session 离线被丢弃"警告（每 10 秒最多一次），避免刷屏。
     /// </summary>
     /// <param name="sessionId">丢失的 sessionId（实际为 characterId）。</param>
@@ -433,9 +498,14 @@ public sealed class GatewaySyncDispatcher
         if (Interlocked.CompareExchange(ref _lastDropWarnTicks, now.Ticks, lastTicks) != lastTicks)
             return;
 
+        // sessionDrops：该会话本轮连续丢包数（totalDropped 为进程生命周期累计值，
+        // 单看累计值无法区分"当前正在丢"与"历史丢过"，补充分会话计数便于诊断）。
+        var sessionDrops = _offlineDropTrackers.TryGetValue(sessionId, out var tracker)
+            ? Interlocked.Read(ref tracker.DropCount)
+            : 0;
         _logger?.LogWarning(
-            "[GatewaySyncDispatcher] Packet dropped: session offline (sessionId={SessionId}, packetKind={PacketKind}, totalDropped={Count})",
-            sessionId, packetKind, DroppedOfflineCount);
+            "[GatewaySyncDispatcher] Packet dropped: session offline (sessionId={SessionId}, packetKind={PacketKind}, sessionDropped={SessionDrops}, totalDropped={Count})",
+            sessionId, packetKind, sessionDrops, DroppedOfflineCount);
     }
 
     // ── Task D.4：per-session 带宽跟踪器 ───────────────────────────────────

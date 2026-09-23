@@ -1,8 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.Core.World;
 using Horizon.Game.Message.Sync;
 using MemoryPack;
@@ -35,12 +35,7 @@ public class PositionDrivenSubscriptionTests
         mockState.SetupGet(s => s.State).Returns(new ZoneShardState());
         var grain = new ZoneShardGrain(logger, mockState.Object);
 
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         grain.SnapshotBroadcastIntervalTicks = 1;
         return grain;

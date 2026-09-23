@@ -658,6 +658,19 @@ namespace Horizon.Game.GengDi.Core.Services
             return await SendMessageAsync(senderId, receiverId, serializedContent, contentType, useGroupTransport).ConfigureAwait(false);
         }
 
+        /// <summary>尽力获取本地文件大小（失败返回 0，接收端显示兜底文案）</summary>
+        private static long TryGetFileSize(string path)
+        {
+            try
+            {
+                return File.Exists(path) ? new FileInfo(path).Length : 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
         public async Task<Horizon.Game.GengDi.Models.IMMessage> SendComposedMessageAsync(
             string senderId,
             string receiverId,
@@ -703,7 +716,18 @@ namespace Horizon.Game.GengDi.Core.Services
             }
             else if (fileAttachment != null)
             {
-                content = RichMessageContent.CreateFile(fileAttachment.SourcePath, draftText);
+                // 共享文件：先上传到 IM 媒体服务，mediaUrl 用远程 URL（接收端可下载打开）。
+                // 上传失败回退本地路径（仅发送端本机可打开），不阻塞消息发送。
+                var fileName = Path.GetFileName(fileAttachment.SourcePath);
+                var fileSize = TryGetFileSize(fileAttachment.SourcePath);
+                var remoteUrl = await ImMediaUploadClient
+                    .UploadAsync(fileAttachment.SourcePath, fileName)
+                    .ConfigureAwait(false);
+                content = RichMessageContent.CreateFile(
+                    remoteUrl ?? fileAttachment.SourcePath,
+                    fileName,
+                    draftText,
+                    fileSize);
             }
             else if (SocialLinkParser.TryExtractFirstUrl(draftText, out var url, out var caption))
             {
@@ -769,6 +793,27 @@ namespace Horizon.Game.GengDi.Core.Services
         }
 
         /// <summary>
+        /// 标记消息为已撤回（按服务端消息ID定位；LiteDB Id 即 ServerMessageId）。
+        /// 返回更新后的消息；消息不存在时返回 null。
+        /// </summary>
+        public Task<Horizon.Game.GengDi.Models.IMMessage> MarkMessageRecalledAsync(string serverMessageId)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(serverMessageId);
+            return ExecuteRepositoryAsync(() =>
+            {
+                var message = _messageRepository.GetById(serverMessageId);
+                if (message == null)
+                {
+                    return null;
+                }
+
+                message.IsRecalled = true;
+                _messageRepository.Update(message);
+                return message;
+            });
+        }
+
+        /// <summary>
         /// 向 IM 网关查询服务端存储的会话列表（含服务端侧未读计数），用于同步离线期间积累的未读消息数量。
         /// 失败时静默返回空列表，不影响主流程。
         /// </summary>
@@ -831,8 +876,8 @@ namespace Horizon.Game.GengDi.Core.Services
             {
                 foreach (var notify in serverMessages)
                 {
-                    // 仅持久化当前用户作为接收方的消息；发送方的消息在本地已记录为发出消息，无需再次写入。
-                    if (notify.ReceiverId != userId)
+                    // 持久化当前用户作为接收方的消息，以及自己发送的消息（多端同步：其他设备发送时本地无记录）
+                    if (notify.ReceiverId != userId && notify.SenderId != userId)
                     {
                         continue;
                     }
@@ -1069,7 +1114,10 @@ namespace Horizon.Game.GengDi.Core.Services
             {
                 Id = messageId,
                 SenderId = senderId,
-                ReceiverId = currentUserId,
+                // 多端同步：自己发的消息回推时 ReceiverId 是对方，不能硬编码为当前用户
+                ReceiverId = notify.ReceiverId > 0
+                    ? notify.ReceiverId.ToString()
+                    : currentUserId,
                 Content = notify.Content ?? string.Empty,
                 Timestamp = notify.Timestamp > 0
                     ? DateTimeOffset.FromUnixTimeMilliseconds(notify.Timestamp).LocalDateTime

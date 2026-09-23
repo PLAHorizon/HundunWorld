@@ -1,0 +1,254 @@
+## page: menu-shop
+## dom-ids: back-hud, buy-dye-set, buy-equipment-box, buy-exp-pill, buy-fine-weapon, buy-mystery-box, buy-newbie-pack, buy-repair-hammer, buy-return-scroll, buy-stamina-pill, cancel-purchase, card-dye-set, card-equipment-box, card-exp-pill, card-fine-weapon, card-mystery-box, card-newbie-pack, card-repair-hammer, card-return-scroll, card-stamina-pill, confirm-purchase, nav-bestiary, nav-character, nav-equipment, nav-livelihood, nav-mail, nav-martial-record, nav-quests, nav-settings, nav-shop, nav-team, qty-decrease, qty-increase, shortcut-casual-mode, tab-appearance, tab-bundle, tab-consumable, tab-equipment, tab-material, tab-recommend
+  div
+    div
+    div
+    div
+    div
+    div
+      div
+        aside .flex-col
+          div .items-center justify-center
+            span | 混沌世界
+          nav .flex-col
+            a #nav-quests .shop-nav-item
+              i
+              span | 任务
+            a #nav-bestiary .shop-nav-item
+              i
+              span | 博物志
+            a #nav-martial-record .shop-nav-item
+              i
+              span | 武林录
+            a #nav-livelihood .shop-nav-item
+              i
+              span | 营生
+            a #nav-team .shop-nav-item
+              i
+              span | 组队
+            a #nav-mail .shop-nav-item
+              i
+              span | 邮箱
+            a #nav-shop .shop-nav-item shop-nav-item-active
+              i
+              span | 商店
+            div
+            a #shortcut-casual-mode .shop-nav-item shop-nav-shortcut
+              i
+              span | 休闲模式
+              span .ink-tag ink-tag-brand | 快捷
+            div
+            a #nav-character .shop-nav-item shop-nav-item-muted
+              i
+              span | 角色
+            a #nav-equipment .shop-nav-item shop-nav-item-muted
+              i
+              span | 装备
+          div
+            a #nav-settings .shop-nav-item shop-nav-item-muted
+              i
+              span | 设置
+        div .flex-col
+          header .items-center
+            div .items-center
+              button #back-hud .ink-btn ink-btn-ghost ink-btn-sm
+                i
+                span | 返回战场
+              div .items-center justify-center
+                i
+              div .items-center
+                span | 无名侠
+                span .ink-tag ink-tag-vermilion | Lv.42
+                span | 逍遥派
+            div .items-center
+              div .items-center
+                i
+                span | 铜钱
+                span .tabular-nums | 12,450
+              div .items-center
+                i
+                span | 银两
+                span .tabular-nums | 328
+          main
+            div
+              div .flex-col md:flex-row md:items-center
+                div .items-center
+                  span .ink-vertical-title | 市集
+                  h1 | 商店
+                div .items-center no-scrollbar
+                  button #tab-recommend .shop-tab shop-tab-active | 推荐
+                  button #tab-equipment .shop-tab | 装备
+                  button #tab-consumable .shop-tab | 消耗品
+                  button #tab-material .shop-tab | 材料
+                  button #tab-appearance .shop-tab | 外观
+                  button #tab-bundle .shop-tab | 礼包
+              div
+                div .grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+                  div #card-newbie-pack .shop-card shop-card-selected
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 新手大礼包
+                      span .ink-tag q-tag-legendary | 传世
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 328
+                        span | 银两
+                      button #buy-newbie-pack .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                  div #card-mystery-box .shop-card
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 神秘宝箱
+                      span .ink-tag q-tag-epic | 史
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 200
+                        span | 银两
+                      button #buy-mystery-box .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                  div #card-equipment-box .shop-card
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 精良装备箱
+                      span .ink-tag q-tag-rare | 珍
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 80
+                        span | 银两
+                      button #buy-equipment-box .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                  div #card-fine-weapon .shop-card
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 精良武器
+                      span .ink-tag q-tag-uncommon | 良
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 50
+                        span | 银两
+                      button #buy-fine-weapon .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                  div #card-exp-pill .shop-card
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 经验丹×10
+                      span .ink-tag q-tag-uncommon | 良
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 20
+                        span | 银两
+                      button #buy-exp-pill .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                  div #card-dye-set .shop-card
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 染色剂套装
+                      span .ink-tag q-tag-rare | 珍
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 120
+                        span | 银两
+                      button #buy-dye-set .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                  div #card-repair-hammer .shop-card
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 修复锤×5
+                      span .ink-tag q-tag-common | 凡
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 500
+                        span | 铜钱
+                      button #buy-repair-hammer .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                  div #card-return-scroll .shop-card
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 回城符×3
+                      span .ink-tag q-tag-common | 凡
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 300
+                        span | 铜钱
+                      button #buy-return-scroll .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                  div #card-stamina-pill .shop-card
+                    div .items-center justify-center
+                      i
+                    div .items-center
+                      span | 体力丹×5
+                      span .ink-tag q-tag-common | 凡
+                    div .items-center
+                      div .items-center
+                        i
+                        span .tabular-nums | 200
+                        span | 铜钱
+                      button #buy-stamina-pill .ink-btn ink-btn-vermilion ink-btn-sm | 购买
+                aside
+                  div .top-0
+                    div .ink-paper-panel
+                      span
+                      span
+                      span
+                      span
+                      div
+                        div .items-center
+                          h2 | 新手大礼包
+                          span .ink-tag q-tag-legendary | 传世
+                        div
+                          p | 礼包内容
+                          div
+                            div .items-center
+                              span | 经验丹
+                              span .tabular-nums | ×10
+                            div .items-center
+                              span | 修复锤
+                              span .tabular-nums | ×5
+                            div .items-center
+                              span | 回城符
+                              span .tabular-nums | ×3
+                            div .items-center
+                              span | 体力丹
+                              span .tabular-nums | ×5
+                            div .items-center
+                              span | 银两
+                              span .tabular-nums | ×500
+                        div
+                        div .items-center
+                          span | 单价
+                          div .items-center
+                            span .tabular-nums | 328
+                            span | 银两
+                        div .items-center
+                          span | 数量
+                          div .items-center
+                            button #qty-decrease .qty-btn [aria="减少数量"] | −
+                            span .tabular-nums text-center | 1
+                            button #qty-increase .qty-btn [aria="增加数量"] | +
+                        div .items-center
+                          span | 总价
+                          div .items-center
+                            span .tabular-nums | 328
+                            span | 银两
+                        div .items-center
+                          span | 当前银两
+                          div .items-center
+                            span .tabular-nums | 328
+                            span | （刚好够）
+                        div
+                          button #confirm-purchase .ink-btn ink-btn-vermilion | 确认购买
+                          button #cancel-purchase .ink-btn paper-btn-outline | 取消
+            footer .items-center
+              span | 混沌世界 · v1.0.0
+              span | 商店系统 · 仅供参考
+
+## COPY (56)
+混沌世界 | 任务 | 博物志 | 武林录 | 营生 | 组队 | 邮箱 | 商店 | 休闲模式 | 快捷 | 角色 | 装备 | 设置 | 返回战场 | 无名侠 | Lv.42 | 逍遥派 | 铜钱 | 12,450 | 银两 | 市集 | 推荐 | 消耗品 | 材料 | 外观 | 礼包 | 新手大礼包 | 传世 | 购买 | 神秘宝箱 | 史 | 精良装备箱 | 珍 | 精良武器 | 良 | 经验丹×10 | 染色剂套装 | 修复锤×5 | 凡 | 回城符×3 | 体力丹×5 | 礼包内容 | 经验丹 | 修复锤 | 回城符 | 体力丹 | ×500 | 单价 | 数量 | 总价 | 当前银两 | （刚好够） | 确认购买 | 取消 | 混沌世界 · v1.0.0 | 商店系统 · 仅供参考

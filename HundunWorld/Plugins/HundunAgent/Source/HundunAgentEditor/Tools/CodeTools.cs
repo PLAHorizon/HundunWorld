@@ -16,10 +16,16 @@ namespace HundunAgent.Tools
     /// </summary>
     public static class CodeTools
     {
-        private static object _scriptsBuilder;
-        private static bool _builderSearched;
-
-        public static string SourceRoot => Path.Combine(Globals.ProjectFolder, "Source");
+        /// <summary>
+        /// Absolute, normalized client Source root.
+        /// </summary>
+        /// <remarks>
+        /// <c>Globals.ProjectFolder</c> arrives with mixed separators (e.g. <c>C:\Works/.../HundunWorld</c>) and
+        /// no guaranteed trailing separator. <see cref="Path.GetFullPath"/> normalizes both the separator style
+        /// and any trailing separator, so it must be applied before any prefix comparison - see
+        /// <see cref="ResolveSourcePath"/>.
+        /// </remarks>
+        public static string SourceRoot => Path.GetFullPath(Path.Combine(Globals.ProjectFolder, "Source"));
 
         public static void Register()
         {
@@ -67,6 +73,18 @@ namespace HundunAgent.Tools
 
         // ==================== 白名单校验 ====================
 
+        /// <summary>
+        /// Resolves a Source-relative path and asserts it stays inside the Source root.
+        /// </summary>
+        /// <remarks>
+        /// Both sides are run through <see cref="Path.GetFullPath"/> before comparing. Previously the root was
+        /// left as raw <c>Path.Combine</c> output while the candidate was normalized, so the mixed separators in
+        /// <c>Globals.ProjectFolder</c> made every comparison fail and code_read / code_write / code_list
+        /// rejected even plainly correct paths such as <c>Game/Game.Build.cs</c>.
+        ///
+        /// The trailing-separator test is not cosmetic: without it <c>...\SourceEvil\x.cs</c> would be accepted
+        /// as a child of <c>...\Source</c>.
+        /// </remarks>
         private static string ResolveSourcePath(string relativePath)
         {
             if (string.IsNullOrEmpty(relativePath))
@@ -75,10 +93,20 @@ namespace HundunAgent.Tools
             var root = SourceRoot;
             var full = Path.GetFullPath(Path.Combine(root, relativePath));
 
-            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            var inside = string.Equals(full, root, StringComparison.OrdinalIgnoreCase) ||
+                         full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                         full.StartsWith(root + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+
+            if (!inside)
                 throw new UnauthorizedAccessException("路径越出 Source 白名单: " + relativePath);
 
             return full;
+        }
+
+        /// <summary>Root-relative, forward-slashed path for display. Robust to either separator style.</summary>
+        private static string ToRelativeDisplay(string fullPath)
+        {
+            return Path.GetRelativePath(SourceRoot, fullPath).Replace('\\', '/');
         }
 
         // ==================== Handlers ====================
@@ -100,7 +128,7 @@ namespace HundunAgent.Tools
                                 !f.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar))
                     .OrderBy(f => f)
                     .Take(limit)
-                    .Select(f => f.Substring(root.Length + 1).Replace('\\', '/'))
+                    .Select(ToRelativeDisplay)
                     .ToList();
 
                 return new { count = files.Count, files };
@@ -183,178 +211,61 @@ namespace HundunAgent.Tools
         {
             var timeoutMs = EditorUtils.GetInt(args, "timeoutMs", 120000);
 
-            var builder = await MainThread.InvokeAsync(GetScriptsBuilder);
-            if (builder == null)
+            // Polling rather than event subscriptions: CompilationBegin/End are static events on the same
+            // assembly we are about to unload during a reload, so a handler here would be revoked by the very
+            // compile it is waiting for.
+
+            // Let the editor notice the file change and enter compiling state (it may already be done).
+            var dirtySeen = await MainThread.WaitUntilAsync(() => FlaxEditor.ScriptsBuilder.IsSourceDirty
+                                                                || FlaxEditor.ScriptsBuilder.IsCompiling,
+                                                            15000);
+
+            // Nudge the check so a build is not left waiting on the editor's own polling interval. Only
+            // trigger it when the sources actually changed: CheckForCompile on a clean tree still runs a
+            // project regeneration, which would reload the editor for no reason.
+            if (dirtySeen)
+                await MainThread.InvokeAsync(() => FlaxEditor.ScriptsBuilder.CheckForCompile());
+
+            var done = await MainThread.WaitUntilAsync(() => !FlaxEditor.ScriptsBuilder.IsCompiling, timeoutMs);
+
+            if (!done)
             {
-                // 找不到编译器对象：退化为等待文件被编辑器感知
-                await Task.Delay(2000);
                 return new
                 {
-                    status = "unknown",
-                    message = "未能定位编辑器脚本编译器（ScriptsBuilder），文件已写入，请在编辑器日志确认编译结果"
+                    status = "timeout",
+                    message = "编译超时（" + timeoutMs + "ms）",
+                    isCompiling = FlaxEditor.ScriptsBuilder.IsCompiling
                 };
             }
 
-            // 等待编辑器感知源码变更并开始编译（最多 15 秒）
-            var dirtySeen = await MainThread.WaitUntilAsync(() =>
+            var failed = FlaxEditor.ScriptsBuilder.LastCompilationFailed;
+            return new
             {
-                var b = GetScriptsBuilder();
-                if (b == null) return true;
-                var isCompiling = (bool)GetBuilderValue(b, "IsCompiling");
-                var dirty = (bool)GetBuilderValue(b, "IsSourceDirty");
-                return isCompiling || dirty;
-            }, 15000);
-
-            // 触发一次编译检查
-            await MainThread.InvokeAsync(() =>
-            {
-                var b = GetScriptsBuilder();
-                if (b != null)
-                {
-                    var check = b.GetType().GetMethod("CheckForCompile");
-                    check?.Invoke(b, null);
-                }
-            });
-
-            // 等待编译结束
-            var done = await MainThread.WaitUntilAsync(() =>
-            {
-                var b = GetScriptsBuilder();
-                if (b == null) return true;
-                return !(bool)GetBuilderValue(b, "IsCompiling");
-            }, timeoutMs);
-
-            if (!done)
-                return new { status = "timeout", message = "编译超时（" + timeoutMs + "ms）" };
-
-            return await MainThread.InvokeAsync<object>(() =>
-            {
-                var b = GetScriptsBuilder();
-                if (b == null)
-                    return new { status = "unknown" };
-
-                var failed = (bool)GetBuilderValue(b, "LastCompilationFailed");
-                return failed
-                    ? (object)new { status = "failed", message = "脚本编译失败，请查看编辑器 Output Log 中的错误" }
-                    : new { status = "success", message = "脚本编译成功，热重载已生效" };
-            });
+                status = failed ? "failed" : "success",
+                dirtyChangeSeen = dirtySeen,
+                compilations = FlaxEditor.ScriptsBuilder.CompilationsCount,
+                message = failed
+                    ? "脚本编译失败，请查看编辑器 Output Log 或 log_errors 工具"
+                    : "脚本编译成功，热重载已生效"
+            };
         }
 
         private static Task<object> CodeBuildStatusAsync(JsonElement args)
         {
-            return MainThread.InvokeAsync<object>(() =>
+            // FlaxEditor.ScriptsBuilder is a static class, so there is no instance to locate and no reason
+            // for the status probe to ever be unavailable. An earlier revision reached it by walking the
+            // Editor object graph with reflection, latched a failed search into a permanent flag, and so
+            // reported "unknown" forever after one miss.
+            return Task.FromResult<object>(new
             {
-                var b = GetScriptsBuilder();
-                if (b == null)
-                    return new { available = false };
-
-                return new
-                {
-                    available = true,
-                    isCompiling = (bool)GetBuilderValue(b, "IsCompiling"),
-                    lastCompilationFailed = (bool)GetBuilderValue(b, "LastCompilationFailed"),
-                    compilationsCount = (int)GetBuilderValue(b, "CompilationsCount"),
-                    isSourceDirty = (bool)GetBuilderValue(b, "IsSourceDirty")
-                };
+                available = true,
+                isCompiling = FlaxEditor.ScriptsBuilder.IsCompiling,
+                isReady = FlaxEditor.ScriptsBuilder.IsReady,
+                lastCompilationFailed = FlaxEditor.ScriptsBuilder.LastCompilationFailed,
+                compilationsCount = FlaxEditor.ScriptsBuilder.CompilationsCount,
+                isSourceDirty = FlaxEditor.ScriptsBuilder.IsSourceDirty,
+                isWorkspaceDirty = FlaxEditor.ScriptsBuilder.IsSourceWorkspaceDirty
             });
-        }
-
-        // ==================== ScriptsBuilder 反射定位 ====================
-
-        private static object GetScriptsBuilder()
-        {
-            if (_builderSearched)
-                return _scriptsBuilder;
-
-            _builderSearched = true;
-            try
-            {
-                var editor = FlaxEditor.Editor.Instance;
-                if (editor == null)
-                    return null;
-
-                var builderType = Type.GetType("FlaxEditor.ScriptsBuilder, FlaxEngine.CSharp");
-                if (builderType == null)
-                {
-                    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        builderType = asm.GetType("FlaxEditor.ScriptsBuilder", false);
-                        if (builderType != null)
-                            break;
-                    }
-                }
-                if (builderType == null)
-                    return null;
-
-                var visited = new HashSet<object>();
-                _scriptsBuilder = FindFieldOfType(editor, builderType, 3, visited);
-            }
-            catch
-            {
-                _scriptsBuilder = null;
-            }
-
-            return _scriptsBuilder;
-        }
-
-        private static object FindFieldOfType(object root, Type targetType, int depth, HashSet<object> visited)
-        {
-            if (root == null || depth < 0 || visited.Contains(root))
-                return null;
-            visited.Add(root);
-
-            var type = root.GetType();
-
-            foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-            {
-                object value;
-                try { value = field.GetValue(root); } catch { continue; }
-                if (value == null) continue;
-
-                if (targetType.IsInstanceOfType(value))
-                    return value;
-
-                if (depth > 0 && value.GetType().Namespace != null &&
-                    value.GetType().Namespace.StartsWith("Flax"))
-                {
-                    var found = FindFieldOfType(value, targetType, depth - 1, visited);
-                    if (found != null)
-                        return found;
-                }
-            }
-
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (!prop.CanRead || prop.GetIndexParameters().Length > 0)
-                    continue;
-                object value;
-                try { value = prop.GetValue(root); } catch { continue; }
-                if (value == null) continue;
-
-                if (targetType.IsInstanceOfType(value))
-                    return value;
-
-                if (depth > 0 && value.GetType().Namespace != null &&
-                    value.GetType().Namespace.StartsWith("Flax"))
-                {
-                    var found = FindFieldOfType(value, targetType, depth - 1, visited);
-                    if (found != null)
-                        return found;
-                }
-            }
-
-            return null;
-        }
-
-        private static object GetBuilderValue(object builder, string name)
-        {
-            var prop = builder.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
-            if (prop != null)
-                return prop.GetValue(builder);
-            var field = builder.GetType().GetField(name, BindingFlags.Public | BindingFlags.Instance);
-            if (field != null)
-                return field.GetValue(builder);
-            throw new MissingMemberException("ScriptsBuilder." + name);
         }
 
         private static object RunIo(Func<object> action)

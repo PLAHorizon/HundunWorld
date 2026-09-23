@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Horizon.Game.Core;
 using Horizon.Game.Core.Handlers;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.Core.World;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Server;
@@ -43,12 +43,7 @@ public class NetworkSyncIntegrationTests
         mockState.SetupGet(s => s.State).Returns(new Horizon.Orleans.Grains.World.ZoneShardState());
         var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
 
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         return grain;
     }

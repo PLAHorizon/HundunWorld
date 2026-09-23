@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Executable golden-value probe for the PCG noise/RNG core.
+
+    Why this exists: PCGVerify builds as a library, so it proves the plugin sources compile but
+    never executes a single line. The golden constants in
+    HundunWorld/Plugins/PCG/Source/PCG/Tests/PCGNoiseGoldenTests.cs are only meaningful if some
+    process actually ran the algorithm and printed real numbers. This harness does that without
+    launching the Flax editor.
+
+    It links the real plugin sources (Link, not a copy) so it measures the shipped implementation
+    rather than a re-typed duplicate; a reimplementation would silently bless its own mistakes.
+
+    Debug.Log is not used here; PCGNoiseGoldenTests writes through it and requires the engine.
+    The probe reads PCGSeededNoise and PCGDeterministicRng directly, which are pure maths.
+
+    Usage:
+        dotnet run project Tools/PCGGoldenRunner/PCGGoldenRunner.csproj (with the usual run flags)
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>PCGGoldenRunner</AssemblyName>
+    <RootNamespace>PCGGoldenRunner</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.12</EngineRoot>
+    <PluginRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\PCG\Source\PCG</PluginRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGSeededNoise.cs" Link="PCGSeededNoise.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGDeterministicRng.cs" Link="PCGDeterministicRng.cs" />
+  </ItemGroup>
+
+</Project>

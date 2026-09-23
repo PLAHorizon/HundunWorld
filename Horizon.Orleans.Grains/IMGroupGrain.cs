@@ -1020,11 +1020,12 @@ namespace Horizon.Orleans.Grains
                     Timestamp = timestamp,
                     MentionedUserIds = message.MentionedUserIds ?? new List<ulong>(),
                     MentionAll = message.MentionAll,
-                    Attachments = message.Attachments ?? new List<string>()
+                    Attachments = message.Attachments ?? new List<string>(),
+                    ClientMessageId = message.ClientMessageId ?? ""
                 };
 
+                // 包含发送者自身，用于多端同步（发送方的其他设备也能收到消息）
                 var recipientIds = state.Members.Keys
-                    .Where(memberId => memberId != message.SenderId)
                     .ToList();
 
                 ObserveBackgroundTask(

@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Horizon.Orleans.Grains;
+using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -33,15 +33,18 @@ namespace Horizon.Orleans.Silo.Services
             try
             {
                 // 激活订单超时扫描 Grain（负责取消超时未支付订单）
-                // 使用 key=1 激活 FlowerOrderTimeoutGrain，OnActivateAsync 会注册定时器
-                var timeoutGrain = _grainFactory.GetGrain<FlowerOrderTimeoutGrain>(1);
+                // 使用 key=1 激活 FlowerOrderTimeoutGrain，OnActivateAsync 会注册定时器。
+                // 修复 BUG：GetGrain<T> 的 T 必须是 Grain 接口——原实现传入实现类
+                // FlowerOrderTimeoutGrain/SchedulerGrain，运行时报
+                // "Argument type must be an interface"，导致两个订单超时任务从未激活。
+                var timeoutGrain = _grainFactory.GetGrain<IFlowerOrderTimeoutGrain>(1);
                 // 调用一次方法确保 Grain 被激活并注册定时器
                 _ = timeoutGrain.ScanAndCancelExpiredOrdersAsync().ConfigureAwait(false);
                 _logger.LogInformation("FlowerOrderTimeoutGrain 已激活，将每5分钟扫描一次超时未支付订单");
 
                 // 激活订单超时调度 Grain（负责催发货、自动确认收货、自动完成订单）
                 // 使用 key=1 激活 FlowerOrderTimeoutSchedulerGrain
-                var schedulerGrain = _grainFactory.GetGrain<FlowerOrderTimeoutSchedulerGrain>(1);
+                var schedulerGrain = _grainFactory.GetGrain<IFlowerOrderTimeoutSchedulerGrain>(1);
                 // 调用一次方法确保 Grain 被激活并注册定时器
                 _ = schedulerGrain.CheckTimeoutAsync().ConfigureAwait(false);
                 _logger.LogInformation("FlowerOrderTimeoutSchedulerGrain 已激活，将每30分钟检查一次订单超时");

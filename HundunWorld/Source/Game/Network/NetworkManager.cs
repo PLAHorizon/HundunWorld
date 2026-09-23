@@ -518,7 +518,8 @@ namespace HundunWorld.Game.Network
         {
             if (_client != null && _client.Online)
             {
-                EnhancedLogging.LogInfo("[DisconnectAsync] 开始断开连接");
+                // 诊断：打印调用栈，定位是谁在「登录后 / 发出请求后」主动断开连接。
+                EnhancedLogging.LogInfo($"[DisconnectAsync] 开始断开连接；调用栈:\n{System.Environment.StackTrace}");
                 await _client.CloseAsync();
                 EnhancedLogging.LogInfo("[DisconnectAsync] 连接已断开");
             }
@@ -539,6 +540,8 @@ namespace HundunWorld.Game.Network
             {
                 try
                 {
+                    // 诊断：Dispose 会触发 Closed 事件，打印调用栈以定位来源。
+                    EnhancedLogging.LogInfo($"[CleanupClient] 释放客户端；调用栈:\n{System.Environment.StackTrace}");
                     _client.Dispose();
                 }
                 catch (Exception ex)
@@ -636,6 +639,24 @@ namespace HundunWorld.Game.Network
             }
 
             EnhancedLogging.LogInfo("[OnClientDisconnected] 客户端断开连接");
+
+            // 诊断（定位「登录后连接被主动关闭」、导致角色列表响应永远收不到）：
+            // 打印关闭原因与本地状态并附带调用栈，一次重现即可定案是谁关的连接。
+            {
+                bool ctsCancelled;
+                try { ctsCancelled = _connectionCts != null && _connectionCts.IsCancellationRequested; }
+                catch (ObjectDisposedException) { ctsCancelled = true; }
+
+                bool clientOnline;
+                try { clientOnline = _client != null && _client.Online; }
+                catch { clientOnline = false; }
+
+                EnhancedLogging.LogInfo(
+                    $"[OnClientDisconnected] 断开诊断: CloseMessage={e?.Message ?? "null"}, " +
+                    $"_isDisposing={_isDisposing}, ctsCancelled={ctsCancelled}, clientOnline={clientOnline}, " +
+                    $"调用栈:\n{System.Environment.StackTrace}");
+            }
+
             EnhancedDiagnostics.LogNetworkOperation("断开连接", $"{_currentGateway?.IP}:{_currentGateway?.Port}", true, "连接断开");
 
             UpdateConnectionStatus(ConnectionStatus.Disconnected);
@@ -1365,6 +1386,10 @@ namespace HundunWorld.Game.Network
                 InitialX = initialX,
                 InitialY = initialY,
                 InitialZ = initialZ,
+                // 协议 v9 起服务器硬校验确定性公式版本（FormulaVersionPolicy.IsCompatible：必须与
+                // MovementFormula.FormulaVersion 精确相等）：漏填（默认 0）或版本落后都会收到
+                // HandshakeRejectPacket、无法进入世界。单点取自双端共用实现，禁止手写常量以免升级漂移。
+                FormulaVersion = Horizon.Game.Sim.MovementFormula.FormulaVersion,
             };
 
             SyncPacketCodec.Encode(handshake, out var frame, out var frameLength);

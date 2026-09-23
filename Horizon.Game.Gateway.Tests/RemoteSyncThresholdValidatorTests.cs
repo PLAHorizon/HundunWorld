@@ -224,4 +224,119 @@ public class RemoteSyncThresholdValidatorTests
         Assert.Equal(8000, result.UltraScaleEntityCap);
         Assert.Empty(sink.ConfigInvalid);
     }
+
+    // ── 阶段 5.3.1 — SnapshotApplySystem 阈值校验 ───────────────────────
+
+    [Fact]
+    public void Validate_InvalidMaxSnapshotsPerFrame_FallsBackTo32()
+    {
+        var sink = new TestSink();
+        var opt = new RemoteSyncThresholdOptions { MaxSnapshotsPerFrame = 0 };
+
+        var result = RemoteSyncThresholdValidator.Validate(opt, sink);
+
+        Assert.Equal(32, result.MaxSnapshotsPerFrame);
+        Assert.Contains(sink.ConfigInvalid, e => e.Field == "MaxSnapshotsPerFrame" && !e.WarningOnly);
+    }
+
+    [Fact]
+    public void Validate_InvalidStaleEntityTimeout_FallsBackTo90()
+    {
+        var sink = new TestSink();
+        var opt = new RemoteSyncThresholdOptions { StaleEntityTimeoutSeconds = 0f };
+
+        var result = RemoteSyncThresholdValidator.Validate(opt, sink);
+
+        Assert.Equal(90f, result.StaleEntityTimeoutSeconds);
+        Assert.Contains(sink.ConfigInvalid, e => e.Field == "StaleEntityTimeoutSeconds" && !e.WarningOnly);
+    }
+
+    [Fact]
+    public void Validate_InvertedAdaptiveDelayBounds_FallsBackMaxToAtLeastMin()
+    {
+        var sink = new TestSink();
+        // 下限 0.3 > 上限 0.1：Math.Clamp 要求 min <= max，必须修正上限
+        var opt = new RemoteSyncThresholdOptions
+        {
+            AdaptiveDelayMinSeconds = 0.3f,
+            AdaptiveDelayMaxSeconds = 0.1f,
+        };
+
+        var result = RemoteSyncThresholdValidator.Validate(opt, sink);
+
+        Assert.Equal(0.3f, result.AdaptiveDelayMinSeconds);
+        Assert.True(result.AdaptiveDelayMaxSeconds >= result.AdaptiveDelayMinSeconds);
+        Assert.Contains(sink.ConfigInvalid, e => e.Field == "AdaptiveDelayMaxSeconds" && !e.WarningOnly);
+    }
+
+    [Fact]
+    public void Validate_InvalidRttEwmaAlpha_FallsBackTo0_125()
+    {
+        var sink = new TestSink();
+        var opt = new RemoteSyncThresholdOptions { RttEwmaAlpha = 2f };
+
+        var result = RemoteSyncThresholdValidator.Validate(opt, sink);
+
+        Assert.Equal(0.125f, result.RttEwmaAlpha);
+        Assert.Contains(sink.ConfigInvalid, e => e.Field == "RttEwmaAlpha" && !e.WarningOnly);
+    }
+
+    [Fact]
+    public void Validate_InvalidDeadReckoningExtrapolation_FallsBackTo0_25()
+    {
+        var sink = new TestSink();
+        var opt = new RemoteSyncThresholdOptions { DeadReckoningMaxExtrapolationSeconds = 0f };
+
+        var result = RemoteSyncThresholdValidator.Validate(opt, sink);
+
+        Assert.Equal(0.25f, result.DeadReckoningMaxExtrapolationSeconds);
+        Assert.Contains(sink.ConfigInvalid, e => e.Field == "DeadReckoningMaxExtrapolationSeconds" && !e.WarningOnly);
+    }
+
+    [Fact]
+    public void Validate_NullOptions_NewFieldDefaultsPreserved()
+    {
+        var result = RemoteSyncThresholdValidator.Validate(null, null);
+
+        Assert.Equal(32, result.MaxSnapshotsPerFrame);
+        Assert.Equal(90f, result.StaleEntityTimeoutSeconds);
+        Assert.Equal(0.1f, result.AdaptiveDelayMinSeconds);
+        Assert.Equal(0.2f, result.AdaptiveDelayMaxSeconds);
+        Assert.Equal(0.1f, result.FixedInterpolationDelaySeconds);
+        Assert.Equal(0.3f, result.MaxDelayChangePerSecond);
+        Assert.Equal(0.125f, result.RttEwmaAlpha);
+        Assert.Equal(0.25f, result.RttJitterBeta);
+        Assert.Equal(0.2f, result.SnapshotArrivalEwmaAlpha);
+        Assert.Equal(0.25f, result.SnapshotArrivalJitterBeta);
+        Assert.Equal(0.05f, result.StopDisplacementThreshold);
+        Assert.Equal(0.5f, result.StopVelocityThreshold);
+        Assert.Equal(300, result.OrphanCleanupInterval);
+        Assert.Equal(60, result.StaleEntityCleanupInterval);
+        Assert.Equal(0.25f, result.DeadReckoningMaxExtrapolationSeconds);
+    }
+
+    [Fact]
+    public void Validate_ValidNewFields_Unchanged()
+    {
+        var sink = new TestSink();
+        var opt = new RemoteSyncThresholdOptions
+        {
+            MaxSnapshotsPerFrame = 64,
+            StaleEntityTimeoutSeconds = 120f,
+            AdaptiveDelayMinSeconds = 0.08f,
+            AdaptiveDelayMaxSeconds = 0.25f,
+            RttEwmaAlpha = 0.2f,
+            DeadReckoningMaxExtrapolationSeconds = 0.4f,
+        };
+
+        var result = RemoteSyncThresholdValidator.Validate(opt, sink);
+
+        Assert.Equal(64, result.MaxSnapshotsPerFrame);
+        Assert.Equal(120f, result.StaleEntityTimeoutSeconds);
+        Assert.Equal(0.08f, result.AdaptiveDelayMinSeconds);
+        Assert.Equal(0.25f, result.AdaptiveDelayMaxSeconds);
+        Assert.Equal(0.2f, result.RttEwmaAlpha);
+        Assert.Equal(0.4f, result.DeadReckoningMaxExtrapolationSeconds);
+        Assert.Empty(sink.ConfigInvalid);
+    }
 }

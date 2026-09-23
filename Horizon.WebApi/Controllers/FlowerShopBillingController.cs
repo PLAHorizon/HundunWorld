@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -34,14 +37,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("pending/{shopId}")]
-        public async Task<ResultVM<List<PendingSettlementState>>> GetPendingSettlementsAsync(long shopId)
+        public async Task<ResultVM<List<PendingSettlementDto>>> GetPendingSettlementsAsync(long shopId)
         {
-            var result = new ResultVM<List<PendingSettlementState>>();
+            var result = new ResultVM<List<PendingSettlementDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IShopBillingGrain>(shopId);
-                result.Data = await grain.GetPendingSettlementsAsync(shopId);
+                var settlements = await grain.GetPendingSettlementsAsync(shopId);
+                result.Data = settlements?.Select(s => FlowerDtoMapper.ToDto(s)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -110,14 +114,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("account-items/{shopId}")]
-        public async Task<ResultVM<List<ShopAccountItemState>>> GetShopAccountItemsAsync(long shopId)
+        public async Task<ResultVM<List<ShopAccountItemDto>>> GetShopAccountItemsAsync(long shopId)
         {
-            var result = new ResultVM<List<ShopAccountItemState>>();
+            var result = new ResultVM<List<ShopAccountItemDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IShopBillingGrain>(shopId);
-                result.Data = await grain.GetShopAccountItemsAsync(shopId);
+                var items = await grain.GetShopAccountItemsAsync(shopId);
+                result.Data = items?.Select(i => FlowerDtoMapper.ToDto(i)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

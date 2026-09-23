@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Components;
 

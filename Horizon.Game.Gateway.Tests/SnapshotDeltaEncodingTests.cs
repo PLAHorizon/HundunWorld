@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -33,12 +33,7 @@ public class SnapshotDeltaEncodingTests
         mockState.SetupGet(s => s.State).Returns(new Horizon.Orleans.Grains.World.ZoneShardState());
         var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
 
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         // 测试环境：每 tick 广播（60Hz），验证每 tick 的 delta 语义。
         // 生产环境默认 3（20Hz 降频），但单元测试需要精确验证每次 TickAsync 的广播行为。
@@ -336,7 +331,7 @@ public class SnapshotDeltaEncodingTests
         // ===== 跳跃同步验证 =====
         // 提交跳跃输入（InputBits bit0=1），计算跳跃后的预测 Z 位置
         // 使用 MovementFormula.Step 计算与服务端一致的预测位置，避免 correction
-        var (_, _, predictedJumpZ, _) = Horizon.Game.Core.Sim.MovementFormula.Step(
+        var (_, _, predictedJumpZ, _) = Horizon.Game.Sim.MovementFormula.Step(
             0f, 0f, ecsZ, 0f,  // 起始位置 ECS (0, 0, 8)
             0f, 0f,             // 不移动
             5.5f,               // 普通跳跃冲量
@@ -540,8 +535,8 @@ public class SnapshotDeltaEncodingTests
     [Fact]
     public void ClientRebuildsFullState_FromDeltaSnapshot()
     {
-        // 清理上次测试的静态状态
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
+        // 独立系统实例（阶段 6.4）：重建状态与 merge 缓冲均为实例级，并行测试互不串扰。
+        var system = new SnapshotApplySystem();
 
         // 1. 构造全量快照（BaselineTick=0），含 3 个实体
         var fullSnapshot = new SnapshotPacket
@@ -557,7 +552,7 @@ public class SnapshotDeltaEncodingTests
         };
 
         // 模拟网络层应用全量快照后通知 SnapshotApplySystem
-        SnapshotApplySystem.OnFullSnapshotApplied(fullSnapshot);
+        system.OnFullSnapshotApplied(fullSnapshot);
 
         // 2. 构造增量快照（BaselineTick=100），仅含实体 8001 的变化
         var deltaSnapshot = new SnapshotPacket
@@ -571,7 +566,7 @@ public class SnapshotDeltaEncodingTests
         };
 
         // 3. 尝试重建
-        var rebuilt = SnapshotApplySystem.TryRebuildFromDelta(deltaSnapshot);
+        var rebuilt = system.TryRebuildFromDelta(deltaSnapshot);
 
         // 4. 验证重建结果
         Assert.NotNull(rebuilt);
@@ -594,9 +589,6 @@ public class SnapshotDeltaEncodingTests
         var d8003 = rebuilt.Deltas.First(d => d.EntityId == 8003);
         Assert.Equal(20f, d8003.Transform!.Value.X);
         Assert.Equal(60, d8003.State!.Value.Health);
-
-        // 清理
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
     }
 
     // =======================================================================
@@ -609,7 +601,7 @@ public class SnapshotDeltaEncodingTests
     [Fact]
     public void ClientRebuildsFullState_RejectsMismatchedBaseline()
     {
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
+        var system = new SnapshotApplySystem();
 
         var fullSnapshot = new SnapshotPacket
         {
@@ -617,7 +609,7 @@ public class SnapshotDeltaEncodingTests
             BaselineTick = 0,
             Deltas = new[] { MakeDelta(entityId: 9001, x: 0, y: 0, z: 0) },
         };
-        SnapshotApplySystem.OnFullSnapshotApplied(fullSnapshot);
+        system.OnFullSnapshotApplied(fullSnapshot);
 
         // BaselineTick=200（不匹配 100）→ 应返回 null
         var mismatchedDelta = new SnapshotPacket
@@ -627,10 +619,8 @@ public class SnapshotDeltaEncodingTests
             Deltas = new[] { MakeDelta(entityId: 9001, x: 5, y: 0, z: 0) },
         };
 
-        var result = SnapshotApplySystem.TryRebuildFromDelta(mismatchedDelta);
+        var result = system.TryRebuildFromDelta(mismatchedDelta);
         Assert.Null(result);
-
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
     }
 
     // =======================================================================
@@ -643,7 +633,7 @@ public class SnapshotDeltaEncodingTests
     [Fact]
     public void ClientRebuildsFullState_NullBaselineRejectsDelta()
     {
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
+        var system = new SnapshotApplySystem();
 
         var delta = new SnapshotPacket
         {
@@ -652,9 +642,7 @@ public class SnapshotDeltaEncodingTests
             Deltas = new[] { MakeDelta(entityId: 10001, x: 1, y: 0, z: 0) },
         };
 
-        var result = SnapshotApplySystem.TryRebuildFromDelta(delta);
+        var result = system.TryRebuildFromDelta(delta);
         Assert.Null(result);
-
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
     }
 }

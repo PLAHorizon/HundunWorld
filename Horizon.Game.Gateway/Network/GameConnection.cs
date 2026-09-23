@@ -88,6 +88,14 @@ namespace Horizon.Game.Gateway.Network
         public DateTime LastActiveTime { get; set; }
 
         /// <summary>
+        /// 是否已收到过客户端数据（幽灵连接判定的权威依据，由
+        /// <see cref="ClientPacketPipeline.HandleReceivedAsync"/> 在收到数据时置位）。<br/>
+        /// 不能用 <c>LastActiveTime - ConnectedTime</c> 推断：连接条目若在首包到达时才补注册，
+        /// 两个时间戳相差不足 1ms，会把活连接误判为"从未收到数据"并清理。
+        /// </summary>
+        public bool HasReceivedData { get; set; }
+
+        /// <summary>
         /// 是否已连接
         /// </summary>
         public bool IsConnected => !_isBroken && _client.Online;

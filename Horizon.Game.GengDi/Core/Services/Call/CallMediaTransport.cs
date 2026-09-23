@@ -266,7 +266,7 @@ namespace Horizon.Game.GengDi.Core.Services.Call
 
                 try
                 {
-                    HandleDatagram(result.Buffer);
+                    HandleDatagram(result.Buffer, result.RemoteEndPoint);
                 }
                 catch (Exception ex)
                 {
@@ -275,7 +275,7 @@ namespace Horizon.Game.GengDi.Core.Services.Call
             }
         }
 
-        private void HandleDatagram(byte[] buffer)
+        private void HandleDatagram(byte[] buffer, IPEndPoint source)
         {
             if (buffer == null || buffer.Length < HeaderSize)
             {
@@ -287,6 +287,13 @@ namespace Horizon.Game.GengDi.Core.Services.Call
             if (magic != Magic || callHash != _callIdHash)
             {
                 return;
+            }
+
+            // 源地址学习：对端（尤其移动端 NAT/多网卡场景）经信令告知的端点可能不可达，
+            // 收到通过校验的合法媒体包时以包源地址为准（callId 哈希已验证包归属本会话）。
+            if (_remoteEndpoint is null || !Equals(_remoteEndpoint, source))
+            {
+                _remoteEndpoint = source;
             }
 
             Interlocked.Exchange(ref LastPacketReceivedMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());

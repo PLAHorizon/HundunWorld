@@ -1,0 +1,60 @@
+## page: guide-martial
+## dom-ids: back-hud, gm-modal-title, guide-martial-practice, link-multiplayer
+  main
+    div
+      div
+      div
+      div
+      div
+    div
+      div .gm-modal
+        span
+        span
+        span
+        span
+        header .gm-header
+          h2 #gm-modal-title .gm-title
+            span .gm-title-deco | 奇术引导
+          button #back-hud .gm-close-btn [aria="返回战场"]
+        section [aria="奇术信息"]
+          div .gm-skill-icon
+            span | 遁
+          div
+            span | 遁地术
+            span .ink-tag ink-tag-brand | 奇术 · 主动
+          section .gm-combo-section [aria="连招步骤"]
+            h3 .gm-subtitle | 连招步骤
+            div
+              article
+                div
+                  span | 壹
+                  span .gm-step-title | 起手
+                  span [aria="按键 Q"] | Q
+                p | 按
+                  span | Q | 键释放遁地术，潜入地下。
+              div .gm-step-arrow
+              article
+                div
+                  span | 贰
+                  span .gm-step-title | 潜行
+                  span [aria="长按 Q"] | 长按 Q
+                p | 长按
+                  span | Q | 键保持潜行状态，可躲避敌人视线。
+              div .gm-step-arrow
+              article
+                div
+                  span | 叁
+                  span .gm-step-title | 突袭
+                  span [aria="松开 Q"] | 松开 Q
+                p | 松开
+                  span | Q | 键跃出地面，对周围敌人造成突袭伤害。
+            section .gm-timing-section [aria="释放时机"]
+              h3 .gm-subtitle | 释放时机
+              p | 在
+                span | 敌人攻击时 | 释放遁地术，可避开伤害并反击。
+              div
+                button #guide-martial-practice .ink-btn ink-btn-primary | 开始练习
+                button #link-multiplayer .ink-btn ink-btn-ghost | 联机切磋
+
+## COPY (25)
+奇术引导 | 遁 | 遁地术 | 奇术 · 主动 | 连招步骤 | 壹 | 起手 | 按 | 键释放遁地术，潜入地下。 | 贰 | 潜行 | 长按 Q | 长按 | 键保持潜行状态，可躲避敌人视线。 | 叁 | 突袭 | 松开 Q | 松开 | 键跃出地面，对周围敌人造成突袭伤害。 | 释放时机 | 在 | 敌人攻击时 | 释放遁地术，可避开伤害并反击。 | 开始练习 | 联机切磋

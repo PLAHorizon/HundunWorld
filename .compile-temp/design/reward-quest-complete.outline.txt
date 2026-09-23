@@ -1,0 +1,70 @@
+## page: reward-quest-complete
+## dom-ids: back-hud, shortcut-photo-mode
+  main
+    div
+      div
+      div
+      div
+        div .quest-modal
+          span
+          span
+          span
+          span
+          div
+          div
+          div
+            div .quest-title-section
+              h1 .quest-title | 任务完成
+              div
+                span | 成
+              div .quest-name-section
+                div | 昆仑山异兽调查
+                span .ink-tag ink-tag-brand | 主线任务
+              div .evaluation-section
+                div .evaluation-subtitle | 完成评价
+                div | S
+                div | 完美通关
+                div
+                div .reward-section
+                  div .reward-subtitle | 获得奖励
+                  div .reward-list
+                    div .reward-item
+                      div .reward-item-icon reward-icon-jade
+                      span .reward-item-label | 经验
+                      span .reward-item-value reward-value-jade | +8,500
+                      div .reward-item
+                        div .reward-item-icon reward-icon-gold
+                        span .reward-item-label | 铜钱
+                        span .reward-item-value reward-value-gold | +3,200
+                        div .reward-item
+                          div .reward-item-icon reward-icon-gold
+                          span .reward-item-label | 元宝
+                          span .reward-item-value reward-value-gold | +50
+                          div .reward-item
+                            div .reward-item-icon reward-icon-vermilion
+                            span .reward-item-label | 物品
+                            span .reward-item-name | 墨麒麟鳞片
+                            span .reward-item-count | ×2
+                            div .reward-item
+                              div .reward-item-icon reward-icon-jade
+                              span .reward-item-label | 声望
+                              span .reward-item-value reward-value-jade | +100
+                              span .reward-item-faction | 青城派
+                  div .exp-section
+                    div .exp-header
+                      span .exp-subtitle | 经验值
+                      span .exp-value | 8,500 / 12,000
+                    div .ink-bar exp-bar
+                      div .ink-bar-fill exp-bar-fill
+                    div | 距离升级还需 3,500 经验
+                  div .confirm-section
+                    button #back-hud .ink-btn ink-btn-primary ink-btn-lg confirm-button
+                      span | 确认
+                    div
+                      a #shortcut-photo-mode .ink-btn ink-btn-ghost ink-btn-sm
+                        span | 拍照留念
+                      a
+                        span | 分享战绩
+
+## COPY (23)
+任务完成 | 成 | 昆仑山异兽调查 | 主线任务 | 完成评价 | 完美通关 | 获得奖励 | 经验 | +8,500 | 铜钱 | +3,200 | 元宝 | 物品 | 墨麒麟鳞片 | 声望 | +100 | 青城派 | 经验值 | 8,500 / 12,000 | 距离升级还需 3,500 经验 | 确认 | 拍照留念 | 分享战绩

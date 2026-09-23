@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Arch.Core;
 using Horizon.Game.ECS.Arch.Components;
+using Horizon.Game.ECS.Arch.Configuration;
 using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.ECS.Arch.Network;
+using Microsoft.Extensions.Logging;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Components;
 
@@ -23,6 +25,33 @@ namespace Horizon.Game.ECS.Arch.Systems;
 [ArchSystem(SystemGroup.NetworkReceive, order: 10)]
 public sealed class SnapshotApplySystem : ArchSystemBase
 {
+    /// <summary>
+    /// 快照接收队列（注入用）。阶段 6.4（共享静态竞态修复）：默认生产单例
+    /// <see cref="SnapshotReceiveBuffer.Instance"/>，测试可注入独立实例隔离并行串扰。
+    /// </summary>
+    private readonly SnapshotReceiveBuffer _receiveBuffer;
+
+    /// <summary>
+    /// 创建快照应用系统。
+    /// </summary>
+    /// <param name="receiveBuffer">快照接收队列（可选）：默认生产单例
+    /// <see cref="SnapshotReceiveBuffer.Instance"/>；测试注入独立实例以隔离并行串扰。</param>
+    public SnapshotApplySystem(SnapshotReceiveBuffer? receiveBuffer = null)
+    {
+        _receiveBuffer = receiveBuffer ?? SnapshotReceiveBuffer.Instance;
+    }
+
+    /// <summary>
+    /// 无参构造（供 <see cref="Horizon.Game.ECS.Arch.Core.SystemRegistry"/> 反射注册使用）：
+    /// 使用生产单例 <see cref="SnapshotReceiveBuffer.Instance"/>。
+    /// <para>
+    /// ⚠ 必须显式提供真·无参构造：反射以 <c>GetConstructor(Type.EmptyTypes)</c> 识别构造，
+    /// "全部参数可选"的构造函数不算无参——曾导致本系统在客户端被静默跳过
+    /// （快照不被应用、远端实体不创建、多客户端互相不可见的直接根因）。
+    /// </para>
+    /// </summary>
+    public SnapshotApplySystem() : this(null) { }
+
     /// <summary>EntityId 到 Arch Entity 的映射表。</summary>
     private readonly Dictionary<ulong, Entity> _entityIdToArchEntity = new();
 
@@ -33,7 +62,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // 当收到 BaselineTick != 0 的增量快照时，基于本字段重建完整状态。
     // 由网络层在应用全量快照后调用 OnFullSnapshotApplied 更新。
     // 跨线程读写使用 Volatile 保证可见性。
-    private static SnapshotPacket? _lastAppliedSnapshot;
+    // 阶段 6.4（共享静态竞态修复）：实例级字段——并行测试各建实例，不再跨测试串扰。
+    private SnapshotPacket? _lastAppliedSnapshot;
 
     // Task 1：LocalPlayerOwnerId 的 backing 字段，跨线程读写使用 Volatile 保证可见性。
     private ulong _localPlayerOwnerId;
@@ -104,10 +134,11 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // Task 2：单帧消费上限溢出日志限频时间戳（Stopwatch.GetTimestamp() 单位）。
     private long _lastOverflowLogTime;
 
-    // 孤儿实体清理：每 300 帧（约 5 秒 @60fps）扫描一次映射字典，
+    // 孤儿实体清理：每 OrphanCleanupInterval 帧（默认 300 ≈ 5 秒 @60fps）扫描一次映射字典，
     // 移除 Arch World 中已不存活的实体引用，防止内存泄漏和字典膨胀。
+    // 阶段 5.3.1：收敛到 <see cref="RemoteSyncThresholdOptions.OrphanCleanupInterval"/>（<see cref="ApplyOptions"/> 注入）。
     private int _orphanCleanupCounter;
-    private const int OrphanCleanupInterval = 300;
+    public static int OrphanCleanupInterval { get; set; } = 300;
     private readonly List<ulong> _orphanKeysToRemove = new();
     /// <summary>累计清理的孤儿实体映射数（诊断用）。</summary>
     public long OrphanMappingsCleaned { get; private set; }
@@ -120,7 +151,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // 正常在线角色的 TimeSinceLastSnapshot 不会超过 1~2 秒，10 秒阈值足够安全。
     // 误判风险极低：即使误清理，后续收到 Spawn delta 会重新创建实体。
     private int _staleEntityCleanupCounter;
-    private const int StaleEntityCleanupInterval = 60; // 每 60 帧（约 1 秒 @60fps）扫描一次
+    /// <summary>远程实体超时清理扫描间隔（帧）。阶段 5.3.1：由 <see cref="ApplyOptions"/> 从配置注入。</summary>
+    public static int StaleEntityCleanupInterval { get; set; } = 60; // 每 60 帧（约 1 秒 @60fps）扫描一次
 
     // 停止检测（修复远程角色"前后摇动"）：
     // 远程玩家停止后，服务端增量过滤（EntityDeltaChanged Transform 阈值 0.01m）抑制位置快照，
@@ -128,14 +160,16 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // 若新位置与旧 Target 位移小于此阈值，判定实体已停止 → 清零外推速度 + 置 IsStopped。
     // 阈值 0.05m：覆盖服务端增量过滤下限 + 心跳量化误差；低于 0.05m/50ms ≈ 1 m/s 的
     // 缓慢移动视觉上近静止，误判影响可忽略。
-    private const float StopDisplacementThreshold = 0.05f;
-    private const float StopDisplacementThresholdSq = StopDisplacementThreshold * StopDisplacementThreshold;
+    /// <summary>停止判定位移阈值（米）。阶段 5.3.1：由 <see cref="ApplyOptions"/> 从配置注入。</summary>
+    public static float StopDisplacementThreshold { get; set; } = 0.05f;
+    private static float StopDisplacementThresholdSq => StopDisplacementThreshold * StopDisplacementThreshold;
 
     // 速度停止阈值（米/秒）：MovementState 心跳携带的水平速度低于此值视为停止。
     // 0.5m/s 覆盖服务端速度量化/噪声（MovementValidator 速度按回放帧归一，静止时≈0），
     // 同时不误判低速行走（Run≈6m/s）。阈值平方用于快速比较。
-    private const float StopVelocityThreshold = 0.5f;
-    private const float StopVelocityThresholdSq = StopVelocityThreshold * StopVelocityThreshold;
+    /// <summary>速度停止阈值（米/秒）。阶段 5.3.1：由 <see cref="ApplyOptions"/> 从配置注入。</summary>
+    public static float StopVelocityThreshold { get; set; } = 0.5f;
+    private static float StopVelocityThresholdSq => StopVelocityThreshold * StopVelocityThreshold;
     private readonly List<ulong> _staleEntityIds = new();
     /// <summary>
     /// 远程实体超时阈值（秒）。超过此时间未收到任何快照更新的远程实体将被客户端主动清理。
@@ -165,9 +199,9 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // 位置 Update 可被新快照覆盖，但生命周期事件丢失会导致实体永久缺失。
     private readonly List<(EntityDelta Delta, long ServerTick)> _pendingLifecycleDeltas = new();
 
-    // Task 3：增量合并缓冲复用（静态方法 TryRebuildFromDelta 使用）。
-    private static readonly Dictionary<ulong, EntityDelta> _deltaMergeBufferStatic = new();
-    private static readonly List<EntityDelta> _deltaMergeListStatic = new();
+    // Task 3：增量合并缓冲复用（实例方法 TryRebuildFromDelta 使用），避免每帧分配 Dictionary/数组。
+    private readonly Dictionary<ulong, EntityDelta> _deltaMergeBufferStatic = new();
+    private readonly List<EntityDelta> _deltaMergeListStatic = new();
 
     /// <summary>累计已消费的快照包总数（从不重置）。</summary>
     public long TotalSnapshotsApplied => _totalSnapshotsApplied;
@@ -221,6 +255,19 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     private static long _adaptiveLastArrivalTimestamp;
     private static readonly object _adaptiveLock = new();
 
+    // 修复（远程角色"偶有卡顿"——delayTicks 逐帧跳变）：
+    // 目标延迟每帧实时重算（avg+2*jitter 的 EWMA，Jitter 40-220ms 时大幅波动，
+    // 日志 AdaptiveWindow 100→180→150ms 反复跳）→ delayTicks = delay×60 在 6~10.8 间逐帧跳变
+    // → renderTick = latestTick - delayTicks 同步跳 → 插值位置相对快照时间点来回移 → 卡顿。
+    // 对生效延迟做时间门控限幅：每帧最多向目标收敛 MaxDelayChangePerSecond/60，
+    // 使 delayTicks 平滑过渡（多实体/多调用共享同一生效值，时间门控保证每秒步进 ≤60 次）。
+    private static float _effectiveDelaySeconds;
+    private static long _lastDelayStepTimestamp;
+
+    /// <summary>平滑延迟最大变化速率（秒/秒）。默认 0.3 → 60fps 下每帧 ≤5ms 步进，
+    /// 100ms 的窗口变化约 0.33s 平滑过渡。调小更平滑但窗口响应变慢；调大响应快但平滑性下降。</summary>
+    public static float MaxDelayChangePerSecond { get; set; } = 0.3f;
+
     // [A2] RTT 输入：心跳/InputAck 测量的网络往返延迟（秒）与抖动（秒）。
     // 到达间隔统计（_adaptiveAvgInterval/_adaptiveJitter）反映的是"包到达节奏"，
     // 无法感知整体链路延迟抬升（如 4G/WiFi 切换后 RTT 从 40ms 涨到 180ms，
@@ -228,8 +275,11 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // RTT/2 + rttJitter，否则快照尚在途中插值缓冲已耗尽，表现为周期性卡顿。
     private static float _adaptiveRttSeconds;
     private static float _adaptiveRttJitterSeconds;
-    private const float RttEwmaAlpha = 0.125f;   // EWMA 平滑因子（与 TCP RTT 估计一致）
-    private const float RttJitterBeta = 0.25f;
+    /// <summary>RTT EWMA 平滑因子（与 TCP RTT 估计一致）。阶段 5.3.1：由 <see cref="ApplyOptions"/> 从配置注入。</summary>
+    public static float RttEwmaAlpha { get; set; } = 0.125f;
+
+    /// <summary>RTT 抖动 EWMA 平滑因子。阶段 5.3.1：由 <see cref="ApplyOptions"/> 从配置注入。</summary>
+    public static float RttJitterBeta { get; set; } = 0.25f;
 
     /// <summary>自适应插值延迟下限（秒）：避免窗口过小导致 dead reckoning 突跳（闪移修复，见 Phase C4 注释）。</summary>
     public static float AdaptiveDelayMinSeconds { get; set; } = 0.1f;
@@ -247,6 +297,39 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// </summary>
     public static ISyncDiagnosticsSink? Diagnostics { get; set; }
 
+    // ── 阶段 5.3.1 — 阈值配置注入（RemoteSyncThresholdOptions → 本系统）──
+
+    /// <summary>快照到达间隔 EWMA 平滑因子。阶段 5.3.1：由 <see cref="ApplyOptions"/> 从配置注入。</summary>
+    public static float SnapshotArrivalEwmaAlpha { get; set; } = 0.2f;
+
+    /// <summary>快照到达抖动 EWMA 平滑因子。阶段 5.3.1：由 <see cref="ApplyOptions"/> 从配置注入。</summary>
+    public static float SnapshotArrivalJitterBeta { get; set; } = 0.25f;
+
+    /// <summary>
+    /// 阶段 5.3.1：从 <see cref="RemoteSyncThresholdOptions"/> 注入全部阈值（经
+    /// <see cref="RemoteSyncThresholdValidator"/> 校验，非法值回退默认并输出诊断事件）。
+    /// 由游戏层在启动装配时调用一次；未调用时各属性默认值与历史硬编码一致（兜底）。
+    /// </summary>
+    /// <param name="options">阈值配置（可为 null 或含非法值，均由校验器兜底）。</param>
+    public void ApplyOptions(RemoteSyncThresholdOptions? options)
+    {
+        var o = RemoteSyncThresholdValidator.Validate(options, Diagnostics);
+        MaxSnapshotsPerFrame = o.MaxSnapshotsPerFrame;
+        StaleEntityTimeoutSeconds = o.StaleEntityTimeoutSeconds;
+        AdaptiveDelayMinSeconds = o.AdaptiveDelayMinSeconds;
+        AdaptiveDelayMaxSeconds = o.AdaptiveDelayMaxSeconds;
+        FixedInterpolationDelaySeconds = o.FixedInterpolationDelaySeconds;
+        MaxDelayChangePerSecond = o.MaxDelayChangePerSecond;
+        RttEwmaAlpha = o.RttEwmaAlpha;
+        RttJitterBeta = o.RttJitterBeta;
+        SnapshotArrivalEwmaAlpha = o.SnapshotArrivalEwmaAlpha;
+        SnapshotArrivalJitterBeta = o.SnapshotArrivalJitterBeta;
+        StopDisplacementThreshold = o.StopDisplacementThreshold;
+        StopVelocityThreshold = o.StopVelocityThreshold;
+        OrphanCleanupInterval = o.OrphanCleanupInterval;
+        StaleEntityCleanupInterval = o.StaleEntityCleanupInterval;
+    }
+
     /// <summary>上次报告的自适应延迟（秒），用于检测显著变化触发诊断事件。</summary>
     private static float _lastReportedDelay;
 
@@ -259,12 +342,14 @@ public sealed class SnapshotApplySystem : ArchSystemBase
 
     /// <summary>
     /// 待上送的 baseline 重传请求队列（由 ECSUpdateDriver 消费并通过 NetworkManager 发送服务端）。
+    /// 阶段 6.4（共享静态竞态修复）：实例级队列——并行测试各建实例，不再跨测试串扰；
+    /// 静态 <see cref="TakePendingResyncRequest"/> 保留为转发到共享实例的兼容面。
     /// </summary>
-    private static readonly Queue<BaselineResyncRequestPacket> _pendingResyncRequests = new();
-    private static readonly object _resyncLock = new();
+    private readonly Queue<BaselineResyncRequestPacket> _pendingResyncRequests = new();
+    private readonly object _resyncLock = new();
 
     /// <summary>入队一个 baseline 重传请求（限流 16 避免队列爆炸）。</summary>
-    private static void EnqueueResyncRequest(BaselineResyncRequestPacket req)
+    private void EnqueueResyncRequest(BaselineResyncRequestPacket req)
     {
         lock (_resyncLock)
         {
@@ -274,7 +359,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     }
 
     /// <summary>取出一个待上送的 baseline 重传请求（无则返回 null），供 ECSUpdateDriver 消费发送。</summary>
-    public static BaselineResyncRequestPacket? TakePendingResyncRequest()
+    public BaselineResyncRequestPacket? TakePendingResyncRequest()
     {
         lock (_resyncLock)
         {
@@ -344,7 +429,43 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 _lastReportedDelay = result;
                 Diagnostics.OnAdaptiveWindowAdjusted(lastReported, result, rtt, jitter);
             }
-            return result;
+
+            // 修复（远程角色"偶有卡顿"——delayTicks 逐帧跳变）：
+            // 目标延迟 result 每帧重算（Jitter 大时大幅波动）→ delayTicks 逐帧跳变 →
+            // renderTick 同步跳 → 插值位置抖动。对生效值做时间门控限幅：
+            // 每帧最多向目标收敛 MaxDelayChangePerSecond/60，使 delayTicks 平滑过渡。
+            lock (_adaptiveLock)
+            {
+                var now = Stopwatch.GetTimestamp();
+                if (_lastDelayStepTimestamp == 0)
+                {
+                    // 首次（或重连重置后）：直接吸附目标，避免延迟启动。
+                    _effectiveDelaySeconds = result;
+                    _lastDelayStepTimestamp = now;
+                }
+                else
+                {
+                    var elapsedSec = (float)((now - _lastDelayStepTimestamp) / (double)Stopwatch.Frequency);
+                    if (elapsedSec >= 1f / 60f)
+                    {
+                        _lastDelayStepTimestamp = now;
+                        var maxStep = MaxDelayChangePerSecond * elapsedSec;
+                        var diff = result - _effectiveDelaySeconds;
+                        // 大幅跳变（>50ms，如测试直接注入极端 avgInterval、网络质量等级切换）：
+                        // 一次步进到目标，避免"永远追不上 clamp 边界"的稳态偏差。
+                        // 正常运行 Jitter 波动通常 <50ms，仍走平滑限幅（≤5ms/帧）。
+                        if (MathF.Abs(diff) >= 0.05f)
+                        {
+                            _effectiveDelaySeconds = result;
+                        }
+                        else
+                        {
+                            _effectiveDelaySeconds += Math.Clamp(diff, -maxStep, maxStep);
+                        }
+                    }
+                }
+            }
+            return _effectiveDelaySeconds;
         }
     }
 
@@ -381,6 +502,9 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             _adaptiveRttSeconds = 0f;
             _adaptiveRttJitterSeconds = 0f;
             _currentNetworkQualityLevel = NetworkQualityLevel.Strong;
+            // 重置平滑生效延迟：下次 getter 首次直接吸附新目标，避免旧窗口值污染新连接。
+            _effectiveDelaySeconds = 0f;
+            _lastDelayStepTimestamp = 0;
         }
     }
 
@@ -395,11 +519,11 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 var intervalSec = (float)((now - _adaptiveLastArrivalTimestamp) / (double)Stopwatch.Frequency);
                 _adaptiveAvgInterval = _adaptiveAvgInterval == 0f
                     ? intervalSec
-                    : _adaptiveAvgInterval + 0.2f * (intervalSec - _adaptiveAvgInterval);
+                    : _adaptiveAvgInterval + SnapshotArrivalEwmaAlpha * (intervalSec - _adaptiveAvgInterval);
                 var deviation = Math.Abs(intervalSec - _adaptiveAvgInterval);
                 _adaptiveJitter = _adaptiveJitter == 0f
                     ? deviation
-                    : _adaptiveJitter + 0.25f * (deviation - _adaptiveJitter);
+                    : _adaptiveJitter + SnapshotArrivalJitterBeta * (deviation - _adaptiveJitter);
             }
             _adaptiveLastArrivalTimestamp = now;
         }
@@ -413,7 +537,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// </para>
     /// </summary>
     /// <param name="snapshot">已应用的全量快照（BaselineTick 应为 0）。</param>
-    public static void OnFullSnapshotApplied(SnapshotPacket snapshot)
+    /// <remarks>阶段 6.4（共享静态竞态修复）：实例方法，作用于本实例状态。</remarks>
+    public void OnFullSnapshotApplied(SnapshotPacket snapshot)
     {
         Volatile.Write(ref _lastAppliedSnapshot, snapshot);
     }
@@ -428,7 +553,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// </summary>
     /// <param name="deltaSnapshot">待应用的全量或增量快照。</param>
     /// <returns>重建后的全量快照；若 baseline 不匹配则返回 null。</returns>
-    internal static SnapshotPacket? TryRebuildFromDelta(SnapshotPacket deltaSnapshot)
+    /// <remarks>阶段 6.4（共享静态竞态修复）：实例方法，使用本实例的 merge 缓冲与缓存。</remarks>
+    internal SnapshotPacket? TryRebuildFromDelta(SnapshotPacket deltaSnapshot)
     {
         if (deltaSnapshot.BaselineTick == 0)
         {
@@ -471,7 +597,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// <summary>
     /// Task D.3.3：重置客户端快照缓存（重连/握手场景使用，避免旧 baseline 污染新连接）。
     /// </summary>
-    public static void ResetLastAppliedSnapshot()
+    /// <remarks>阶段 6.4（共享静态竞态修复）：实例方法，作用于本实例状态。</remarks>
+    public void ResetLastAppliedSnapshot()
     {
         Volatile.Write(ref _lastAppliedSnapshot, null);
     }
@@ -510,7 +637,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[SnapshotApplySystem] GetRemoteEntityIds 遍历异常: {ex.Message}");
+            Log?.LogDebug($"[SnapshotApplySystem] GetRemoteEntityIds 遍历异常: {ex.Message}");
         }
 
         return result;
@@ -555,13 +682,13 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         // 生命周期 delta 不可丢弃——位置 Update 可被新快照覆盖，但生命周期事件是幂等状态迁移，
         // 丢失后实体永久缺失（服务端只在注册时补发一次 Spawn）。提取到 _pendingLifecycleDeltas，
         // 本帧消费前优先应用（HandleSpawn 幂等，重复应用安全）。
-        var queueCount = SnapshotReceiveBuffer.Instance.Count;
+        var queueCount = _receiveBuffer.Count;
         if (queueCount > MaxSnapshotsPerFrame)
         {
             var toDrop = queueCount - MaxSnapshotsPerFrame;
             for (int i = 0; i < toDrop; i++)
             {
-                if (!SnapshotReceiveBuffer.Instance.TryDequeue(out var dropped))
+                if (!_receiveBuffer.TryDequeue(out var dropped))
                     break;
                 if (dropped?.Deltas != null)
                 {
@@ -600,7 +727,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             _pendingLifecycleDeltas.Clear();
         }
 
-        while (consumedThisTick < MaxSnapshotsPerFrame && SnapshotReceiveBuffer.Instance.TryDequeue(out var snapshot))
+        while (consumedThisTick < MaxSnapshotsPerFrame && _receiveBuffer.TryDequeue(out var snapshot))
         {
             consumedThisTick++;
             RecordSnapshotArrival(); // [Phase C4] 记录快照到达时间，更新自适应延迟统计
@@ -661,7 +788,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SnapshotApplySystem] BaselineApplied 订阅者异常被隔离: {ex.Message}");
+                    Log?.LogDebug($"[SnapshotApplySystem] BaselineApplied 订阅者异常被隔离: {ex.Message}");
                 }
             }
             else
@@ -754,14 +881,14 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         }
 
         // Task 2：单帧消费上限溢出 — 队列仍有剩余时，限频（每秒一次）输出 Debug 日志。
-        if (SnapshotReceiveBuffer.Instance.Count > 0)
+        if (_receiveBuffer.Count > 0)
         {
             OverflowCount++; // [Phase C6] 溢出计数，供游戏层转发到 ClientSyncMetrics
             var now = Stopwatch.GetTimestamp();
             if (now - _lastOverflowLogTime >= Stopwatch.Frequency)
             {
                 _lastOverflowLogTime = now;
-                Debug.WriteLine($"[SnapshotApplySystem] 单帧消费上限 {MaxSnapshotsPerFrame} 达到，剩余队列长度: {SnapshotReceiveBuffer.Instance.Count}");
+                Log?.LogDebug($"[SnapshotApplySystem] 单帧消费上限 {MaxSnapshotsPerFrame} 达到，剩余队列长度: {_receiveBuffer.Count}");
             }
         }
 
@@ -1080,7 +1207,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 Interlocked.Increment(ref _handleUpdateSpawnFallbackCount);
                 if (updateCount <= 5 || updateCount % 120 == 1)
                 {
-                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount}: 实体 {delta.EntityId} 不在字典，走 Spawn 回退。Transform={(delta.Transform.HasValue ? $"X={delta.Transform.Value.X:F2},Y={delta.Transform.Value.Y:F2},Z={delta.Transform.Value.Z:F2}" : "null")}");
+                    Log?.LogDebug($"[SnapshotApplySystem] HandleUpdate#{updateCount}: 实体 {delta.EntityId} 不在字典，走 Spawn 回退。Transform={(delta.Transform.HasValue ? $"X={delta.Transform.Value.X:F2},Y={delta.Transform.Value.Y:F2},Z={delta.Transform.Value.Z:F2}" : "null")}");
                 }
                 HandleSpawn(world, delta, serverTick);
             }
@@ -1110,7 +1237,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 // （本地玩家无 InterpolatedTransformComponent），插值不会被错误更新。
                 if (updateCount <= 5 || updateCount % 120 == 1)
                 {
-                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount}: EntityId={delta.EntityId} 为本地玩家，仅写 AuthTransformComponent");
+                    Log?.LogDebug($"[SnapshotApplySystem] HandleUpdate#{updateCount}: EntityId={delta.EntityId} 为本地玩家，仅写 AuthTransformComponent");
                 }
                 world.Set(archEntity, ref newTransform);
             }
@@ -1122,7 +1249,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 var interpCount = Interlocked.Increment(ref _handleUpdateRemoteInterpCount);
                 if (interpCount <= 5 || interpCount % 120 == 1)
                 {
-                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 远程实体插值更新: EntityId={delta.EntityId}, State={interp.State}, OldPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), NewTarget=({newTransform.X:F2},{newTransform.Y:F2},{newTransform.Z:F2}), Yaw={newTransform.Yaw:F2}, ServerTick={serverTick}");
+                    Log?.LogDebug($"[SnapshotApplySystem] HandleUpdate#{updateCount} 远程实体插值更新: EntityId={delta.EntityId}, State={interp.State}, OldPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), NewTarget=({newTransform.X:F2},{newTransform.Y:F2},{newTransform.Z:F2}), Yaw={newTransform.Yaw:F2}, ServerTick={serverTick}");
                 }
 
                 // 状态机分支：按远程实体当前状态精确控制行为
@@ -1222,7 +1349,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 // 补加后走与正常远程实体相同的插值更新路径，确保移动/旋转/跳跃可见。
                 if (updateCount <= 10 || updateCount % 120 == 1)
                 {
-                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 修复: EntityId={delta.EntityId} 非本地玩家但缺少 InterpolatedTransformComponent，已补加。IsLocalPlayer={netId.IsLocalPlayer}");
+                    Log?.LogDebug($"[SnapshotApplySystem] HandleUpdate#{updateCount} 修复: EntityId={delta.EntityId} 非本地玩家但缺少 InterpolatedTransformComponent，已补加。IsLocalPlayer={netId.IsLocalPlayer}");
                 }
 
                 var recoveryInterp = new InterpolatedTransformComponent
@@ -1395,7 +1522,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         _entityIdToArchEntity.Clear();
         if (count > 0)
         {
-            Debug.WriteLine($"[SnapshotApplySystem] 已清理所有实体映射: {count} 个");
+            Log?.LogDebug($"[SnapshotApplySystem] 已清理所有实体映射: {count} 个");
         }
     }
 
@@ -1422,7 +1549,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 _entityIdToArchEntity.Remove(key);
             }
             OrphanMappingsCleaned += _orphanKeysToRemove.Count;
-            Debug.WriteLine($"[SnapshotApplySystem] 孤儿实体清理: 移除 {_orphanKeysToRemove.Count} 个已失效映射，字典剩余 {_entityIdToArchEntity.Count}");
+            Log?.LogDebug($"[SnapshotApplySystem] 孤儿实体清理: 移除 {_orphanKeysToRemove.Count} 个已失效映射，字典剩余 {_entityIdToArchEntity.Count}");
         }
     }
 
@@ -1502,7 +1629,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             var delta = new EntityDelta { EntityId = entityId, Kind = EntityDeltaKind.Despawn };
             HandleDespawn(world, delta);
             StaleEntitiesCleaned++;
-            Debug.WriteLine(
+            Log?.LogDebug(
                 $"[SnapshotApplySystem] 超时清理: 实体 {entityId} 超过 {timeout:F0} 秒未收到快照（Stale 状态），" +
                 $"判定为离线并主动清理（服务端 Despawn delta 可能尚未到达）");
         }

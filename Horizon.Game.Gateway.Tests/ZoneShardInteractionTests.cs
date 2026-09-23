@@ -28,12 +28,7 @@ public class ZoneShardInteractionTests
 
         // ZoneShardGrain 直接 new 时 GrainContext 为 null，导致 GetPrimaryKeyLong() 抛 NullReferenceException。
         // 通过反射注入 mock IGrainContext，使日志参数中的 GetPrimaryKeyLong() 调用不再抛异常。
-        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
-        var mockContext = new Mock<IGrainContext>();
-        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
-
-        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
-        contextField?.SetValue(grain, mockContext.Object);
+        GrainTestHarness.AttachGrainContext(grain);
 
         return grain;
     }

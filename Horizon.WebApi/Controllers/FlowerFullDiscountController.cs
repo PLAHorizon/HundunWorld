@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -34,15 +37,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{ruleId}")]
-        public async Task<ResultVM<FullDiscountRuleState>> GetRuleAsync(long ruleId)
+        public async Task<ResultVM<FullDiscountRuleDto>> GetRuleAsync(long ruleId)
         {
-            var result = new ResultVM<FullDiscountRuleState>();
+            var result = new ResultVM<FullDiscountRuleDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IFullDiscountGrain>(0);
-                result.Data = await grain.GetRuleAsync(ruleId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetRuleAsync(ruleId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -53,14 +57,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("shop/{shopId}")]
-        public async Task<ResultVM<List<FullDiscountRuleState>>> GetShopRulesAsync(long shopId)
+        public async Task<ResultVM<List<FullDiscountRuleDto>>> GetShopRulesAsync(long shopId)
         {
-            var result = new ResultVM<List<FullDiscountRuleState>>();
+            var result = new ResultVM<List<FullDiscountRuleDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IFullDiscountGrain>(0);
-                result.Data = await grain.GetShopRulesAsync(shopId);
+                var rules = await grain.GetShopRulesAsync(shopId);
+                result.Data = rules?.Select(r => FlowerDtoMapper.ToDto(r)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

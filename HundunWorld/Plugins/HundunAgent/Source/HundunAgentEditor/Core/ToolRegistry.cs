@@ -85,6 +85,12 @@ namespace HundunAgent.Core
             Tools.ViewportEnvTools.Register();
             Tools.CodeTools.Register();
             Tools.TaskTools.Register();
+            Tools.UiDesignTools.Register();
+            Tools.UiPrefabTools.Register();
+            Tools.SimulationTools.Register();
+            Tools.LogTools.Register();
+            Tools.LevelDesignTools.Register();
+            Tools.DevWorkflowTools.Register();
 
             IsInitialized = true;
             FlaxEngine.Debug.Log("[HundunAgent] 工具注册完成，共 " + _tools.Count + " 个工具");

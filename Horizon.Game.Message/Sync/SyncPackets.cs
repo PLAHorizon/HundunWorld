@@ -43,8 +43,18 @@ public static class SyncProtocolVersion
     ///        （<c>InterestGradeOptions</c>/<c>ISyncInterestGradeStrategy</c>）；客户端新增规模档位控制
     ///        （<c>SyncScaleController</c>，20/100/1000/5000）。本次无包结构变更，版本提升用于标识
     ///        重构后的兼容语义边界。
+    ///   v9 = <see cref="HandshakePacket"/> 新增 <see cref="HandshakePacket.FormulaVersion"/> 字段：
+    ///        客户端在握手时上报自身确定性公式版本（<c>MovementFormula.FormulaVersion</c>），
+    ///        服务器校验不匹配即拒绝连接，使"版本化公式双端同步"从测试断言变为运行时不变量。
+    ///        <see cref="SyncProtocolVersion.MinimumSupported"/> 保持 5 不变（旧客户端仍被公式版本检查拒绝）。
+    ///   v10 = <see cref="HandshakePacket"/> 新增 <see cref="HandshakePacket.ShardId"/> 字段（阶段 4 多 Shard 水平扩展）：
+    ///        服务器握手成功后回填目标 Shard ID（<c>IShardRouter.Resolve(characterId)</c>），客户端据此知晓
+    ///        自身所在 Shard（诊断/分流/未来客户端直连 DS 的依据）；客户端请求时可忽略（默认 0）。
+    ///        追加在末尾且为引用类型类成员，MemoryPack 前向容错（旧读取端跳过未知尾部成员），
+    ///        配合过渡期软校验（版本 != Current 仅告警不拒绝）保证 v9 客户端不中断。
+    ///        <see cref="SyncProtocolVersion.MinimumSupported"/> 保持 5 不变。
     /// </summary>
-    public const int Current = 8;
+    public const int Current = 10;
 
     /// <summary>
     /// 服务器支持的最低协议版本。低于此版本的客户端握手将被拒绝并收到 <see cref="HandshakeRejectPacket"/>，
@@ -108,7 +118,7 @@ public enum SyncPacketKind : byte
 [MemoryPackUnion(6, typeof(InputAckPacket))]
 [MemoryPackUnion(7, typeof(ReconnectResumePacket))]
 // 注意：union tag 8 对应 SyncPacketKind.InteractionSync=9（枚举中 Unknown=0 占位导致偏移 1）。
-// MemoryPack 要求 tag 从 0 起连续递增，不可跳号，因此这里显式写 8 而非 (byte)SyncPacketKind.InteractionSync(=9)。
+// MemoryPack union 只要求 tag 唯一（不要求连续）；"连续递增"仅为本项目约定。此处显式写 8 而非 (byte)SyncPacketKind.InteractionSync(=9)。
 [MemoryPackUnion(8, typeof(InteractionSyncPacket))]
 // 注意：union tag 9 对应 SyncPacketKind.SceneObjectSync=10（枚举中 Unknown=0 占位导致偏移 1）。
 // 紧跟 InteractionSyncPacket 的 tag 8，保持 0..9 连续递增。
@@ -169,6 +179,26 @@ public sealed partial class HandshakePacket : SyncPacket
     [MemoryPackOrder(6)]
     [Id(4)]
     public float InitialZ { get; set; }
+
+    /// <summary>
+    /// 客户端使用的确定性公式版本（<see cref="Horizon.Game.Sim.MovementFormula.FormulaVersion"/>）。
+    /// 服务器在 <c>HandleHandshakeAsync</c> 中校验：不匹配则拒绝连接并返回 <see cref="HandshakeRejectPacket"/>，
+    /// 避免双端公式版本不一致导致校正风暴。
+    /// 默认 0 表示未设置（旧客户端），服务器会拒绝。
+    /// </summary>
+    [MemoryPackOrder(7)]
+    [Id(5)]
+    public int FormulaVersion { get; set; }
+
+    /// <summary>
+    /// 服务器分配的目标 Shard ID（服务器→客户端回显字段；客户端请求时可忽略，默认 0）。<br/>
+    /// 握手成功后服务器把 <c>IShardRouter.Resolve(characterId)</c> 的结果回填，
+    /// 使客户端知晓自身所在 Shard（阶段 4 多 Shard 水平扩展：诊断/分流/未来客户端直连 DS 的依据）。<br/>
+    /// 默认 0 = 未知（单 Shard 或旧客户端）。
+    /// </summary>
+    [MemoryPackOrder(8)]
+    [Id(6)]
+    public long ShardId { get; set; }
 
     public HandshakePacket() { Kind = SyncPacketKind.Handshake; }
 }
@@ -857,7 +887,7 @@ public sealed partial class DamagePacket : SyncPacket
     [Id(2)]
     public int DamageAmount { get; set; }
 
-    /// <summary>伤害类型（复用 ICharacterStateBridge 中的 DamageType 编码）。</summary>
+    /// <summary>伤害类型（复用 CharacterCombatContract 中 DamageType 的编码语义）。</summary>
     [MemoryPackOrder(5)]
     [Id(3)]
     public byte DamageType { get; set; }

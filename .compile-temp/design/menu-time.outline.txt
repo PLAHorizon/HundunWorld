@@ -1,0 +1,144 @@
+## page: menu-time
+## dom-ids: back-hud, btn-wait-1shichen, btn-wait-dawn, btn-wait-dusk, centerGlow, dialFace, pointerGlow, shortcut-quests
+  main
+    div
+    div
+    div
+      aside .flex-col
+        div .items-center justify-center
+          span .ink-vertical-title | 时辰
+        nav .flex-col
+          a .nav-item items-center | 角色
+          a .nav-item items-center | 装备
+          a .nav-item items-center | 外观
+          a .nav-item items-center | 备战
+          a .nav-item items-center | 门派
+          a .nav-item items-center | 个人信息
+          a .nav-item nav-item-active items-center | 时间
+            a .nav-item nav-item-disabled items-center | 任务
+            a .nav-item nav-item-disabled items-center | 博物志
+            a .nav-item nav-item-disabled items-center | 武林录
+            a .nav-item nav-item-disabled items-center | 营生
+            a .nav-item nav-item-disabled items-center | 组队
+            a .nav-item nav-item-disabled items-center | 邮箱
+            a .nav-item nav-item-disabled items-center | 商店
+              a .nav-item nav-item-disabled items-center | 设置
+      div .flex-col
+        header .items-center
+          div .items-center
+            button #back-hud .ink-btn ink-btn-ghost [aria="返回"]
+            button .items-center justify-center [aria="打开菜单"]
+            div .items-center justify-center | 无
+            div .items-center
+              span | 无名侠
+              span .ink-tag ink-tag-brand | Lv.42
+              span | 逍遥派
+          div .items-center
+            button #shortcut-quests .ink-btn ink-btn-ghost ink-btn-sm | 任务
+            div .items-center
+              div .items-center
+                span | 铜钱
+                span | 12,450
+              div .items-center
+                span | 银两
+                span | 328
+        div .dial-section-wrap
+          div .dial-section flex-col
+            div
+            div
+            div .items-start
+              span .ink-vertical-title | 时辰
+              div
+                h1 | 十二时辰
+                p | 子丑寅卯辰巳 · 午未申酉戌亥
+            div .items-center justify-center
+              div
+                    radialgradient #dialFace
+                    radialgradient #centerGlow
+                    filter #pointerGlow
+                  text | 夜市
+                  text | 巡夜
+                  text | 晨钟
+                  text | 早市
+                  text | 早课
+                  text | 武馆
+                  text | 集市
+                  text | 茶馆
+                  text | 比武
+                  text | 晚歇
+                  text | 花灯
+                  text | 夜行
+                  text | 子
+                  text | 丑
+                  text | 寅
+                  text | 卯
+                  text | 辰
+                  text | 巳
+                  text | 午
+                  text | 未
+                  text | 申
+                  text | 酉
+                  text | 戌
+                  text | 亥
+                  g
+                  text .center-shichen | 午时
+                  text .center-date | 三月初七
+            div
+              div .legend-item
+                span
+                span | 当前时辰
+              div .legend-item
+                span
+                span | 其他时辰
+              div .legend-item
+                span
+                span | 外圈活动
+          div
+            div .ink-paper-panel
+              h2 .panel-title-paper | 当前时辰
+              div .time-info-grid
+                div .time-info-item
+                  div .time-info-label | 日期
+                  div .time-info-value | 三月初七
+                div .time-info-item
+                  div .time-info-label | 时辰
+                  div .time-info-value time-info-value-active | 午时
+                    span
+                div .time-info-item
+                  div .time-info-label | 天气
+                  div .time-info-value | 晴
+            div .ink-panel
+              span
+              span
+              span
+              span
+              h2 .panel-title-gold | 时间快进
+              div .flex-col
+                button #btn-wait-1shichen .ink-btn ink-btn-primary ink-btn-lg | 等待1时辰
+                button #btn-wait-dusk .ink-btn ink-btn-ghost ink-btn-lg | 等待至黄昏
+                button #btn-wait-dawn .ink-btn ink-btn-ghost ink-btn-lg | 等待至黎明
+            div .ink-panel
+              span
+              span
+              span
+              span
+              h2 .panel-title-gold | 时辰影响
+              div .effect-list
+                div .effect-item
+                  i .effect-icon
+                  div | 不同时辰影响NPC出现与消失，部分商贩仅在昼间营业，夜行侠客多出没于亥子之时
+                div .effect-item
+                  i .effect-icon
+                  div | 夜间某些区域出现特殊事件，荒郊古寺、深巷暗街或有奇遇
+                div .effect-item
+                  i .effect-icon
+                  div | 特定时辰可修炼特定功法，子时练阴属功法事半功倍，午时修阳属心法收效甚佳
+            div .hint-bar
+              i .hint-icon
+              span | 等待时间可能触发随机事件
+        footer .items-center
+          span | 混沌世界 v1.0.0
+          span | 混沌盛世 · 32ms
+
+## COPY (68)
+时辰 | 角色 | 装备 | 外观 | 备战 | 门派 | 个人信息 | 时间 | 任务 | 博物志 | 武林录 | 营生 | 组队 | 邮箱 | 商店 | 设置 | 无 | 无名侠 | Lv.42 | 逍遥派 | 铜钱 | 12,450 | 银两 | 十二时辰 | 子丑寅卯辰巳 · 午未申酉戌亥 | 夜市 | 巡夜 | 晨钟 | 早市 | 早课 | 武馆 | 集市 | 茶馆 | 比武 | 晚歇 | 花灯 | 夜行 | 子 | 丑 | 寅 | 卯 | 辰 | 巳 | 午 | 未 | 申 | 酉 | 戌 | 亥 | 午时 | 三月初七 | 当前时辰 | 其他时辰 | 外圈活动 | 日期 | 天气 | 晴 | 时间快进 | 等待1时辰 | 等待至黄昏 | 等待至黎明 | 时辰影响 | 不同时辰影响NPC出现与消失，部分商贩仅在昼间营业，夜行侠客多出没于亥子之时 | 夜间某些区域出现特殊事件，荒郊古寺、深巷暗街或有奇遇 | 特定时辰可修炼特定功法，子时练阴属功法事半功倍，午时修阳属心法收效甚佳 | 等待时间可能触发随机事件 | 混沌世界 v1.0.0 | 混沌盛世 · 32ms

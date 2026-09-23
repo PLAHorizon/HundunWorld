@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(212, Enums.ServiceType.Game)]
     public partial class CharacterStateSyncRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -42,6 +43,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(213, Enums.ServiceType.Game)]
     public partial class CharacterStateSyncResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -106,6 +108,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(214, Enums.ServiceType.Game)]
     public partial class CraftingGoldSyncRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -149,6 +152,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(215, Enums.ServiceType.Game)]
     public partial class CraftingGoldSyncResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -199,6 +203,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(216, Enums.ServiceType.Game)]
     public partial class SkillTargetValidationRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -256,6 +261,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(217, Enums.ServiceType.Game)]
     public partial class SkillTargetValidationResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -320,6 +326,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(218, Enums.ServiceType.Game)]
     public partial class ScreenshotNotifyMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -363,6 +370,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(219, Enums.ServiceType.Game)]
     public partial class CharacterAttributeRefreshRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -392,6 +400,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(220, Enums.ServiceType.Game)]
     public partial class CharacterAttributeRefreshResponse : MessageUnion, INetworkMessage
     {
         /// <summary>

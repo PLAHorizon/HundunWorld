@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -15,6 +16,9 @@ namespace Horizon.Game.GengDi;
 
 public partial class App : Application
 {
+    /// <summary>D1 — 服务组合根（ServiceRegistry）。测试与 ViewModel 经此解析服务。</summary>
+    public static IServiceProvider Services { get; private set; } = Horizon.Game.GengDi.Core.Services.ServiceRegistry.BuildProvider();
+
     private static User _currentUser;
 
     public static event EventHandler CurrentUserChanged;
@@ -71,6 +75,41 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // 通话窗口 UI 预览模式（开发调试）：--preview-call=scene，跳过登录直接弹通话窗口
+            var previewArg = Environment.GetCommandLineArgs()
+                .FirstOrDefault(a => a.StartsWith("--preview-call", StringComparison.OrdinalIgnoreCase));
+            if (previewArg != null)
+            {
+                var scene = previewArg.Contains('=') ? previewArg.Split('=', 2)[1] : "cycle";
+                desktop.MainWindow = CallPreviewLauncher.Launch(scene);
+                base.OnFrameworkInitializationCompleted();
+                return;
+            }
+
+            // 页面 UI 预览模式（开发调试）：--preview-view=FlowerShop，跳过登录直接进入主壳指定页
+            // 可选叠加 --preview-mock：后端不可用时使用演示商品数据
+            var previewViewArg = Environment.GetCommandLineArgs()
+                .FirstOrDefault(a => a.StartsWith("--preview-view", StringComparison.OrdinalIgnoreCase));
+            if (previewViewArg != null)
+            {
+                var viewTag = previewViewArg.Contains('=') ? previewViewArg.Split('=', 2)[1] : "Home";
+
+                // 预览分支提前 return，需自行应用主题；可选 --dark 强制深色对照设计稿
+                await ApplyClientThemeAsync();
+                if (Environment.GetCommandLineArgs().Any(a => a.Equals("--dark", StringComparison.OrdinalIgnoreCase)))
+                    RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+
+                var previewWindow = new MainWindow
+                {
+                    Content = CreateMainShell(viewTag),
+                    Title = $"预览 · {viewTag}"
+                };
+                desktop.MainWindow = previewWindow;
+                previewWindow.Show();
+                base.OnFrameworkInitializationCompleted();
+                return;
+            }
+
             var mainWindow = new MainWindow
             {
                 Content = new LoginView(),

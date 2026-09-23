@@ -20,7 +20,8 @@ namespace Horizon.Orleans.Grains
     {
         private const int MaxMessageContentLength = 5000;
         private const int MaxSearchResultCount = 50;
-        private const int RecallTimeWindowMinutes = 2;
+        /// <summary>消息撤回时间窗口：48小时。</summary>
+        private const int RecallTimeWindowHours = 48;
         /// <summary>好友请求过期时间：3天（毫秒）。</summary>
         private const long ContactRequestExpirationMs = 3L * 24 * 60 * 60 * 1000;
 
@@ -166,7 +167,7 @@ namespace Horizon.Orleans.Grains
                     $"p_{message.ReceiverId}",
                     record);
 
-                // 投递消息给接收方
+                // 投递消息给接收方（同时携带 ClientMessageId 用于多端同步）
                 var notify = new IMPrivateChatNotifyMessage
                 {
                     ServerMessageId = serverMessageId,
@@ -176,7 +177,8 @@ namespace Horizon.Orleans.Grains
                     ReceiverId = message.ReceiverId,
                     Content = filteredContent,
                     ContentType = message.ContentType,
-                    Timestamp = timestamp
+                    Timestamp = timestamp,
+                    ClientMessageId = message.ClientMessageId ?? ""
                 };
 
                 try
@@ -190,6 +192,30 @@ namespace Horizon.Orleans.Grains
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "投递私聊消息给接收方失败，消息已存储: ReceiverId={ReceiverId}", message.ReceiverId);
+                }
+
+                // 多端同步：将消息推送给发送方自己的其他设备
+                try
+                {
+                    var senderNotify = new IMPrivateChatNotifyMessage
+                    {
+                        ServerMessageId = serverMessageId,
+                        SenderId = message.SenderId,
+                        SenderName = message.SenderName,
+                        SenderAvatar = message.SenderAvatar,
+                        ReceiverId = message.ReceiverId,
+                        Content = filteredContent,
+                        ContentType = message.ContentType,
+                        Timestamp = timestamp,
+                        ClientMessageId = message.ClientMessageId ?? ""
+                    };
+                    ObserveBackgroundTask(
+                        NotifyGatewayObserversAsync(senderNotify),
+                        $"多端同步推送私聊消息给发送方其他设备失败: SenderId={message.SenderId}, ServerMessageId={serverMessageId}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "多端同步推送私聊消息给发送方其他设备失败: SenderId={SenderId}", message.SenderId);
                 }
 
                 return serverMessageId;
@@ -350,7 +376,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 var elapsed = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - found.Timestamp;
-                if (elapsed > RecallTimeWindowMinutes * 60 * 1000)
+                if (elapsed > (long)RecallTimeWindowHours * 60 * 60 * 1000)
                 {
                     _logger.LogWarning("超过撤回时间窗口: Elapsed={Elapsed}ms", elapsed);
                     return false;
@@ -358,14 +384,102 @@ namespace Horizon.Orleans.Grains
 
                 found.Status = IMMessageStatus.Recalled;
                 found.Content = "[消息已撤回]";
+                UpdateConversationSummaryIfRecalled($"p_{recall.PeerId}", found.Timestamp, "[消息已撤回]");
                 ScheduleStateFlush(
                     $"异步持久化消息撤回失败: UserId={_userState.State.UserId}, RecalledMessageId={recall.RecalledMessageId}");
+
+                // 撤回成功后全平台广播：
+                // 1) 推送给自己其他在线设备（多端同步）
+                ObserveBackgroundTask(
+                    NotifyGatewayObserversAsync(recall),
+                    $"多端同步推送消息撤回失败: UserId={recall.UserId}, RecalledMessageId={recall.RecalledMessageId}");
+
+                // 2) 投递撤回通知给接收方 Grain（私聊/陌生人；群聊撤回暂不支持）
+                if (recall.ChatRelationType != IMChatRelationType.Group && recall.PeerId > 0)
+                {
+                    try
+                    {
+                        var peerGuid = UInt64ToGuid(recall.PeerId);
+                        var peerGrain = GrainFactory.GetGrain<IIMUserGrain>(peerGuid);
+                        ObserveBackgroundTask(
+                            peerGrain.ReceiveMessageRecallAsync(recall),
+                            $"投递消息撤回通知给接收方失败: PeerId={recall.PeerId}, RecalledMessageId={recall.RecalledMessageId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "投递消息撤回通知给接收方失败: PeerId={PeerId}", recall.PeerId);
+                    }
+                }
+
                 return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "撤回消息失败");
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// 接收撤回通知（接收方侧）：把对端发来的消息标记为已撤回并推送本用户所有在线设备。
+        /// </summary>
+        public async Task<bool> ReceiveMessageRecallAsync(IMChatRecallMessage recall)
+        {
+            try
+            {
+                _logger.LogInformation("接收消息撤回通知: RecalledMessageId={RecalledMessageId}, 撤回者={UserId}",
+                    recall.RecalledMessageId, recall.UserId);
+
+                var found = FindChatRecord(_userState.State.PrivateChatHistory, recall.RecalledMessageId);
+                found ??= FindChatRecord(_userState.State.StrangerChatHistory, recall.RecalledMessageId);
+
+                if (found == null)
+                {
+                    // 本地无该消息（如接收方从未上线收取）——仍推送撤回事件给在线设备，客户端自行忽略未知 ID
+                    _logger.LogDebug("撤回的消息不在本用户历史中: RecalledMessageId={RecalledMessageId}", recall.RecalledMessageId);
+                }
+                else
+                {
+                    if (found.SenderId != recall.UserId)
+                    {
+                        _logger.LogWarning("撤回者与消息发送者不一致，拒绝: SenderId={SenderId}, 撤回者={Recaller}",
+                            found.SenderId, recall.UserId);
+                        return false;
+                    }
+
+                    found.Status = IMMessageStatus.Recalled;
+                    found.Content = "[消息已撤回]";
+                    UpdateConversationSummaryIfRecalled($"p_{recall.UserId}", found.Timestamp, "[消息已撤回]");
+                    ScheduleStateFlush(
+                        $"异步持久化接收方消息撤回失败: UserId={_userState.State.UserId}, RecalledMessageId={recall.RecalledMessageId}");
+                }
+
+                // 推送给本用户所有在线设备
+                ObserveBackgroundTask(
+                    NotifyGatewayObserversAsync(recall),
+                    $"推送消息撤回到网关订阅失败: UserId={_userState.State.UserId}, RecalledMessageId={recall.RecalledMessageId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "接收消息撤回通知失败");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 撤回后修正会话摘要：仅当被撤回消息是该会话最后一条时，把摘要替换为撤回占位文案。
+        /// </summary>
+        private void UpdateConversationSummaryIfRecalled(string conversationId, long recalledTimestamp, string summary)
+        {
+            if (!_userState.State.Conversations.TryGetValue(conversationId, out var conversation))
+            {
+                return;
+            }
+
+            if (conversation.LastMessageTime <= recalledTimestamp)
+            {
+                conversation.LastMessage = summary;
             }
         }
 
@@ -1744,7 +1858,10 @@ namespace Horizon.Orleans.Grains
                     throw new NotSupportedException("群聊历史记录查询尚未实现");
                 }
 
+                // 修复（BUG）：count 无上限，count == int.MaxValue 时 fetchCount = count + 1 溢出为负 →
+                // ArgumentOutOfRangeException，且大值会物化整段历史。夹紧到上限（与 IMGroupGrain 一致）。
                 var count = request.Count > 0 ? request.Count : 20;
+                if (count > 200) count = 200;
                 // 多取一条用于判断是否还有更多记录
                 var fetchCount = count + 1;
 
@@ -1967,10 +2084,37 @@ namespace Horizon.Orleans.Grains
                 case IMCallSignalType.Reject:
                 case IMCallSignalType.Cancel:
                 case IMCallSignalType.Hangup:
-                case IMCallSignalType.Busy:
                 case IMCallSignalType.Timeout:
                 {
                     // 终结性信令：释放本端通话状态
+                    if (string.IsNullOrEmpty(_activeCallId)
+                        || string.Equals(_activeCallId, signal.CallId, StringComparison.Ordinal))
+                    {
+                        ClearCallState();
+                    }
+
+                    // 兜底释放发送方的通话占用：挂断方发出的终结信令接收方是本端，
+                    // 发送方自己的 Grain 状态（被叫挂断/拒接场景）无人清理会忙线残留最长 90 秒，
+                    // 期间对方重拨会被忙线拒绝。按 callId 匹配释放，不影响发送方进行中的其他通话。
+                    // 注意：必须走后台任务而非同步 await——终结信令会同时投递给通话双方，
+                    // 双方 Grain 各自在 ReceiveCallSignalAsync 中同步互调 Release 会形成 ABBA 死锁，
+                    // 导致网关调用堆积超时、客户端断连（表现为"挂断后无法再次拨通"）。
+                    if (signal.SenderId != _userState.State.UserId)
+                    {
+                        var senderId = signal.SenderId;
+                        var senderCallId = signal.CallId;
+                        ObserveBackgroundTask(
+                            GrainFactory.GetGrain<IIMUserGrain>(UInt64ToGuid(senderId))
+                                .ReleaseCallStateAsync(senderCallId),
+                            $"兜底释放发送方通话状态失败: SenderId={senderId}, CallId={senderCallId}");
+                    }
+
+                    break;
+                }
+
+                case IMCallSignalType.Busy:
+                {
+                    // 忙线回执：仅本端状态与该通话匹配时释放（发送方正忙于其他通话，不能误清）
                     if (string.IsNullOrEmpty(_activeCallId)
                         || string.Equals(_activeCallId, signal.CallId, StringComparison.Ordinal))
                     {
@@ -2024,6 +2168,20 @@ namespace Horizon.Orleans.Grains
             _activeCallPeerId = 0;
             _activeCallIsRinging = false;
             _activeCallLastSignalMs = 0;
+        }
+
+        public Task ReleaseCallStateAsync(string callId)
+        {
+            // 按通话 ID 匹配释放，避免误清正在进行中的其他通话
+            if (string.Equals(_activeCallId, callId, StringComparison.Ordinal))
+            {
+                _logger.LogInformation(
+                    "兜底释放通话忙线占用: UserId={UserId}, CallId={CallId}",
+                    _userState.State.UserId, callId);
+                ClearCallState();
+            }
+
+            return Task.CompletedTask;
         }
 
         #endregion

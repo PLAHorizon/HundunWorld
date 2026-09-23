@@ -55,6 +55,12 @@ namespace Horizon.Orleans.Interface
         Task<List<FlowerPriceSnapshot>> GetPriceHistoryAsync(DateTime startTime, DateTime endTime);
 
         /// <summary>
+        /// 清空价格历史与当前预测（数据源切换迁移用：清除旧市场口径的历史序列，
+        /// 清空后由 DounanMarketDataFetcher 的冷启动回填逻辑重建纯斗南口径历史）
+        /// </summary>
+        Task ClearPriceHistoryAsync();
+
+        /// <summary>
         /// 获取种植建议（基于预测数据）
         /// </summary>
         Task<PlantingSuggestion> GetPlantingSuggestionAsync();
@@ -288,6 +294,32 @@ namespace Horizon.Orleans.Interface
         Task<bool> RepurchaseAsync(Guid buyerId, long originalOrderId);
         Task<List<RepurchaseState>> GetFrequentProductsAsync(Guid buyerId, int topN);
         Task<List<OrderState>> BatchShipOrdersAsync(BatchShipRequest request);
+    }
+
+    /// <summary>
+    /// 订单超时扫描Grain接口 - 负责定期扫描并取消超时未支付订单
+    /// （Silo 启动时按 key=1 激活，OnActivateAsync 注册定时器）
+    /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
+    public interface IFlowerOrderTimeoutGrain : IGrainWithIntegerKey
+    {
+        /// <summary>
+        /// 扫描并取消超时未支付订单（超过 30 分钟未支付），返回取消数量
+        /// </summary>
+        Task<int> ScanAndCancelExpiredOrdersAsync();
+    }
+
+    /// <summary>
+    /// 订单超时调度Grain接口 - 负责催发货、自动确认收货与自动完成订单
+    /// （Silo 启动时按 key=1 激活，OnActivateAsync 注册定时器）
+    /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
+    public interface IFlowerOrderTimeoutSchedulerGrain : IGrainWithIntegerKey
+    {
+        /// <summary>
+        /// 检查订单超时：已付款超 24 小时未发货催发货、发货超 7 天自动确认收货、收货超 7 天自动完成
+        /// </summary>
+        Task CheckTimeoutAsync();
     }
 
     /// <summary>

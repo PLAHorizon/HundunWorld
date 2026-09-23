@@ -674,7 +674,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogError($"[MenuCharAttributesV2Page] 初始化失败: {ex.Message}");
+                FlaxEngine.Debug.LogError($"[MenuCharAttributesV2Page] 初始化失败: {ex.Message}\n{ex.StackTrace}");
             }
         }
 

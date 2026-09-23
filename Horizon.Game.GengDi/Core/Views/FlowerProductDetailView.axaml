@@ -95,15 +95,13 @@
                             <!-- 右侧详情区 -->
                             <StackPanel Grid.Column="1" MinWidth="0">
 
-                                <!-- 标题行：22px 商品名 + 预售徽章 -->
+                                <!-- 标题行：22px 商品名（预售徽标已移除：本页无预售数据字段，
+                                     原先无条件显示「预售」对所有商品都不准确；接入预售标识后再恢复） -->
                                 <StackPanel Orientation="Horizontal" Spacing="10"
                                             Margin="0 0 0 8">
                                     <TextBlock Text="{Binding ProductName}"
                                                FontSize="22" FontWeight="SemiBold"
                                                Foreground="{DynamicResource GdForegroundBrush}" />
-                                    <Border Classes="GdBadge GdError">
-                                        <TextBlock Text="预售" />
-                                    </Border>
                                 </StackPanel>
 
                                 <!-- 商户信息：store 图标 + 商户名 + 信誉等级 -->

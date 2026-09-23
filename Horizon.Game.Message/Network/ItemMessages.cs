@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(33, Enums.ServiceType.Game)]
     public partial class InventoryUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -49,6 +50,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(65, Enums.ServiceType.Game)]
     public partial class ItemChangeInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -99,6 +101,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(31, Enums.ServiceType.Game)]
     public partial class ItemInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -191,6 +194,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(66, Enums.ServiceType.Game)]
     public partial class EquipItemMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -241,6 +245,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(67, Enums.ServiceType.Game)]
     public partial class WeaponSwitchMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -288,6 +293,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(68, Enums.ServiceType.Game)]
     public partial class UseItemRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -331,6 +337,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(69, Enums.ServiceType.Game)]
     public partial class UseItemResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -374,6 +381,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(70, Enums.ServiceType.Game)]
     public partial class ItemEffect : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -414,6 +422,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(32, Enums.ServiceType.Game)]
     public partial class EquipmentInfoMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -485,6 +494,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(71, Enums.ServiceType.Game)]
     public partial class EquipmentEnhanceRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -521,6 +531,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(72, Enums.ServiceType.Game)]
     public partial class EquipmentEnhanceResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -571,6 +582,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(73, Enums.ServiceType.Game)]
     public partial class EquipmentRefineRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -614,6 +626,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(74, Enums.ServiceType.Game)]
     public partial class EquipmentRefineResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -675,6 +688,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(118, Enums.ServiceType.Game)]
     public partial class InventoryInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -736,6 +750,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(75, Enums.ServiceType.Game)]
     public partial class CraftingRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -779,6 +794,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(76, Enums.ServiceType.Game)]
     public partial class CraftingResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -829,6 +845,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(77, Enums.ServiceType.Game)]
     public partial class AttributeInheritanceRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -876,6 +893,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(78, Enums.ServiceType.Game)]
     public partial class AttributeInheritanceResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -926,6 +944,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(79, Enums.ServiceType.Game)]
     public partial class WuXingCraftingRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -962,6 +981,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(80, Enums.ServiceType.Game)]
     public partial class WuXingCraftingResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1018,6 +1038,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(119, Enums.ServiceType.Game)]
     public partial class CraftingRecipe : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1128,6 +1149,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(204, Enums.ServiceType.Game)]
     public partial class InventorySortRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1164,6 +1186,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(205, Enums.ServiceType.Game)]
     public partial class ItemSplitRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1207,6 +1230,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(206, Enums.ServiceType.Game)]
     public partial class ItemSplitResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1257,6 +1281,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(207, Enums.ServiceType.Game)]
     public partial class ItemDiscardRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1293,6 +1318,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(208, Enums.ServiceType.Game)]
     public partial class ItemDiscardResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1329,6 +1355,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(209, Enums.ServiceType.Game)]
     public partial class ItemLockRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1365,6 +1392,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(210, Enums.ServiceType.Game)]
     public partial class InventoryExpandRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1401,6 +1429,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(211, Enums.ServiceType.Game)]
     public partial class InventoryExpandResponse : MessageUnion, INetworkMessage
     {
         /// <summary>

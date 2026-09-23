@@ -1,8 +1,6 @@
 using System;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml;
 using Horizon.Game.GengDi.Core.ViewModels;
@@ -26,34 +24,27 @@ namespace Horizon.Game.GengDi.Core.Views
             AvaloniaXamlLoader.Load(this);
         }
 
-        private void OnSpeciesFilterClick(object sender, RoutedEventArgs e)
+        /// <summary>页头「购物车 · N 件」胶囊 → 跳转购物车页。</summary>
+        private void OnCartClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.Tag is string tag && int.TryParse(tag, out var speciesId))
-            {
-                if (DataContext is FlowerShopViewModel vm)
-                    vm.SelectedSpeciesId = speciesId;
-
-                UpdateFilterButtonStyle(btn);
-            }
+            var mainView = this.FindLogicalAncestorOfType<MainView>();
+            if (mainView?.DataContext is MainViewModel mainVm)
+                mainVm.NavigateTo("FlowerCart");
         }
 
-        private static void UpdateFilterButtonStyle(Button selectedBtn)
+        /// <summary>收藏按钮：阻断事件冒泡，避免触发卡片 Tapped 跳转详情。</summary>
+        private void OnFavoriteTapped(object? sender, TappedEventArgs e)
         {
-            if (selectedBtn.Parent is StackPanel panel)
-            {
-                foreach (var child in panel.Children)
-                {
-                    if (child is Button childBtn)
-                    {
-                        childBtn.Classes.Remove("PrimaryAction");
-                        if (!childBtn.Classes.Contains("QuietAction"))
-                            childBtn.Classes.Add("QuietAction");
-                    }
-                }
-                selectedBtn.Classes.Remove("QuietAction");
-                if (!selectedBtn.Classes.Contains("PrimaryAction"))
-                    selectedBtn.Classes.Add("PrimaryAction");
-            }
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// 卡片内交互控件（加入购物车 / 批量勾选 / 数量框）通用处理：
+        /// 阻断 Tapped 冒泡，避免点击这些控件时被卡片的 OnProductTapped 捕获而跳转详情页。
+        /// </summary>
+        private void OnInnerControlTapped(object? sender, TappedEventArgs e)
+        {
+            e.Handled = true;
         }
 
         private void OnProductTapped(object sender, TappedEventArgs e)

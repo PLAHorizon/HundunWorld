@@ -115,6 +115,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// <summary>左下角操作说明文本</summary>
         private InkTextBlock _instructionText;
 
+        /// <summary>说明区小标题（时机已至）</summary>
+        private InkTextBlock _timingLabel;
+
+        /// <summary>底部可见出口按钮（点穴经络 → acupoint）</summary>
+        private InkButton _acupointButton;
+
         // ===================================================================
         // mock 数据
         // =======================================================================
@@ -161,6 +167,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// 表示玩家在时限内完成破招。
         /// </summary>
         public event Action QteSucceeded;
+
+        /// <summary>
+        /// 点穴经络出口请求事件（设计稿 .qte-acupoint → link-acupoint）。
+        /// 点击「点穴经络」按钮时触发，由外部导航到 acupoint 页面。
+        /// </summary>
+        public event Action AcupointRequested;
 
         // ===================================================================
         // 构造函数
@@ -308,6 +320,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// </summary>
         private void BuildInstruction()
         {
+            // 说明区小标题（设计稿 .qte-instruction 上方朱红标签「时机已至」）
+            _timingLabel = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "时机已至",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(120f, 18f),
+                HorizontalAlignment = TextAlignment.Near,
+                TextColor = InkWashTheme.TextVermilion,
+            };
+            AddChild(_timingLabel);
+
             _instructionText = new InkTextBlock(InkTextStyle.Subheading)
             {
                 Text = $"按 {_mockKey} 键发动{_mockQteType}",
@@ -319,6 +342,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 15f),
             };
             AddChild(_instructionText);
+
+            // 底部中央可见出口：点穴经络（设计稿 link-acupoint → acupoint）
+            _acupointButton = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "点穴经络",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(120f, 28f),
+            };
+            _acupointButton.ButtonClicked += OnAcupointButtonClicked;
+            AddChild(_acupointButton);
         }
 
         // ===================================================================
@@ -508,12 +543,38 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                     TitleMarginTop);
             }
 
-            // 左下角操作说明
-            if (_instructionText != null)
+            // 左下角操作说明（上方为「时机已至」小标题）
+            if (_timingLabel != null && _instructionText != null)
             {
                 _instructionText.Location = new Float2(
                     InstructionMarginLeft,
                     sh - InstructionHeight - InstructionMarginBottom);
+                _timingLabel.Location = new Float2(
+                    InstructionMarginLeft,
+                    _instructionText.Location.Y - 22f);
+            }
+
+            // 底部中央可见出口：点穴经络
+            if (_acupointButton != null)
+            {
+                _acupointButton.Location = new Float2(
+                    centerX - 60f,
+                    sh - 64f);
+            }
+        }
+
+        /// <summary>
+        /// 「点穴经络」按钮点击：触发 <see cref="AcupointRequested"/> 事件（由外部导航到 acupoint 页面）。
+        /// </summary>
+        private void OnAcupointButtonClicked(Button button)
+        {
+            try
+            {
+                AcupointRequested?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[QtePage] AcupointRequested 触发失败: {ex.Message}");
             }
         }
 

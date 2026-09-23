@@ -1,11 +1,12 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Arch.Core;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Components;
+using Microsoft.Extensions.Logging;
 
 namespace Horizon.Game.ECS.Arch.Systems;
 
@@ -93,7 +94,7 @@ public sealed class EventApplySystem : ArchSystemBase
                         break;
 
                     default:
-                        System.Diagnostics.Debug.WriteLine(
+                        Log?.LogDebug(
                             $"[EventApply] Warning: unhandled SyncEventKind={syncEvent.Kind}, " +
                             $"Source={syncEvent.SourceEntityId}, Target={syncEvent.TargetEntityId}");
                         break;
@@ -114,7 +115,7 @@ public sealed class EventApplySystem : ArchSystemBase
     private void HandleSkillCast(SyncEvent syncEvent)
     {
         TotalSkillCastEvents++;
-        System.Diagnostics.Debug.WriteLine(
+        Log?.LogDebug(
             $"[EventApply] SkillCast: Source={syncEvent.SourceEntityId}, Target={syncEvent.TargetEntityId}, " +
             $"SkillId={syncEvent.IntValue}, Duration={syncEvent.FloatValue}");
     }
@@ -134,7 +135,7 @@ public sealed class EventApplySystem : ArchSystemBase
                 return;
             }
 
-            System.Diagnostics.Debug.WriteLine(
+            Log?.LogDebug(
                 $"[EventApply] Damage: Source={syncEvent.SourceEntityId}, Target={syncEvent.TargetEntityId}, " +
                 $"Damage={syncEvent.IntValue}, CritRate={syncEvent.FloatValue}");
 
@@ -166,7 +167,7 @@ public sealed class EventApplySystem : ArchSystemBase
                 return;
             }
 
-            System.Diagnostics.Debug.WriteLine(
+            Log?.LogDebug(
                 $"[EventApply] Death: Source={syncEvent.SourceEntityId}, Target={syncEvent.TargetEntityId}");
 
             if (world.Has<EntityStateAuthComponent>(entity))
@@ -189,7 +190,7 @@ public sealed class EventApplySystem : ArchSystemBase
 
         if (syncEvent.Payload == null || syncEvent.Payload.Length == 0)
         {
-            System.Diagnostics.Debug.WriteLine(
+            Log?.LogDebug(
                 "[EventApply] Correction: Payload 为空，无法反序列化 CorrectionPacket");
             return;
         }
@@ -200,7 +201,7 @@ public sealed class EventApplySystem : ArchSystemBase
             if (correction != null)
             {
                 CorrectionReceiveBuffer.Instance.Add(correction);
-                System.Diagnostics.Debug.WriteLine(
+                Log?.LogDebug(
                     $"[EventApply] Correction: EntityId={correction.EntityId}, " +
                     $"Pos=({correction.CorrectedX:F2},{correction.CorrectedY:F2},{correction.CorrectedZ:F2}), " +
                     $"Drift={correction.DriftMeters:F3}m, Reason={correction.Reason}");
@@ -208,7 +209,7 @@ public sealed class EventApplySystem : ArchSystemBase
         }
         catch (System.Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine(
+            Log?.LogDebug(
                 $"[EventApply] Correction 反序列化失败: {ex.Message}");
         }
     }
@@ -224,7 +225,7 @@ public sealed class EventApplySystem : ArchSystemBase
 
         if (syncEvent.Payload == null || syncEvent.Payload.Length == 0)
         {
-            System.Diagnostics.Debug.WriteLine(
+            Log?.LogDebug(
                 "[EventApply] InputAck: Payload 为空，无法反序列化 InputAckPacket");
             return;
         }
@@ -240,14 +241,14 @@ public sealed class EventApplySystem : ArchSystemBase
                 // 推进 InputSendSystem 的已确认 tick，停止冗余重传。
                 InputSendSystem.Instance?.OnInputAck(inputAck.LastProcessedClientTick);
 
-                System.Diagnostics.Debug.WriteLine(
+                Log?.LogDebug(
                     $"[EventApply] InputAck: LastProcessedClientTick={inputAck.LastProcessedClientTick}, " +
                     $"ServerTick={inputAck.ServerTick}");
             }
         }
         catch (System.Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine(
+            Log?.LogDebug(
                 $"[EventApply] InputAck 反序列化失败: {ex.Message}");
         }
     }

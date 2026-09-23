@@ -118,13 +118,57 @@ namespace Horizon.WebApi
                 var config = provider.GetRequiredService<IConfiguration>();
                 var logger = provider.GetRequiredService<ILogger<UserAuthTokenProvider>>();
                 var secretKey = config["Security:AuthTokenSecret"];
-                if (string.IsNullOrWhiteSpace(secretKey))
+                if (string.IsNullOrWhiteSpace(secretKey) || secretKey.StartsWith("${"))
                 {
-                    logger.LogWarning("未配置 Security:AuthTokenSecret，使用开发环境临时密钥。生产环境必须配置与 Game Gateway / IM Gateway 相同的密钥！");
+                    logger.LogWarning("未配置 Security:AuthTokenSecret（或环境变量 GATEWAY_AUTH_TOKEN_SECRET 未注入），使用开发环境临时密钥。生产环境必须配置与 Game Gateway / IM Gateway 相同的密钥！");
                     secretKey = $"HundunWorld-Dev-Only-{Environment.MachineName}";
                 }
                 return new UserAuthTokenProvider(secretKey, logger);
             });
+
+            // 通行证级共享 IM 授权令牌存储（统一 PC / 移动端令牌；Redis 与网关注册中心共用）
+            services.AddSingleton<Horizon.WebApi.Security.PassportImTokenStore>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var logger = provider.GetRequiredService<ILogger<Horizon.WebApi.Security.PassportImTokenStore>>();
+                var connectionString = ResolveGatewayRegistryRedisConnectionString(config);
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException(
+                        "未配置 Redis 连接字符串：共享 IM 令牌存储依赖 Redis（Gateway:RedisConnectionString 或 DataBase:RedisMasters）");
+                }
+                var expiryHours = config.GetValue("Security:ImTokenExpiryHours", 168);
+                return new Horizon.WebApi.Security.PassportImTokenStore(
+                    connectionString,
+                    provider.GetRequiredService<Horizon.Core.Security.UserAuthTokenProvider>(),
+                    expiryHours,
+                    logger);
+            });
+            #endregion
+
+            #region 花卉品种目录缓存（Redis 落库 + 定时刷新）
+
+            // 花卉品种目录：数据源 = 平台目录(兜底) + 斗南花卉市场公开行情；整体落库 Redis 并定时刷新。
+            // Redis 连接字符串与网关注册中心共用（Gateway:RedisConnectionString / DataBase:RedisMasters）。
+            {
+                var speciesRedisCs = ResolveGatewayRegistryRedisConnectionString(Configuration);
+                if (!string.IsNullOrWhiteSpace(speciesRedisCs) && !speciesRedisCs.Contains("${"))
+                {
+                    services.AddSingleton<Horizon.Core.Abstract.ICache>(_ =>
+                        new Horizon.Strategy.Storage.Redis.RedisCache(speciesRedisCs));
+                }
+
+                services.AddSingleton<Horizon.WebApi.Services.IFlowerSpeciesCatalogService>(provider =>
+                {
+                    var cache = provider.GetService<Horizon.Core.Abstract.ICache>(); // Redis 未配置时为 null（服务内部降级为平台目录）
+                    var clusterClient = provider.GetRequiredService<IClusterClient>();
+                    var svcLogger = provider.GetRequiredService<ILogger<Horizon.WebApi.Services.FlowerSpeciesCatalogService>>();
+                    return new Horizon.WebApi.Services.FlowerSpeciesCatalogService(cache, clusterClient, svcLogger);
+                });
+
+                services.AddHostedService<Horizon.WebApi.Services.FlowerSpeciesCatalogRefreshService>();
+            }
+
             #endregion
 
             services.AddControllers();
@@ -219,10 +263,21 @@ namespace Horizon.WebApi
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
+            // HTTPS 强制重定向改为配置驱动（默认仅生产环境启用）：
+            // 开发调试（模拟器/移动端直连 http:5100）无法信任本机自签证书，
+            // 307 强制跳 https 会导致客户端 "Invalid SSL peer certificate"。
+            // 生产想显式控制时设 "HttpsRedirection:Enabled": true/false。
+            var httpsRedirectEnabled = Configuration.GetValue<bool?>("HttpsRedirection:Enabled")
+                ?? !env.IsDevelopment();
+            if (httpsRedirectEnabled)
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseRouting();
-            app.UseMiddleware<Horizon.WebApi.Middleware.AdminApiKeyMiddleware>();
+            // 修复（安全）：AdminApiKeyMiddleware 已移除——它设置的 Items["IsAdmin"] 全仓无任何读取方，
+            // 且 context.User 被后续 UseAuthentication() 覆盖，属无效/误导性"管理 API Key"机制。
+            // 管理面鉴权由控制器 CheckAdmin()（JWT PassportType=System）统一负责。
             app.UseIdentityServer()
                 .UseAuthentication()
                 .UseAuthorization();

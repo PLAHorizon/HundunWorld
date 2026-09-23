@@ -1,0 +1,73 @@
+{
+	"ID": "644b9d804dc9c563e2ce878325382e78",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "d2f333574dc6d07db0cc0692963485d1",
+		"TypeName": "FlaxEngine.UIControl",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "FX_Underline",
+		"Transform": {
+			"Orientation": {
+				"X": -1.0,
+				"Y": -4.3711388286737935e-8,
+				"Z": -4.3711388286737935e-8,
+				"W": 1.910685465164705e-15
+			}
+		},
+		"Control": "HundunWorld.Game.UI.Authentication.LoginUnderline",
+		"Data": {
+			"ClipChildren": false,
+			"CullChildren": true,
+			"AnchorMin": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"AnchorMax": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Offsets": {
+				"Left": 0.0,
+				"Right": 160.0,
+				"Top": 0.0,
+				"Bottom": 4.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0
+			},
+			"Pivot": {
+				"X": 0.5,
+				"Y": 0.5
+			},
+			"Shear": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Rotation": 0.0,
+			"BackgroundColor": {
+				"R": 0.0,
+				"G": 0.0,
+				"B": 0.0,
+				"A": 0.0
+			},
+			"BackgroundBrush": null,
+			"Enabled": false,
+			"Visible": true,
+			"AutoFocus": false
+		}
+	},
+	{
+		"ID": "fe46591649248d0f591091a33530c15b",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.GenericControlProfile",
+		"ParentID": "d2f333574dc6d07db0cc0692963485d1",
+		"V": {
+			"ControlTypeName": "LoginUnderline",
+			"Width": 160.0,
+			"Height": 4.0
+		}
+	}
+]
+}

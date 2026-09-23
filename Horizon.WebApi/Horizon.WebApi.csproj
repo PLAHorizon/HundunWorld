@@ -12,8 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 登录链路：GameUserRoleController 依赖的 IGameUserGrain/IGameEquipmentGrain 已实现，重新纳入编译。
+         其余（GameConfigController / UserController）依赖未就绪，保持排除。 -->
     <Compile Remove="Controllers\Games\GameConfigController.cs" />
-    <Compile Remove="Controllers\Games\GameUserRoleController.cs" />
     <Compile Remove="Controllers\Users\UserController .cs" />
   </ItemGroup>
 
@@ -65,7 +66,8 @@
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
     <ProjectReference Include="..\Horizon.IM.Message\Horizon.IM.Message.csproj" />
     <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
-    <ProjectReference Include="..\Horizon.Orleans.Grains\Horizon.Orleans.Grains.csproj" />
+    <!-- 修复（分层）：WebApi 是 Orleans Client，只应引用契约(Interface)，不得引用实现(Grains)。
+         全仓无 using Horizon.Orleans.Grains 命中，属误引，已移除。 -->
     <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
     <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
     <ProjectReference Include="..\Horizon.Strategy.Storage.Redis\Horizon.Strategy.Storage.Redis.csproj" />

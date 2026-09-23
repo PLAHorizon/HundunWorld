@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Reflection;
 using Arch.Core;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Network;
@@ -200,20 +200,20 @@ public class SnapshotConsumptionThroughputTests : IDisposable
     private readonly World _world;
     private readonly SnapshotApplySystem _system;
 
+    /// <summary>每测试独立的接收队列：注入系统实例，消除并行测试对静态单例的串扰（阶段 6.4）。</summary>
+    private readonly SnapshotReceiveBuffer _buffer = new();
+
     public SnapshotConsumptionThroughputTests()
     {
-        SnapshotReceiveBuffer.Instance.ClearQueue();
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
         SnapshotApplySystem.Diagnostics = null;
         _world = World.Create();
-        _system = new SnapshotApplySystem();
+        _system = new SnapshotApplySystem(_buffer); // 注入独立 buffer：各测试互不串扰
     }
 
     public void Dispose()
     {
         World.Destroy(_world);
-        SnapshotReceiveBuffer.Instance.ClearQueue();
-        SnapshotApplySystem.ResetLastAppliedSnapshot();
+        _buffer.ClearQueue();
     }
 
     /// <summary>构造一个带 Spawn delta 的全量快照，创建远程实体。</summary>
@@ -269,23 +269,23 @@ public class SnapshotConsumptionThroughputTests : IDisposable
         const ulong entityId = 1001L;
 
         // 1. 先 Spawn 实体
-        SnapshotReceiveBuffer.Instance.Enqueue(CreateSpawnSnapshot(entityId, 0f, 0f, 0f, serverTick: 1));
+        _buffer.Enqueue(CreateSpawnSnapshot(entityId, 0f, 0f, 0f, serverTick: 1));
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
-        Assert.Equal(0, SnapshotReceiveBuffer.Instance.Count);
+        Assert.Equal(0, _buffer.Count);
 
         // 2. 入队 32 个 Update 快照，位置递增（模拟 500ms 抖动积压）
         const int backlogCount = 32;
         for (int i = 0; i < backlogCount; i++)
         {
-            SnapshotReceiveBuffer.Instance.Enqueue(
+            _buffer.Enqueue(
                 CreateUpdateSnapshot(entityId, x: i + 1, y: 0f, z: 0f, serverTick: 100 + i));
         }
-        Assert.Equal(backlogCount, SnapshotReceiveBuffer.Instance.Count);
+        Assert.Equal(backlogCount, _buffer.Count);
 
         // 3. 运行一帧 Update，应全部消费完毕
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
-        Assert.Equal(0, SnapshotReceiveBuffer.Instance.Count);
+        Assert.Equal(0, _buffer.Count);
         Assert.Equal(backlogCount, _system.LastTickConsumed);
 
         // 4. Target 应为最新快照位置（x=32），而非最旧（x=1）
@@ -308,21 +308,21 @@ public class SnapshotConsumptionThroughputTests : IDisposable
         const ulong entityId = 2001L;
 
         // Spawn
-        SnapshotReceiveBuffer.Instance.Enqueue(CreateSpawnSnapshot(entityId, 0f, 0f, 0f, serverTick: 1));
+        _buffer.Enqueue(CreateSpawnSnapshot(entityId, 0f, 0f, 0f, serverTick: 1));
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         // 入队 40 个 Update 快照
         const int totalBacklog = 40;
         for (int i = 0; i < totalBacklog; i++)
         {
-            SnapshotReceiveBuffer.Instance.Enqueue(
+            _buffer.Enqueue(
                 CreateUpdateSnapshot(entityId, x: i + 1, y: 0f, z: 0f, serverTick: 100 + i));
         }
 
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         // 队列应清空（最多消费 32 个，丢弃 8 个旧的，剩 32 个一帧消费完）
-        Assert.Equal(0, SnapshotReceiveBuffer.Instance.Count);
+        Assert.Equal(0, _buffer.Count);
         // 应触发溢出计数
         Assert.True(_system.OverflowCount >= 1, "积压超过 32 应触发溢出计数");
 
@@ -341,13 +341,13 @@ public class SnapshotConsumptionThroughputTests : IDisposable
         const ulong entityId = 3001L;
 
         // Spawn
-        SnapshotReceiveBuffer.Instance.Enqueue(CreateSpawnSnapshot(entityId, 0f, 0f, 0f, serverTick: 1));
+        _buffer.Enqueue(CreateSpawnSnapshot(entityId, 0f, 0f, 0f, serverTick: 1));
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         // 预热
         for (int i = 0; i < 50; i++)
         {
-            SnapshotReceiveBuffer.Instance.Enqueue(CreateUpdateSnapshot(entityId, i, 0f, 0f, 100 + i));
+            _buffer.Enqueue(CreateUpdateSnapshot(entityId, i, 0f, 0f, 100 + i));
             _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
         }
 
@@ -358,7 +358,7 @@ public class SnapshotConsumptionThroughputTests : IDisposable
         {
             for (int j = 0; j < 32; j++)
             {
-                SnapshotReceiveBuffer.Instance.Enqueue(
+                _buffer.Enqueue(
                     CreateUpdateSnapshot(entityId, j, 0f, 0f, 1000 + i * 32 + j));
             }
             _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));

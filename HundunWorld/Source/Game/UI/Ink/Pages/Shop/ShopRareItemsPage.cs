@@ -51,6 +51,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
             InkWashTheme.QualityLegendary
         };
 
+        /// <summary>
+        /// 标准导航事件（对齐 Ink 页面契约，由工厂挂钩后经路由器跳转）。
+        /// </summary>
+        public event Action<string> NavigationRequested;
+
         public ShopRareItemsPage()
         {
             _screenSize = FlaxEngine.Screen.Size;
@@ -99,6 +104,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 BackgroundColor = InkWashTheme.BaseDefault,
                 Parent = this
             };
+            // 返回战斗 HUD（设计隐藏出口 back-hud）
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
         }
 
         private void BuildLeftNav()
@@ -121,6 +128,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 HorizontalAlignment = TextAlignment.Near,
                 Parent = _leftNav
             };
+            // 返回战斗 HUD（设计隐藏出口 back-hud）
+            navBack.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
 
             var logoMark = new ContainerControl
             {
@@ -154,6 +163,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
 
             string[] navItems = { "不肝", "抽卡", "活动", "通行证", "属性", "奇珍阁", "设置" };
 
+            // 左侧导航即设计链路（批次5 §3.2）：不肝→抽卡→活动→通行证→属性→奇珍阁(自身)→设置
+            string[] navTargets =
+            {
+                InkPageDomIds.NavCasualMode,
+                InkPageDomIds.NavGacha,
+                InkPageDomIds.NavActivities,
+                InkPageDomIds.NavBattlePass,
+                InkPageDomIds.NavCharacterV2,
+                InkPageDomIds.NavShopRare,
+                InkPageDomIds.NavSettings,
+            };
+
             for (int i = 0; i < navItems.Length; i++)
             {
                 var navItem = new InkButton
@@ -177,6 +198,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                     navItem.Variant = InkButtonVariant.Ghost;
                     navItem.TextColor = InkWashTheme.TextSecondary;
                 }
+
+                // 左栏项直达对应菜单（设计链路）
+                int navIndex = i;
+                navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
             }
 
             var footerDivider = new InkDivider
@@ -588,6 +613,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Parent = modalIconPanel
+            };
+
+            // 设计稿弹窗倒计时标签「限时剩余」（.modal-countdown-label）
+            var countdownLabel = new Label
+            {
+                Text = "限时剩余",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextVermilion,
+                Location = new Float2(396f, 26f),
+                Size = new Float2(72f, 18f),
+                HorizontalAlignment = TextAlignment.Far,
+                Parent = _modalPanel
             };
 
             var modalTitle = new Label

@@ -84,8 +84,10 @@ public sealed class RichSocialMessageTests
 
         var playbackUrl = SocialLinkParser.BuildDirectVideoPlaybackAddress(localVideoPath);
 
+        // 本地文件直接导航 file:// URI（CEF same-origin 策略禁止 file:// 页面跨源加载视频，
+        // 见 SocialLinkParser.BuildDirectVideoPlaybackAddress 注释），不再经 inline-video-player.html 包装。
         Assert.StartsWith("file:///", playbackUrl);
-        Assert.Contains("inline-video-player.html?src=file%3A%2F%2F%2F", playbackUrl);
+        Assert.DoesNotContain("inline-video-player.html", playbackUrl);
         Assert.Contains("hundun-inline-preview.mp4", Uri.UnescapeDataString(playbackUrl));
     }
 

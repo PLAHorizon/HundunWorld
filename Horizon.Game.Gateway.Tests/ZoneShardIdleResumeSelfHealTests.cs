@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -96,7 +96,7 @@ public class ZoneShardIdleResumeSelfHealTests : IAsyncLifetime
                 if (e.Kind != SyncEventKind.Correction) continue;
                 try
                 {
-                    var c = MemoryPackSerializer.Deserialize<Horizon.Game.Core.Sim.CorrectionPacket>(e.Payload);
+                    var c = MemoryPackSerializer.Deserialize<Horizon.Game.Sim.CorrectionPacket>(e.Payload);
                     sb.Append($"[Reason={c!.Reason}, Drift={c.DriftMeters:F2}m, LastProcTick={c.LastProcessedClientTick}, ServerTick={c.ServerTick}] ");
                 }
                 catch { sb.Append("[解析失败] "); }

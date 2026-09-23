@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(30, Enums.ServiceType.Game)]
     public partial class SkillInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -112,6 +113,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(84, Enums.ServiceType.Game)]
     public partial class LearnSkillRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -148,6 +150,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(85, Enums.ServiceType.Game)]
     public partial class LearnSkillResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -202,6 +205,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(86, Enums.ServiceType.Game)]
     public partial class SkillCooldownQueryRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -231,6 +235,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(87, Enums.ServiceType.Game)]
     public partial class SkillCooldownQueryResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -260,6 +265,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(88, Enums.ServiceType.Game)]
     public partial class SkillCooldownUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -307,6 +313,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(89, Enums.ServiceType.Game)]
     public partial class SkillProficiencyQueryRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -336,6 +343,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(90, Enums.ServiceType.Game)]
     public partial class SkillProficiencyQueryResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -365,6 +373,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(91, Enums.ServiceType.Game)]
     public partial class SkillProficiencyUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -419,6 +428,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(92, Enums.ServiceType.Game)]
     public partial class UpgradeSkillRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -455,6 +465,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(93, Enums.ServiceType.Game)]
     public partial class UpgradeSkillResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -512,6 +523,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(94, Enums.ServiceType.Game)]
     public partial class SkillLevelUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -566,6 +578,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(95, Enums.ServiceType.Game)]
     public partial class SkillSlotInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -602,6 +615,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(96, Enums.ServiceType.Game)]
     public partial class UpdateSkillSlotRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -645,6 +659,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(97, Enums.ServiceType.Game)]
     public partial class UpdateSkillSlotResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -685,6 +700,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(221, Enums.ServiceType.Game)]
     public partial class EffectMessage : MessageUnion, INetworkMessage
     {
         /// <summary>

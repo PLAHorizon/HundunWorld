@@ -25,7 +25,7 @@
                                    Foreground="{DynamicResource GdMutedForegroundBrush}"
                                    VerticalAlignment="Center" />
                         <!-- 种植户 -->
-                        <Border CornerRadius="{DynamicResource GdRadiusFull}" Padding="18 7"
+                        <Border CornerRadius="17" Padding="18 7"
                                 BorderThickness="1" Cursor="Hand"
                                 BorderBrush="{DynamicResource GdBorderBrush}"
                                 Background="{Binding UserRole, Converter={x:Static converters:EnumMatchToBackgroundConverter.Instance}, ConverterParameter=Farmer}">
@@ -33,7 +33,7 @@
                                        Foreground="{Binding UserRole, Converter={x:Static converters:EnumMatchToForegroundConverter.Instance}, ConverterParameter=Farmer}" />
                         </Border>
                         <!-- 采购商 -->
-                        <Border CornerRadius="{DynamicResource GdRadiusFull}" Padding="18 7"
+                        <Border CornerRadius="17" Padding="18 7"
                                 BorderThickness="1" Cursor="Hand"
                                 BorderBrush="{DynamicResource GdBorderBrush}"
                                 Background="{Binding UserRole, Converter={x:Static converters:EnumMatchToBackgroundConverter.Instance}, ConverterParameter=Buyer}">
@@ -41,7 +41,7 @@
                                        Foreground="{Binding UserRole, Converter={x:Static converters:EnumMatchToForegroundConverter.Instance}, ConverterParameter=Buyer}" />
                         </Border>
                         <!-- 商户 -->
-                        <Border CornerRadius="{DynamicResource GdRadiusFull}" Padding="18 7"
+                        <Border CornerRadius="17" Padding="18 7"
                                 BorderThickness="1" Cursor="Hand"
                                 BorderBrush="{DynamicResource GdBorderBrush}"
                                 Background="{Binding UserRole, Converter={x:Static converters:EnumMatchToBackgroundConverter.Instance}, ConverterParameter=Merchant}">

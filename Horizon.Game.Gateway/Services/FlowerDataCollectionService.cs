@@ -49,7 +49,14 @@ namespace Horizon.Game.Gateway.Services
                 // 但默认配置就是 false（未启用 TCP collector），用户可能根本不打算用 TCP 模式。
                 // 降为 Debug，仅在显式启用时才打 info 提示已启用。
                 _logger.LogDebug("未启用 TCP 数据采集模式（默认）。如需启用，请设置 FlowerIoT:EnableTcpCollector=true");
-                await Task.Delay(Timeout.Infinite, stoppingToken);
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // 应用关闭，正常退出
+                }
                 return;
             }
 
@@ -65,7 +72,9 @@ namespace Horizon.Game.Gateway.Services
                 _tcpService.Received = OnDataReceived;
 
                 var config = new TouchSocketConfig()
-                    .SetListenIPHosts(ipAddress, port)
+                    // 字符串重载会按网卡展开出额外监听（含公网 IPv6），具备全局 IPv6 的机器上
+                    // 第二个 bind 报 10048 假性端口占用；必须用 IPHost 对象重载（同 GameNetworkServer）。
+                    .SetListenIPHosts(new IPHost[] { new IPHost($"{ipAddress}:{port}") })
                     .SetTcpDataHandlingAdapter(() => new FlowerDataMessageAdapter())
                     .ConfigureContainer(container =>
                     {

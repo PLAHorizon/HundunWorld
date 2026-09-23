@@ -1,4 +1,4 @@
-﻿using Horizon.Game.Message.Enums;
+using Horizon.Game.Message.Enums;
 using MemoryPack;
 using Orleans;
 
@@ -6,6 +6,7 @@ namespace Horizon.Game.Message.Arena
 {
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(159, Enums.ServiceType.Arena)]
     public partial class ArenaJoinRequest : MessageUnion, INetworkMessage
     {
         [MemoryPackIgnore]
@@ -20,6 +21,7 @@ namespace Horizon.Game.Message.Arena
 
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(160, Enums.ServiceType.Arena)]
     public partial class ArenaJoinResponse : MessageUnion, INetworkMessage
     {
         [MemoryPackIgnore]
@@ -38,6 +40,7 @@ namespace Horizon.Game.Message.Arena
 
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(161, Enums.ServiceType.Arena)]
     public partial class ArenaLeaveRequest : MessageUnion, INetworkMessage
     {
         [MemoryPackIgnore]
@@ -52,6 +55,7 @@ namespace Horizon.Game.Message.Arena
 
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(162, Enums.ServiceType.Arena)]
     public partial class ArenaLeaveResponse : MessageUnion, INetworkMessage
     {
         [MemoryPackIgnore]
@@ -70,6 +74,7 @@ namespace Horizon.Game.Message.Arena
 
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(163, Enums.ServiceType.Arena)]
     public partial class ArenaInfoRequest : MessageUnion, INetworkMessage
     {
         [MemoryPackIgnore]
@@ -84,6 +89,7 @@ namespace Horizon.Game.Message.Arena
 
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(164, Enums.ServiceType.Arena)]
     public partial class ArenaInfoResponse : MessageUnion, INetworkMessage
     {
         [MemoryPackIgnore]

@@ -1,0 +1,288 @@
+## page: settings
+## dom-ids: back-hud, shortcut-popup-bestiary
+  main
+    div
+      aside .left-nav
+        div .nav-logo | 混沌世界
+        nav .nav-list
+          a .nav-item
+            span .nav-item-icon
+            span | 任务
+          a .nav-item
+            span .nav-item-icon
+            span | 抽卡
+          a .nav-item
+            span .nav-item-icon
+            span | 通行证
+          a .nav-item
+            span .nav-item-icon
+            span | 角色
+          a .nav-item
+            span .nav-item-icon
+            span | 博物志
+          a .nav-item
+            span .nav-item-icon
+            span | 奇珍阁
+          a .nav-item
+            span .nav-item-icon
+            span | 设置
+        div .nav-footer
+          div .nav-version | v1.2.0 · Build 20260715
+      div .right-section
+        header .top-bar
+          div
+            button #back-hud .back-hud-btn [aria="返回战斗"]
+              span | 返回战斗
+            span
+            div .player-avatar | 客
+            span | 江湖过客
+            span | Lv. 42
+          div .currency-bar
+            button #shortcut-popup-bestiary .quick-jump-btn [aria="快捷打开异兽详情"]
+              span | 异兽图鉴
+            span
+            div .currency-item
+              span .currency-label | 铜钱
+              span .currency-value | 12,450
+            span
+            div .currency-item
+              span .currency-label | 元宝
+              span .currency-value | 328
+            span
+            div
+              span | 戌时 三刻
+        div
+          aside .category-tabs
+            div .category-header | 设置分类
+            a .cat-tab
+              span .cat-icon
+              span | 画面
+              span | 10
+            a .cat-tab
+              span .cat-icon
+              span | 音效
+              span | 8
+            a .cat-tab
+              span .cat-icon
+              span | 操作
+              span | 12
+            a .cat-tab
+              span .cat-icon
+              span | 账号
+              span | 6
+            a .cat-tab
+              span .cat-icon
+              span | 其他
+              span | 5
+          section .settings-list
+            div
+            div
+            div .settings-header
+              div
+                div .settings-title-row
+                  h1 .settings-title | 画面设置
+                  span .ink-tag ink-tag-brand | 画质推荐
+                p .settings-subtitle | 调整游戏画面表现，平衡视觉效果与性能
+              div
+            div .setting-group
+              div .setting-section-label | 画质基础
+              div .settings-grid
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 画面质量
+                      span .setting-tag setting-tag-recommend | 推荐
+                    span | 调整整体画面质量，影响所有画面选项的预设
+                    div
+                      div .quality-preview-item | 流畅
+                      div .quality-preview-item | 标准
+                      div .quality-preview-item | 高清
+                      div .quality-preview-item | 极致
+                  div
+                    div
+                      div
+                        span .dropdown-trigger-value | 高清
+                        i
+                      div
+                        div
+                          span | 流畅
+                          i
+                        div
+                          span | 标准
+                          i
+                        div
+                          span | 高清
+                          i
+                        div
+                          span | 极致
+                          i
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 分辨率
+                    span | 调整画面分辨率，分辨率越高画面越清晰
+                  div
+                    div
+                      div
+                        span .dropdown-trigger-value | 1920 × 1080
+                        i
+                      div
+                        div
+                          span | 1280 × 720
+                          i
+                        div
+                          span | 1600 × 900
+                          i
+                        div
+                          span | 1920 × 1080
+                          i
+                        div
+                          span | 2560 × 1440
+                          i
+                        div
+                          span | 3840 × 2160
+                          i
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 帧率上限
+                    span | 设置游戏最高帧率，帧率越高画面越流畅
+                  div
+                    div
+                      div
+                        div
+                          div
+                            div
+                      span .slider-value | 60 fps
+            div .setting-group
+              div .setting-section-label | 视觉效果
+              div .settings-grid
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 视距
+                    span | 调整视角远近，视距越大可见范围越广
+                  div
+                    div
+                      div
+                        div
+                          div
+                            div
+                      span .slider-value | 75
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 特效质量
+                    span | 技能特效和粒子效果质量，影响战斗视觉表现
+                  div
+                    div
+                      div
+                        span .dropdown-trigger-value | 高
+                        i
+                      div
+                        div
+                          span | 低
+                          i
+                        div
+                          span | 中
+                          i
+                        div
+                          span | 高
+                          i
+                        div
+                          span | 极致
+                          i
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 阴影质量
+                    span | 阴影渲染质量，高质量阴影增强画面立体感
+                  div
+                    div
+                      div
+                        span .dropdown-trigger-value | 中
+                        i
+                      div
+                        div
+                          span | 关闭
+                          i
+                        div
+                          span | 低
+                          i
+                        div
+                          span | 中
+                          i
+                        div
+                          span | 高
+                          i
+                        div
+                          span | 极致
+                          i
+            div .setting-group
+              div .setting-section-label | 高级选项
+              div .settings-grid
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 抗锯齿
+                      span .setting-tag setting-tag-recommend | 推荐
+                    span | 开启抗锯齿使画面边缘更平滑，减少锯齿感
+                  div
+                    span .toggle-status | 开启
+                    div
+                      div
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 垂直同步
+                    span | 防止画面撕裂，开启后帧率上限将同步显示器刷新率
+                  div
+                    span .toggle-status | 关闭
+                    div
+                      div
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 自动隐藏UI
+                    span | 战斗中自动隐藏部分UI元素，沉浸式战斗体验
+                  div
+                    span .toggle-status | 开启
+                    div
+                      div
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 画质省电模式
+                      span .setting-tag setting-tag-experimental | 实验
+                    span | 降低画质以节省电量，适合笔记本及移动设备
+                  div
+                    span .toggle-status | 关闭
+                    div
+                      div
+            div .setting-group
+              div .setting-section-label | 画面信息
+              div .ink-panel
+                div .gpu-info-grid
+                  div
+                    div .gpu-info-label | 显卡
+                    div .gpu-info-value | NVIDIA RTX 4070
+                  div
+                    div .gpu-info-label | 显存占用
+                    div .gpu-info-value | 4.2 GB / 12 GB
+                  div
+                    div .gpu-info-label | 当前帧率
+                    div .gpu-info-value | 58 fps
+        footer .action-bar
+          div
+            span
+            span | 有 3 项设置已修改，尚未保存
+          div .action-buttons
+            button .action-btn action-btn-secondary
+              span | 恢复默认
+            button .action-btn ink-btn-primary
+              span | 保存设置
+            button .action-btn ink-btn-vermilion
+              span | 应用并重启
+
+## COPY (78)
+混沌世界 | 任务 | 抽卡 | 通行证 | 角色 | 博物志 | 奇珍阁 | 设置 | v1.2.0 · Build 20260715 | 返回战斗 | 客 | 江湖过客 | Lv. 42 | 异兽图鉴 | 铜钱 | 12,450 | 元宝 | 戌时 三刻 | 设置分类 | 画面 | 音效 | 操作 | 账号 | 其他 | 画面设置 | 画质推荐 | 调整游戏画面表现，平衡视觉效果与性能 | 画质基础 | 画面质量 | 推荐 | 调整整体画面质量，影响所有画面选项的预设 | 流畅 | 标准 | 高清 | 极致 | 分辨率 | 调整画面分辨率，分辨率越高画面越清晰 | 1920 × 1080 | 1280 × 720 | 1600 × 900 | 2560 × 1440 | 3840 × 2160 | 帧率上限 | 设置游戏最高帧率，帧率越高画面越流畅 | 60 fps | 视觉效果 | 视距 | 调整视角远近，视距越大可见范围越广 | 特效质量 | 技能特效和粒子效果质量，影响战斗视觉表现 | 高 | 低 | 中 | 阴影质量 | 阴影渲染质量，高质量阴影增强画面立体感 | 关闭 | 高级选项 | 抗锯齿 | 开启抗锯齿使画面边缘更平滑，减少锯齿感 | 开启 | 垂直同步 | 防止画面撕裂，开启后帧率上限将同步显示器刷新率 | 自动隐藏UI | 战斗中自动隐藏部分UI元素，沉浸式战斗体验 | 画质省电模式 | 实验 | 降低画质以节省电量，适合笔记本及移动设备 | 画面信息 | 显卡 | NVIDIA RTX 4070 | 显存占用 | 4.2 GB / 12 GB | 当前帧率 | 58 fps | 有 3 项设置已修改，尚未保存 | 恢复默认 | 保存设置 | 应用并重启

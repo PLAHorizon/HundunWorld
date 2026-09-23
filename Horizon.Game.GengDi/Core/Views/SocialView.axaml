@@ -768,6 +768,15 @@
                                                         <DataTemplate x:DataType="vm:ChatMessageItemViewModel">
                                                             <StackPanel Margin="0,0,0,8"
                                                                         Spacing="4">
+                                                                <!-- 撤回提示：居中灰字，替代气泡渲染 -->
+                                                                <TextBlock Text="{Binding RecallNoticeText}"
+                                                                           Classes="GdChatTime"
+                                                                           HorizontalAlignment="Center"
+                                                                           IsVisible="{Binding IsRecalled}" />
+
+                                                                <!-- 正常消息内容（撤回后整体隐藏） -->
+                                                                <StackPanel Spacing="4"
+                                                                            IsVisible="{Binding !IsRecalled}">
                                                                 <!-- 消息头：昵称（仅群聊显示） -->
                                                                 <StackPanel Orientation="Horizontal"
                                                                             Spacing="8"
@@ -821,6 +830,11 @@
                                                                                                Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                                                                 </StackPanel>
                                                                             </Grid>
+                                                                        </Border>
+                                                                        <!-- 语音消息卡片（点击播放，播放中声波动画） -->
+                                                                        <Border IsVisible="{Binding IsVoiceMessage}"
+                                                                                Padding="6,2">
+                                                                            <controls:VoiceMessageCard />
                                                                         </Border>
                                                                         <Border IsVisible="{Binding HasCard}"
                                                                                 Cursor="Hand"
@@ -921,6 +935,23 @@
                                                                                   VerticalAlignment="Center"
                                                                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                                                     </Button>
+                                                                    <Button ToolTip.Tip="撤回"
+                                                                            Background="{DynamicResource GdMutedBrush}"
+                                                                            BorderThickness="0"
+                                                                            Width="28"
+                                                                            Height="28"
+                                                                            Padding="0"
+                                                                            CornerRadius="{DynamicResource GdRadiusSm}"
+                                                                            IsVisible="{Binding CanRecall}"
+                                                                            Click="RecallButton_Click">
+                                                                        <PathIcon Data="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"
+                                                                                  Width="13"
+                                                                                  Height="13"
+                                                                                  HorizontalAlignment="Center"
+                                                                                  VerticalAlignment="Center"
+                                                                                  Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                                    </Button>
+                                                                </StackPanel>
                                                                 </StackPanel>
                                                             </StackPanel>
                                                         </DataTemplate>
@@ -1155,6 +1186,20 @@
                                                 CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Click="ViewerCopyButton_Click">
                                             <PathIcon Data="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm4 8H8V3h12v6zM6 21h12v-2H6v2zm14-6H8V9h12v6z"
+                                                      Width="15"
+                                                      Height="15"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Foreground="White" />
+                                        </Button>
+                                        <Button ToolTip.Tip="使用系统程序打开"
+                                                Classes="GdGhost GdBtnSm"
+                                                Width="32"
+                                                Height="32"
+                                                Padding="0"
+                                                CornerRadius="{DynamicResource GdRadiusSm}"
+                                                Click="ViewerOpenExternalButton_Click">
+                                            <PathIcon Data="M19 19H5V5h7V3H5c-1.11 0-2 0.9-2 2v14c0 1.1 0.89 2 2 2h14c1.1 0 2-0.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"
                                                       Width="15"
                                                       Height="15"
                                                       HorizontalAlignment="Center"

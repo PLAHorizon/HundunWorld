@@ -31,6 +31,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
         private Label _pageTitle;
 
+        /// <summary>左栏竖排标识「门派志」（设计稿 .ink-vertical-title）</summary>
+        private InkVerticalTitle _verticalPageTitle;
+
         private Panel _sectListSection;
         private List<ContainerControl> _sectListItems;
 
@@ -41,6 +44,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
         private Label _sectRankLabel;
         private Label _sectDescLabel;
         private Label _contributionLabel;
+
+        /// <summary>门派贡献度标题（设计稿 menu-sect.html「门派贡献度」）</summary>
+        private Label _contributionTitleLabel;
         private InkBar _contributionBar;
         private Label _contributionHintLabel;
 
@@ -290,6 +296,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _mainArea
             };
+
+            // 设计稿左栏竖排标识「门派志」（.ink-vertical-title text-sm）
+            _verticalPageTitle = new InkVerticalTitle
+            {
+                Text = "门派志",
+                FontSize = 13f,
+                Parent = _mainArea
+            };
         }
 
         private void BuildSectList()
@@ -405,6 +419,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                 Text = "逍遥自在，无拘无束。以逍遥游为心法根基，剑法轻灵飘逸，步法出神入化，内功深不可测。",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperAged,
+                Parent = _sectInfoPanel
+            };
+
+            _contributionTitleLabel = new Label
+            {
+                Text = "门派贡献度",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.TextOnPaper,
                 Parent = _sectInfoPanel
             };
 
@@ -723,6 +745,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
             {
                 _pageTitle.Location = new Float2(32f, contentY);
             }
+
+            if (_verticalPageTitle != null)
+            {
+                _verticalPageTitle.Location = new Float2(8f, contentY + 30f);
+                _verticalPageTitle.Size = new Float2(20f, 90f);
+            }
             contentY += 50f;
 
             float listW = (sw - SidebarWidth - 32f * 2f) * SectListRatio;
@@ -817,6 +845,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
             }
 
             infoY += 60f;
+            if (_contributionTitleLabel != null)
+            {
+                _contributionTitleLabel.Location = new Float2(infoX, infoY - 2f);
+                _contributionTitleLabel.Size = new Float2(120f, 18f);
+            }
             if (_contributionLabel != null)
             {
                 _contributionLabel.Location = new Float2(detailW - PanelPadding - 100f, infoY);

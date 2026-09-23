@@ -328,7 +328,7 @@
     <!-- 副导航 Badge（红色圆角小数字） -->
     <Style Selector="Border.SubNavBadge">
         <Setter Property="Background" Value="{DynamicResource GdErrorBrush}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusFull}" />
+        <Setter Property="CornerRadius" Value="8" />
         <Setter Property="MinWidth" Value="16" />
         <Setter Property="Height" Value="16" />
         <Setter Property="Padding" Value="4 0" />
@@ -564,7 +564,7 @@
     <!-- Chip (品种筛选标签) -->
     <Style Selector="Border.GdChip">
         <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusFull}" />
+        <Setter Property="CornerRadius" Value="14" />
         <Setter Property="Padding" Value="12 6" />
         <Setter Property="Cursor" Value="Hand" />
     </Style>
@@ -640,12 +640,12 @@
         <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="TextBlock.GdCalDay">
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="18" />
         <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
     </Style>
     <Style Selector="Ellipse.GdCalDot">
-        <Setter Property="Width" Value="6" />
-        <Setter Property="Height" Value="6" />
+        <Setter Property="Width" Value="9" />
+        <Setter Property="Height" Value="9" />
     </Style>
 
     <!-- Star Rating -->

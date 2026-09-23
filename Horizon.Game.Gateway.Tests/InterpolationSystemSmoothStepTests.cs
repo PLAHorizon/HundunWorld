@@ -13,6 +13,7 @@ namespace Horizon.Game.Gateway.Tests;
 /// smoothedFactor = lerpFactor * lerpFactor * (3 - 2 * lerpFactor) 的数学性质与性能。
 /// 被测代码：InterpolationSystem.cs:200。
 /// </summary>
+[Collection("InterpolationStaticState")]
 public class InterpolationSystemSmoothStepTests : IDisposable
 {
     private readonly World _world;
@@ -265,14 +266,17 @@ public class InterpolationSystemSmoothStepTests : IDisposable
 
     /// <summary>
     /// Idle 状态下速度非零时，Dead Reckoning 应继续推进位置。
-    /// 场景：远程角色以 6m/s 移动，网络抖动 1s 导致进入 Idle，
+    /// 场景：远程角色以 6m/s 移动，网络抖动导致进入 Idle（失联 0.9s，尚处全速窗口内——
+    /// 实现约定失联 1s 内全速外推，之后按 IdleDeadReckoningDecayRate 指数衰减），
     /// 角色应继续按 6m/s 外推，而非瞬间冻结。
+    /// 注意：InterpolationSystem.Update 内部先累加 TimeSinceLastSnapshot（+dt），
+    /// 故构造值取 0.9f 使执行时 ≈0.9167s &lt; 1.0s 全速窗口。
     /// </summary>
     [Fact]
     public void Idle_DeadReckoning_ContinuesMovingWithVelocity()
     {
         const float velocity = 6f; // 6 m/s
-        var entity = CreateIdleEntityWithVelocity(posX: 0f, velX: velocity, timeSinceSnapshot: 1.0f);
+        var entity = CreateIdleEntityWithVelocity(posX: 0f, velX: velocity, timeSinceSnapshot: 0.9f);
 
         // 模拟 1 帧（dt = 1/60s）
         var dt = 1.0 / 60.0;
@@ -347,15 +351,18 @@ public class InterpolationSystemSmoothStepTests : IDisposable
 
     /// <summary>
     /// Idle Dead Reckoning 多帧持续推进，模拟网络抖动期间远程角色保持移动。
-    /// 场景：60 帧（1 秒）Idle 状态，6m/s 速度应外推约 6m。
-    /// 注意：TimeSinceLastSnapshot 由 InterpolationSystem.Update 每帧累加（line 204），
-    /// 不需要测试手动累加。从 1.0s 开始，60 帧 +1s = 2.0s，恰好在 IdleDeadReckoningMaxSeconds 边界内。
+    /// 场景：60 帧（1 秒）Idle 状态，6m/s 速度外推。
+    /// 注意：TimeSinceLastSnapshot 由 InterpolationSystem.Update 每帧累加（line 312），
+    /// 不需要测试手动累加。从 0.9s 开始，60 帧后 ≈1.983s，处于 IdleDeadReckoningMaxSeconds=2.0s 边界内；
+    /// 但失联超过 1s 后按 IdleDeadReckoningDecayRate=2 指数衰减：
+    /// 外推总量 ≈ 6 × ∫₀^1 e^(-2t) dt = 6 × (1-e⁻²)/2 ≈ 2.59m（而非无衰减的 6m）。
+    /// 断言目标：显著大于冻结（0m），且不超过无衰减全速上限——验证"抖动期间保持移动而非冻结"的修复意图。
     /// </summary>
     [Fact]
     public void Idle_DeadReckoning_MultiFrame_ContinuousMovement()
     {
         const float velocity = 6f;
-        var entity = CreateIdleEntityWithVelocity(posX: 0f, velX: velocity, timeSinceSnapshot: 1.0f);
+        var entity = CreateIdleEntityWithVelocity(posX: 0f, velX: velocity, timeSinceSnapshot: 0.9f);
         _system.IdleDeadReckoningMaxSeconds = 2.0f;
 
         var dt = 1.0 / 60.0;
@@ -366,10 +373,9 @@ public class InterpolationSystemSmoothStepTests : IDisposable
         }
 
         ref var final = ref _world.Get<InterpolatedTransformComponent>(entity);
-        // 60 帧 × 6m/s × (1/60)s = 6m
-        // TimeSinceLastSnapshot 从 1.0s 增长到 2.0s，均在 IdleDeadReckoningMaxSeconds=2.0s 内
-        Assert.True(final.X > 5.5f,
-            $"Idle Dead Reckoning 1 秒应外推约 6m，实际 X={final.X:F4}。" +
+        // 衰减后理论外推 ≈2.59m；断言 1.5m 下限（防冻结）与 6.5m 上限（防过冲）。
+        Assert.True(final.X > 1.5f && final.X < 6.5f,
+            $"Idle Dead Reckoning 1 秒应外推约 2.6m（含衰减），实际 X={final.X:F4}。" +
             "远程角色在网络抖动期间应保持移动而非冻结。");
     }
 }

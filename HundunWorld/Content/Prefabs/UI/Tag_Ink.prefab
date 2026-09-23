@@ -1,0 +1,109 @@
+{
+	"ID": "894827964071f066d543aba96a516cad",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "d8f6cf3a40c1bb8905d0dd81ac4665ca",
+		"TypeName": "FlaxEngine.UIControl",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "Tag_Ink",
+		"Transform": {
+			"Orientation": {
+				"X": -1.0,
+				"Y": -4.3711388286737935e-8,
+				"Z": -4.3711388286737935e-8,
+				"W": 1.910685465164705e-15
+			}
+		},
+		"Control": "HundunWorld.Game.UI.Ink.InkTag",
+		"Data": {
+			"TagVariant": 0,
+			"Text": "标签",
+			"CaseOption": 0,
+			"Bold": false,
+			"Italic": false,
+			"TextColor": {
+				"R": 0.72156864,
+				"G": 0.6901961,
+				"B": 0.627451,
+				"A": 1.0
+			},
+			"TextColorHighlighted": {
+				"R": 1.0,
+				"G": 1.0,
+				"B": 1.0,
+				"A": 1.0
+			},
+			"HorizontalAlignment": 1,
+			"VerticalAlignment": 1,
+			"Wrapping": 0,
+			"BaseLinesGapScale": 1.0,
+			"Font": {
+				"Font": "9c6135344289a9d4261ff882b0e00182",
+				"Size": 11.0
+			},
+			"Material": null,
+			"Margin": {
+				"Left": 0.0,
+				"Right": 0.0,
+				"Top": 0.0,
+				"Bottom": 0.0
+			},
+			"ClipText": false,
+			"AutoWidth": false,
+			"AutoHeight": false,
+			"AutoFitText": false,
+			"AutoFitTextRange": {
+				"X": 0.1,
+				"Y": 100.0
+			},
+			"ClipChildren": true,
+			"CullChildren": true,
+			"AnchorMin": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"AnchorMax": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Offsets": {
+				"Left": 0.0,
+				"Right": 60.0,
+				"Top": 0.0,
+				"Bottom": 22.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0
+			},
+			"Pivot": {
+				"X": 0.5,
+				"Y": 0.5
+			},
+			"Shear": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Rotation": 0.0,
+			"BackgroundColor": {
+				"R": 0.78431374,
+				"G": 0.65882355,
+				"B": 0.34509805,
+				"A": 0.08
+			},
+			"BackgroundBrush": null,
+			"Enabled": true,
+			"Visible": true,
+			"AutoFocus": false
+		}
+	},
+	{
+		"ID": "bf081d3746850560c046e8b7c50ec3a8",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.InkTagProfile",
+		"ParentID": "d8f6cf3a40c1bb8905d0dd81ac4665ca",
+		"V": {}
+	}
+]
+}

@@ -312,10 +312,19 @@
     <Compile Include="HundunAgentEditor\HundunAgentPlugin.cs" />
     <Compile Include="HundunAgentEditor\Server\AgentHttpServer.cs" />
     <Compile Include="HundunAgentEditor\Server\McpServer.cs" />
+    <Compile Include="HundunAgentEditor\Tools\AssetForensicsTools.cs" />
+    <Compile Include="HundunAgentEditor\Tools\AssetIntrospectTools.cs" />
     <Compile Include="HundunAgentEditor\Tools\CodeTools.cs" />
+    <Compile Include="HundunAgentEditor\Tools\DevWorkflowTools.cs" />
+    <Compile Include="HundunAgentEditor\Tools\LevelDesignTools.cs" />
+    <Compile Include="HundunAgentEditor\Tools\LogTools.cs" />
     <Compile Include="HundunAgentEditor\Tools\MaterialAssetTools.cs" />
     <Compile Include="HundunAgentEditor\Tools\SceneActorTools.cs" />
+    <Compile Include="HundunAgentEditor\Tools\SimulationTools.cs" />
     <Compile Include="HundunAgentEditor\Tools\TaskTools.cs" />
+    <Compile Include="HundunAgentEditor\Tools\UiDesignAuditTools.cs" />
+    <Compile Include="HundunAgentEditor\Tools\UiDesignTools.cs" />
+    <Compile Include="HundunAgentEditor\Tools\UiPrefabTools.cs" />
     <Compile Include="HundunAgentEditor\Tools\ViewportEnvTools.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' " >

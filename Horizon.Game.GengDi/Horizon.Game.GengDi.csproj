@@ -1,19 +1,52 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0;net10.0-android</TargetFrameworks>
+    <OutputType>Library</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>$(NoWarn);NU1507</NoWarn>
     <NuGetAudit>false</NuGetAudit>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Android 最低支持版本 -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24</SupportedOSPlatformVersion>
+    <!-- CefGlue.Common.props（WebViewControl-Avalonia 传递依赖）会无条件设置桌面 RuntimeIdentifiers。
+         GengDi 是 Library，不需要 RuntimeIdentifiers；清除以避免多目标 outer build 聚合时
+         将桌面 RID 传递给 Android 项目导致 XA0035 错误。PC 项目有自己的 WebViewControl 直接引用。 -->
+    <RuntimeIdentifiers></RuntimeIdentifiers>
   </PropertyGroup>
 
+  <!-- net10.0-android 也定义了 NET10_0 符号，因此用自定义 DESKTOP 符号区分纯桌面目标 -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <DefineConstants>$(DefineConstants);DESKTOP</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Android 目标框架下，Android SDK 的类型与 Avalonia/项目类型同名，通过全局 using 别名消歧 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
+    <Using Include="Avalonia.Controls.Button" Alias="Button" />
+    <Using Include="Avalonia.Controls.RadioButton" Alias="RadioButton" />
+    <Using Include="Avalonia.Controls.CheckBox" Alias="CheckBox" />
+    <Using Include="Avalonia.Layout.Orientation" Alias="Orientation" />
+    <Using Include="Avalonia.Application" Alias="Application" />
+    <Using Include="Horizon.Game.GengDi.Models.Activity" Alias="Activity" />
+    <Using Include="Horizon.Game.GengDi.Enums.DownloadStatus" Alias="DownloadStatus" />
+  </ItemGroup>
+
+  <!-- Android SDK 的 Sdk/AutoImport.props 会对项目目录执行默认通配：
+         <AndroidNativeLibrary Include="**\*.so" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+       它只排除 bin/obj 等默认输出目录。若项目目录下残留桌面端发布产物
+       （publish/、output/），其中 runtimes/<rid>/native/libe_sqlite3.so 会被当成
+       Android 原生库，又因路径不是合法 ABI 目录名而报 XA4301（无法确定本机库的 ABI）。
+       此处显式剔除，避免发布产物污染 Android 构建。 -->
   <ItemGroup>
-    <!-- Avalonia 资源：XAML样式/图标/图片�?-->
+    <AndroidNativeLibrary Remove="publish\**" />
+    <AndroidNativeLibrary Remove="output\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Avalonia 资源：XAML样式/图标/图片 -->
     <AvaloniaResource Include="Assets\**" Exclude="Assets\Data\*.json;Assets\Styles\ControlsGalleryStyles.axaml;Assets\Styles\Resources.axaml" />
     
-    <!-- JSON 数据文件：需要复制到输出目录�?LiteDB 导入使用 -->
+    <!-- JSON 数据文件：需要复制到输出目录，LiteDB 导入使用 -->
     <Content Include="Assets\Data\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -30,6 +63,9 @@
     <Content Include="appsettings.*.json" Condition="'$(Configuration)' == 'Debug'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- 服务端自签证书（与 Horizon.WebApi/cert.pfx 公钥部分一致）：
+         供 SslConfiguration 做证书锁定，开发环境 PC 客户端信任私有部署的 WebApi。 -->
+    <EmbeddedResource Include="Core\Security\server_cert.pem" LogicalName="GengDi.server_cert.pem" />
   </ItemGroup>
 
   <ItemGroup>
@@ -75,15 +111,13 @@
     <Page Include="Assets\Styles\Resources.axaml" />
   </ItemGroup>
   
-  <!-- <PropertyGroup>
-    <StartupObject>Horizon.Game.GengDi.ExceptionTest</StartupObject>
-  </PropertyGroup> -->
-
   <ItemGroup>
     <PackageReference Include="Avalonia" />
-    <PackageReference Include="Avalonia.Desktop" />
+    <!-- Avalonia.Desktop 仅桌面端需要 -->
+    <PackageReference Include="Avalonia.Desktop" Condition="'$(TargetFramework)' == 'net10.0'" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+    <!-- NAudio / System.Drawing.Common 有 netstandard2.0 兼容目标，Android 上可编译（运行时会有 CA1416 警告） -->
     <PackageReference Include="NAudio" />
     <PackageReference Include="Newtonsoft.Json" />
     
@@ -93,15 +127,19 @@
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" />
     <PackageReference Include="TouchSocket" />
     <PackageReference Include="TouchSocket.Core" />
-    <PackageReference Include="WebViewControl-Avalonia" />
+    <!-- WebViewControl-Avalonia 仅桌面端需要（CefGlue 不支持 Android）。
+         PrivateAssets 阻止 build/buildTransitive 流向消费项目。
+         PC 项目需自行添加直接引用以获取 CEF 原生资源构建目标。 -->
+    <PackageReference Include="WebViewControl-Avalonia" PrivateAssets="build;buildTransitive" Condition="'$(TargetFramework)' == 'net10.0'" />
     <PackageReference Include="MQTTnet" />
     <PackageReference Include="MQTTnet.Extensions.ManagedClient" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 
-  <Target Name="ForceMQTTnetRefs" AfterTargets="ResolvePackageAssets" BeforeTargets="ResolveAssemblyReferences">
+  <Target Name="ForceMQTTnetRefs" AfterTargets="ResolvePackageAssets" BeforeTargets="ResolveAssemblyReferences" Condition="'$(TargetFramework)' == 'net10.0'">
     <ItemGroup>
       <Reference Include="$(NuGetPackageRoot)mqttnet\4.3.7.1207\lib\net7.0\MQTTnet.dll" />
       <Reference Include="$(NuGetPackageRoot)mqttnet.extensions.managedclient\4.3.7.1207\lib\net7.0\MQTTnet.Extensions.ManagedClient.dll" />

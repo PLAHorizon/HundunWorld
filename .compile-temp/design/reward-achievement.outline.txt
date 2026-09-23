@@ -1,0 +1,79 @@
+## page: reward-achievement
+## dom-ids: achievement-modal, achievement-overlay, achievementTitle, back-hud, link-reward-teleport
+  main
+    div
+      div
+      div
+      div
+      div
+      button #back-hud .ink-back-btn [aria="返回战斗"]
+      div #achievement-overlay
+        div
+          span
+          span
+          span
+          span
+          span
+          span
+        section #achievement-modal .achievement-modal
+          span
+          span
+          span
+          span
+          div .modal-content
+            header .title-section
+              h1 #achievementTitle .modal-title | 成就解锁
+              div .title-divider
+                span
+                span
+                span
+            div .icon-container
+              div .icon-ring-outer
+              div .icon-ring-inner
+              div .achievement-icon
+                span .icon-char | 侠
+                div .icon-glow
+              span
+              span
+              span
+              span
+            h2 | 初入江湖
+            div .badge-row
+              span .ink-tag ink-tag-brand rarity-badge
+                i .badge-icon | 稀有
+            p | 首次踏入江湖世界，开启你的武侠之旅。
+              section .rewards-section
+                h3 .rewards-title
+                  i .rewards-title-icon
+                  span | 解锁奖励
+                div .rewards-list
+                  div .reward-item
+                    div .reward-icon reward-icon-gold
+                      div .reward-icon-glow
+                    div
+                      span | 经验
+                      span | ×5000
+                  div .reward-item
+                    div .reward-icon reward-icon-coin
+                      div .reward-icon-glow
+                    div
+                      span | 铜钱
+                      span | ×2000
+                  div .reward-item
+                    div .reward-icon reward-icon-jade
+                      div .reward-icon-glow
+                    div
+                      span | 初心者称号
+                      span | 已获得
+                a #link-reward-teleport
+                  i .teleport-link-icon
+                  span | 已解锁传送功能 · 前往查看
+                  i .teleport-link-arrow
+              div .action-section
+                button .ink-btn ink-btn-primary ink-btn-lg confirm-btn
+                  i .confirm-icon
+                  span | 确认
+                  span .btn-shine
+
+## COPY (14)
+成就解锁 | 侠 | 初入江湖 | 稀有 | 首次踏入江湖世界，开启你的武侠之旅。 | 解锁奖励 | 经验 | ×5000 | 铜钱 | ×2000 | 初心者称号 | 已获得 | 已解锁传送功能 · 前往查看 | 确认

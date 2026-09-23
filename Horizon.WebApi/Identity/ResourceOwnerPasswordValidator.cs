@@ -1,4 +1,4 @@
-﻿using Horizon.Core;
+using Horizon.Core;
 using Horizon.Core.Abstract;
 using Horizon.Core.Abstract.Enums;
 using Horizon.Core.Options;
@@ -58,7 +58,9 @@ namespace Horizon.WebApi.Identity
             }
             catch (Exception ex)
             {
-
+                // 修复（BUG）：原空 catch 吞掉所有异常，把基础设施故障也伪装成"用户名或密码错误"，
+                // 掩盖真实错误。改为记录异常（仍返回 INVALID_USER 给客户端，不泄露内部细节）。
+                _logger.LogError(ex, "Passport 认证异常: PassportId={PassportId}", context.UserName);
             }
 
             if (user != null)

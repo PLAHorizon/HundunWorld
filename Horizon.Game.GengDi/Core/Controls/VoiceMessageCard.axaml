@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             mc:Ignorable="d"
+             x:Class="Horizon.Game.GengDi.Core.Controls.VoiceMessageCard"
+             x:DataType="vm:ChatMessageItemViewModel">
+
+  <!-- 微信风格语音卡片：喇叭图标 + 声波动画（播放中） + 时长 -->
+  <Border Background="Transparent"
+          Cursor="Hand"
+          PointerPressed="Card_PointerPressed">
+    <StackPanel Orientation="Horizontal"
+                Spacing="8">
+      <!-- 喇叭图标 -->
+      <Path x:Name="SpeakerIcon"
+            Data="F0 M3,9 L3,15 L7,15 L12,20 L12,4 L7,9 Z"
+            Fill="{Binding BubbleForeground}"
+            Width="18"
+            Height="18"
+            Stretch="Uniform"
+            VerticalAlignment="Center" />
+
+      <!-- 声波（播放中三根柱体循环跳动；空闲静态） -->
+      <StackPanel Orientation="Horizontal"
+                  Spacing="3"
+                  VerticalAlignment="Center">
+        <Rectangle x:Name="Wave1" Width="3" Height="8" RadiusX="1.5" RadiusY="1.5" Fill="{Binding BubbleForeground}" Opacity="0.45" />
+        <Rectangle x:Name="Wave2" Width="3" Height="14" RadiusX="1.5" RadiusY="1.5" Fill="{Binding BubbleForeground}" Opacity="0.70" />
+        <Rectangle x:Name="Wave3" Width="3" Height="6" RadiusX="1.5" RadiusY="1.5" Fill="{Binding BubbleForeground}" Opacity="0.45" />
+      </StackPanel>
+
+      <!-- 时长 -->
+      <TextBlock Text="{Binding VoiceDurationText}"
+                 FontSize="12"
+                 Foreground="{Binding BubbleForeground}"
+                 VerticalAlignment="Center" />
+    </StackPanel>
+  </Border>
+</UserControl>

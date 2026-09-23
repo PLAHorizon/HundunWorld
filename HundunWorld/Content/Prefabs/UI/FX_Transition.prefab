@@ -1,0 +1,96 @@
+{
+	"ID": "7303f59b4260aeed6c333ba72b6e7533",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "c506404048964a8e1547a18e5b1f57a5",
+		"TypeName": "FlaxEngine.UIControl",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "FX_Transition",
+		"Transform": {
+			"Orientation": {
+				"X": -1.0,
+				"Y": -4.3711388286737935e-8,
+				"Z": -4.3711388286737935e-8,
+				"W": 1.910685465164705e-15
+			}
+		},
+		"Control": "FlaxEngine.GUI.Panel",
+		"Data": {
+			"ScrollBars": 0,
+			"ScrollBarsSize": 14.0,
+			"AlwaysShowScrollbars": false,
+			"ScrollMargin": {
+				"Left": 0.0,
+				"Right": 0.0,
+				"Top": 0.0,
+				"Bottom": 0.0
+			},
+			"ScrollbarTrackColor": {
+				"R": 0.32941177,
+				"G": 0.32941177,
+				"B": 0.36078432,
+				"A": 1.0
+			},
+			"ScrollbarThumbColor": {
+				"R": 0.24705882,
+				"G": 0.24705882,
+				"B": 0.27450982,
+				"A": 1.0
+			},
+			"ScrollbarThumbSelectedColor": {
+				"R": 0.0,
+				"G": 0.47843137,
+				"B": 0.8,
+				"A": 1.0
+			},
+			"ClipChildren": true,
+			"CullChildren": true,
+			"AnchorMin": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"AnchorMax": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Offsets": {
+				"Left": 0.0,
+				"Right": 8.0,
+				"Top": 0.0,
+				"Bottom": 8.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0
+			},
+			"Pivot": {
+				"X": 0.5,
+				"Y": 0.5
+			},
+			"Shear": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Rotation": 0.0,
+			"BackgroundColor": {
+				"R": 0.0,
+				"G": 0.0,
+				"B": 0.0,
+				"A": 0.0
+			},
+			"BackgroundBrush": null,
+			"Enabled": true,
+			"Visible": true,
+			"AutoFocus": false
+		}
+	},
+	{
+		"ID": "2e19cbc7452690a8d31c5b9eebe87658",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.UIAnimationProfile",
+		"ParentID": "c506404048964a8e1547a18e5b1f57a5",
+		"V": {}
+	}
+]
+}

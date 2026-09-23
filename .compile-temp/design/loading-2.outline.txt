@@ -1,0 +1,36 @@
+## page: loading-2
+## dom-ids: auto-advance, continue-hint, loading-bar, loading-pct, loading-tip-text
+  div
+    div
+    div
+    div
+      div
+        span | 混沌世界
+      div
+      div .loading2-center
+        div #auto-advance .loading-ring
+          div .loading-ring-outer
+          div .loading-ring-inner
+          div .loading-ring-center | 峰
+        div | 远峰入云 · 破境中
+      div
+        div
+          div .ink-vertical-title | 会当凌绝顶 | 一览众山小
+          div | 望岳·杜甫
+        div | 岳
+      div .loading2-bottom
+        div .loading2-progress-wrap
+          span .loading2-progress-label | 正在凝聚内力
+          div .ink-bar
+            div #loading-bar .ink-bar-fill
+          span #loading-pct .loading2-progress-pct | 0%
+        div .loading2-tips-row
+          div
+            span #loading-tip-text | 山高水长，江湖路远
+          div #continue-hint
+            span | 点击继续
+            span | ·
+          div | VER 1.0.0 · CN
+
+## COPY (11)
+混沌世界 | 峰 | 远峰入云 · 破境中 | 会当凌绝顶 | 一览众山小 | 望岳·杜甫 | 岳 | 正在凝聚内力 | 山高水长，江湖路远 | 点击继续 | VER 1.0.0 · CN

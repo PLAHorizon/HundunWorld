@@ -102,7 +102,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
             _previewLabel = new Label
             {
-                Text = "角色预览",
+                Text = "捏骨塑形",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 24f),
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Center,
@@ -113,7 +113,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
             _previewHint = new Label
             {
-                Text = "拖动旋转查看角色",
+                Text = "DRAG TO ROTATE · 拖拽旋转",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 TextColor = InkWashTheme.TextTertiary,
                 HorizontalAlignment = TextAlignment.Center,
@@ -175,12 +175,23 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
             _panelTitle = new Label
             {
-                Text = "捏脸",
+                Text = "面相·捏骨",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 24f),
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Near,
                 Location = new Float2(_customizePanel.Width * 0.5f - 30, 20f),
+                Parent = _customizePanel
+            };
+
+            // 面板标题右侧预设计数标签（设计稿「预设 · 03」）
+            var presetCountTag = new InkTag
+            {
+                Text = "预设 · 03",
+                TagVariant = InkTagVariant.Brand,
+                Width = 76f,
+                Height = 22f,
+                Location = new Float2(_customizePanel.Width - 96f, 26f),
                 Parent = _customizePanel
             };
 
@@ -230,7 +241,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
             var presetTitle = new Label
             {
-                Text = "预设",
+                Text = "脸型预设",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
                 TextColor = InkWashTheme.TextTertiary,
                 HorizontalAlignment = TextAlignment.Near,
@@ -273,7 +284,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
             var sliderTitle = new Label
             {
-                Text = "调整",
+                Text = "面部参数",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
                 TextColor = InkWashTheme.TextTertiary,
                 HorizontalAlignment = TextAlignment.Near,
@@ -404,7 +415,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
             _enterButton = new InkButton
             {
-                Text = "进入江湖",
+                Text = "踏入江湖",
                 Width = 170f,
                 Height = 36f,
                 Location = new Float2(_customizePanel.Width - 190f, 10f),

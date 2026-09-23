@@ -630,6 +630,23 @@ namespace HundunWorld.Game.Network
             CancelDelayedReconnect();
             // 注意：不取消 CancelDisconnectTimeout()，等 UpdateHeartbeat() 收到数据后再取消
 
+            // ★ 重置「连续心跳失败」计数（2026-09-20 修复「重新连上后立刻又被判定断线」）：
+            //   该计数原本**只在 UpdateHeartbeat()（收到服务端应用层数据）时**归零。
+            //   但玩家尚未进入游戏时服务端**不会主动下发任何数据**（无角色、无快照），
+            //   于是计数只增不减，日志可见其单调增长到 24/5、25/5 … 31/5（阈值 5）。
+            //   后果：每次登录/重连**刚建立的新连接**，会在下一次心跳检查 tick
+            //   （周期 3s）立刻算出 elapsed > 30s 且计数已超阈值 → 触发断线探查
+            //   → 调用 _disconnectFunction() **把刚建好的连接主动关掉**。
+            //   典型现象：连接建立后 ~150ms 就断开，登录发的 CharacterList 永远收不到响应。
+            //
+            //   语义上这是明确的缺陷：该计数的含义是「**当前这条连接**连续多少次心跳超时」，
+            //   换了一条新连接就必须从零开始计，不能让新连接继承上一条连接的历史欠账。
+            //   注意这与注释里「不取消断线超时计时器」的取舍不冲突——那条规则防的是
+            //   「TCP 连上但无数据 → 服务端首包超时关闭 → 无限重连」，针对的是**超时计时器**；
+            //   而本计数只是超时判定的**前置门限**，重置它不会让上述循环复活
+            //   （超时计时器仍然只在 UpdateHeartbeat 时才取消）。
+            _consecutiveHeartbeatFailures = 0;
+
             // [修复] 重试循环中不覆盖 CurrentState（保持 Reconnecting），
             // 防止短暂连接成功后 OnClientDisconnected 触发级联 HandleDisconnect。
             // StartReconnectAsync 退出循环时统一设置最终状态。

@@ -145,12 +145,16 @@ namespace Horizon.Game.Gateway.Handlers
                 }
 
                 // 4. 构造心跳响应
-                var serverTime = DateTime.UtcNow.Ticks;
+                // 修复 BUG（延迟计算单位错乱）：客户端 HeartbeatMessage.ClientTime 是
+                // Unix 毫秒时间戳（DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()），
+                // 原实现用 DateTime.UtcNow.Ticks（自 0001-01-01 起 100ns 间隔）与之相减，
+                // 得到约 6.38e13 毫秒（≈2000 年）的虚假延迟。此处统一用 Unix 毫秒。
+                var serverTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 long latency = 0;
                 if (heartbeat.ClientTime > 0)
                 {
                     // 计算单向延迟（毫秒）。注意：依赖客户端与服务器时钟同步，仅供参考
-                    latency = Math.Max(0, (serverTime - heartbeat.ClientTime) / TimeSpan.TicksPerMillisecond);
+                    latency = Math.Max(0, serverTime - heartbeat.ClientTime);
                 }
 
                 var response = new HeartbeatResponse
@@ -169,8 +173,8 @@ namespace Horizon.Game.Gateway.Handlers
                 // 心跳处理失败不应断开连接，返回失败响应让客户端重试
                 var errorResponse = new HeartbeatResponse
                 {
-                    Timestamp = DateTime.UtcNow.Ticks,
-                    ServerTime = DateTime.UtcNow.Ticks,
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    ServerTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                     Latency = -1 // -1 表示延迟计算失败
                 };
                 var responsePacket = CreateHorizonMessage(errorResponse);

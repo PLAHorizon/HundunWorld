@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微信「App 支付」商户号申办完整指南</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FBFBFD;
+    --surface: #FFFFFF;
+    --surface-muted: #F5F3FA;
+    --text: #221F1F;
+    --text-muted: #6B6470;
+    --border: rgba(34,31,31,0.12);
+    --brand: #7A4BE3;
+    --brand-soft: #F4EEFF;
+    --brand-text: #4A2B96;
+    --gold: #D89A2B;
+    --gold-soft: #FBF3E2;
+    --gold-text: #8A5F10;
+    --success: #1E9E6A;
+    --success-soft: #e8f7f0;
+    --warning: #C77B0F;
+    --warning-soft: #fdf3e0;
+    --danger: #C93A2E;
+    --danger-soft: #fdecea;
+    --radius: 12px;
+  }
+  :root[data-widget-theme="dark"] {
+    color-scheme: dark;
+    --bg: #141318;
+    --surface: #1C1A22;
+    --surface-muted: #26232E;
+    --text: #EDEAEF;
+    --text-muted: #A29AAE;
+    --border: rgba(237,234,239,0.12);
+    --brand: #9A6BF2;
+    --brand-soft: #2A2140;
+    --brand-text: #CBB5FF;
+    --gold: #E0A93E;
+    --gold-soft: #3A2F17;
+    --gold-text: #F2CE8A;
+    --success: #2BB87B;
+    --success-soft: #0e2e20;
+    --warning: #E0A93E;
+    --warning-soft: #33260f;
+    --danger: #E05A4E;
+    --danger-soft: #33110f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    line-height: 1.65;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 24px 64px; }
+  header { text-align: center; padding: 28px 0 24px; }
+  header h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: .5px; }
+  header .sub { color: var(--text-muted); font-size: 14px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 18px;
+  }
+  h2 {
+    font-size: 19px;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--brand-soft);
+  }
+  h3 { font-size: 15px; margin: 18px 0 8px; }
+  ul, ol { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  p { margin: 8px 0; }
+  code {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 13px;
+    font-family: ui-monospace,"JetBrains Mono",monospace;
+  }
+  pre {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow: auto;
+    font-size: 12.5px;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  .phase-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+  }
+  .phase-open { background: var(--brand-soft); color: var(--brand-text); }
+  .phase-mch { background: var(--gold-soft); color: var(--gold-text); }
+  .phase-cfg { background: var(--surface-muted); color: var(--text-muted); }
+  .step-intro { color: var(--text-muted); font-size: 13.5px; margin-bottom: 10px; }
+  .note {
+    background: var(--brand-soft);
+    border-left: 3px solid var(--brand);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    color: var(--brand-text);
+    margin: 12px 0;
+  }
+  .warn {
+    background: var(--warning-soft);
+    border-left: 3px solid var(--warning);
+    color: var(--gold-text);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-muted); font-weight: 600; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .b-success { background: var(--success-soft); color: var(--success); }
+  .b-warning { background: var(--warning-soft); color: var(--warning); }
+  .b-danger { background: var(--danger-soft); color: var(--danger); }
+  .svgbox { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; margin-bottom: 18px; }
+  footer { text-align: center; color: var(--text-muted); font-size: 12.5px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🌸 微信「App 支付」商户号申办完整指南</h1>
+  <div class="sub">耕地鸿蒙客户端 · 真机拉起微信收银台目标 · 含可视化流程与排查表</div>
+</header>
+
+<!-- ==================== 0. 流程总览 ==================== -->
+<div class="svgbox" id="overview">
+  <h2 style="padding:6px 8px 0;">0 · 申办流程总览</h2>
+  <svg viewBox="0 0 720 566" width="100%" height="auto" role="img" aria-label="微信App支付商户号申办流程">
+    <style>
+      .t{fill:var(--text)}.th{fill:var(--text);font-weight:600}.ts{fill:var(--text-muted);font-size:12px}
+      .phase{fill:var(--text-muted);font-size:12px;font-weight:600}
+      .bn{fill:var(--text-muted);font-size:12px}
+      rect.c-neutral{fill:var(--surface);stroke:var(--border)}
+      rect.c-brand{fill:var(--brand-soft);stroke:var(--brand)}
+      rect.c-gold{fill:var(--gold-soft);stroke:var(--gold)}
+      .c-brand .th{fill:var(--brand-text)}.c-gold .th{fill:var(--gold-text)}
+      .c-brand .ts{fill:var(--brand)}
+      .arr{stroke:var(--text-muted);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+      .badge{fill:var(--surface);stroke:var(--border)}
+    </style>
+    <defs>
+      <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+        <path d="M1 1 L7 4 L1 7 Z" fill="var(--text-muted)"/>
+      </marker>
+    </defs>
+    <text class="phase" x="114" y="30">微信开放平台</text>
+    <g><circle class="badge" cx="60" cy="67" r="16"/><text class="bn" x="60" y="71" text-anchor="middle">1</text>
+      <rect class="c-neutral" x="96" y="40" width="540" height="54" rx="8"/>
+      <text class="th" x="116" y="64">注册开放平台账号</text><text class="ts" x="116" y="84">完成开发者资质认证（企业 / 个体主体）</text></g>
+    <g><circle class="badge" cx="60" cy="143" r="16"/><text class="bn" x="60" y="147" text-anchor="middle">2</text>
+      <rect class="c-neutral" x="96" y="116" width="540" height="54" rx="8"/>
+      <text class="th" x="116" y="140">创建移动应用</text><text class="ts" x="116" y="160">审核后获得应用 AppID</text></g>
+    <text class="phase" x="114" y="194">微信支付商户平台</text>
+    <g><circle class="badge" cx="60" cy="245" r="16"/><text class="bn" x="60" y="249" text-anchor="middle">3</text>
+      <rect class="c-gold" x="96" y="218" width="540" height="54" rx="8"/>
+      <text class="th" x="116" y="242">注册支付商户号</text><text class="ts" x="116" y="262">开通 App 支付产品（需企业 / 个体主体）</text></g>
+    <g><circle class="badge" cx="60" cy="321" r="16"/><text class="bn" x="60" y="325" text-anchor="middle">4</text>
+      <rect class="c-neutral" x="96" y="294" width="540" height="54" rx="8"/>
+      <text class="th" x="116" y="318">开通 API v3</text><text class="ts" x="116" y="338">获取证书序列号 + 商户私钥 + APIv3 密钥</text></g>
+    <text class="phase" x="114" y="380">关联与接入</text>
+    <g><circle class="badge" cx="60" cy="423" r="16"/><text class="bn" x="60" y="427" text-anchor="middle">5</text>
+      <rect class="c-neutral" x="96" y="396" width="540" height="54" rx="8"/>
+      <text class="th" x="116" y="420">开放平台绑定商户号</text><text class="ts" x="116" y="440">关联 AppID 与商户号，完成校验</text></g>
+    <g><circle class="badge" cx="60" cy="499" r="16"/><text class="bn" x="60" y="503" text-anchor="middle">6</text>
+      <rect class="c-neutral" x="96" y="472" width="540" height="54" rx="8"/>
+      <text class="th" x="116" y="496">配置到项目</text><text class="ts" x="116" y="516">写入配置，关闭模拟支付</text></g>
+    <g><rect class="c-brand" x="275" y="548" width="170" height="18" rx="9" fill="var(--brand)"/>
+      <text x="360" y="560" text-anchor="middle" fill="var(--surface)">真机拉起微信收银台</text></g>
+    <line class="arr" x1="60" y1="83" x2="60" y2="127" marker-end="url(#arr)"/>
+    <line class="arr" x1="60" y1="159" x2="60" y2="202" marker-end="url(#arr)"/>
+    <line class="arr" x1="60" y1="261" x2="60" y2="305" marker-end="url(#arr)"/>
+    <line class="arr" x1="60" y1="337" x2="60" y2="380" marker-end="url(#arr)"/>
+    <line class="arr" x1="60" y1="439" x2="60" y2="483" marker-end="url(#arr)"/>
+    <line class="arr" x1="60" y1="515" x2="60" y2="540" marker-end="url(#arr)"/>
+  </svg>
+</div>
+
+<!-- ==================== 说明 ==================== -->
+<div class="card">
+  <h2>前置说明</h2>
+  <ul>
+    <li>需要一台<b>已实名认证的手机微信</b> + 一个可用的手机号。</li>
+    <li>App 支付要求注册主体为<b>企业或个体工商户</b>；<span class="badge b-danger">个人主体无法开通</span>。</li>
+    <li>全流程共 3 个阶段、6 个步骤；第 3 步（开通 App 支付产品）是唯一硬性门槛，标金高亮。</li>
+  </ul>
+</div>
+
+<!-- ==================== 阶段一 ==================== -->
+<div class="card">
+  <span class="phase-tag phase-open">阶段一 · 微信开放平台</span>
+  <h2 style="border:none;padding-bottom:0;">1 · 注册微信开放平台账号（可跳过）</h2>
+  <div class="step-intro">目的：获得一个已认证的开放平台账号，作为后续创建应用与绑定商户号的前提。</div>
+  <ul>
+    <li>访问 <a>open.weixin.qq.com</a>，点击右上角「登录」。</li>
+    <li>用<b>企业/个体主体</b>的微信扫码登录，按提示完成<b>开发者资质认证</b>（认证费约 300 元/年，企业主体）。</li>
+    <li>个人主体只能注册「个人开发者」，不开放 App 支付。</li>
+  </ul>
+  <div class="note warn">⚠️ 尚未认证的话，这是后续所有步骤的前置门槛，请优先完成。</div>
+</div>
+
+<div class="card">
+  <span class="phase-tag phase-open">阶段一 · 微信开放平台</span>
+  <h2 style="border:none;padding-bottom:0;">2 · 创建「移动应用」并获取 AppID</h2>
+  <ol>
+    <li>登录开放平台 → <b>管理中心 → 移动应用 → 创建移动应用</b>。</li>
+    <li>如实填写名称、简介、图标；平台类型选 <b>HarmonyOS / OpenHarmony</b>（无此选项则选「Android」并在备注注明鸿蒙）。</li>
+    <li>提交审核，通过后在<b>应用信息</b>页拿到 <b>AppID</b>（形如 <code>wx8c0e...</code>）。</li>
+    <li>记录该 AppID —— 后续服务端 <code>WECHAT_APP_ID</code> 与客户端 scheme 都使用它。</li>
+  </ol>
+  <div class="note">客户端 <code>module.json5</code> 的微信回调 scheme 需填 <code>wx</code> + 该 AppID（见第 6 步）。</div>
+</div>
+
+<!-- ==================== 阶段二 ==================== -->
+<div class="card">
+  <span class="phase-tag phase-mch">阶段二 · 微信支付商户平台</span>
+  <h2 style="border:none;padding-bottom:0;">3 · 注册支付商户号（开通 App 支付）</h2>
+  <ol>
+    <li>访问 <a>pay.weixin.qq.com</a>，点击「接入微信支付」→ 选择 <b>App 支付</b>，用已认证的开放平台账号关联登录。</li>
+    <li>提交<b>营业执照、法人/经营者身份、银行结算账户</b>等资料，等待审核（1~3 个工作日）。</li>
+    <li>通过后，在「账户中心 → 商户信息」拿到 <b>商户号（mchid）</b>，形如 <code>1900001xxx</code>。</li>
+    <li>完成<b>超级管理员/操作员</b>角色绑定，方便后续获取密钥。</li>
+  </ol>
+  <div class="note warn">申请时务必勾选产品类型 <b>App 支付</b>；漏选则需后续在「产品中心 → App支付」手动开通。</div>
+</div>
+
+<div class="card">
+  <span class="phase-tag phase-mch">阶段二 · 微信支付商户平台</span>
+  <h2 style="border:none;padding-bottom:0;">4 · 开通 API v3，获取证书与密钥</h2>
+  <div class="step-intro">全程需商户超级管理员配合扫码授权，产出三样关键凭据。</div>
+  <h3>4.1 获取 APIv3 密钥</h3>
+  <p><b>账户中心 → API安全 → 设置APIv3密钥</b>，设置一个 32 位密钥并妥善保存 → 对应 <code>WECHAT_V3_SECRET</code>。</p>
+  <h3>4.2 获取 API 证书（双向 TLS）</h3>
+  <p><b>账户中心 → API安全 → 申请API证书</b>，按向导下载「微信支付证书工具」，导出<b>商户 API 证书</b>，得到：</p>
+  <ul>
+    <li><b>商户证书序列号</b> → <code>WECHAT_CERT_SERIAL</code></li>
+    <li><b>商户私钥（apiclient_key.pem）</b> → <code>WECHAT_PRIVATE_KEY</code></li>
+  </ul>
+  <div class="note warn">未申请 API 证书时，服务端无法完成 v3 签名，下单会报「商户配置缺失/签名失败」。务必完成这一步。</div>
+</div>
+
+<!-- ==================== 阶段三 ==================== -->
+<div class="card">
+  <span class="phase-tag phase-cfg">阶段三 · 关联与接入</span>
+  <h2 style="border:none;padding-bottom:0;">5 · 开放平台绑定商户号并关联应用</h2>
+  <ol>
+    <li>回到微信开放平台 → 你的移动应用 → <b>支付能力 / 关联 AppID 与商户号</b>。</li>
+    <li>将第 3 步的<b>商户号</b>与第 2 步的<b>AppID</b>进行绑定。</li>
+    <li>确认绑定成功后，App v3 下单才能通过校验。</li>
+  </ol>
+</div>
+
+<div class="card">
+  <span class="phase-tag phase-cfg">阶段三 · 关联与接入</span>
+  <h2 style="border:none;padding-bottom:0;">6 · 把凭据配置到本项目</h2>
+  <p>以下六项凭据，二选一方式填入（推荐环境变量，避免明文进仓库）：</p>
+  <table>
+    <thead><tr><th>配置项</th><th>来源</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>WECHAT_MERCHANT_ID</code></td><td>第 3 步</td><td>商户号 mchid</td></tr>
+      <tr><td><code>WECHAT_APP_ID</code></td><td>第 2 步</td><td>开放平台移动应用 AppID</td></tr>
+      <tr><td><code>WECHAT_V3_SECRET</code></td><td>4.1</td><td>APIv3 32 位密钥</td></tr>
+      <tr><td><code>WECHAT_CERT_SERIAL</code></td><td>4.2</td><td>商户证书序列号</td></tr>
+      <tr><td><code>WECHAT_PRIVATE_KEY</code></td><td>4.2</td><td>商户私钥（PEM，含头尾）</td></tr>
+      <tr><td><code>WECHAT_NOTIFY_URL</code></td><td>自行提供</td><td>公网 HTTPS 回调地址</td></tr>
+    </tbody>
+  </table>
+
+  <h3>方式 A：环境变量（推荐）</h3>
+  <pre><code>$env:WECHAT_MERCHANT_ID="1900001xxx"
+$env:WECHAT_APP_ID="wx8c0e..."
+$env:WECHAT_V3_SECRET="32位密钥"
+$env:WECHAT_CERT_SERIAL="证书序列号"
+$env:WECHAT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...-----END PRIVATE KEY-----"
+$env:WECHAT_NOTIFY_URL="https://你的域名/FlowerPayment/callback/wechat"</code></pre>
+
+  <h3>方式 B：<code>appsettings.json</code></h3>
+  <pre><code>"WechatPaySettings": {
+  "MerchantId": "1900001xxx",
+  "AppId": "wx8c0e...",
+  "MerchantV3Secret": "32位密钥",
+  "CertSerialNumber": "证书序列号",
+  "PrivateKey": "-----BEGIN PRIVATE KEY-----...",
+  "NotifyUrl": "https://你的域名/FlowerPayment/callback/wechat",
+  "IsSandbox": false
+}</code></pre>
+
+  <h3>客户端同步修改</h3>
+  <ol>
+    <li><code>PaymentService.ets</code> 内 <code>MOCK_PAYMENT_ENABLED</code> 改为 <code>false</code>。</li>
+    <li><code>module.json5</code> 的 scheme <code>wxAPPID</code> 改为 <code>wx</code> + 你的 AppID（小写）。</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>7 · 真机验证</h2>
+  <ol>
+    <li>重启 Silo，确认日志无「商户配置缺失」报错。</li>
+    <li>打包鸿蒙客户端并安装到真机。</li>
+    <li>下单 → 选微信支付 → 应能拉起微信收银台并完成支付。</li>
+    <li>支付后服务端收到回调并更新订单为「已支付」。</li>
+  </ol>
+</div>
+
+<!-- ==================== 常见问题 ==================== -->
+<div class="svgbox">
+  <h2 style="padding:6px 8px 0;">常见问题排查</h2>
+  <table>
+    <thead><tr><th>现象</th><th>原因</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge b-danger">问题</span> 无法创建移动应用</td>
+        <td>未完成开发者资质认证</td>
+        <td><span class="badge b-success">处理</span> 完成企业 / 个体开发者认证</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-danger">问题</span> App 支付申请被拒</td>
+        <td>注册主体为个人</td>
+        <td><span class="badge b-success">处理</span> 升级为企业 / 个体户主体</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-warning">问题</span> 下单报「签名失败」</td>
+        <td>APIv3 密钥或证书不正确</td>
+        <td><span class="badge b-success">处理</span> 核对 APIv3 密钥与证书序列号 / 私钥</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-warning">问题</span> 拉起不了收银台</td>
+        <td><code>IsSandbox</code> 设为 <code>true</code>（沙箱不支持 App）</td>
+        <td><span class="badge b-success">处理</span> 改为 <code>false</code>，走正式环境</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-danger">问题</span> 微信回调不到</td>
+        <td>scheme 未配置或 NotifyUrl 无公网访问</td>
+        <td><span class="badge b-success">处理</span> 配置 scheme + 公网 HTTPS 回调地址</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>耕地鸿蒙客户端 · 微信 App 支付对接配套文档 · 生成于 2026-08</footer>
+
+</div>
+</body>
+</html>

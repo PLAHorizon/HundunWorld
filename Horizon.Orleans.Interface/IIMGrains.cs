@@ -56,6 +56,12 @@ namespace Horizon.Orleans.Interface
         Task<bool> RecallMessageAsync(IMChatRecallMessage recall);
 
         /// <summary>
+        /// 接收消息撤回通知（由撤回方 Grain 调用）：把对端发来的消息标记为已撤回，
+        /// 并推送到本用户所有在线设备（多端同步）。
+        /// </summary>
+        Task<bool> ReceiveMessageRecallAsync(IMChatRecallMessage recall);
+
+        /// <summary>
         /// 发送已读回执
         /// </summary>
         Task<bool> SendReadReceiptAsync(IMChatReadReceiptMessage receipt);
@@ -130,6 +136,14 @@ namespace Horizon.Orleans.Interface
         /// <param name="signal">通话信令消息</param>
         /// <returns>信令应答（Accepted=false 时表示忙线等拒绝原因）</returns>
         Task<IMCallSignalAckMessage> ReceiveCallSignalAsync(IMCallSignalMessage signal);
+
+        /// <summary>
+        /// 释放指定通话的忙线占用（仅当当前占用与 callId 匹配时清理）。
+        /// 挂断方发送的终结信令只送达对端 Grain，本端 Grain 的忙线状态需要由对端 Grain 兜底释放，
+        /// 否则挂断后本端忙线最长残留 90 秒，期间对端重拨会被"对方正在通话中"拒绝。
+        /// </summary>
+        /// <param name="callId">通话会话 ID</param>
+        Task ReleaseCallStateAsync(string callId);
 
         #endregion
 

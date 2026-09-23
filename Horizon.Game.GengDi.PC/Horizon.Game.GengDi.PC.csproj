@@ -24,6 +24,9 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+    <!-- 直接引用 WebViewControl-Avalonia 以获取 CEF 原生资源的构建目标
+         （GengDi 中设置了 PrivateAssets 阻止 build targets 传递） -->
+    <PackageReference Include="WebViewControl-Avalonia" />
   </ItemGroup>
 
   <ItemGroup>

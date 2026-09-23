@@ -3,7 +3,9 @@ using Horizon.Core.Options;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
 using Horizon.WebApi.Configs;
+using Horizon.WebApi.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -12,6 +14,7 @@ using Orleans;
 using Orleans.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Horizon.WebApi.Controllers
@@ -36,14 +39,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{productId}")]
-        public async Task<ResultVM<ProductState>> GetProductAsync(long productId)
+        public async Task<ResultVM<ProductDto>> GetProductAsync(long productId)
         {
-            var result = new ResultVM<ProductState>();
+            var result = new ResultVM<ProductDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IProductGrain>(productId);
-                result.Data = await grain.GetProductAsync();
+                var state = await grain.GetProductAsync();
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -155,9 +159,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("merchant/{merchantId}")]
-        public async Task<ResultVM<List<ProductState>>> MerchantProductsAsync(long merchantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<ProductDto>>> MerchantProductsAsync(long merchantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<ProductState>>();
+            var result = new ResultVM<List<ProductDto>>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -178,7 +182,8 @@ namespace Horizon.WebApi.Controllers
 
                 var queryGrain = client.GetGrain<IFlowerQueryGrain>(0);
                 var skip = (page - 1) * pageSize;
-                result.Data = await queryGrain.QueryProductsByMerchantAsync(merchantId, skip, pageSize);
+                var products = await queryGrain.QueryProductsByMerchantAsync(merchantId, skip, pageSize);
+                result.Data = products?.Select(p => FlowerDtoMapper.ToDto(p)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -190,15 +195,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("active")]
-        public async Task<ResultVM<List<ProductState>>> ActiveProductsAsync([FromQuery] int speciesId = 0, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ResultVM<List<ProductDto>>> ActiveProductsAsync([FromQuery] int speciesId = 0, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = new ResultVM<List<ProductState>>();
+            var result = new ResultVM<List<ProductDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var queryGrain = client.GetGrain<IFlowerQueryGrain>(0);
                 var skip = (page - 1) * pageSize;
-                result.Data = await queryGrain.QueryActiveProductsAsync(speciesId, skip, pageSize);
+                var products = await queryGrain.QueryActiveProductsAsync(speciesId, skip, pageSize);
+                result.Data = products?.Select(p => FlowerDtoMapper.ToDto(p)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -314,14 +320,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{productId}/skus")]
-        public async Task<ResultVM<List<ProductSKUState>>> GetProductSKUsAsync(long productId)
+        public async Task<ResultVM<List<ProductSKUDto>>> GetProductSKUsAsync(long productId)
         {
-            var result = new ResultVM<List<ProductSKUState>>();
+            var result = new ResultVM<List<ProductSKUDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IProductGrain>(productId);
-                result.Data = await grain.GetProductSKUsAsync(productId);
+                var skus = await grain.GetProductSKUsAsync(productId);
+                result.Data = skus?.Select(s => FlowerDtoMapper.ToDto(s)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)

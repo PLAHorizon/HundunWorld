@@ -1,0 +1,69 @@
+## page: popup-item-acquired
+## dom-ids: back-hud, itemModal, itemOverlay, itemTitleLabel, link-popup-skill-realization, page-popup-item-acquired
+  main #page-popup-item-acquired .popup-item-acquired-page
+    div .popup-bg-layer
+    div .popup-vignette
+    div
+      div
+    div
+      div
+    div #itemOverlay
+      div #itemModal .item-modal ink-panel-elevated
+        div
+        div
+        span
+        span
+        span
+        span
+        button #back-hud .close-btn [aria="关闭返回"]
+        header .item-title-section
+          div .title-decor-line left
+          h2 #itemTitleLabel .item-title
+            i .title-icon
+            span | 获得物品
+          div .title-decor-line right
+        div .title-divider-wrap
+          span .title-divider
+        section .item-icon-section [aria="物品图标"]
+          div .icon-splash icon-splash-a
+          div .icon-splash icon-splash-b
+          div .icon-splash icon-splash-c
+          div .icon-ring-outer
+            span .ring-dot ring-dot-1
+            span .ring-dot ring-dot-2
+            span .ring-dot ring-dot-3
+            span .ring-dot ring-dot-4
+          div .icon-ring-inner
+          div .item-icon-container
+            div .item-icon-glow
+            span .item-icon-character | 剑
+        section .item-name-section
+          h3 .item-name | 青锋剑·寒光
+        section .item-badges-section
+          span .ink-tag quality-badge
+            i .badge-icon
+            span | 传世
+          span .badge-separator
+          span .ink-tag type-badge
+            i .badge-icon
+            span | 长剑
+        section .item-quantity-section
+          span .quantity-label | 数量
+          span .quantity-value | × 1
+        section .item-description-section
+          p .item-description | 寒铁铸就，剑身泛着幽幽寒光。
+        div
+          span
+        footer .item-actions
+          button #back-hud .ink-btn ink-btn-ghost action-btn confirm-btn
+            i .btn-icon
+            span | 确认
+          button #link-popup-skill-realization .ink-btn ink-btn-primary action-btn detail-btn
+            i .btn-icon
+            span | 查看详情
+        div .footer-hint
+          i .hint-icon
+          span | 按 ESC 关闭
+
+## COPY (10)
+获得物品 | 剑 | 青锋剑·寒光 | 传世 | 长剑 | 数量 | 寒铁铸就，剑身泛着幽幽寒光。 | 确认 | 查看详情 | 按 ESC 关闭

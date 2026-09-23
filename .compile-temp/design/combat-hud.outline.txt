@@ -1,0 +1,83 @@
+## page: combat-hud
+## dom-ids: link-guide-hud, nav-bestiary-popup, nav-casual, nav-character, nav-photo, nav-quests, nav-reward, nav-settings, page-combat-hud
+  main #page-combat-hud
+    div
+        div
+        div
+    div .hud-vignette
+    div .top-6 left-6
+      button #link-guide-hud .hud-nav-btn [aria="引导"]
+        span | 引导
+    div .top-6 left-1/2
+      div .hud-quest
+        span | 主线 · 前往藏经阁探查异动
+        span .hud-quest-sep | ·
+        span .hud-quest-count | 3 / 5
+    div .top-6 right-6
+      div .hud-compass [aria="指南针"]
+        div .hud-compass-ring
+        span .hud-compass-dir hud-compass-dir-n | 北
+        span .hud-compass-dir hud-compass-dir-s | 南
+        span .hud-compass-dir hud-compass-dir-e | 东
+        span .hud-compass-dir hud-compass-dir-w | 西
+        div .hud-compass-needle
+        div .hud-compass-center
+    div .bottom-24 left-8 items-end
+      button #nav-character .hud-avatar-btn [aria="角色"]
+      div .ink-vertical-title | 燕归人
+      div .hud-stats flex-col
+        div .items-center
+          span .hud-label | 气血
+          div .ink-bar
+            div .ink-bar-fill ink-bar-fill-vermilion
+          span .hud-value | 720
+        div .items-center
+          span .hud-label | 体魄
+          div .ink-bar
+            div .ink-bar-fill ink-bar-fill-jade
+          span .hud-value | 88
+    div .bottom-24 right-8 items-end
+      div .items-end
+        div .hud-skill [aria="技能 斩"]
+          span .hud-skill-key | J
+        div .hud-skill [aria="技能 劈 冷却中"]
+          div .hud-skill-cooldown
+          span .hud-skill-num | 3
+          span .hud-skill-key | K
+        div .hud-skill [aria="技能 闪"]
+          span .hud-skill-key | Shift
+        div .hud-skill [aria="技能 挡 冷却中"]
+          div .hud-skill-cooldown
+          span .hud-skill-num | 7
+          span .hud-skill-key | L
+        div .hud-skill [aria="技能 跃"]
+          span .hud-skill-key | Space
+      div
+      div .hud-skill hud-skill-special hud-skill-ready [aria="奇术 焰 已就绪"]
+        span .hud-skill-key | Q
+    div .bottom-24 left-1/2 items-center
+      div .hud-buff hud-buff-positive
+        span .hud-buff-stack | 2
+      div .hud-buff hud-buff-positive
+      div .hud-buff hud-buff-positive
+      div .hud-buff-sep
+      div .hud-buff hud-buff-negative
+        span .hud-buff-stack | 3
+      div .hud-buff hud-buff-negative
+    div .bottom-4 left-1/2
+      nav .hud-sysnav [aria="系统导航"]
+        button #nav-quests .hud-sysnav-btn [aria="任务"]
+          span | 任务
+        button #nav-casual .hud-sysnav-btn [aria="闲趣"]
+          span | 闲趣
+        button #nav-bestiary-popup .hud-sysnav-btn [aria="异闻"]
+          span | 异闻
+        button #nav-reward .hud-sysnav-btn [aria="成就"]
+          span | 成就
+        button #nav-photo .hud-sysnav-btn [aria="留影"]
+          span | 留影
+        button #nav-settings .hud-sysnav-btn [aria="设置"]
+          span | 设置
+
+## COPY (18)
+引导 | 主线 · 前往藏经阁探查异动 | 3 / 5 | 北 | 南 | 东 | 西 | 燕归人 | 气血 | 体魄 | Shift | Space | 任务 | 闲趣 | 异闻 | 成就 | 留影 | 设置

@@ -9,6 +9,7 @@ namespace Horizon.Game.Message.Network;
 /// </summary>
 [MemoryPackable]
 [GenerateSerializer]
+[NetworkMessage(169, Enums.ServiceType.Game)]
 public partial class SyncFrameMessage : MessageUnion, INetworkMessage
 {
     /// <summary>SyncPacketCodec.Encode 输出的完整帧（含 6 字节同步帧头）。</summary>

@@ -41,18 +41,21 @@ namespace Horizon.WebApi.Controllers
         private readonly ILogger<AccountController> _logger;
         private readonly IPassportCurrentUser _passportCurrent;
         private readonly UserAuthTokenProvider _authTokenProvider;
+        private readonly Horizon.WebApi.Security.PassportImTokenStore _imTokenStore;
 
         public AccountController(IOptions<AdoNetOptions> options,
                                 IOptions<ClusterOptions> clusterOptions,
                                 ILogger<AccountController> logger,
                                 IPassportCurrentUser passportCurrent,
                                 IClusterClient clusterClient,
-                                UserAuthTokenProvider authTokenProvider)
+                                UserAuthTokenProvider authTokenProvider,
+                                Horizon.WebApi.Security.PassportImTokenStore imTokenStore)
                                 : base(options, clusterOptions, logger, clusterClient)
         {
             _logger = logger;
             _passportCurrent = passportCurrent;
             _authTokenProvider = authTokenProvider;
+            _imTokenStore = imTokenStore;
         }
 
         /// <summary>
@@ -86,13 +89,17 @@ namespace Horizon.WebApi.Controllers
                 ClientSecret = Config.ClientSecret,
                 UserName = dto.PassportId,
                 Password = dto.Password,
-                Parameters = new Parameters {
-                    { "appId", $"{dto.AppId}" },
-                    { "appType", $"{(int)dto.AppType}" },
-                    { "passportType", $"{(int)dto.PassportType}" },
-                    { "verifyCode", $"{dto.VerifyCode}" },
-                    { "phone", $"{dto.Phone}" },
-                    { "email", $"{dto.Email}" }, },
+                // IdentityModel 4.x 起 ProtocolRequest.Parameters 的类型由 IDictionary<string,string>
+                // 改为 IdentityModel.Client.Parameters，普通字典需显式包装后才能赋值。
+                Parameters = new Parameters(new Dictionary<string, string>
+                {
+                    ["appId"] = $"{dto.AppId}",
+                    ["appType"] = $"{(int)dto.AppType}",
+                    ["passportType"] = $"{(int)dto.PassportType}",
+                    ["verifyCode"] = $"{dto.VerifyCode}",
+                    ["phone"] = $"{dto.Phone}",
+                    ["email"] = $"{dto.Email}",
+                }),
                 Scope = $"{Config.OfflineAccess} {Config.Scope}"
             });
 
@@ -104,9 +111,9 @@ namespace Horizon.WebApi.Controllers
             }
             else
             {
-                // 使用客户端上传的机器ID生成鉴权令牌（机器ID比IP更稳定，适用于NAT/动态IP场景）
+                // 通行证级共享 IM 令牌：多端（PC/移动）复用同一令牌；machineId 仅登记会话
                 var machineId = dto.MachineId ?? string.Empty;
-                var imAuthToken = TryGenerateImAuthToken(dto.PassportId, machineId);
+                var imAuthToken = await TryGetSharedImAuthTokenAsync(dto.PassportId, machineId);
 
                 // 获取用户ID（用于后续角色列表等操作）
                 ulong userId = 0;
@@ -158,7 +165,7 @@ namespace Horizon.WebApi.Controllers
         /// <param name="refreshToken"></param>
         /// <param name="expiredImAuthToken">客户端已过期的ImAuthToken（可选），用于提取machineId以签发新令牌</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPost("GetRefreshTokenAsync")]
         public async Task<ResultVM<LoginResultDto>> GetRefreshTokenAsync([FromServices] IDiscoveryCache discoverCache, [FromServices] IHttpClientFactory httpClientFactory, [FromBody] string refreshToken, [FromQuery] string expiredImAuthToken = null)
         {
             ResultVM<LoginResultDto> result = new ResultVM<LoginResultDto>();
@@ -190,7 +197,7 @@ namespace Horizon.WebApi.Controllers
                     ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn)
                 };
 
-                // 如果客户端提供了过期的ImAuthToken，解密提取machineId后签发新的ImAuthToken
+                // 如果客户端提供了过期的ImAuthToken，解密提取身份后复用/签发通行证级共享令牌
                 if (_authTokenProvider != null && !string.IsNullOrWhiteSpace(expiredImAuthToken))
                 {
                     try
@@ -198,11 +205,9 @@ namespace Horizon.WebApi.Controllers
                         var validation = _authTokenProvider.ValidateTokenWithoutExpiryCheck(expiredImAuthToken);
                         if (validation.IsValid && validation.TokenData != null)
                         {
-                            var newImAuthToken = _authTokenProvider.GenerateToken(
+                            result.Data.ImAuthToken = await TryGetSharedImAuthTokenAsync(
                                 validation.TokenData.PassportId,
-                                validation.TokenData.MachineId,
-                                validation.TokenData.CharacterId);
-                            result.Data.ImAuthToken = newImAuthToken;
+                                validation.TokenData.MachineId ?? string.Empty);
                         }
                     }
                     catch (Exception ex)
@@ -253,13 +258,16 @@ namespace Horizon.WebApi.Controllers
                 ClientSecret = Config.ClientSecret,
                 UserName = passportInfoDto.PassportId,
                 Password = registerDto.Password,
-                Parameters = new Parameters {
-                    { "appId", $"{registerDto.AppId}" },
-                    { "appType", $"{(int)registerDto.AppType}" },
-                    { "passportType", $"{(int)registerDto.PassportType}" },
-                    { "verifyCode", $"-" },
-                    { "phone", $"{registerDto.Phone}" },
-                    { "email", $"{registerDto.Email}" }, },
+                // 同 Login：Parameters 需为 IdentityModel.Client.Parameters 类型
+                Parameters = new Parameters(new Dictionary<string, string>
+                {
+                    ["appId"] = $"{registerDto.AppId}",
+                    ["appType"] = $"{(int)registerDto.AppType}",
+                    ["passportType"] = $"{(int)registerDto.PassportType}",
+                    ["verifyCode"] = "-",
+                    ["phone"] = $"{registerDto.Phone}",
+                    ["email"] = $"{registerDto.Email}",
+                }),
                 Scope = $"{Config.OfflineAccess} {Config.Scope}"
             });
 
@@ -273,7 +281,7 @@ namespace Horizon.WebApi.Controllers
             {
                 // 使用客户端上传的机器ID生成鉴权令牌（与Login对齐）
                 var regMachineId = registerDto.MachineId ?? string.Empty;
-                var regImAuthToken = TryGenerateImAuthToken(passportInfoDto.PassportId, regMachineId);
+                var regImAuthToken = await TryGetSharedImAuthTokenAsync(passportInfoDto.PassportId, regMachineId);
 
                 result.Data = new LoginResultDto
                 {
@@ -282,7 +290,8 @@ namespace Horizon.WebApi.Controllers
                     ExpiresIn = tokenResponse.ExpiresIn,
                     ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn),
                     ImAuthToken = regImAuthToken,
-                    UserId = (ulong)passportInfoDto.UserId
+                    UserId = (ulong)passportInfoDto.UserId,
+                    PassportId = passportInfoDto.PassportId
                 };
                 result.IsSuccess = true;
             }
@@ -292,10 +301,11 @@ namespace Horizon.WebApi.Controllers
         /// <summary>
         /// 退出登录
         /// </summary>
+        /// <param name="machineId">客户端机器ID（可选；传入则注销该端的共享IM令牌会话，该通行证全端退出后令牌失效）</param>
         /// <returns></returns>
         [Authorize]
         [HttpPost("signout")]
-        public async Task<ResultVM<bool>> SignOutAsync()
+        public async Task<ResultVM<bool>> SignOutAsync([FromQuery] string machineId = null)
         {
             bool resutl = false;
             LoginDto dto = new LoginDto
@@ -311,6 +321,13 @@ namespace Horizon.WebApi.Controllers
                 resutl = await passport.SignOutAsync(dto);
 
             }
+
+            // 注销该端的共享IM令牌会话；通行证全端退出后共享令牌失效
+            if (_imTokenStore != null && !string.IsNullOrWhiteSpace(_passportCurrent.PassportId))
+            {
+                await _imTokenStore.ReleaseAsync(_passportCurrent.PassportId, machineId ?? string.Empty);
+            }
+
             return new ResultVM<bool> { Data = resutl, ErrorMessage = null };
         }
 
@@ -427,20 +444,23 @@ namespace Horizon.WebApi.Controllers
             public string Avatar { get; set; }
             public string Email { get; set; }
         }
-        private string TryGenerateImAuthToken(string passportId, string machineId)
+        /// <summary>
+        /// 获取通行证级共享 IM 授权令牌（多端复用同一令牌；machineId 仅登记会话，不绑定令牌）。
+        /// </summary>
+        private async Task<string> TryGetSharedImAuthTokenAsync(string passportId, string machineId)
         {
-            if (_authTokenProvider == null || string.IsNullOrWhiteSpace(passportId))
+            if (_imTokenStore == null || string.IsNullOrWhiteSpace(passportId))
             {
                 return string.Empty;
             }
 
             try
             {
-                return _authTokenProvider.GenerateToken(passportId, machineId);
+                return await _imTokenStore.GetOrCreateAsync(passportId, machineId ?? string.Empty);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "生成IM鉴权令牌失败: PassportId={PassportId}", passportId);
+                _logger.LogError(ex, "获取共享IM鉴权令牌失败: PassportId={PassportId}", passportId);
                 return string.Empty;
             }
         }

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙花卉市场 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen bg-background relative">
+      <!-- 鸿蒙状态栏 + 导航栏 (sticky) -->
+      <header class="sticky top-0 z-50">
+        <!-- 导航栏：磨砂玻璃 搜索框 + mic + bell -->
+        <div class="bg-card/70 backdrop-blur-xl border-b border-border px-4 py-3">
+          <div class="flex items-center gap-2.5">
+            <div class="flex-1 flex items-center gap-2 bg-muted rounded-full px-4 h-11">
+              <i data-lucide="search" class="w-4 h-4 text-muted-foreground shrink-0"></i>
+              <input type="text" placeholder="搜索花卉品种、产地..." class="flex-1 min-w-0 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground">
+            </div>
+            <button class="w-11 h-11 rounded-full flex items-center justify-center bg-muted text-foreground shrink-0">
+              <i data-lucide="mic" class="w-5 h-5"></i>
+            </button>
+            <button class="relative w-11 h-11 rounded-full flex items-center justify-center bg-muted text-foreground shrink-0">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+              <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-destructive rounded-full ring-2 ring-card"></span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 分类标签：胶囊形 横向滚动 -->
+      <div class="flex gap-2 overflow-x-auto no-scrollbar px-4 py-3">
+        <button class="shrink-0 px-4 h-9 inline-flex items-center rounded-full bg-primary text-primary-foreground text-sm font-medium">全部</button>
+        <button class="shrink-0 px-4 h-9 inline-flex items-center rounded-full bg-muted text-muted-foreground text-sm">玫瑰</button>
+        <button class="shrink-0 px-4 h-9 inline-flex items-center rounded-full bg-muted text-muted-foreground text-sm">百合</button>
+        <button class="shrink-0 px-4 h-9 inline-flex items-center rounded-full bg-muted text-muted-foreground text-sm">康乃馨</button>
+        <button class="shrink-0 px-4 h-9 inline-flex items-center rounded-full bg-muted text-muted-foreground text-sm">向日葵</button>
+        <button class="shrink-0 px-4 h-9 inline-flex items-center rounded-full bg-muted text-muted-foreground text-sm">郁金香</button>
+        <button class="shrink-0 px-4 h-9 inline-flex items-center rounded-full bg-muted text-muted-foreground text-sm">兰花</button>
+        <button class="shrink-0 px-4 h-9 inline-flex items-center rounded-full bg-muted text-muted-foreground text-sm">混合花束</button>
+      </div>
+
+      <!-- 筛选条：品种/价格/产地/排序 -->
+      <div class="flex gap-2 px-4">
+        <button class="flex-1 inline-flex items-center justify-center gap-1 h-11 rounded-2xl bg-card border border-border text-sm text-foreground">
+          <span>品种</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-muted-foreground"></i>
+        </button>
+        <button class="flex-1 inline-flex items-center justify-center gap-1 h-11 rounded-2xl bg-card border border-border text-sm text-foreground">
+          <span>价格</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-muted-foreground"></i>
+        </button>
+        <button class="flex-1 inline-flex items-center justify-center gap-1 h-11 rounded-2xl bg-card border border-border text-sm text-foreground">
+          <span>产地</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-muted-foreground"></i>
+        </button>
+        <button class="flex-1 inline-flex items-center justify-center gap-1 h-11 rounded-2xl bg-card border border-border text-sm text-foreground">
+          <span>排序</span>
+          <i data-lucide="arrow-up-down" class="w-4 h-4 text-muted-foreground"></i>
+        </button>
+      </div>
+
+      <!-- 实时库存提醒：横向滚动 4条低库存预警 -->
+      <section class="mt-4">
+        <div class="flex items-center justify-between px-4 mb-2.5">
+          <h2 class="text-base font-semibold text-foreground inline-flex items-center gap-2">
+            <i data-lucide="bell-ring" class="w-4 h-4" style="color:#c4956a"></i>
+            实时库存提醒
+          </h2>
+          <button class="text-xs text-muted-foreground inline-flex items-center gap-0.5">
+            全部 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <div class="flex gap-3 overflow-x-auto no-scrollbar px-4 pb-1">
+          <!-- 预警 1 -->
+          <div class="shrink-0 w-64 rounded-3xl bg-card/80 backdrop-blur-sm border border-border p-4">
+            <div class="flex items-center justify-between">
+              <div class="inline-flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background:#c4956a"></span>
+                <span class="text-[11px] text-muted-foreground">低库存预警</span>
+              </div>
+              <span class="text-[10px] text-muted-foreground">2分钟前</span>
+            </div>
+            <h3 class="mt-2 text-sm font-semibold text-foreground">云南红玫瑰</h3>
+            <div class="mt-2 flex items-baseline gap-1.5">
+              <span class="text-2xl font-bold font-mono" style="color:#c4956a">120</span>
+              <span class="text-xs text-muted-foreground">扎剩余</span>
+            </div>
+            <div class="mt-1 text-[11px] text-muted-foreground">安全库存 500 扎 · 缺口 380 扎</div>
+            <button class="mt-3 w-full h-10 rounded-full text-xs font-medium inline-flex items-center justify-center gap-1" style="background: rgba(255,152,0,0.15); color:#c4956a;">
+              <i data-lucide="truck" class="w-3.5 h-3.5"></i>一键补货
+            </button>
+          </div>
+          <!-- 预警 2 -->
+          <div class="shrink-0 w-64 rounded-3xl bg-card/80 backdrop-blur-sm border border-border p-4">
+            <div class="flex items-center justify-between">
+              <div class="inline-flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse bg-destructive"></span>
+                <span class="text-[11px] text-muted-foreground">紧急补货</span>
+              </div>
+              <span class="text-[10px] text-muted-foreground">5分钟前</span>
+            </div>
+            <h3 class="mt-2 text-sm font-semibold text-foreground">昆明粉百合</h3>
+            <div class="mt-2 flex items-baseline gap-1.5">
+              <span class="text-2xl font-bold font-mono text-down">80</span>
+              <span class="text-xs text-muted-foreground">扎剩余</span>
+            </div>
+            <div class="mt-1 text-[11px] text-muted-foreground">安全库存 400 扎 · 缺口 320 扎</div>
+            <button class="mt-3 w-full h-10 rounded-full text-xs font-medium inline-flex items-center justify-center gap-1 bg-down-surface text-down">
+              <i data-lucide="truck" class="w-3.5 h-3.5"></i>立即补货
+            </button>
+          </div>
+          <!-- 预警 3 -->
+          <div class="shrink-0 w-64 rounded-3xl bg-card/80 backdrop-blur-sm border border-border p-4">
+            <div class="flex items-center justify-between">
+              <div class="inline-flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse bg-destructive"></span>
+                <span class="text-[11px] text-muted-foreground">严重不足</span>
+              </div>
+              <span class="text-[10px] text-muted-foreground">8分钟前</span>
+            </div>
+            <h3 class="mt-2 text-sm font-semibold text-foreground">福建兰花</h3>
+            <div class="mt-2 flex items-baseline gap-1.5">
+              <span class="text-2xl font-bold font-mono text-down">35</span>
+              <span class="text-xs text-muted-foreground">扎剩余</span>
+            </div>
+            <div class="mt-1 text-[11px] text-muted-foreground">安全库存 200 扎 · 缺口 165 扎</div>
+            <button class="mt-3 w-full h-10 rounded-full text-xs font-medium inline-flex items-center justify-center gap-1 bg-down-surface text-down">
+              <i data-lucide="truck" class="w-3.5 h-3.5"></i>立即补货
+            </button>
+          </div>
+          <!-- 预警 4 -->
+          <div class="shrink-0 w-64 rounded-3xl bg-card/80 backdrop-blur-sm border border-border p-4">
+            <div class="flex items-center justify-between">
+              <div class="inline-flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background:#c4956a"></span>
+                <span class="text-[11px] text-muted-foreground">建议补货</span>
+              </div>
+              <span class="text-[10px] text-muted-foreground">12分钟前</span>
+            </div>
+            <h3 class="mt-2 text-sm font-semibold text-foreground">海南向日葵</h3>
+            <div class="mt-2 flex items-baseline gap-1.5">
+              <span class="text-2xl font-bold font-mono" style="color:#c4956a">200</span>
+              <span class="text-xs text-muted-foreground">扎剩余</span>
+            </div>
+            <div class="mt-1 text-[11px] text-muted-foreground">安全库存 600 扎 · 缺口 400 扎</div>
+            <button class="mt-3 w-full h-10 rounded-full text-xs font-medium inline-flex items-center justify-center gap-1" style="background: rgba(255,152,0,0.15); color:#c4956a;">
+              <i data-lucide="truck" class="w-3.5 h-3.5"></i>一键补货
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 商品网格：8 个花卉商品 -->
+      <section class="mt-4 px-4">
+        <div class="flex items-center justify-between mb-2.5">
+          <h2 class="text-base font-semibold text-foreground">热门花卉</h2>
+          <span class="text-xs text-muted-foreground">共 8 个品种</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <!-- 1 云南红玫瑰 -->
+          <article class="rounded-3xl bg-card border border-border overflow-hidden">
+            <div class="aspect-[5/4] relative" style="background: linear-gradient(135deg, #e11d48, #881337);">
+              <i data-lucide="flower-2" class="absolute inset-0 m-auto w-12 h-12 text-white/40"></i>
+              <span class="absolute top-2.5 left-2.5 px-2 h-6 inline-flex items-center rounded-full text-[11px] font-medium bg-up-surface text-up">现货</span>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-foreground truncate">云南红玫瑰</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">云南 · A级</p>
+              <div class="flex items-end justify-between mt-2">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold font-mono text-foreground">¥38.50</span>
+                  <span class="text-[10px] text-muted-foreground">/扎</span>
+                </div>
+                <span class="text-xs font-mono text-up">+2.3%</span>
+              </div>
+              <button class="mt-2.5 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-1">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>立即下单
+              </button>
+            </div>
+          </article>
+          <!-- 2 昆明粉百合 -->
+          <article class="rounded-3xl bg-card border border-border overflow-hidden">
+            <div class="aspect-[5/4] relative" style="background: linear-gradient(135deg, #f472b6, #9d174d);">
+              <i data-lucide="flower-2" class="absolute inset-0 m-auto w-12 h-12 text-white/40"></i>
+              <span class="absolute top-2.5 left-2.5 px-2 h-6 inline-flex items-center rounded-full text-[11px] font-medium bg-up-surface text-up">现货</span>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-foreground truncate">昆明粉百合</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">昆明 · A级</p>
+              <div class="flex items-end justify-between mt-2">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold font-mono text-foreground">¥52.00</span>
+                  <span class="text-[10px] text-muted-foreground">/扎</span>
+                </div>
+                <span class="text-xs font-mono text-down">-1.2%</span>
+              </div>
+              <button class="mt-2.5 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-1">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>立即下单
+              </button>
+            </div>
+          </article>
+          <!-- 3 四川康乃馨 预订 -->
+          <article class="rounded-3xl bg-card border border-border overflow-hidden">
+            <div class="aspect-[5/4] relative" style="background: linear-gradient(135deg, #fb7185, #be123c);">
+              <i data-lucide="flower-2" class="absolute inset-0 m-auto w-12 h-12 text-white/40"></i>
+              <span class="absolute top-2.5 left-2.5 px-2 h-6 inline-flex items-center rounded-full text-[11px] font-medium" style="background: rgba(255,152,0,0.15); color:#c4956a;">预订</span>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-foreground truncate">四川康乃馨</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">四川 · B级</p>
+              <div class="flex items-end justify-between mt-2">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold font-mono text-foreground">¥25.80</span>
+                  <span class="text-[10px] text-muted-foreground">/扎</span>
+                </div>
+                <span class="text-xs font-mono text-up">+0.8%</span>
+              </div>
+              <button class="mt-2.5 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-1">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>立即下单
+              </button>
+            </div>
+          </article>
+          <!-- 4 海南向日葵 -->
+          <article class="rounded-3xl bg-card border border-border overflow-hidden">
+            <div class="aspect-[5/4] relative" style="background: linear-gradient(135deg, #fbbf24, #ea580c);">
+              <i data-lucide="flower-2" class="absolute inset-0 m-auto w-12 h-12 text-white/40"></i>
+              <span class="absolute top-2.5 left-2.5 px-2 h-6 inline-flex items-center rounded-full text-[11px] font-medium bg-up-surface text-up">现货</span>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-foreground truncate">海南向日葵</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">海南 · A级</p>
+              <div class="flex items-end justify-between mt-2">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold font-mono text-foreground">¥45.00</span>
+                  <span class="text-[10px] text-muted-foreground">/扎</span>
+                </div>
+                <span class="text-xs font-mono text-up">+5.6%</span>
+              </div>
+              <button class="mt-2.5 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-1">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>立即下单
+              </button>
+            </div>
+          </article>
+          <!-- 5 云南郁金香 -->
+          <article class="rounded-3xl bg-card border border-border overflow-hidden">
+            <div class="aspect-[5/4] relative" style="background: linear-gradient(135deg, #c084fc, #6b21a8);">
+              <i data-lucide="flower-2" class="absolute inset-0 m-auto w-12 h-12 text-white/40"></i>
+              <span class="absolute top-2.5 left-2.5 px-2 h-6 inline-flex items-center rounded-full text-[11px] font-medium bg-up-surface text-up">现货</span>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-foreground truncate">云南郁金香</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">云南 · A级</p>
+              <div class="flex items-end justify-between mt-2">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold font-mono text-foreground">¥68.00</span>
+                  <span class="text-[10px] text-muted-foreground">/扎</span>
+                </div>
+                <span class="text-xs font-mono text-down">-3.1%</span>
+              </div>
+              <button class="mt-2.5 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-1">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>立即下单
+              </button>
+            </div>
+          </article>
+          <!-- 6 福建兰花 预订 -->
+          <article class="rounded-3xl bg-card border border-border overflow-hidden">
+            <div class="aspect-[5/4] relative" style="background: linear-gradient(135deg, #a78bfa, #4c1d95);">
+              <i data-lucide="flower-2" class="absolute inset-0 m-auto w-12 h-12 text-white/40"></i>
+              <span class="absolute top-2.5 left-2.5 px-2 h-6 inline-flex items-center rounded-full text-[11px] font-medium" style="background: rgba(255,152,0,0.15); color:#c4956a;">预订</span>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-foreground truncate">福建兰花</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">福建 · 特级</p>
+              <div class="flex items-end justify-between mt-2">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold font-mono text-foreground">¥120.00</span>
+                  <span class="text-[10px] text-muted-foreground">/扎</span>
+                </div>
+                <span class="text-xs font-mono text-up">+1.5%</span>
+              </div>
+              <button class="mt-2.5 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-1">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>立即下单
+              </button>
+            </div>
+          </article>
+          <!-- 7 云南白玫瑰 -->
+          <article class="rounded-3xl bg-card border border-border overflow-hidden">
+            <div class="aspect-[5/4] relative" style="background: linear-gradient(135deg, #cbd5e1, #475569);">
+              <i data-lucide="flower-2" class="absolute inset-0 m-auto w-12 h-12 text-white/50"></i>
+              <span class="absolute top-2.5 left-2.5 px-2 h-6 inline-flex items-center rounded-full text-[11px] font-medium bg-up-surface text-up">现货</span>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-foreground truncate">云南白玫瑰</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">云南 · A级</p>
+              <div class="flex items-end justify-between mt-2">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold font-mono text-foreground">¥35.00</span>
+                  <span class="text-[10px] text-muted-foreground">/扎</span>
+                </div>
+                <span class="text-xs font-mono text-up">+0.3%</span>
+              </div>
+              <button class="mt-2.5 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-1">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>立即下单
+              </button>
+            </div>
+          </article>
+          <!-- 8 混合花束 -->
+          <article class="rounded-3xl bg-card border border-border overflow-hidden">
+            <div class="aspect-[5/4] relative" style="background: linear-gradient(135deg, #f472b6, #fbbf24, #26a69a);">
+              <i data-lucide="flower-2" class="absolute inset-0 m-auto w-12 h-12 text-white/50"></i>
+              <span class="absolute top-2.5 left-2.5 px-2 h-6 inline-flex items-center rounded-full text-[11px] font-medium bg-up-surface text-up">现货</span>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-foreground truncate">混合花束</h3>
+              <p class="text-[11px] text-muted-foreground mt-0.5">多产地 · 精品</p>
+              <div class="flex items-end justify-between mt-2">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold font-mono text-foreground">¥88.00</span>
+                  <span class="text-[10px] text-muted-foreground">/扎</span>
+                </div>
+                <span class="text-xs font-mono text-up">+4.2%</span>
+              </div>
+              <button class="mt-2.5 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-1">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>立即下单
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <div class="h-4"></div>
+
+      <!-- 鸿蒙底部导航：市场高亮 胶囊选中态 -->
+      <nav class="sticky bottom-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border">
+        <div class="flex items-center justify-around px-2 h-16 pb-1">
+          <button class="flex flex-col items-center justify-center gap-1 h-full px-3 text-muted-foreground">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px]">首页</span>
+          </button>
+          <button class="flex flex-col items-center justify-center gap-1 h-full px-3">
+            <span class="px-3 py-0.5 rounded-full inline-flex items-center justify-center" style="background: rgba(41,98,255,0.15);">
+              <i data-lucide="store" class="w-5 h-5 text-primary"></i>
+            </span>
+            <span class="text-[10px] text-primary font-medium">市场</span>
+          </button>
+          <button class="flex flex-col items-center justify-center gap-1 h-full px-3 text-muted-foreground">
+            <i data-lucide="trending-up" class="w-5 h-5"></i>
+            <span class="text-[10px]">行情</span>
+          </button>
+          <button class="flex flex-col items-center justify-center gap-1 h-full px-3 text-muted-foreground">
+            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+            <span class="text-[10px]">订单</span>
+          </button>
+          <button class="flex flex-col items-center justify-center gap-1 h-full px-3 text-muted-foreground">
+            <i data-lucide="user" class="w-5 h-5"></i>
+            <span class="text-[10px]">我的</span>
+          </button>
+        </div>
+      </nav>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

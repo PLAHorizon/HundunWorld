@@ -57,6 +57,11 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private bool _isNewsDetailOpen;
         private string _weatherLoadError = string.Empty;
         private DrawerType _activeDrawer;
+        private string _currentDateDisplay = string.Empty;
+        // 涨跌幅颜色：中国行情惯例——涨红 / 跌绿 / 平盘灰
+        private string _flowerPriceChangeBrush = "#94A3B8";
+        private string _hourlyCardSummary = string.Empty;
+        private string _airCardSummary = string.Empty;
 
         public HomeViewModel()
         {
@@ -84,6 +89,11 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             NavigateToGamesCommand = new SimpleRelayCommand(OnNavigateToGames);
             NavigateToNewsCommand = new SimpleRelayCommand(OnNavigateToNews);
             NavigateToSocialCommand = new SimpleRelayCommand(OnNavigateToSocial);
+            // 快速访问 / 预警中心等入口：统一走 tag 导航（由 View 注入回调，转发到 MainViewModel）
+            QuickNavigateCommand = new SimpleRelayCommand(OnQuickNavigate);
+
+            UpdateGreeting();
+            CurrentDateDisplay = DateTime.Now.ToString("M月d日 dddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
 
             _filteredCities = CitySearchService.SearchCitiesAsync("").Result;
             UpdateSelectedCityName();
@@ -108,6 +118,64 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public ICommand CloseLifeIndexDetailCommand { get; }
         public ICommand ToggleNewsDetailCommand { get; }
         public ICommand CloseNewsDetailCommand { get; }
+        public ICommand QuickNavigateCommand { get; }
+
+        /// <summary>
+        /// 页面级导航回调：由 HomeView 注入，转发到顶层 MainViewModel.NavigateTo(tag)，
+        /// 使首页的快速访问等入口纳入全局返回/前进历史。
+        /// </summary>
+        public Action<string> NavigationRequested { get; set; }
+
+        /// <summary>当前日期显示（如「9月5日 星期六」）。</summary>
+        public string CurrentDateDisplay
+        {
+            get => _currentDateDisplay;
+            set => SetProperty(ref _currentDateDisplay, value);
+        }
+
+        /// <summary>涨跌幅文字颜色（涨红/跌绿/平灰，十六进制）。</summary>
+        public string FlowerPriceChangeBrush
+        {
+            get => _flowerPriceChangeBrush;
+            set => SetProperty(ref _flowerPriceChangeBrush, value);
+        }
+
+        /// <summary>逐时预报子卡摘要（如「最高 32° · 最低 24°」）。</summary>
+        public string HourlyCardSummary
+        {
+            get => _hourlyCardSummary;
+            set => SetProperty(ref _hourlyCardSummary, value);
+        }
+
+        /// <summary>空气质量子卡摘要（如「湿度 62% · 能见度良好」）。</summary>
+        public string AirCardSummary
+        {
+            get => _airCardSummary;
+            set => SetProperty(ref _airCardSummary, value);
+        }
+
+        /// <summary>根据当前时间生成问候语（含用户名）。</summary>
+        private void UpdateGreeting()
+        {
+            var hour = DateTime.Now.Hour;
+            var part = hour switch
+            {
+                < 6 => "夜深了",
+                < 9 => "早上好",
+                < 12 => "上午好",
+                < 14 => "中午好",
+                < 18 => "下午好",
+                _ => "晚上好"
+            };
+            var name = App.CurrentUser?.Username;
+            WelcomeMessage = string.IsNullOrWhiteSpace(name) ? part : $"{part}，{name}";
+        }
+
+        private void OnQuickNavigate(object parameter)
+        {
+            if (parameter is string tag && !string.IsNullOrEmpty(tag))
+                NavigationRequested?.Invoke(tag);
+        }
 
         public WeatherForecast WeatherForecast
         {
@@ -475,6 +543,16 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             ComputeLifeIndices(forecast);
             ComputeHourlyTemperatureCurve(forecast);
             ComputePrecipitationState(forecast);
+            ComputeAirCardSummary(forecast);
+        }
+
+        /// <summary>空气质量子卡摘要：基于实时湿度与能见度（模型无 AQI 数据，不再写死「AQI 45 · 优」）。</summary>
+        private void ComputeAirCardSummary(WeatherForecast forecast)
+        {
+            var current = forecast.Current;
+            AirCardSummary = current == null
+                ? string.Empty
+                : $"湿度 {current.Humidity}% · 能见度{current.VisibilityLevel}";
         }
 
         private void ComputeTemperatureBars(WeatherForecast forecast)
@@ -748,6 +826,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             {
                 HourlyTemperaturePoints = string.Empty;
                 HourlyTemperatureFillPoints = string.Empty;
+                HourlyCardSummary = string.Empty;
                 return;
             }
 
@@ -756,6 +835,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             {
                 HourlyTemperaturePoints = string.Empty;
                 HourlyTemperatureFillPoints = string.Empty;
+                HourlyCardSummary = string.Empty;
                 return;
             }
 
@@ -777,6 +857,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             }
 
             HourlyTemperaturePoints = string.Join(" ", points);
+            HourlyCardSummary = $"最高 {maxTemp}° · 最低 {minTemp}°";
 
             var fillPoints = new List<string>(points);
             fillPoints.Add($"{canvasWidth:F1},{canvasHeight:F1}");
@@ -915,6 +996,10 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     FlowerPriceChange = overview.PriceChange != 0
                         ? $"{(overview.PriceChange > 0 ? "+" : "")}{overview.PriceChange:F2}%"
                         : "0.00%";
+                    // 中国行情惯例：涨红 / 跌绿 / 平盘灰
+                    FlowerPriceChangeBrush = overview.PriceChange > 0 ? "#E5484D"
+                        : overview.PriceChange < 0 ? "#30A46C"
+                        : "#94A3B8";
                     FlowerAlertCount = overview.AlertCount;
                     IsFlowerDataLoaded = true;
                 }

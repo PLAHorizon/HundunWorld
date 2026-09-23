@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Grains
 {
-    public class FlowerOrderTimeoutSchedulerGrain : Grain, IGrainWithIntegerKey
+    public class FlowerOrderTimeoutSchedulerGrain : Grain, IFlowerOrderTimeoutSchedulerGrain
     {
         private readonly ILogger<FlowerOrderTimeoutSchedulerGrain> _logger;
         private readonly IDataContext<FlowerEntityContext, FlowerOrder, long> _orderContext;

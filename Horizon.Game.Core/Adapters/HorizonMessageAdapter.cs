@@ -1,7 +1,7 @@
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
-using K4os.Compression.LZ4;
+using LZ4Pickler = Horizon.Game.Core.Utilities.LZ4Pickler;
 using MemoryPack;
 using System;
 using System.Collections.Generic;
@@ -193,6 +193,8 @@ namespace Horizon.Game.Core
                     throw new InvalidOperationException("消息校验和验证失败");
 
                 byte[] finalData = isCompressed ? LZ4Pickler.Unpickle(messageBody) : messageBody.ToArray();
+                if (finalData is null)
+                    throw new InvalidOperationException($"消息解压失败（畸形输入或超过 {LZ4Pickler.MaxDecompressedLength} 字节上限）");
 
                 var packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(finalData);
                 if (packet == null)

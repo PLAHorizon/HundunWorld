@@ -30,6 +30,24 @@ namespace Horizon.WebApi
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((context, config) =>
+            {
+                config.SetBasePath(AppContext.BaseDirectory);
+
+                // 配置文件设置
+                config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                config.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json",
+                                 optional: true, reloadOnChange: true);
+                config.AddEnvironmentVariables();
+                config.AddCommandLine(args);
+
+                // 加载 .env 文件到环境变量（不覆盖系统变量），并解析 ${VAR} 占位符，
+                // 兑现 .env.example 的 "${VAR} 由此注入" 约定。用 in-memory 叠加替换后的值（优先级最高）。
+                EnvironmentPlaceholderResolver.LoadDotEnvFile(AppContext.BaseDirectory);
+                var resolved = EnvironmentPlaceholderResolver.BuildResolvedOverrides(config.Build());
+                config.AddInMemoryCollection(resolved);
+                config.AddCommandLine(args);
+            })
             .ConfigureServices((context, services) =>
             {
                 services.Configure<MqttBrokerOptions>(context.Configuration.GetSection(MqttBrokerOptions.SectionName));
@@ -48,9 +66,15 @@ namespace Horizon.WebApi
                 var clusterOptions = context.Configuration.GetSection("ClusterOptions").Get<ClusterOptions>();
 
                 // ===== Redis 集群配置（主方案） =====
-                var redisConnectionStr = context.Configuration.GetSection("Redis:ConnectionString").Value
-                    ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+                // 阶段 0.1：配置必需——删除 127.0.0.1 本地默认回退，缺失抛清晰错误。
+                var redisConnectionStr = Horizon.Game.Message.Configuration.ConnectionStrings.Require(
+                    context.Configuration.GetSection("Redis:ConnectionString").Value,
+                    "Redis:ConnectionString", "WebApi Orleans 客户端 Redis 集群", "GATEWAY_REDIS_CONNECTION_STRING");
                 var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
+
+                // 防御性兜底：确保连接失败时允许 ConnectionMultiplexer 继续重试，
+                // 与 Horizon.Strategy.Storage.Redis.RedisConnection 行为一致。
+                redisConfigOptions.AbortOnConnectFail = false;
 
                 client.UseRedisClustering(options =>
                 {

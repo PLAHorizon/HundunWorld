@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(98, Enums.ServiceType.Social)]
     public partial class SectInfoMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -77,6 +78,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(99, Enums.ServiceType.Social)]
     public partial class JoinSectRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -120,6 +122,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(100, Enums.ServiceType.Social)]
     public partial class JoinSectResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -163,6 +166,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(101, Enums.ServiceType.Social)]
     public partial class SectSkillMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -220,6 +224,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(102, Enums.ServiceType.Quest)]
     public partial class SectQuestMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -281,6 +286,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(103, Enums.ServiceType.Social)]
     public partial class ReputationUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -331,6 +337,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(104, Enums.ServiceType.Social)]
     public partial class ChivalryPointUpdateMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -378,6 +385,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(105, Enums.ServiceType.Social)]
     public partial class DuelRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -421,6 +429,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(106, Enums.ServiceType.Social)]
     public partial class DuelResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -457,6 +466,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(107, Enums.ServiceType.Social)]
     public partial class SwornBrotherRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -500,6 +510,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(108, Enums.ServiceType.Social)]
     public partial class SwornBrotherResponse : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -536,6 +547,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(109, Enums.ServiceType.Social)]
     public partial class MasterApprenticeRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -579,6 +591,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(110, Enums.ServiceType.Social)]
     public partial class MasterApprenticeResponse : MessageUnion, INetworkMessage
     {
         /// <summary>

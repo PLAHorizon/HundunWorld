@@ -1,9 +1,11 @@
-using System;
+﻿using System;
 using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+#if DESKTOP
 using WebViewControl;
+#endif
 
 namespace Horizon.Game.GengDi.Core.Controls
 {
@@ -14,7 +16,11 @@ namespace Horizon.Game.GengDi.Core.Controls
         private Border _fallbackHost;
         private TextBlock _fallbackCityText;
         private TextBlock _fallbackCoordText;
+#if DESKTOP
         private WebView _webView;
+#else
+        private object? _webView;
+#endif
         private string _currentLayer = "temperature";
 
         public static readonly DirectProperty<WeatherMapView, double> LatitudeProperty =
@@ -108,6 +114,7 @@ namespace Horizon.Game.GengDi.Core.Controls
             var tempPath = Path.Combine(Path.GetTempPath(), "weather_map.html");
             File.WriteAllText(tempPath, html);
 
+#if DESKTOP
             try
             {
                 if (_webView == null)
@@ -129,11 +136,16 @@ namespace Horizon.Game.GengDi.Core.Controls
                 _mapHost.Content = null;
                 ShowFallback();
             }
+#else
+            _webViewUnavailable = true;
+            ShowFallback();
+#endif
         }
 
         private void SwitchLayer(string layer)
         {
             _currentLayer = layer;
+#if DESKTOP
             if (_webView != null && !_webViewUnavailable)
             {
                 try
@@ -150,6 +162,7 @@ namespace Horizon.Game.GengDi.Core.Controls
                 }
                 catch { }
             }
+#endif
         }
 
         private void ShowFallback()

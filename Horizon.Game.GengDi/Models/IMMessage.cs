@@ -14,5 +14,7 @@ namespace Horizon.Game.GengDi.Models
         public DateTime Timestamp { get; set; }
         public bool IsRead { get; set; }
         public MessageType Type { get; set; }
+        /// <summary>消息是否已被撤回（撤回后以居中灰字提示渲染，不再显示原内容）</summary>
+        public bool IsRecalled { get; set; }
     }
 }

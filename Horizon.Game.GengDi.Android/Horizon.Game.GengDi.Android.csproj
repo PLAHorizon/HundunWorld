@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <SelfContained>false</SelfContained>
+    <UseAppHost>false</UseAppHost>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <ApplicationLabel>耕地</ApplicationLabel>
+    <ApplicationId>com.horizon.gengdi.android</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <NoWarn>$(NoWarn);NU1507</NoWarn>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Game.GengDi\Horizon.Game.GengDi.csproj" />
+  </ItemGroup>
+
+  <!-- Android 平台设计原型 HTML 页面 -->
+  <ItemGroup>
+    <AndroidAsset Include="Assets\Pages\*.html" />
+  </ItemGroup>
+
+  <!-- 移除传递依赖引入的 Microsoft.AspNetCore.App 框架引用，
+       Android 不需要 AspNetCore 服务端运行时 -->
+  <Target Name="RemoveAspNetCoreFrameworkReference" AfterTargets="ResolvePackageAssets" BeforeTargets="ResolveFrameworkReferences">
+    <ItemGroup>
+      <FrameworkReference Remove="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+  </Target>
+
+</Project>

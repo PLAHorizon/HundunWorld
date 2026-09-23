@@ -26,6 +26,7 @@ namespace Horizon.Game.GengDi.Core.Services.Call
     {
         private const int OutgoingRingTimeoutMs = 30_000;
         private const int IncomingRingTimeoutMs = 45_000;
+        private const int ConnectingTimeoutMs = 30_000;
         private const int KeepAliveIntervalMs = 15_000;
         private const int WatchdogWarnMs = 15_000;
         private const int WatchdogLostMs = 30_000;
@@ -56,6 +57,7 @@ namespace Horizon.Game.GengDi.Core.Services.Call
         private bool _remoteMuted;
         private bool _remoteCameraOff;
         private long _ringStartedMs;
+        private long _connectingStartedMs;
         private long _connectedMs;
         private long _lastKeepAliveMs;
         private bool _mediaWarned;
@@ -275,6 +277,7 @@ namespace Horizon.Game.GengDi.Core.Services.Call
                 }
 
                 acceptSignal = BuildSignal(IMCallSignalType.Accept, peerUserId);
+                _connectingStartedMs = NowMs();
                 PublishSnapshot(CallState.Connecting, "正在接通…");
             }
 
@@ -501,6 +504,7 @@ namespace Horizon.Game.GengDi.Core.Services.Call
                     case IMCallSignalType.Accept:
                         if (_machine.TryRemoteAccept())
                         {
+                            _connectingStartedMs = NowMs();
                             PublishSnapshot(CallState.Connecting, "对方已接听，正在接通…");
                             _ = SendMediaReadyLockedAsync(signal.SenderId);
                         }
@@ -527,14 +531,36 @@ namespace Horizon.Game.GengDi.Core.Services.Call
                         break;
 
                     case IMCallSignalType.MediaReady:
+                        // 乱序容错：对端的 MediaReady 先于 Accept 到达时（网关并发转发），
+                        // 先视同对方已接听进入 Connecting，再处理媒体端点，避免永远卡在"正在接通"。
+                        // 随后迟到的 Accept 会因状态已是 InCall/Connecting 且不匹配而被忽略，无副作用。
+                        if (_machine.State == CallState.OutgoingRinging)
+                        {
+                            if (_machine.TryRemoteAccept())
+                            {
+                                _connectingStartedMs = NowMs();
+                                PublishSnapshot(CallState.Connecting, "对方已接听，正在接通…");
+                            }
+                        }
                         HandleMediaReady(signal);
                         break;
 
                     case IMCallSignalType.MediaState:
+                    {
+                        // 状态变化才产生事件提示；重复信令（对端重发）不覆盖已有状态文本。
+                        // 持续状态由快照 IsRemoteMuted/IsRemoteCameraOff 驱动 UI 角标，此处文本仅作瞬时反馈。
+                        var mutedChanged = _remoteMuted != signal.IsMuted;
+                        var cameraChanged = _remoteCameraOff != signal.IsCameraOff;
                         _remoteMuted = signal.IsMuted;
                         _remoteCameraOff = signal.IsCameraOff;
-                        PublishSnapshot(_machine.State, signal.IsMuted ? "对方已静音" : string.Empty);
+                        var mediaText = mutedChanged
+                            ? (signal.IsMuted ? "对方已静音" : "对方已取消静音")
+                            : cameraChanged
+                                ? (signal.IsCameraOff ? "对方关闭了摄像头" : "对方开启了摄像头")
+                                : _snapshot.StatusText;
+                        PublishSnapshot(_machine.State, mediaText);
                         break;
+                    }
 
                     case IMCallSignalType.KeepAlive:
                         // 信令层存活信号，媒体看门狗单独跟踪 UDP 包
@@ -641,6 +667,21 @@ namespace Horizon.Game.GengDi.Core.Services.Call
 
                     timeoutReason = IMCallEndReason.Timeout;
                     timeoutText = "来电超时未接听";
+                }
+
+                // 接通超时：握手信令（Accept/MediaReady）丢失会导致永远停留在 Connecting，
+                // 此时后续来电会被当作忙线拒绝，必须兜底结束。
+                if (_machine.State == CallState.Connecting
+                    && _connectingStartedMs > 0
+                    && now - _connectingStartedMs > ConnectingTimeoutMs)
+                {
+                    timeoutReason = IMCallEndReason.Lost;
+                    timeoutText = "接通超时，通话已结束";
+                    if (peerUserId != 0)
+                    {
+                        timeoutSignal = BuildSignal(IMCallSignalType.Hangup, peerUserId);
+                        timeoutSignal.EndReason = IMCallEndReason.Lost;
+                    }
                 }
 
                 // 保活信令
@@ -914,6 +955,7 @@ namespace Horizon.Game.GengDi.Core.Services.Call
             transport?.Dispose();
 
             _connectedMs = 0;
+            _connectingStartedMs = 0;
         }
 
         private void PublishSnapshot(CallState state, string statusText, IMCallEndReason endReason = IMCallEndReason.Normal)

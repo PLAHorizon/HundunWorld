@@ -68,14 +68,23 @@ namespace HundunWorld.Game.Equipment
         /// <summary>龙皮巨包ID</summary>
         public static int HugeDragonBagId => 2004;
 
-        /// <summary>默认身体模型资产 GUID</summary>
-        public static readonly Guid DefaultBodyModelGuid = new Guid("c7c70820409088e4d96db396a43c410f");
+        /// <summary>
+        /// 默认身体模型资产 GUID。
+        /// <para>
+        /// 注意：**GUID 会随资产重新导入而变化**（2026-09-22 自动修复导入缩放时由
+        /// `bb21309c…` 变为当前值；更早是已失效的 `c7c70820…`），因此加载时**以路径为准**、
+        /// GUID 仅作回退（见 <see cref="GetDefaultBodyModel"/>）。
+        /// 如需核对真实 GUID，可读 .flax 头部 offset 28 起的 16 字节并按 DWORD/WORD/WORD/8BYTE 小端还原。
+        /// </para>
+        /// </summary>
+        public static readonly Guid DefaultBodyModelGuid = new Guid("b0823a8576cb47cb9932f5af61aa1ef7");
 
-        /// <summary>默认身体模型资产路径（必须带 .flax 后缀）</summary>
+        /// <summary>默认身体模型资产路径（必须带 .flax 后缀）——**稳定标识**，优先使用</summary>
         public const string DefaultBodyModelPath = "Content/Character/Models/skm_uefn_mannequin.flax";
 
         /// <summary>
-        /// 按需加载并缓存默认身体模型
+        /// 按需加载并缓存默认身体模型。
+        /// <para>加载顺序：**路径优先**（重新导入不会改变路径，但会改变 GUID），GUID 仅作回退。</para>
         /// </summary>
         public static SkinnedModel GetDefaultBodyModel()
         {
@@ -86,7 +95,15 @@ namespace HundunWorld.Game.Equipment
                 if (DefaultBody.BodyModel.IsLoaded) return DefaultBody.BodyModel;
             }
 
-            var asset = Content.Load<SkinnedModel>(DefaultBodyModelGuid);
+            var asset = Content.LoadAsync<SkinnedModel>(DefaultBodyModelPath);
+            if (asset != null && asset.WaitForLoaded(30000.0) && asset.IsLoaded)
+            {
+                DefaultBody.BodyModel = asset;
+                return asset;
+            }
+
+            // 回退：按 GUID 加载（应对路径被改名/搬动的情况）
+            asset = Content.Load<SkinnedModel>(DefaultBodyModelGuid);
             if (asset != null && asset.IsLoaded)
             {
                 DefaultBody.BodyModel = asset;
@@ -100,13 +117,6 @@ namespace HundunWorld.Game.Equipment
                     DefaultBody.BodyModel = asset;
                     return asset;
                 }
-            }
-
-            asset = Content.LoadAsync<SkinnedModel>(DefaultBodyModelPath);
-            if (asset != null && asset.WaitForLoaded(30000.0) && asset.IsLoaded)
-            {
-                DefaultBody.BodyModel = asset;
-                return asset;
             }
 
             Debug.LogError($"[EquipmentDatabase] 无法加载默认身体模型: {DefaultBodyModelGuid}, {DefaultBodyModelPath}");

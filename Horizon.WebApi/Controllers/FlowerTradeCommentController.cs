@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -53,15 +56,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("order/{orderId}")]
-        public async Task<ResultVM<TradeCommentState>> GetOrderTradeCommentAsync(long orderId)
+        public async Task<ResultVM<TradeCommentDto>> GetOrderTradeCommentAsync(long orderId)
         {
-            var result = new ResultVM<TradeCommentState>();
+            var result = new ResultVM<TradeCommentDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ITradeCommentGrain>(0);
-                result.Data = await grain.GetOrderTradeCommentAsync(orderId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetOrderTradeCommentAsync(orderId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (Exception ex)
             {
@@ -72,14 +76,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("shop/{shopId}")]
-        public async Task<ResultVM<List<TradeCommentState>>> GetShopTradeCommentsAsync(long shopId)
+        public async Task<ResultVM<List<TradeCommentDto>>> GetShopTradeCommentsAsync(long shopId)
         {
-            var result = new ResultVM<List<TradeCommentState>>();
+            var result = new ResultVM<List<TradeCommentDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ITradeCommentGrain>(0);
-                result.Data = await grain.GetShopTradeCommentsAsync(shopId);
+                var comments = await grain.GetShopTradeCommentsAsync(shopId);
+                result.Data = comments?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -91,14 +96,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("shop/{shopId}/average")]
-        public async Task<ResultVM<TradeCommentState>> GetShopAverageScoreAsync(long shopId)
+        public async Task<ResultVM<TradeCommentDto>> GetShopAverageScoreAsync(long shopId)
         {
-            var result = new ResultVM<TradeCommentState>();
+            var result = new ResultVM<TradeCommentDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ITradeCommentGrain>(0);
-                result.Data = await grain.GetShopAverageScoreAsync(shopId);
+                var state = await grain.GetShopAverageScoreAsync(shopId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
                 result.IsSuccess = true;
             }
             catch (Exception ex)

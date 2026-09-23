@@ -173,6 +173,11 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             {
                 Services.Call.CallService.Instance.Initialize(_socialService.GatewayClient, localCallUserId);
                 Core.Views.CallWindowHost.EnsureAttached();
+
+                // 全局来电：主壳加载即建立 IM 网关订阅连接（含心跳认证与自动重连），
+                // 使用户停留在任意页面（而非仅聊天页）都能接收来电信令并弹出通话窗口。
+                // 幂等：进入聊天页后 StartNotificationSubscriptions 的重复调用会直接返回。
+                _ = _socialService.GatewayClient.StartRealtimeNotificationsAsync(localCallUserId);
             }
         }
 
@@ -1598,34 +1603,43 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             }
 
             var senderId = notification.SenderId.ToString();
-            if (string.IsNullOrWhiteSpace(senderId) || string.Equals(senderId, _currentUserId, StringComparison.Ordinal))
+            // 多端同步：自己发送的消息被服务端回推到其他设备，不能丢弃
+            var isOwnMessage = string.Equals(senderId, _currentUserId, StringComparison.Ordinal);
+            // 会话对方：自己发的消息时对方是接收者，否则对方是发送者
+            var peerId = isOwnMessage ? notification.ReceiverId.ToString() : senderId;
+            if (string.IsNullOrWhiteSpace(peerId))
             {
                 return false;
             }
 
-            UpsertKnownUser(CreateIncomingUserProjection(notification));
+            if (!isOwnMessage)
+            {
+                UpsertKnownUser(CreateIncomingUserProjection(notification));
+            }
 
-            var isActiveConversation = string.Equals(_selectedFriendId, senderId, StringComparison.Ordinal)
+            var isActiveConversation = string.Equals(_selectedFriendId, peerId, StringComparison.Ordinal)
                 && string.IsNullOrWhiteSpace(_selectedGroupId);
             var savedMessage = await _socialService
-                .SaveIncomingGatewayPrivateMessageAsync(_currentUserId, notification, markAsRead: isActiveConversation);
+                .SaveIncomingGatewayPrivateMessageAsync(_currentUserId, notification, markAsRead: isActiveConversation || isOwnMessage);
 
             if (isActiveConversation && _messages.All(message => !string.Equals(message.Id, savedMessage.Id, StringComparison.Ordinal)))
             {
                 _messages.Add(savedMessage);
                 _messageItems.Add(CreateMessageItem(savedMessage));
-                await _socialService.MarkConversationAsReadAsync(_currentUserId, senderId);
+                await _socialService.MarkConversationAsReadAsync(_currentUserId, peerId);
             }
 
-            await ApplyDirectConversationStatesAsync(new[] { senderId });
+            await ApplyDirectConversationStatesAsync(new[] { peerId });
             ResortFriendsForDisplay();
 
-            var senderDisplayName = ResolveUserDisplayName(senderId);
+            var peerDisplayName = ResolveUserDisplayName(peerId);
             ActionStatusMessage = isActiveConversation
-                ? $"收到来自 {senderDisplayName} 的新消息，已同步到当前会话。"
-                : $"收到来自 {senderDisplayName} 的新消息。";
+                ? $"与 {peerDisplayName} 的消息已同步到当前会话。"
+                : isOwnMessage
+                    ? $"已同步其他设备发送给 {peerDisplayName} 的消息。"
+                    : $"收到来自 {peerDisplayName} 的新消息。";
 
-            if (isActiveConversation)
+            if (isActiveConversation || isOwnMessage)
             {
                 RefreshConversationState();
                 return false;
@@ -1775,6 +1789,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             var gatewayClient = _socialService.GatewayClient;
             gatewayClient.SystemNotificationReceived += OnSystemNotificationReceived;
             gatewayClient.PrivateChatReceived += OnPrivateChatReceived;
+            gatewayClient.MessageRecallReceived += OnMessageRecallReceived;
             gatewayClient.GroupChatReceived += OnGroupChatReceived;
             gatewayClient.ContactOnlineStatusReceived += OnContactOnlineStatusReceived;
             gatewayClient.ContactProfileUpdateReceived += OnContactProfileUpdateReceived;
@@ -1798,6 +1813,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             var gatewayClient = _socialService.GatewayClient;
             gatewayClient.SystemNotificationReceived -= OnSystemNotificationReceived;
             gatewayClient.PrivateChatReceived -= OnPrivateChatReceived;
+            gatewayClient.MessageRecallReceived -= OnMessageRecallReceived;
             gatewayClient.GroupChatReceived -= OnGroupChatReceived;
             gatewayClient.ContactOnlineStatusReceived -= OnContactOnlineStatusReceived;
             gatewayClient.ContactProfileUpdateReceived -= OnContactProfileUpdateReceived;
@@ -1840,6 +1856,110 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     ChatAnimationRequested?.Invoke(message.SenderId.ToString(), false);
                 }
             });
+        }
+
+        /// <summary>撤回推送入口（自己撤回的多端同步 / 对方撤回）</summary>
+        private async void OnMessageRecallReceived(object? sender, IMChatRecallMessage recall)
+        {
+            await Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                await HandleIncomingMessageRecallAsync(recall);
+            });
+        }
+
+        /// <summary>
+        /// 处理撤回推送：本地标记已撤回；若撤回的是当前会话消息则原位替换渲染项；刷新会话列表摘要。
+        /// </summary>
+        private async Task HandleIncomingMessageRecallAsync(IMChatRecallMessage recall)
+        {
+            if (recall == null || string.IsNullOrWhiteSpace(_currentUserId))
+            {
+                return;
+            }
+
+            if (!ImIdentity.TryResolveUserId(_currentUserId, out var selfUserId))
+            {
+                return;
+            }
+
+            var isSelfRecall = recall.UserId == selfUserId;
+            var peerId = (isSelfRecall ? recall.PeerId : recall.UserId).ToString();
+            if (string.IsNullOrWhiteSpace(peerId) || peerId == "0")
+            {
+                return;
+            }
+
+            var updated = await _socialService.MarkMessageRecalledAsync(recall.RecalledMessageId);
+            if (updated == null)
+            {
+                // 本地无该消息（如离线期间未收取）：无需 UI 替换，仅刷新会话列表
+                await ApplyDirectConversationStatesAsync(new[] { peerId });
+                ResortFriendsForDisplay();
+                return;
+            }
+
+            var isActiveConversation = string.Equals(_selectedFriendId, peerId, StringComparison.Ordinal)
+                && string.IsNullOrWhiteSpace(_selectedGroupId);
+            if (isActiveConversation)
+            {
+                var index = _messages.ToList().FindIndex(m => string.Equals(m.Id, updated.Id, StringComparison.Ordinal));
+                if (index >= 0)
+                {
+                    _messages[index] = updated;
+                    var itemIndex = _messageItems.ToList()
+                        .FindIndex(item => string.Equals(item.Message.Id, updated.Id, StringComparison.Ordinal));
+                    if (itemIndex >= 0)
+                    {
+                        _messageItems[itemIndex] = CreateMessageItem(updated);
+                    }
+                }
+            }
+
+            await ApplyDirectConversationStatesAsync(new[] { peerId });
+            ResortFriendsForDisplay();
+            var peerDisplayName = ResolveUserDisplayName(peerId);
+            ActionStatusMessage = isSelfRecall
+                ? $"你撤回了一条发给 {peerDisplayName} 的消息。"
+                : $"{peerDisplayName} 撤回了一条消息。";
+        }
+
+        /// <summary>
+        /// 撤回指定私聊消息（fire-and-forget：服务端成功不回包，生效通知经推送回写 UI）。
+        /// 仅自己 48 小时内发送的私聊消息可撤回（与服务端窗口对齐）。
+        /// </summary>
+        public async Task RecallMessageAsync(Horizon.Game.GengDi.Models.IMMessage message)
+        {
+            if (message == null
+                || string.IsNullOrWhiteSpace(_currentUserId)
+                || message.IsGroupConversation
+                || !string.Equals(message.SenderId, _currentUserId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (!ImIdentity.TryResolveUserId(_currentUserId, out var selfUserId)
+                || !ImIdentity.TryResolveUserId(message.ReceiverId, out var peerUserId))
+            {
+                ActionStatusMessage = "撤回失败：无法解析通行证号。";
+                return;
+            }
+
+            if (DateTime.Now - message.Timestamp > TimeSpan.FromHours(48))
+            {
+                ActionStatusMessage = "已超过 48 小时，无法撤回。";
+                return;
+            }
+
+            try
+            {
+                await _socialService.GatewayClient
+                    .RecallMessageAsync(selfUserId, message.Id, peerUserId)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                ActionStatusMessage = $"撤回消息失败：{ex.Message}";
+            }
         }
 
         private async void OnGroupChatReceived(object? sender, IMGroupChatNotifyMessage message)
@@ -3158,15 +3278,27 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 return string.Empty;
             }
 
+            if (message.IsRecalled)
+            {
+                return "[消息已撤回]";
+            }
+
             var content = RichMessageContentSerializer.Deserialize(message);
+            // 语音消息（Video 结构 + provider=audio）：优先显示 [语音] N"
+            var audioSeconds = string.Equals(content.Provider, "audio", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(content.Subtitle?.Trim(), out var seconds)
+                    ? seconds
+                    : 0;
             var preview = !string.IsNullOrWhiteSpace(content.Text)
                 ? content.Text.Trim()
                 : content.Type switch
                 {
                     MessageType.Image => "[图片]",
-                    MessageType.Video => "[视频]",
+                    MessageType.Video => audioSeconds > 0
+                        ? $"[语音] {audioSeconds}\""
+                        : string.Equals(content.Provider, "audio", StringComparison.OrdinalIgnoreCase) ? "[语音]" : "[视频]",
                     MessageType.LinkCard => string.IsNullOrWhiteSpace(content.Title) ? "[链接卡片]" : $"[链接] {content.Title}",
-                    MessageType.File => "[文件]",
+                    MessageType.File => string.IsNullOrWhiteSpace(content.FileName) ? "[文件]" : $"[文件] {content.FileName}",
                     MessageType.System => "[系统消息]",
                     MessageType.Emoji => "[表情]",
                     _ => string.Empty

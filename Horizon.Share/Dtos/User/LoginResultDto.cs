@@ -42,5 +42,10 @@ namespace Horizon.Share.Dtos.User
         /// </summary>
         [Id(5)] public ulong UserId { get; set; }
 
+        /// <summary>
+        /// 通行证号（注册场景必须返回，供客户端展示给用户以便下次登录）
+        /// </summary>
+        [Id(6)] public string PassportId { get; set; }
+
     }
 }

@@ -164,6 +164,36 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>UI 浏览器（Debug 菜单，用于查看所有 UI）</summary>
         public const string UIGallery = "ui-gallery";
 
+        /// <summary>引导 HUD 页（步骤引导覆盖层，含聚光高亮/水墨箭头/操作提示）</summary>
+        public const string GuideHud = "guide-hud";
+
+        /// <summary>动作引导页（招式演示引导）</summary>
+        public const string GuideAction = "guide-action";
+
+        /// <summary>武学引导页（武学修习引导）</summary>
+        public const string GuideMartial = "guide-martial";
+
+        /// <summary>角色属性菜单 V1（menu-char-attributes.html，与 V2 并存）</summary>
+        public const string MenuCharAttributes = "menu-char-attributes";
+
+        /// <summary>小游戏完成页（奖励结算 + 继续到引导动作）</summary>
+        public const string MiniGameComplete = "mini-game-complete";
+
+        /// <summary>传世恭喜奖励页（reward-congratulations.html）</summary>
+        public const string RewardCongratulations = "reward-congratulations";
+
+        /// <summary>水墨动画分镜参考 01 · 水墨晕染（ink-anim-ref-1.html）</summary>
+        public const string InkAnimRefSpread = "ink-anim-ref-1";
+
+        /// <summary>水墨动画分镜参考 02 · 水墨笔触（ink-anim-ref-2.html）</summary>
+        public const string InkAnimRefBrush = "ink-anim-ref-2";
+
+        /// <summary>地图解锁奖励页（reward-map-unlock.html）</summary>
+        public const string RewardMapUnlock = "reward-map-unlock";
+
+        /// <summary>传送点解锁奖励页（reward-teleport-unlock.html）</summary>
+        public const string RewardTeleportUnlock = "reward-teleport-unlock";
+
         // ===================================================================
         // game-ui-system 设计方案要求的 19 个页面 dom-id
         // 按 4 大子系统分组：① 核心战斗 HUD ② 角色与背包 ③ 任务与技能 ④ 社交与商城
@@ -289,6 +319,18 @@ namespace HundunWorld.Game.UI.Ink
         private string _hudDomId;
 
         /// <summary>
+        /// 隐藏外壳返回按钮的页面集合：这些页面自带返回按钮或左侧栏（logo 位于左上角），
+        /// 外壳返回按钮（左上角 16,16）会与其重叠/遮挡。随"全部走查"逐页确认后增补。
+        /// </summary>
+        private static readonly System.Collections.Generic.HashSet<string> ShellBackSuppressedPages = new System.Collections.Generic.HashSet<string>
+        {
+            InkPageDomIds.NavCasualMode,
+            InkPageDomIds.NavActivities,
+            InkPageDomIds.NavShopRare,
+            InkPageDomIds.NavSettingsAudio,
+        };
+
+        /// <summary>
         /// 当前页面 dom-id。
         /// </summary>
         public string CurrentPageDomId => _currentPageDomId;
@@ -390,6 +432,13 @@ namespace HundunWorld.Game.UI.Ink
                     return false;
                 }
 
+                // 战斗 HUD 别名：枢纽可在 v1/v2 间切换（见 Initialize 的 hudDomId）——
+                // 将 "combat-hud" 请求解析为当前激活的枢纽 HUD，使所有页面出口/回退自动指向生效版本。
+                if (domId == InkPageDomIds.CombatHud && !string.IsNullOrEmpty(_hudDomId) && domId != _hudDomId)
+                {
+                    domId = _hudDomId;
+                }
+
                 if (!_pageFactories.TryGetValue(domId, out var factory))
                 {
                     FlaxEngine.Debug.LogWarning($"[InkPageRouter] 未注册的页面 domId: {domId}");
@@ -420,19 +469,29 @@ namespace HundunWorld.Game.UI.Ink
                     return false;
                 }
 
+                // 根据 dom-id 控制页面外壳视觉层：
+                // - 战斗 HUD：不显示返回按钮、隐藏背景层/暗角层，避免遮挡游戏场景
+                // - 非 HUD 菜单页：显示返回按钮、背景层、暗角层
+                bool isHud = domId == _hudDomId;
+
+                // 战斗 HUD 内容层顶部对齐：非 16:9 窗口下设计空间默认上下居中会整体下沉，
+                // 顶部对齐后设计坐标 y=0 贴合窗口上边缘（罗盘带/屏幕边缘边距才是真实像素距离）。
+                _shell.TopAnchoredContent = isHud;
+
                 // 通过 Shell 挂载页面（Shell 负责生命周期管理，UnloadPage 时销毁旧页面）
                 _shell.LoadPage(page);
 
                 // 更新当前页面 dom-id
                 _currentPageDomId = domId;
 
-                // 根据 dom-id 控制页面外壳视觉层：
-                // - 战斗 HUD：不显示返回按钮、隐藏背景层/暗角层，避免遮挡游戏场景
-                // - 非 HUD 菜单页：显示返回按钮、背景层、暗角层
-                bool isHud = domId == _hudDomId;
-                _shell.ShowBackButton(!isHud);
-                _shell.ShowBackgroundLayer(!isHud);
-                _shell.ShowVignette(!isHud);
+                // 覆盖层弹窗（popup-*）：叠加在战斗 HUD 之上，不能开启全屏墨背景/暗角——
+                // 否则墨底与底部深墨渐变会叠在游戏场景上形成"阴影区域"，且弹窗关闭不触发导航、残留不消失。
+                bool isOverlayPopup = domId.StartsWith("popup-", StringComparison.Ordinal);
+                // 自带返回/侧栏的页面隐藏外壳返回，避免与页面自身控件重叠遮挡。
+                bool suppressShellBack = ShellBackSuppressedPages.Contains(domId);
+                _shell.ShowBackButton(!isHud && !suppressShellBack);
+                _shell.ShowBackgroundLayer(!isHud && !isOverlayPopup);
+                _shell.ShowVignette(!isHud && !isOverlayPopup);
 
                 // 触发 PanelShow 事件：通知粒子系统在屏幕中心绘制墨韵涟漪。
                 // 屏幕中心坐标由粒子系统在事件回调中通过 PointFromScreen 转换为控件局部坐标，

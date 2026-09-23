@@ -1,0 +1,52 @@
+[config] 已加载配置文件：C:\Works\GitHubProjects\HundunWorld\Horizon.DsHost\bin\Debug\net10.0\appsettings.json
+[23:48:53.911] 已配置 2 个刷怪点（覆盖 shard 0）。
+[23:48:57.220] Orleans 不可达（TimeoutException: 连接 Orleans 超过 2000ms 未完成）；回退内置确定性掉落表，DS 实时服务不受影响。
+[23:48:57.242] DsDataPlaneHost：数据面已监听 0.0.0.0:19870
+[23:48:57.243] DsHostRunner：数据面与发送泵已启动（外部驱动，待宿主调 RunSingleTickAsync）。ShardIds=0 TicksPerSecond=60 SpawnPoints=2 MaxSessions=5000
+[23:48:57.243] DsHostRunner：已启动（自驱）。ShardIds=0 TicksPerSecond=60 SpawnPoints=2 MaxSessions=5000
+[23:48:57.251] DsUplinkClient：已连接网关 127.0.0.1:19871（第 1 次）。
+[23:48:57.340] DS 就绪。Shard=0 数据面端口=19870 网关=127.0.0.1:19871
+[23:48:57.736] DsUplinkClient：注册成功。DsId=ds-e2e-0 Shards=0 Port=19870
+[23:49:07.246] [DsHost] 状态摘要 Ticks=600 玩家=0 收帧=0 丢帧=0 解码失败=0 重复输入=0 批次发送=0 批次失败=0 事件产出=0 事件发送=0 会话移除=0 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:49:17.245] [DsHost] 状态摘要 Ticks=1200 玩家=0 收帧=0 丢帧=0 解码失败=0 重复输入=0 批次发送=0 批次失败=0 事件产出=0 事件发送=0 会话移除=0 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:49:27.245] [DsHost] 状态摘要 Ticks=1800 玩家=0 收帧=0 丢帧=0 解码失败=0 重复输入=0 批次发送=0 批次失败=0 事件产出=0 事件发送=0 会话移除=0 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:49:27.662] [DataPlane] 新连接 #1 from 127.0.0.1:57888, 当前活跃: 1
+[23:49:27.684] [DataPlane] 握手成功 CharacterId=777001, 当前玩家: 1
+[23:49:37.245] [DsHost] 状态摘要 Ticks=2400 玩家=1 收帧=3 丢帧=0 解码失败=0 重复输入=0 批次发送=193 批次失败=0 事件产出=0 事件发送=0 会话移除=0 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:49:43.014] 会话结束：已从世界移除玩家 sessionId=777001（剩余 0 人）。
+[23:49:47.245] [DsHost] 状态摘要 Ticks=3000 玩家=0 收帧=3 丢帧=0 解码失败=0 重复输入=0 批次发送=308 批次失败=0 事件产出=0 事件发送=0 会话移除=1 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:49:57.245] [DsHost] 状态摘要 Ticks=3600 玩家=0 收帧=3 丢帧=0 解码失败=0 重复输入=0 批次发送=308 批次失败=0 事件产出=0 事件发送=0 会话移除=1 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:50:07.245] [DsHost] 状态摘要 Ticks=4200 玩家=0 收帧=3 丢帧=0 解码失败=0 重复输入=0 批次发送=308 批次失败=0 事件产出=0 事件发送=0 会话移除=1 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:50:17.246] [DsHost] 状态摘要 Ticks=4800 玩家=0 收帧=3 丢帧=0 解码失败=0 重复输入=0 批次发送=308 批次失败=0 事件产出=0 事件发送=0 会话移除=1 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:50:26.428] [DataPlane] 握手成功 CharacterId=424242, 当前玩家: 1
+[23:50:26.512] [DataPlane] 握手成功 CharacterId=777001, 当前玩家: 2
+[23:50:27.245] [DsHost] 状态摘要 Ticks=5400 玩家=2 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=326 批次失败=0 事件产出=0 事件发送=0 会话移除=1 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:50:37.244] [DsHost] 状态摘要 Ticks=6000 玩家=2 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=526 批次失败=0 事件产出=0 事件发送=0 会话移除=1 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:50:41.461] 会话结束：已从世界移除玩家 sessionId=424242（剩余 1 人）。
+[23:50:41.728] 会话结束：已从世界移除玩家 sessionId=777001（剩余 0 人）。
+[23:50:47.244] [DsHost] 状态摘要 Ticks=6600 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:50:57.244] [DsHost] 状态摘要 Ticks=7200 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:51:07.245] [DsHost] 状态摘要 Ticks=7800 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:51:17.244] [DsHost] 状态摘要 Ticks=8400 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:51:27.244] [DsHost] 状态摘要 Ticks=9000 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:51:27.663] [DataPlane] 连接 #1 断开(对端关闭), 存活 120.0s, 收帧 7, 会话: 777001,424242, 当前活跃: 0
+[23:51:37.244] [DsHost] 状态摘要 Ticks=9600 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:51:47.245] [DsHost] 状态摘要 Ticks=10200 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:51:57.244] [DsHost] 状态摘要 Ticks=10800 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:52:07.245] [DsHost] 状态摘要 Ticks=11400 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:52:17.244] [DsHost] 状态摘要 Ticks=12000 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:52:27.244] [DsHost] 状态摘要 Ticks=12600 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:52:37.247] [DsHost] 状态摘要 Ticks=13200 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:52:47.244] [DsHost] 状态摘要 Ticks=13800 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:52:57.244] [DsHost] 状态摘要 Ticks=14400 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:53:07.244] [DsHost] 状态摘要 Ticks=15000 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:53:17.249] [DsHost] 状态摘要 Ticks=15600 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:53:27.244] [DsHost] 状态摘要 Ticks=16200 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:53:37.244] [DsHost] 状态摘要 Ticks=16800 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:53:47.244] [DsHost] 状态摘要 Ticks=17400 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:53:57.244] [DsHost] 状态摘要 Ticks=18000 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:54:07.245] [DsHost] 状态摘要 Ticks=18600 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:54:17.243] [DsHost] 状态摘要 Ticks=19200 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:54:27.244] [DsHost] 状态摘要 Ticks=19800 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:54:37.243] [DsHost] 状态摘要 Ticks=20400 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0
+[23:54:47.244] [DsHost] 状态摘要 Ticks=21000 玩家=0 收帧=7 丢帧=0 解码失败=0 重复输入=0 批次发送=616 批次失败=0 事件产出=0 事件发送=0 会话移除=3 AoiGroups=0 AvgEntitiesPerGroup=0.0

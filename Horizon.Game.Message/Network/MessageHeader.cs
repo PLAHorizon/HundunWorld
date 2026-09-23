@@ -97,11 +97,19 @@ namespace Horizon.Game.Message.Network
         public uint Flags { get; set; }
 
         /// <summary>
-        /// 扩展数据
+        /// 扩展数据。
         /// </summary>
+        /// <remarks>
+        /// 修复：原为 <c>Dictionary&lt;string, object&gt;</c>——<c>object</c> 无 MemoryPack union 且无 Orleans
+        /// 序列化器，任意非基本类型值都会在序列化时抛异常（潜在崩溃）。改为 <c>Dictionary&lt;string, string&gt;</c>，
+        /// 与 IM 侧 IMMessageHeader.ExtensionData 一致。
+        /// 注意：因值为 <c>string</c>，写入方须自行做字符串转换（数值按 InvariantCulture 往返），不要再存 object。
+        /// 现有使用方：<c>HundunWorld/Source/Game/Network/Handlers/EnhancedMessageProcessor.cs</c>
+        /// 的 <c>PerformanceMonitoringInterceptor</c>（写入 "StartTime" 毫秒时间戳）。
+        /// </remarks>
         [MemoryPackOrder(17)]
         [Id(17)]
-        public Dictionary<string, object> ExtensionData { get; set; } = new();
+        public Dictionary<string, string> ExtensionData { get; set; } = new();
 
         /// <summary>
         /// 用户鉴权令牌
@@ -117,6 +125,15 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(19)]
         [Id(19)]
         public string MachineId { get; set; } = "";
+
+        /// <summary>
+        /// 幂等键：客户端为每次<b>非幂等</b>操作（如创建角色）生成的唯一标识，
+        /// 请求重发（在途断线自动重试）时保持不变，服务端按键去重保证同一次操作只执行一次。
+        /// 空字符串表示该请求不参与幂等去重（旧客户端/查询类请求）。
+        /// </summary>
+        [MemoryPackOrder(20)]
+        [Id(20)]
+        public string IdempotencyKey { get; set; } = "";
 
         /// <summary>
         /// 是否需要响应

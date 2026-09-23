@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -32,15 +34,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ResultVM<SettledConfigState>> GetSettledConfigAsync()
+        public async Task<ResultVM<SettledConfigDto>> GetSettledConfigAsync()
         {
-            var result = new ResultVM<SettledConfigState>();
+            var result = new ResultVM<SettledConfigDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<ISettledConfigGrain>(1);
-                result.Data = await grain.GetSettledConfigAsync();
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetSettledConfigAsync();
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (System.Exception ex)
             {

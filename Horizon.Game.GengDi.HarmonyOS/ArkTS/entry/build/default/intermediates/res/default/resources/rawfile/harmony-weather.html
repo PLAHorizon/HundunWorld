@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气预报 — 耕地花卉</title>
+    <style id="theme-vars">
+        /* ============================================================
+           耕地（Horizon.Game.GengDi）— 天气预报
+           视觉还原墨迹天气（moji.com）：深蓝灰底 + 橙色点缀 + 卡片流
+           Brand Prefix: gd
+           ============================================================ */
+        :root {
+            /* 墨迹深蓝灰底 */
+            --sky-from: #242c3e;
+            --sky-to: #171d2b;
+
+            /* 品牌强调（墨迹橙） */
+            --gd-accent: #ff9500;
+            --gd-accent-soft: rgba(255, 149, 0, 0.16);
+            --gd-brand: #3d8bff;
+
+            /* 文字层级 */
+            --text-hi: #ffffff;
+            --text-mid: rgba(255, 255, 255, 0.66);
+            --text-low: rgba(255, 255, 255, 0.42);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", system-ui, sans-serif;
+            color: var(--text-hi);
+            -webkit-font-smoothing: antialiased;
+            background: linear-gradient(225deg, var(--sky-from) 0%, #1d2434 45%, var(--sky-to) 100%) fixed;
+            min-height: 100vh;
+            position: relative;
+        }
+        /* 墨迹式右上橙光晕 + 左下蓝光晕 */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 88% 4%, rgba(255, 135, 0, 0.13) 0px, transparent 42%),
+                radial-gradient(circle at 8% 82%, rgba(51, 126, 204, 0.10) 0px, transparent 45%);
+            z-index: 0;
+        }
+        .page { position: relative; z-index: 1; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 墨迹卡片 */
+        .glass {
+            background: rgba(255, 255, 255, 0.055);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+        }
+
+        /* 区块标题：左侧橙色竖条 + 粗体（墨迹式） */
+        .sec-title { display: flex; align-items: center; gap: 8px; }
+        .sec-title::before {
+            content: '';
+            width: 4px; height: 16px;
+            border-radius: 2px;
+            background: linear-gradient(180deg, var(--gd-accent), #ff6a00);
+        }
+        .sec-title h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+
+        /* ============================================================
+           墨迹 .life-index-grid 还原：
+           两行，每行横滑；卡片实色 #242C3E、无圆角、1px 缝隙拼块
+           卡内：36px 图标 → gap → 白色评级(500) → 60%白指数名(400)
+           ============================================================ */
+        .life-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            border-radius: 10px;
+            overflow: hidden;
+            /* 缝隙色：比卡片略深，形成墨迹拼块分割线 */
+            background: rgba(10, 14, 22, 0.55);
+        }
+        .life-row {
+            display: flex;
+            gap: 1px;
+            overflow-x: auto;
+            /* 滚动区域底部续拼缝色 */
+            background: rgba(10, 14, 22, 0.55);
+        }
+        .life-row::-webkit-scrollbar { display: none; }
+        .life-row { scrollbar-width: none; }
+        .life-cell {
+            /* 墨迹 .life-index-item：144×169 等比缩至移动端 108×128 */
+            flex: 0 0 108px;
+            width: 108px;
+            height: 128px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            padding: 16px 8px 14px;
+            background: rgb(36, 44, 62);
+        }
+        .life-cell .li-icon {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .life-cell .li-level {
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 20px;
+            color: #ffffff;
+        }
+        .life-cell .li-name {
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 16px;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+</head>
+<body class="min-h-screen antialiased">
+    <div class="page max-w-[390px] mx-auto min-h-screen">
+
+        <!-- ========== 顶部：搜索城市 + 城市横滑栏 ========== -->
+        <header class="sticky top-0 z-40 pt-3 pb-2 px-4" style="background:linear-gradient(180deg, rgba(23,29,43,0.92) 0%, rgba(23,29,43,0.55) 70%, transparent 100%);">
+            <div class="relative">
+                <div class="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2.5" style="background:rgba(255,255,255,0.08);">
+                    <i data-lucide="search" class="w-4 h-4" style="color:var(--text-low);"></i>
+                    <input id="searchInput" type="text" placeholder="搜索城市及地址"
+                           class="flex-1 min-w-0 bg-transparent outline-none text-sm" style="color:var(--text-hi);">
+                    <button id="searchClearBtn" class="hidden items-center justify-center w-6 h-6 rounded-full" style="background:rgba(255,255,255,0.12);" aria-label="清空">
+                        <i data-lucide="x" class="w-3.5 h-3.5" style="color:var(--text-mid);"></i>
+                    </button>
+                </div>
+                <div id="searchPanel" class="hidden absolute left-0 right-0 top-full mt-2 z-50 overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
+                     style="background:rgba(23,29,43,0.98); backdrop-filter:blur(20px);">
+                    <div class="px-4 py-2.5 border-b border-white/10 flex items-center justify-between">
+                        <span class="text-xs" style="color:var(--text-mid);">搜索结果</span>
+                        <span id="searchStatus" class="text-xs" style="color:var(--text-low);"></span>
+                    </div>
+                    <div id="searchResultList" class="max-h-80 overflow-y-auto no-scrollbar"></div>
+                    <div id="searchEmpty" class="hidden text-center py-10 text-sm" style="color:var(--text-low);">未找到匹配城市</div>
+                </div>
+            </div>
+
+            <!-- 城市横滑栏（墨迹：城市名 + 实时温度） -->
+            <div id="cityBar" class="flex gap-2 overflow-x-auto no-scrollbar mt-3"></div>
+        </header>
+
+        <main class="px-4 pb-8 space-y-3">
+
+            <!-- ========== 当前天气主面板 ========== -->
+            <section class="glass p-5 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-3xl opacity-25" style="background:radial-gradient(circle, #ff8700 0%, transparent 70%);"></div>
+                <div class="relative">
+                    <div class="flex items-center gap-2">
+                        <span id="airBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium" style="background:rgba(38,166,154,0.16); color:#26b5a0;">
+                            <i data-lucide="check-circle" class="w-3 h-3"></i><span id="airText">优 45</span>
+                        </span>
+                        <span id="curLocCity" class="text-[13px] font-medium" style="color:var(--text-mid);">昆明</span>
+                        <span id="curUpdateTime" class="ml-auto text-[11px]" style="color:var(--text-low);">--:-- 更新</span>
+                    </div>
+
+                    <div class="flex items-center justify-between mt-3">
+                        <div class="flex items-start">
+                            <span id="curTemp" class="text-[76px] leading-none font-light tracking-tighter" style="color:#fff;">--</span>
+                            <span class="text-2xl mt-2 ml-0.5" style="color:var(--text-mid);">°</span>
+                        </div>
+                        <div class="text-center flex flex-col items-center gap-1.5">
+                            <i id="curWeatherIcon" data-lucide="cloud-sun" class="w-16 h-16" style="color:var(--gd-accent); filter:drop-shadow(0 0 12px rgba(255,149,0,0.35));"></i>
+                            <span id="curCondition" class="text-base font-medium">--</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 mt-2 text-[13px]" style="color:var(--text-mid);">
+                        <span class="inline-flex items-center gap-1"><i data-lucide="wind" class="w-3.5 h-3.5" style="color:var(--text-low);"></i><span id="curWind">--</span></span>
+                        <span class="opacity-30">|</span>
+                        <span class="inline-flex items-center gap-1"><i data-lucide="droplets" class="w-3.5 h-3.5" style="color:var(--text-low);"></i><span id="curHumidity">--%</span></span>
+                        <span class="opacity-30">|</span>
+                        <span class="inline-flex items-center gap-1"><i data-lucide="thermometer" class="w-3.5 h-3.5" style="color:var(--text-low);"></i><span id="curFeelsLike">体感 --°</span></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== 天气指标网格（墨迹 2×3） ========== -->
+            <section class="glass p-4">
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div class="flex flex-col items-center gap-1.5 py-3 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                        <i data-lucide="wind" class="w-5 h-5" style="color:var(--gd-brand);"></i>
+                        <span id="gWind" class="text-[14px] font-semibold">--</span>
+                        <span class="text-[11px]" style="color:var(--text-low);">风力</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1.5 py-3 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                        <i data-lucide="thermometer" class="w-5 h-5" style="color:var(--gd-brand);"></i>
+                        <span id="gFeels" class="text-[14px] font-semibold">--°</span>
+                        <span class="text-[11px]" style="color:var(--text-low);">体感温度</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1.5 py-3 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                        <i data-lucide="sun" class="w-5 h-5" style="color:var(--gd-accent);"></i>
+                        <span id="gUv" class="text-[14px] font-semibold">--</span>
+                        <span class="text-[11px]" style="color:var(--text-low);">紫外线</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1.5 py-3 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                        <i data-lucide="gauge" class="w-5 h-5" style="color:var(--gd-brand);"></i>
+                        <span id="gPressure" class="text-[14px] font-semibold">--</span>
+                        <span class="text-[11px]" style="color:var(--text-low);">气压</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1.5 py-3 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                        <i data-lucide="cloud" class="w-5 h-5" style="color:var(--gd-brand);"></i>
+                        <span id="gCloud" class="text-[14px] font-semibold">--%</span>
+                        <span class="text-[11px]" style="color:var(--text-low);">云量</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1.5 py-3 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                        <i data-lucide="umbrella" class="w-5 h-5" style="color:var(--gd-accent);"></i>
+                        <span id="gRain" class="text-[14px] font-semibold">--%</span>
+                        <span class="text-[11px]" style="color:var(--text-low);">降水概率</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== 花卉生活服务（墨迹式：两行横滑网格 + 拼块卡） ========== -->
+            <section class="glass p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="sec-title"><h2>花卉生活服务</h2></div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="cultScore" class="text-xl font-bold" style="color:#26b5a0;">--</span>
+                        <span class="text-[11px]" style="color:var(--text-low);">分</span>
+                    </div>
+                </div>
+                <!-- 墨迹 .life-index-grid：两行，每行横滑；1px 缝隙拼块（缝隙色为容器底色） -->
+                <div id="lifeIndex" class="life-rows"></div>
+            </section>
+
+            <!-- ========== 逐小时预报（墨迹：日出日落 + 温度曲线 + 时间轴） ========== -->
+            <section class="glass p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="sec-title"><h2>逐小时预报</h2></div>
+                    <div class="flex items-center gap-2 text-[11px]" style="color:var(--text-low);">
+                        <span class="inline-flex items-center gap-1"><i data-lucide="sunrise" class="w-3.5 h-3.5" style="color:var(--gd-accent);"></i><span id="sunriseText">--:--</span></span>
+                        <span class="inline-flex items-center gap-1"><i data-lucide="sunset" class="w-3.5 h-3.5" style="color:#ff6b6b;"></i><span id="sunsetText">--:--</span></span>
+                    </div>
+                </div>
+                <div class="h-28 -mx-1"><canvas id="hourlyChart"></canvas></div>
+                <div id="hourlyForecast" class="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 mt-2"></div>
+            </section>
+
+            <!-- ========== 未来预报（墨迹：折线/柱状切换 + 表格式列表） ========== -->
+            <section class="glass p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="sec-title"><h2>未来预报</h2></div>
+                    <div class="flex items-center gap-1 p-1 rounded-full" style="background:rgba(255,255,255,0.08);">
+                        <button id="tabLine" class="px-3 py-1 rounded-full text-[11px] font-medium transition-transform active:scale-95" style="background:var(--gd-accent); color:#fff;">折线</button>
+                        <button id="tabBar" class="px-3 py-1 rounded-full text-[11px] transition-transform active:scale-95" style="background:transparent; color:var(--text-mid);">柱状</button>
+                    </div>
+                </div>
+                <div class="h-40 -mx-1"><canvas id="tempChart"></canvas></div>
+                <div id="dailyList" class="mt-3"></div>
+            </section>
+
+            <!-- ========== 天气详情（墨迹：风速罗盘 + 指标） ========== -->
+            <section class="glass p-4">
+                <div class="sec-title mb-3"><h2>天气详情</h2></div>
+                <div class="flex items-center gap-4">
+                    <canvas id="compassCanvas" width="140" height="140" class="flex-shrink-0"></canvas>
+                    <div class="flex-1 grid grid-cols-2 gap-2.5">
+                        <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                            <i data-lucide="droplets" class="w-4 h-4" style="color:var(--gd-brand);"></i>
+                            <div><p id="dHumidity" class="text-[13px] font-semibold leading-tight">--%</p><p class="text-[10px]" style="color:var(--text-low);">湿度</p></div>
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                            <i data-lucide="sun-medium" class="w-4 h-4" style="color:var(--gd-accent);"></i>
+                            <div><p id="dUv" class="text-[13px] font-semibold leading-tight">--</p><p class="text-[10px]" style="color:var(--text-low);">紫外线</p></div>
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                            <i data-lucide="gauge" class="w-4 h-4" style="color:var(--gd-brand);"></i>
+                            <div><p id="dPressure" class="text-[13px] font-semibold leading-tight">--</p><p class="text-[10px]" style="color:var(--text-low);">气压</p></div>
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                            <i data-lucide="leaf" class="w-4 h-4" style="color:#26b5a0;"></i>
+                            <div><p id="dAir" class="text-[13px] font-semibold leading-tight">--</p><p class="text-[10px]" style="color:var(--text-low);">空气质量</p></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== 农事提醒（花卉特色保留） ========== -->
+            <section class="glass p-4">
+                <div class="sec-title mb-3"><h2>农事提醒</h2></div>
+                <div id="agriAlerts" class="space-y-2.5"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>lucide.createIcons();</script>
+    <script>
+        // ============================================================
+        // 城市数据（与后端 WeatherController.CityCoords 一致；动态接口优先）
+        // ============================================================
+        var CITY_LIST = [
+            "北京","上海","天津","重庆","昆明","曲靖","玉溪","丽江","大理",
+            "广州","深圳","珠海","佛山","东莞","杭州","宁波","温州","南京",
+            "苏州","无锡","成都","绵阳","武汉","西安","郑州","长沙","合肥",
+            "福州","厦门","南昌","济南","青岛","沈阳","大连","长春","哈尔滨",
+            "石家庄","太原","呼和浩特","南宁","海口","三亚","贵阳","兰州",
+            "西宁","银川","乌鲁木齐","拉萨","台北","香港","澳门"
+        ];
+
+        var state = {
+            city: "昆明",
+            favCities: ["昆明","北京","上海","广州"],
+            cityTemps: {},       // 城市名 → 温度
+            mode: "line",        // 折线/柱状
+            windAngle: 0         // 风向角度（罗盘用）
+        };
+
+        /* ============ 工具 ============ */
+        function hasApi() { return typeof window.flowerApi !== 'undefined' && window.flowerApi !== null; }
+        function safeParse(str) { if (!str || typeof str !== 'string' || str.length === 0) return null; try { return JSON.parse(str); } catch (e) { return null; } }
+        function $(id) { return document.getElementById(id); }
+        function setIcon(id, name) { var el = $(id); if (!el) return; el.setAttribute('data-lucide', name); el.innerHTML = ''; lucide.createIcons(); }
+
+        function weatherIconName(code, isDay) {
+            code = code || 0;
+            if (code === 0) return isDay ? 'sun' : 'moon';
+            if (code === 1 || code === 2) return isDay ? 'cloud-sun' : 'cloud-moon';
+            if (code === 3) return 'cloud';
+            if (code === 45 || code === 48) return 'cloud-fog';
+            if (code >= 51 && code <= 57) return 'cloud-drizzle';
+            if (code >= 61 && code <= 67) return 'cloud-rain';
+            if (code >= 71 && code <= 77) return 'cloud-snow';
+            if (code >= 80 && code <= 82) return 'cloud-rain-wind';
+            if (code >= 85 && code <= 86) return 'cloud-snow';
+            if (code >= 95) return 'cloud-lightning';
+            return 'cloud-sun';
+        }
+        function windLevel(s) {
+            s = s || 0;
+            if (s < 1) return '0级'; if (s < 6) return '1级'; if (s < 12) return '2级';
+            if (s < 20) return '3级'; if (s < 29) return '4级'; if (s < 39) return '5级';
+            if (s < 50) return '6级'; if (s < 62) return '7级'; if (s < 75) return '8级'; return '9级+';
+        }
+        /* 风向文字 → 罗盘角度 */
+        function windAngle(dirText) {
+            var map = { '北风': 0, '东北风': 45, '东风': 90, '东南风': 135, '南风': 180, '西南风': 225, '西风': 270, '西北风': 315 };
+            return map[dirText] !== undefined ? map[dirText] : 0;
+        }
+
+        /* ============ 城市栏（墨迹：城市 + 实时温度） ============ */
+        function renderCityBar() {
+            var bar = $('cityBar');
+            bar.innerHTML = '';
+            state.favCities.forEach(function (c) {
+                var temp = state.cityTemps[c];
+                var item = document.createElement('button');
+                item.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full flex-shrink-0 border transition-colors';
+                if (c === state.city) {
+                    item.style.background = 'rgba(255,149,0,0.16)';
+                    item.style.borderColor = 'rgba(255,149,0,0.45)';
+                } else {
+                    item.style.background = 'rgba(255,255,255,0.06)';
+                    item.style.borderColor = 'rgba(255,255,255,0.08)';
+                }
+                item.innerHTML = '<span class="text-[13px] font-medium">' + c + '</span>' +
+                    '<span class="text-[12px]" style="color:var(--gd-accent);">' + (temp !== undefined ? temp + '°' : '--°') + '</span>';
+                item.onclick = function () { switchCity(c); };
+                bar.appendChild(item);
+            });
+        }
+
+        /* 异步加载常用城市温度（并行匿名接口） */
+        function loadCityTemps() {
+            if (!hasApi()) return;
+            state.favCities.forEach(function (c) {
+                if (state.cityTemps[c] !== undefined) return;
+                window.flowerApi.getCurrentWeather(c).then(function (raw) {
+                    var d = safeParse(raw);
+                    if (d && d.isSuccess && d.data && d.data.temperature !== undefined) {
+                        state.cityTemps[c] = Math.round(d.data.temperature);
+                        renderCityBar();
+                    }
+                }).catch(function () {});
+            });
+        }
+
+        /* ============ 城市切换与搜索 ============ */
+        function savePref() {
+            try { localStorage.setItem('gd_weather_city', state.city); localStorage.setItem('gd_weather_fav', JSON.stringify(state.favCities)); } catch (e) {}
+        }
+        function switchCity(city) {
+            state.city = city;
+            if (state.favCities.indexOf(city) === -1) {
+                state.favCities.push(city);
+                if (state.favCities.length > 8) state.favCities.shift();
+            }
+            var loc = $('curLocCity'); if (loc) loc.textContent = city;
+            renderCityBar();
+            hideSearchPanel();
+            savePref();
+            loadWeatherRealData(city);
+            loadCityTemps();
+        }
+
+        function doSearch(kw) {
+            kw = (kw || "").trim();
+            if (!kw) { hideSearchPanel(); return; }
+            var list = $('searchResultList');
+            var status = $('searchStatus');
+            list.innerHTML = '';
+            $('searchPanel').classList.remove('hidden');
+            $('searchEmpty').classList.add('hidden');
+            var hits = CITY_LIST.filter(function (c) { return c.indexOf(kw) !== -1; });
+            if (hits.length === 0) { $('searchEmpty').classList.remove('hidden'); status.textContent = ''; return; }
+            status.textContent = hits.length + ' 个城市';
+            hits.forEach(function (c) {
+                var item = document.createElement('div');
+                item.className = 'flex items-center gap-3 px-4 py-3 cursor-pointer';
+                item.onmouseenter = function () { item.style.background = 'rgba(255,149,0,0.10)'; };
+                item.onmouseleave = function () { item.style.background = 'transparent'; };
+                item.innerHTML =
+                    '<i data-lucide="map-pin" class="w-4 h-4" style="color:var(--text-low);"></i>' +
+                    '<span class="text-sm flex-1">' + c + '</span>' +
+                    (c === state.city ? '<span class="text-xs" style="color:var(--gd-accent);">当前</span>' : '<i data-lucide="corner-down-left" class="w-4 h-4" style="color:var(--text-low);"></i>');
+                item.onclick = function () { switchCity(c); };
+                list.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+        function hideSearchPanel() { $('searchPanel').classList.add('hidden'); }
+        function bindSearchEvents() {
+            var input = $('searchInput');
+            $('searchClearBtn').classList.add('hidden');
+            $('searchClearBtn').addEventListener('click', function () { input.value = ""; $('searchClearBtn').classList.add('hidden'); hideSearchPanel(); input.focus(); });
+            input.addEventListener('input', function () { $('searchClearBtn').classList.toggle('hidden', input.value.length === 0); });
+            input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doSearch(input.value); } });
+            document.addEventListener('click', function (e) {
+                var p = $('searchPanel');
+                if (!p.classList.contains('hidden') && !p.contains(e.target) && e.target !== input && !input.contains(e.target)) hideSearchPanel();
+            });
+        }
+
+        /* ============ AQI 估算（保留展示） ============ */
+        function estimateAqi(d) {
+            var aq = 45;
+            if (d.uvIndex !== undefined && d.uvIndex >= 7) aq = 38;
+            if (d.humidity !== undefined && d.humidity >= 85) aq = 70;
+            return aq;
+        }
+
+        /* ============ 当前天气渲染 ============ */
+        function renderCurrent(d) {
+            var t = $('curTemp'); if (t) t.textContent = d.temperature !== undefined ? Math.round(d.temperature) : '--';
+            var cd = $('curCondition'); if (cd) cd.textContent = d.conditionText || '--';
+            setIcon('curWeatherIcon', weatherIconName(d.wmoCode, d.isDay));
+            var feels = $('curFeelsLike'); if (feels) feels.textContent = '体感 ' + (d.apparentTemperature !== undefined ? Math.round(d.apparentTemperature) : '--') + '°';
+            var hum = $('curHumidity'); if (hum) hum.textContent = (d.humidity !== undefined ? d.humidity : '--') + '%';
+            var wind = $('curWind'); if (wind) wind.textContent = (d.windDirection || '') + ' ' + windLevel(d.windSpeed);
+            state.windAngle = windAngle(d.windDirection);
+            state.windText = (d.windDirection || '') + ' ' + windLevel(d.windSpeed);
+
+            // 指标网格
+            if ($('gFeels')) $('gFeels').textContent = (d.apparentTemperature !== undefined ? Math.round(d.apparentTemperature) : '--') + '°';
+            if ($('gWind')) $('gWind').textContent = windLevel(d.windSpeed);
+            if ($('gPressure')) $('gPressure').textContent = d.pressure ? Math.round(d.pressure) + 'hPa' : '--';
+            if ($('gCloud')) $('gCloud').textContent = d.cloudCover !== undefined ? Math.round(d.cloudCover) + '%' : '--';
+            if ($('gUv')) $('gUv').textContent = d.uvIndex !== undefined ? Math.round(d.uvIndex) : '--';
+
+            // 详情区
+            if ($('dHumidity')) $('dHumidity').textContent = (d.humidity !== undefined ? d.humidity : '--') + '%';
+            if ($('dUv')) $('dUv').textContent = d.uvIndex !== undefined ? Math.round(d.uvIndex) : '--';
+            if ($('dPressure')) $('dPressure').textContent = d.pressure ? Math.round(d.pressure) + 'hPa' : '--';
+
+            // AQI
+            var aq = estimateAqi(d);
+            var aqText = aq <= 50 ? '优' : (aq <= 100 ? '良' : (aq <= 150 ? '轻度' : '中度'));
+            var aqColor = aq <= 50 ? '#26b5a0' : (aq <= 100 ? '#ffd54a' : '#ff6b6b');
+            if ($('airText')) $('airText').textContent = aqText + ' ' + aq;
+            if ($('dAir')) { $('dAir').textContent = aqText + ' ' + aq; $('dAir').style.color = aqColor; }
+            if ($('airBadge')) { $('airBadge').style.background = aqColor + '26'; $('airBadge').style.color = aqColor; }
+            var airIcon = document.querySelector('#airBadge i');
+            if (airIcon) { airIcon.setAttribute('data-lucide', aq <= 50 ? 'check-circle' : 'info'); }
+
+            // 更新时间
+            if ($('curUpdateTime') && d.updateTime) {
+                var ut = new Date(d.updateTime);
+                $('curUpdateTime').textContent = ('0'+ut.getHours()).slice(-2) + ':' + ('0'+ut.getMinutes()).slice(-2) + ' 更新';
+            }
+
+            drawCompass();
+        }
+
+        /* ============ 风速罗盘（墨迹天气详情） ============ */
+        function drawCompass() {
+            var canvas = $('compassCanvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width, h = canvas.height, cx = w/2, cy = h/2, r = 62;
+            ctx.clearRect(0, 0, w, h);
+
+            // 外圈
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI*2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            // 内圈
+            ctx.beginPath();
+            ctx.arc(cx, cy, r-26, 0, Math.PI*2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // 刻度（每15度，主刻度每90度）
+            for (var a = 0; a < 360; a += 15) {
+                var rad = (a - 90) * Math.PI / 180;
+                var isMain = a % 90 === 0;
+                var len = isMain ? 8 : 4;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(rad)*(r-2), cy + Math.sin(rad)*(r-2));
+                ctx.lineTo(cx + Math.cos(rad)*(r-2-len), cy + Math.sin(rad)*(r-2-len));
+                ctx.strokeStyle = isMain ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.18)';
+                ctx.lineWidth = isMain ? 2 : 1;
+                ctx.stroke();
+            }
+
+            // N E S W 文字
+            var dirs = [['N',0],['E',90],['S',180],['W',270]];
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            dirs.forEach(function (d) {
+                var rad = (d[1] - 90) * Math.PI / 180;
+                var x = cx + Math.cos(rad)*(r-16), y = cy + Math.sin(rad)*(r-16);
+                ctx.fillStyle = d[0] === 'N' ? '#ff9500' : 'rgba(255,255,255,0.55)';
+                ctx.fillText(d[0], x, y);
+            });
+
+            // 风向指针（橙色箭头）
+            var windRad = (state.windAngle - 90) * Math.PI / 180;
+            var tipX = cx + Math.cos(windRad)*(r-30), tipY = cy + Math.sin(windRad)*(r-30);
+            var baseX = cx - Math.cos(windRad)*14, baseY = cy - Math.sin(windRad)*14;
+            var perpX = Math.cos(windRad + Math.PI/2), perpY = Math.sin(windRad + Math.PI/2);
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(baseX + perpX*7, baseY + perpY*7);
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(baseX - perpX*7, baseY - perpY*7);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(255,149,0,0.85)';
+            ctx.fill();
+
+            // 中心风力文字
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(state.windText || '--', cx, cy + r + 12);
+
+            // 中心点
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3.5, 0, Math.PI*2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+        }
+
+        /* ============ 花卉生活服务指数（墨迹 .life-index-grid：两行横滑拼块网格） ============ */
+        function scoreTemp(t) { if (t >= 15 && t <= 28) return 100; if (t < 5 || t > 35) return 30; if (t < 10 || t > 30) return 50; return 75; }
+        function scoreHum(h) { if (h >= 50 && h <= 80) return 100; if (h < 30 || h > 90) return 40; return 75; }
+        function scoreSun(uv) { if (uv >= 4 && uv <= 7) return 100; if (uv < 2 || uv > 9) return 50; return 80; }
+        function scoreRain(p) { if (p <= 30) return 100; if (p <= 60) return 70; return 40; }
+
+        function renderLifeIndex(fc) {
+            var d = fc.current || {};
+            var temp = d.temperature !== undefined ? d.temperature : 22;
+            var hum = d.humidity !== undefined ? d.humidity : 65;
+            var uv = d.uvIndex !== undefined ? d.uvIndex : 3;
+            var pressure = d.pressure || 1010;
+            var rainP = 30;
+            if (fc.hourly && fc.hourly.length > 0 && fc.hourly[0].precipitation !== undefined) rainP = fc.hourly[0].precipitation;
+
+            var s = { temp: scoreTemp(temp), hum: scoreHum(hum), sun: scoreSun(uv), rain: scoreRain(rainP) };
+            var total = Math.round((s.temp + s.hum + s.sun + s.rain) / 4);
+            if ($('cultScore')) $('cultScore').textContent = total;
+
+            // 墨迹同款 12 项指数（含花卉特色：浇花/晾晒）
+            var calmWind = d.windSpeed !== undefined && d.windSpeed < 20;
+            var items = [
+                { icon: 'shirt',        name: '穿衣指数',    tag: temp >= 28 ? '炎热' : (temp >= 22 ? '舒适' : (temp >= 15 ? '套装' : (temp >= 8 ? '夹衣' : '棉衣'))), val: s.temp },
+                { icon: 'dumbbell',     name: '运动指数',    tag: (temp >= 15 && temp <= 28 && rainP <= 40) ? '适宜' : '不太适宜', val: Math.round((s.temp + s.rain) / 2) },
+                { icon: 'sun',          name: '紫外线指数',  tag: uv >= 8 ? '很强' : (uv >= 6 ? '强' : (uv >= 3 ? '中等' : '弱')), val: s.sun },
+                { icon: 'heart-pulse',  name: '感冒指数',    tag: (temp <= 10 || hum >= 85) ? '易发' : '少发', val: (temp <= 10 || hum >= 85) ? 45 : 85 },
+                { icon: 'droplet',      name: '浇花指数',    tag: (hum < 40 && rainP <= 30 && temp >= 10 && temp <= 32) ? '适宜浇水' : '暂缓', val: (hum < 40 && rainP <= 30 && temp >= 10 && temp <= 32) ? 90 : 50 },
+                { icon: 'wind',         name: '晾晒指数',    tag: (rainP <= 20 && hum <= 60 && calmWind) ? '适宜晾晒' : '不宜', val: (rainP <= 20 && hum <= 60 && calmWind) ? 90 : 45 },
+                { icon: 'car',          name: '洗车指数',    tag: rainP <= 20 ? '适宜洗车' : '不宜洗车', val: scoreRain(rainP) },
+                { icon: 'fish',         name: '钓鱼指数',    tag: (pressure >= 1000 && calmWind) ? '较适宜' : '一般', val: (pressure >= 1000 && calmWind) ? 85 : 55 },
+                { icon: 'plane-takeoff',name: '旅游指数',    tag: (rainP <= 40 && temp >= 12 && temp <= 30) ? '适宜出游' : '注意天气', val: (rainP <= 40 && temp >= 12 && temp <= 30) ? 85 : 55 },
+                { icon: 'flower-2',     name: '过敏指数',    tag: (hum < 40 || uv >= 7) ? '较易发' : '不易发', val: (hum < 40 || uv >= 7) ? 45 : 85 },
+                { icon: 'snowflake',    name: '空调开启指数', tag: temp >= 30 ? '长时间开启' : (temp >= 26 ? '部分开启' : '较少开启'), val: temp >= 30 ? 90 : 65 },
+                { icon: 'sparkles',     name: '化妆指数',    tag: hum < 40 ? '干燥补水' : (hum > 80 ? '控油' : '滋润'), val: s.hum }
+            ];
+
+            // 墨迹配色：图标按冷暖着色（穿衣蓝/运动绿/紫外线橙…），评级白字 500、指数名 60% 白
+            var iconColors = ['#3d8bff', '#26b5a0', '#ff9500', '#ff6b6b', '#3d8bff', '#ffd54a',
+                              '#3d8bff', '#26b5a0', '#26b5a0', '#ff6b6b', '#5bc8ff', '#ff7eb6'];
+
+            var wrap = $('lifeIndex');
+            wrap.innerHTML = '';
+            // 两行，每行横滑（墨迹 .life-index-row × 2）
+            var half = Math.ceil(items.length / 2);
+            for (var r = 0; r < 2; r++) {
+                var row = document.createElement('div');
+                row.className = 'life-row';
+                var rowItems = items.slice(r * half, (r + 1) * half);
+                rowItems.forEach(function (it, idx) {
+                    var cell = document.createElement('div');
+                    cell.className = 'life-cell';
+                    var color = iconColors[(r * half + idx) % iconColors.length];
+                    cell.innerHTML =
+                        '<div class="li-icon"><i data-lucide="' + it.icon + '" class="w-[30px] h-[30px]" style="color:' + color + ';"></i></div>' +
+                        '<div class="li-text"><div class="li-level">' + it.tag + '</div><div class="li-name">' + it.name + '</div></div>';
+                    row.appendChild(cell);
+                });
+                wrap.appendChild(row);
+            }
+            lucide.createIcons();
+        }
+
+        /* ============ 逐小时（曲线 + 时间轴卡片） ============ */
+        var hourlyChart = null;
+        function renderHourly(fc) {
+            var wrap = $('hourlyForecast');
+            if (!wrap) return;
+            wrap.innerHTML = '';
+            var hourly = fc.hourly || [];
+            if (hourly.length === 0) {
+                wrap.innerHTML = '<span class="text-xs" style="color:var(--text-low);">暂无逐小时数据</span>';
+                return;
+            }
+            // 日出日落
+            if (fc.daily && fc.daily.length > 0) {
+                if ($('sunriseText')) $('sunriseText').textContent = fc.daily[0].sunrise || '--:--';
+                if ($('sunsetText')) $('sunsetText').textContent = fc.daily[0].sunset || '--:--';
+            }
+
+            var now = new Date().getHours();
+            var firstIdx = 0;
+            for (var i = 0; i < hourly.length; i++) { if (hourly[i].hour >= now) { firstIdx = i; break; } }
+            var count = Math.min(24, hourly.length - firstIdx);
+            var labels = [], data = [];
+            for (var j = 0; j < count; j++) {
+                var h = hourly[firstIdx + j];
+                var icon = weatherIconName(h.wmoCode, h.hour < 19 && h.hour >= 6);
+                var label = (j === 0) ? '现在' : (h.hour !== undefined ? h.hour + '时' : '');
+                var card = document.createElement('div');
+                card.className = 'flex flex-col items-center gap-1 px-2.5 py-2.5 rounded-xl flex-shrink-0 min-w-[54px]';
+                card.style.background = j === 0 ? 'rgba(255,149,0,0.12)' : 'rgba(255,255,255,0.04)';
+                card.innerHTML =
+                    '<span class="text-[11px]" style="color:' + (j === 0 ? 'var(--gd-accent)' : 'var(--text-mid)') + ';">' + label + '</span>' +
+                    '<i data-lucide="' + icon + '" class="w-5 h-5" style="color:var(--gd-accent);"></i>' +
+                    '<span class="text-[13px] font-semibold">' + (h.temperature !== undefined ? h.temperature : '--') + '°</span>' +
+                    '<span class="text-[10px]" style="color:var(--text-low);">' + (h.precipitation !== undefined && h.precipitation > 0 ? h.precipitation + '%' : '') + '</span>';
+                wrap.appendChild(card);
+                labels.push(label);
+                data.push(h.temperature !== undefined ? h.temperature : 0);
+            }
+            lucide.createIcons();
+
+            // 顶部温度曲线
+            var canvas = $('hourlyChart');
+            if (canvas && labels.length > 0) {
+                var ctx = canvas.getContext('2d');
+                var gradient = ctx.createLinearGradient(0, 0, 0, 110);
+                gradient.addColorStop(0, 'rgba(255,149,0,0.28)');
+                gradient.addColorStop(1, 'rgba(255,149,0,0)');
+                if (hourlyChart) hourlyChart.destroy();
+                hourlyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: labels, datasets: [{ data: data, borderColor: '#ff9500', backgroundColor: gradient, borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 4 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(23,29,43,0.95)', titleColor: '#fff', bodyColor: '#fff', displayColors: false, callbacks: { label: function (c) { return c.parsed.y + '°'; } } } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false, beginAtZero: false }
+                        }
+                    }
+                });
+            }
+        }
+
+        /* ============ 未来预报（折线/柱状 + 表格式列表） ============ */
+        var tempChart = null;
+        function renderDaily(fc) {
+            var daily = fc.daily || [];
+            var container = $('dailyList');
+            if (!container || daily.length === 0) return;
+            container.innerHTML = '';
+
+            // 表格式列表（墨迹：周几/日期 | 图标 | 温度区间 | 图标 | 风力）
+            daily.forEach(function (day, idx) {
+                var icon = weatherIconName(day.wmoCode, true);
+                var row = document.createElement('div');
+                row.className = 'flex items-center gap-2 px-2.5 py-2.5 rounded-xl' + (idx === 0 ? ' font-medium' : '');
+                row.style.background = idx === 0 ? 'rgba(255,149,0,0.10)' : 'rgba(255,255,255,0.04)';
+                row.innerHTML =
+                    '<div class="w-[52px] flex-shrink-0">' +
+                        '<p class="text-[12px] leading-tight">' + (day.weekDay || '') + '</p>' +
+                        '<p class="text-[10px]" style="color:var(--text-low);">' + (day.date ? day.date.slice(5) : '') + '</p>' +
+                    '</div>' +
+                    '<i data-lucide="' + icon + '" class="w-5 h-5 flex-shrink-0" style="color:var(--gd-accent);"></i>' +
+                    '<div class="flex-1 min-w-0 text-center">' +
+                        '<span class="text-[14px] font-semibold" style="color:#ff9500;">' + (day.temperatureMax !== undefined ? Math.round(day.temperatureMax) : '--') + '°</span>' +
+                        '<span class="text-[11px] mx-1" style="color:var(--text-low);">/</span>' +
+                        '<span class="text-[14px] font-semibold" style="color:#3d8bff;">' + (day.temperatureMin !== undefined ? Math.round(day.temperatureMin) : '--') + '°</span>' +
+                    '</div>' +
+                    '<span class="w-[64px] text-right text-[11px] flex-shrink-0" style="color:var(--text-low);">' + windLevel(day.windSpeedMax || 0) + '</span>';
+                container.appendChild(row);
+            });
+            lucide.createIcons();
+            renderTempChart(fc);
+        }
+
+        function renderTempChart(fc) {
+            var canvas = $('tempChart');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var daily = fc.daily || [];
+            var labels = [], maxData = [], minData = [];
+            daily.forEach(function (day) {
+                labels.push(day.weekDay || '');
+                maxData.push(day.temperatureMax !== undefined ? day.temperatureMax : 0);
+                minData.push(day.temperatureMin !== undefined ? day.temperatureMin : 0);
+            });
+            if (labels.length === 0) return;
+
+            var gradient = ctx.createLinearGradient(0, 0, 0, 160);
+            gradient.addColorStop(0, 'rgba(255,149,0,0.30)');
+            gradient.addColorStop(1, 'rgba(255,149,0,0)');
+
+            var datasets;
+            var type;
+            if (state.mode === 'line') {
+                type = 'line';
+                datasets = [
+                    { label: '最高', data: maxData, borderColor: '#ff9500', backgroundColor: gradient, borderWidth: 2, tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: '#ff9500' },
+                    { label: '最低', data: minData, borderColor: '#3d8bff', borderWidth: 2, tension: 0.4, fill: false, pointRadius: 3, pointBackgroundColor: '#3d8bff' }
+                ];
+            } else {
+                type = 'bar';
+                datasets = [
+                    { label: '最高', data: maxData, backgroundColor: 'rgba(255,149,0,0.65)', borderRadius: 5 },
+                    { label: '最低', data: minData, backgroundColor: 'rgba(61,139,255,0.55)', borderRadius: 5 }
+                ];
+            }
+
+            if (tempChart) { tempChart.destroy(); tempChart = null; }
+            tempChart = new Chart(ctx, {
+                type: type,
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: true, labels: { color: 'rgba(255,255,255,0.6)', boxWidth: 10, boxHeight: 10, font: { size: 10 } } },
+                        tooltip: { backgroundColor: 'rgba(23,29,43,0.95)', titleColor: '#fff', bodyColor: '#fff', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 10, callbacks: { label: function (c) { return c.dataset.label + ' ' + c.parsed.y + '°'; } } }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, border: { display: false }, ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.06)' }, border: { display: false }, ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 }, callback: function (v) { return v + '°'; } } }
+                    }
+                }
+            });
+        }
+
+        /* ============ 农事提醒 ============ */
+        function renderAlerts(alerts) {
+            var container = $('agriAlerts');
+            if (!container || !alerts || alerts.length === 0) return;
+            container.innerHTML = '';
+            var iconMap = { sun: 'sun', rain: 'cloud-rain', dry: 'droplet', humidity: 'cloud-fog', heat: 'thermometer-sun', cold: 'snowflake', wind: 'wind', ok: 'check-circle' };
+            var colorMap = { high: '#ff6b6b', medium: '#ff9500', good: '#26b5a0' };
+            alerts.forEach(function (a) {
+                var icon = iconMap[a.type] || 'bell';
+                var color = colorMap[a.level] || '#ff9500';
+                var row = document.createElement('div');
+                row.className = 'flex items-start gap-2.5 p-3 rounded-xl';
+                row.style.background = 'rgba(255,255,255,0.04)';
+                row.innerHTML =
+                    '<div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0" style="background:' + color + '22;">' +
+                    '<i data-lucide="' + icon + '" class="w-4 h-4" style="color:' + color + ';"></i></div>' +
+                    '<div class="flex-1 min-w-0">' +
+                    '<p class="text-[13px] font-medium">' + (a.title || '') + '</p>' +
+                    '<p class="text-[11px] mt-0.5 leading-relaxed" style="color:var(--text-mid);">' + (a.description || '') + '</p>' +
+                    '</div>';
+                container.appendChild(row);
+            });
+            lucide.createIcons();
+        }
+
+        /* ============ 数据加载 ============ */
+        async function loadWeatherRealData(city) {
+            city = city || state.city || '昆明';
+            try {
+                var curRaw = null, fcRaw = null, alRaw = null;
+                if (hasApi()) {
+                    curRaw = await window.flowerApi.getCurrentWeather(city);
+                    fcRaw = await window.flowerApi.getWeatherForecast(city, 10);
+                    alRaw = await window.flowerApi.getAgriAlerts(city);
+                }
+                var curD = safeParse(curRaw);
+                if (curD && curD.isSuccess && curD.data) { renderCurrent(curD.data); }
+                var fcD = safeParse(fcRaw);
+                if (fcD && fcD.isSuccess && fcD.data) {
+                    renderLifeIndex(fcD.data);
+                    renderHourly(fcD.data);
+                    renderDaily(fcD.data);
+                    // 降水概率（取当前时刻）
+                    if (fcD.data.hourly && fcD.data.hourly.length > 0 && $('gRain')) {
+                        var nowH = new Date().getHours();
+                        var h0 = fcD.data.hourly[0];
+                        for (var i = 0; i < fcD.data.hourly.length; i++) { if (fcD.data.hourly[i].hour >= nowH) { h0 = fcD.data.hourly[i]; break; } }
+                        $('gRain').textContent = (h0.precipitation !== undefined ? h0.precipitation : 0) + '%';
+                    }
+                }
+                var alD = safeParse(alRaw);
+                if (alD && alD.isSuccess && alD.data && alD.data.alerts) renderAlerts(alD.data.alerts);
+            } catch (e) { console.log('天气数据加载异常:', e); }
+        }
+
+        /* ============ 折线/柱状切换 ============ */
+        function bindChartTabs() {
+            $('tabLine').addEventListener('click', function () {
+                state.mode = 'line';
+                $('tabLine').style.background = 'var(--gd-accent)'; $('tabLine').style.color = '#fff';
+                $('tabBar').style.background = 'transparent'; $('tabBar').style.color = 'var(--text-mid)';
+                loadWeatherRealData();
+            });
+            $('tabBar').addEventListener('click', function () {
+                state.mode = 'bar';
+                $('tabBar').style.background = 'var(--gd-accent)'; $('tabBar').style.color = '#fff';
+                $('tabLine').style.background = 'transparent'; $('tabLine').style.color = 'var(--text-mid)';
+                loadWeatherRealData();
+            });
+        }
+
+        /* ============ 初始化 ============ */
+        function init() {
+            try {
+                var saved = localStorage.getItem('gd_weather_city');
+                if (saved) state.city = saved;
+                var fav = localStorage.getItem('gd_weather_fav');
+                if (fav) { var arr = JSON.parse(fav); if (Array.isArray(arr) && arr.length > 0) state.favCities = arr; }
+            } catch (e) {}
+            var loc = $('curLocCity'); if (loc) loc.textContent = state.city;
+            renderCityBar();
+            bindSearchEvents();
+            bindChartTabs();
+            // 动态城市列表
+            if (hasApi() && typeof window.flowerApi.getWeatherCities === 'function') {
+                window.flowerApi.getWeatherCities().then(function (raw) {
+                    var d = safeParse(raw);
+                    if (d && d.isSuccess && Array.isArray(d.data) && d.data.length > 0) CITY_LIST = d.data.slice();
+                }).catch(function () {});
+            }
+            loadWeatherRealData(state.city);
+            loadCityTemps();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

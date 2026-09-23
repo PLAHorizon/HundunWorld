@@ -1,6 +1,7 @@
 using FlaxEngine;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.ECS.Arch.Systems;
@@ -427,8 +428,16 @@ namespace HundunWorld.Game
             if (networkManager == null || !networkManager.CanSendMessage() || !networkManager.IsSyncHandshakeComplete)
                 return;
 
+            // 阶段 6.4 起 TakePendingResyncRequest 为实例方法（静态竞态修复）：从宿主取当前系统实例消费。
+            var snapshotSystem = HundunWorldGame.Instance?.ArchHost?
+                .GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.NetworkReceive)
+                .OfType<SnapshotApplySystem>()
+                .FirstOrDefault();
+            if (snapshotSystem == null)
+                return;
+
             BaselineResyncRequestPacket? req;
-            while ((req = SnapshotApplySystem.TakePendingResyncRequest()) != null)
+            while ((req = snapshotSystem.TakePendingResyncRequest()) != null)
             {
                 try
                 {

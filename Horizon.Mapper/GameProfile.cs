@@ -36,6 +36,7 @@ namespace Horizon.Mapper
                 
             CreateMap<CharacterEntity, CharacterInfo>()
                 .BeforeMap((c1, c2) => c2.CharacterId = (ulong)c1.Id)
+                .ForMember(dest => dest.CurrentHealth, opt => opt.MapFrom(src => src.Health))
                 .ForMember(dest => dest.Position, opt => opt.MapFrom(src => new Position 
                 { 
                     X = src.PositionX, 

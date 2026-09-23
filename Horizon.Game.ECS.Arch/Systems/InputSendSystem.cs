@@ -6,6 +6,7 @@ using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.ECS.Arch.SyncGuard.Contracts;
 using Horizon.Game.Message.Sync;
+using Microsoft.Extensions.Logging;
 
 namespace Horizon.Game.ECS.Arch.Systems;
 
@@ -266,7 +267,7 @@ public sealed class InputSendSystem : ArchSystemBase
         _diagFrameCount++;
         if (_diagFrameCount <= 3 || _diagFrameCount % 120 == 1)
         {
-            System.Diagnostics.Debug.WriteLine(
+            Log?.LogDebug(
                 $"[InputSendSystem] Update#{_diagFrameCount}: MatchedEntities={diagMatchedEntities}, GeneratedPackets={diagGeneratedPackets}, LastAckedTick={_lastAckedClientTick}");
         }
     }

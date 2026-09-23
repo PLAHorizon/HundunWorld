@@ -25,7 +25,7 @@ namespace Horizon.Game.GengDi.Core.Services
     /// </summary>
     internal sealed class ImGatewayContactClient : IDisposable, IAsyncDisposable
     {
-        private const string DefaultHost = "192.168.1.78";
+        private const string DefaultHost = "127.0.0.1";
         private const int DefaultPort = 31000;
         private const int MaxRetryAttempts = 2;
         private const int ConnectTimeoutSeconds = 8;
@@ -50,6 +50,8 @@ namespace Horizon.Game.GengDi.Core.Services
 
         public event EventHandler<IMSystemNotificationMessage> SystemNotificationReceived;
         public event EventHandler<IMPrivateChatNotifyMessage> PrivateChatReceived;
+        /// <summary>消息撤回推送（自己撤回的多端同步 / 对方撤回）</summary>
+        public event EventHandler<IMChatRecallMessage> MessageRecallReceived;
         public event EventHandler<IMGroupChatNotifyMessage> GroupChatReceived;
         public event EventHandler<IMContactOnlineStatusMessage> ContactOnlineStatusReceived;
         public event EventHandler<IMContactProfileUpdateMessage> ContactProfileUpdateReceived;
@@ -414,6 +416,33 @@ namespace Horizon.Game.GengDi.Core.Services
             };
 
             return SendAsync<IMChatAckMessage>(request, senderId, cancellationToken);
+        }
+
+        /// <summary>
+        /// 撤回私聊消息（服务端校验 2 分钟窗口与发送者身份；成功不回包，
+        /// 撤回生效通知经 MessageRecallReceived 事件推送回本端与对端）。单向发送，失败仅记录日志。
+        /// </summary>
+        public Task RecallMessageAsync(
+            ulong userId,
+            string serverMessageId,
+            ulong peerId,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(serverMessageId))
+            {
+                throw new ArgumentException("被撤回消息的服务端消息ID不能为空。", nameof(serverMessageId));
+            }
+
+            var request = new IMChatRecallMessage
+            {
+                RecalledMessageId = serverMessageId,
+                UserId = userId,
+                PeerId = peerId,
+                ChatRelationType = IMChatRelationType.Friend,
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+
+            return SendFireAndForgetAsync(request, userId, cancellationToken);
         }
 
         public Task<IMChatAckMessage> SendGroupChatAsync(
@@ -866,6 +895,10 @@ namespace Horizon.Game.GengDi.Core.Services
 
                 _sharedClient = newClient;
                 _isSharedClientConnected = true;
+                // 共享连接建立后立即心跳绑定用户并周期保活：
+                // 网关仅对携带心跳的连接绑定用户身份并注册主动推送，
+                // 该冗余通道可保证订阅连接异常时来电等推送仍可达。
+                _ = RunSharedClientHeartbeatAsync(newClient);
                 return newClient;
             }
             finally
@@ -913,6 +946,10 @@ namespace Horizon.Game.GengDi.Core.Services
                 else if (packet.Body is IMPrivateChatNotifyMessage privateChatNotification)
                 {
                     PrivateChatReceived?.Invoke(this, privateChatNotification);
+                }
+                else if (packet.Body is IMChatRecallMessage recallNotification)
+                {
+                    MessageRecallReceived?.Invoke(this, recallNotification);
                 }
                 else if (packet.Body is IMGroupChatNotifyMessage groupChatNotification)
                 {
@@ -1186,8 +1223,69 @@ namespace Horizon.Game.GengDi.Core.Services
             return client;
         }
 
+        /// <summary>
+        /// 共享连接心跳循环：建立即发送一次心跳完成用户绑定，随后每 15 秒保活。
+        /// 连接断开（Closed 置 _isSharedClientConnected=false）或被重建（_sharedClient 换新实例）时自动退出。
+        /// </summary>
+        private async Task RunSharedClientHeartbeatAsync(ImGatewaySharedClient client)
+        {
+            var userId = _notificationUserId;
+            if (userId == 0)
+            {
+                // 连接早于 StartRealtimeNotificationsAsync 建立（如登录后立即拉取花名册）：
+                // 限时等待通知用户就绪后再开始心跳绑定，避免该连接错过推送注册。
+                using var waitTimer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+                var deadline = DateTime.UtcNow.AddSeconds(60);
+                while (DateTime.UtcNow < deadline && !_disposed && ReferenceEquals(_sharedClient, client))
+                {
+                    if (!await waitTimer.WaitForNextTickAsync().ConfigureAwait(false))
+                    {
+                        break;
+                    }
+
+                    userId = _notificationUserId;
+                    if (userId != 0)
+                    {
+                        break;
+                    }
+                }
+
+                if (userId == 0)
+                {
+                    return;
+                }
+            }
+
+            try
+            {
+                await SendHeartbeatAsync(client, userId, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch
+            {
+                return; // 发送失败说明连接不可用，Closed 回调会将连接标记为断开
+            }
+
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+            while (ReferenceEquals(_sharedClient, client) && _isSharedClientConnected && !_disposed)
+            {
+                try
+                {
+                    if (!await timer.WaitForNextTickAsync().ConfigureAwait(false))
+                    {
+                        break;
+                    }
+
+                    await SendHeartbeatAsync(client, userId, CancellationToken.None).ConfigureAwait(false);
+                }
+                catch
+                {
+                    break;
+                }
+            }
+        }
+
         private static async Task SendHeartbeatAsync(
-            ImGatewaySubscriptionClient client,
+            TouchSocketTcpClient client,
             ulong userId,
             CancellationToken cancellationToken)
         {

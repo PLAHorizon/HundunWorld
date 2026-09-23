@@ -17,9 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 修复（分层）：存储层只依赖零项目依赖的 Core.Abstract，不再反向依赖 Horizon.Game.Core/World/Message。
+         4 个纯接口（ICharacterPresenceStore/ICharacterPositionStore/ICorrectionCounterStore/
+         ICharacterFingerprintService）已下沉到 Core.Abstract（保持原命名空间，见 Core.Abstract/Storage）。 -->
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
-    <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
-    <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
   </ItemGroup>
 
 </Project>

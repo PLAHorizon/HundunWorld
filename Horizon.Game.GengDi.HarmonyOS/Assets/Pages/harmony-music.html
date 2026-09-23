@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙音乐播放器 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen bg-background text-foreground relative overflow-hidden flex flex-col">
+        <style>
+            /* 专辑封面旋转动画 */
+            @keyframes hm-spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+            .hm-disc-spin { animation: hm-spin 24s linear infinite; }
+
+            /* 波形可视化动画 */
+            @keyframes hm-wave {
+                0%, 100% { transform: scaleY(0.18); }
+                50% { transform: scaleY(1); }
+            }
+            .hm-wave-bar {
+                display: inline-block;
+                width: 3px;
+                height: 100%;
+                border-radius: 9999px;
+                background: linear-gradient(to top, var(--gd-brand-600), var(--gd-brand-300));
+                animation-name: hm-wave;
+                animation-timing-function: ease-in-out;
+                animation-iteration-count: infinite;
+                transform-origin: bottom center;
+            }
+
+            /* 播放按钮光晕脉动 */
+            @keyframes hm-glow {
+                0%, 100% { opacity: 0.45; transform: scale(1); }
+                50% { opacity: 0.7; transform: scale(1.08); }
+            }
+            .hm-play-glow { animation: hm-glow 2.4s ease-in-out infinite; }
+        </style>
+
+        <!-- 背景氛围光晕 -->
+        <div class="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full pointer-events-none"
+             style="background: radial-gradient(circle, rgba(41, 98, 255, 0.28) 0%, transparent 65%); filter: blur(50px);"></div>
+        <div class="absolute bottom-[-60px] left-[-40px] w-[260px] h-[260px] rounded-full pointer-events-none"
+             style="background: radial-gradient(circle, rgba(31, 79, 214, 0.18) 0%, transparent 65%); filter: blur(40px);"></div>
+
+        <!-- 鸿蒙导航栏（磨砂玻璃） -->
+        <div class="relative z-20 backdrop-blur-xl bg-card/50 border-b border-border/40">
+            <div class="flex items-center justify-between px-3 h-14">
+                <button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-secondary/40 active:scale-95 transition-all" aria-label="返回">
+                    <i data-lucide="arrow-left" class="w-6 h-6 text-foreground"></i>
+                </button>
+                <h1 class="text-lg font-semibold text-foreground">正在播放</h1>
+                <button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-secondary/40 active:scale-95 transition-all" aria-label="播放列表">
+                    <i data-lucide="list-music" class="w-6 h-6 text-foreground"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="relative z-10 flex-1 flex flex-col px-5 pb-6 pt-5 gap-5 overflow-y-auto no-scrollbar">
+
+            <!-- 专辑封面（256px，品牌蓝渐变，旋转，光晕） -->
+            <div class="flex justify-center pt-1 pb-1">
+                <div class="relative">
+                    <!-- 外层光晕 -->
+                    <div class="absolute inset-0 rounded-3xl hm-play-glow"
+                         style="background: linear-gradient(135deg, var(--gd-brand-600), var(--gd-brand-500)); filter: blur(28px); transform: scale(1.12);"></div>
+                    <!-- 封面主体 -->
+                    <div class="relative w-64 h-64 rounded-3xl overflow-hidden shadow-2xl"
+                         style="background: linear-gradient(135deg, var(--gd-brand-600), var(--gd-brand-500));">
+                        <!-- 装饰圆环 -->
+                        <div class="absolute inset-0 opacity-25">
+                            <div class="absolute top-6 left-6 w-16 h-16 rounded-full border-2 border-white"></div>
+                            <div class="absolute bottom-8 right-8 w-12 h-12 rounded-full border-2 border-white"></div>
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border border-white/70"></div>
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border border-white/50"></div>
+                        </div>
+                        <!-- 旋转的黑胶图案 -->
+                        <div class="absolute inset-0 flex items-center justify-center hm-disc-spin">
+                            <div class="w-36 h-36 rounded-full border-4 border-white/20 flex items-center justify-center">
+                                <div class="w-24 h-24 rounded-full border-2 border-white/30 flex items-center justify-center">
+                                    <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                        <i data-lucide="music" class="w-5 h-5" style="color: var(--gd-brand-600);"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 歌曲信息 + 收藏 -->
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-foreground truncate">花间一壶酒</h2>
+                    <p class="text-base text-muted-foreground mt-0.5 truncate">花语乐队</p>
+                </div>
+                <button class="w-12 h-12 flex items-center justify-center rounded-full bg-secondary/40 hover:bg-secondary/70 active:scale-95 transition-all shrink-0" aria-label="收藏">
+                    <i data-lucide="heart" class="w-6 h-6" style="color: var(--gd-brand-500); fill: var(--gd-brand-500);"></i>
+                </button>
+            </div>
+
+            <!-- 波形可视化（36根竖条） -->
+            <div class="flex items-end justify-center gap-[3px] h-12 px-2" id="waveform"></div>
+
+            <!-- 鸿蒙Slider进度条 -->
+            <div>
+                <div class="relative h-1.5 rounded-full bg-secondary/80">
+                    <!-- 已播放进度 -->
+                    <div class="absolute left-0 top-0 h-full rounded-full"
+                         style="width: 34%; background: linear-gradient(90deg, var(--gd-brand-600), var(--gd-brand-500));"></div>
+                    <!-- 滑块手柄 -->
+                    <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-lg ring-2"
+                         style="left: calc(34% - 8px); --tw-ring-color: var(--gd-brand-500);"></div>
+                </div>
+                <div class="flex justify-between mt-2.5 text-xs text-muted-foreground font-mono">
+                    <span>1:23</span>
+                    <span>4:05</span>
+                </div>
+            </div>
+
+            <!-- 播放控制 -->
+            <div class="flex items-center justify-between px-1">
+                <button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-secondary/40 active:scale-90 transition-all" aria-label="随机播放">
+                    <i data-lucide="shuffle" class="w-5 h-5 text-muted-foreground"></i>
+                </button>
+                <button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-secondary/40 active:scale-90 transition-all" aria-label="上一首">
+                    <i data-lucide="skip-back" class="w-7 h-7 text-foreground" style="fill: currentColor;"></i>
+                </button>
+                <!-- 播放/暂停大按钮（64px品牌蓝，带光晕） -->
+                <button class="relative w-16 h-16 flex items-center justify-center rounded-full active:scale-95 transition-transform" aria-label="播放/暂停">
+                    <div class="absolute inset-0 rounded-full hm-play-glow"
+                         style="background: var(--gd-brand-500); filter: blur(12px);"></div>
+                    <div class="relative w-16 h-16 flex items-center justify-center rounded-full shadow-xl"
+                         style="background: linear-gradient(135deg, var(--gd-brand-600), var(--gd-brand-500));">
+                        <i data-lucide="pause" class="w-8 h-8 text-white" style="fill: currentColor;"></i>
+                    </div>
+                </button>
+                <button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-secondary/40 active:scale-90 transition-all" aria-label="下一首">
+                    <i data-lucide="skip-forward" class="w-7 h-7 text-foreground" style="fill: currentColor;"></i>
+                </button>
+                <button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-secondary/40 active:scale-90 transition-all" aria-label="循环播放">
+                    <i data-lucide="repeat" class="w-5 h-5 text-muted-foreground"></i>
+                </button>
+            </div>
+
+            <!-- 底部功能栏 -->
+            <div class="grid grid-cols-4 gap-1.5 rounded-3xl bg-card/50 backdrop-blur-md border border-border/40 p-2">
+                <button class="flex flex-col items-center gap-1.5 py-2.5 hover:bg-secondary/30 rounded-2xl active:scale-95 transition-all">
+                    <i data-lucide="list" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-xs text-muted-foreground">播放列表</span>
+                </button>
+                <button class="flex flex-col items-center gap-1.5 py-2.5 hover:bg-secondary/30 rounded-2xl active:scale-95 transition-all">
+                    <i data-lucide="timer" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-xs text-muted-foreground">定时</span>
+                </button>
+                <button class="flex flex-col items-center gap-1.5 py-2.5 hover:bg-secondary/30 rounded-2xl active:scale-95 transition-all">
+                    <i data-lucide="volume-2" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-xs text-muted-foreground">音质</span>
+                </button>
+                <button class="flex flex-col items-center gap-1.5 py-2.5 hover:bg-secondary/30 rounded-2xl active:scale-95 transition-all">
+                    <i data-lucide="share-2" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-xs text-muted-foreground">分享</span>
+                </button>
+            </div>
+
+            <!-- 迷你播放列表（磨砂玻璃卡片） -->
+            <div class="rounded-3xl bg-card/60 backdrop-blur-md border border-border/40 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-foreground">播放列表</h3>
+                    <span class="text-xs text-muted-foreground font-mono">3 首</span>
+                </div>
+                <div class="space-y-1">
+                    <!-- 当前播放 -->
+                    <div class="flex items-center gap-3 p-2 rounded-2xl" style="background: rgba(41, 98, 255, 0.10);">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                             style="background: linear-gradient(135deg, var(--gd-brand-600), var(--gd-brand-500));">
+                            <i data-lucide="music" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-semibold truncate" style="color: var(--gd-brand-500);">花间一壶酒</div>
+                            <div class="text-xs text-muted-foreground truncate">花语乐队</div>
+                        </div>
+                        <!-- 正在播放指示动画 -->
+                        <div class="flex items-end gap-[2px] h-4 mr-1">
+                            <span class="w-[3px] rounded-full" style="background: var(--gd-brand-500); height: 50%; animation: hm-wave 0.9s ease-in-out infinite; transform-origin: bottom;"></span>
+                            <span class="w-[3px] rounded-full" style="background: var(--gd-brand-500); height: 100%; animation: hm-wave 0.9s ease-in-out infinite 0.2s; transform-origin: bottom;"></span>
+                            <span class="w-[3px] rounded-full" style="background: var(--gd-brand-500); height: 70%; animation: hm-wave 0.9s ease-in-out infinite 0.4s; transform-origin: bottom;"></span>
+                        </div>
+                    </div>
+                    <!-- 其他歌曲 -->
+                    <div class="flex items-center gap-3 p-2 rounded-2xl hover:bg-secondary/30 active:scale-[0.98] transition-all cursor-pointer">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-secondary">
+                            <i data-lucide="music" class="w-5 h-5 text-muted-foreground"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-foreground truncate">春暖花开</div>
+                            <div class="text-xs text-muted-foreground truncate">绿叶组合</div>
+                        </div>
+                        <span class="text-xs text-muted-foreground font-mono">3:42</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 rounded-2xl hover:bg-secondary/30 active:scale-[0.98] transition-all cursor-pointer">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-secondary">
+                            <i data-lucide="music" class="w-5 h-5 text-muted-foreground"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-foreground truncate">花开富贵</div>
+                            <div class="text-xs text-muted-foreground truncate">民乐坊</div>
+                        </div>
+                        <span class="text-xs text-muted-foreground font-mono">4:18</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        // 波形可视化：生成36根竖条，随机延迟与持续时间
+        (function () {
+            var waveform = document.getElementById('waveform');
+            if (!waveform) return;
+            var barCount = 36;
+            for (var i = 0; i < barCount; i++) {
+                var bar = document.createElement('span');
+                bar.className = 'hm-wave-bar';
+                var delay = (Math.random() * 1.2).toFixed(2);
+                var duration = (0.7 + Math.random() * 0.7).toFixed(2);
+                bar.style.animationDelay = delay + 's';
+                bar.style.animationDuration = duration + 's';
+                waveform.appendChild(bar);
+            }
+        })();
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -190,6 +190,26 @@ namespace Horizon.Orleans.Grains
             }
         }
 
+        /// <summary>
+        /// 清空价格历史与当前预测。
+        /// 数据源切换迁移用：旧市场（如朝阳）口径的历史序列会污染涨跌幅/走势图/预测基线，
+        /// 清空后由 DounanMarketDataFetcher 冷启动回填逻辑重建纯斗南口径历史。
+        /// </summary>
+        public async Task ClearPriceHistoryAsync()
+        {
+            var speciesId = this.GetPrimaryKeyLong();
+            var removed = _speciesState.State.PriceHistory?.Count ?? 0;
+
+            _speciesState.State.PriceHistory = new List<FlowerPriceSnapshot>();
+            _speciesState.State.CurrentForecast = null;
+            _speciesState.State.LastPredictionTime = default;
+
+            await _speciesState.WriteStateAsync();
+
+            _logger.LogInformation("清空价格历史（数据源迁移）: SpeciesId={SpeciesId}, RemovedEntries={RemovedEntries}",
+                speciesId, removed);
+        }
+
         public async Task<PlantingSuggestion> GetPlantingSuggestionAsync()
         {
             try

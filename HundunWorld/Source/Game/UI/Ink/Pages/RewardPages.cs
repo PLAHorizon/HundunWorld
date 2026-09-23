@@ -23,7 +23,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private const float PanelWidth = 400f;
 
         /// <summary>居中抬升面板高度（像素）</summary>
-        private const float PanelHeight = 360f;
+        private const float PanelHeight = 452f;
 
         /// <summary>成就图标尺寸（正方形，像素）</summary>
         private const float CellSize = 80f;
@@ -32,13 +32,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private const float CellX = 160f;
 
         /// <summary>成就图标 Y 坐标</summary>
-        private const float CellY = 40f;
+        private const float CellY = 64f;
 
         /// <summary>成就名文本 X 坐标（面板内水平居中：(400-320)/2 = 40）</summary>
         private const float NameX = 40f;
 
         /// <summary>成就名文本 Y 坐标</summary>
-        private const float NameY = 140f;
+        private const float NameY = 156f;
 
         /// <summary>成就名文本宽度</summary>
         private const float NameWidth = 320f;
@@ -50,19 +50,19 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private const float DescX = 40f;
 
         /// <summary>成就描述文本 Y 坐标</summary>
-        private const float DescY = 200f;
+        private const float DescY = 196f;
 
         /// <summary>成就描述文本宽度</summary>
         private const float DescWidth = 320f;
 
         /// <summary>成就描述文本高度</summary>
-        private const float DescHeight = 60f;
+        private const float DescHeight = 44f;
 
         /// <summary>"领取"按钮 X 坐标（面板内水平居中：(400-160)/2 = 120）</summary>
         private const float ClaimX = 120f;
 
         /// <summary>"领取"按钮 Y 坐标</summary>
-        private const float ClaimY = 290f;
+        private const float ClaimY = 356f;
 
         /// <summary>"领取"按钮宽度</summary>
         private const float ClaimWidth = 160f;
@@ -106,6 +106,24 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
         /// <summary>"领取"按钮</summary>
         private InkButton _claimButton;
+
+        /// <summary>弹窗标题（成就解锁）</summary>
+        private InkTextBlock _titleText;
+
+        /// <summary>解锁奖励小节标题</summary>
+        private InkTextBlock _rewardSectionTitle;
+
+        /// <summary>奖励行容器</summary>
+        private InkPanel _rewardRow;
+
+        /// <summary>奖励名称（初心者称号）</summary>
+        private InkTextBlock _rewardName;
+
+        /// <summary>奖励状态（已获得）</summary>
+        private InkTextBlock _rewardAmount;
+
+        /// <summary>传送解锁链接文案</summary>
+        private InkTextBlock _teleportLinkText;
 
         // ===================================================================
         // 屏幕尺寸缓存与动画时间
@@ -155,9 +173,11 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
                 // 4. 面板内子控件（光晕先于图标添加，确保图标绘制于光晕之上）
                 BuildGlow();
+                BuildTitleText();
                 BuildIconCell();
                 BuildNameText();
                 BuildDescText();
+                BuildRewardSection();
                 BuildClaimButton();
 
                 // 5. 应用初始布局（基于屏幕尺寸居中面板）
@@ -212,11 +232,87 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <see cref="InkTextBlock"/> Display 样式，文本"江湖初悟"，
         /// 位置 (40, 140)，宽度 320，水平居中。
         /// </summary>
+        /// <summary>
+        /// 弹窗标题「成就解锁」（设计稿 .modal-title）。
+        /// </summary>
+        private void BuildTitleText()
+        {
+            _titleText = new InkTextBlock(InkTextStyle.Heading)
+            {
+                Text = "成就解锁",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(40f, 16f),
+                Size = new Float2(320f, 28f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.TextBrand,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 20f),
+            };
+            _panel.AddChild(_titleText);
+        }
+
+        /// <summary>
+        /// 解锁奖励区（设计稿：小节标题「解锁奖励」+ 奖励项「初心者称号 / 已获得」+ 传送解锁链接文案）。
+        /// </summary>
+        private void BuildRewardSection()
+        {
+            _rewardSectionTitle = new InkTextBlock(InkTextStyle.Subheading)
+            {
+                Text = "解锁奖励",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(40f, 248f),
+                Size = new Float2(320f, 20f),
+                TextColor = InkWashTheme.TextBrand,
+            };
+            _panel.AddChild(_rewardSectionTitle);
+
+            _rewardRow = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(40f, 272f),
+                Size = new Float2(320f, 36f),
+                Radius = InkWashTheme.RadiusMd,
+                BackgroundColor = InkWashTheme.BgHover,
+            };
+            _panel.AddChild(_rewardRow);
+
+            _rewardName = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "初心者称号",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(12f, 9f),
+                Size = new Float2(200f, 18f),
+                TextColor = InkWashTheme.TextDefault,
+            };
+            _rewardRow.AddChild(_rewardName);
+
+            _rewardAmount = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "已获得",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(212f, 9f),
+                Size = new Float2(96f, 18f),
+                HorizontalAlignment = TextAlignment.Far,
+                TextColor = InkWashTheme.TextJade,
+            };
+            _rewardRow.AddChild(_rewardAmount);
+
+            _teleportLinkText = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "已解锁传送功能 · 前往查看",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(40f, 316f),
+                Size = new Float2(320f, 18f),
+                HorizontalAlignment = TextAlignment.Center,
+                TextColor = InkWashTheme.TextTertiary,
+            };
+            _panel.AddChild(_teleportLinkText);
+        }
+
         private void BuildNameText()
         {
             _nameText = new InkTextBlock(InkTextStyle.Display)
             {
-                Text = "江湖初悟",
+                Text = "初入江湖",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(NameX, NameY),
                 Size = new Float2(NameWidth, NameHeight),
@@ -235,7 +331,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         {
             _descText = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = "完成首次江湖历练，领悟武学真意",
+                Text = "首次踏入江湖世界，开启你的武侠之旅。",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(DescX, DescY),
                 Size = new Float2(DescWidth, DescHeight),
@@ -257,7 +353,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Primary,
                 ButtonSize = InkButtonSize.Lg,
-                Text = "领取",
+                Text = "前往查看",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(ClaimX, ClaimY),
                 Size = new Float2(ClaimWidth, ClaimHeight),
@@ -1351,6 +1447,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkTextBlock _areaSubText;
         private InkTextBlock _descText;
         private InkPanel _previewPanel;
+        private InkTextBlock _rewardSectionTitle;
         private InkPanel[] _rewardRows;
         private InkTextBlock[] _rewardLabels;
         private InkTextBlock[] _rewardValues;
@@ -1496,6 +1593,17 @@ namespace HundunWorld.Game.UI.Ink.Pages
             string[] values = { "经验 ×3000", "铜钱 ×1000", "元宝 ×100" };
 
             float rowStartX = (PanelWidth - 432f) * 0.5f;
+
+            // 设计稿小节标题「探索奖励」（reward-map-unlock.html）
+            _rewardSectionTitle = new InkTextBlock(InkTextStyle.Subheading)
+            {
+                Text = "探索奖励",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(rowStartX, RewardsY - 28f),
+                Size = new Float2(432f, 20f),
+                TextColor = InkWashTheme.TextBrand,
+            };
+            _panel.AddChild(_rewardSectionTitle);
 
             for (int i = 0; i < 3; i++)
             {

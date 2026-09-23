@@ -690,7 +690,10 @@
         <Setter Property="MinWidth" Value="0" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Medium" />
-        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusFull}" />
+        <!-- 注意：不能用 GdRadiusFull(9999)——Avalonia 对超尺寸圆角按轴钳制
+             (rx=宽/2, ry=高/2)，会把宽扁按钮渲染成椭圆而非胶囊。
+             参照设计稿做法（商城 GdCatPill：h36 r18），固定 18。 -->
+        <Setter Property="CornerRadius" Value="18" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>

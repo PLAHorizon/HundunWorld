@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "ohos-module-entry": {
+    "SELECT_TARGET": "default",
+    "MODULE_BUILD_DIR": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build",
+    "TARGETS": {
+      "default": {
+        "SOURCE_ROOT": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\src\\main",
+        "RESOURCES_PATH": [
+          "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\src\\main\\resources"
+        ],
+        "BUILD_PATH": {
+          "OUTPUT_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\outputs\\default",
+          "INTERMEDIA_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates",
+          "JS_ASSETS_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates\\loader_out\\default",
+          "JS_LITE_ASSETS_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates\\loader_out_lite\\default",
+          "RES_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates\\res\\default",
+          "RES_PROFILE_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates\\res\\default\\resources\\base\\profile",
+          "ETS_SUPER_VISUAL_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\cache\\default\\default@CompileArkTS\\esmodule",
+          "JS_SUPER_VISUAL_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\cache\\default\\default@CompileJS\\jsbundle",
+          "WORKER_LOADER": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates\\loader\\default\\loader.json",
+          "MANIFEST_JSON": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates\\manifest\\default",
+          "OUTPUT_METADATA_JSON": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates\\hap_metadata\\default\\output_metadata.json",
+          "SOURCE_MAP_DIR": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry\\build\\default\\intermediates\\source_map\\default"
+        },
+        "BUILD_OPTION": {
+          "debuggable": true
+        }
+      }
+    },
+    "BUILD_OPTION": {
+      "default-default": {
+        "debuggable": true,
+        "copyFrom": "default",
+        "name": "debug"
+      }
+    },
+    "BUILD_PROFILE_OPT": {
+      "apiType": "stageMode",
+      "buildOption": {},
+      "buildOptionSet": [
+        {
+          "name": "release",
+          "arkOptions": {
+            "obfuscation": {
+              "ruleOptions": {
+                "enable": false,
+                "files": [
+                  "./obfuscation-rules.txt"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "name": "default"
+        },
+        {
+          "name": "debug"
+        }
+      ],
+      "targets": [
+        {
+          "name": "default",
+          "runtimeOS": "HarmonyOS"
+        }
+      ]
+    },
+    "BUILD_CACHE_DIR": ""
+  },
+  "ohos-project": {
+    "SELECT_PRODUCT_NAME": "default",
+    "MODULE_BUILD_DIR": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\build",
+    "BUNDLE_NAME": "com.horizon.gengdi.harmonyos",
+    "VERSION_CODE": 1000000,
+    "VERSION_NAME": "1.0.0",
+    "BUILD_PATH": {
+      "OUTPUT_PATH": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\build\\outputs\\default"
+    },
+    "MODULES": [
+      {
+        "name": "entry",
+        "srcPath": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS\\entry",
+        "targets": [
+          {
+            "name": "default",
+            "applyToProducts": [
+              "default"
+            ]
+          }
+        ],
+        "belongProjectPath": "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS"
+      }
+    ],
+    "PROFILE_OPT": {
+      "app": {
+        "signingConfigs": [
+          {
+            "name": "default",
+            "type": "HarmonyOS",
+            "material": {
+              "certpath": "C:\\Users\\33011\\.ohos\\config\\default_ArkTS_3iF_d7gcKja6x-Zk81IHhvsJkRzcVKLTftQZst7UDSA=.cer",
+              "keyAlias": "debugKey",
+              "keyPassword": "0000001B012779BB82723A7083BBBFF9BCAA1EC2FDCFCB471C0B33750B81A201C4B9AC6991493B7E07CE41",
+              "profile": "C:\\Users\\33011\\.ohos\\config\\default_ArkTS_3iF_d7gcKja6x-Zk81IHhvsJkRzcVKLTftQZst7UDSA=.p7b",
+              "signAlg": "SHA256withECDSA",
+              "storeFile": "C:\\Users\\33011\\.ohos\\config\\default_ArkTS_3iF_d7gcKja6x-Zk81IHhvsJkRzcVKLTftQZst7UDSA=.p12",
+              "storePassword": "0000001BC1EDE21DB62F4DA473DE1393BF9D629F90B28073F78239079C1E9F3E47F039816E8A38E3462E0D"
+            }
+          }
+        ],
+        "products": [
+          {
+            "name": "default",
+            "signingConfig": "default",
+            "compatibleSdkVersion": "6.1.1(24)",
+            "targetSdkVersion": "6.1.1(24)",
+            "runtimeOS": "HarmonyOS"
+          }
+        ],
+        "buildModeSet": [
+          {
+            "name": "debug"
+          },
+          {
+            "name": "release"
+          }
+        ]
+      },
+      "modules": [
+        {
+          "name": "entry",
+          "srcPath": "./entry",
+          "targets": [
+            {
+              "name": "default",
+              "applyToProducts": [
+                "default"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "CONFIG_PROPERTIES": {
+      "enableSignTask": true,
+      "skipNativeIncremental": false,
+      "hvigor.keepDependency": true
+    },
+    "OVERALL_PROJECT_PATHS": [
+      "C:\\Works\\GitHubProjects\\20260801\\Horizon.Game.GengDi.HarmonyOS\\ArkTS"
+    ],
+    "BUILD_CACHE_DIR": ""
+  }
+}

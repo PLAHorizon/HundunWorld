@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Horizon.Game.Message.Generator —— 消息 union 注册源生成器（A2 生成链路）。
+
+    ⚠️ 本文件是**重建**产物。原项目从未入库（磁盘与 git 均无），
+       仅存一处引用：Horizon.Game.Message.csproj 的
+         <ProjectReference Include="..\Horizon.Game.Message.Generator\..." OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+       缺它时 Message.csproj 报 MSB9008，测试项目报 CS0103: UnionKinds 不存在（9 处）。
+
+    契约来源（三处，非猜测）：
+      1. UnionRegistrationParityTests.cs —— 断言 UnionKinds 与手写 [MemoryPackUnion] 双射一致；
+      2. NetworkMessageAttribute.cs 的 XML 注释 —— 「生成 UnionKinds 常量表」「tag 冲突由 HZN001 拦截」；
+      3. MessageUnion.cs 的 // <generated-union-block> ... // </generated-union-block> 标记对。
+
+    关键约束（踩坑说明）：
+      · netstandard2.0 —— Roslyn 分析器加载进编译器进程，必须是 netstandard2.0，不能是 net10.0；
+      · 不引 MemoryPack/Orleans —— 生成文本，编译期不解析这些类型，避免把 BCL 绑进分析器；
+      · 关闭 CPM 自动注入 —— 分析器项目不能被 Directory.Packages.props 的版本集绑住 BCL 版本。
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- 分析器项目刻意不参与中央包管理：版本由本文件夹内 PackageReference 显式钉死。 -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <NoWarn>$(NoWarn);RS1035;RS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- 解决方案编译后，把本分析器 DLL 分发到 Flax 引擎托管工具目录（按需求统一处理）。
+       注：本项是 netstandard2.0 的 Roslyn 源生成器（仅编译期使用），
+       刻意不加入客户端运行时列表（Game.Build.cs 的 dlls[] / Game.csproj 的 <Reference>）。
+       - FlaxToolsDir / CopyToFlax 均可在命令行覆盖（-p:CopyToFlax=false 关闭分发）；
+       - 仅当目标目录存在时才执行；写入 Program Files 失败按警告处理，不阻断编译。 -->
+  <PropertyGroup>
+    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
+    <CopyToFlax Condition="'$(CopyToFlax)' == ''">true</CopyToFlax>
+  </PropertyGroup>
+
+  <Target Name="CopyToFlax" AfterTargets="Build"
+          Condition="'$(CopyToFlax)' == 'true' And Exists('$(FlaxToolsDir)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+          Condition="Exists('$(TargetDir)$(TargetName).pdb')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Message Importance="high" Text="[CopyToFlax] $(TargetFileName) -&gt; $(FlaxToolsDir)" />
+  </Target>
+
+</Project>

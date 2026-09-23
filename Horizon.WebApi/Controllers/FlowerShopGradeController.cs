@@ -3,6 +3,8 @@ using Horizon.Core.Options;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,6 +13,7 @@ using Orleans;
 using Orleans.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Horizon.WebApi.Controllers
@@ -33,14 +36,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ResultVM<List<ShopGradeState>>> GetAllGrades()
+        public async Task<ResultVM<List<ShopGradeDto>>> GetAllGrades()
         {
-            var result = new ResultVM<List<ShopGradeState>>();
+            var result = new ResultVM<List<ShopGradeDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IShopGradeGrain>(0);
-                result.Data = await grain.GetAllShopGradesAsync();
+                var grades = await grain.GetAllShopGradesAsync();
+                result.Data = grades?.Select(g => FlowerDtoMapper.ToDto(g)).ToList();
                 result.IsSuccess = true;
             }
             catch (System.Exception ex)
@@ -52,15 +56,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{gradeId}")]
-        public async Task<ResultVM<ShopGradeState>> GetGrade(long gradeId)
+        public async Task<ResultVM<ShopGradeDto>> GetGrade(long gradeId)
         {
-            var result = new ResultVM<ShopGradeState>();
+            var result = new ResultVM<ShopGradeDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IShopGradeGrain>(0);
-                result.Data = await grain.GetShopGradeAsync(gradeId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetShopGradeAsync(gradeId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (System.Exception ex)
             {

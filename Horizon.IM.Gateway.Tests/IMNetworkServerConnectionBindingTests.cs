@@ -25,6 +25,7 @@ using TouchSocketTcpClient = TouchSocket.Sockets.TcpClient;
 
 namespace Horizon.IM.Gateway.Tests;
 
+[Collection("OrleansCluster")]
 public sealed class IMNetworkServerConnectionBindingTests : IAsyncLifetime
 {
     private readonly IMMessageAdapter _adapter = new();
@@ -39,6 +40,7 @@ public sealed class IMNetworkServerConnectionBindingTests : IAsyncLifetime
     {
         var builder = new TestClusterBuilder();
         builder.AddSiloBuilderConfigurator<IMGatewayTestSiloConfigurator>();
+        builder.AddClientBuilderConfigurator<IMGatewayTestClientConfigurator>();
 
         _cluster = builder.Build();
         await _cluster.DeployAsync();

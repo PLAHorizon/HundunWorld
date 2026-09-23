@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -116,6 +116,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     new GalleryItem("点穴系统", "acupoint", "人体穴位图", InkWashTheme.JadePrimary),
                     new GalleryItem("QTE 千钧一发", "qte", "圆环计时器", InkWashTheme.VermilionBright),
                     new GalleryItem("元素视野", "nav-element-vision", "高亮元素标记", InkWashTheme.JadeBright),
+                    new GalleryItem("引导 HUD", "guide-hud", "聚光步骤引导层", InkWashTheme.GoldPrimary),
+                    new GalleryItem("动作引导", "guide-action", "招式演示引导", InkWashTheme.BronzePrimary),
+                    new GalleryItem("武学引导", "guide-martial", "武学修习引导", InkWashTheme.GoldBright),
                 }
             });
 
@@ -130,6 +133,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     new GalleryItem("外观", "nav-appearance", "发型/服饰/坐骑", InkWashTheme.GoldDeep),
                     new GalleryItem("个人信息", "nav-personal-info", "角色卡+统计", InkWashTheme.GoldPrimary),
                     new GalleryItem("武学记录", "nav-martial-record", "已学武学列表", InkWashTheme.BronzeBright),
+                    new GalleryItem("角色属性 V1", "menu-char-attributes", "初版属性页", InkWashTheme.GoldDeep),
                 }
             });
 
@@ -210,6 +214,44 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 }
             });
 
+            // 子系统页面（game-ui-system 设计方案的 19 页，此前未纳入 UI 浏览器）
+            _categories.Add(new GalleryCategory
+            {
+                Name = "子系统页面",
+                Items =
+                {
+                    new GalleryItem("传统战斗 HUD", "combat-hud-traditional", "沉浸式传统布局", InkWashTheme.VermilionDeep),
+                    new GalleryItem("角色面板", "nav-character-panel", "战力/装备/武学", InkWashTheme.GoldPrimary),
+                    new GalleryItem("武学技能", "nav-skill-panel", "经脉/心法/招式", InkWashTheme.BronzePrimary),
+                    new GalleryItem("背包行囊", "nav-inventory", "物品网格+详情", InkWashTheme.PaperAged),
+                    new GalleryItem("装备强化", "nav-equipment-enhance", "强化/镶嵌/精炼", InkWashTheme.GoldBright),
+                    new GalleryItem("制造技艺", "nav-crafting", "配方/材料/产出", InkWashTheme.BronzeBright),
+                    new GalleryItem("坐骑灵兽", "nav-mount-pet", "坐骑/宠物列表", InkWashTheme.JadePrimary),
+                    new GalleryItem("江湖任务志", "nav-quest-log", "任务列表+详情", InkWashTheme.GoldPrimary),
+                    new GalleryItem("世界地图", "nav-world-map", "区域/传送点", InkWashTheme.JadeBright),
+                    new GalleryItem("指南针", "nav-compass", "方位/POI/追踪", InkWashTheme.BronzePrimary),
+                    new GalleryItem("江湖秘境", "nav-dungeon-entry", "副本列表+进入", InkWashTheme.VermilionPrimary),
+                    new GalleryItem("江湖门派", "nav-social-guild", "门派列表+成员", InkWashTheme.GoldDeep),
+                    new GalleryItem("江湖交游", "nav-friends", "好友列表", InkWashTheme.JadePrimary),
+                    new GalleryItem("飞鸽传书", "nav-social-mail", "邮件分类+详情", InkWashTheme.PaperAged),
+                    new GalleryItem("师徒传承", "nav-mentor", "师徒任务/奖励", InkWashTheme.BronzeBright),
+                    new GalleryItem("江湖风云榜", "nav-leaderboard", "排名/对比", InkWashTheme.GoldBright),
+                    new GalleryItem("江湖百艺录", "nav-achievement", "成就分类+进度", InkWashTheme.VermilionBright),
+                    new GalleryItem("江湖商城", "nav-social-shop", "商品分类+结算", InkWashTheme.GoldPrimary),
+                }
+            });
+
+            // 水墨动画分镜（对应 hundun-yy-ui/pages/ink-anim-ref-1.html、ink-anim-ref-2.html）
+            _categories.Add(new GalleryCategory
+            {
+                Name = "水墨动画",
+                Items =
+                {
+                    new GalleryItem("水墨晕染", "ink-anim-ref-1", "晕染分镜 Spread", InkWashTheme.GoldPrimary),
+                    new GalleryItem("水墨笔触", "ink-anim-ref-2", "笔触分镜 Brush", InkWashTheme.VermilionPrimary),
+                }
+            });
+
             // 弹窗
             _categories.Add(new GalleryCategory
             {
@@ -227,6 +269,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     new GalleryItem("成就奖励", "reward-achievement", "成就解锁", InkWashTheme.GoldBright),
                     new GalleryItem("任务完成奖励", "reward-quest-complete", "完成评价", InkWashTheme.GoldPrimary),
                     new GalleryItem("等级提升", "reward-level-up", "属性对比", InkWashTheme.VermilionBright),
+                    new GalleryItem("传送点解锁", "reward-teleport-unlock", "区域传送", InkWashTheme.BronzeBright),
+                    new GalleryItem("地图解锁", "reward-map-unlock", "新区域", InkWashTheme.JadeBright),
+                    new GalleryItem("恭喜奖励", "reward-congratulations", "传世庆典", InkWashTheme.VermilionBright),
+                    new GalleryItem("小游戏完成", "mini-game-complete", "结算+引导", InkWashTheme.GoldBright),
                 }
             });
 

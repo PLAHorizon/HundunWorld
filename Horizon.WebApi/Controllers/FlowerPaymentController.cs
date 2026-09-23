@@ -11,6 +11,8 @@ using Microsoft.Extensions.Options;
 using Horizon.Core.Abstract;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -145,6 +147,11 @@ namespace Horizon.WebApi.Controllers
 
                 result.Data = paymentState;
                 result.IsSuccess = paymentState != null;
+                if (paymentState == null)
+                {
+                    // 渠道下单失败的常见原因：商户密钥未配置（Silo 端 WechatPaySettings/AlipaySettings），具体原因见 Silo 日志
+                    result.ErrorMessage = "发起支付失败：支付渠道下单未成功（商户密钥可能未配置），请稍后重试或联系管理员";
+                }
             }
             catch (Exception ex)
             {
@@ -210,9 +217,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{transactionId}/status")]
-        public async Task<ResultVM<PaymentState>> QueryPaymentStatusAsync(long transactionId)
+        public async Task<ResultVM<PaymentDto>> QueryPaymentStatusAsync(long transactionId)
         {
-            var result = new ResultVM<PaymentState>();
+            var result = new ResultVM<PaymentDto>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -244,7 +251,7 @@ namespace Horizon.WebApi.Controllers
                     }
                 }
 
-                result.Data = state;
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -335,12 +342,12 @@ namespace Horizon.WebApi.Controllers
             if (!_passportCurrentUser.IsAuthenticated)
                 return Guid.Empty;
 
-            var passportId = _passportCurrentUser.PassportId;
-            if (string.IsNullOrEmpty(passportId))
-                return Guid.Empty;
-
-            if (Guid.TryParse(passportId, out var userId))
+            // UserId claim 为 Guid 格式（通行证号 PassportId 为数字串，不能用于 Guid 解析）
+            var userIdText = _passportCurrentUser.UserId;
+            if (!string.IsNullOrEmpty(userIdText) && Guid.TryParse(userIdText, out var userId))
+            {
                 return userId;
+            }
 
             return Guid.Empty;
         }

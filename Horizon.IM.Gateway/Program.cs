@@ -1,5 +1,4 @@
-using System.Reflection;
-
+using Horizon.Core;
 using Horizon.Core.Options;
 using Horizon.Core.Security;
 using Horizon.IM.Core;
@@ -7,18 +6,16 @@ using Horizon.IM.Core.Adapters;
 using Horizon.IM.Gateway.Configuration;
 using Horizon.IM.Gateway.Network;
 using Horizon.IM.Gateway.Services;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
-
-using TouchSocket.Core;
 using StackExchange.Redis;
+using System.Reflection;
+using TouchSocket.Core;
 
 namespace Horizon.IM.Gateway;
 
@@ -37,9 +34,19 @@ public class Program
             .ConfigureAppConfiguration((context, config) =>
             {
                 config.SetBasePath(AppContext.BaseDirectory);
+               
+                // 配置文件设置
                 config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-                config.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+                config.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json",
+                                 optional: true, reloadOnChange: true);
                 config.AddEnvironmentVariables();
+                config.AddCommandLine(args);
+
+                // 加载 .env 文件到环境变量（不覆盖系统变量），并解析 ${VAR} 占位符，
+                // 兑现 .env.example 的 "${VAR} 由此注入" 约定。用 in-memory 叠加替换后的值（优先级最高）。
+                EnvironmentPlaceholderResolver.LoadDotEnvFile(AppContext.BaseDirectory);
+                var resolved = EnvironmentPlaceholderResolver.BuildResolvedOverrides(config.Build());
+                config.AddInMemoryCollection(resolved);
                 config.AddCommandLine(args);
             })
             .ConfigureLogging((context, logging) =>
@@ -68,9 +75,9 @@ public class Program
                     var config = provider.GetRequiredService<IConfiguration>();
                     var logger = provider.GetRequiredService<ILogger<UserAuthTokenProvider>>();
                     var secretKey = config["Security:AuthTokenSecret"];
-                    if (string.IsNullOrWhiteSpace(secretKey))
+                    if (string.IsNullOrWhiteSpace(secretKey) || secretKey.StartsWith("${"))
                     {
-                        logger.LogError("未配置 Security:AuthTokenSecret，生产环境必须配置自定义密钥！当前使用临时密钥，仅限开发环境使用。");
+                        logger.LogError("未配置 Security:AuthTokenSecret（或环境变量 GATEWAY_AUTH_TOKEN_SECRET 未注入），生产环境必须配置自定义密钥！当前使用临时密钥，仅限开发环境使用。");
                         secretKey = $"HundunWorld-Dev-Only-{Environment.MachineName}";
                     }
                     return new UserAuthTokenProvider(secretKey, logger);
@@ -89,8 +96,10 @@ public class Program
                 var options = ResolveOrleansOptions(context.Configuration);
 
                 // ===== Redis 集群配置（主方案） =====
-                var redisConnectionStr = context.Configuration.GetSection("Redis:ConnectionString").Value
-                    ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+                // 阶段 0.1：配置必需——删除 127.0.0.1 本地默认回退，缺失抛清晰错误。
+                var redisConnectionStr = Horizon.Game.Message.Configuration.ConnectionStrings.Require(
+                    context.Configuration.GetSection("Redis:ConnectionString").Value,
+                    "Redis:ConnectionString", "IM Gateway Orleans 客户端 Redis 集群", "GATEWAY_REDIS_CONNECTION_STRING");
                 var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
 
                 client.UseRedisClustering(clustering =>

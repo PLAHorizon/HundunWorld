@@ -1,0 +1,290 @@
+## page: shop-rare-items
+## dom-ids: back-hud, itemGrid, itemModal, modalAttrGrid, modalAttrSection, modalBackdrop, modalBuyBtn, modalCancelBtn, modalCloseBtn, modalCountdown, modalCountdownArea, modalDesc, modalIcon, modalIconGlow, modalItemName, modalItemType, modalPanel, modalPriceCurrency, modalPriceIcon, modalPriceNumber, modalQualityBadge, modalSkillBox, modalSkillSection, modalSkillText, nav-settings, refreshCountdown
+  main
+    div
+      div
+      div
+      div
+      div
+      div
+        aside .left-nav [aria="主导航"]
+          button #back-hud .nav-back [aria="返回江湖"]
+            i .nav-icon
+            span .nav-label | 返回江湖
+          div .nav-logo
+            span | 混沌世界
+            span | HUNDUN WORLD
+          div
+          nav .nav-list
+            a .nav-item
+              i .nav-icon
+              span .nav-label | 不肝
+            a .nav-item
+              i .nav-icon
+              span .nav-label | 抽卡
+            a .nav-item
+              i .nav-icon
+              span .nav-label | 活动
+            a .nav-item
+              i .nav-icon
+              span .nav-label | 通行证
+            a .nav-item
+              i .nav-icon
+              span .nav-label | 属性
+            a .nav-item
+              i .nav-icon
+              span .nav-label | 奇珍阁
+            a #nav-settings .nav-item
+              i .nav-icon
+              span .nav-label | 设置
+          div .nav-footer
+            div .nav-footer-divider
+            p .nav-version | v1.2.0 · 江湖公测
+        header .top-bar
+          div .top-bar-left
+            div .char-avatar [aria="角色头像"] | 客
+            div
+              span | 江湖过客
+              span
+                i .level-icon | Lv. 42
+          div .top-bar-right
+            div .currency-item
+              i .currency-icon currency-icon-copper
+              span .currency-label | 铜钱
+              span .currency-value | 12,450
+            div .top-bar-divider
+            div .currency-item
+              i .currency-icon currency-icon-gold
+              span .currency-label | 元宝
+              span .currency-value | 328
+            div .top-bar-divider
+            div
+              i .time-icon
+              span | 戌时 三刻
+        section
+          div .page-header
+            div .page-header-left
+              h1 .page-title | 奇珍阁
+              p .page-subtitle | 江湖异宝 · 限时珍品
+            div .page-header-right
+              div .header-decorative-seal | 珍
+          div .tab-bar
+            button .tab-item tab-active
+              i .tab-icon
+              span | 限时珍品
+            button .tab-item
+              i .tab-icon
+              span | 常驻奇珍
+            button .tab-item
+              i .tab-icon
+              span | 兑换商店
+            div .tab-spacer
+            div
+              i .refresh-icon
+              span .refresh-label | 刷新时间
+              span #refreshCountdown | 02:45:30
+            div .filter-bar
+              div .filter-left
+                span .filter-label | 品质筛选
+                button .filter-chip filter-chip-active | 全部
+                button .filter-chip | 传世
+                button .filter-chip | 史品
+                button .filter-chip | 珍品
+                button .filter-chip | 良品
+              div .filter-right
+                span .filter-label | 共 | 9 | 件珍品
+            div #itemGrid .item-grid
+              article .item-card
+                span
+                span
+                div .item-card-badge-area
+                  span .ink-tag ink-tag-vermilion | 限时
+                div .item-icon-wrap
+                  div .item-icon | 青
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 青锋剑·绝世
+                  p .item-desc | 上古名剑，锋利无比
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-gold
+                    span .price-value | 6480
+                    span | 元宝
+                  div .item-countdown
+                    i .countdown-icon
+                    span | 12:30:45
+                div .item-card-border-bottom
+              article .item-card
+                div .item-card-badge-area
+                  span .ink-tag ink-tag-brand | 热销
+                div .item-icon-wrap
+                  div .item-icon | 紫
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 紫霞秘籍
+                  p .item-desc | 紫霞派不传之秘
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-gold
+                    span .price-value | 3280
+                    span | 元宝
+                div .item-card-border-bottom
+              article .item-card
+                div .item-card-badge-area
+                  span .ink-tag ink-tag-brand | 史品
+                div .item-icon-wrap
+                  div .item-icon | 龙
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 龙纹玉佩
+                  p .item-desc | 龙纹环绕，护身辟邪
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-gold
+                    span .price-value | 2680
+                    span | 元宝
+                div .item-card-border-bottom
+              article .item-card
+                div .item-card-badge-area
+                  span .ink-tag | 珍品
+                div .item-icon-wrap
+                  div .item-icon | 玄
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 玄铁重甲
+                  p .item-desc | 玄铁锻造，坚不可摧
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-gold
+                    span .price-value | 1280
+                    span | 元宝
+                div .item-card-border-bottom
+              article .item-card
+                div .item-card-badge-area
+                  span .ink-tag ink-tag-vermilion | 仅剩3件
+                div .item-icon-wrap
+                  div .item-icon | 凌
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 凌波残卷
+                  p .item-desc | 凌波微步残卷
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-gold
+                    span .price-value | 1880
+                    span | 元宝
+                div .item-card-border-bottom
+              article .item-card
+                div .item-card-badge-area
+                  span .ink-tag | 珍品
+                div .item-icon-wrap
+                  div .item-icon | 莲
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 天山雪莲
+                  p .item-desc | 天山特产，疗伤圣药
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-gold
+                    span .price-value | 880
+                    span | 元宝
+                div .item-card-border-bottom
+              article .item-card
+                div .item-card-badge-area
+                  span .ink-tag | 珍品
+                div .item-icon-wrap
+                  div .item-icon | 金
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 金丝软甲
+                  p .item-desc | 金丝编织，轻便护体
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-gold
+                    span .price-value | 1080
+                    span | 元宝
+                div .item-card-border-bottom
+              article .item-card
+                div .item-card-badge-area
+                  span .ink-tag | 良品
+                div .item-icon-wrap
+                  div .item-icon | 魂
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 还魂丹
+                  p .item-desc | 起死回生，满血复活
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-gold
+                    span .price-value | 480
+                    span | 元宝
+                div .item-card-border-bottom
+              article .item-card
+                div .item-card-badge-area
+                  span .ink-tag | 良品
+                div .item-icon-wrap
+                  div .item-icon | 参
+                  div .item-glow
+                div .item-info
+                  h3 .item-name | 百年人参
+                  p .item-desc | 百年药龄，大补之物
+                div .item-footer
+                  div .item-price
+                    i .price-icon price-icon-copper
+                    span .price-value | 5000
+                    span | 铜钱
+                div .item-card-border-bottom
+            div .bottom-hint
+              i .hint-icon
+              span | 限时珍品倒计时结束后将下架，江湖过客请把握时机。购买后商品将送至您的信箱。
+    div #itemModal .modal-overlay
+      div #modalBackdrop .modal-backdrop
+      div #modalPanel .modal-panel
+        button #modalCloseBtn .modal-close [aria="关闭"]
+          i .close-icon
+        div .modal-watermark | 珍
+        span
+        span
+        span
+        span
+        div .modal-header
+          div .modal-icon-wrap
+            div #modalIcon .modal-icon | 青
+            div #modalIconGlow .modal-icon-glow
+          div .modal-title-area
+            h2 #modalItemName .modal-item-name | 青锋剑·绝世
+            div .modal-quality-row
+              span #modalQualityBadge .modal-quality-badge | 传世品质
+              span #modalItemType .modal-item-type | 武器 · 长剑
+          div .modal-section
+            h3 .modal-section-title
+              i .section-icon | 物品描述
+            p #modalDesc .modal-desc | 上古名剑，锋利无比。
+          div #modalAttrSection .modal-section
+            h3 .modal-section-title
+              i .section-icon | 属性详情
+            div #modalAttrGrid .modal-attr-grid
+          div #modalSkillSection .modal-section
+            h3 .modal-section-title
+              i .section-icon | 特殊效果
+            div #modalSkillBox .modal-skill-box
+              p #modalSkillText .modal-skill-text
+            div .modal-footer
+              div .modal-price-area
+                span .modal-price-label | 购买价格
+                div .modal-price-value
+                  i #modalPriceIcon .modal-price-icon
+                  span #modalPriceNumber .modal-price-number | 6480
+                  span #modalPriceCurrency .modal-price-currency | 元宝
+              div .modal-actions
+                button #modalCancelBtn .ink-btn ink-btn-ghost
+                  i .btn-icon | 取消
+                button #modalBuyBtn .ink-btn ink-btn-primary
+                  i .btn-icon | 购买
+            div #modalCountdownArea .modal-countdown-area
+              i .modal-countdown-icon
+              span .modal-countdown-label | 限时剩余
+              span #modalCountdown .modal-countdown-value | 12:30:45
+
+## COPY (82)
+返回江湖 | 混沌世界 | HUNDUN WORLD | 不肝 | 抽卡 | 活动 | 通行证 | 属性 | 奇珍阁 | 设置 | v1.2.0 · 江湖公测 | 客 | 江湖过客 | Lv. 42 | 铜钱 | 12,450 | 元宝 | 戌时 三刻 | 江湖异宝 · 限时珍品 | 珍 | 限时珍品 | 常驻奇珍 | 兑换商店 | 刷新时间 | 02:45:30 | 品质筛选 | 全部 | 传世 | 史品 | 珍品 | 良品 | 共 | 件珍品 | 限时 | 青 | 青锋剑·绝世 | 上古名剑，锋利无比 | 6480 | 12:30:45 | 热销 | 紫 | 紫霞秘籍 | 紫霞派不传之秘 | 3280 | 龙 | 龙纹玉佩 | 龙纹环绕，护身辟邪 | 2680 | 玄 | 玄铁重甲 | 玄铁锻造，坚不可摧 | 1280 | 仅剩3件 | 凌 | 凌波残卷 | 凌波微步残卷 | 1880 | 莲 | 天山雪莲 | 天山特产，疗伤圣药 | 金 | 金丝软甲 | 金丝编织，轻便护体 | 1080 | 魂 | 还魂丹 | 起死回生，满血复活 | 参 | 百年人参 | 百年药龄，大补之物 | 5000 | 限时珍品倒计时结束后将下架，江湖过客请把握时机。购买后商品将送至您的信箱。 | 传世品质 | 武器 · 长剑 | 物品描述 | 上古名剑，锋利无比。 | 属性详情 | 特殊效果 | 购买价格 | 取消 | 购买 | 限时剩余

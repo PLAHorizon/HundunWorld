@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="MQTTnet" />
-    <PackageReference Include="MQTTnet.AspNetCore" />
     <PackageReference Include="MQTTnet.Extensions.ManagedClient" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />

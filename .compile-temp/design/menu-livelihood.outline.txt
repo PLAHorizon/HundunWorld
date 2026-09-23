@@ -1,0 +1,275 @@
+## page: menu-livelihood
+## dom-ids: back-hud, btn-repair, nav-bestiary, nav-char-info, nav-equipment, nav-friends, nav-livelihood, nav-mail, nav-martial, nav-quests, nav-settings, nav-shop, nav-skills, nav-team
+  div
+    div
+    div
+    div
+    div
+    div
+      aside .flex-col
+        div .items-center justify-center
+          span | 混沌世界
+        nav .no-scrollbar
+          div
+            a #nav-quests .nav-item
+              i
+              span | 任务
+            a #nav-bestiary .nav-item
+              i
+              span | 博物志
+            a #nav-martial .nav-item
+              i
+              span | 武林录
+            a #nav-livelihood .nav-item
+              i
+              span | 营生
+            a #nav-team .nav-item
+              i
+              span | 组队
+            a #nav-mail .nav-item
+              i
+              span | 邮箱
+            a #nav-shop .nav-item
+              i
+              span | 商店
+          div
+          div
+            a #nav-char-info .nav-item nav-item-muted
+              i
+              span | 角色
+            a #nav-equipment .nav-item nav-item-muted
+              i
+              span | 装备
+            a #nav-skills .nav-item nav-item-muted
+              i
+              span | 武学
+            a #nav-friends .nav-item nav-item-muted
+              i
+              span | 好友
+        div
+          a #nav-settings .nav-item nav-item-muted
+            i
+            span | 设置
+      div .flex-col
+        header .items-center
+          div .items-center
+            button #back-hud .ink-btn ink-btn-ghost
+              i
+              span | 返回
+            div
+            div .items-center justify-center
+              span | 侠
+            div
+              div .items-center
+                span | 无名侠
+                span .ink-tag ink-tag-brand | Lv.42
+              span | 逍遥派 · 内门弟子
+          div .items-center
+            div .items-center
+              i
+              span | 12,450
+            div .items-center
+              i
+              span | 328
+            div .items-center
+              i
+              span | 15
+        main
+          div .items-center
+            div .items-center
+              h1 | 营生
+              span | 采集制造，谋生之道
+            div .items-center
+              span .ink-tag | 技能总数
+                span | 6
+              span .ink-tag ink-tag-brand | 已掌握
+                span | 4
+          div .flex-col lg:flex-row
+            div .ink-panel flex-col
+              div
+              div
+              div
+              div
+              div .ink-panel-title
+                span | 营生技能
+                span | 点击切换
+              div
+                div .skill-item
+                  div .items-center
+                    div .items-center justify-center
+                      i
+                    span | 采药
+                    span .ink-tag ink-tag-vermilion | Lv.8
+                  div .items-center
+                    div .ink-bar
+                      div .ink-bar-fill ink-bar-fill-vermilion
+                    span | 2400/3200
+                div .skill-item
+                  div .items-center
+                    div .items-center justify-center
+                      i
+                    span | 钓鱼
+                    span .ink-tag ink-tag-common | Lv.5
+                  div .items-center
+                    div .ink-bar
+                      div .ink-bar-fill
+                    span | 1800/3000
+                div .skill-item
+                  div .items-center
+                    div .items-center justify-center
+                      i
+                    span | 采矿
+                    span .ink-tag ink-tag-common | Lv.3
+                  div .items-center
+                    div .ink-bar
+                      div .ink-bar-fill
+                    span | 800/2000
+                div .skill-item
+                  div .items-center
+                    div .items-center justify-center
+                      i
+                    span | 锻造
+                    span .ink-tag ink-tag-brand | Lv.6
+                  div .items-center
+                    div .ink-bar
+                      div .ink-bar-fill
+                    span | 2160/3000
+                div .skill-item
+                  div .items-center
+                    div .items-center justify-center
+                      i
+                    span | 烹饪
+                    span .ink-tag ink-tag-jade | Lv.4
+                  div .items-center
+                    div .ink-bar
+                      div .ink-bar-fill ink-bar-fill-jade
+                    span | 1000/2000
+                div .skill-item
+                  div .items-center
+                    div .items-center justify-center
+                      i
+                    span | 缝纫
+                    span .ink-tag ink-tag-common | Lv.2
+                  div .items-center
+                    div .ink-bar
+                      div .ink-bar-fill
+                    span | 250/1000
+            div .ink-panel flex-col
+              div
+              div
+              div
+              div
+              div
+                div .items-center
+                  div .items-center
+                    div .items-center justify-center
+                      i
+                    div
+                      div .items-center
+                        h2 | 采药
+                        span .ink-tag ink-tag-vermilion | Lv.8
+                      p | 于山野间辨识百草，采集入药
+                  div .text-right
+                    span | 经验值
+                    span | 2,400 / 3,200
+                div .ink-bar
+                  div .ink-bar-fill ink-bar-fill-vermilion
+              div .ink-panel-title
+                span | 可采集配方
+                span | 已掌握
+                  span | 4 / 6
+              div
+                div .recipe-item
+                  div .recipe-icon
+                    i
+                  span | 常见草药
+                  span .ink-tag ink-tag-common | 已掌握
+                  div
+                  div
+                    i
+                    span | 草药 ×3
+                  div
+                    i
+                    span | 采药锄
+                div .recipe-item
+                  div .recipe-icon
+                    i
+                  span | 雪莲
+                  span .ink-tag | 已掌握
+                  div
+                  div
+                    i
+                    span | 雪莲 ×1
+                  div
+                    i
+                    span | 采药锄
+                div .recipe-item
+                  div .recipe-icon
+                    i
+                  span | 灵芝
+                  span .ink-tag | 已掌握
+                  div
+                  div
+                    i
+                    span | 灵芝 ×1
+                  div
+                    i
+                    span | 采药锄
+                div .recipe-item
+                  div .recipe-icon
+                    i
+                  span | 寒梅
+                  span .ink-tag ink-tag-jade | 已掌握
+                  div
+                  div
+                    i
+                    span | 寒梅 ×2
+                  div
+                    i
+                    span | 采药锄
+                div .recipe-item
+                  div .recipe-icon
+                    i
+                  span | 天山雪菊
+                  span .ink-tag ink-tag-common | Lv.10 解锁
+                  div
+                  div
+                    i
+                    span | 雪菊 ×2
+                  div
+                    i
+                    span | 采药锄
+                div .recipe-item
+                  div .recipe-icon
+                    i
+                  span | 九死还魂草
+                  span .ink-tag ink-tag-common | Lv.15 解锁
+                  div
+                  div
+                    i
+                    span | 还魂草 ×1
+                  div
+                    i
+                    span | 采药锄
+              div
+                div .items-center
+                  div .items-center
+                    i
+                    div
+                      div .items-center
+                        span | 采药锄
+                        span .ink-tag ink-tag-common | 普通
+                      div .items-center
+                        span | 耐久
+                        div .ink-bar
+                          div .ink-bar-fill
+                        span | 85/100
+                  button #btn-repair .ink-btn ink-btn-primary
+                    i
+                    span | 修理
+        footer .items-center
+          span | 服务器：逍遥江湖
+          span | 延迟 32ms · 版本 v1.2.4
+
+## COPY (68)
+混沌世界 | 任务 | 博物志 | 武林录 | 营生 | 组队 | 邮箱 | 商店 | 角色 | 装备 | 武学 | 好友 | 设置 | 返回 | 侠 | 无名侠 | Lv.42 | 逍遥派 · 内门弟子 | 12,450 | 采集制造，谋生之道 | 技能总数 | 已掌握 | 营生技能 | 点击切换 | 采药 | Lv.8 | 2400/3200 | 钓鱼 | Lv.5 | 1800/3000 | 采矿 | Lv.3 | 800/2000 | 锻造 | Lv.6 | 2160/3000 | 烹饪 | Lv.4 | 1000/2000 | 缝纫 | Lv.2 | 250/1000 | 于山野间辨识百草，采集入药 | 经验值 | 2,400 / 3,200 | 可采集配方 | 4 / 6 | 常见草药 | 草药 ×3 | 采药锄 | 雪莲 | 雪莲 ×1 | 灵芝 | 灵芝 ×1 | 寒梅 | 寒梅 ×2 | 天山雪菊 | Lv.10 解锁 | 雪菊 ×2 | 九死还魂草 | Lv.15 解锁 | 还魂草 ×1 | 普通 | 耐久 | 85/100 | 修理 | 服务器：逍遥江湖 | 延迟 32ms · 版本 v1.2.4

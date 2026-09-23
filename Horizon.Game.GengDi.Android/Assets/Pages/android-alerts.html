@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安卓商家预警 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen flex flex-col bg-background">
+        <!-- 顶部固定组：安卓状态栏 + Material应用栏 + M3 Tab -->
+        <div class="sticky top-0 z-20 bg-background border-b border-border">
+            <!-- Material应用栏：返回 + 商家预警 + 设置 -->
+            <header class="h-14 px-1 flex items-center">
+                <button class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-secondary/60 active:bg-secondary transition-colors" aria-label="返回">
+                    <i data-lucide="arrow-left" class="w-6 h-6 text-foreground"></i>
+                </button>
+                <h1 class="text-xl font-medium text-foreground flex-1 ml-1">商家预警</h1>
+                <button class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-secondary/60 active:bg-secondary transition-colors" aria-label="设置">
+                    <i data-lucide="settings" class="w-6 h-6 text-foreground"></i>
+                </button>
+            </header>
+
+            <!-- M3 Tab 角色切换：种植户(选中)/批发商/零售商 -->
+            <nav class="flex">
+                <button class="flex-1 h-12 flex items-center justify-center text-sm font-medium relative transition-colors" style="color: var(--gd-primary);">
+                    种植户
+                    <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 rounded-full" style="background-color: var(--gd-primary);"></span>
+                </button>
+                <button class="flex-1 h-12 flex items-center justify-center text-sm font-medium text-muted-foreground hover:bg-secondary/40 transition-colors">
+                    批发商
+                </button>
+                <button class="flex-1 h-12 flex items-center justify-center text-sm font-medium text-muted-foreground hover:bg-secondary/40 transition-colors">
+                    零售商
+                </button>
+            </nav>
+        </div>
+
+        <!-- 内容区 -->
+        <div class="flex-1 px-4 pt-4 pb-6 space-y-5">
+
+            <!-- 预警统计 -->
+            <section>
+                <div class="rounded-xl bg-card p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-xs text-muted-foreground">今日预警总数</p>
+                            <p class="text-3xl font-semibold text-foreground leading-tight mt-0.5">12 <span class="text-base font-normal text-muted-foreground">条</span></p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-error-surface);">
+                            <i data-lucide="bell-ring" class="w-6 h-6" style="color: var(--gd-state-error);"></i>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2.5">
+                        <div class="rounded-lg p-3" style="background-color: var(--gd-state-error-surface);">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <span class="w-2 h-2 rounded-full" style="background-color: var(--gd-state-error);"></span>
+                                <span class="text-[11px] text-muted-foreground">严重</span>
+                            </div>
+                            <p class="text-xl font-semibold" style="color: var(--gd-state-error);">3</p>
+                        </div>
+                        <div class="rounded-lg p-3" style="background-color: var(--gd-state-warning-surface);">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <span class="w-2 h-2 rounded-full" style="background-color: var(--gd-state-warning);"></span>
+                                <span class="text-[11px] text-muted-foreground">警告</span>
+                            </div>
+                            <p class="text-xl font-semibold" style="color: var(--gd-state-warning);">5</p>
+                        </div>
+                        <div class="rounded-lg p-3" style="background-color: var(--gd-state-info-surface);">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <span class="w-2 h-2 rounded-full" style="background-color: var(--gd-state-info);"></span>
+                                <span class="text-[11px] text-muted-foreground">提示</span>
+                            </div>
+                            <p class="text-xl font-semibold" style="color: var(--gd-state-info);">4</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- M3 Chips 筛选 -->
+            <section>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
+                    <button class="shrink-0 h-9 px-3.5 rounded-lg text-[13px] font-medium flex items-center gap-1.5 transition-colors" style="background-color: var(--gd-primary); color: var(--gd-primary-foreground);">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        全部 <span class="opacity-80">12</span>
+                    </button>
+                    <button class="shrink-0 h-9 px-3.5 rounded-lg text-[13px] font-medium flex items-center gap-1.5 border text-foreground hover:bg-secondary/50 transition-colors" style="border-color: var(--gd-border);">
+                        价格波动 <span class="text-muted-foreground">4</span>
+                    </button>
+                    <button class="shrink-0 h-9 px-3.5 rounded-lg text-[13px] font-medium flex items-center gap-1.5 border text-foreground hover:bg-secondary/50 transition-colors" style="border-color: var(--gd-border);">
+                        供需失衡 <span class="text-muted-foreground">3</span>
+                    </button>
+                    <button class="shrink-0 h-9 px-3.5 rounded-lg text-[13px] font-medium flex items-center gap-1.5 border text-foreground hover:bg-secondary/50 transition-colors" style="border-color: var(--gd-border);">
+                        极端天气 <span class="text-muted-foreground">3</span>
+                    </button>
+                    <button class="shrink-0 h-9 px-3.5 rounded-lg text-[13px] font-medium flex items-center gap-1.5 border text-foreground hover:bg-secondary/50 transition-colors" style="border-color: var(--gd-border);">
+                        病虫害 <span class="text-muted-foreground">2</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 预警列表 -->
+            <section>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-baseline gap-2">
+                        <h2 class="text-base font-semibold text-foreground">预警列表</h2>
+                        <span class="text-xs text-muted-foreground">8 条</span>
+                    </div>
+                    <button class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors h-8 px-2">
+                        <i data-lucide="arrow-down-narrow-wide" class="w-3.5 h-3.5"></i>
+                        按时间
+                    </button>
+                </div>
+                <div class="space-y-2.5">
+                    <!-- 1. 严重 玫瑰价格暴跌 -->
+                    <article class="relative rounded-xl bg-card overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--gd-state-error);"></div>
+                        <div class="pl-5 pr-4 py-3.5 flex items-start gap-3">
+                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-error-surface);">
+                                <i data-lucide="trending-down" class="w-5 h-5" style="color: var(--gd-state-error);"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-foreground truncate">玫瑰价格暴跌</h3>
+                                    <span class="text-[11px] text-muted-foreground shrink-0">10分钟前</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[11px] px-1.5 py-0.5 rounded font-medium" style="background-color: var(--gd-state-error-surface); color: var(--gd-state-error);">严重</span>
+                                    <span class="text-xs text-muted-foreground">价格波动</span>
+                                    <span class="text-xs font-semibold" style="color: var(--gd-state-error);">-12%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- 2. 警告 百合供应过剩 -->
+                    <article class="relative rounded-xl bg-card overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--gd-state-warning);"></div>
+                        <div class="pl-5 pr-4 py-3.5 flex items-start gap-3">
+                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-warning-surface);">
+                                <i data-lucide="package" class="w-5 h-5" style="color: var(--gd-state-warning);"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-foreground truncate">百合供应过剩</h3>
+                                    <span class="text-[11px] text-muted-foreground shrink-0">32分钟前</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[11px] px-1.5 py-0.5 rounded font-medium" style="background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning);">警告</span>
+                                    <span class="text-xs text-muted-foreground">供需失衡</span>
+                                    <span class="text-xs font-semibold" style="color: var(--gd-state-warning);">库存 +45%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- 3. 严重 冰冻天气 -->
+                    <article class="relative rounded-xl bg-card overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--gd-state-error);"></div>
+                        <div class="pl-5 pr-4 py-3.5 flex items-start gap-3">
+                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-error-surface);">
+                                <i data-lucide="snowflake" class="w-5 h-5" style="color: var(--gd-state-error);"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-foreground truncate">冰冻天气预警</h3>
+                                    <span class="text-[11px] text-muted-foreground shrink-0">1小时前</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[11px] px-1.5 py-0.5 rounded font-medium" style="background-color: var(--gd-state-error-surface); color: var(--gd-state-error);">严重</span>
+                                    <span class="text-xs text-muted-foreground">极端天气</span>
+                                    <span class="text-xs font-semibold" style="color: var(--gd-state-error);">-3℃</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- 4. 警告 康乃馨需求+80% -->
+                    <article class="relative rounded-xl bg-card overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--gd-state-warning);"></div>
+                        <div class="pl-5 pr-4 py-3.5 flex items-start gap-3">
+                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-warning-surface);">
+                                <i data-lucide="trending-up" class="w-5 h-5" style="color: var(--gd-state-warning);"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-foreground truncate">康乃馨需求激增</h3>
+                                    <span class="text-[11px] text-muted-foreground shrink-0">2小时前</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[11px] px-1.5 py-0.5 rounded font-medium" style="background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning);">警告</span>
+                                    <span class="text-xs text-muted-foreground">供需失衡</span>
+                                    <span class="text-xs font-semibold" style="color: var(--gd-state-warning);">需求 +80%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- 5. 提示 向日葵价格稳定 -->
+                    <article class="relative rounded-xl bg-card overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--gd-primary);"></div>
+                        <div class="pl-5 pr-4 py-3.5 flex items-start gap-3">
+                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-info-surface);">
+                                <i data-lucide="activity" class="w-5 h-5" style="color: var(--gd-primary);"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-foreground truncate">向日葵价格稳定</h3>
+                                    <span class="text-[11px] text-muted-foreground shrink-0">3小时前</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[11px] px-1.5 py-0.5 rounded font-medium" style="background-color: var(--gd-state-info-surface); color: var(--gd-primary);">提示</span>
+                                    <span class="text-xs text-muted-foreground">价格波动</span>
+                                    <span class="text-xs font-semibold" style="color: var(--gd-state-success);">波动 &lt;1%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- 6. 严重 白粉病高发风险 -->
+                    <article class="relative rounded-xl bg-card overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--gd-state-error);"></div>
+                        <div class="pl-5 pr-4 py-3.5 flex items-start gap-3">
+                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-error-surface);">
+                                <i data-lucide="bug" class="w-5 h-5" style="color: var(--gd-state-error);"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-foreground truncate">白粉病高发风险</h3>
+                                    <span class="text-[11px] text-muted-foreground shrink-0">5小时前</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[11px] px-1.5 py-0.5 rounded font-medium" style="background-color: var(--gd-state-error-surface); color: var(--gd-state-error);">严重</span>
+                                    <span class="text-xs text-muted-foreground">病虫害</span>
+                                    <span class="text-xs font-semibold" style="color: var(--gd-state-error);">风险等级 高</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- 7. 警告 运输成本+8% -->
+                    <article class="relative rounded-xl bg-card overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--gd-state-warning);"></div>
+                        <div class="pl-5 pr-4 py-3.5 flex items-start gap-3">
+                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-warning-surface);">
+                                <i data-lucide="truck" class="w-5 h-5" style="color: var(--gd-state-warning);"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-foreground truncate">运输成本上涨</h3>
+                                    <span class="text-[11px] text-muted-foreground shrink-0">6小时前</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[11px] px-1.5 py-0.5 rounded font-medium" style="background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning);">警告</span>
+                                    <span class="text-xs text-muted-foreground">价格波动</span>
+                                    <span class="text-xs font-semibold" style="color: var(--gd-state-warning);">+8%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- 8. 提示 新品种推荐 -->
+                    <article class="relative rounded-xl bg-card overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--gd-primary);"></div>
+                        <div class="pl-5 pr-4 py-3.5 flex items-start gap-3">
+                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-info-surface);">
+                                <i data-lucide="sparkles" class="w-5 h-5" style="color: var(--gd-primary);"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-foreground truncate">新品种推荐</h3>
+                                    <span class="text-[11px] text-muted-foreground shrink-0">昨天</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[11px] px-1.5 py-0.5 rounded font-medium" style="background-color: var(--gd-state-info-surface); color: var(--gd-primary);">提示</span>
+                                    <span class="text-xs text-muted-foreground">系统推荐 · 桔梗</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- 阈值设置 -->
+            <section>
+                <div class="rounded-xl bg-card p-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4 text-muted-foreground"></i>
+                        <h2 class="text-base font-semibold text-foreground">阈值设置</h2>
+                    </div>
+                    <p class="text-xs text-muted-foreground mb-5">调整预警触发条件，超出阈值将自动提醒</p>
+
+                    <div class="space-y-5">
+                        <!-- 价格波动 -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2.5">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="trending-up" class="w-4 h-4 text-muted-foreground"></i>
+                                    <span class="text-sm text-foreground">价格波动</span>
+                                </div>
+                                <span class="text-sm font-semibold" style="color: var(--gd-primary);">±10%</span>
+                            </div>
+                            <div class="relative h-5">
+                                <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded-full" style="background-color: var(--gd-secondary);"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 left-0 h-1 rounded-full" style="width: 33%; background-color: var(--gd-primary);"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style="left: calc(33% - 8px); background-color: var(--gd-primary); box-shadow: 0 0 0 4px var(--gd-card), 0 1px 4px rgba(0,0,0,0.5);"></div>
+                            </div>
+                            <div class="flex justify-between mt-1.5">
+                                <span class="text-[10px] text-muted-foreground">0%</span>
+                                <span class="text-[10px] text-muted-foreground">30%</span>
+                            </div>
+                        </div>
+
+                        <!-- 库存预警 -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2.5">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="package" class="w-4 h-4 text-muted-foreground"></i>
+                                    <span class="text-sm text-foreground">库存预警</span>
+                                </div>
+                                <span class="text-sm font-semibold" style="color: var(--gd-primary);">20%</span>
+                            </div>
+                            <div class="relative h-5">
+                                <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded-full" style="background-color: var(--gd-secondary);"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 left-0 h-1 rounded-full" style="width: 40%; background-color: var(--gd-primary);"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style="left: calc(40% - 8px); background-color: var(--gd-primary); box-shadow: 0 0 0 4px var(--gd-card), 0 1px 4px rgba(0,0,0,0.5);"></div>
+                            </div>
+                            <div class="flex justify-between mt-1.5">
+                                <span class="text-[10px] text-muted-foreground">0%</span>
+                                <span class="text-[10px] text-muted-foreground">50%</span>
+                            </div>
+                        </div>
+
+                        <!-- 低温阈值 -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2.5">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="thermometer-snowflake" class="w-4 h-4 text-muted-foreground"></i>
+                                    <span class="text-sm text-foreground">低温阈值</span>
+                                </div>
+                                <span class="text-sm font-semibold" style="color: var(--gd-primary);">5℃</span>
+                            </div>
+                            <div class="relative h-5">
+                                <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded-full" style="background-color: var(--gd-secondary);"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 left-0 h-1 rounded-full" style="width: 60%; background-color: var(--gd-primary);"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style="left: calc(60% - 8px); background-color: var(--gd-primary); box-shadow: 0 0 0 4px var(--gd-card), 0 1px 4px rgba(0,0,0,0.5);"></div>
+                            </div>
+                            <div class="flex justify-between mt-1.5">
+                                <span class="text-[10px] text-muted-foreground">-10℃</span>
+                                <span class="text-[10px] text-muted-foreground">15℃</span>
+                            </div>
+                        </div>
+
+                        <!-- 高温阈值 -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2.5">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="thermometer-sun" class="w-4 h-4 text-muted-foreground"></i>
+                                    <span class="text-sm text-foreground">高温阈值</span>
+                                </div>
+                                <span class="text-sm font-semibold" style="color: var(--gd-primary);">35℃</span>
+                            </div>
+                            <div class="relative h-5">
+                                <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded-full" style="background-color: var(--gd-secondary);"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 left-0 h-1 rounded-full" style="width: 60%; background-color: var(--gd-primary);"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style="left: calc(60% - 8px); background-color: var(--gd-primary); box-shadow: 0 0 0 4px var(--gd-card), 0 1px 4px rgba(0,0,0,0.5);"></div>
+                            </div>
+                            <div class="flex justify-between mt-1.5">
+                                <span class="text-[10px] text-muted-foreground">20℃</span>
+                                <span class="text-[10px] text-muted-foreground">45℃</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 通知设置 -->
+            <section>
+                <div class="rounded-xl bg-card px-4 py-1">
+                    <div class="flex items-center gap-2 py-3">
+                        <i data-lucide="bell" class="w-4 h-4 text-muted-foreground"></i>
+                        <h2 class="text-base font-semibold text-foreground">通知设置</h2>
+                    </div>
+
+                    <!-- 震动 关 -->
+                    <div class="flex items-center justify-between h-14 border-t" style="border-color: var(--gd-border);">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background-color: var(--gd-secondary);">
+                                <i data-lucide="vibrate" class="w-5 h-5 text-foreground"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-foreground">震动提醒</p>
+                                <p class="text-[11px] text-muted-foreground">预警时震动反馈</p>
+                            </div>
+                        </div>
+                        <button class="relative w-11 h-6 rounded-full border-2 shrink-0 transition-colors" style="border-color: var(--gd-muted-foreground); background-color: transparent;" aria-pressed="false" aria-label="震动提醒">
+                            <span class="absolute top-1/2 -translate-y-1/2 left-1 w-3.5 h-3.5 rounded-full" style="background-color: var(--gd-muted-foreground);"></span>
+                        </button>
+                    </div>
+
+                    <!-- 声音 关 -->
+                    <div class="flex items-center justify-between h-14 border-t" style="border-color: var(--gd-border);">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background-color: var(--gd-secondary);">
+                                <i data-lucide="volume-2" class="w-5 h-5 text-foreground"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-foreground">声音提醒</p>
+                                <p class="text-[11px] text-muted-foreground">预警时播放提示音</p>
+                            </div>
+                        </div>
+                        <button class="relative w-11 h-6 rounded-full border-2 shrink-0 transition-colors" style="border-color: var(--gd-muted-foreground); background-color: transparent;" aria-pressed="false" aria-label="声音提醒">
+                            <span class="absolute top-1/2 -translate-y-1/2 left-1 w-3.5 h-3.5 rounded-full" style="background-color: var(--gd-muted-foreground);"></span>
+                        </button>
+                    </div>
+
+                    <!-- 推送 开 -->
+                    <div class="flex items-center justify-between h-14 border-t" style="border-color: var(--gd-border);">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-info-surface);">
+                                <i data-lucide="bell-ring" class="w-5 h-5" style="color: var(--gd-primary);"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-foreground">推送通知</p>
+                                <p class="text-[11px] text-muted-foreground">系统通知栏推送</p>
+                            </div>
+                        </div>
+                        <button class="relative w-11 h-6 rounded-full shrink-0 transition-colors" style="background-color: var(--gd-primary);" aria-pressed="true" aria-label="推送通知">
+                            <span class="absolute top-1/2 -translate-y-1/2 right-0.5 w-5 h-5 rounded-full" style="background-color: var(--gd-primary-foreground);"></span>
+                        </button>
+                    </div>
+
+                    <!-- 仅严重 关 -->
+                    <div class="flex items-center justify-between h-14 border-t" style="border-color: var(--gd-border);">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background-color: var(--gd-state-error-surface);">
+                                <i data-lucide="shield-alert" class="w-5 h-5" style="color: var(--gd-state-error);"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-foreground">仅推送严重预警</p>
+                                <p class="text-[11px] text-muted-foreground">过滤警告与提示级别</p>
+                            </div>
+                        </div>
+                        <button class="relative w-11 h-6 rounded-full border-2 shrink-0 transition-colors" style="border-color: var(--gd-muted-foreground); background-color: transparent;" aria-pressed="false" aria-label="仅严重">
+                            <span class="absolute top-1/2 -translate-y-1/2 left-1 w-3.5 h-3.5 rounded-full" style="background-color: var(--gd-muted-foreground);"></span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Material 底部导航栏（无高亮） -->
+        <nav class="sticky bottom-0 z-20 bg-background border-t border-border">
+            <div class="grid grid-cols-4 h-16">
+                <button class="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-secondary/40 transition-colors">
+                    <i data-lucide="home" class="w-6 h-6"></i>
+                    <span class="text-[11px]">首页</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-secondary/40 transition-colors">
+                    <i data-lucide="line-chart" class="w-6 h-6"></i>
+                    <span class="text-[11px]">行情</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-secondary/40 transition-colors">
+                    <i data-lucide="bell" class="w-6 h-6"></i>
+                    <span class="text-[11px]">预警</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-secondary/40 transition-colors">
+                    <i data-lucide="user" class="w-6 h-6"></i>
+                    <span class="text-[11px]">我的</span>
+                </button>
+            </div>
+        </nav>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

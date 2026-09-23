@@ -1,0 +1,134 @@
+{
+	"app": {
+		"bundleName": "com.horizon.gengdi.harmonyos",
+		"vendor": "Horizon",
+		"versionCode": 1000000,
+		"versionName": "1.0.0",
+		"icon": "$media:app_icon",
+		"label": "$string:app_name",
+		"apiReleaseType": "Release",
+		"compileSdkVersion": "6.1.1.125",
+		"targetAPIVersion": 60101024,
+		"minAPIVersion": 60101024,
+		"compileSdkType": "HarmonyOS",
+		"targetMinorAPIVersion": 0,
+		"targetPatchAPIVersion": 0,
+		"appEnvironments": [],
+		"bundleType": "app",
+		"buildMode": "debug",
+		"debug": true
+	},
+	"module": {
+		"name": "entry",
+		"type": "entry",
+		"description": "$string:module_desc",
+		"mainElement": "EntryAbility",
+		"deviceTypes": [
+			"phone",
+			"tablet"
+		],
+		"deliveryWithInstall": true,
+		"installationFree": false,
+		"querySchemes": [
+			"weixin",
+			"wechat",
+			"com.tencent.wechat"
+		],
+		"pages": "$profile:main_pages",
+		"abilities": [
+			{
+				"name": "EntryAbility",
+				"srcEntry": "./ets/entryability/EntryAbility.ets",
+				"description": "$string:EntryAbility_desc",
+				"icon": "$media:app_icon",
+				"label": "$string:EntryAbility_label",
+				"startWindowIcon": "$media:app_icon",
+				"startWindowBackground": "$color:start_window_background",
+				"exported": true,
+				"skills": [
+					{
+						"entities": [
+							"entity.system.home"
+						],
+						"actions": [
+							"action.system.home"
+						]
+					},
+					{
+						"actions": [
+							"ohos.want.action.viewData"
+						],
+						"uris": [
+							{
+								"scheme": "wxAPPID"
+							}
+						]
+					}
+				]
+			}
+		],
+		"requestPermissions": [
+			{
+				"name": "ohos.permission.INTERNET",
+				"reason": "$string:reason_internet",
+				"usedScene": {
+					"abilities": [
+						"EntryAbility"
+					],
+					"when": "always"
+				}
+			},
+			{
+				"name": "ohos.permission.MICROPHONE",
+				"reason": "$string:reason_microphone",
+				"usedScene": {
+					"abilities": [
+						"EntryAbility"
+					],
+					"when": "inuse"
+				}
+			},
+			{
+				"name": "ohos.permission.CAMERA",
+				"reason": "$string:reason_camera",
+				"usedScene": {
+					"abilities": [
+						"EntryAbility"
+					],
+					"when": "inuse"
+				}
+			},
+			{
+				"name": "ohos.permission.GET_WIFI_INFO",
+				"reason": "$string:reason_wifi_info",
+				"usedScene": {
+					"abilities": [
+						"EntryAbility"
+					],
+					"when": "inuse"
+				}
+			},
+			{
+				"name": "ohos.permission.LOCATION",
+				"reason": "$string:reason_location",
+				"usedScene": {
+					"abilities": [
+						"EntryAbility"
+					],
+					"when": "inuse"
+				}
+			},
+			{
+				"name": "ohos.permission.APPROXIMATELY_LOCATION",
+				"reason": "$string:reason_location",
+				"usedScene": {
+					"abilities": [
+						"EntryAbility"
+					],
+					"when": "inuse"
+				}
+			}
+		],
+		"packageName": "entry"
+	}
+}

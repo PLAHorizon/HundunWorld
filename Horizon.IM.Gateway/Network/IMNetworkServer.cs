@@ -98,7 +98,9 @@ public class IMNetworkServer
             try
             {
                 var config = new TouchSocketConfig()
-                    .SetListenIPHosts(networkOptions.IpAddress, port)
+                    // 字符串重载会按网卡展开出额外监听（含公网 IPv6），具备全局 IPv6 的机器上
+                    // 第二个 bind 报 10048 假性端口占用；必须用 IPHost 对象重载（同 GameNetworkServer）。
+                    .SetListenIPHosts(new IPHost[] { new IPHost($"{networkOptions.IpAddress}:{port}") })
                     .SetTcpDataHandlingAdapter(() => new IMMessageAdapter())
                     .ConfigureContainer(container => container.AddLogger(_touchSocketLogger));
 
@@ -198,13 +200,13 @@ public class IMNetworkServer
     {
         _logger.LogInformation("IM 客户端已断开: {ClientId}, Reason={Reason}", client.Id, e.Message);
         var connection = _connectionManager.GetConnection(client.Id);
-        var shouldHandleDisconnect = connection?.UserId > 0
-            && string.Equals(_connectionManager.GetConnectionByUser(connection.UserId)?.Id, client.Id, StringComparison.Ordinal);
+        var userId = connection?.UserId ?? 0;
         await _connectionManager.RemoveConnectionAsync(client.Id).ConfigureAwait(false);
 
-        if (shouldHandleDisconnect)
+        // 用户所有设备都断开后才触发离线处理
+        if (userId > 0 && !_connectionManager.HasConnections(userId))
         {
-            await _pushService.HandleUserDisconnectedAsync(connection.UserId).ConfigureAwait(false);
+            await _pushService.HandleUserDisconnectedAsync(userId).ConfigureAwait(false);
         }
     }
 
@@ -226,12 +228,14 @@ public class IMNetworkServer
         }
 
         var packet = requestInfo.Packet;
-        if (packet.Header.UserId == 0)
-        {
-            packet.Header.UserId = IMPacketUserResolver.ResolveUserId(packet);
-        }
+        var claimedUserId = packet.Header.UserId != 0
+            ? packet.Header.UserId
+            : IMPacketUserResolver.ResolveUserId(packet);
 
-        // 用户鉴权令牌验证：所有IM请求必须携带有效的鉴权令牌
+        // 用户鉴权令牌验证：所有IM请求必须携带有效的鉴权令牌。
+        // 修复（安全）：验证通过后，身份一律取自令牌（PassportId 即权威 IM UserId），
+        // 不再信任客户端声明的 Header.UserId/Body.SenderId，杜绝跨用户冒名。
+        ulong authoritativeUserId = claimedUserId;
         if (_authTokenProvider != null)
         {
             var authToken = packet.Header.AuthToken;
@@ -243,8 +247,9 @@ public class IMNetworkServer
                 return;
             }
 
-            var machineId = packet.Header.MachineId;
-            var validationResult = _authTokenProvider.ValidateToken(authToken, expectedMachineId: machineId);
+            // 通行证级共享令牌（WebApi PassportImTokenStore 签发）不绑定机器ID：多端（PC/移动）machineId 各不相同，
+            // 此处仅验签名与有效期，权威身份取令牌内 PassportId，杜绝以消息头声明身份冒名。
+            var validationResult = _authTokenProvider.ValidateToken(authToken);
             if (!validationResult.IsValid)
             {
                 _logger.LogWarning("IM鉴权令牌验证失败，拒绝服务. ClientId: {ClientId}, Reason: {Reason}, MessageType: {MessageType}",
@@ -252,7 +257,32 @@ public class IMNetworkServer
                 await SendAuthErrorAsync(client, packet, "鉴权失败，请重新登录");
                 return;
             }
+
+            authoritativeUserId = ResolveAuthoritativeUserId(validationResult.TokenData!, connection);
+
+            // 无法解析权威身份 → 拒绝（fail-closed，防止以 0 身份或声明身份继续处理）。
+            if (authoritativeUserId == 0)
+            {
+                _logger.LogWarning(
+                    "IM 令牌身份解析失败，拒绝服务. ClientId={ClientId}, PassportId={PassportId}",
+                    client.Id, validationResult.TokenData?.PassportId);
+                await SendAuthErrorAsync(client, packet, "无法解析用户身份，请重新登录");
+                return;
+            }
+
+            // 客户端声明了非零身份却与令牌身份不符 → 拒绝（防冒名）。
+            if (claimedUserId != 0 && claimedUserId != authoritativeUserId)
+            {
+                _logger.LogWarning(
+                    "IM 消息声明身份与令牌身份不一致，拒绝服务. ClientId={ClientId}, ClaimedUserId={Claimed}, AuthoritativeUserId={Authoritative}",
+                    client.Id, claimedUserId, authoritativeUserId);
+                await SendAuthErrorAsync(client, packet, "消息身份与登录身份不一致，请重新登录");
+                return;
+            }
         }
+
+        // 覆盖为权威身份，后续绑定/路由/推送均以此为准。
+        packet.Header.UserId = authoritativeUserId;
 
         if (packet.Header.UserId > 0 && ShouldBindSession(packet))
         {
@@ -267,6 +297,25 @@ public class IMNetworkServer
         }
 
         await ProcessMessageAsync(client, packet).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 从令牌身份解析权威 IM UserId。
+    /// IM 身份约定：IM UserId 即数字形式的 PassportId（与客户端 ImIdentity 规则一致），
+    /// 因此权威身份直接取自令牌中的 PassportId；非正整数视为无法解析。
+    /// 已绑定过的连接复用缓存身份，避免逐消息重复解析。
+    /// </summary>
+    private static ulong ResolveAuthoritativeUserId(UserAuthTokenData tokenData, IMConnection connection)
+    {
+        // 已通过此前验证绑定的连接：直接复用缓存身份。
+        if (connection.UserId > 0)
+        {
+            return connection.UserId;
+        }
+
+        return ulong.TryParse(tokenData?.PassportId?.Trim(), out var userId) && userId > 0
+            ? userId
+            : 0;
     }
 
     private static bool ShouldBindSession(IMMessagePacket packet)

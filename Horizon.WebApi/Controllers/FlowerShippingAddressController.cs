@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 using Horizon.WebApi.Configs;
@@ -38,9 +41,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("user/{userId}")]
-        public async Task<ResultVM<List<ShippingAddressState>>> GetUserAddressesAsync(string userId)
+        public async Task<ResultVM<List<ShippingAddressDto>>> GetUserAddressesAsync(string userId)
         {
-            var result = new ResultVM<List<ShippingAddressState>>();
+            var result = new ResultVM<List<ShippingAddressDto>>();
             try
             {
                 var currentUserId = GetAuthenticatedUserId();
@@ -60,7 +63,8 @@ namespace Horizon.WebApi.Controllers
 
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IShippingAddressGrain>(0);
-                result.Data = await grain.GetUserAddressesAsync(currentUserId);
+                var addresses = await grain.GetUserAddressesAsync(currentUserId);
+                result.Data = addresses?.Select(a => FlowerDtoMapper.ToDto(a)).ToList();
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -72,9 +76,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{addressId}")]
-        public async Task<ResultVM<ShippingAddressState>> GetAddressAsync(long addressId)
+        public async Task<ResultVM<ShippingAddressDto>> GetAddressAsync(long addressId)
         {
-            var result = new ResultVM<ShippingAddressState>();
+            var result = new ResultVM<ShippingAddressDto>();
             try
             {
                 var userId = GetAuthenticatedUserId();
@@ -98,7 +102,7 @@ namespace Horizon.WebApi.Controllers
                     result.ErrorMessage = "无权查看此地址";
                     return result;
                 }
-                result.Data = address;
+                result.Data = FlowerDtoMapper.ToDto(address);
                 result.IsSuccess = true;
             }
             catch (Exception ex)
@@ -266,9 +270,9 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("user/{userId}/default")]
-        public async Task<ResultVM<ShippingAddressState>> GetDefaultAddressAsync(string userId)
+        public async Task<ResultVM<ShippingAddressDto>> GetDefaultAddressAsync(string userId)
         {
-            var result = new ResultVM<ShippingAddressState>();
+            var result = new ResultVM<ShippingAddressDto>();
             try
             {
                 var currentUserId = GetAuthenticatedUserId();
@@ -288,7 +292,8 @@ namespace Horizon.WebApi.Controllers
 
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IShippingAddressGrain>(0);
-                result.Data = await grain.GetDefaultAddressAsync(currentUserId);
+                var state = await grain.GetDefaultAddressAsync(currentUserId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
                 result.IsSuccess = true;
             }
             catch (Exception ex)

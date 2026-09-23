@@ -1,0 +1,190 @@
+## page: popup-martial-arts
+## dom-ids: back-hud, link-popup-item-acquired, martial-modal, martial-skill-name
+  main
+    div #back-hud .popup-overlay
+      div
+      div
+      div
+      section #martial-modal .martial-modal ink-panel
+        span
+        span
+        span
+        span
+        div .modal-top-accent
+        header .modal-header
+          div .header-title-wrap
+            span .header-rail
+            div .header-title-text
+              span .header-eyebrow | 奇术详情
+              span .header-subline | SPECIAL ARTS
+          button #back-hud .modal-close [aria="关闭"]
+            i .icon-close
+        div
+          div .skill-icon-frame
+            div .skill-icon-inner
+              span .skill-icon-char | 遁
+            span .skill-icon-rank | 叁
+          div
+            h2 #martial-skill-name | 遁地术
+            p .skill-tagline | 土遁·匿形刺
+            div .skill-badges
+              span .ink-tag ink-tag-brand
+                i .badge-icon | 奇术 · 主动
+              span .ink-tag ink-tag-brand
+                i .badge-icon | 史诗
+              span .ink-tag
+                i .badge-icon | 位移
+        div .keyword-row
+          span .keyword-chip
+            i .kw-icon | 无法选中
+          span .keyword-chip
+            i .kw-icon | 移速 +50%
+          span .keyword-chip
+            i .kw-icon | 范围伤害
+          span .keyword-chip
+            i .kw-icon | 脱战遁走
+          section
+            div .section-title
+              i .section-icon
+              h3 | 效果
+            p | 瞬间遁入地下，3秒内无法被选中，移动速度提升50%。结束时从地下跃出，对周围敌人造成攻击力120%的伤害。
+            p | ——「土行遁去，形隐于渊；破土而出，一击裂石。」此术源自茅山遁甲残篇，修至大成者可遁于山石草木之间。
+          section .numeric-panel
+            div .numeric-grid
+              div .numeric-cell
+                div .numeric-icon-wrap
+                  i .numeric-icon
+                div
+                  span .numeric-label | 消耗内力
+                  span .numeric-value | 200
+              div .numeric-cell
+                div .numeric-icon-wrap
+                  i .numeric-icon
+                div
+                  span .numeric-label | 冷却时间
+                  span .numeric-value | 15
+                    span | 秒
+              div .numeric-cell
+                div .numeric-icon-wrap
+                  i .numeric-icon
+                div
+                  span .numeric-label | 持续时间
+                  span .numeric-value | 3
+                    span | 秒
+              div .numeric-cell
+                div .numeric-icon-wrap
+                  i .numeric-icon
+                div
+                  span .numeric-label | 伤害倍率
+                  span .numeric-value | 120
+                    span | %
+              div .numeric-cell
+                div .numeric-icon-wrap
+                  i .numeric-icon
+                div
+                  span .numeric-label | 影响范围
+                  span .numeric-value | 5
+                    span | 米
+              div .numeric-cell
+                div .numeric-icon-wrap
+                  i .numeric-icon
+                div
+                  span .numeric-label | 施法距离
+                  span .numeric-value | 自身
+            section
+              div
+                div .section-title
+                  i .section-icon
+                  h3 | 修炼等级
+                div
+                  span | Lv. 3
+                  i .level-arrow
+                  span | Lv. 4
+              div .progress-wrap
+                div .progress-meta
+                  span .progress-label | 当前修为
+                  span .progress-count | 180 / 300
+                div .ink-bar
+                  div .ink-bar-fill
+                div .progress-marks
+                  span
+                  span
+                  span
+                  span
+                  span
+              div .preview-card
+                span .preview-title | 升级预览
+                div .preview-rows
+                  div .preview-row
+                    span | 伤害倍率
+                    span | 120%
+                    i .preview-arrow
+                    span | 140%
+                    span | +20%
+                  div .preview-row
+                    span | 持续时间
+                    span | 3秒
+                    i .preview-arrow
+                    span | 4秒
+                    span | +1秒
+                  div .preview-row
+                    span | 冷却缩减
+                    span | 0%
+                    i .preview-arrow
+                    span | 10%
+                    span | +10%
+              div
+                div .materials-title
+                  i .section-icon
+                  span | 升级材料
+                ul .material-list
+                  li .material-row
+                    div .material-icon-box
+                      i .material-icon
+                    div
+                      span | 玄铁精魄
+                      span | 奇珍 · 史诗
+                    span
+                      span | 8
+                      span | /
+                      span | 5
+                    span .material-status status-ok
+                      i .status-icon | 充足
+                  li .material-row
+                    div .material-icon-box
+                      i .material-icon
+                    div
+                      span | 遁甲残卷
+                      span | 古籍 · 珍稀
+                    span
+                      span | 2
+                      span | /
+                      span | 3
+                    span .material-status status-lack
+                      i .status-icon | 不足
+                  li .material-row
+                    div .material-icon-box
+                      i .material-icon
+                    div
+                      span | 黄泉灵露
+                      span | 灵药 · 珍稀
+                    span
+                      span | 0
+                      span | /
+                      span | 1
+                    span .material-status status-lack
+                      i .status-icon | 不足
+                div .sufficiency-banner banner-lack
+                  i .banner-icon
+                  span .banner-text | 材料不足，暂无法修炼升级
+                  span .banner-hint | 缺少 2 种材料
+            footer .action-bar
+              button #link-popup-item-acquired .ink-btn ink-btn-primary
+                i .btn-icon | 修炼升级
+              button .ink-btn ink-btn-ghost
+                i .btn-icon | 装备
+              button #back-hud .ink-btn ink-btn-ghost
+                i .btn-icon | 关闭
+
+## COPY (53)
+奇术详情 | SPECIAL ARTS | 遁 | 叁 | 遁地术 | 土遁·匿形刺 | 奇术 · 主动 | 史诗 | 位移 | 无法选中 | 移速 +50% | 范围伤害 | 脱战遁走 | 效果 | 瞬间遁入地下，3秒内无法被选中，移动速度提升50%。结束时从地下跃出，对周围敌人造成攻击力120%的伤害。 | ——「土行遁去，形隐于渊；破土而出，一击裂石。」此术源自茅山遁甲残篇，修至大成者可遁于山石草木之间。 | 消耗内力 | 冷却时间 | 秒 | 持续时间 | 伤害倍率 | 影响范围 | 米 | 施法距离 | 自身 | 修炼等级 | Lv. 3 | Lv. 4 | 当前修为 | 180 / 300 | 升级预览 | 120% | 140% | +20% | 3秒 | 4秒 | +1秒 | 冷却缩减 | +10% | 升级材料 | 玄铁精魄 | 奇珍 · 史诗 | 充足 | 遁甲残卷 | 古籍 · 珍稀 | 不足 | 黄泉灵露 | 灵药 · 珍稀 | 材料不足，暂无法修炼升级 | 缺少 2 种材料 | 修炼升级 | 装备 | 关闭

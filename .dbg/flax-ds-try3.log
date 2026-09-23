@@ -1,0 +1,40 @@
+Unhandled exception. System.Reflection.ReflectionTypeLoadException: Unable to load one or more of the requested types.
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+   at System.Reflection.RuntimeModule.GetDefinedTypes()
+   at FlaxEngine.Interop.NativeInterop.GetAssemblyTypes(Assembly assembly)
+   at FlaxEngine.Interop.NativeInterop.GetManagedClasses(ManagedHandle assemblyHandle, NativeClassDefinitions** managedClasses, Int32* managedClassCount)
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'
+System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'. 系统找不到指定的文件。
+File name: 'Newtonsoft.Json, Version=13.0.2.0, Culture=neutral, PublicKeyToken=null'

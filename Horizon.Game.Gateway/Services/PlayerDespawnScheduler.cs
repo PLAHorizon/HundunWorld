@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Horizon.Game.Core.Handlers;
 using Horizon.Game.Core.Interfaces;
 using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Core.World;
@@ -41,6 +42,17 @@ namespace Horizon.Game.Gateway.Services
         private readonly PresenceRefreshService? _presenceRefreshService;
         private readonly ILogger<PlayerDespawnScheduler> _logger;
         private readonly IShardRouter _shardRouter;
+        private readonly SyncSessionState? _sessionState;
+
+        /// <summary>
+        /// DS 数据面（可选）。用于判断"该会话是否由 UE5 DS 承载权威"——
+        /// DS 权威的会话，其存活判定必须跳过基于 <c>ZoneShardGrain</c> 的检查，
+        /// 否则网关会把实体住在 DS 里的玩家当成幽灵踢下线。
+        /// </summary>
+        private readonly Horizon.Game.Core.Interfaces.IDSyncDataPlane? _dsDataPlane;
+
+        /// <summary>DS 会话结束通知端（可选）：DS 权威会话断线时告知 DS 回收玩家实体。</summary>
+        private readonly Horizon.Game.Core.Sim.Server.IDsSessionNotifier? _dsSessionNotifier;
 
         /// <summary>characterId → 待执行的 Despawn 取消令牌。</summary>
         private readonly ConcurrentDictionary<long, CancellationTokenSource> _pendingDespawns = new();
@@ -52,7 +64,10 @@ namespace Horizon.Game.Gateway.Services
             ICharacterFingerprintService fingerprintService,
             ILogger<PlayerDespawnScheduler> logger,
             IShardRouter? shardRouter = null,
-            PresenceRefreshService? presenceRefreshService = null)
+            PresenceRefreshService? presenceRefreshService = null,
+            SyncSessionState? sessionState = null,
+            Horizon.Game.Core.Interfaces.IDSyncDataPlane? dsDataPlane = null,
+            Horizon.Game.Core.Sim.Server.IDsSessionNotifier? dsSessionNotifier = null)
         {
             _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
@@ -61,6 +76,9 @@ namespace Horizon.Game.Gateway.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _shardRouter = shardRouter ?? new ZoneBasedShardRouter(1);
             _presenceRefreshService = presenceRefreshService;
+            _sessionState = sessionState;
+            _dsDataPlane = dsDataPlane;
+            _dsSessionNotifier = dsSessionNotifier;
 
             _logger.LogInformation("PlayerDespawnScheduler 初始化完成，断线立即 Despawn。ShardCount={ShardCount}", _shardRouter.ShardCount);
         }
@@ -216,108 +234,214 @@ namespace Horizon.Game.Gateway.Services
                     return;
                 }
 
-                // 批量续约使用 Shard 0（单 Shard 模式）。多 Shard 场景需按 characterId 分组到不同 Shard。
-                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(0));
-
-                // 修复严重 BUG（在线角色一段时间后从其它客户端离线）：
-                // 原实现只调用一次 RenewLeaseAsync，如果 Orleans grain 调用因瞬时网络问题失败，
-                // 异常被 catch 并仅记录 Warning，导致租约未续约。连续 4 次失败（80 秒）后
-                // 实体租约过期（90 秒），ZoneShardGrain 孤儿清理触发，广播 Despawn 给其他客户端，
-                // 角色从其他客户端视野中消失。增加重试机制确保瞬时失败不会导致租约过期。
-                int renewed = 0;
-                const int maxRetries = 3;
-                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                // 阶段 4（多 Shard）：按 shard 分组续约。每个角色解析到自己的 shard（Resolve(characterId)），
+                // 同一 shard 的实体批量续约，不同 shard 分别处理、异常相互隔离。
+                // 修复 BUG：原实现把全部实体一次性续约到 Resolve(0)（单 Shard 假设），
+                // 多 Shard 下其他 shard 的实体租约 90s 后过期被孤儿清理，在线角色从其他客户端消失。
+                var groups = validEntityIds
+                    .GroupBy(id => _shardRouter.Resolve((long)id))
+                    .OrderBy(g => g.Key);
+                var renewedTotal = 0;
+                foreach (var group in groups)
                 {
-                    try
-                    {
-                        renewed = await zoneShard.RenewLeaseAsync(validEntityIds.ToArray()).ConfigureAwait(false);
-                        break; // 成功则退出重试循环
-                    }
-                    catch (Exception retryEx) when (attempt < maxRetries)
-                    {
-                        _logger.LogWarning(retryEx,
-                            "批量续约实体租约第 {Attempt}/{MaxRetries} 次尝试失败，{DelayMs}ms 后重试",
-                            attempt, maxRetries, 500 * attempt);
-                        await Task.Delay(500 * attempt).ConfigureAwait(false);
-                    }
-                }
-
-                // 修复 BUG（ConnectionManager 过期角色映射残留）：
-                // 当续约发现实体不在 ZoneShardGrain 中，且该角色有在线连接，说明 ConnectionManager
-                // 中保留了过期映射（实体已从 ZoneShard 消失但映射未清理）。这会导致：
-                // 1) 续约日志持续显示 0/1，PresenceRefreshService 每 30 秒尝试刷新已不存在的 Redis key
-                // 2) 客户端重连循环，每 ~10 秒创建幽灵连接（因为客户端认为角色仍在线但实际上无法进入游戏）
-                // 3) 日志噪音污染（Warning 日志每 20 秒刷一次，持续数分钟）
-                //
-                // 修复方案：当续约数量 < 预期时，查询 ZoneShardGrain 确认哪些实体缺失，
-                // 对确认缺失的实体清理 ConnectionManager 映射并触发 Despawn。
-                // 注意：不做重新注册（避免位置错乱），只清理过期映射。
-                if (renewed < validEntityIds.Count)
-                {
-                    try
-                    {
-                        // 获取 ZoneShardGrain 中实际注册的所有实体 ID
-                        var registeredEntityIds = await zoneShard.GetRegisteredEntityIdsAsync().ConfigureAwait(false);
-                        var registeredSet = new HashSet<ulong>(registeredEntityIds);
-
-                        foreach (var entityId in validEntityIds)
-                        {
-                            if (!registeredSet.Contains(entityId))
-                            {
-                                // 实体确认不在 ZoneShardGrain 中，但 ConnectionManager 中仍有映射。
-                                // 二次确认：使用 HasEntityAsync 避免并发竞态（GetRegisteredEntityIdsAsync 返回的
-                                // 是快照，实体可能在快照后刚被注册）。
-                                var stillMissing = !await zoneShard.HasEntityAsync(entityId).ConfigureAwait(false);
-                                if (stillMissing)
-                                {
-                                    var characterId = (long)entityId;
-                                    _logger.LogWarning(
-                                        "实体 {EntityId} 不在 ZoneShardGrain 中但 ConnectionManager 仍有映射，关闭客户端连接并立即 Despawn",
-                                        entityId);
-
-                                    // 修复 BUG（重连死循环：每 20 秒一次的"关闭连接→重连→再关闭"循环）：
-                                    // 原实现使用 ScheduleDespawn（15 秒宽限期），客户端在宽限期内重连时
-                                    // StageCharacterMappingAndPresence 会 CancelDespawn + RegisterCharacter，
-                                    // 但实体已不在 ZoneShardGrain 中，无法恢复，下次续约再次检测到→循环。
-                                    // 修复：使用 DespawnImmediatelyAsync 立即完成 Despawn（UnregisterEntity +
-                                    // GoOffline + 清理 Redis + UnregisterCharacter），_pendingDespawns 中
-                                    // 不会有挂起任务，客户端重连时 CancelDespawn 无效果，必须走完整的
-                                    // EnterWorld 流程重新 Spawn 实体到 ZoneShardGrain。
-                                    var conn = _connectionManager.GetConnectionByCharacterId(characterId);
-                                    if (conn != null)
-                                    {
-                                        _ = conn.CloseAsync("实体已从 ZoneShardGrain 消失，关闭连接");
-                                    }
-
-                                    // 清理 PresenceRefreshService 中的刷新记录
-                                    _presenceRefreshService?.RemoveCharacter(characterId);
-
-                                    // 立即执行 Despawn（不使用宽限期），DoDespawnCoreAsync 的 finally 块
-                                    // 会清理 ConnectionManager 映射 + Redis presence/fingerprint + GoOfflineAsync。
-                                    await DespawnImmediatelyAsync(characterId).ConfigureAwait(false);
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception detectEx)
-                    {
-                        _logger.LogWarning(detectEx,
-                            "查询实体丢失状态失败，跳过清理（下次续约重试）。Renewed={Renewed}/{Expected}",
-                            renewed, validEntityIds.Count);
-                    }
+                    renewedTotal += await RenewLeasesOnShardAsync(group.Key, group.ToArray()).ConfigureAwait(false);
                 }
 
                 if (skippedCount > 0)
                 {
                     _logger.LogDebug(
                         "已续约 {Renewed}/{Total} 个实体租约（跳过 {Skipped} 个不在线连接，未清理映射）",
-                        renewed, validEntityIds.Count, skippedCount);
+                        renewedTotal, validEntityIds.Count, skippedCount);
                 }
+
+                // 2026-08：同步续约边界分片的会话订阅租约。边界分片上是"纯订阅会话"（无实体），
+                // 实体租约续约覆盖不到——不续约的话，ZoneShardGrain 的订阅租约过期驱逐
+                // （SessionSubscriptionLease，5 分钟）会把合法在线玩家的边界订阅误清。
+                // 断线/Despawn 后 BoundaryShardSubscriptions 条目被 DoDespawnCoreAsync 移除，
+                // 不会为死会话续租。
+                await RenewBoundarySessionLeasesAsync(validEntityIds).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "批量续约实体租约失败");
             }
+        }
+
+        /// <summary>
+        /// 批量续约边界分片会话订阅租约（<see cref="IZoneShardGrain.RenewSessionLeaseAsync"/>）。<br/>
+        /// 对每个在线角色，按 <see cref="SyncSessionState.BoundaryShardSubscriptions"/> 记录的
+        /// 分片集合逐个续约；单会话/单分片失败仅记 Debug（下个 20s 周期重试），不影响其他续约。
+        /// </summary>
+        /// <param name="onlineCharacterIds">当前在线（连接 IsConnected）的角色 ID 列表。</param>
+        private async Task RenewBoundarySessionLeasesAsync(List<ulong> onlineCharacterIds)
+        {
+            if (_sessionState == null || onlineCharacterIds.Count == 0) return;
+
+            try
+            {
+                foreach (var entityId in onlineCharacterIds)
+                {
+                    var characterId = (long)entityId;
+
+                    HashSet<long>? shards;
+                    lock (_sessionState.BoundaryShardLock)
+                    {
+                        if (!_sessionState.BoundaryShardSubscriptions.TryGetValue(characterId, out shards))
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (shards == null || shards.Count == 0) continue;
+
+                    foreach (var shardId in shards)
+                    {
+                        try
+                        {
+                            await _clusterClient.GetGrain<IZoneShardGrain>(shardId)
+                                .RenewSessionLeaseAsync(characterId)
+                                .ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex,
+                                "续约边界分片会话租约失败（下个周期重试）。ShardId={ShardId}, CharacterId={CharacterId}",
+                                shardId, characterId);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "批量续约边界分片会话租约失败");
+            }
+        }
+
+        /// <summary>
+        /// 在指定 shard 上批量续约实体租约；续约数量不足时查询该 shard 确认缺失实体，
+        /// 对确认缺失的实体清理 ConnectionManager 映射并立即 Despawn（修复过期映射残留）。<br/>
+        /// 阶段 4（多 Shard）：每个 shard 独立调用本方法，单 shard 的持续失败（超出重试次数）
+        /// 只跳过该 shard 本次续约，不影响其他 shard（原单 Shard 实现中总失败会中断整个续约）。
+        /// </summary>
+        /// <param name="shardId">目标 shard。</param>
+        /// <param name="entityIds">该 shard 上的实体 ID 列表。</param>
+        /// <returns>续约成功的实体数量。</returns>
+        private async Task<int> RenewLeasesOnShardAsync(long shardId, IReadOnlyList<ulong> entityIds)
+        {
+            var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(shardId);
+
+            // 修复严重 BUG（在线角色一段时间后从其它客户端离线）：
+            // 原实现只调用一次 RenewLeaseAsync，如果 Orleans grain 调用因瞬时网络问题失败，
+            // 异常被 catch 并仅记录 Warning，导致租约未续约。连续 4 次失败（80 秒）后
+            // 实体租约过期（90 秒），ZoneShardGrain 孤儿清理触发，广播 Despawn 给其他客户端，
+            // 角色从其他客户端视野中消失。增加重试机制确保瞬时失败不会导致租约过期。
+            int renewed = 0;
+            const int maxRetries = 3;
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    renewed = await zoneShard.RenewLeaseAsync(entityIds.ToArray()).ConfigureAwait(false);
+                    break; // 成功则退出重试循环
+                }
+                catch (Exception retryEx) when (attempt < maxRetries)
+                {
+                    _logger.LogWarning(retryEx,
+                        "批量续约实体租约第 {Attempt}/{MaxRetries} 次尝试失败，{DelayMs}ms 后重试。ShardId={ShardId}",
+                        attempt, maxRetries, 500 * attempt, shardId);
+                    await Task.Delay(500 * attempt).ConfigureAwait(false);
+                }
+                catch (Exception finalEx)
+                {
+                    // 多 Shard 下单个 shard 的持续失败不应拖垮其他 shard 的续约，逐 shard 隔离。
+                    _logger.LogWarning(finalEx,
+                        "批量续约实体租约最终失败，跳过本次续约。ShardId={ShardId}",
+                        shardId);
+                    return 0;
+                }
+            }
+
+            // 修复 BUG（ConnectionManager 过期角色映射残留）：
+            // 当续约发现实体不在 ZoneShardGrain 中，且该角色有在线连接，说明 ConnectionManager
+            // 中保留了过期映射（实体已从 ZoneShard 消失但映射未清理）。这会导致：
+            // 1) 续约日志持续显示 0/1，PresenceRefreshService 每 30 秒尝试刷新已不存在的 Redis key
+            // 2) 客户端重连循环，每 ~10 秒创建幽灵连接（因为客户端认为角色仍在线但实际上无法进入游戏）
+            // 3) 日志噪音污染（Warning 日志每 20 秒刷一次，持续数分钟）
+            //
+            // 修复方案：当续约数量 < 预期时，查询 ZoneShardGrain 确认哪些实体缺失，
+            // 对确认缺失的实体清理 ConnectionManager 映射并触发 Despawn。
+            // 注意：不做重新注册（避免位置错乱），只清理过期映射。
+            if (renewed < entityIds.Count)
+            {
+                try
+                {
+                    // 获取 ZoneShardGrain 中实际注册的所有实体 ID
+                    var registeredEntityIds = await zoneShard.GetRegisteredEntityIdsAsync().ConfigureAwait(false);
+                    var registeredSet = new HashSet<ulong>(registeredEntityIds);
+
+                    foreach (var entityId in entityIds)
+                    {
+                        if (!registeredSet.Contains(entityId))
+                        {
+                            // 实体确认不在 ZoneShardGrain 中，但 ConnectionManager 中仍有映射。
+                            // 二次确认：使用 HasEntityAsync 避免并发竞态（GetRegisteredEntityIdsAsync 返回的
+                            // 是快照，实体可能在快照后刚被注册）。
+                            var stillMissing = !await zoneShard.HasEntityAsync(entityId).ConfigureAwait(false);
+                            if (stillMissing)
+                            {
+                                var characterId = (long)entityId;
+
+                                // ★ DS 权威会话必须跳过本判定（否则玩家会被自己的网关踢掉）。
+                                // 实体住在 DS 的 DsWorldSession 中，ZoneShardGrain 本就查不到它——
+                                // 这在"DS 通道尚未存在"的年代是不可能的，因此旧代码把"查不到"一律
+                                // 解读为幽灵映射。启用 DS 后该解读失效：实测真客户端进世界约 13 秒后
+                                // 被此路径关闭连接（日志："实体 27 不在 ZoneShardGrain 中但 ConnectionManager 仍有映射"）。
+                                // DS 权威会话的租约与生命周期由 DS 负责，此处不清理、不关连接。
+                                if (_dsDataPlane?.IsSessionDsAuthoritative(shardId, characterId) == true)
+                                {
+                                    _logger.LogDebug(
+                                        "实体 {EntityId} 不在 ZoneShardGrain 中，但该会话由 UE5 DS 承载权威（Shard={ShardId}），跳过幽灵映射判定。",
+                                        entityId, shardId);
+                                    continue;
+                                }
+
+                                _logger.LogWarning(
+                                    "实体 {EntityId} 不在 ZoneShardGrain 中但 ConnectionManager 仍有映射，关闭客户端连接并立即 Despawn",
+                                    entityId);
+
+                                // 修复 BUG（重连死循环：每 20 秒一次的"关闭连接→重连→再关闭"循环）：
+                                // 原实现使用 ScheduleDespawn（15 秒宽限期），客户端在宽限期内重连时
+                                // StageCharacterMappingAndPresence 会 CancelDespawn + RegisterCharacter，
+                                // 但实体已不在 ZoneShardGrain 中，无法恢复，下次续约再次检测到→循环。
+                                // 修复：使用 DespawnImmediatelyAsync 立即完成 Despawn（UnregisterEntity +
+                                // GoOffline + 清理 Redis + UnregisterCharacter），_pendingDespawns 中
+                                // 不会有挂起任务，客户端重连时 CancelDespawn 无效果，必须走完整的
+                                // EnterWorld 流程重新 Spawn 实体到 ZoneShardGrain。
+                                var conn = _connectionManager.GetConnectionByCharacterId(characterId);
+                                if (conn != null)
+                                {
+                                    _ = conn.CloseAsync("实体已从 ZoneShardGrain 消失，关闭连接");
+                                }
+
+                                // 清理 PresenceRefreshService 中的刷新记录
+                                _presenceRefreshService?.RemoveCharacter(characterId);
+
+                                // 立即执行 Despawn（不使用宽限期），DoDespawnCoreAsync 的 finally 块
+                                // 会清理 ConnectionManager 映射 + Redis presence/fingerprint + GoOfflineAsync。
+                                await DespawnImmediatelyAsync(characterId).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+                catch (Exception detectEx)
+                {
+                    _logger.LogWarning(detectEx,
+                        "查询实体丢失状态失败，跳过清理（下次续约重试）。Renewed={Renewed}/{Expected}, ShardId={ShardId}",
+                        renewed, entityIds.Count, shardId);
+                }
+            }
+
+            return renewed;
         }
 
         /// <summary>
@@ -386,20 +510,62 @@ namespace Horizon.Game.Gateway.Services
         /// </summary>
         private async Task DoDespawnCoreAsync(long characterId)
         {
+            // ★ DS 权威会话：必须**主动告知 DS**该玩家已断线。
+            // 在此之前网关只清理自己的连接与映射，DS 却始终保留该玩家并持续 20Hz 广播给死会话
+            // （实测：网关日志 "Packet dropped: session offline" 刷屏、计数不断增长）。
+            // 放在 Despawn 核心（宽限期之后）而非断线瞬间：宽限期内客户端可能重连，
+            // 提前通知会让 DS 误以为玩家走了，重连后还要重新握手建实体。
+            if (_dsSessionNotifier is not null)
+            {
+                try
+                {
+                    var shardIdForNotify = _shardRouter.Resolve(characterId);
+                    if (_dsDataPlane?.IsSessionDsAuthoritative(shardIdForNotify, characterId) == true)
+                    {
+                        _dsSessionNotifier.NotifySessionEnded(shardIdForNotify, new[] { characterId });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 通知失败不能阻断断线清理本身。
+                    _logger.LogWarning(ex, "通知 DS 会话结束失败。CharacterId={CharacterId}", characterId);
+                }
+            }
+
             var goOfflineCompleted = false;
             try
             {
-                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
+                var primaryShardId = _shardRouter.Resolve(characterId);
+                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(primaryShardId);
 
                 // 1) 注销实体并广播 Despawn delta 给所有在线客户端。
                 await ExecuteWithRetryAsync(
                     () => zoneShard.UnregisterEntityAsync((ulong)characterId),
                     $"UnregisterEntity({characterId})").ConfigureAwait(false);
 
-                // 2) 移除 AOI session（清理该角色在服务端的订阅与可见性表）
-                await ExecuteWithRetryAsync(
-                    () => zoneShard.RemoveSessionAsync(characterId),
-                    $"RemoveSession({characterId})").ConfigureAwait(false);
+                // 2) 移除 AOI session（清理该角色在服务端的订阅与可见性表）。
+                //    阶段 4.3：跨 Shard 边界双重订阅下，角色可能同时在相邻 Shard 建有 AOI 订阅，
+                //    清理主 Shard + 边界订阅跟踪记录的全部 Shard（精确，避免对无订阅 Shard 调用
+                //    RemoveSessionAsync 产生诊断日志噪音）；RemoveSessionAsync 幂等，重复调用无副作用。
+                var cleanupShards = new HashSet<long> { primaryShardId };
+                if (_sessionState != null)
+                {
+                    lock (_sessionState.BoundaryShardLock)
+                    {
+                        if (_sessionState.BoundaryShardSubscriptions.TryGetValue(characterId, out var boundaryShards))
+                        {
+                            cleanupShards.UnionWith(boundaryShards);
+                        }
+                        _sessionState.BoundaryShardSubscriptions.Remove(characterId);
+                    }
+                }
+                foreach (var cleanupShardId in cleanupShards)
+                {
+                    var cleanupShard = _clusterClient.GetGrain<IZoneShardGrain>(cleanupShardId);
+                    await ExecuteWithRetryAsync(
+                        () => cleanupShard.RemoveSessionAsync(characterId),
+                        $"RemoveSession({characterId})@shard{cleanupShardId}").ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {

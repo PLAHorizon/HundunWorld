@@ -1,12 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Arch.Core;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.Core.World;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
-// MovementFormula 统一使用 Horizon.Game.Core.Sim 版本（原 Message 副本已删除）。
-using MovementFormula = Horizon.Game.Core.Sim.MovementFormula;
+// MovementFormula 统一使用 Horizon.Game.Sim 版本（原 Core.Sim 副本已收敛删除）。
+using MovementFormula = Horizon.Game.Sim.MovementFormula;
 
 namespace Horizon.Game.ECS.Arch.Systems;
 
@@ -23,6 +23,12 @@ public sealed class LocalSimulationSystem : ArchSystemBase
 {
     /// <summary>固定时间步长（秒），默认 1/60 秒。</summary>
     public float FixedDtSeconds { get; set; } = 1f / 60f;
+
+    /// <summary>
+    /// 单帧移动推进（阶段 1.3）：三段跳冲量/跳跃计数/公式调用唯一实现，与
+    /// <see cref="ReconciliationSystem"/>（修正重放）共用同一 stepper，消除预测 vs 重放分叉。
+    /// </summary>
+    public IMovementStepper Stepper { get; set; } = new MovementFormulaStepper();
 
     /// <summary>当前客户端 tick 序号（从 0 开始，仅对本地玩家有效）。</summary>
     public long CurrentClientTick { get; private set; }
@@ -118,40 +124,29 @@ public sealed class LocalSimulationSystem : ArchSystemBase
             var jumpCount = _jumpCounts[entity.Id];
             _jumpCountsLastSeenTick[entity.Id] = CurrentClientTick;
 
-            float jumpImpulse;
-            if (isJumpPressed)
+            // 阶段 1.3：跳跃状态机（轻功三段/普通单跳/未按清零）+ 公式调用收敛到 IMovementStepper，
+            // 与 ReconciliationSystem 重放共用同一实现（预测与重放消除分叉）。
+            var step = Stepper.Step(new MovementStepInput
             {
-                if (isQinggongJump)
-                {
-                    jumpCount++;
-                    jumpImpulse = jumpCount switch
-                    {
-                        1 => 5.5f,
-                        2 => 4.5f,
-                        3 => 3.5f,
-                        _ => 0f
-                    };
-                }
-                else
-                {
-                    jumpCount = 1;
-                    jumpImpulse = 5.5f;
-                }
-            }
-            else
-            {
-                jumpImpulse = 0f;
-                if (!isQinggongJump)
-                    jumpCount = 0;
-            }
+                X = pred.X,
+                Y = pred.Y,
+                Z = pred.Z,
+                Vz = pred.Vz,
+                MoveX = input.MoveX,
+                MoveY = input.MoveY,
+                JumpPressed = isJumpPressed,
+                IsQinggongJump = isQinggongJump,
+                JumpCount = jumpCount,
+                MaxSpeed = input.MaxSpeed,
+            }, FixedDtSeconds);
 
+            jumpCount = step.JumpCount;
             _jumpCounts[entity.Id] = jumpCount;
 
-            var (nx, ny, nz, nvz) = MovementFormula.Step(
-                pred.X, pred.Y, pred.Z, pred.Vz,
-                input.MoveX, input.MoveY, jumpImpulse,
-                FixedDtSeconds,
-                maxSpeed: input.MaxSpeed);
+            var nx = step.X;
+            var ny = step.Y;
+            var nz = step.Z;
+            var nvz = step.Vz;
 
             // 地面碰撞检测：采样 (nx, ny) 处的地面 ECS.Z 高度，
             // 若新位置低于地面则吸附到地面并清零垂直速度，防止角色穿透 Terrain。

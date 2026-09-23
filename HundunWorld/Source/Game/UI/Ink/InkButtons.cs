@@ -7,45 +7,46 @@ namespace HundunWorld.Game.UI.Ink
 {
     /// <summary>
     /// 水墨按钮视觉变体。
-    /// 对应设计规范 ds-btn §4.1 五变体：primary/secondary/ghost/danger/brand。
+    /// 对应燕云融合设计规范（hundun-yy-ui .ink-btn 系列）：
+    /// primary 鎏金主 CTA / secondary 深底金线 / ghost 透明 / danger 血色 / brand 亮鎏金 / vermilion 朱红战斗。
     /// </summary>
     public enum InkButtonVariant
     {
-        /// <summary>主按钮 — 春青底 + 反色文字，主操作（确认、提交）</summary>
+        /// <summary>主按钮 — 鎏金底 + 反色文字（.ink-btn-primary，主操作确认/提交）</summary>
         Primary = 0,
 
-        /// <summary>次按钮 — 金雾底 + 金边 + 主文字，次操作（取消、返回）</summary>
+        /// <summary>次按钮 — 深墨底 + 金线描边 + 主文字（.ink-btn 默认）</summary>
         Secondary = 1,
 
-        /// <summary>幽灵按钮 — 透明底 + 透明边，工具栏、行内操作</summary>
+        /// <summary>幽灵按钮 — 透明底 + 弱金边（.ink-btn-ghost，工具栏、行内操作）</summary>
         Ghost = 2,
 
-        /// <summary>危险按钮 — 血色底 + 反色文字，危险操作（删除、丢弃）</summary>
+        /// <summary>危险按钮 — 血色底 + 反色文字（删除、丢弃）</summary>
         Danger = 3,
 
-        /// <summary>品牌按钮 — 鎏金底 + 反色文字，金色强调（购买、强化）</summary>
+        /// <summary>品牌按钮 — 亮鎏金底 + 反色文字（购买、强化等关键操作）</summary>
         Brand = 4,
 
-        /// <summary>默认按钮（向后兼容别名 = Secondary）</summary>
-        Default = Secondary,
+        /// <summary>朱红按钮 — 朱红底 + 纸色文字（.ink-btn-vermilion，战斗/危险/传世强调）</summary>
+        Vermilion = 5,
 
-        /// <summary>朱红按钮（向后兼容别名 = Danger）</summary>
-        Vermilion = Danger
+        /// <summary>默认按钮（向后兼容别名 = Secondary）</summary>
+        Default = Secondary
     }
 
     /// <summary>
     /// 水墨按钮尺寸。
-    /// 对应设计规范 ds-btn §4.1：sm 24px / md 28px / lg 32px，圆角统一 8px。
+    /// 对应燕云融合规范 --ink-control-h-*：sm 28px / md 36px / lg 44px，字号 12/13/15。
     /// </summary>
     public enum InkButtonSize
     {
-        /// <summary>小号 — 高 24px，字号 11，表格内操作、紧凑工具栏</summary>
+        /// <summary>小号 — 高 28px，字号 12，表格内操作、紧凑工具栏</summary>
         Sm,
 
-        /// <summary>中号 — 高 28px，字号 14（默认），通用场景</summary>
+        /// <summary>中号 — 高 36px，字号 13（默认），通用场景</summary>
         Md,
 
-        /// <summary>大号 — 高 32px，字号 14，主操作、对话框确认</summary>
+        /// <summary>大号 — 高 44px，字号 15，主操作、对话框确认</summary>
         Lg
     }
 
@@ -113,20 +114,30 @@ namespace HundunWorld.Game.UI.Ink
         }
 
         /// <summary>
-        /// 根据变体设置正常态与悬停态配色（ds-btn §4.1 状态表）。
+        /// 根据变体设置正常态与悬停态配色（燕云融合规范 .ink-btn 状态表）。
         /// </summary>
         private void ApplyVariantColors()
         {
             switch (_variant)
             {
                 case InkButtonVariant.Primary:
-                    // 春青底 + 反色文字，悬停 jade-bright
-                    _normalBg = InkWashTheme.JadePrimary;
-                    _normalBorder = InkWashTheme.JadePrimary;
-                    _normalText = InkWashTheme.TextInverse;
-                    _hoverBg = InkWashTheme.JadeBright;
-                    _hoverBorder = InkWashTheme.JadeBright;
-                    _hoverText = InkWashTheme.TextInverse;
+                    // .ink-btn-primary 鎏金底（金渐变近似）+ 反色文字，悬停 gold-bright
+                    _normalBg = InkWashTheme.GoldPrimary;
+                    _normalBorder = InkWashTheme.GoldPrimary;
+                    _normalText = InkWashTheme.TextOnBrand;
+                    _hoverBg = InkWashTheme.GoldBright;
+                    _hoverBorder = InkWashTheme.GoldBright;
+                    _hoverText = InkWashTheme.TextOnBrand;
+                    break;
+
+                case InkButtonVariant.Vermilion:
+                    // .ink-btn-vermilion 朱红底 + 纸色文字（战斗/危险），悬停 vermilion-primary
+                    _normalBg = InkWashTheme.VermilionDeep;
+                    _normalBorder = InkWashTheme.BorderVermilion;
+                    _normalText = InkWashTheme.PaperBright;
+                    _hoverBg = InkWashTheme.VermilionPrimary;
+                    _hoverBorder = InkWashTheme.VermilionBright;
+                    _hoverText = InkWashTheme.PaperBright;
                     break;
 
                 case InkButtonVariant.Danger:
@@ -140,39 +151,39 @@ namespace HundunWorld.Game.UI.Ink
                     break;
 
                 case InkButtonVariant.Brand:
-                    // 鎏金底 + 反色文字，悬停 gold-bright
-                    _normalBg = InkWashTheme.GoldPrimary;
-                    _normalBorder = InkWashTheme.GoldPrimary;
+                    // 亮鎏金底 + 反色文字（关键品牌操作），悬停 gold-primary
+                    _normalBg = InkWashTheme.GoldBright;
+                    _normalBorder = InkWashTheme.GoldDeep;
                     _normalText = InkWashTheme.TextOnBrand;
-                    _hoverBg = InkWashTheme.GoldBright;
+                    _hoverBg = InkWashTheme.GoldPrimary;
                     _hoverBorder = InkWashTheme.GoldBright;
                     _hoverText = InkWashTheme.TextOnBrand;
                     break;
 
                 case InkButtonVariant.Ghost:
-                    // 透明底 + 透明边，悬停 bg-hover
+                    // .ink-btn-ghost 透明底 + 弱金边 + 次文字，悬停微金底 + 品牌文字
                     _normalBg = Color.Transparent;
-                    _normalBorder = Color.Transparent;
-                    _normalText = InkWashTheme.TextDefault;
-                    _hoverBg = InkWashTheme.BgHover;
-                    _hoverBorder = InkWashTheme.BgHover;
-                    _hoverText = InkWashTheme.TextDefault;
+                    _normalBorder = InkWashTheme.BorderNeutralL2;
+                    _normalText = InkWashTheme.TextSecondary;
+                    _hoverBg = InkWashTheme.GoldTrace;
+                    _hoverBorder = InkWashTheme.BorderGold;
+                    _hoverText = InkWashTheme.TextBrand;
                     break;
 
                 default: // Secondary
-                    // 金雾底 + 金边 + 主文字，悬停 bg-hover
-                    _normalBg = InkWashTheme.BgMist;
+                    // .ink-btn 默认 深墨底 + 金线描边 + 主文字，悬停 elevated 底 + 强金边 + 品牌文字
+                    _normalBg = InkWashTheme.BaseTertiary;
                     _normalBorder = InkWashTheme.BorderGold;
                     _normalText = InkWashTheme.TextDefault;
-                    _hoverBg = InkWashTheme.BgHover;
-                    _hoverBorder = InkWashTheme.BorderGold;
-                    _hoverText = InkWashTheme.TextDefault;
+                    _hoverBg = InkWashTheme.BaseElevated;
+                    _hoverBorder = InkWashTheme.BorderGoldStrong;
+                    _hoverText = InkWashTheme.TextBrand;
                     break;
             }
         }
 
         /// <summary>
-        /// 根据尺寸设置按钮高度与字号（ds-btn §4.1：24/28/32px，字号 11/14/14）。
+        /// 根据尺寸设置按钮高度与字号（燕云融合规范：28/36/44px，字号 12/13/15）。
         /// </summary>
         private void ApplySize()
         {
@@ -182,15 +193,15 @@ namespace HundunWorld.Game.UI.Ink
             {
                 case InkButtonSize.Sm:
                     height = InkWashTheme.ControlHSm;
-                    fontSize = 11f;
+                    fontSize = 12f;
                     break;
                 case InkButtonSize.Lg:
                     height = InkWashTheme.ControlHLg;
-                    fontSize = 14f;
+                    fontSize = 15f;
                     break;
                 default:
                     height = InkWashTheme.ControlHMd;
-                    fontSize = 14f;
+                    fontSize = 13f;
                     break;
             }
             Height = height;

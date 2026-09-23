@@ -1,0 +1,582 @@
+using FlaxEngine;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Horizon.DsHost;
+using Horizon.Game.Core.Sim.Server;
+using Horizon.Game.Sim;
+
+namespace HundunWorld.Server
+{
+    /// <summary>
+    /// FlaxEngine 无头 Dedicated Server 宿主（DS）——<b>纯托管宿主对象，不是 <c>Script</c></b>。
+    ///
+    /// <para><b>为什么不是 <c>Script</c>（V7 重大修正）</b>：<c>Script</c> 继承自 <c>SceneObject</c>，
+    /// 必须挂在场景里的某个 Actor 上，由场景 tick 驱动 <c>OnStart</c>/<c>OnUpdate</c>。
+    /// 而 <c>ServerTarget</c> 的设计前提是<b>"纯托管、无场景依赖"</b>——不加载任何场景内容。
+    /// 两者直接冲突：<c>Script</c> 版本<b>永远不会被实例化</b>，DS 静默起不来。
+    /// （引擎侧证据：<c>Source/Engine/Scripting/Script.h</c> → <c>class Script : public SceneObject</c>，
+    /// 带 <c>GetActor()</c>/<c>SetActor()</c>；而 <c>Plugin.h</c> → <c>class Plugin : public ScriptingObject</c>，
+    /// 由 <c>PluginManager</c> 直接实例化，不需要场景。）</para>
+    ///
+    /// <para><b>承载方式</b>：由 <see cref="ServerGamePlugin"/>（<c>GamePlugin</c> 子类）在
+    /// <c>Initialize()</c> 里创建并 <see cref="Start"/>。这与 <c>Game</c> 模块的
+    /// <c>HundunWorldGamePlugin</c> 是同一套已验证可行的模式。</para>
+    ///
+    /// <para><b>职责</b>：把 <see cref="DsHostRunner"/>（权威模拟 + 数据面 + 控制面）挂到 Flax 进程上，
+    /// 并按固定频率驱动 <see cref="DsHostRunner.RunSingleTickAsync"/>。</para>
+    ///
+    /// <para><b>为什么不用 <c>StartAsync</c> 而是自己调 <c>RunSingleTickAsync</c></b>：
+    /// <c>StartAsync</c> 会额外起一个 <c>TickLoopAsync</c> 任务，与宿主本机的循环
+    /// <b>竞争同一份世界</b>（<see cref="DsWorldSession"/> 非线程安全），
+    /// 表现为随机的模拟跳帧与状态损坏。因此本类调用的是 <c>StartDataPlaneAsync</c>
+    /// （只开数据面 + 发送泵，不自驱 tick），随后在宿主线程上反复调 <c>RunSingleTickAsync</c>。</para>
+    ///
+    /// <para><b>驱动模式</b>：默认走 <b>独立线程自驱</b>（<see cref="DriveMode.Thread"/>）。
+    /// <c>OnUpdate</c> 模式仅在本类被 <c>FlaxEngine.Script</c> 承载时才可用（见 <see cref="TickFromFrame"/>），
+    /// Plugin 承载下恒为线程驱动——Plugin 没有帧回调。</para>
+    /// </summary>
+    public sealed class DedicatedServerHost
+    {
+        /// <summary>tick 驱动模式。</summary>
+        public enum DriveMode
+        {
+            /// <summary>
+            /// 独立线程自驱（默认，推荐）。<br/>
+            /// <b>理由</b>：权威模拟的节拍<b>不能</b>依赖渲染帧。Flax 在 <c>-headless</c> 下
+            /// 是否仍按帧驱动 <c>OnUpdate</c> 未经证实（方案文档 V4 项）；即便驱动，
+            /// 帧率也受 <c>Time.MaxFPS</c> / 垂直同步 / 加载停顿影响。
+            /// 而 <c>DsWorldSession.Tick()</c> 的 <c>dt</c> 是硬编码的 <c>1/TicksPerSecond</c>，
+            /// 不由 DeltaTime 决定——所以正确的做法是"照自己的节奏调 Tick"，
+            /// 而不是"叫 Tick 去适应 DeltaTime"。独立线程从根上消除这个耦合。
+            /// </summary>
+            Thread = 0,
+
+            /// <summary>
+            /// 由 <c>OnUpdate</c> 以固定步长累加器驱动。<br/>
+            /// 仅在确认 <c>-headless</c> 下 <c>OnUpdate</c> 正常驱动、<b>且</b>本宿主被
+            /// <c>Script</c> 承载时可用（Plugin 承载下无帧回调，调用 <see cref="TickFromFrame"/>
+            /// 会静默无效果）。
+            /// </summary>
+            OnUpdate = 1,
+        }
+
+        // ── 配置（可在编辑器中设置 / 环境变量覆盖）────────────────────────────
+
+        /// <summary>tick 驱动模式。</summary>
+        public DriveMode Mode = DriveMode.Thread;
+
+        /// <summary>本 DS 唯一标识。空则读环境变量 <c>HORIZON_DS_ID</c>，再回退 <c>ds-flax-0</c>。</summary>
+        public string DsId = string.Empty;
+
+        /// <summary>承载的 shard 列表（逗号分隔）。空则读 <c>HORIZON_DS_SHARD_IDS</c>，再回退 "0"。</summary>
+        public string ShardIds = string.Empty;
+
+        /// <summary>数据面监听端口（网关据此转发客户端上行帧）。0 则读 <c>HORIZON_DS_LISTEN_PORT</c>，再回退 19870。</summary>
+        public int ListenPort = 0;
+
+        /// <summary>对网关可达的主机名（写入注册表）。空则读 <c>HORIZON_DS_ADVERTISE_HOST</c>，再回退 "127.0.0.1"。</summary>
+        public string AdvertiseHost = string.Empty;
+
+        /// <summary>区域标识（跨区盲路由防护）。空则读 <c>HORIZON_DS_REGION</c>。</summary>
+        public string Region = string.Empty;
+
+        /// <summary>模拟频率（Hz）。0 则读 <c>HORIZON_DS_TICK_RATE</c>，再回退 60。</summary>
+        public int TicksPerSecond = 0;
+
+        /// <summary>开发用刷怪点数量。0 = 世界内无怪，仅同步玩家。</summary>
+        public int SpawnPointCount = 0;
+
+        /// <summary>是否启用 AOI 分桶快照裁剪。默认 false（全量快照，向后兼容）。</summary>
+        public bool EnableAoiFilter = false;
+
+        /// <summary>AOI chunk 边长（米）。</summary>
+        public int AoiChunkSize = 16;
+
+        /// <summary>AOI 视野半径（chunk 数）。</summary>
+        public int AoiRadiusChunks = 28;
+
+        /// <summary>单 DS 软容量上限（会话数）。0 则读 <c>HORIZON_DS_MAX_SESSIONS</c>，再回退 5000。</summary>
+        public int MaxSessions = 0;
+
+        // ── 运行时状态 ──────────────────────────────────────────────────────
+
+        private DsHostRunner _runner;
+        private DsUplinkClient _uplink;
+        private DsUplinkClientOptions _uplinkOptions;
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        private Thread _tickThread;
+        private volatile bool _stopping;
+        private double _tickAccumulator;
+        private double _tickInterval;
+        private long _lastSummaryTick;
+        private bool _started;
+
+        /// <summary>宿主是否已成功启动（诊断/幂等保护）。</summary>
+        public bool IsStarted => _started;
+
+        /// <summary>累计执行的 tick 数（诊断）。</summary>
+        public long TicksExecuted => _runner?.TicksExecuted ?? 0;
+
+        /// <summary>单帧最多补的 tick 数（OnUpdate 模式下防止停顿后的追帧风暴）。</summary>
+        private const int MaxCatchUpTicksPerFrame = 4;
+
+        /// <summary>状态摘要打印间隔（tick 数）。600 tick ≈ 10s @60Hz。</summary>
+        private const long SummaryIntervalTicks = 600;
+
+        // ── 生命周期（由承载者调用）────────────────────────────────────────
+
+        /// <summary>
+        /// 启动 DS：开数据面 + 起 tick 驱动。
+        /// <para>由 <see cref="ServerGamePlugin.Initialize"/> 调用。启动失败会抛出——
+        /// DS 是无人值守进程，启动失败必须留痕，不能静默。</para>
+        /// </summary>
+        public void Start()
+        {
+            StartServer();
+        }
+
+        /// <summary>
+        /// 关闭 DS：停 tick 线程 → 摘除网关注册 → 释放 runner/uplink。
+        /// <para>由 <see cref="ServerGamePlugin.Deinitialize"/> 调用。</para>
+        /// </summary>
+        public void Stop()
+        {
+            StopServer();
+        }
+
+        /// <summary>
+        /// 由外部帧回调（<c>Script.OnUpdate</c>）驱动一个 tick 步。
+        /// <para>
+        /// <b>Plugin 承载下不会被调用</b>（Plugin 无帧回调）；保留此入口是为将来若改用
+        /// <c>Script</c> 承载、且确认 <c>-headless</c> 下帧循环可用时，可直接复用。
+        /// </para>
+        /// </summary>
+        public void TickFromFrame()
+        {
+            if (Mode != DriveMode.OnUpdate || _runner is null) return;
+            DriveByFrame();
+        }
+
+        // ── 启动 ────────────────────────────────────────────────────────────
+
+        private void StartServer()
+        {
+            if (_started) return;
+            _started = true;
+
+            var options = BuildHostOptions();
+            _tickInterval = 1.0 / options.TicksPerSecond;
+            _lastSummaryTick = 0;
+
+            _uplinkOptions = new DsUplinkClientOptions
+            {
+                DsId = options.DsId,
+                ShardIds = options.ShardIds,
+                Host = options.AdvertiseHost,
+                ListenPort = options.ListenPort,
+                Region = options.Region,
+                GatewayHost = Env("HORIZON_GATEWAY_HOST", "127.0.0.1"),
+                GatewayPort = EnvInt("HORIZON_GATEWAY_DS_UPLINK_PORT", 0),
+                Token = Env("HORIZON_DS_CONTROL_TOKEN", string.Empty),
+            };
+
+            _uplink = new DsUplinkClient(_uplinkOptions, Log);
+
+            // ⚠️ 订阅必须在 runner 构造**之后**：SessionEndReceived 在读循环线程触发，
+            //    而 DsWorldSession 非线程安全。DsHostRunner.NotifySessionEnded 内部
+            //    只做 ConcurrentQueue 入队，真正的 RemovePlayer 发生在下次
+            //    RunSingleTickAsync 的开头（tick 线程）——所以订 NotifySessionEnded 是安全的，
+            //    宿主层**无需**再做一次转投。
+            _runner = new DsHostRunner(options, _uplink, Log);
+            _uplink.SessionEndReceived += _runner.NotifySessionEnded;
+
+            // ⚠️ 必须用 StartDataPlaneAsync（而不是 StartAsync）：StartAsync 会额外起一条
+            //    内部 TickLoopAsync，与宿主的 TickLoop 竞争同一个非线程安全的 DsWorldSession。
+            //    StartDataPlaneAsync 只做两件事——开数据面监听 + 起后台发送泵——正好是外部宿主所需。
+            //    漏掉这一步的症状是"DS 起来了、网关注册成功、客户端握手永远超时"；
+            //    只做监听而漏掉发送泵的症状是"模拟在跑但客户端永远收不到快照"。
+            _runner.StartDataPlaneAsync(_cts.Token).GetAwaiter().GetResult();
+
+            // 控制面（连接 → 注册 → 心跳）独立于 tick 循环：网络抖动不应阻塞模拟。
+            // 与 Horizon.DsHost/Program.RunControlPlaneAsync 行为一致。
+            StartControlPlane();
+
+            if (Mode == DriveMode.Thread)
+            {
+                StartTickThread();
+            }
+
+            Log($"DS 就绪。驱动模式={Mode} DsId={options.DsId} Shard={string.Join(",", options.ShardIds)} " +
+                $"数据面端口={options.ListenPort} 刷怪点={options.SpawnPoints.Count} " +
+                $"网关={_uplinkOptions.GatewayHost}:{_uplinkOptions.GatewayPort}");
+        }
+
+        private DsHostOptions BuildHostOptions()
+        {
+            var dsId = Resolve(DsId, "HORIZON_DS_ID", "ds-flax-0");
+            var shards = ParseShardIds(Resolve(ShardIds, "HORIZON_DS_SHARD_IDS", "0"));
+            var tickRate = TicksPerSecond > 0 ? TicksPerSecond : EnvInt("HORIZON_DS_TICK_RATE", 60);
+            if (tickRate <= 0) tickRate = 60;
+            var port = ListenPort > 0 ? ListenPort : EnvInt("HORIZON_DS_LISTEN_PORT", 19870);
+
+            var options = new DsHostOptions
+            {
+                DsId = dsId,
+                ShardIds = shards,
+                TicksPerSecond = tickRate,
+                ListenPort = port,
+                ListenAddress = Env("HORIZON_DS_LISTEN_ADDRESS", "0.0.0.0"),
+                AdvertiseHost = Resolve(AdvertiseHost, "HORIZON_DS_ADVERTISE_HOST", "127.0.0.1"),
+                Region = Resolve(Region, "HORIZON_DS_REGION", string.Empty),
+                EnableAoiFilter = EnableAoiFilter,
+                AoiChunkSize = AoiChunkSize > 0 ? AoiChunkSize : 16,
+                AoiRadiusChunks = AoiRadiusChunks > 0 ? AoiRadiusChunks : 28,
+                MaxSessionsPerDs = MaxSessions > 0 ? MaxSessions : EnvInt("HORIZON_DS_MAX_SESSIONS", 5000),
+                // 未接 Orleans → 使用内置确定性掉落表（零依赖、可离线跑）。
+                // 与 Horizon.DsHost/Program.cs 的默认行为一致；接 Orleans 是独立的可选项
+                // （OrleansLootProvider 需要 Orleans 客户端，不该在游戏进程里硬接）。
+                LootProvider = null,
+                SpawnPoints = SpawnPointCount > 0
+                    ? BuildSpawnPoints(shards, SpawnPointCount)
+                    : new List<SpawnPointConfig>(),
+            };
+
+            return options;
+        }
+
+        /// <summary>
+        /// 生成开发用刷怪点。<b>算法必须与 <c>Horizon.DsHost/Program.BuildSpawnPoints</c> 逐字一致</b>——
+        /// 怪物实体 ID 规则为 <c>(spawnPointId &lt;&lt; 32) | slotIndex</c>，
+        /// 且 <c>GatewayDsFullLoopLiveTests</c> 硬断言"默认刷怪点 1 的 0 号槽位 = (1&lt;&lt;32)|1"。
+        /// 两个宿主的刷怪点不一致会让同一场景在 Flax/UE 下产生不同的实体 ID。
+        /// </summary>
+        private static List<SpawnPointConfig> BuildSpawnPoints(long[] shardIds, int count)
+        {
+            var list = new List<SpawnPointConfig>(count);
+            for (var i = 0; i < count; i++)
+            {
+                var cfg = SpawnPointConfig.Default;
+                cfg.SpawnPointId = i + 1;
+                cfg.ShardId = shardIds.Length > 0 ? shardIds[0] : 0;
+                cfg.X = 20f + i * 60f;
+                cfg.Y = 0f;
+                cfg.Z = 0f;
+                cfg.MaxAlive = 3;
+                cfg.MonsterTemplateId = 1 + (i % 3);
+                list.Add(cfg);
+            }
+            return list;
+        }
+
+        // ── 驱动 ────────────────────────────────────────────────────────────
+
+        private void StartTickThread()
+        {
+            _tickThread = new Thread(TickLoop)
+            {
+                IsBackground = true,
+                Name = "HorizonDS-Tick",
+                // 权威模拟是延迟敏感的：避免被 OS 降级到低优先级。
+                Priority = ThreadPriority.AboveNormal,
+            };
+            _tickThread.Start();
+        }
+
+        /// <summary>
+        /// 独立线程 tick 循环。节奏对齐逻辑移植自
+        /// <c>DsHostRunner.TickLoopAsync</c>：固定步长 + 有上限的追赶（防死亡螺旋）。
+        /// </summary>
+        private void TickLoop()
+        {
+            var ticksPerSecond = _tickInterval > 0 ? (int)Math.Round(1.0 / _tickInterval) : 60;
+            if (ticksPerSecond <= 0) ticksPerSecond = 60;
+
+            var targetIntervalTicks = Stopwatch.Frequency / (double)ticksPerSecond;
+            var nextDeadline = Stopwatch.GetTimestamp();
+
+            while (!_stopping)
+            {
+                nextDeadline += (long)targetIntervalTicks;
+                var waitTicks = nextDeadline - Stopwatch.GetTimestamp();
+
+                if (waitTicks > 0)
+                {
+                    var waitMs = (int)Math.Max(1, waitTicks * 1000 / Stopwatch.Frequency);
+                    if (waitMs > 0) Thread.Sleep(waitMs);
+                }
+                else
+                {
+                    // 落后了：补 tick，但超出上限就重置基准——
+                    // 否则一次长停顿会让补 tick 越补越落后（死亡螺旋）。
+                    var behind = -waitTicks / targetIntervalTicks;
+                    if (behind > 8)
+                    {
+                        Log($"[DS] tick 落后 {behind:F0} 帧，重置调度基准（防死亡螺旋）。");
+                        nextDeadline = Stopwatch.GetTimestamp();
+                    }
+                }
+
+                RunOneTick();
+            }
+        }
+
+        /// <summary>
+        /// <c>OnUpdate</c> 驱动模式：固定步长累加器。
+        /// <para>
+        /// <b>为什么不直接用 <c>Time.DeltaTime</c> 当 dt</b>：<c>DsWorldSession.Tick()</c> 的
+        /// 时间步是硬编码的 <c>1/TicksPerSecond</c>（见 <c>MovementValidator.Options.TickDtSeconds</c>）。
+        /// 若按可变 DeltaTime 驱动，权威模拟与客户端预测会逐帧发散 → 修正风暴。
+        /// 累加器的作用是"用可变帧率凑出固定 tick 数"。
+        /// </para>
+        /// </summary>
+        private void DriveByFrame()
+        {
+            _tickAccumulator += Time.DeltaTime;
+
+            var ticks = 0;
+            while (_tickAccumulator >= _tickInterval && ticks < MaxCatchUpTicksPerFrame)
+            {
+                RunOneTick();
+                _tickAccumulator -= _tickInterval;
+                ticks++;
+            }
+
+            // 追不上就丢弃积压：宁可丢掉落后时间，也不让累加器无限增长
+            // （否则一旦卡顿，后续每帧都会跑满 MaxCatchUpTicksPerFrame，永远追不回）。
+            if (ticks >= MaxCatchUpTicksPerFrame) _tickAccumulator = 0;
+        }
+
+        /// <summary>
+        /// 执行一个 tick。<b>所有世界状态变更都必须发生在此</b>（tick 线程）。
+        /// <para>
+        /// 刻意<b>不</b>调用 <see cref="DsHostRunner.StartAsync"/>：它会起一条内部
+        /// <c>TickLoopAsync</c>，与宿主线程同时推进同一个非线程安全的
+        /// <see cref="DsWorldSession"/>。本方法只做单步推进，节奏由宿主掌握。
+        /// </para>
+        /// </summary>
+        private void RunOneTick()
+        {
+            var runner = _runner;
+            if (runner is null) return;
+
+            try
+            {
+                // RunSingleTickAsync 内部顺序（不可调换）：
+                //   1) 排干会话结束队列 → RemovePlayer
+                //   2) DrainIntoWorld（数据面收包 → 世界）
+                //   3) World.Tick()（权威模拟）
+                //   4) Encode + 写入发送 Channel（发送泵异步发出）
+                // 第 2、3 步必须同线程且先 drain 再 tick——DsWorldSession 非线程安全。
+                runner.RunSingleTickAsync().GetAwaiter().GetResult();
+                EmitPeriodicSummary(runner);
+            }
+            catch (Exception ex)
+            {
+                // 单 tick 异常不能杀死整个 DS：记录后继续。
+                // 否则一个坏输入就能下线整张地图（与 DsHostRunner.TickLoopAsync 的策略一致）。
+                Log($"[DS] tick 异常（已跳过）：{ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private void EmitPeriodicSummary(DsHostRunner runner)
+        {
+            var ticks = runner.TicksExecuted;
+            if (ticks == 0 || ticks % SummaryIntervalTicks != 0 || ticks == _lastSummaryTick) return;
+            _lastSummaryTick = ticks;
+
+            var world = runner.World;
+            var plane = runner.DataPlane;
+            Log($"[DS] Ticks={ticks} 玩家={world.PlayerCount} 怪={world.MonsterCount} " +
+                $"ServerTick={world.ServerTick} 收帧={plane.ReceivedFrameCount} 丢帧={plane.DroppedFrameCount} " +
+                $"解码失败={plane.DecodeFailureCount} 批次发送={runner.BatchesSent} 批次失败={runner.BatchesFailed} " +
+                $"会话移除={runner.SessionsRemoved} AOI分组={runner.LastAoiGroupCount}");
+        }
+
+        // ── 控制面 ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// 控制面：连接网关（指数退避）→ 注册 → 周期心跳。
+        /// 与 tick 循环解耦：网络抖动不应阻塞模拟。
+        /// <para>结构与 <c>Horizon.DsHost/Program.RunControlPlaneAsync</c> 对齐。</para>
+        /// </summary>
+        private void StartControlPlane()
+        {
+            var ct = _cts.Token;
+            var uplink = _uplink;
+            var opts = _uplinkOptions;
+
+            if (uplink is null || opts is null) return;
+
+            if (opts.GatewayPort <= 0)
+            {
+                // 合法用法：只跑本地模拟、不接网关（单机调 DS 时常用）。
+                Log("未配置网关上行端口（HORIZON_GATEWAY_DS_UPLINK_PORT），控制面未启用；DS 仅本地模拟。");
+                return;
+            }
+
+            // 注意：ThreadPool 需要 ServerGame.Build.cs 显式引用 System.Threading.ThreadPool
+            // 程序集（该类型被 type forward 出去了），否则报 CS1069。
+            ThreadPool.QueueUserWorkItem(async _ =>
+            {
+                var backoff = opts.ReconnectBackoffMs > 0 ? opts.ReconnectBackoffMs : 1000;
+                var backoffMax = opts.ReconnectBackoffMaxMs > 0 ? opts.ReconnectBackoffMaxMs : 30000;
+                var heartbeatMs = Math.Max(1000, opts.HeartbeatSeconds * 1000);
+
+                while (!_stopping && !ct.IsCancellationRequested)
+                {
+                    if (!uplink.IsConnected)
+                    {
+                        if (!await uplink.ConnectAsync(ct).ConfigureAwait(false))
+                        {
+                            Log($"连接网关失败（{uplink.LastFailureReason}），{backoff}ms 后重试。");
+                            if (!await DelaySafe(backoff, ct).ConfigureAwait(false)) return;
+                            backoff = Math.Min(backoff * 2, backoffMax);
+                            continue;
+                        }
+
+                        backoff = opts.ReconnectBackoffMs > 0 ? opts.ReconnectBackoffMs : 1000;
+
+                        if (!await uplink.RegisterAsync(ct).ConfigureAwait(false))
+                        {
+                            Log($"注册失败（{uplink.LastFailureReason}），{backoff}ms 后重试。");
+                            if (!await DelaySafe(backoff, ct).ConfigureAwait(false)) return;
+                            backoff = Math.Min(backoff * 2, backoffMax);
+                            continue;
+                        }
+
+                        Log($"已向网关注册成功。DsId={opts.DsId} Shards={string.Join(',', opts.ShardIds)} Port={opts.ListenPort}");
+                    }
+
+                    if (!await DelaySafe(heartbeatMs, ct).ConfigureAwait(false)) return;
+                    if (ct.IsCancellationRequested || _stopping) return;
+
+                    if (!await uplink.HeartbeatAsync(ct).ConfigureAwait(false))
+                    {
+                        // ⚠️ 这里刻意只 Disconnect，不 Dispose：
+                        //    Dispose 会让控制面永久停摆——网关重启一次后 DS 再也不回来
+                        //    （注册表过期摘除 → 该 shard 永远回退 Orleans）。
+                        //    此缺陷由 M5.3 混沌用例 DsHostReconnectLiveTests 捕获过。
+                        Log($"心跳失败（{uplink.LastFailureReason}），断开连接，{backoff}ms 后重连。");
+                        uplink.Disconnect();
+                        if (!await DelaySafe(backoff, ct).ConfigureAwait(false)) return;
+                        backoff = Math.Min(backoff * 2, backoffMax);
+                        continue;
+                    }
+
+                    backoff = opts.ReconnectBackoffMs > 0 ? opts.ReconnectBackoffMs : 1000;
+                }
+            });
+        }
+
+        private static async Task<bool> DelaySafe(int ms, CancellationToken ct)
+        {
+            try
+            {
+                await Task.Delay(ms, ct).ConfigureAwait(false);
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+        }
+
+        // ── 停机 ────────────────────────────────────────────────────────────
+
+        private void StopServer()
+        {
+            if (_stopping) return;
+            _stopping = true;
+
+            var runner = _runner;
+            var uplink = _uplink;
+            var ticks = runner?.TicksExecuted ?? 0;
+
+            try { _cts.Cancel(); }
+            catch { /* 忽略 */ }
+
+            // 先停 tick 线程：它在跑世界，继续推进会让后续释放变成竞态。
+            if (_tickThread is not null)
+            {
+                try { _tickThread.Join(TimeSpan.FromSeconds(3)); }
+                catch { /* 忽略 */ }
+                _tickThread = null;
+            }
+
+            _runner = null;
+            _uplink = null;
+
+            // 优雅下线：先摘除注册，再停模拟。
+            // 不摘除的话网关会把新客户端路由到已死的 DS —— 表现为连接黑洞。
+            if (uplink is not null && uplink.IsConnected)
+            {
+                // 注意用 CancellationToken.None：_cts 已取消，带它进去会直接抛。
+                try
+                {
+                    var ok = uplink.UnregisterAsync(CancellationToken.None).GetAwaiter().GetResult();
+                    Log(ok ? "已向网关摘除注册。" : "摘除注册未被网关确认。");
+                }
+                catch (Exception ex)
+                {
+                    Log($"摘除注册失败（忽略）：{ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            if (runner is not null)
+            {
+                try { runner.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(3)); }
+                catch (Exception ex) { Log($"释放 runner 异常（忽略）：{ex.Message}"); }
+            }
+
+            if (uplink is not null)
+            {
+                try { uplink.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(2)); }
+                catch (Exception ex) { Log($"释放 uplink 异常（忽略）：{ex.Message}"); }
+            }
+
+            try { _cts.Dispose(); }
+            catch { /* 忽略 */ }
+
+            Log($"DS 已停止。累计 tick={ticks}");
+        }
+
+        // ── 辅助 ────────────────────────────────────────────────────────────
+
+        private static string Resolve(string configured, string envKey, string fallback)
+        {
+            if (!string.IsNullOrWhiteSpace(configured)) return configured.Trim();
+            var env = Environment.GetEnvironmentVariable(envKey);
+            return string.IsNullOrWhiteSpace(env) ? fallback : env.Trim();
+        }
+
+        private static string Env(string key, string fallback)
+        {
+            var v = Environment.GetEnvironmentVariable(key);
+            return string.IsNullOrWhiteSpace(v) ? fallback : v.Trim();
+        }
+
+        private static int EnvInt(string key, int fallback)
+            => int.TryParse(Environment.GetEnvironmentVariable(key), out var v) ? v : fallback;
+
+        private static long[] ParseShardIds(string raw)
+        {
+            var parts = (raw ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var ids = new List<long>(parts.Length);
+            foreach (var p in parts)
+            {
+                if (long.TryParse(p, out var id) && id >= 0) ids.Add(id);
+            }
+            return ids.Count > 0 ? ids.ToArray() : new long[] { 0 };
+        }
+
+        private static void Log(string message)
+        {
+            // 显式限定：见 OnStart 的 CS0104 说明。
+            FlaxEngine.Debug.Log($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
+        }
+    }
+}

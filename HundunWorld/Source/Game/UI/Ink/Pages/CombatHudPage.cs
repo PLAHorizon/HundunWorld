@@ -33,8 +33,11 @@ namespace HundunWorld.Game.UI.Ink.Pages
         // 布局常量
         // =======================================================================
 
-        /// <summary>中央引导按钮尺寸（正方形），平铺于屏幕中央</summary>
-        private const float GuideSize = 64f;
+        /// <summary>左上角引导按钮宽度（对齐设计 .hud-nav-btn ≈88px）</summary>
+        private const float GuideWidth = 88f;
+
+        /// <summary>引导按钮高度（对齐设计 .hud-nav-btn）</summary>
+        private const float GuideHeight = 34f;
 
         /// <summary>顶部任务条距离屏幕顶部的边距</summary>
         private const float TopMargin = 20f;
@@ -42,22 +45,22 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <summary>顶部导航条尺寸</summary>
         private static readonly Float2 NavStripSize = new Float2(440f, 30f);
 
-        /// <summary>右上角小地图尺寸（正方形），对齐 design combat-hud.html 160x160</summary>
-        private const float MinimapSize = 160f;
+        /// <summary>右上角圆形罗盘尺寸（对齐设计 .hud-compass 148px）</summary>
+        private const float CompassSize = 148f;
 
         /// <summary>左上角角色信息面板尺寸（对齐 boss 目标面板紧凑风格）</summary>
         private static readonly Float2 LeftBottomSize = new Float2(360f, 130f);
 
-        /// <summary>右下角容器尺寸（容纳 5 个技能槽 + 间隔 + 1 个奇术槽）</summary>
-        private static readonly Float2 RightBottomSize = new Float2(420f, 84f);
+        /// <summary>右下角容器尺寸（5 技能槽 60 + 间隔 8 + 分隔 + 奇术槽 72，对齐设计）</summary>
+        private static readonly Float2 RightBottomSize = new Float2(440f, 76f);
 
         /// <summary>buff/debuff 图标条尺寸（对齐 design 横向图标条，位于左上角角色面板下方）</summary>
         private static readonly Float2 BuffBarSize = new Float2(360f, 42f);
 
-        /// <summary>系统主导航栏尺寸（第一行：9 个主导航按钮 + 分隔符 + 传统模式切换）</summary>
-        private static readonly Float2 SysNavSize = new Float2(760f, 36f);
+        /// <summary>系统导航栏尺寸（对齐设计 .hud-sysnav：底部中央一行 6 项）</summary>
+        private static readonly Float2 SysNavSize = new Float2(300f, 58f);
 
-        /// <summary>系统扩展导航栏尺寸（第二行：9 个扩展导航按钮）</summary>
+        /// <summary>系统扩展导航栏尺寸（已停用融合扩展行，保留字段避免破坏历史引用）</summary>
         private static readonly Float2 SysNavExtendedSize = new Float2(760f, 36f);
 
         /// <summary>主导航栏与扩展导航栏的垂直间距</summary>
@@ -71,20 +74,23 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <summary>主导航栏分隔符宽度（竖线 + 两侧 margin）</summary>
         private const float SysNavDividerWidth = 8f;
 
-        /// <summary>技能槽尺寸（正方形）</summary>
-        private const float SkillSlotSize = 58f;
+        /// <summary>技能槽尺寸（对齐设计 .hud-skill 60px 圆形）</summary>
+        private const float SkillSlotSize = 60f;
 
-        /// <summary>技能槽间距</summary>
-        private const float SkillSlotGap = 10f;
+        /// <summary>技能槽间距（对齐设计 gap-2 = 8px）</summary>
+        private const float SkillSlotGap = 8f;
 
-        /// <summary>奇术槽尺寸（正方形，大于技能槽）</summary>
-        private const float QishuSlotSize = 76f;
+        /// <summary>奇术槽尺寸（对齐设计 .hud-skill-special 72px 圆形）</summary>
+        private const float QishuSlotSize = 72f;
 
-        /// <summary>奇术槽与最后一个技能槽的间距</summary>
-        private const float QishuSlotGap = 18f;
+        /// <summary>奇术槽与最后一个技能槽的间距（含分隔线，对齐设计 gap-3 = 12px）</summary>
+        private const float QishuSlotGap = 12f;
 
-        /// <summary>buff cell 尺寸（正方形）</summary>
-        private const float BuffCellSize = 34f;
+        /// <summary>buff cell 尺寸（正方形，对齐设计 .hud-buff 38px）</summary>
+        private const float BuffCellSize = 38f;
+
+        /// <summary>顶部中央任务提示条尺寸（对齐设计 .hud-quest）</summary>
+        private static readonly Float2 QuestBannerSize = new Float2(340f, 34f);
 
         /// <summary>系统导航按钮尺寸</summary>
         private static readonly Float2 SysNavBtnSize = new Float2(96f, 30f);
@@ -150,11 +156,17 @@ namespace HundunWorld.Game.UI.Ink.Pages
         // SubTask 5.2 引导按钮
         private InkButton _guideButton;
 
-        // 顶部中央导航条（方位 + 目标距离）
+        // 顶部中央导航条（方位 + 目标距离）——已按设计停用（设计为任务提示条，见 _questBanner）
         private InkNavigationStrip _navStrip;
 
-        // SubTask 5.4 水墨小地图（带地形快照、NPC、玩家图标）
+        // 顶部中央任务提示条（对齐设计 .hud-quest）
+        private InkPanel _questBanner;
+
+        // SubTask 5.4 水墨小地图（带地形快照、NPC、玩家图标）——已按设计替换为圆形罗盘（见 _compass）
         private InkMinimap _minimap;
+
+        // 右上角圆形水墨罗盘（对齐设计 .hud-compass 148px）
+        private InkCompass _compass;
 
         // SubTask 5.5 左上角角色信息面板（对齐 boss 目标面板布局风格）
         private ContainerControl _leftBottom;
@@ -398,14 +410,15 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
         /// <summary>
         /// 小地图玩家朝向角（度）。0 = 正北，顺时针增加。默认 0。
+        /// （历史名称保留：现驱动右上角圆形罗盘指针 <see cref="InkCompass.Yaw"/>。）
         /// </summary>
         public float MinimapPlayerYaw
         {
-            get => _minimap?.PlayerYaw ?? 0f;
+            get => _compass?.Yaw ?? 0f;
             set
             {
-                if (_minimap != null)
-                    _minimap.PlayerYaw = value;
+                if (_compass != null)
+                    _compass.Yaw = value;
             }
         }
 
@@ -747,19 +760,16 @@ namespace HundunWorld.Game.UI.Ink.Pages
             try
             {
                 BuildSplashDecorations();
-                BuildGuideButton();
-                BuildNavigationStrip();
-                BuildMinimap();
+                // 引导入口已按需求取消（引导三页保留注册，可经 F9 画廊访问）。
+                // BuildGuideButton();
+                // 设计 combat-hud.html：顶部中央为任务提示条（原"方位导航条"已停用，
+                // 方向信息由右上角罗盘承担；目标/队伍/连击/道具栏为 combat-hud-v2 元素，本页不再构建）。
+                BuildQuestBanner();
+                BuildCompass();
                 BuildLeftBottom();
                 BuildRightBottom();
                 BuildBuffBar();
                 BuildSystemNav();
-
-                // 美化扩展：对齐 combat-hud-v2.html 设计补全目标/队伍/连击/道具 4 个区域
-                BuildTargetInfo();
-                BuildPartySection();
-                BuildComboCounter();
-                BuildItemBar();
 
                 // 应用初始布局（基于屏幕尺寸计算所有子控件位置）
                 ApplyLayout();
@@ -782,47 +792,94 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// </summary>
         private void BuildSplashDecorations()
         {
-            // 三个 splash 显式降低不透明度（0.15f），使装饰更轻盈，不依赖 InkSplash 默认值
+            // 对齐设计 combat-hud.html：共 2 个水墨晕染（左上 Normal 16%、右下 Elevated 14%），
+            // 原第三个朱红晕染为融合扩展，已停用（_splash2 保持 null，ApplyLayout 守卫跳过）。
             _splash1 = new InkSplash
             {
                 Variant = InkSplashVariant.Normal,
-                Opacity = 0.15f,
-                AutoFocus = false,
-            };
-            _splash2 = new InkSplash
-            {
-                Variant = InkSplashVariant.Vermilion,
-                Opacity = 0.15f,
+                Opacity = 0.16f,
                 AutoFocus = false,
             };
             _splash3 = new InkSplash
             {
                 Variant = InkSplashVariant.Elevated,
-                Opacity = 0.15f,
+                Opacity = 0.14f,
                 AutoFocus = false,
             };
             AddChild(_splash1);
-            AddChild(_splash2);
             AddChild(_splash3);
         }
 
         /// <summary>
-        /// SubTask 5.2：屏幕中央引导/目标按钮。
-        /// 采用平铺于屏幕中央的设计，尺寸较大（64x64），文本"引"用于显示当前目标/引导提示。
-        /// 点击时记录日志"引导功能待落地"。
+        /// 左上角引导按钮（对齐设计 combat-hud.html .hud-nav-btn）：
+        /// 墨底金边圆角胶囊，文本"引导"，点击进入引导入口。
         /// </summary>
         private void BuildGuideButton()
         {
             _guideButton = new InkButton
             {
-                Variant = InkButtonVariant.Ghost,
-                ButtonSize = InkButtonSize.Lg,
-                Text = "引",
+                Variant = InkButtonVariant.Default,
+                ButtonSize = InkButtonSize.Md,
+                Text = "引导",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(GuideSize, GuideSize),
+                Size = new Float2(GuideWidth, GuideHeight),
             };
             _guideButton.ButtonClicked += OnGuideButtonClicked;
             AddChild(_guideButton);
+        }
+
+        /// <summary>
+        /// 顶部中央任务提示条（对齐设计 combat-hud.html .hud-quest）：
+        /// 卷轴图标字形（鎏金）+ 主线标题（纸白 13px）+ 进度计数（DIN 数字体）。
+        /// </summary>
+        private void BuildQuestBanner()
+        {
+            _questBanner = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = QuestBannerSize,
+            };
+
+            var glyph = new Label
+            {
+                Text = "卷",
+                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 15f),
+                TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(12f, 0f),
+                Size = new Float2(18f, QuestBannerSize.Y),
+            };
+            _questBanner.AddChild(glyph);
+
+            var title = new Label
+            {
+                Text = "主线 · 前往藏经阁探查异动",
+                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 13f),
+                TextColor = InkWashTheme.PaperBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(38f, 0f),
+                Size = new Float2(QuestBannerSize.X - 110f, QuestBannerSize.Y),
+            };
+            _questBanner.AddChild(title);
+
+            var count = new Label
+            {
+                Text = "3 / 5",
+                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
+                TextColor = InkWashTheme.PaperAged,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(QuestBannerSize.X - 62f, 0f),
+                Size = new Float2(50f, QuestBannerSize.Y),
+            };
+            _questBanner.AddChild(count);
+
+            AddChild(_questBanner);
         }
 
         /// <summary>
@@ -843,49 +900,19 @@ namespace HundunWorld.Game.UI.Ink.Pages
             AddChild(_navStrip);
         }
         /// <summary>
-        /// SubTask 5.4：右上角水墨小地图。
-        /// 替换原指南针，使用 <see cref="InkMinimap"/> 展示地形快照、NPC、玩家图标与方向。
-        /// 初始化时填充 mock 地形/实体数据，实际运行时可由外部刷新。
+        /// 右上角圆形水墨罗盘（对齐设计 combat-hud.html .hud-compass 148px）：
+        /// 圆形墨底 + 金线外环 + 内圈装饰环 + 四方位字（北=朱红亮）+ 双色指针 + 中心金点。
+        /// 朝向由 <see cref="MinimapPlayerYaw"/> 属性驱动（0=正北，顺时针）。
         /// </summary>
-        private void BuildMinimap()
+        private void BuildCompass()
         {
-            _minimap = new InkMinimap
+            _compass = new InkCompass
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(MinimapSize, MinimapSize),
-                PlayerYaw = 0f,
+                Size = new Float2(CompassSize, CompassSize),
+                Yaw = 0f,
             };
-
-            // 模拟地形快照：水域（青黛）、山地（古铜）、林地（翡翠）
-            _minimap.AddLandmark(-0.35f, -0.42f, 0.22f, new Color(70f / 255f, 110f / 255f, 120f / 255f, 0.45f)); // 水域
-            _minimap.AddLandmark(0.45f, -0.20f, 0.18f, new Color(120f / 255f, 90f / 255f, 60f / 255f, 0.40f));  // 山地
-            _minimap.AddLandmark(-0.20f, 0.38f, 0.28f, new Color(60f / 255f, 130f / 255f, 90f / 255f, 0.35f));  // 林地
-            _minimap.AddLandmark(0.30f, 0.45f, 0.15f, new Color(160f / 255f, 140f / 255f, 90f / 255f, 0.38f));  // 建筑群
-
-            // 模拟实体点位：玩家（中心）+ 友方 + 敌方 + NPC
-            _minimap.AddEntity(InkMinimapEntityType.Player, 0f, 0f);
-            _minimap.AddEntity(InkMinimapEntityType.Friendly, -0.30f, 0.25f);
-            _minimap.AddEntity(InkMinimapEntityType.Friendly, 0.15f, -0.35f);
-            _minimap.AddEntity(InkMinimapEntityType.Enemy, 0.50f, 0.10f);
-            _minimap.AddEntity(InkMinimapEntityType.Enemy, -0.40f, -0.30f);
-            _minimap.AddEntity(InkMinimapEntityType.NPC, 0.25f, 0.35f);
-
-            AddChild(_minimap);
-
-            // 小地图下方坐标标签（对齐设计 .minimap-coord，显示当前位置名）
-            // 使用 Display 字体字号 11，字色 PaperAged，与设计 HTML 一致
-            _minimapCoordLabel = new Label
-            {
-                Text = _locationName,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 11f),
-                TextColor = InkWashTheme.PaperAged,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(MinimapSize, MinimapCoordHeight),
-                BackgroundColor = Color.Transparent,
-            };
-            AddChild(_minimapCoordLabel);
+            AddChild(_compass);
         }
 
         /// <summary>
@@ -1130,131 +1157,49 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// </summary>
         private void BuildSystemNav()
         {
-            // ========== 第一行：主导航栏 ==========
+            // 对齐设计 combat-hud.html .hud-sysnav：底部中央一行 6 项
+            //（任务/闲趣/异闻/成就/留影/设置）。原双行 18 项导航与传统模式切换为融合扩展，已停用。
             _sysNav = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = SysNavSize,
             };
 
-            // 主导航按钮：标签 + dom-id + 是否传统模式切换（特殊样式）
-            var mainEntries = new[]
+            var entries = new[]
             {
-                (label: "角色", domId: InkPageDomIds.NavCharacterPanel),
-                (label: "武学", domId: InkPageDomIds.NavSkillPanel),
-                (label: "背包", domId: InkPageDomIds.NavInventory),
                 (label: "任务", domId: InkPageDomIds.NavQuests),
-                (label: "地图", domId: InkPageDomIds.NavWorldMap),
-                (label: "社交", domId: InkPageDomIds.NavFriends),
-                (label: "商城", domId: InkPageDomIds.NavShop),
-                (label: "罗盘", domId: InkPageDomIds.NavCompass),
+                (label: "闲趣", domId: InkPageDomIds.NavCasualMode),
+                (label: "异闻", domId: InkPageDomIds.PopupBestiarySide),
+                (label: "成就", domId: InkPageDomIds.RewardAchievement),
+                (label: "留影", domId: InkPageDomIds.NavPhotoMode),
+                (label: "设置", domId: InkPageDomIds.NavSettings),
             };
 
-            // 主导航按钮宽度：8 个按钮 + 1 个分隔符 + 1 个切换按钮 + 9 个间距
-            // 总宽 760，分隔符 8px，切换按钮略宽 80px，其余 8 个按钮均分剩余
-            float mainBtnGap = SysNavBtnGap;
-            float toggleBtnWidth = 80f;
-            float dividerWidth = SysNavDividerWidth;
-            // 8 个主按钮宽度 = (760 - 9*gap - divider - toggle) / 8
-            float mainBtnWidth = (SysNavSize.X - mainBtnGap * 9 - dividerWidth - toggleBtnWidth) / 8f;
-            float mainBtnHeight = SysNavSize.Y - 4f;
-            float mainBtnY = (SysNavSize.Y - mainBtnHeight) * 0.5f;
+            const float pad = 6f;
+            const float gap = 4f;
+            float btnWidth = (SysNavSize.X - pad * 2f - gap * (entries.Length - 1)) / entries.Length;
+            float btnHeight = SysNavSize.Y - pad * 2f;
 
-            float cursorX = 0f;
-            for (int i = 0; i < mainEntries.Length; i++)
+            for (int i = 0; i < entries.Length; i++)
             {
-                var entry = mainEntries[i];
+                var entry = entries[i];
                 var btn = new InkButton
                 {
-                    Variant = InkButtonVariant.Default,
-                    ButtonSize = InkButtonSize.Md,
+                    Variant = InkButtonVariant.Ghost,
+                    ButtonSize = InkButtonSize.Sm,
                     Text = entry.label,
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(cursorX, mainBtnY),
-                    Size = new Float2(mainBtnWidth, mainBtnHeight),
+                    Location = new Float2(pad + i * (btnWidth + gap), pad),
+                    Size = new Float2(btnWidth, btnHeight),
                 };
 
                 string domId = entry.domId;
                 btn.ButtonClicked += (b) => OnSystemNavButtonClicked(domId, b);
 
                 _sysNav.AddChild(btn);
-                cursorX += mainBtnWidth + mainBtnGap;
             }
-
-            // 分隔符：竖线（用窄长方形 InkPanel 模拟）
-            var divider = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(cursorX, (SysNavSize.Y - 20f) * 0.5f),
-                Size = new Float2(1f, 20f),
-                BackgroundColor = InkWashTheme.BorderNeutralL3,
-            };
-            _sysNav.AddChild(divider);
-            cursorX += dividerWidth + mainBtnGap;
-
-            // 传统模式切换按钮：金色强调背景
-            var toggleBtn = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Md,
-                Text = "传统模式",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(cursorX, mainBtnY),
-                Size = new Float2(toggleBtnWidth, mainBtnHeight),
-                BackgroundColor = TraditionalToggleBg,
-            };
-            toggleBtn.ButtonClicked += (b) => OnSystemNavButtonClicked(InkPageDomIds.CombatHudTraditional, b);
-            _sysNav.AddChild(toggleBtn);
 
             AddChild(_sysNav);
-
-            // ========== 第二行：扩展导航栏 ==========
-            _sysNavExtended = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Size = SysNavExtendedSize,
-            };
-
-            var extendedEntries = new[]
-            {
-                (label: "强化", domId: InkPageDomIds.NavEquipmentEnhance),
-                (label: "制造", domId: InkPageDomIds.NavCrafting),
-                (label: "坐骑", domId: InkPageDomIds.NavMountPet),
-                (label: "好友", domId: InkPageDomIds.NavFriends),
-                (label: "邮件", domId: InkPageDomIds.NavMail),
-                (label: "排行", domId: InkPageDomIds.NavLeaderboard),
-                (label: "师徒", domId: InkPageDomIds.NavMentor),
-                (label: "成就", domId: InkPageDomIds.NavAchievement),
-                (label: "副本", domId: InkPageDomIds.NavDungeonEntry),
-            };
-
-            // 扩展导航按钮宽度：9 个按钮 + 8 个间距
-            float extBtnWidth = (SysNavExtendedSize.X - SysNavBtnGap * (extendedEntries.Length - 1)) / extendedEntries.Length;
-            float extBtnHeight = SysNavExtendedSize.Y - 4f;
-            float extBtnY = (SysNavExtendedSize.Y - extBtnHeight) * 0.5f;
-
-            float cursorX2 = 0f;
-            for (int i = 0; i < extendedEntries.Length; i++)
-            {
-                var entry = extendedEntries[i];
-                var btn = new InkButton
-                {
-                    Variant = InkButtonVariant.Default,
-                    ButtonSize = InkButtonSize.Md,
-                    Text = entry.label,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(cursorX2, extBtnY),
-                    Size = new Float2(extBtnWidth, extBtnHeight),
-                };
-
-                string domId = entry.domId;
-                btn.ButtonClicked += (b) => OnSystemNavButtonClicked(domId, b);
-
-                _sysNavExtended.AddChild(btn);
-                cursorX2 += extBtnWidth + SysNavBtnGap;
-            }
-
-            AddChild(_sysNavExtended);
         }
 
         // ===================================================================
@@ -1674,116 +1619,60 @@ namespace HundunWorld.Game.UI.Ink.Pages
             float sw = _screenSize.X;
             float sh = _screenSize.Y;
 
-            const float screenEdge = 24f;   // 屏幕边缘统一边距
-            const float bottomSafe = 96f;   // 底部安全区高度（容纳导航栏 + buff 条）
+            // 对齐设计 combat-hud.html 定位：
+            // top-6/left-6/right-6 = 24px；bottom-24 = 96px（左下/右下/底部中央组）；
+            // bottom-4 = 16px（系统导航）；左右组 left-8/right-8 = 32px。
 
-            // SubTask 5.1 水墨晕染装饰：分散在屏幕四角与中右
-            // splash1（Normal 300x300）：左上角，部分溢出
+            // 水墨晕染装饰（设计 .ink-splash：左上 (-60,-80) 16%；右下 18% 处 14%）
             if (_splash1 != null)
             {
                 _splash1.Location = new Float2(-60f, -80f);
             }
-            // splash2（Vermilion 250x250）：右下角
-            if (_splash2 != null)
-            {
-                _splash2.Location = new Float2(sw - 210f, sh - 210f);
-            }
-            // splash3（Elevated 200x200）：中右偏下
             if (_splash3 != null)
             {
-                _splash3.Location = new Float2(sw * 0.72f, sh * 0.58f);
+                _splash3.Location = new Float2(sw * 0.82f - 200f, sh - 160f);
             }
 
-            // SubTask 5.2 引导按钮：平铺于屏幕中央，尺寸较大
+            // 左上角引导按钮（设计 top-6 left-6）
             if (_guideButton != null)
             {
-                _guideButton.Location = new Float2(sw * 0.5f - GuideSize * 0.5f, sh * 0.5f - GuideSize * 0.5f);
+                _guideButton.Location = new Float2(24f, 24f);
             }
 
-            // 导航条：顶部居中，距离顶部 28px
-            if (_navStrip != null)
+            // 顶部中央任务提示条（设计 top-6 居中）
+            if (_questBanner != null)
             {
-                _navStrip.Location = new Float2(sw * 0.5f - NavStripSize.X * 0.5f, 28f);
+                _questBanner.Location = new Float2(sw * 0.5f - QuestBannerSize.X * 0.5f, 24f);
             }
 
-            // SubTask 5.4 小地图：右上角，右侧边距 24px，顶部 24px
-            if (_minimap != null)
+            // 右上角圆形罗盘（设计 top-6 right-6）
+            if (_compass != null)
             {
-                _minimap.Location = new Float2(sw - MinimapSize - screenEdge, screenEdge);
+                _compass.Location = new Float2(sw - CompassSize - 24f, 24f);
             }
 
-            // 小地图下方坐标标签：紧贴小地图底部，居中对齐（对齐设计 .minimap-coord）
-            if (_minimapCoordLabel != null)
-            {
-                _minimapCoordLabel.Location = new Float2(
-                    sw - MinimapSize - screenEdge,
-                    screenEdge + MinimapSize + MinimapCoordGap);
-            }
-
-            // SubTask 5.5 左上角角色面板：左侧边距 24px，顶部对齐（对齐 design top:16px left:16px）
+            // 左下角角色信息组（设计 bottom-24 left-8=32）
             if (_leftBottom != null)
             {
-                _leftBottom.Location = new Float2(screenEdge, screenEdge + 4f);
+                _leftBottom.Location = new Float2(32f, sh - 96f - LeftBottomSize.Y);
             }
 
-            // SubTask 5.6 右下角容器：右侧贴边，底部对齐安全区
+            // 右下角技能组（设计 bottom-24 right-8=32）
             if (_rightBottom != null)
             {
-                _rightBottom.Location = new Float2(sw - RightBottomSize.X - screenEdge, sh - bottomSafe - RightBottomSize.Y + 10f);
+                _rightBottom.Location = new Float2(sw - RightBottomSize.X - 32f, sh - 96f - RightBottomSize.Y + 10f);
             }
 
-            // SubTask 5.7 buff 图标条：左上角角色面板下方，横向排列
+            // 底部中央 buff/debuff 图标条（设计 bottom-24 居中）
             if (_buffBar != null)
             {
-                _buffBar.Location = new Float2(screenEdge, screenEdge + 4f + LeftBottomSize.Y + 6f);
+                _buffBar.Location = new Float2(sw * 0.5f - BuffBarSize.X * 0.5f, sh - 96f - BuffBarSize.Y);
             }
 
-            // SubTask 5.8 系统导航栏（双行）：底部居中，紧贴屏幕底部
-            // 第一行（主导航）位于最底部，第二行（扩展导航）位于其上方
-            // 布局自下而上：扩展行 y = sh - 50 - SysNavExtendedSize.Y - SysNavRowGap
-            //              主行 y = sh - 50
+            // 底部系统导航栏（设计 bottom-4=16 居中，单行 6 项）
             if (_sysNav != null)
             {
-                _sysNav.Location = new Float2(sw * 0.5f - SysNavSize.X * 0.5f, sh - 50f);
-            }
-            if (_sysNavExtended != null)
-            {
-                _sysNavExtended.Location = new Float2(
-                    sw * 0.5f - SysNavExtendedSize.X * 0.5f,
-                    sh - 50f - SysNavExtendedSize.Y - SysNavRowGap);
-            }
-
-            // ---------- 美化扩展定位（对齐 combat-hud-v2.html 设计） ----------
-
-            // 目标信息面板：顶部居中，紧贴任务提示条下方
-            // 任务条 y=28 高 36，目标面板 y=72 起，避免遮挡
-            if (_targetFrame != null)
-            {
-                _targetFrame.Location = new Float2(sw * 0.5f - TargetFrameSize.X * 0.5f, 72f);
-            }
-
-            // 队伍成员状态卡：右上角，紧贴小地图坐标标签下方
-            // 小地图 y=24 高 140 + 坐标标签 y=168 高 16 + 间距 6 = 队伍容器 y=190 起
-            if (_partyContainer != null)
-            {
-                _partyContainer.Location = new Float2(
-                    sw - PartySectionWidth - screenEdge,
-                    screenEdge + MinimapSize + MinimapCoordGap + MinimapCoordHeight + 6f);
-            }
-
-            // 连击计数器：左侧中部，避开左下角玩家面板与左上角水墨晕染
-            // 垂直居中略偏上，x 距屏幕左缘 30px
-            if (_comboCounter != null)
-            {
-                _comboCounter.Location = new Float2(screenEdge + 30f, sh * 0.5f - ComboCounterSize.Y * 0.5f - 40f);
-            }
-
-            // 道具栏：右下角，水平 10 格，位于技能槽上方
-            if (_itemBar != null)
-            {
-                float barW = ItemSlotCount * ItemCellSize + (ItemSlotCount - 1) * ItemCellGap;
-                float skillTop = sh - bottomSafe - RightBottomSize.Y + 10f;
-                _itemBar.Location = new Float2(sw - barW - screenEdge, skillTop - 16f - ItemCellSize);
+                _sysNav.Location = new Float2(sw * 0.5f - SysNavSize.X * 0.5f, sh - 16f - SysNavSize.Y);
             }
         }
 
@@ -1824,13 +1713,21 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <param name="button">触发事件的按钮</param>
         private void OnGuideButtonClicked(Button button)
         {
-            EmitGoldAtButton(button);
-            FlaxEngine.Debug.Log("[CombatHudPage] 引导功能待落地");
+            try
+            {
+                EmitGoldAtButton(button);
+                // 设计 combat-hud.html：link-guide-hud → 引导 HUD 页（已注册路由）。
+                NavigationRequested?.Invoke(InkPageDomIds.GuideHud);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[CombatHudPage] 引导按钮导航失败: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// 头像按钮点击处理：触发 <see cref="NavigationRequested"/>("nav-character-v2")，
-        /// 由 <see cref="InkPageRouter"/> 订阅后跳转角色属性页 V2。
+        /// 头像按钮点击处理：触发 <see cref="NavigationRequested"/>（角色属性合并入口 → 角色信息面板，含行囊），
+        /// 由 <see cref="InkPageRouter"/> 订阅后执行跳转。
         /// 同时在按钮中心位置触发金粉爆发反馈。
         /// </summary>
         /// <param name="button">触发事件的按钮</param>
@@ -1839,7 +1736,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             try
             {
                 EmitGoldAtButton(button);
-                NavigationRequested?.Invoke("nav-character-v2");
+                NavigationRequested?.Invoke(InkPageDomIds.NavInventory); // 角色属性合并入口：角色信息面板（含行囊）
             }
             catch (Exception ex)
             {
@@ -1987,23 +1884,27 @@ namespace HundunWorld.Game.UI.Ink.Pages
             // 2. 金色边框
             DrawCircleRing(center, radius, InkWashTheme.BorderGold, 1f);
 
-            // 3. 内圈装饰线（弱金）
-            DrawCircleRing(center, radius - 4f, InkWashTheme.BorderNeutralL3, 1f);
+            // 3. 内圈装饰线（对齐设计 .hud-compass-ring inset 8px，金色 18%）
+            DrawCircleRing(center, radius - 8f,
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.18f), 1f);
 
-            // 4. 四方位字"东南西北"，字号 12，字色 TextBrand
-            var fontRef = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 12f);
-            float labelOffset = radius - 12f;
-            DrawDirectionLabel(fontRef, center, new Float2(0f, -labelOffset), "北", InkWashTheme.TextBrand);
-            DrawDirectionLabel(fontRef, center, new Float2(0f, labelOffset), "南", InkWashTheme.TextBrand);
-            DrawDirectionLabel(fontRef, center, new Float2(labelOffset, 0f), "东", InkWashTheme.TextBrand);
-            DrawDirectionLabel(fontRef, center, new Float2(-labelOffset, 0f), "西", InkWashTheme.TextBrand);
+            // 4. 四方位字"东南西北"（对齐设计：北=朱红亮书法体 13px，南/东/西=旧纸色）
+            var fontRef = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 13f);
+            float labelOffset = radius - 13f;
+            DrawDirectionLabel(fontRef, center, new Float2(0f, -labelOffset), "北", InkWashTheme.VermilionBright);
+            DrawDirectionLabel(fontRef, center, new Float2(0f, labelOffset), "南", InkWashTheme.PaperAged);
+            DrawDirectionLabel(fontRef, center, new Float2(labelOffset, 0f), "东", InkWashTheme.PaperAged);
+            DrawDirectionLabel(fontRef, center, new Float2(-labelOffset, 0f), "西", InkWashTheme.PaperAged);
 
-            // 5. 朱红指针：从中心向"北"方向绘制三角形
+            // 5. 双色指针（对齐设计 .hud-compass-needle：3px 线，上半朱红、下半暗灰）
             // 实际角度 = Yaw + 摆动偏移（正弦波 ±5°）
             float sway = Mathf.Sin(_animTime * (Mathf.TwoPi / SwayPeriod)) * SwayAmplitude;
             float angleDeg = _yaw + sway;
             float angleRad = Mathf.DegreesToRadians * angleDeg;
-            DrawNeedle(center, radius, angleRad);
+            DrawTwoToneNeedle(center, radius, angleRad);
+
+            // 6. 中心金点（对齐设计 .hud-compass-center 8px）
+            FillCircle(center, 4f, InkWashTheme.GoldPrimary);
         }
 
         /// <summary>
@@ -2030,41 +1931,26 @@ namespace HundunWorld.Game.UI.Ink.Pages
         }
 
         /// <summary>
-        /// 绘制朱红指针三角形。
-        /// 指针从中心出发，沿 <paramref name="angleRad"/> 方向延伸
-        /// <see cref="NeedleLengthRatio"/>*<paramref name="radius"/> 长度。
+        /// 绘制双色指针（对齐设计 .hud-compass-needle）：3px 线，
+        /// 上半段朱红（中心→48%）、下半段暗灰（52%→尖端），延伸至 <see cref="NeedleLengthRatio"/> 半径。
         /// </summary>
         /// <param name="center">指针基点（指南针中心）</param>
         /// <param name="radius">指南针半径</param>
         /// <param name="angleRad">指针角度（弧度，0 = 正北，顺时针）</param>
-        private void DrawNeedle(Float2 center, float radius, float angleRad)
+        private void DrawTwoToneNeedle(Float2 center, float radius, float angleRad)
         {
-            // 在屏幕坐标系中，角度 0 = 正北（向上），顺时针增加
-            // 方向向量：(sin(a), -cos(a))
+            // 屏幕坐标系：角度 0 = 正北（向上），顺时针增加；方向向量 (sin a, -cos a)
             float dirX = Mathf.Sin(angleRad);
             float dirY = -Mathf.Cos(angleRad);
+            float len = radius * NeedleLengthRatio;
 
-            // 指针尖端
-            float needleLen = radius * NeedleLengthRatio;
-            var tip = center + new Float2(dirX * needleLen, dirY * needleLen);
+            var tip = center + new Float2(dirX * len, dirY * len);
+            var upperEnd = center + new Float2(dirX * len * 0.48f, dirY * len * 0.48f);
+            var lowerStart = center + new Float2(dirX * len * 0.52f, dirY * len * 0.52f);
 
-            // 指针底部两侧（垂直于方向）
-            float baseHalf = radius * NeedleBaseRatio;
-            float perpX = dirY;
-            float perpY = -dirX;
-            var base1 = center + new Float2(perpX * baseHalf, perpY * baseHalf);
-            var base2 = center - new Float2(perpX * baseHalf, perpY * baseHalf);
-
-            // 朱红三角形：使用 FillTriangles 绘制
-            // Render2D.FillTriangles 接收 Float2[] 顶点数组（每 3 个为一组三角形）
-            var vertices = new Float2[3];
-            vertices[0] = tip;
-            vertices[1] = base1;
-            vertices[2] = base2;
-            Render2D.FillTriangles(vertices, InkWashTheme.VermilionPrimary);
-
-            // 中心金圆点
-            FillCircle(center, 3f, InkWashTheme.GoldPrimary);
+            const float thickness = 3f;
+            Render2D.DrawLine(center, upperEnd, InkWashTheme.VermilionPrimary, thickness);
+            Render2D.DrawLine(lowerStart, tip, InkWashTheme.TextTertiary, thickness);
         }
 
         /// <summary>
@@ -2119,10 +2005,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
     // =======================================================================
 
     /// <summary>
-    /// 方形技能槽控件。
-    /// 方形墨色背景 + 金线边框（对齐 design .hud-skill-slot 48x48）+
-    /// 中央字形 + 冷却遮罩（黑色半透明从右侧覆盖）+
-    /// 右下角快捷键标签。
+    /// 圆形技能槽控件（对齐设计 .hud-skill 60px 圆形）：
+    /// 圆形墨底 + 金线圆环 + 冷却饼图遮罩（自顶部顺时针）+ 中央字形 + 底部快捷键标签。
     /// </summary>
     internal class SkillSlotControl : ContainerControl
     {
@@ -2188,20 +2072,23 @@ namespace HundunWorld.Game.UI.Ink.Pages
             if (!Visible || Width <= 0f || Height <= 0f)
                 return;
 
+            var center = new Float2(Width * 0.5f, Height * 0.5f);
+            float radius = Mathf.Min(Width, Height) * 0.5f;
             var rect = new Rectangle(0f, 0f, Width, Height);
 
-            // 1. 方形墨色背景
-            Render2D.FillRectangle(rect, SlotBgColor);
+            // 1. 圆形墨色背景（对齐设计 .hud-skill 圆形）
+            FillCircle(center, radius, SlotBgColor);
 
-            // 2. 金线边框（1px）
-            float b = 1f;
-            Color bColor = InkWashTheme.BorderGold;
-            Render2D.DrawLine(new Float2(0f, 0f), new Float2(Width, 0f), bColor, b);
-            Render2D.DrawLine(new Float2(Width, 0f), new Float2(Width, Height), bColor, b);
-            Render2D.DrawLine(new Float2(Width, Height), new Float2(0f, Height), bColor, b);
-            Render2D.DrawLine(new Float2(0f, Height), new Float2(0f, 0f), bColor, b);
+            // 2. 金线圆环边框
+            DrawCircleRing(center, radius, InkWashTheme.BorderGold, 1f);
 
-            // 3. 中央字形
+            // 3. 冷却饼图遮罩（对齐设计 conic-gradient：自顶部顺时针扫过）
+            if (_cooldown > 0f)
+            {
+                FillPie(center, radius, _cooldown, CooldownMaskColor);
+            }
+
+            // 4. 中央字形
             if (!string.IsNullOrEmpty(_glyph))
             {
                 var glyphFontRef = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 20f);
@@ -2213,28 +2100,78 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 }
             }
 
-            // 4. 冷却遮罩（从右侧向左覆盖 cooldown 比例）
-            if (_cooldown > 0f)
-            {
-                float fillW = Width * _cooldown;
-                var overlayRect = new Rectangle(Width - fillW, 0f, fillW, Height);
-                Render2D.FillRectangle(overlayRect, CooldownMaskColor);
-            }
-
-            // 5. 快捷键标签（右下角）
+            // 5. 快捷键标签（圆内下缘，金色；设计为圆下 -8px 外置，此处内聚呈现）
             if (!string.IsNullOrEmpty(_hotkey))
             {
-                var fontRef = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 9f);
+                var fontRef = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 10f);
                 var font = fontRef.GetFont();
                 if (font != null)
                 {
-                    var hotkeyRect = new Rectangle(
-                        Width - 14f, Height - 12f,
-                        12f, 10f);
-                    Render2D.DrawText(font, _hotkey, hotkeyRect, InkWashTheme.TextTertiary,
+                    var hotkeyRect = new Rectangle(Width * 0.5f - 16f, Height - 18f, 32f, 14f);
+                    Render2D.DrawText(font, _hotkey, hotkeyRect, InkWashTheme.GoldPrimary,
                         TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
                 }
             }
+        }
+
+        /// <summary>用三角形扇填充一个圆形。</summary>
+        private static void FillCircle(Float2 center, float radius, Color color)
+        {
+            if (radius <= 0f)
+                return;
+            const int segments = 32;
+            var vertices = new Float2[segments * 3];
+            for (int i = 0; i < segments; i++)
+            {
+                float a1 = (i / (float)segments) * Mathf.TwoPi;
+                float a2 = ((i + 1) / (float)segments) * Mathf.TwoPi;
+                int idx = i * 3;
+                vertices[idx] = center;
+                vertices[idx + 1] = center + new Float2(Mathf.Cos(a1) * radius, Mathf.Sin(a1) * radius);
+                vertices[idx + 2] = center + new Float2(Mathf.Cos(a2) * radius, Mathf.Sin(a2) * radius);
+            }
+            Render2D.FillTriangles(vertices, color);
+        }
+
+        /// <summary>用线段近似绘制圆环描边。</summary>
+        private static void DrawCircleRing(Float2 center, float radius, Color color, float thickness)
+        {
+            if (radius <= 0f)
+                return;
+            const int segments = 32;
+            for (int i = 0; i < segments; i++)
+            {
+                float a1 = (i / (float)segments) * Mathf.TwoPi;
+                float a2 = ((i + 1) / (float)segments) * Mathf.TwoPi;
+                var p1 = center + new Float2(Mathf.Cos(a1) * radius, Mathf.Sin(a1) * radius);
+                var p2 = center + new Float2(Mathf.Cos(a2) * radius, Mathf.Sin(a2) * radius);
+                Render2D.DrawLine(p1, p2, color, thickness);
+            }
+        }
+
+        /// <summary>自顶部（12 点）顺时针填充扇形，用作冷却遮罩。</summary>
+        private static void FillPie(Float2 center, float radius, float ratio, Color color)
+        {
+            if (ratio <= 0f || radius <= 0f)
+                return;
+            float sweep = Mathf.Clamp(ratio, 0f, 1f) * Mathf.TwoPi;
+            const int maxSegments = 40;
+            // 注意：Flax 的 Mathf 无 Ceiling/Max(int,int)，此处用纯整数运算（向上取整 + 保底两段）。
+            int segments = (int)(sweep / Mathf.TwoPi * maxSegments) + 1;
+            if (segments < 2)
+                segments = 2;
+            var vertices = new Float2[segments * 3];
+            float start = -Mathf.Pi * 0.5f; // 屏幕坐标系：12 点 = -90°，顺时针为正（Y 向下）
+            for (int i = 0; i < segments; i++)
+            {
+                float a1 = start + sweep * (i / (float)segments);
+                float a2 = start + sweep * ((i + 1) / (float)segments);
+                int idx = i * 3;
+                vertices[idx] = center;
+                vertices[idx + 1] = center + new Float2(Mathf.Cos(a1) * radius, Mathf.Sin(a1) * radius);
+                vertices[idx + 2] = center + new Float2(Mathf.Cos(a2) * radius, Mathf.Sin(a2) * radius);
+            }
+            Render2D.FillTriangles(vertices, color);
         }
     }
 
@@ -2243,10 +2180,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
     // =======================================================================
 
     /// <summary>
-    /// 奇术（终极）槽控件。
-    /// 方形墨色背景 + 强金边框（2px，对齐 design .hud-ultimate）+
-    /// 脉冲动画（就绪时 alpha 0.5-1.0）+
-    /// 底部充能进度条 + 中心"奇"字。
+    /// 奇术（终极）槽控件（对齐设计 .hud-skill-special 72px 圆形）：
+    /// 圆形墨底 + 内圈金晕 + 2px 金色圆环边框 + 就绪脉冲环（外扩渐隐）+ 中心"奇"字。
     /// </summary>
     internal class QishuSlotControl : ContainerControl
     {
@@ -2320,59 +2255,78 @@ namespace HundunWorld.Game.UI.Ink.Pages
             if (!Visible || Width <= 0f || Height <= 0f)
                 return;
 
+            var center = new Float2(Width * 0.5f, Height * 0.5f);
+            float radius = Mathf.Min(Width, Height) * 0.5f;
             var rect = new Rectangle(0f, 0f, Width, Height);
 
-            // 1. 方形墨色背景
-            Render2D.FillRectangle(rect, SlotBgColor);
-
-            // 微弱金色辉光
+            // 1. 圆形墨底 + 内圈金晕（近似设计 radial-gradient）
+            FillCircle(center, radius, SlotBgColor);
             var goldTint = new Color(
                 InkWashTheme.GoldPrimary.R,
                 InkWashTheme.GoldPrimary.G,
                 InkWashTheme.GoldPrimary.B,
-                0.10f);
-            var innerRect = new Rectangle(4f, 4f, Width - 8f, Height - 8f);
-            Render2D.FillRectangle(innerRect, goldTint);
+                0.12f);
+            FillCircle(center, radius * 0.78f, goldTint);
 
-            // 2. 金色边框（脉冲 2px）
-            Color borderColor = InkWashTheme.BorderGoldStrong;
+            // 2. 金色圆环边框（2px，对齐设计 .hud-skill-special）
+            DrawCircleRing(center, radius, InkWashTheme.BorderGoldStrong, 2f);
+
+            // 3. 就绪脉冲环（对齐设计 .hud-skill-ready readyPulse：外扩渐隐）
             if (_ready)
             {
-                float t = (_animTime / PulsePeriod) * Mathf.TwoPi;
-                float alpha = Mathf.Lerp(PulseAlphaMin, PulseAlphaMax,
-                    (Mathf.Sin(t) + 1f) * 0.5f);
-                borderColor = new Color(
-                    InkWashTheme.BorderGoldStrong.R,
-                    InkWashTheme.BorderGoldStrong.G,
-                    InkWashTheme.BorderGoldStrong.B,
-                    InkWashTheme.BorderGoldStrong.A * alpha);
+                float phase = (_animTime / PulsePeriod) % 1f;
+                float ringRadius = radius + 2f + phase * 10f;
+                float alpha = (1f - phase) * 0.6f;
+                var ringColor = new Color(
+                    InkWashTheme.GoldPrimary.R,
+                    InkWashTheme.GoldPrimary.G,
+                    InkWashTheme.GoldPrimary.B,
+                    InkWashTheme.GoldPrimary.A * alpha);
+                DrawCircleRing(center, ringRadius, ringColor, 1f);
             }
 
-            float b = 2f;
-            Render2D.DrawLine(new Float2(0f, 0f), new Float2(Width, 0f), borderColor, b);
-            Render2D.DrawLine(new Float2(Width, 0f), new Float2(Width, Height), borderColor, b);
-            Render2D.DrawLine(new Float2(Width, Height), new Float2(0f, Height), borderColor, b);
-            Render2D.DrawLine(new Float2(0f, Height), new Float2(0f, 0f), borderColor, b);
-
-            // 3. 中心"奇"字（金色）
-            var fontRef = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 22f);
+            // 4. 中心"奇"字（金色）
+            var fontRef = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 24f);
             var font = fontRef.GetFont();
             if (font != null)
             {
                 Render2D.DrawText(font, "奇", rect, InkWashTheme.TextBrand,
                     TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
             }
+        }
 
-            // 4. 底部充能进度条（对齐 design .hud-ultimate charge bar）
-            float chargeBarY = Height - ChargeBarHeight;
-            var chargeBg = new Rectangle(0f, chargeBarY, Width, ChargeBarHeight);
-            Render2D.FillRectangle(chargeBg, new Color(0f, 0f, 0f, 0.6f));
-
-            if (_chargeProgress > 0f)
+        /// <summary>用三角形扇填充一个圆形。</summary>
+        private static void FillCircle(Float2 center, float radius, Color color)
+        {
+            if (radius <= 0f)
+                return;
+            const int segments = 32;
+            var vertices = new Float2[segments * 3];
+            for (int i = 0; i < segments; i++)
             {
-                float fillW = Width * _chargeProgress;
-                var chargeFill = new Rectangle(0f, chargeBarY, fillW, ChargeBarHeight);
-                Render2D.FillRectangle(chargeFill, InkWashTheme.GoldBright);
+                float a1 = (i / (float)segments) * Mathf.TwoPi;
+                float a2 = ((i + 1) / (float)segments) * Mathf.TwoPi;
+                int idx = i * 3;
+                vertices[idx] = center;
+                vertices[idx + 1] = center + new Float2(Mathf.Cos(a1) * radius, Mathf.Sin(a1) * radius);
+                vertices[idx + 2] = center + new Float2(Mathf.Cos(a2) * radius, Mathf.Sin(a2) * radius);
+            }
+            Render2D.FillTriangles(vertices, color);
+        }
+
+        /// <summary>用线段近似绘制圆环描边。</summary>
+        private static void DrawCircleRing(Float2 center, float radius, Color color, float thickness)
+        {
+            if (radius <= 0f)
+                return;
+            const int segments = 32;
+            for (int i = 0; i < segments; i++)
+            {
+                float a1 = (i / (float)segments) * Mathf.TwoPi;
+                float a2 = ((i + 1) / (float)segments) * Mathf.TwoPi;
+                var p1 = center + new Float2(Mathf.Cos(a1) * radius, Mathf.Sin(a1) * radius);
+                var p2 = center + new Float2(Mathf.Cos(a2) * radius, Mathf.Sin(a2) * radius);
+                Render2D.DrawLine(p1, p2, color, thickness);
             }
         }
     }

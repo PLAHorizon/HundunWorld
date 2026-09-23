@@ -29,66 +29,110 @@
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
     <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
     <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Game.World\Horizon.Game.World.csproj" />
     <ProjectReference Include="..\Horizon.Game.ECS.Arch\Horizon.Game.ECS.Arch.csproj" />
     <ProjectReference Include="..\Horizon.Game.Gateway\Horizon.Game.Gateway.csproj" />
+    <!-- IoT MQTT：DI 生命周期（captive dependency）回归——Silo 曾因它无法在 Development 环境启动 -->
+    <ProjectReference Include="..\Horizon.IoT.MQTT\Horizon.IoT.MQTT.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+    <!-- MMORPG 开发计划 P3：无头 DS 宿主（tick 链路可端到端测试，无需真实网关） -->
+    <ProjectReference Include="..\Horizon.DsHost\Horizon.DsHost.csproj" />
     <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Grains\Horizon.Orleans.Grains.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Silo\Horizon.Orleans.Silo.csproj" />
     <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
+    <!-- 阶段0.6：原 `..\.freebuff\Verify\Verify.csproj` 引用已移除。
+         该验证工具项目目录从未入库（磁盘 + git 均无），其两个生成器已按规格内联回本测试项目：
+           · MultiEntityTraceGen.cs      （多实体轨迹 + AOI/分片指纹）
+           · DeterministicTraceGen.cs    （单实体轨迹 + 移动指纹）
+         仍保留源生成器侧验证：UnionRegistrationParityTests 断言 UnionKinds 与手写 union 注册双射一致。 -->
   </ItemGroup>
 
-  <!--
-    Task E.3/E.4：ManagedHundunWorld �?C# 文件已从 UE5 项目中移除，
-    相关�?JitterBuffer.cs �?ReconnectService.cs 文件不再存在�?    因此移除 Compile Include 引用�?  -->
-
-  <!--
-    排除依赖 ManagedHundunWorld.Network.Sync（JitterBuffer）的已失效测试文件，
-    这些文件引用的类型已从代码库移除，编译会失败�?    移除排除前需要先恢复 ManagedHundunWorld 相关代码或重写这些测试�?  -->
-  <ItemGroup>
-    <Compile Remove="CrossHardwareConsistencyTests.cs" />
-    <Compile Remove="NetworkEdgeCaseTests.cs" />
-    <!--
-      下列文件存在既存编译错误（与本次 BUG 修复无关），暂时排除编译以让测试项目可运行�?      错误根因�?        - InputRetransmitTests.cs：调�?InputSendSystem 的实例方法（CS0120�?        - SceneObjectBroadcastAoiTests.cs:133：IReadOnlyCollection<long> �?Length 属性（CS1061�?        - NetworkSyncIntegrationTests.cs：EntityDelta 类型字段缺失 / NotNull 参数（CS1501,CS1061,CS0103�?      移除排除前需要先修复这些既存错误�?    -->
-    <Compile Remove="InputRetransmitTests.cs" />
-    <Compile Remove="SceneObjectBroadcastAoiTests.cs" />
-    <Compile Remove="NetworkSyncIntegrationTests.cs" />
-  </ItemGroup>
+  <!-- 排除已失效测试文件的 Compile Remove 统一收敛在下方“阶段0.5”ItemGroup，避免重复排除。 -->
 
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- 阶段 6.2：确定性对拍金轨迹（输入记录，供测试重放与未来 UE5 DS 对拍） -->
+  <ItemGroup>
+    <EmbeddedResource Include="Traces\deterministic_trace_600.txt">
+      <LogicalName>Horizon.Game.Gateway.Tests.Traces.deterministic_trace_600.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Traces\multi_entity_trace_600.txt">
+      <LogicalName>Horizon.Game.Gateway.Tests.Traces.multi_entity_trace_600.txt</LogicalName>
+    </EmbeddedResource>
+    <!-- M5.1：玩法确定性金轨迹（刷怪 / 怪物 AI / 战斗结算）——移动金轨迹之外的第二个对拍域 -->
+    <EmbeddedResource Include="Traces\gameplay_trace_600.txt">
+      <LogicalName>Horizon.Game.Gateway.Tests.Traces.gameplay_trace_600.txt</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <!-- 链接客户端 ClientSyncMetrics 源文件（仅依赖 System，无 FlaxEngine 依赖） -->
   <ItemGroup>
-    <Compile Include="..\HundunWorld\Source\Game\Network\ClientSyncMetrics.cs" Link="Linked\ClientSyncMetrics.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\Network\ClientSyncMetrics.cs" Link="Linked\ClientSyncMetrics.cs" Condition="Exists('..\HundunWorld\Source\Game\Network\ClientSyncMetrics.cs')" />
+  </ItemGroup>
+
+  <!-- 会话客户端同源链接：驱动**真实** GameGatewaySessionClient（原 HandshakeClient）的 HandshakeAsync
+       四路径回环测试。不 ProjectReference UE 工程——那会拉入 UnrealSharp 插件二进制依赖（CI 无该环境）；
+       本文件仅依赖 TouchSocket + Horizon.Game.Message/Sim，可独立编译，与 UE 工程同源（同一文件，无拷贝漂移）。 -->
+  <ItemGroup>
+    <Compile Include="..\HundunWorld\Script\ManagedHundunWorld\Network\GameGatewaySessionClient.cs" Link="Linked\GameGatewaySessionClient.cs" Condition="Exists('..\HundunWorld\Script\ManagedHundunWorld\Network\GameGatewaySessionClient.cs')" />
+  </ItemGroup>
+
+  <!-- 链接客户端 WebApi 登录链路源文件（GameLoginClient，同源链接无拷贝漂移）： -->
+  <ItemGroup>
+    <Compile Include="..\HundunWorld\Script\ManagedHundunWorld\Network\GameLoginClient.cs" Link="Linked\GameLoginClient.cs" Condition="Exists('..\HundunWorld\Script\ManagedHundunWorld\Network\GameLoginClient.cs')" />
   </ItemGroup>
 
   <!-- 链接客户端 SyncGuard 资格管控源文件（仅依赖 System + Horizon.Game.ECS.Arch/Message，无 FlaxEngine 依赖） -->
   <ItemGroup>
-    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\OutboundSyncAuthorizer.cs" Link="Linked\OutboundSyncAuthorizer.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\BindingRelationshipRegistry.cs" Link="Linked\BindingRelationshipRegistry.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\LocalSendEligibilityState.cs" Link="Linked\LocalSendEligibilityState.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\SendViolationMonitor.cs" Link="Linked\SendViolationMonitor.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\GuardSyncSender.cs" Link="Linked\GuardSyncSender.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\OutboundSyncGuardImpl.cs" Link="Linked\OutboundSyncGuardImpl.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\OutboundSyncAuthorizer.cs" Link="Linked\OutboundSyncAuthorizer.cs" Condition="Exists('..\HundunWorld\Source\Game\SyncGuard\OutboundSyncAuthorizer.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\BindingRelationshipRegistry.cs" Link="Linked\BindingRelationshipRegistry.cs" Condition="Exists('..\HundunWorld\Source\Game\SyncGuard\BindingRelationshipRegistry.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\LocalSendEligibilityState.cs" Link="Linked\LocalSendEligibilityState.cs" Condition="Exists('..\HundunWorld\Source\Game\SyncGuard\LocalSendEligibilityState.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\SendViolationMonitor.cs" Link="Linked\SendViolationMonitor.cs" Condition="Exists('..\HundunWorld\Source\Game\SyncGuard\SendViolationMonitor.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\GuardSyncSender.cs" Link="Linked\GuardSyncSender.cs" Condition="Exists('..\HundunWorld\Source\Game\SyncGuard\GuardSyncSender.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\OutboundSyncGuardImpl.cs" Link="Linked\OutboundSyncGuardImpl.cs" Condition="Exists('..\HundunWorld\Source\Game\SyncGuard\OutboundSyncGuardImpl.cs')" />
   </ItemGroup>
 
   <!-- 链接客户端 RemoteVisibility 重连恢复/可见性审计源文件（纯 C#，无 FlaxEngine 依赖，可单测） -->
   <ItemGroup>
-    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IReconnectResumeSender.cs" Link="Linked\RemoteVisibility\Contracts\IReconnectResumeSender.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IReconnectResumeStateMachine.cs" Link="Linked\RemoteVisibility\Contracts\IReconnectResumeStateMachine.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IRemoteVisibilityAudit.cs" Link="Linked\RemoteVisibility\Contracts\IRemoteVisibilityAudit.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IRemoteObservationCoordinator.cs" Link="Linked\RemoteVisibility\Contracts\IRemoteObservationCoordinator.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\ReconnectResumeStateMachine.cs" Link="Linked\RemoteVisibility\ReconnectResumeStateMachine.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\RemoteVisibilityAudit.cs" Link="Linked\RemoteVisibility\RemoteVisibilityAudit.cs" />
-    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\ReconnectFlowGuard.cs" Link="Linked\RemoteVisibility\ReconnectFlowGuard.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IReconnectResumeSender.cs" Link="Linked\RemoteVisibility\Contracts\IReconnectResumeSender.cs" Condition="Exists('..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IReconnectResumeSender.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IReconnectResumeStateMachine.cs" Link="Linked\RemoteVisibility\Contracts\IReconnectResumeStateMachine.cs" Condition="Exists('..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IReconnectResumeStateMachine.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IRemoteVisibilityAudit.cs" Link="Linked\RemoteVisibility\Contracts\IRemoteVisibilityAudit.cs" Condition="Exists('..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IRemoteVisibilityAudit.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IRemoteObservationCoordinator.cs" Link="Linked\RemoteVisibility\Contracts\IRemoteObservationCoordinator.cs" Condition="Exists('..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IRemoteObservationCoordinator.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\ReconnectResumeStateMachine.cs" Link="Linked\RemoteVisibility\ReconnectResumeStateMachine.cs" Condition="Exists('..\HundunWorld\Source\Game\RemoteVisibility\ReconnectResumeStateMachine.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\RemoteVisibilityAudit.cs" Link="Linked\RemoteVisibility\RemoteVisibilityAudit.cs" Condition="Exists('..\HundunWorld\Source\Game\RemoteVisibility\RemoteVisibilityAudit.cs')" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\ReconnectFlowGuard.cs" Link="Linked\RemoteVisibility\ReconnectFlowGuard.cs" Condition="Exists('..\HundunWorld\Source\Game\RemoteVisibility\ReconnectFlowGuard.cs')" />
   </ItemGroup>
 
   <!-- 链接客户端 NetworkProbeRunner 源文件（纯 C#，无 FlaxEngine 依赖，可单测） -->
   <ItemGroup>
-    <Compile Include="..\HundunWorld\Source\Game\Network\NetworkProbeRunner.cs" Link="Linked\Network\NetworkProbeRunner.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\Network\NetworkProbeRunner.cs" Link="Linked\Network\NetworkProbeRunner.cs" Condition="Exists('..\HundunWorld\Source\Game\Network\NetworkProbeRunner.cs')" />
+  </ItemGroup>
+
+
+  <!-- 阶段0.3：以下测试引用随 UE5 客户端迁移被移除的 SyncGuard / RemoteVisibility / ClientSyncMetrics / NetworkProbeRunner 客户端源码（HundunWorld/Source/Game 已不存在），源码已删除，测试失效。保留文件供逻辑恢复时参考，临时排除编译。 -->
+  <ItemGroup>
+    <Compile Remove="CrossHardwareConsistencyTests.cs" />
+    <Compile Remove="NetworkEdgeCaseTests.cs" />
+    <Compile Remove="InputRetransmitTests.cs" />
+    <Compile Remove="SceneObjectBroadcastAoiTests.cs" />
+    <Compile Remove="NetworkSyncIntegrationTests.cs" />
+    <Compile Remove="OutboundSyncGuardExemptionTests.cs" />
+    <Compile Remove="NetworkProbeRunnerTests.cs" />
+    <Compile Remove="RemoteVisibilityAuditTests.cs" />
+    <Compile Remove="RemoteVisibilityReconnectFlowGuardTests.cs" />
+    <Compile Remove="RemoteVisibilityReconnectStateMachineTests.cs" />
+    <Compile Remove="SyncGuardBindingRegistryTests.cs" />
+    <Compile Remove="SyncGuardEligibilityStateTests.cs" />
+    <Compile Remove="SyncGuardOutboundAuthorizerTests.cs" />
+    <Compile Remove="SyncGuardPerformanceTests.cs" />
+    <Compile Remove="SyncGuardSenderTests.cs" />
+    <Compile Remove="ClientSyncMetricsSmoothnessTests.cs" />
+    <Compile Remove="ClientSyncMetricsTests.cs" />
   </ItemGroup>
 
 </Project>

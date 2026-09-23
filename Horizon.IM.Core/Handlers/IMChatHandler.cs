@@ -84,6 +84,7 @@ public class IMChatHandler : IMMessageHandlerBase
 
         var ack = new IMChatAckMessage
         {
+            // 返回 serverMessageId 作为本地消息主键，与服务端回推 notify 的 ServerMessageId 保持一致以去重
             AckedMessageId = serverMessageId,
             Status = IMMessageStatus.Sent,
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),

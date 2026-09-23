@@ -7,6 +7,7 @@ using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Model.GameModel;
 using Horizon.Orleans.Interface;
+using Horizon.Orleans.Interface.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -31,16 +32,24 @@ namespace Horizon.Orleans.Grains
         private readonly IDataContext<GameEntityContext, CharacterEntity, long> _characterContext;
         private readonly IMapper _mapper;
 
+        /// <summary>
+        /// 阶段 3.1 — ICharacterGrain 解析器（HP 单一权威回写目标）。
+        /// 默认经 <see cref="GrainFactory"/> 解析；测试可注入 mock 验证回写契约。
+        /// </summary>
+        private readonly Func<ulong, ICharacterGrain> _characterGrainProvider;
+
         public CombatGrain(
             ILogger<CombatGrain> logger,
             [PersistentState("combat", "GameStore")] IPersistentState<CombatState> combatState,
             IDataContext<GameEntityContext, CharacterEntity, long> characterContext,
-            IMapper mapper)
+            IMapper mapper,
+            Func<ulong, ICharacterGrain>? characterGrainProvider = null)
         {
             _logger = logger;
             _combatState = combatState;
             _characterContext = characterContext;
             _mapper = mapper;
+            _characterGrainProvider = characterGrainProvider ?? (id => GrainFactory.GetGrain<ICharacterGrain>((long)id));
         }
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -98,8 +107,15 @@ namespace Horizon.Orleans.Grains
                 bool isCritical = Random.Shared.NextDouble() < attackerInfo.CritRate;
                 damage = CombatCalculator.ApplyCriticalDamage(damage, isCritical, attackerInfo.CritDamageMultiplier);
 
-                // 更新目标血量
-                targetInfo.Health = CombatCalculator.ClampHealth(targetInfo.Health, damage);
+                // 阶段 3.1：HP 单一权威——战斗结算结果回写 CharacterGrain.RequestHpChangeAsync
+                // （CharacterInfo.CurrentHealth 唯一持久化权威）。此前攻击只改 CombatInfo.Health，
+                // 从不回写 → HP 双权威残留（角色档案 HP 与实际战斗 HP 脱节）。
+                // 致死归零由 RequestHpChangeAsync 内部 clamp 到 0 并标记死亡完成，
+                // ProcessDeathAsync 只管理战斗状态，避免 DeathCount 重复计数。
+                // Phase 2：裁决层可能减免伤害（防御/减伤/Buff），本地 Health 以裁决结果回写。
+                var hpResult = await SyncHpToCharacterAsync(
+                    request.TargetId, -(int)damage, request.AttackerId, Horizon.Orleans.Interface.World.DamageType.Physical);
+                targetInfo.Health = hpResult?.CurrentHp ?? CombatCalculator.ClampHealth(targetInfo.Health, damage);
 
                 // 进入战斗状态
                 await EnterCombatAsync(request.AttackerId);
@@ -202,7 +218,11 @@ namespace Horizon.Orleans.Grains
                     var (blockedDamage, isBlocked) = CombatCalculator.ApplyBlock(damage, targetInfo.BlockRate);
                     damage = blockedDamage;
 
-                    targetInfo.Health = CombatCalculator.ClampHealth(targetInfo.Health, damage);
+                    // 阶段 3.1：HP 单一权威——技能结算回写 CharacterGrain（见 ProcessAttackAsync 注释）。
+                    // Phase 2：裁决层可能减免伤害，本地 Health 以裁决结果回写。
+                    var hpResult = await SyncHpToCharacterAsync(
+                        request.TargetEntityId, -(int)damage, request.CasterId, Horizon.Orleans.Interface.World.DamageType.Internal);
+                    targetInfo.Health = hpResult?.CurrentHp ?? CombatCalculator.ClampHealth(targetInfo.Health, damage);
 
                     AddCombatLogEntry(new CombatLogEntry
                     {
@@ -267,8 +287,11 @@ namespace Horizon.Orleans.Grains
 
                 var victimInfo = await GetOrCreateCombatInfo(request.VictimId);
 
-                // 更新血量
-                victimInfo.Health = CombatCalculator.ClampHealth(victimInfo.Health, request.Damage);
+                // 阶段 3.1：HP 单一权威——受击结算回写 CharacterGrain（见 ProcessAttackAsync 注释）。
+                // Phase 2：裁决层可能减免伤害，本地 Health 以裁决结果回写。
+                var hpResult = await SyncHpToCharacterAsync(
+                    request.VictimId, -(int)request.Damage, request.AttackerId, Horizon.Orleans.Interface.World.DamageType.Physical);
+                victimInfo.Health = hpResult?.CurrentHp ?? CombatCalculator.ClampHealth(victimInfo.Health, request.Damage);
 
                 // 进入战斗状态
                 await EnterCombatAsync(request.VictimId);
@@ -367,6 +390,25 @@ namespace Horizon.Orleans.Grains
                 // 恢复血量（根据复活类型决定恢复比例）
                 resurrectedInfo.Health = CombatCalculator.CalculateResurrectHealth(resurrectedInfo.MaxHealth, request.ResurrectType);
 
+                // 阶段 3.1：HP 单一权威——复活结果同步回 CharacterGrain（权威复活流程：
+                // 恢复血量 + IsAlive=true + 复活位置 + ResurrectionCount）。
+                try
+                {
+                var characterGrain = _characterGrainProvider(request.ResurrectedId);
+                await characterGrain.ResurrectAsync(new ResurrectMessage
+                    {
+                        ResurrectedId = request.ResurrectedId,
+                        ResurrectPosition = request.ResurrectPosition,
+                        ResurrectType = request.ResurrectType,
+                    });
+                }
+                catch (Exception syncEx)
+                {
+                    _logger.LogError(syncEx,
+                        "CombatGrain {GrainKey}: 复活结果同步 CharacterGrain 失败。ResurrectedId={ResurrectedId}",
+                        this.GetPrimaryKey(), request.ResurrectedId);
+                }
+
                 // 创建响应
                 var response = new ResurrectMessage
                 {
@@ -388,6 +430,32 @@ namespace Horizon.Orleans.Grains
             {
                 _logger.LogError(ex, "处理复活请求时发生异常: {ResurrectedId}", request.ResurrectedId);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// 阶段 3.1 — HP 单一权威回写：把战斗结算的 HP 增量同步到 CharacterGrain
+        /// （<c>CharacterInfo.CurrentHealth</c> 唯一持久化权威）。
+        /// <para>
+        /// 回写失败不抛异常（战斗结算已完成，日志告警即可）；权威同步失败会在下次
+        /// 会话/离开空间时由 CharacterGrain 重新校准。避免把战斗热路径与权威同步强耦合。
+        /// 返回裁决结果（实际 HP 变化量与变更后 HP），调用方用 <see cref="HpChangeResult.CurrentHp"/>
+        /// 回写本地 <c>CombatInfo.Health</c>，使判死判断与权威一致（裁决可能减免伤害）。
+        /// </para>
+        /// </summary>
+        private async Task<HpChangeResult?> SyncHpToCharacterAsync(ulong characterId, int hpDelta, ulong sourceId, Horizon.Orleans.Interface.World.DamageType damageType)
+        {
+            try
+            {
+                var characterGrain = _characterGrainProvider(characterId);
+                return await characterGrain.RequestHpChangeAsync(hpDelta, sourceId, damageType);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "CombatGrain {GrainKey}: HP 权威回写失败。CharacterId={CharacterId}, Delta={Delta}",
+                    this.GetPrimaryKey(), characterId, hpDelta);
+                return null;
             }
         }
 
@@ -650,16 +718,12 @@ namespace Horizon.Orleans.Grains
             // 基础伤害计算
             float damage = CombatCalculator.CalculateBaseDamage(attacker.AttackPower, baseDamage);
 
-            // 五行伤害计算
+            // 五行克制计算（仅攻击侧加成，不含防御——防御/减伤/Buff 统一由
+            // CharacterGrain.RequestHpChangeAsync 裁决，避免双重减免）。
             if (elementType > 0)
             {
-                damage = await CalculateWuxingDamageAsync(attacker.CharacterId, defender.CharacterId, damage, elementType);
-            }
-            else
-            {
-                // 普通物理伤害计算
-                float defenseReduction = CombatCalculator.CalculateDefenseReduction(defender.Defense);
-                damage *= (1 - defenseReduction);
+                float multiplier = CombatCalculator.GetWuxingMultiplier(attacker.WuxingElement, defender.WuxingElement);
+                damage *= multiplier;
             }
 
             return damage;

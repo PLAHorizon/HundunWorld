@@ -54,6 +54,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(222, Enums.ServiceType.Account)]
     public partial class VerificationCodeRequest : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -107,6 +108,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(223, Enums.ServiceType.Account)]
     public partial class VerificationCodeResponse : MessageUnion, INetworkMessage
     {
         /// <summary>

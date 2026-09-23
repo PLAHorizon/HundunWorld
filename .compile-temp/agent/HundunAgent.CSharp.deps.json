@@ -1,0 +1,53 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "HundunAgent.CSharp.Project/1.0.0": {
+        "dependencies": {
+          "FlaxEngine.CSharp": "1.12.6913.0",
+          "Newtonsoft.Json": "13.0.2.0"
+        },
+        "runtime": {
+          "HundunAgent.CSharp.dll": {}
+        }
+      },
+      "FlaxEngine.CSharp/1.12.6913.0": {
+        "runtime": {
+          "FlaxEngine.CSharp.dll": {
+            "assemblyVersion": "1.12.6913.0",
+            "fileVersion": "1.12.6913.0"
+          }
+        }
+      },
+      "Newtonsoft.Json/13.0.2.0": {
+        "runtime": {
+          "Newtonsoft.Json.dll": {
+            "assemblyVersion": "13.0.2.0",
+            "fileVersion": "13.0.2.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "HundunAgent.CSharp.Project/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "FlaxEngine.CSharp/1.12.6913.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Newtonsoft.Json/13.0.2.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

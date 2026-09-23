@@ -1,6 +1,6 @@
 using System;
 using System.Buffers;
-using Horizon.Game.Core.Utilities;
+using Horizon.Game.Message.Utilities;
 using Horizon.Game.Message.Sync;
 using MemoryPack;
 

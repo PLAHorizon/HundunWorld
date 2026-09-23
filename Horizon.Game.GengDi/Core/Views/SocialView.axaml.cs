@@ -1218,6 +1218,41 @@ namespace Horizon.Game.GengDi.Core.Views
 
         private ChatMessageItemViewModel _mediaViewerTarget;
 
+        /** 正在下载打开的文件（按消息去重，防止连点重复下载） */
+        private readonly HashSet<string> _openingFileIds = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 打开共享文件：本地路径直接交给系统关联程序；
+        /// 远程 URL（IM 媒体服务）先下载到缓存（保留原始文件名与扩展名）再打开，支持查看/编辑。
+        /// </summary>
+        private async Task OpenSharedFileAsync(ChatMessageItemViewModel messageItem)
+        {
+            var key = messageItem.Message?.Id ?? messageItem.MediaUrl;
+            if (!_openingFileIds.Add(key))
+            {
+                return;
+            }
+
+            try
+            {
+                if (_viewModel != null)
+                {
+                    _viewModel.ActionStatusMessage = $"正在获取文件：{messageItem.FileDisplayName}…";
+                }
+
+                var error = await SharedFileService.OpenAsync(messageItem.MediaUrl, messageItem.FileDisplayName)
+                    .ConfigureAwait(true);
+                if (_viewModel != null)
+                {
+                    _viewModel.ActionStatusMessage = error ?? $"已使用系统程序打开：{messageItem.FileDisplayName}";
+                }
+            }
+            finally
+            {
+                _openingFileIds.Remove(key);
+            }
+        }
+
         private void MediaCard_Tapped(object sender, Avalonia.Input.PointerPressedEventArgs e)
         {
             if (sender is not Control control || control.DataContext is not ChatMessageItemViewModel messageItem)
@@ -1235,18 +1270,7 @@ namespace Horizon.Game.GengDi.Core.Views
             if (messageItem.IsFileViewable)
             {
                 e.Handled = true;
-                try
-                {
-                    var path = messageItem.MediaUrl;
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path)
-                    {
-                        UseShellExecute = true
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[SocialView] 打开文件失败：{ex.Message}");
-                }
+                _ = OpenSharedFileAsync(messageItem);
                 return;
             }
 
@@ -1423,6 +1447,22 @@ namespace Horizon.Game.GengDi.Core.Views
             await ShowForwardDialogAsync(messageItem.SerializedContent);
         }
 
+        /// <summary>撤回私聊消息（2 分钟内自己发送的消息；生效通知经推送回写 UI）</summary>
+        private async void RecallButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.DataContext is not ChatMessageItemViewModel messageItem)
+            {
+                return;
+            }
+
+            if (_viewModel == null || messageItem.Message == null)
+            {
+                return;
+            }
+
+            await _viewModel.RecallMessageAsync(messageItem.Message);
+        }
+
         private async Task ShowForwardDialogAsync(string content)
         {
             if (_viewModel == null || string.IsNullOrWhiteSpace(content))
@@ -1459,6 +1499,37 @@ namespace Horizon.Game.GengDi.Core.Views
             if (_viewModel != null)
             {
                 _viewModel.ActionStatusMessage = "内容已复制到剪贴板。";
+            }
+        }
+
+        /// <summary>媒体查看器：使用系统关联程序打开当前媒体（远程先下载缓存，支持查看/编辑）</summary>
+        private async void ViewerOpenExternalButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mediaViewerTarget == null)
+            {
+                return;
+            }
+
+            var item = _mediaViewerTarget;
+            var mediaUrl = item.MediaUrl;
+            if (string.IsNullOrWhiteSpace(mediaUrl))
+            {
+                return;
+            }
+
+            if (_viewModel != null)
+            {
+                _viewModel.ActionStatusMessage = "正在获取媒体文件…";
+            }
+
+            // 文件名：优先消息标题（转发/原图场景），否则取 URL 末段
+            var fileName = !string.IsNullOrWhiteSpace(item.PreviewTitle) && item.PreviewTitle != item.SenderDisplayName
+                ? item.PreviewTitle
+                : item.PreviewSubtitle;
+            var error = await SharedFileService.OpenAsync(mediaUrl, fileName).ConfigureAwait(true);
+            if (_viewModel != null)
+            {
+                _viewModel.ActionStatusMessage = error ?? "已使用系统程序打开媒体文件。";
             }
         }
 

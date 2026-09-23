@@ -131,6 +131,57 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private bool _isRenameGroupDialogOpen = false;
         private string _renameGroupTargetId = "";
 
+        // ===== 农事日历（本地持久化：LiteDB farm calendar） =====
+        private DateTime _calendarMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        private DateTime? _selectedCalendarDate;
+        private bool _isCalendarTaskDialogOpen;
+        private string _newCalendarTaskType = "播种";
+        private string _newCalendarTaskTitle = "";
+        private string _newCalendarTaskNote = "";
+        private string _calendarStatusMessage = "";
+        private List<FarmCalendarTaskRecord> _farmTasks = new();
+        private ObservableCollection<FarmCalendarTaskItem> _selectedDayTasks = new();
+
+        /// <summary>农事日历当前展示月份（取该月 1 号）。</summary>
+        public DateTime CalendarMonth
+        {
+            get => _calendarMonth;
+            set
+            {
+                if (SetProperty(ref _calendarMonth, value))
+                    OnPropertyChanged(nameof(CalendarHeaderText));
+            }
+        }
+
+        /// <summary>日历标题（如「2026 年 9 月」）。</summary>
+        public string CalendarHeaderText => $"{_calendarMonth.Year} 年 {_calendarMonth.Month} 月";
+
+        /// <summary>选中日期的展示文案（弹窗标题）。</summary>
+        public string SelectedCalendarDateDisplay => _selectedCalendarDate.HasValue
+            ? $"{_selectedCalendarDate.Value:yyyy 年 M 月 d 日} 农事任务"
+            : "农事任务";
+
+        public bool IsCalendarTaskDialogOpen
+        {
+            get => _isCalendarTaskDialogOpen;
+            set => SetProperty(ref _isCalendarTaskDialogOpen, value);
+        }
+
+        /// <summary>当日任务列表（弹窗内展示）。</summary>
+        public ObservableCollection<FarmCalendarTaskItem> SelectedDayTasks { get => _selectedDayTasks; set => SetProperty(ref _selectedDayTasks, value); }
+
+        public bool HasSelectedDayTasks => _selectedDayTasks.Count > 0;
+
+        /// <summary>可选农事类型（与图例色点一一对应，另加「其他」）。</summary>
+        public List<string> CalendarTaskTypes { get; } = new() { "播种", "施肥", "病虫害防治", "采收", "其他" };
+
+        public string NewCalendarTaskType { get => _newCalendarTaskType; set => SetProperty(ref _newCalendarTaskType, value); }
+        public string NewCalendarTaskTitle { get => _newCalendarTaskTitle; set => SetProperty(ref _newCalendarTaskTitle, value); }
+        public string NewCalendarTaskNote { get => _newCalendarTaskNote; set => SetProperty(ref _newCalendarTaskNote, value); }
+
+        /// <summary>日历操作反馈（如「已添加任务」），显示在卡片底部。</summary>
+        public string CalendarStatusMessage { get => _calendarStatusMessage; set => SetProperty(ref _calendarStatusMessage, value); }
+
         public bool IsCostDialogOpen { get => _isCostDialogOpen; set => SetProperty(ref _isCostDialogOpen, value); }
         public bool IsYieldDialogOpen { get => _isYieldDialogOpen; set => SetProperty(ref _isYieldDialogOpen, value); }
         public bool IsDeviceDialogOpen { get => _isDeviceDialogOpen; set => SetProperty(ref _isDeviceDialogOpen, value); }
@@ -539,6 +590,14 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public ICommand RenameGroupCommand { get; }
         public ICommand SubmitRenameGroupCommand { get; }
         public ICommand CancelRenameGroupCommand { get; }
+        public ICommand CalendarPrevMonthCommand { get; }
+        public ICommand CalendarNextMonthCommand { get; }
+        public ICommand CalendarTodayCommand { get; }
+        public ICommand SelectCalendarDayCommand { get; }
+        public ICommand CloseCalendarTaskDialogCommand { get; }
+        public ICommand SubmitCalendarTaskCommand { get; }
+        public ICommand ToggleCalendarTaskDoneCommand { get; }
+        public ICommand DeleteCalendarTaskCommand { get; }
 
         public FlowerPlantingAdviceViewModel()
         {
@@ -592,6 +651,17 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             RenameGroupCommand = new ParameterAsyncCommand(OpenRenameGroupDialogAsync);
             SubmitRenameGroupCommand = new AsyncCommand(SubmitRenameGroupAsync);
             CancelRenameGroupCommand = new AsyncCommand(() => { IsRenameGroupDialogOpen = false; return Task.CompletedTask; });
+
+            // 农事日历
+            CalendarPrevMonthCommand = new AsyncCommand(CalendarPrevMonthAsync);
+            CalendarNextMonthCommand = new AsyncCommand(CalendarNextMonthAsync);
+            CalendarTodayCommand = new AsyncCommand(CalendarTodayAsync);
+            SelectCalendarDayCommand = new ParameterAsyncCommand(SelectCalendarDayAsync);
+            CloseCalendarTaskDialogCommand = new AsyncCommand(() => { IsCalendarTaskDialogOpen = false; return Task.CompletedTask; });
+            SubmitCalendarTaskCommand = new AsyncCommand(SubmitCalendarTaskAsync);
+            ToggleCalendarTaskDoneCommand = new ParameterAsyncCommand(ToggleCalendarTaskDoneAsync);
+            DeleteCalendarTaskCommand = new ParameterAsyncCommand(DeleteCalendarTaskAsync);
+
             InitializeMqtt();
             InitializePlantingAdviceMockData();
             _ = LoadDataAsync();
@@ -668,43 +738,210 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 }
             };
 
-            // 农事日历 2026 年 7 月（周一起始，含 6 月 29/30 日补位，今日为 26 日）
-            CalendarDays = new ObservableCollection<CalendarDayItem>
+            // 农事日历：从本地库加载任务（首次使用播种示例），并构建当月视图
+            InitializeFarmCalendar();
+        }
+
+        /// <summary>
+        /// 农事日历初始化：加载本地持久化任务，空库时播种一组相对「今天」的示例任务，
+        /// 然后构建当前月份的 6×7 日历视图。
+        /// </summary>
+        private void InitializeFarmCalendar()
+        {
+            _farmTasks = FarmCalendarStore.LoadAll();
+            var seeded = FarmCalendarStore.SeedIfEmpty(BuildSeedTasks());
+            if (seeded > 0)
+                _farmTasks = FarmCalendarStore.LoadAll();
+
+            RebuildCalendarDays();
+        }
+
+        /// <summary>首次使用的示例任务：围绕今天前后几天铺一组常见农事，保证首屏有内容。</summary>
+        private static List<FarmCalendarTaskRecord> BuildSeedTasks()
+        {
+            var today = DateTime.Today;
+            return new List<FarmCalendarTaskRecord>
             {
-                new() { Day = "29", IsCurrentMonth = false },
-                new() { Day = "30", IsCurrentMonth = false },
-                new() { Day = "1", HasSowing = true },
-                new() { Day = "2", HasFertilizing = true },
-                new() { Day = "3" },
-                new() { Day = "4", HasPestControl = true },
-                new() { Day = "5" },
-                new() { Day = "6", HasFertilizing = true, HasSowing = true },
-                new() { Day = "7" },
-                new() { Day = "8", HasPestControl = true },
-                new() { Day = "9", HasHarvest = true },
-                new() { Day = "10" },
-                new() { Day = "11", HasFertilizing = true },
-                new() { Day = "12" },
-                new() { Day = "13", HasSowing = true },
-                new() { Day = "14", HasPestControl = true, HasFertilizing = true },
-                new() { Day = "15" },
-                new() { Day = "16", HasHarvest = true },
-                new() { Day = "17" },
-                new() { Day = "18", HasFertilizing = true },
-                new() { Day = "19" },
-                new() { Day = "20", HasSowing = true },
-                new() { Day = "21" },
-                new() { Day = "22", HasPestControl = true },
-                new() { Day = "23" },
-                new() { Day = "24", HasHarvest = true },
-                new() { Day = "25" },
-                new() { Day = "26", IsToday = true, HasFertilizing = true, HasSowing = true },
-                new() { Day = "27" },
-                new() { Day = "28", HasHarvest = true },
-                new() { Day = "29" },
-                new() { Day = "30" },
-                new() { Day = "31" }
+                new() { Date = today.AddDays(-2), TaskType = "病虫害防治", Title = "巡查蚜虫与红蜘蛛", Note = "重点检查叶背" },
+                new() { Date = today, TaskType = "施肥", Title = "月季花后追肥", Note = "磷钾肥为主" },
+                new() { Date = today, TaskType = "播种", Title = "秋播草花育苗", Note = "波斯菊 / 百日草" },
+                new() { Date = today.AddDays(2), TaskType = "病虫害防治", Title = "喷施保护性杀菌剂", Note = "雨后补喷" },
+                new() { Date = today.AddDays(4), TaskType = "采收", Title = "采收鲜切花", Note = "清晨带露水采收" },
+                new() { Date = today.AddDays(6), TaskType = "施肥", Title = "滴灌系统随水施肥", Note = "EC 值 1.2 左右" }
             };
+        }
+
+        /// <summary>按当前展示月份重建 6×7 日历格（周一起始，前后月补位）。</summary>
+        private void RebuildCalendarDays()
+        {
+            var first = new DateTime(_calendarMonth.Year, _calendarMonth.Month, 1);
+            //周一=0 … 周日=6
+            var lead = ((int)first.DayOfWeek + 6) % 7;
+            var start = first.AddDays(-lead);
+            var today = DateTime.Today;
+
+            var cells = new List<CalendarDayItem>(42);
+            for (var i = 0; i < 42; i++)
+            {
+                var date = start.AddDays(i);
+                cells.Add(new CalendarDayItem
+                {
+                    Date = date,
+                    IsCurrentMonth = date.Month == _calendarMonth.Month && date.Year == _calendarMonth.Year,
+                    IsToday = date == today,
+                    IsSelected = _selectedCalendarDate.HasValue && _selectedCalendarDate.Value == date
+                });
+            }
+
+            ApplyTaskFlags(cells);
+            CalendarDays = new ObservableCollection<CalendarDayItem>(cells);
+            OnPropertyChanged(nameof(CalendarHeaderText));
+        }
+
+        /// <summary>把本地任务按日期聚合到日历格的 Has* 圆点标记上。</summary>
+        private void ApplyTaskFlags(List<CalendarDayItem> cells)
+        {
+            var byDate = _farmTasks
+                .GroupBy(t => t.Date.Date)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var cell in cells)
+            {
+                cell.RefreshHasFlags(byDate.TryGetValue(cell.Date.Date, out var tasks) ? tasks : null);
+            }
+        }
+
+        private Task CalendarPrevMonthAsync()
+        {
+            CalendarMonth = _calendarMonth.AddMonths(-1);
+            IsCalendarTaskDialogOpen = false;
+            RebuildCalendarDays();
+            return Task.CompletedTask;
+        }
+
+        private Task CalendarNextMonthAsync()
+        {
+            CalendarMonth = _calendarMonth.AddMonths(1);
+            IsCalendarTaskDialogOpen = false;
+            RebuildCalendarDays();
+            return Task.CompletedTask;
+        }
+
+        private Task CalendarTodayAsync()
+        {
+            var today = DateTime.Today;
+            CalendarMonth = new DateTime(today.Year, today.Month, 1);
+            RebuildCalendarDays();
+            return Task.CompletedTask;
+        }
+
+        /// <summary>点击日期格：选中该日期并打开当日任务弹窗。</summary>
+        private Task SelectCalendarDayAsync(object? parameter)
+        {
+            if (parameter is not CalendarDayItem item)
+                return Task.CompletedTask;
+
+            _selectedCalendarDate = item.Date.Date;
+            OnPropertyChanged(nameof(SelectedCalendarDateDisplay));
+
+            foreach (var cell in CalendarDays)
+                cell.IsSelected = cell.Date == _selectedCalendarDate.Value;
+
+            ReloadSelectedDayTasks();
+            NewCalendarTaskType = "播种";
+            NewCalendarTaskTitle = "";
+            NewCalendarTaskNote = "";
+            CalendarStatusMessage = "";
+            IsCalendarTaskDialogOpen = true;
+            return Task.CompletedTask;
+        }
+
+        private void ReloadSelectedDayTasks()
+        {
+            var date = _selectedCalendarDate ?? DateTime.Today;
+            SelectedDayTasks = new ObservableCollection<FarmCalendarTaskItem>(
+                _farmTasks
+                    .Where(t => t.Date.Date == date)
+                    .OrderBy(t => t.CreatedAt)
+                    .Select(t => new FarmCalendarTaskItem(t))
+            );
+            OnPropertyChanged(nameof(HasSelectedDayTasks));
+        }
+
+        /// <summary>刷新日历圆点与当日任务弹窗（有任务变更后调用）。</summary>
+        private void RefreshCalendarViews()
+        {
+            ApplyTaskFlags(CalendarDays.ToList());
+            ReloadSelectedDayTasks();
+        }
+
+        private Task SubmitCalendarTaskAsync()
+        {
+            var title = (NewCalendarTaskTitle ?? "").Trim();
+            if (string.IsNullOrEmpty(title))
+            {
+                CalendarStatusMessage = "请填写任务内容";
+                return Task.CompletedTask;
+            }
+
+            var date = (_selectedCalendarDate ?? DateTime.Today).Date;
+            var record = new FarmCalendarTaskRecord
+            {
+                Date = date,
+                TaskType = string.IsNullOrWhiteSpace(NewCalendarTaskType) ? "其他" : NewCalendarTaskType,
+                Title = title,
+                Note = (NewCalendarTaskNote ?? "").Trim()
+            };
+
+            if (!FarmCalendarStore.Save(record))
+            {
+                CalendarStatusMessage = "保存失败，请重试";
+                return Task.CompletedTask;
+            }
+
+            _farmTasks.Add(record);
+            NewCalendarTaskTitle = "";
+            NewCalendarTaskNote = "";
+            CalendarStatusMessage = $"已在 {_selectedCalendarDate.Value:M 月 d 日} 添加「{record.TaskType}」任务";
+            RefreshCalendarViews();
+            return Task.CompletedTask;
+        }
+
+        private Task ToggleCalendarTaskDoneAsync(object? parameter)
+        {
+            if (parameter is not FarmCalendarTaskItem item)
+                return Task.CompletedTask;
+
+            item.IsDone = !item.IsDone;
+            item.Record.DoneAt = item.IsDone ? DateTime.Now : null;
+            if (!FarmCalendarStore.Save(item.Record))
+            {
+                item.IsDone = !item.IsDone;
+                CalendarStatusMessage = "保存失败，请重试";
+                return Task.CompletedTask;
+            }
+
+            RefreshCalendarViews();
+            return Task.CompletedTask;
+        }
+
+        private Task DeleteCalendarTaskAsync(object? parameter)
+        {
+            if (parameter is not FarmCalendarTaskItem item)
+                return Task.CompletedTask;
+
+            if (!FarmCalendarStore.Delete(item.Id))
+            {
+                CalendarStatusMessage = "删除失败，请重试";
+                return Task.CompletedTask;
+            }
+
+            var record = _farmTasks.FirstOrDefault(t => t.Id == item.Id);
+            if (record != null) _farmTasks.Remove(record);
+
+            CalendarStatusMessage = "任务已删除";
+            RefreshCalendarViews();
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -856,6 +1093,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     LightIntensity = reading.LightIntensity,
                     Co2Concentration = reading.Co2Level,
                     SoilMoisture = reading.SoilMoisture,
+                    // 传感器管线（SensorReadingInfo）无 PH 字段，取花卉适宜中性值兜底，避免卡片显示 0.0 误报「偏酸」
+                    SoilPH = 6.5,
                     TemperatureTrend = reading.Temperature > 25 ? "↑ 偏高" : reading.Temperature < 15 ? "↓ 偏低" : "→ 正常",
                     HumidityTrend = reading.Humidity > 80 ? "↑ 偏高" : reading.Humidity < 40 ? "↓ 偏低" : "→ 正常",
                     LightTrend = reading.LightIntensity > 20000 ? "↑ 强光" : reading.LightIntensity < 5000 ? "↓ 弱光" : "→ 适中",
@@ -885,6 +1124,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 LightIntensity = 12500,
                 Co2Concentration = 420,
                 SoilMoisture = 42.3,
+                SoilPH = 6.5,
                 TemperatureTrend = "↑ 0.3℃/h",
                 HumidityTrend = "↓ 1.2%/h",
                 LightTrend = "→ 稳定",
@@ -2365,6 +2605,35 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public string SoilTrend { get => _soilTrend; set => SetProperty(ref _soilTrend, value); }
         public double SoilPH { get => _soilPH; set => SetProperty(ref _soilPH, value); }
         public string SoilPHTrend { get => _soilPHTrend; set => SetProperty(ref _soilPHTrend, value); }
+
+        // 说明：状态徽标/量程占比为纯计算属性（按当前值实时求值），SensorData 整体替换时绑定自动刷新。
+
+        // ===== 环境状态徽标（数据驱动，修复原写死的「正常/偏高」） =====
+        // 阈值与 ViewModel 既有趋势规则对齐：
+        //   温度  <15 偏低 / 15~25 正常 / 25~32 偏高 / >32 高温（告警阈值）
+        //   土壤湿度 <40 偏干 / 40~80 正常 / >80 偏湿
+        //   光照  <5000 弱光 / 5000~20000 适中 / 20000~40000 强光 / >40000 过强
+        //   土壤 PH <5.5 偏酸 / 5.5~7.0 正常 / 7.0~7.5 偏碱 / >7.5 强碱
+        // 颜色：正常绿 / 轻度越界橙 / 越过告警阈值红。
+
+        private static string StatusToBrush(bool normal, bool danger) =>
+            normal ? "#30A46C" : danger ? "#EF5350" : "#FFA726";
+
+        public string TemperatureStatusText => Temperature < 15 ? "偏低" : Temperature <= 25 ? "正常" : Temperature <= 32 ? "偏高" : "高温";
+        public string TemperatureStatusBrush => StatusToBrush(Temperature >= 15 && Temperature <= 25, Temperature > 32);
+        public double TemperatureFillPercent => Math.Clamp((Temperature - 10) / (35 - 10) * 100, 0, 100);
+
+        public string SoilMoistureStatusText => SoilMoisture < 40 ? "偏干" : SoilMoisture <= 80 ? "正常" : "偏湿";
+        public string SoilMoistureStatusBrush => StatusToBrush(SoilMoisture >= 40 && SoilMoisture <= 80, false);
+        public double SoilMoistureFillPercent => Math.Clamp((SoilMoisture - 20) / (90 - 20) * 100, 0, 100);
+
+        public string LightStatusText => LightIntensity < 5000 ? "弱光" : LightIntensity <= 20000 ? "适中" : LightIntensity <= 40000 ? "强光" : "过强";
+        public string LightStatusBrush => StatusToBrush(LightIntensity >= 5000 && LightIntensity <= 20000, LightIntensity > 40000);
+        public double LightFillPercent => Math.Clamp(LightIntensity / 40000 * 100, 0, 100);
+
+        public string SoilPhStatusText => SoilPH < 5.5 ? "偏酸" : SoilPH <= 7.0 ? "正常" : SoilPH <= 7.5 ? "偏碱" : "强碱";
+        public string SoilPhStatusBrush => StatusToBrush(SoilPH >= 5.5 && SoilPH <= 7.0, SoilPH > 7.5);
+        public double SoilPhFillPercent => Math.Clamp((SoilPH - 4.5) / (8.0 - 4.5) * 100, 0, 100);
     }
 
     public class HarvestAdviceItem : ViewModelBase
@@ -2619,24 +2888,92 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
     /// <summary>
     /// 农事日历单日数据项（种植建议 section 农事日历）。
-    /// Has* 布尔标记对应不同农事类型的彩色圆点。
+    /// 携带真实日期 <see cref="Date"/>，由本地任务聚合出 Has* 彩色圆点标记。
     /// </summary>
     public class CalendarDayItem : ViewModelBase
     {
-        private string _day = "";
+        private DateTime _date;
         private bool _isToday;
         private bool _isCurrentMonth = true;
+        private bool _isSelected;
         private bool _hasSowing;
         private bool _hasFertilizing;
         private bool _hasPestControl;
         private bool _hasHarvest;
+        private int _taskCount;
 
-        public string Day { get => _day; set => SetProperty(ref _day, value); }
+        /// <summary>该格对应的真实日期（含前后月补位）。</summary>
+        public DateTime Date { get => _date; set { if (SetProperty(ref _date, value)) OnPropertyChanged(nameof(DayNumber)); } }
+
+        /// <summary>日期数字（用于格子显示）。</summary>
+        public string DayNumber => _date.Day.ToString();
+
         public bool IsToday { get => _isToday; set => SetProperty(ref _isToday, value); }
         public bool IsCurrentMonth { get => _isCurrentMonth; set => SetProperty(ref _isCurrentMonth, value); }
+        public bool IsSelected { get => _isSelected; set => SetProperty(ref _isSelected, value); }
+
+        /// <summary>当日任务总数（0 时圆点区隐藏）。</summary>
+        public int TaskCount { get => _taskCount; set { if (SetProperty(ref _taskCount, value)) OnPropertyChanged(nameof(HasAnyTask)); } }
+        public bool HasAnyTask => _taskCount > 0;
+
         public bool HasSowing { get => _hasSowing; set => SetProperty(ref _hasSowing, value); }
         public bool HasFertilizing { get => _hasFertilizing; set => SetProperty(ref _hasFertilizing, value); }
         public bool HasPestControl { get => _hasPestControl; set => SetProperty(ref _hasPestControl, value); }
         public bool HasHarvest { get => _hasHarvest; set => SetProperty(ref _hasHarvest, value); }
+
+        /// <summary>根据当日任务集合刷新圆点标记。</summary>
+        public void RefreshHasFlags(List<FarmCalendarTaskRecord>? tasks)
+        {
+            tasks ??= new List<FarmCalendarTaskRecord>();
+            TaskCount = tasks.Count;
+            HasSowing = tasks.Any(t => t.TaskType == "播种" && !t.IsDone);
+            HasFertilizing = tasks.Any(t => t.TaskType == "施肥" && !t.IsDone);
+            HasPestControl = tasks.Any(t => t.TaskType == "病虫害防治" && !t.IsDone);
+            HasHarvest = tasks.Any(t => t.TaskType == "采收" && !t.IsDone);
+        }
+    }
+
+    /// <summary>
+    /// 农事日历弹窗中的单条任务展示项，包装 <see cref="FarmCalendarTaskRecord"/> 并提供
+    /// 类型 → 圆点可见性的映射（与日历格图例一致）。
+    /// </summary>
+    public class FarmCalendarTaskItem : ViewModelBase
+    {
+        private bool _isDone;
+
+        public FarmCalendarTaskItem(FarmCalendarTaskRecord record)
+        {
+            Record = record ?? throw new ArgumentNullException(nameof(record));
+            _isDone = record.IsDone;
+        }
+
+        public FarmCalendarTaskRecord Record { get; }
+
+        public string Id => Record.Id;
+        public string TaskType => Record.TaskType;
+        public string Title => Record.Title;
+        public string Note => Record.Note;
+        public string CreatedTimeText => Record.CreatedAt.ToString("HH:mm");
+
+        public bool IsDone
+        {
+            get => _isDone;
+            set
+            {
+                if (SetProperty(ref _isDone, value))
+                {
+                    Record.IsDone = value;
+                    OnPropertyChanged(nameof(DoneText));
+                }
+            }
+        }
+
+        public string DoneText => _isDone ? "撤销" : "完成";
+
+        public bool HasSowing => TaskType == "播种";
+        public bool HasFertilizing => TaskType == "施肥";
+        public bool HasPestControl => TaskType == "病虫害防治";
+        public bool HasHarvest => TaskType == "采收";
+        public bool HasOther => TaskType == "其他";
     }
 }

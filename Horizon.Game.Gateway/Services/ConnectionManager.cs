@@ -386,99 +386,45 @@ namespace Horizon.Game.Gateway.Services
         /// <summary>
         /// 广播消息给所有连接
         /// </summary>
-        public async Task BroadcastAsync(byte[] message)
-        {
-            var connections = GetAllConnections().ToList();
-            var tasks = new List<Task>();
-
-            foreach (var connection in connections)
-            {
-                if (connection.IsConnected)
-                {
-                    tasks.Add(SendToConnectionSafeAsync(connection, message));
-                }
-            }
-
-            await Task.WhenAll(tasks);
-            
-            lock (_statsLock)
-            {
-                _networkStatistics.MessagesSent += connections.Count;
-                _networkStatistics.BytesSent += message.Length * connections.Count;
-            }
-
-            _logger.LogDebug("广播消息发送完成: {ConnectionCount} 个连接, {MessageSize} 字节", 
-                connections.Count, message.Length);
-        }
+        public Task BroadcastAsync(byte[] message)
+            => BroadcastCoreAsync(message, _ => true, logLabel: string.Empty);
 
         /// <summary>
         /// 按条件筛选并广播消息
         /// </summary>
-        public async Task BroadcastAsync(byte[] message, Func<IGameConnection, bool> predicate)
-        {
-            var connections = GetAllConnections().Where(predicate).ToList();
-            var tasks = new List<Task>();
-
-            foreach (var connection in connections)
-            {
-                if (connection.IsConnected)
-                {
-                    tasks.Add(SendToConnectionSafeAsync(connection, message));
-                }
-            }
-
-            await Task.WhenAll(tasks);
-
-            lock (_statsLock)
-            {
-                _networkStatistics.MessagesSent += connections.Count;
-                _networkStatistics.BytesSent += message.Length * connections.Count;
-            }
-
-            _logger.LogDebug("按条件筛选广播消息发送完成: {ConnectionCount} 个连接, {MessageSize} 字节",
-                connections.Count, message.Length);
-        }
+        public Task BroadcastAsync(byte[] message, Func<IGameConnection, bool> predicate)
+            => BroadcastCoreAsync(message, predicate, logLabel: "按条件筛选");
 
         /// <summary>
         /// 向指定用户组广播消息
         /// </summary>
-        public async Task BroadcastToUserGroupAsync(byte[] message, IEnumerable<long> userIds)
+        public Task BroadcastToUserGroupAsync(byte[] message, IEnumerable<long> userIds)
         {
             var userIdSet = new HashSet<long>(userIds);
-            var connections = GetAllConnections()
-                .Where(c => c.UserId.HasValue && userIdSet.Contains(c.UserId.Value))
-                .ToList();
-            var tasks = new List<Task>();
-
-            foreach (var connection in connections)
-            {
-                if (connection.IsConnected)
-                {
-                    tasks.Add(SendToConnectionSafeAsync(connection, message));
-                }
-            }
-
-            await Task.WhenAll(tasks);
-
-            lock (_statsLock)
-            {
-                _networkStatistics.MessagesSent += connections.Count;
-                _networkStatistics.BytesSent += message.Length * connections.Count;
-            }
-
-            _logger.LogDebug("向指定用户组广播消息发送完成: {ConnectionCount} 个连接, {MessageSize} 字节",
-                connections.Count, message.Length);
+            return BroadcastCoreAsync(
+                message,
+                c => c.UserId.HasValue && userIdSet.Contains(c.UserId.Value),
+                logLabel: "向指定用户组");
         }
 
         /// <summary>
         /// 根据连接属性筛选并广播消息
         /// </summary>
-        public async Task BroadcastByPropertyAsync(byte[] message, Func<Dictionary<string, object>, bool> propertyFilter)
+        public Task BroadcastByPropertyAsync(byte[] message, Func<Dictionary<string, object>, bool> propertyFilter)
+            => BroadcastCoreAsync(message, c => propertyFilter(c.Properties), logLabel: "根据属性筛选");
+
+        /// <summary>
+        /// 广播核心（5.1.2 收敛：四个广播入口共用同一实现）。<br/>
+        /// 按选择器筛选连接 → 过滤在线 → 并发发送（<see cref="SendToConnectionSafeAsync"/> 串行化单连接写入）→
+        /// 更新统计 → 记录日志。统计口径与日志文案与拆分前逐字一致。
+        /// </summary>
+        /// <param name="message">广播消息帧。</param>
+        /// <param name="selector">连接选择器（全量 / 谓词 / 用户组 / 属性）。</param>
+        /// <param name="logLabel">日志标签（为空时保持"广播消息发送完成"原文）。</param>
+        private async Task BroadcastCoreAsync(byte[] message, Func<IGameConnection, bool> selector, string logLabel)
         {
-            var connections = GetAllConnections()
-                .Where(c => propertyFilter(c.Properties))
-                .ToList();
-            var tasks = new List<Task>();
+            var connections = GetAllConnections().Where(selector).ToList();
+            var tasks = new List<Task>(connections.Count);
 
             foreach (var connection in connections)
             {
@@ -496,8 +442,8 @@ namespace Horizon.Game.Gateway.Services
                 _networkStatistics.BytesSent += message.Length * connections.Count;
             }
 
-            _logger.LogDebug("根据属性筛选广播消息发送完成: {ConnectionCount} 个连接, {MessageSize} 字节",
-                connections.Count, message.Length);
+            _logger.LogDebug("{Label}广播消息发送完成: {ConnectionCount} 个连接, {MessageSize} 字节",
+                logLabel, connections.Count, message.Length);
         }
 
         /// <summary>

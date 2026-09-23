@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>14.2</SupportedOSPlatformVersion>
+    <ApplicationTitle>耕地</ApplicationTitle>
+    <ApplicationId>com.horizon.gengdi.ios</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <NoWarn>$(NoWarn);NU1507</NoWarn>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- iOS 构建需要 macOS + Xcode；在 Windows 上可加载项目但无法编译 -->
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">iossimulator-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.iOS" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Game.GengDi\Horizon.Game.GengDi.csproj" />
+  </ItemGroup>
+
+  <!-- iOS 平台设计原型 HTML 页面 -->
+  <ItemGroup>
+    <BundleResource Include="Assets\Pages\*.html" />
+  </ItemGroup>
+
+</Project>

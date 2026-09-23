@@ -1,0 +1,84 @@
+{
+	"ID": "effa340549212d40e4bb9cb22b3bb262",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "d17f1f2f42f45e2a84477b9797835549",
+		"TypeName": "FlaxEngine.UIControl",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "Bar_Ink",
+		"Transform": {
+			"Orientation": {
+				"X": -1.0,
+				"Y": -4.3711388286737935e-8,
+				"Z": -4.3711388286737935e-8,
+				"W": 1.910685465164705e-15
+			}
+		},
+		"Control": "HundunWorld.Game.UI.Ink.InkBar",
+		"Data": {
+			"SlotColor": {
+				"R": 0.0,
+				"G": 0.0,
+				"B": 0.0,
+				"A": 0.5
+			},
+			"BorderColor": {
+				"R": 0.78431374,
+				"G": 0.65882355,
+				"B": 0.34509805,
+				"A": 0.15
+			},
+			"Value": 0.6,
+			"FillVariant": 0,
+			"Vertical": false,
+			"ClipChildren": false,
+			"CullChildren": true,
+			"AnchorMin": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"AnchorMax": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Offsets": {
+				"Left": 0.0,
+				"Right": 200.0,
+				"Top": 0.0,
+				"Bottom": 8.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0
+			},
+			"Pivot": {
+				"X": 0.5,
+				"Y": 0.5
+			},
+			"Shear": {
+				"X": 0.0,
+				"Y": 0.0
+			},
+			"Rotation": 0.0,
+			"BackgroundColor": {
+				"R": 0.0,
+				"G": 0.0,
+				"B": 0.0,
+				"A": 0.0
+			},
+			"BackgroundBrush": null,
+			"Enabled": true,
+			"Visible": true,
+			"AutoFocus": false
+		}
+	},
+	{
+		"ID": "0b2d0c8a4a24164bef2b4181a1bcf424",
+		"TypeName": "HundunWorld.Game.UI.Prefabs.InkBarProfile",
+		"ParentID": "d17f1f2f42f45e2a84477b9797835549",
+		"V": {}
+	}
+]
+}

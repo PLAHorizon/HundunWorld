@@ -341,6 +341,19 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                             _orders.Add(item);
                     }
 
+                    // 惰性关闭超时未支付订单（首屏触发；后端关闭成功则本地同步置为已关闭）
+                    if (_currentPage == 1 && items.Count > 0)
+                    {
+                        var closedIds = await _orderService.CloseExpiredUnpaidOrdersAsync(orders).ConfigureAwait(false);
+                        if (closedIds.Count > 0)
+                        {
+                            foreach (var it in items.Where(i => closedIds.Contains(i.OrderId)))
+                                it.Status = FlowerOrderService.OrderStatusCancelled;
+                            _orders = new ObservableCollection<OrderListItem>(items);
+                            ToastService.Instance.Info($"已自动关闭 {closedIds.Count} 笔超时未支付订单");
+                        }
+                    }
+
                     HasMoreOrders = orders.Count >= 20;
                     ApplyFilter();
                 }

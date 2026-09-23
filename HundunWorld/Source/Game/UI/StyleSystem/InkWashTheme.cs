@@ -622,16 +622,16 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #endregion
 
-        #region 控件高度 — ds-btn §4.1 三尺寸
+        #region 控件高度 — 燕云融合规范（hundun-yy-ui --ink-control-h-*）三尺寸
 
-        /// <summary>小控件高度 24px（ds-btn sm）</summary>
-        public const float ControlHSm = 24f;
+        /// <summary>小控件高度 28px（--ink-control-h-sm）</summary>
+        public const float ControlHSm = 28f;
 
-        /// <summary>中控件高度 28px（ds-btn md）</summary>
-        public const float ControlHMd = 28f;
+        /// <summary>中控件高度 36px（--ink-control-h-md，默认）</summary>
+        public const float ControlHMd = 36f;
 
-        /// <summary>大控件高度 32px（ds-btn lg）</summary>
-        public const float ControlHLg = 32f;
+        /// <summary>大控件高度 44px（--ink-control-h-lg）</summary>
+        public const float ControlHLg = 44f;
 
         #endregion
 

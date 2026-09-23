@@ -135,12 +135,26 @@ namespace Horizon.Game.GengDi.Models
         public static RichMessageContent CreateFile(string filePath, string text = "")
         {
             var fileName = System.IO.Path.GetFileName(filePath) ?? "未知文件";
-            long fileSize = 0;
+            return CreateFileCore(filePath, fileName, text, fileSize: 0);
+        }
+
+        /// <summary>
+        /// 创建文件消息（发送端上传后调用）：filePath 为远程 URL 或本地路径，
+        /// displayName 为原始文件名（URL 场景下 GetFileName 会得到服务端 GUID 名，须显式传入）。
+        /// </summary>
+        public static RichMessageContent CreateFile(string filePath, string displayName, string text, long fileSize)
+        {
+            return CreateFileCore(filePath, displayName, text, fileSize);
+        }
+
+        private static RichMessageContent CreateFileCore(string filePath, string fileName, string text, long fileSize)
+        {
+            long size = fileSize;
             try
             {
-                if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+                if (size <= 0 && !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
                 {
-                    fileSize = new FileInfo(filePath).Length;
+                    size = new FileInfo(filePath).Length;
                 }
             }
             catch { }
@@ -151,7 +165,7 @@ namespace Horizon.Game.GengDi.Models
                 Text = string.IsNullOrWhiteSpace(text) ? fileName : text,
                 MediaUrl = filePath ?? string.Empty,
                 FileName = fileName,
-                FileSize = fileSize,
+                FileSize = size,
                 Provider = "file"
             };
         }

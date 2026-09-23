@@ -13,6 +13,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(133, Enums.ServiceType.Game)]
     public partial class SectSkillInfo : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -60,6 +61,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(134, Enums.ServiceType.Game)]
     public partial class SkillPrerequisites : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -107,6 +109,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(137, Enums.ServiceType.Game)]
     public partial class MartialArtsManualMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -189,6 +192,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(138, Enums.ServiceType.Game)]
     public partial class MartialArtsEffect : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -392,6 +396,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
+    [NetworkMessage(139, Enums.ServiceType.Game)]
     public partial class WuXingSystemMessage : MessageUnion, INetworkMessage
     {
         /// <summary>

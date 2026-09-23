@@ -20,9 +20,13 @@ namespace Horizon.Game.Core.Handlers
         {
         }
 
+        // 修复 BUG（心跳双处理器竞争路由）：MessageType.Heartbeat 由 Horizon.Game.Gateway 的
+        // HeartbeatHandler 独占（刷新 Redis presence TTL + 离线角色防复活兜底 + 延迟回显）。
+        // 此前此处同时认领 Heartbeat，依赖 DI 注册顺序决定路由——Core 程序集先注册使本处理器
+        // 抢先处理心跳，HeartbeatHandler 的 presence 续期逻辑成为死代码，且两处延迟计算语义
+        // 不一致（ticks vs Unix 毫秒）。此处移除 Heartbeat，仅保留响应/错误/系统消息。
         public override List<MessageType> MessageTypes => new()
         {
-            MessageType.Heartbeat,
             MessageType.HeartbeatResponse,
             MessageType.Error,
             MessageType.System
@@ -39,9 +43,6 @@ namespace Horizon.Game.Core.Handlers
                 // 根据消息类型处理不同的系统消息
                 switch (message.Header.MessageType)
                 {
-                    case MessageType.Heartbeat:
-                        return await HandleHeartbeatRequestAsync(message);
-
                     case MessageType.HeartbeatResponse:
                         // 网关收到客户端的心跳响应，无需再次响应，直接返回成功
                         Logger.LogDebug("收到客户端心跳响应");
@@ -60,51 +61,6 @@ namespace Horizon.Game.Core.Handlers
             {
                 Logger.LogError(ex, "处理系统消息时发生错误");
                 return (false, message);
-            }
-        }
-
-        /// <summary>
-        /// 处理心跳请求消息
-        /// </summary>
-        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleHeartbeatRequestAsync(HorizonMessagePacket request)
-        {
-            try
-            {
-                var heartbeatMessage = request.Body as HeartbeatMessage;
-                if (heartbeatMessage == null)
-                {
-                    Logger.LogWarning("心跳消息体为空或类型不正确");
-                    return (false, request);
-                }
-
-                // 创建心跳响应消息
-                var response = new HeartbeatResponse
-                {
-                    Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-                    ServerTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-                    Latency = DateTimeOffset.Now.ToUnixTimeMilliseconds() - heartbeatMessage.ClientTime
-                };
-
-                // 创建响应消息包
-                var responsePacket = CreateHorizonMessage(response);
-
-                // 设置响应消息的头部信息，保持与请求一致的GameId, ZoneId, ServerId
-                responsePacket.Header.GameId = request.Header.GameId;
-                responsePacket.Header.ZoneId = request.Header.ZoneId;
-                responsePacket.Header.ServerId = request.Header.ServerId;
-                responsePacket.Header.ResponseToMessageId = request.Header.MessageId;
-                responsePacket.Header.IsResponse = true;
-                responsePacket.Header.RequireResponse = false;
-
-                Logger.LogDebug("心跳响应已创建: ServerTime={ServerTime}, Latency={Latency}ms",
-                    response.ServerTime, response.Latency);
-
-                return (true, responsePacket);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "处理心跳请求时发生错误");
-                return (false, request);
             }
         }
 

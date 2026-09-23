@@ -70,7 +70,9 @@ namespace Horizon.Game.GengDi.Core.Services.Database
                     {
                         Id = RecordId,
                         PassportId = passportId,
-                        Password = password ?? string.Empty,
+                        // 收敛到与 LiteDataContext.passport_info 一致的加密方案：
+                        // 桌面端 DPAPI，非桌面端由 CredentialProtector 兜底
+                        Password = Horizon.Game.GengDi.Core.Services.Security.CredentialProtector.Protect(password),
                         RememberPassword = true,
                         SavedAt = DateTime.UtcNow
                     });
@@ -107,8 +109,9 @@ namespace Horizon.Game.GengDi.Core.Services.Database
                         return false;
 
                     passportId = record.PassportId;
-                    password = record.Password;
-                    return true;
+                    // 新写入为加密存储；CredentialProtector 对旧明文记录做前缀兼容
+                    password = Horizon.Game.GengDi.Core.Services.Security.CredentialProtector.Unprotect(record.Password);
+                    return !string.IsNullOrEmpty(passportId);
                 }
                 catch (Exception ex)
                 {

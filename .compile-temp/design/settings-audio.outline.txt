@@ -1,0 +1,200 @@
+## page: settings-audio
+## dom-ids: action-info-text, back-hud, link-mini-game-complete
+  main
+    div
+      aside .left-nav
+        div .nav-logo | 混沌世界
+        nav .nav-list
+          a .nav-item
+            span .nav-item-icon
+            span | 任务
+          a .nav-item
+            span .nav-item-icon
+            span | 抽卡
+          a .nav-item
+            span .nav-item-icon
+            span | 通行证
+          a .nav-item
+            span .nav-item-icon
+            span | 角色
+          a .nav-item
+            span .nav-item-icon
+            span | 博物志
+          a .nav-item
+            span .nav-item-icon
+            span | 奇珍阁
+          a .nav-item
+            span .nav-item-icon
+            span | 设置
+        div .nav-footer
+          div .nav-version | v1.2.0 · Build 20260715
+      div .right-section
+        header .top-bar
+          div
+            button #back-hud .back-hud-btn [aria="返回战斗"]
+              span | 返回战斗
+            span
+            div .player-avatar | 客
+            span | 江湖过客
+            span | Lv. 42
+          div .currency-bar
+            button #link-mini-game-complete .quick-jump-btn [aria="打开小游戏完成"]
+              span | 小游戏
+            span
+            div .currency-item
+              span .currency-label | 铜钱
+              span .currency-value | 12,450
+            span
+            div .currency-item
+              span .currency-label | 元宝
+              span .currency-value | 328
+            span
+            div
+              span | 戌时 三刻
+        div
+          aside .category-tabs
+            div .category-header | 设置分类
+            a .cat-tab
+              span .cat-icon
+              span | 画面
+              span | 10
+            a .cat-tab
+              span .cat-icon
+              span | 音效
+              span | 7
+            a .cat-tab
+              span .cat-icon
+              span | 操作
+              span | 12
+            a .cat-tab
+              span .cat-icon
+              span | 账号
+              span | 6
+            a .cat-tab
+              span .cat-icon
+              span | 其他
+              span | 5
+          section .settings-list
+            div
+            div
+            div .settings-header
+              div
+                div .settings-title-row
+                  h1 .settings-title | 音效设置
+                  span .ink-tag ink-tag-brand | 音频系统
+                p .settings-subtitle | 调整游戏音频体验，沉浸江湖之声
+              div
+            div .setting-group
+              div .setting-section-label | 音量调节
+              div .settings-grid
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 主音量
+                      span .setting-tag setting-tag-recommend | 推荐
+                    span | 调整游戏整体音量，影响所有音频通道
+                  div
+                    div
+                      div
+                        div
+                          div
+                            div
+                      span .slider-value | 80
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 背景音乐
+                    span | 调整场景与战斗背景音乐音量
+                  div
+                    div
+                      div
+                        div
+                          div
+                            div
+                      span .slider-value | 60
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 音效
+                    span | 调整技能、招式与环境交互音效音量
+                  div
+                    div
+                      div
+                        div
+                          div
+                            div
+                      span .slider-value | 75
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 语音
+                    span | 调整角色对话与剧情语音音量
+                  div
+                    div
+                      div
+                        div
+                          div
+                            div
+                      span .slider-value | 90
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 环境音
+                    span | 调整风声、水声、虫鸣等自然环境音量
+                  div
+                    div
+                      div
+                        div
+                          div
+                            div
+                      span .slider-value | 50
+            div .setting-group
+              div .setting-section-label | 音频功能
+              div .settings-grid
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | UI音效
+                      span .setting-tag setting-tag-recommend | 推荐
+                    span | 界面按钮、标签切换等操作音效反馈
+                  div
+                    span .toggle-status | 开启
+                    div
+                      div
+                div .setting-item
+                  div
+                    div .setting-label-row
+                      span .setting-label | 语音聊天
+                    span | 开启队伍语音聊天功能，需配合麦克风使用
+                  div
+                    span .toggle-status | 关闭
+                    div
+                      div
+            div .setting-group
+              div .setting-section-label | 音频设备
+              div .ink-panel
+                div .audio-device-grid
+                  div
+                    div .audio-device-label
+                      span | 输出设备
+                    div .audio-device-value | 系统默认 · 扬声器（Realtek Audio）
+                  div
+                    div .audio-device-label
+                      span | 输入设备
+                    div .audio-device-value | 系统默认 · 麦克风（USB Audio Device）
+                  div
+                    div .audio-device-label
+                      span | 采样率
+                    div .audio-device-value | 48000 Hz
+        footer .action-bar
+          div
+            span
+            span #action-info-text | 修改将在保存后生效
+          div .action-buttons
+            button .action-btn action-btn-secondary
+              span | 恢复默认
+            button .action-btn ink-btn-primary
+              span | 保存设置
+
+## COPY (55)
+混沌世界 | 任务 | 抽卡 | 通行证 | 角色 | 博物志 | 奇珍阁 | 设置 | v1.2.0 · Build 20260715 | 返回战斗 | 客 | 江湖过客 | Lv. 42 | 小游戏 | 铜钱 | 12,450 | 元宝 | 戌时 三刻 | 设置分类 | 画面 | 音效 | 操作 | 账号 | 其他 | 音效设置 | 音频系统 | 调整游戏音频体验，沉浸江湖之声 | 音量调节 | 主音量 | 推荐 | 调整游戏整体音量，影响所有音频通道 | 背景音乐 | 调整场景与战斗背景音乐音量 | 调整技能、招式与环境交互音效音量 | 语音 | 调整角色对话与剧情语音音量 | 环境音 | 调整风声、水声、虫鸣等自然环境音量 | 音频功能 | UI音效 | 界面按钮、标签切换等操作音效反馈 | 开启 | 语音聊天 | 开启队伍语音聊天功能，需配合麦克风使用 | 关闭 | 音频设备 | 输出设备 | 系统默认 · 扬声器（Realtek Audio） | 输入设备 | 系统默认 · 麦克风（USB Audio Device） | 采样率 | 48000 Hz | 修改将在保存后生效 | 恢复默认 | 保存设置

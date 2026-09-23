@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙天气预报 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #c4956a;
+  --gd-state-warning-surface: rgba(196, 149, 106, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #c47070;
+  --gd-state-error-surface: rgba(196, 112, 112, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #c47070;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(196, 112, 112, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[390px] mx-auto min-h-screen bg-background">
+        <!-- 鸿蒙导航栏：返回 + 天气预报(居中) + 城市选择，磨砂玻璃 -->
+        <div class="sticky top-0 z-40 backdrop-blur-xl border-b border-white/[0.06]" style="background:rgba(10,14,23,0.7);">
+            <div class="relative flex items-center h-14 px-4">
+                <button class="flex items-center justify-center w-11 h-11 -ml-2 rounded-full active:bg-white/10 transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5 text-foreground"></i>
+                </button>
+                <h1 class="absolute left-1/2 -translate-x-1/2 text-[17px] font-semibold text-foreground">天气预报</h1>
+                <button class="ml-auto flex items-center gap-1 h-9 pl-2.5 pr-2 rounded-full bg-white/[0.08] border border-white/[0.08] active:scale-95 transition-transform">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-primary"></i>
+                    <span class="text-[13px] text-foreground">昆明</span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-muted-foreground"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 内容区 -->
+        <div class="px-4 pt-4 pb-6 space-y-4">
+
+            <!-- 当前天气磨砂卡片 -->
+            <section class="relative overflow-hidden rounded-3xl backdrop-blur-xl border border-white/[0.1] p-6"
+                     style="background:linear-gradient(135deg, rgba(41,98,255,0.20) 0%, rgba(19,23,34,0.65) 55%);">
+                <div class="absolute -top-10 -right-6 w-36 h-36 rounded-full blur-3xl opacity-25" style="background:#2962ff;"></div>
+                <div class="relative">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-[13px] text-muted-foreground">8月10日 周一 · 昆明</p>
+                            <div class="flex items-baseline gap-1 mt-2">
+                                <span class="text-[64px] leading-none font-light text-foreground">22</span>
+                                <span class="text-2xl font-light text-muted-foreground">°C</span>
+                            </div>
+                            <p class="text-[15px] text-foreground/80 mt-1">晴转多云</p>
+                        </div>
+                        <i data-lucide="cloud-sun" class="w-16 h-16 text-primary"></i>
+                    </div>
+                    <!-- 4列指标 -->
+                    <div class="grid grid-cols-4 gap-2 mt-6 pt-5 border-t border-white/[0.1]">
+                        <div class="text-center">
+                            <i data-lucide="thermometer" class="w-4 h-4 mx-auto text-muted-foreground"></i>
+                            <p class="text-[11px] text-muted-foreground mt-1.5">体感</p>
+                            <p class="text-[14px] font-semibold text-foreground mt-0.5">24°</p>
+                        </div>
+                        <div class="text-center">
+                            <i data-lucide="droplets" class="w-4 h-4 mx-auto text-muted-foreground"></i>
+                            <p class="text-[11px] text-muted-foreground mt-1.5">湿度</p>
+                            <p class="text-[14px] font-semibold text-foreground mt-0.5">65%</p>
+                        </div>
+                        <div class="text-center">
+                            <i data-lucide="wind" class="w-4 h-4 mx-auto text-muted-foreground"></i>
+                            <p class="text-[11px] text-muted-foreground mt-1.5">风速</p>
+                            <p class="text-[14px] font-semibold text-foreground mt-0.5">3级</p>
+                        </div>
+                        <div class="text-center">
+                            <i data-lucide="leaf" class="w-4 h-4 mx-auto text-up"></i>
+                            <p class="text-[11px] text-muted-foreground mt-1.5">空气</p>
+                            <p class="text-[14px] font-semibold text-up mt-0.5">优</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 花卉栽培指数 -->
+            <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-up-surface">
+                            <i data-lucide="sprout" class="w-4 h-4 text-up"></i>
+                        </div>
+                        <h2 class="text-[15px] font-semibold text-foreground">花卉栽培指数</h2>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-[28px] font-bold text-up leading-none">85</span>
+                        <span class="text-[12px] text-muted-foreground">分</span>
+                    </div>
+                </div>
+                <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-up-surface mt-3">
+                    <i data-lucide="check-circle" class="w-3 h-3 text-up"></i>
+                    <span class="text-[11px] font-medium text-up">适宜栽培</span>
+                </div>
+                <!-- 4项进度条 -->
+                <div class="space-y-3 mt-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="thermometer" class="w-3.5 h-3.5 text-muted-foreground"></i>
+                                <span class="text-[12px] text-foreground/80">温度适宜度</span>
+                            </div>
+                            <span class="text-[12px] font-semibold text-foreground">90</span>
+                        </div>
+                        <div class="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div class="h-full rounded-full bg-primary" style="width:90%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="droplets" class="w-3.5 h-3.5 text-muted-foreground"></i>
+                                <span class="text-[12px] text-foreground/80">湿度适宜度</span>
+                            </div>
+                            <span class="text-[12px] font-semibold text-foreground">75</span>
+                        </div>
+                        <div class="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div class="h-full rounded-full bg-primary" style="width:75%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="sun" class="w-3.5 h-3.5 text-muted-foreground"></i>
+                                <span class="text-[12px] text-foreground/80">光照充足度</span>
+                            </div>
+                            <span class="text-[12px] font-semibold text-foreground">82</span>
+                        </div>
+                        <div class="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div class="h-full rounded-full bg-primary" style="width:82%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="cloud-rain" class="w-3.5 h-3.5 text-muted-foreground"></i>
+                                <span class="text-[12px] text-foreground/80">降水概率</span>
+                            </div>
+                            <span class="text-[12px] font-semibold text-foreground">30%</span>
+                        </div>
+                        <div class="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div class="h-full rounded-full bg-primary" style="width:30%"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 种植建议 -->
+                <div class="mt-4 p-3 rounded-2xl bg-white/[0.05] flex items-start gap-2">
+                    <i data-lucide="lightbulb" class="w-4 h-4 text-primary mt-0.5 flex-shrink-0"></i>
+                    <p class="text-[12px] text-muted-foreground leading-relaxed">当前气候条件适宜花卉生长，建议加强通风，保持土壤湿润，可进行施肥与修剪作业。</p>
+                </div>
+            </section>
+
+            <!-- 交易指数 -->
+            <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-up-surface">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-up"></i>
+                        </div>
+                        <h2 class="text-[15px] font-semibold text-foreground">花卉交易指数</h2>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-[28px] font-bold text-up leading-none">72</span>
+                        <span class="text-[12px] text-muted-foreground">分</span>
+                    </div>
+                </div>
+                <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-up-surface mt-3">
+                    <i data-lucide="trending-up" class="w-3 h-3 text-up"></i>
+                    <span class="text-[11px] font-medium text-up">利好</span>
+                </div>
+                <!-- 推荐品种 -->
+                <div class="space-y-2 mt-4">
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04]">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(41,98,255,0.15);">
+                                <i data-lucide="flower" class="w-4 h-4 text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="text-[13px] font-medium text-foreground">玫瑰</p>
+                                <p class="text-[11px] text-muted-foreground">¥2.8/支</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[14px] font-semibold text-up">+5.2%</p>
+                            <p class="text-[10px] text-muted-foreground">建议买入</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04]">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(41,98,255,0.15);">
+                                <i data-lucide="flower" class="w-4 h-4 text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="text-[13px] font-medium text-foreground">康乃馨</p>
+                                <p class="text-[11px] text-muted-foreground">¥1.5/支</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[14px] font-semibold text-up">+3.8%</p>
+                            <p class="text-[10px] text-muted-foreground">建议买入</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04]">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(41,98,255,0.15);">
+                                <i data-lucide="flower" class="w-4 h-4 text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="text-[13px] font-medium text-foreground">百合</p>
+                                <p class="text-[11px] text-muted-foreground">¥4.2/支</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[14px] font-semibold text-down">-1.2%</p>
+                            <p class="text-[10px] text-muted-foreground">观望</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7天预报横向滚动 -->
+            <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="calendar-days" class="w-4 h-4 text-muted-foreground"></i>
+                        <h2 class="text-[15px] font-semibold text-foreground">7天预报</h2>
+                    </div>
+                    <span class="text-[11px] text-muted-foreground">左右滑动查看</span>
+                </div>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+                    <!-- 今天 高亮 -->
+                    <div class="flex-shrink-0 w-[60px] rounded-2xl py-3 flex flex-col items-center gap-2 border" style="background:rgba(41,98,255,0.15);border-color:rgba(41,98,255,0.3);">
+                        <span class="text-[12px] font-semibold text-primary">今天</span>
+                        <i data-lucide="cloud-sun" class="w-6 h-6 text-primary"></i>
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[13px] font-semibold text-foreground">24°</span>
+                            <span class="text-[11px] text-muted-foreground">16°</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-[60px] rounded-2xl bg-white/[0.04] py-3 flex flex-col items-center gap-2">
+                        <span class="text-[12px] text-muted-foreground">周二</span>
+                        <i data-lucide="sun" class="w-6 h-6 text-[#c4956a]"></i>
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[13px] font-semibold text-foreground">26°</span>
+                            <span class="text-[11px] text-muted-foreground">17°</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-[60px] rounded-2xl bg-white/[0.04] py-3 flex flex-col items-center gap-2">
+                        <span class="text-[12px] text-muted-foreground">周三</span>
+                        <i data-lucide="cloud" class="w-6 h-6 text-muted-foreground"></i>
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[13px] font-semibold text-foreground">23°</span>
+                            <span class="text-[11px] text-muted-foreground">15°</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-[60px] rounded-2xl bg-white/[0.04] py-3 flex flex-col items-center gap-2">
+                        <span class="text-[12px] text-muted-foreground">周四</span>
+                        <i data-lucide="cloud-rain" class="w-6 h-6 text-primary"></i>
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[13px] font-semibold text-foreground">19°</span>
+                            <span class="text-[11px] text-muted-foreground">13°</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-[60px] rounded-2xl bg-white/[0.04] py-3 flex flex-col items-center gap-2">
+                        <span class="text-[12px] text-muted-foreground">周五</span>
+                        <i data-lucide="cloud-drizzle" class="w-6 h-6 text-primary"></i>
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[13px] font-semibold text-foreground">20°</span>
+                            <span class="text-[11px] text-muted-foreground">14°</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-[60px] rounded-2xl bg-white/[0.04] py-3 flex flex-col items-center gap-2">
+                        <span class="text-[12px] text-muted-foreground">周六</span>
+                        <i data-lucide="cloud-sun" class="w-6 h-6 text-primary"></i>
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[13px] font-semibold text-foreground">22°</span>
+                            <span class="text-[11px] text-muted-foreground">15°</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-[60px] rounded-2xl bg-white/[0.04] py-3 flex flex-col items-center gap-2">
+                        <span class="text-[12px] text-muted-foreground">周日</span>
+                        <i data-lucide="sun" class="w-6 h-6 text-[#c4956a]"></i>
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[13px] font-semibold text-foreground">25°</span>
+                            <span class="text-[11px] text-muted-foreground">18°</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 24h温度曲线 + 鸿蒙Tab(胶囊形) -->
+            <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-[15px] font-semibold text-foreground">温度趋势</h2>
+                    <!-- 鸿蒙Tab 胶囊形选中指示 -->
+                    <div class="flex items-center gap-1 p-1 rounded-full bg-white/[0.06]">
+                        <button class="px-3 py-1 rounded-full bg-primary text-[11px] font-medium text-primary-foreground active:scale-95 transition-transform">24小时</button>
+                        <button class="px-3 py-1 rounded-full text-[11px] text-muted-foreground active:scale-95 transition-transform">7天</button>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-4 mb-3">
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-[11px] text-muted-foreground">最高</span>
+                        <span class="text-[16px] font-semibold text-up">24°</span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-[11px] text-muted-foreground">最低</span>
+                        <span class="text-[16px] font-semibold text-primary">13°</span>
+                    </div>
+                </div>
+                <div class="h-40">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </section>
+
+            <!-- 农事提醒 -->
+            <section class="rounded-3xl bg-card border border-white/[0.06] p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background:rgba(255,152,0,0.12);">
+                        <i data-lucide="bell-ring" class="w-4 h-4 text-[#c4956a]"></i>
+                    </div>
+                    <h2 class="text-[15px] font-semibold text-foreground">农事提醒</h2>
+                </div>
+                <div class="space-y-2.5">
+                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.04]">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0" style="background:rgba(255,152,0,0.12);">
+                            <i data-lucide="sun" class="w-4 h-4 text-[#c4956a]"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[13px] font-medium text-foreground">紫外线较强</p>
+                            <p class="text-[12px] text-muted-foreground mt-0.5">中午时段注意遮阳防晒，避免花卉灼伤</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.04]">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0" style="background:rgba(41,98,255,0.15);">
+                            <i data-lucide="cloud-rain" class="w-4 h-4 text-primary"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[13px] font-medium text-foreground">明日有降雨</p>
+                            <p class="text-[12px] text-muted-foreground mt-0.5">提前检查排水沟渠，防止田间积水</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.04]">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 bg-up-surface">
+                            <i data-lucide="droplets" class="w-4 h-4 text-up"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[13px] font-medium text-foreground">湿度适宜</p>
+                            <p class="text-[12px] text-muted-foreground mt-0.5">可进行扦插繁殖，成活率较高</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.04]">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 bg-up-surface">
+                            <i data-lucide="wind" class="w-4 h-4 text-up"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[13px] font-medium text-foreground">风力较小</p>
+                            <p class="text-[12px] text-muted-foreground mt-0.5">适合喷洒叶面肥，药液不易飘散</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- 鸿蒙底部导航：天气高亮，胶囊选中态 -->
+        <nav class="sticky bottom-0 z-50 backdrop-blur-2xl border-t border-white/[0.08]" style="background:rgba(10,14,23,0.8);">
+            <div class="flex items-center justify-around h-[68px] px-2 pb-2 pt-1">
+                <button class="flex flex-col items-center justify-center gap-1 h-12 px-5 rounded-full active:scale-95 transition-transform" style="background:rgba(41,98,255,0.15);">
+                    <i data-lucide="cloud-sun" class="w-5 h-5 text-primary"></i>
+                    <span class="text-[10px] font-medium text-primary">天气</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 h-12 px-5 rounded-full active:scale-95 transition-transform">
+                    <i data-lucide="candlestick-chart" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground">行情</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 h-12 px-5 rounded-full active:scale-95 transition-transform">
+                    <i data-lucide="repeat" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground">交易</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-1 h-12 px-5 rounded-full active:scale-95 transition-transform">
+                    <i data-lucide="user" class="w-5 h-5 text-muted-foreground"></i>
+                    <span class="text-[10px] text-muted-foreground">我的</span>
+                </button>
+            </div>
+        </nav>
+    </main>
+    <script>lucide.createIcons();</script>
+    <script>
+        // Chart.js 24h温度曲线 — 暗色主题
+        const ctx = document.getElementById('tempChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+        gradient.addColorStop(0, 'rgba(41, 98, 255, 0.35)');
+        gradient.addColorStop(1, 'rgba(41, 98, 255, 0)');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['00','02','04','06','08','10','12','14','16','18','20','22'],
+                datasets: [{
+                    data: [14, 13, 13, 15, 19, 22, 24, 24, 22, 19, 17, 16],
+                    borderColor: '#2962ff',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#2962ff',
+                    pointHoverBorderColor: '#ffffff',
+                    pointHoverBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a1f2e',
+                        titleColor: '#e0e6ed',
+                        bodyColor: '#e0e6ed',
+                        borderColor: '#2a2e39',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: { label: c => c.parsed.y + '°C' }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: '#787b86', font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        border: { display: false },
+                        ticks: { color: '#787b86', font: { size: 10 }, callback: v => v + '°', stepSize: 5 }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

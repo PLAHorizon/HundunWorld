@@ -46,4 +46,53 @@ public sealed class RemoteSyncThresholdOptions
 
     /// <summary>超规模实体数上限（个），默认 5000；同屏实体数超过该值触发 <c>OverLimit</c> 档位最远优先降级。</summary>
     public int UltraScaleEntityCap { get; set; } = 5000;
+
+    // ── 阶段 5.3.1 — SnapshotApplySystem（快照应用/自适应插值延迟/RTT 估计）──
+
+    /// <summary>单帧最多消费的快照包数量，超出部分留待下一帧处理。默认 32。</summary>
+    public int MaxSnapshotsPerFrame { get; set; } = 32;
+
+    /// <summary>远程实体超时清理阈值（秒），超过此时间未收到快照更新的远程实体被客户端主动清理。默认 90。</summary>
+    public float StaleEntityTimeoutSeconds { get; set; } = 90f;
+
+    /// <summary>自适应插值延迟下限（秒）。默认 0.1。</summary>
+    public float AdaptiveDelayMinSeconds { get; set; } = 0.1f;
+
+    /// <summary>自适应插值延迟上限（秒），须 ≥ <see cref="AdaptiveDelayMinSeconds"/>（否则 Math.Clamp 抛异常）。默认 0.2。</summary>
+    public float AdaptiveDelayMaxSeconds { get; set; } = 0.2f;
+
+    /// <summary>固定插值延迟（秒），自适应关闭时使用。默认 0.1。</summary>
+    public float FixedInterpolationDelaySeconds { get; set; } = 0.1f;
+
+    /// <summary>平滑延迟最大变化速率（秒/秒），时间门控限幅防 delayTicks 逐帧跳变。默认 0.3。</summary>
+    public float MaxDelayChangePerSecond { get; set; } = 0.3f;
+
+    /// <summary>RTT EWMA 平滑因子（0, 1）。默认 0.125（与 TCP RTT 估计一致）。</summary>
+    public float RttEwmaAlpha { get; set; } = 0.125f;
+
+    /// <summary>RTT 抖动 EWMA 平滑因子（0, 1）。默认 0.25。</summary>
+    public float RttJitterBeta { get; set; } = 0.25f;
+
+    /// <summary>快照到达间隔 EWMA 平滑因子（0, 1）。默认 0.2。</summary>
+    public float SnapshotArrivalEwmaAlpha { get; set; } = 0.2f;
+
+    /// <summary>快照到达抖动 EWMA 平滑因子（0, 1）。默认 0.25。</summary>
+    public float SnapshotArrivalJitterBeta { get; set; } = 0.25f;
+
+    /// <summary>停止判定位移阈值（米）：新 Target 与旧位置位移小于此值判定实体已停止（清零外推速度）。默认 0.05。</summary>
+    public float StopDisplacementThreshold { get; set; } = 0.05f;
+
+    /// <summary>速度停止阈值（米/秒）：MovementState 心跳水平速度低于此值视为停止。默认 0.5。</summary>
+    public float StopVelocityThreshold { get; set; } = 0.5f;
+
+    /// <summary>孤儿实体映射清理扫描间隔（帧）。默认 300（约 5 秒 @60fps）。</summary>
+    public int OrphanCleanupInterval { get; set; } = 300;
+
+    /// <summary>远程实体超时清理扫描间隔（帧）。默认 60（约 1 秒 @60fps）。</summary>
+    public int StaleEntityCleanupInterval { get; set; } = 60;
+
+    // ── 阶段 5.3.2 — InterpolationSystem（前向预测/传送分档）──
+
+    /// <summary>前向预测最大外推时间（秒）：extrapTime = min(TimeSinceLastSnapshot, 此值)，避免长时间无快照时预测位置飘太远。默认 0.25。</summary>
+    public float DeadReckoningMaxExtrapolationSeconds { get; set; } = 0.25f;
 }

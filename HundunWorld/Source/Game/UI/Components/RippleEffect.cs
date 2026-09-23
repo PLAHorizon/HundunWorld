@@ -11,12 +11,14 @@ namespace HundunWorld.Game.UI.Components
     {
         private Float2 _center;
         private float _elapsed;
-        private float _duration = 0.3f;
         private bool _isActive;
         private float _maxRadius;
 
-        // 金色波纹颜色 (RGB 212,175,55)
-        private static readonly Color RippleColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 1f);
+        /// <summary>波纹动画时长（秒）</summary>
+        public float Duration { get; set; } = 0.3f;
+
+        /// <summary>波纹颜色（默认金色，Prefab 使用时建议通过主题令牌配置）</summary>
+        public Color RippleColor { get; set; } = new Color(212f / 255f, 175f / 255f, 55f / 255f, 1f);
 
         public RippleEffect()
         {
@@ -44,7 +46,7 @@ namespace HundunWorld.Game.UI.Components
             if (!_isActive) return;
 
             _elapsed += deltaTime;
-            if (_elapsed >= _duration)
+            if (_elapsed >= Duration)
             {
                 _isActive = false;
             }
@@ -56,7 +58,7 @@ namespace HundunWorld.Game.UI.Components
 
             if (!_isActive || _maxRadius <= 0f) return;
 
-            float t = _elapsed / _duration;
+            float t = _elapsed / Duration;
             if (t > 1f) t = 1f;
 
             float radius = _maxRadius * t;

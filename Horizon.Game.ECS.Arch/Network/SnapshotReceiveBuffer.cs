@@ -2,16 +2,16 @@ using System.Collections.Concurrent;
 using System.Threading;
 using Horizon.Game.Message.Sync;
 
-namespace Horizon.Game.ECS.Arch.Network;
-
-/// <summary>
-/// 线程安全的 <see cref="SnapshotPacket"/> 接收队列。
-/// </summary>
-/// <remarks>
-/// 网络线程写入（收到服务器快照后放入），ECS 线程读取（<see cref="Systems.SnapshotApplySystem"/> 消费）。
-/// 使用 <see cref="ConcurrentQueue{SnapshotPacket}"/> 保证跨线程安全通信。
-/// 静态单例，整个进程共享。
-/// </remarks>
+namespace Horizon.Game.ECS.Arch.Network;    /// <summary>
+    /// 线程安全的 <see cref="SnapshotPacket"/> 接收队列。
+    /// </summary>
+    /// <remarks>
+    /// 网络线程写入（收到服务器快照后放入），ECS 线程读取（<see cref="Systems.SnapshotApplySystem"/> 消费）。
+    /// 使用 <see cref="ConcurrentQueue{SnapshotPacket}"/> 保证跨线程安全通信。
+    /// 生产环境使用静态单例 <see cref="Instance"/>（整个进程共享）；
+    /// 并行测试可 <c>new SnapshotReceiveBuffer()</c> 构造独立实例注入 <see cref="Systems.SnapshotApplySystem"/>，
+    /// 消除跨测试串扰（阶段 6.4 共享静态竞态修复）。
+    /// </remarks>
 public sealed class SnapshotReceiveBuffer
 {
     /// <summary>全局唯一的队列实例。</summary>
@@ -28,9 +28,13 @@ public sealed class SnapshotReceiveBuffer
 
     // 限频告警：每 10 秒最多输出一次溢出告警日志，避免刷屏。
     private long _lastOverflowWarnTicks;
-    private static readonly long OverflowWarnIntervalTicks = TimeSpan.FromSeconds(10).Ticks;
+    // 修复（BUG）：原用 TimeSpan.FromSeconds(10).Ticks（100 纳秒单位 = 1e8），
+    // 却与 Environment.TickCount64（毫秒）比较，导致"10 秒限频"实际变成约 27.8 小时、告警几乎永不重发。
+    // 改为毫秒值 10_000，与 TickCount64 单位一致。
+    private static readonly long OverflowWarnIntervalMs = 10_000;
 
-    private SnapshotReceiveBuffer() { }
+    /// <summary>创建独立接收队列实例（测试隔离用；生产使用 <see cref="Instance"/>）。</summary>
+    public SnapshotReceiveBuffer() { }
 
     /// <summary>
     /// 队列软上限，超过此值时采用 DropOldest 策略丢弃最旧包。
@@ -63,7 +67,7 @@ public sealed class SnapshotReceiveBuffer
     {
         var now = Environment.TickCount64;
         var last = Interlocked.Read(ref _lastOverflowWarnTicks);
-        if (now - last < OverflowWarnIntervalTicks) return;
+        if (now - last < OverflowWarnIntervalMs) return;
         // CAS 更新：确保仅有一个线程成功输出告警，避免并发刷屏
         if (Interlocked.CompareExchange(ref _lastOverflowWarnTicks, now, last) != last) return;
         Console.Error.WriteLine($"[SnapshotReceiveBuffer] 队列溢出丢弃最旧包：QueueCount={_queue.Count}, MaxSize={MaxQueueSize}, TotalDropped={Interlocked.Read(ref _droppedByOverflowCount)}");

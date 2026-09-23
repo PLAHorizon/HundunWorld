@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Horizon.Game.Core.Sim;
+using Horizon.Game.Sim;
 using Horizon.Game.Message.Sync;
 using Xunit;
 

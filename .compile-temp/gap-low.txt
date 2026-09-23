@@ -1,0 +1,64 @@
+ink-anim-ref-1               cov=  0.0%  0/31  Ink/Pages/InkAnim/InkAnimationRefPages.cs
+    dom-ids: 
+    仅别处命中(31): 水墨晕染 | INK SPREAD · 分镜参考 01/02 | 视觉参考 | 墨点初现 | 中心浓墨点骤然浮现，半径由 0 扩散至 40px，透明度 0.9 渐入，持续 0.4s | 晕染扩散 | 墨色以不规则边缘向外晕开，blur(8px) → blur(24px) 渐变，模拟宣纸吸墨效果，持续 0.8s | 淡墨层叠 | 第二层淡墨叠加，透明度 0.3，混合模式 multiply，边缘呈现飞白质感，持续 0.6s | 技术参数 | 动画类型 | 总时长 | 2.4s | 缓动函数 | 墨色层级 | 3 层 | 混合模式 | 最大模糊 | 24px | 触发场景 | 章节切换 | 动画时间轴 · TIMELINE | 0.0s — 0.4s | 浓墨骤现 · opacity 0→0.9 | 0.4s — 1.2s | blur 8→24px · 边缘不规则 | 1.2s — 1.8s | 二次叠加 · multiply 混合 | 1.8s — 2.4s | 渐隐消散 | opacity 0.9→0 · 收束
+    缺失(31): 水墨晕染 | INK SPREAD · 分镜参考 01/02 | 视觉参考 | 墨点初现 | 中心浓墨点骤然浮现，半径由 0 扩散至 40px，透明度 0.9 渐入，持续 0.4s | 晕染扩散 | 墨色以不规则边缘向外晕开，blur(8px) → blur(24px) 渐变，模拟宣纸吸墨效果，持续 0.8s | 淡墨层叠 | 第二层淡墨叠加，透明度 0.3，混合模式 multiply，边缘呈现飞白质感，持续 0.6s | 技术参数 | 动画类型 | 总时长 | 2.4s | 缓动函数 | 墨色层级 | 3 层 | 混合模式 | 最大模糊 | 24px | 触发场景 | 章节切换 | 动画时间轴 · TIMELINE | 0.0s — 0.4s | 浓墨骤现 · opacity 0→0.9 | 0.4s — 1.2s | blur 8→24px · 边缘不规则 | 1.2s — 1.8s | 二次叠加 · multiply 混合 | 1.8s — 2.4s | 渐隐消散 | opacity 0.9→0 · 收束
+
+ink-anim-ref-2               cov=  0.0%  0/36  Ink/Pages/InkAnim/InkAnimationRefPages.cs
+    dom-ids: 
+    仅别处命中(36): 水墨笔触 | INK BRUSH STROKE · 分镜参考 02/02 | 视觉参考 | 落笔 · 蓄势 | 笔锋触纸瞬间，浓墨凝聚一点，scale 0→1.2 回弹，持续 0.3s。模拟笔尖压纸的力度感 | 行笔 · 游走 | 笔触沿贝塞尔曲线游走，stroke-dashoffset 动画展开路径，宽度随速度变化 2px→6px→3px，持续 0.9s | 飞白 · 枯笔 | 行笔末段速度加快，墨色渐枯，以 filter:contrast() + noise texture 模拟飞白效果，持续 0.5s | 收笔 · 回锋 | 笔锋回转收束，末点 opacity 渐隐 0.8→0，半径缩小至 2px，持续 0.3s。模拟回锋藏锋之韵 | 技术参数 | 动画类型 | 总时长 | 2.0s | 路径方式 | 笔触段数 | 4 段 | 宽度变化 | 2-6px | 飞白纹理 | 触发场景 | 技能释放 | 笔触时间轴 · BRUSH TIMELINE | 0.0s — 0.3s | 落笔蓄势 | 浓墨凝聚 · scale 0→1.2 | 0.3s — 1.2s | 行笔游走 | Bezier 路径 · 宽度 2→6→3px | 1.2s — 1.7s | 飞白枯笔 | contrast + noise · 速度加快 | 1.7s — 2.0s | 收笔回锋 | opacity 0.8→0 · 半径收束
+    缺失(36): 水墨笔触 | INK BRUSH STROKE · 分镜参考 02/02 | 视觉参考 | 落笔 · 蓄势 | 笔锋触纸瞬间，浓墨凝聚一点，scale 0→1.2 回弹，持续 0.3s。模拟笔尖压纸的力度感 | 行笔 · 游走 | 笔触沿贝塞尔曲线游走，stroke-dashoffset 动画展开路径，宽度随速度变化 2px→6px→3px，持续 0.9s | 飞白 · 枯笔 | 行笔末段速度加快，墨色渐枯，以 filter:contrast() + noise texture 模拟飞白效果，持续 0.5s | 收笔 · 回锋 | 笔锋回转收束，末点 opacity 渐隐 0.8→0，半径缩小至 2px，持续 0.3s。模拟回锋藏锋之韵 | 技术参数 | 动画类型 | 总时长 | 2.0s | 路径方式 | 笔触段数 | 4 段 | 宽度变化 | 2-6px | 飞白纹理 | 触发场景 | 技能释放 | 笔触时间轴 · BRUSH TIMELINE | 0.0s — 0.3s | 落笔蓄势 | 浓墨凝聚 · scale 0→1.2 | 0.3s — 1.2s | 行笔游走 | Bezier 路径 · 宽度 2→6→3px | 1.2s — 1.7s | 飞白枯笔 | contrast + noise · 速度加快 | 1.7s — 2.0s | 收笔回锋 | opacity 0.8→0 · 半径收束
+
+menu-char-attributes         cov=  5.6%  1/18  Ink/Pages/MenuCharAttributesPage.cs
+    dom-ids: back-hud, btn-mobile-menu, nav-appearance, nav-battle-prep, nav-char-attributes, nav-equipment, nav-personal-info, nav-sect, nav-time
+    仅别处命中(9): 个人信息 | 博物志 | 武林录 | 无名侠 | Lv.42 | 逍遥派 | 12,450 | 基础属性 | 进阶属性
+    缺失(17): 个人信息 | 博物志 | 武林录 | 无名侠 | Lv.42 | 逍遥派 | 12,450 | 逍遥派 · 内功修为 | 无名侠 · 逍遥派 | 基础属性 | 3200/3200 | 1800/1800 | 进阶属性 | 属性说明 | 基础属性决定角色核心能力。气血影响生存，内力决定武学释放频率。筋骨主攻伐，根骨司体魄，气海蕴真元，身法判轻重。进阶属性由基础属性与装备加成共同计算，暴击与命中影响战斗输出效率。 | 混沌世界 v1.2.0 | 逍遥盛世 · 32ms
+
+acupoint                     cov= 17.6%  3/17  Ink/Pages/Combat/AcupointPage.cs
+    dom-ids: acupoint-baihui, acupoint-danzhong, acupoint-fengchi, acupoint-guanyuan, acupoint-hegu, acupoint-shenque, acupoint-taiyang, acupoint-yongquan, back-hud, link-dialogue-confirm, page-acupoint
+    仅别处命中(1): 3 / 5
+    缺失(14): 百会穴 | 太阳穴 | 风池穴 | 膻中穴 | 神阙穴 | 合谷穴 | 关元穴 | 涌泉穴 | 督脉 · 任脉 | 共标记 8 处穴位 | 已选中 | 穴位等级 | 3 / 5 | 下一级：眩晕4秒
+
+reward-level-up              cov= 30.0%  6/20  Ink/Pages/Reward/RewardLevelUpPage.cs
+    dom-ids: back-hud, level-up-overlay, levelNumber, levelUpTitle, link-reward-congratulations
+    仅别处命中(5): 12,450 | 3,450 | 2,000 | +200 | 经验值
+    缺失(14): 12,450 | 13,200 | +750 | 3,280 | 3,450 | +170 | 2,150 | 2,280 | +130 | 2,000 | 2,200 | +200 | 经验值 | 0 / 5,000
+
+popup-message                cov= 33.3%  4/12  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, favoriteBtn, letterContent, link-popup-martial-detail, messageModal
+    仅别处命中(0): 
+    缺失(8): 近日昆仑山中异象频生，墨麒麟出没，恐有大变。山中灵气紊乱，飞禽走兽皆不安其位，草木枯荣失序，此乃天地示警之兆。 | 老夫已派弟子前往探查，望少侠亦能相助。江湖之中，能辨此异象者寥寥，少侠身负天命，或可窥见其中端倪。 | 此事关系江湖安危，切不可等闲视之。若任其蔓延，恐殃及无辜苍生，届时悔之晚矣。 | 若有发现，速来报知。青城掌门 顿首。 | 青城派掌门 玄真子 | 庚子年 暮秋 | 青城山 · 上清宫 | 昆仑异象 · 主线
+
+menu-equipment               cov= 41.7%  20/48  Ink/Pages/Character/MenuEquipmentPage.cs
+    dom-ids: back-hud, btn-equip-swap, btn-mobile-menu, eq-item-1, eq-item-2, eq-item-3, eq-item-4, eq-item-5, eq-item-6, eq-item-7, eq-item-8, nav-appearance, nav-battle-prep, nav-char-attributes, nav-equipment, nav-personal-info, nav-sect, nav-time, slot-accessory-1, slot-accessory-2, slot-chest, slot-feet, slot-head, slot-legs, slot-shoulder, slot-waist, slot-weapon-main, slot-weapon-sub, slot-wrist-l, slot-wrist-r, sort-level, sort-quality, sort-type
+    仅别处命中(7): 个人信息 | 博物志 | 武林录 | 无名侠 | Lv.42 | 逍遥派 | 12,450
+    缺失(28): 个人信息 | 博物志 | 武林录 | 无名侠 | Lv.42 | 逍遥派 | 12,450 | 8/24 | Lv.40 · 长刀 | Lv.38 · 胸甲 | Lv.35 · 长剑 | Lv.32 · 副武器 | Lv.30 · 长枪 | Lv.28 · 短刃 | Lv.15 · 护腕 | Lv.12 · 靴 | 主武器 | 饰品一 | 饰品二 | 9/11 | 套装 2/4 | 龙纹之力 | 当前·鱼肠剑 | +186 | 候选·赤焰刀 | +210 | 混沌世界 v1.2.0 | 逍遥盛世 · 32ms
+
+element-vision               cov= 50.0%  6/12  Ink/Pages/ElementVision/ElementVisionPage.cs
+    dom-ids: back-hud, link-death-screen, page-element-vision
+    仅别处命中(0): 
+    缺失(6): 视野已激活 | 12.4m | 8.7m | 15.2m | 5.3m | 退出视野
+
+multiplayer                  cov= 59.1%  26/44  Ink/Pages/Multiplayer/MultiplayerPage.cs
+    dom-ids: back-hud, btn-load-more, btn-refresh, filter-mode-1v1, filter-mode-3v3, filter-mode-5v5, filter-mode-all, filter-mode-free, filter-status-all, filter-status-playing, filter-status-waiting, link-combat-hud-v2, mode-clan, mode-create-room, mode-friends, mode-join-room, mode-quick-match, room1-spectate, room2-join, room3-join, room4-join, room5-spectate, room6-join, sort-name, sort-players
+    仅别处命中(2): Lv. 42 | 15秒
+    缺失(18): Lv. 42 | 选择模式进入对应大厅 | 预计等待 | 15秒 | 匹配范围 | Lv. 38-46 | 当前匹配 | 326人 | 点击进入匹配队列 | 房主: 独孤求败 | 房主: 丐帮帮主 | 房主: 风清扬 | 房主: 摸金校尉 | 房主: 东方不败 | 房主: 明教教主 | 共 6 个房间 | 已加载全部 | 加载更多
+
+popup-guide-side             cov= 60.9%  14/23  Ink/Pages/PopupPages.cs
+    dom-ids: back-hud, guide-next, guide-prev, guide-skip, guideTitle, link-popup-martial-arts
+    仅别处命中(0): 
+    缺失(9): 第 3 步 | 共 8 步 | 37.5 | 键进入疾跑状态 | 在疾跑中按 | 键起跳 | 空中再次按 | 键施展二段跳 | 可进行墙面奔跑
+
+chapter-transition           cov= 62.5%  5/8  Ink/Pages/ChapterTransition/ChapterTransitionPage.cs
+    dom-ids: cta-enter-world
+    仅别处命中(0): 
+    缺失(3): 天地混沌初开，江湖风起云涌。 | 少年仗剑而出，踏入这烽烟四起的乱世。 | 前路未知，刀光剑影间，且看你如何书写自己的传奇。
+
+menu-char-attributes-v2      cov= 63.6%  28/44  Ink/Pages/Character/MenuCharAttributesV2Page.cs
+    dom-ids: back-hud, nav-shop-rare-items
+    仅别处命中(1): 12,450
+    缺失(16): 青城派 · 内门弟子 | 52,840 | 12,450 | 3,280 | 2,150 | 28.5 | 1,580 | 1,240 | 18.2 | 95.8 | Lv. 15 | 8,520 | Lv. 12 | 6,180 | Lv. 10 | 5,340
+
+menu-livelihood              cov= 63.6%  28/44  Ink/Pages/Livelihood/MenuLivelihoodPage.cs
+    dom-ids: back-hud, btn-repair, nav-bestiary, nav-char-info, nav-equipment, nav-friends, nav-livelihood, nav-mail, nav-martial, nav-quests, nav-settings, nav-shop, nav-skills, nav-team
+    仅别处命中(5): Lv.5 | Lv.3 | Lv.6 | Lv.4 | Lv.2
+    缺失(16): 技能总数 | Lv.8 | 2400/3200 | Lv.5 | 1800/3000 | Lv.3 | 800/2000 | Lv.6 | 2160/3000 | Lv.4 | 1000/2000 | Lv.2 | 250/1000 | 2,400 / 3,200 | 4 / 6 | 85/100

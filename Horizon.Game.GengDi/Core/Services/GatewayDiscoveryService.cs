@@ -94,12 +94,13 @@ namespace Horizon.Game.GengDi.Core.Services
 
         /// <summary>
         /// 获取 Game 网关主机地址，优先级：环境变量 > 配置文件 > 默认值。
+        /// 配置值若为未替换的占位符（<c>${...}</c>，测试/未设环境变量场景）视为无效，回退默认。
         /// </summary>
         public static string GetGameGatewayHost()
         {
             var configured = Environment.GetEnvironmentVariable("HUNDUNWORLD_GAME_GATEWAY_HOST")?.Trim();
             if (!string.IsNullOrWhiteSpace(configured)) return configured;
-            return Configuration["Gateway:Game:Host"] ?? "192.168.1.78";
+            return ResolveHostConfig(Configuration["Gateway:Game:Host"], "127.0.0.1");
         }
 
         /// <summary>
@@ -115,12 +116,13 @@ namespace Horizon.Game.GengDi.Core.Services
 
         /// <summary>
         /// 获取 IM 网关主机地址，优先级：环境变量 > 配置文件 > 默认值。
+        /// 配置值若为未替换的占位符（<c>${...}</c>）视为无效，回退默认。
         /// </summary>
         public static string GetImGatewayHost()
         {
             var configured = Environment.GetEnvironmentVariable("HUNDUNWORLD_IM_GATEWAY_HOST")?.Trim();
             if (!string.IsNullOrWhiteSpace(configured)) return configured;
-            return Configuration["Gateway:IM:Host"] ?? "192.168.1.78";
+            return ResolveHostConfig(Configuration["Gateway:IM:Host"], "127.0.0.1");
         }
 
         /// <summary>
@@ -149,7 +151,7 @@ namespace Horizon.Game.GengDi.Core.Services
                 configured = Configuration["WebApi:BaseUrl"] ?? Configuration["WebApi:Authority"];
             }
             configured = string.IsNullOrWhiteSpace(configured)
-                ? "https://192.168.1.78:5101/"
+                ? "https://127.0.0.1:5101/"
                 : configured.Trim();
 
             if (!configured.EndsWith("/", StringComparison.Ordinal))
@@ -157,6 +159,18 @@ namespace Horizon.Game.GengDi.Core.Services
                 configured += "/";
             }
 
+            return configured;
+        }
+
+        /// <summary>
+        /// 解析主机配置值：null/空白/未替换占位符（<c>${...}</c>）一律回退 <paramref name="fallback"/>。
+        /// 占位符场景：appsettings.json 的 <c>${ENV_VAR}</c> 在未设环境变量时由配置提供者原样透传，
+        /// 该值不可用于连接，必须回退默认（测试与本地开发环境）。
+        /// </summary>
+        private static string ResolveHostConfig(string? configured, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(configured)) return fallback;
+            if (configured.Contains("${", StringComparison.Ordinal)) return fallback;
             return configured;
         }
 

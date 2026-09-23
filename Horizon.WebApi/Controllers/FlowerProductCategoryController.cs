@@ -3,6 +3,8 @@ using Horizon.Core.Options;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Horizon.Share.VMs;
+using Horizon.Share.Dtos.Flower;
+using Horizon.WebApi.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,6 +13,7 @@ using Orleans;
 using Orleans.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Horizon.WebApi.Controllers
@@ -33,14 +36,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("tree")]
-        public async Task<ResultVM<List<ProductCategoryState>>> GetCategoryTree()
+        public async Task<ResultVM<List<ProductCategoryDto>>> GetCategoryTree()
         {
-            var result = new ResultVM<List<ProductCategoryState>>();
+            var result = new ResultVM<List<ProductCategoryDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IProductCategoryGrain>(0);
-                result.Data = await grain.GetCategoryTreeAsync();
+                var categories = await grain.GetCategoryTreeAsync();
+                result.Data = categories?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (System.Exception ex)
@@ -52,15 +56,16 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{categoryId}")]
-        public async Task<ResultVM<ProductCategoryState>> GetCategory(long categoryId)
+        public async Task<ResultVM<ProductCategoryDto>> GetCategory(long categoryId)
         {
-            var result = new ResultVM<ProductCategoryState>();
+            var result = new ResultVM<ProductCategoryDto>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IProductCategoryGrain>(0);
-                result.Data = await grain.GetCategoryAsync(categoryId);
-                result.IsSuccess = result.Data != null;
+                var state = await grain.GetCategoryAsync(categoryId);
+                result.Data = state is null ? null : FlowerDtoMapper.ToDto(state);
+                result.IsSuccess = state != null;
             }
             catch (System.Exception ex)
             {
@@ -71,14 +76,15 @@ namespace Horizon.WebApi.Controllers
         }
 
         [HttpGet("{parentCategoryId}/children")]
-        public async Task<ResultVM<List<ProductCategoryState>>> GetSubCategories(long parentCategoryId)
+        public async Task<ResultVM<List<ProductCategoryDto>>> GetSubCategories(long parentCategoryId)
         {
-            var result = new ResultVM<List<ProductCategoryState>>();
+            var result = new ResultVM<List<ProductCategoryDto>>();
             try
             {
                 var client = await OrleansConnectClient();
                 var grain = client.GetGrain<IProductCategoryGrain>(0);
-                result.Data = await grain.GetSubCategoriesAsync(parentCategoryId);
+                var categories = await grain.GetSubCategoriesAsync(parentCategoryId);
+                result.Data = categories?.Select(c => FlowerDtoMapper.ToDto(c)).ToList();
                 result.IsSuccess = true;
             }
             catch (System.Exception ex)

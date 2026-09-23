@@ -18,6 +18,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+
 using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Silo
@@ -25,6 +26,8 @@ namespace Horizon.Orleans.Silo
     public static class SiloStartupExtension
     {
         public static IConfiguration? Configuration { get; private set; }
+
+
         /// <summary>
         /// 添加数据服务
         /// </summary>
@@ -70,11 +73,16 @@ namespace Horizon.Orleans.Silo
         {
             Task.Run(() =>
             {
-                var redis = Configuration?.GetSection("DataBase")?.Get<DataBase>()?.RedisMasters[0] ?? null;
+                var redis = Configuration?.GetSection("DataBase")?.Get<DataBase>()?.RedisMasters.FirstOrDefault();
                 // StackExchange.Redis 连接字符串格式：端点在前，password 作为 key-value 参数（不能用 password=xxx@host:port 混合格式）
-                Cache.Current = redis != null ? new RedisCache($"{redis.Host}:{redis.Port},password={redis.Password}")
-                    : new RedisCache("127.0.0.1:9379,password=DB65F7F9C");
-                // Cache.Current = new RedisCache("127.0.0.1:9379,password=DB65F7F9C");
+                // 阶段 0.1：配置必需——无 DataBase:RedisMasters 时抛清晰错误，禁止静默连本地默认 127.0.0.1:9379。
+                if (redis == null || string.IsNullOrWhiteSpace(redis.Host) || redis.Port <= 0)
+                {
+                    throw new InvalidOperationException(
+                        $"缺少必需配置 DataBase:RedisMasters[0]（应用缓存 Redis）。（或设置 Redis:ConnectionString 后接入配置源）");
+                }
+                Cache.Current = new RedisCache($"{redis.Host}:{redis.Port},password={redis.Password}");
+                // Cache.Current = new RedisCache("127.0.0.1:9379");
                 service.AddSingleton(Cache.Current);
             });
 
@@ -120,11 +128,21 @@ namespace Horizon.Orleans.Silo
         public static async Task<IConfiguration> GetConfiguration()
         {
             var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? Directory.GetCurrentDirectory();
-            
-            Configuration = await Task.FromResult(new ConfigurationBuilder()
+
+            // 加载 .env 文件到环境变量（不覆盖系统环境变量），并解析 ${VAR} 占位符，兑现 .env.example 的注入约定
+            EnvironmentPlaceholderResolver.LoadDotEnvFile(basePath);
+
+            var baseConfig = new ConfigurationBuilder()
                              .SetBasePath(basePath)
                              .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                              .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+                             .Build();
+
+            // 遍历配置值，替换 ${VAR} 占位符，用 in-memory 叠加覆盖（优先级最高）
+            var resolved = EnvironmentPlaceholderResolver.BuildResolvedOverrides(baseConfig);
+            Configuration = await Task.FromResult(new ConfigurationBuilder()
+                             .AddConfiguration(baseConfig)
+                             .AddInMemoryCollection(resolved)
                              .Build());
             return Configuration ?? new ConfigurationBuilder().Build();
         }

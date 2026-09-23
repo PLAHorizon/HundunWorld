@@ -9,7 +9,7 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <!-- 序列化相�?-->
+    <!-- 序列化相�?-->
     <PackageReference Include="MemoryPack.Core" />
     <PackageReference Include="MemoryPack.Generator">
       <PrivateAssets>all</PrivateAssets>
@@ -22,6 +22,7 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
     <PackageReference Include="OpenTelemetry.Exporter.Prometheus.HttpListener" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" />
     
     <!-- Microsoft Extensions -->
@@ -33,11 +34,11 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
-      <!-- 健康检�?-->
+      <!-- 健康检�?-->
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <PackageReference Include="AspNetCore.HealthChecks.System" />
     
-    <!-- 监控和指�?-->
+    <!-- 监控和指�?-->
     <PackageReference Include="System.Diagnostics.DiagnosticSource" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.Abstractions" />
     
@@ -72,6 +73,7 @@
     <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
     <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Game.World\Horizon.Game.World.csproj" />
     <ProjectReference Include="..\Horizon.Mapper\Horizon.Mapper.csproj" />
     <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Grains\Horizon.Orleans.Grains.csproj" />

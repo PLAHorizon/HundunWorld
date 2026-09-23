@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Horizon.Game.GengDi.Core.Helpers;
+using Horizon.Game.GengDi.Core.ViewModels;
 
 namespace Horizon.Game.GengDi.Core.Services
 {
@@ -28,21 +30,81 @@ namespace Horizon.Game.GengDi.Core.Services
         public bool IsPresale { get; set; }
         public DateTime? PresaleDeliveryDate { get; set; }
         public int AuditStatus { get; set; }
+
+        // ===== 商品卡视觉（设计稿 06：品种渐变色块 + 首字 + 库存水位条） =====
+
+        /// <summary>品种主色（FlowerSpeciesPalette 映射，未命中回退品牌蓝）。</summary>
+        public Avalonia.Media.Color SpeciesColor
+        {
+            get
+            {
+                var name = FlowerSpeciesLookupService.Instance.GetSpeciesName(SpeciesId);
+                return FlowerSpeciesPalette.Resolve(name).Accent;
+            }
+        }
+
+        /// <summary>品种深色（渐变终点）。</summary>
+        public Avalonia.Media.Color SpeciesColorDeep
+        {
+            get
+            {
+                var name = FlowerSpeciesLookupService.Instance.GetSpeciesName(SpeciesId);
+                return FlowerSpeciesPalette.Resolve(name).AccentDeep;
+            }
+        }
+
+        /// <summary>色块上的品种首字（品种名优先，回退商品名）。</summary>
+        public string SpeciesFirstChar
+        {
+            get
+            {
+                var name = FlowerSpeciesLookupService.Instance.GetSpeciesName(SpeciesId);
+                var source = string.IsNullOrWhiteSpace(name) ? ProductName : name;
+                return string.IsNullOrWhiteSpace(source) ? "花" : source.Substring(0, 1);
+            }
+        }
+
+        /// <summary>库存水位条宽度（示意：按库存分档，低库存更短更醒目）。</summary>
+        public double StockBarWidth => Math.Clamp(Stock * 0.6, 8, 100);
     }
 
-    public class CartItem
+    public class CartItem : ViewModelBase
     {
+        private int _quantity;
+        private bool _isSelected = true;
+
         public long CartItemId { get; set; }
         public long ProductId { get; set; }
         public string ProductName { get; set; } = "";
         public decimal Price { get; set; }
-        public int Quantity { get; set; }
+
+        /// <summary>
+        /// 数量。变更时通知 UI 刷新该项数字，并联动小计 Amount。
+        /// （此前为普通 POCO 属性，± 后仅合计变化、单项数字不刷新。）
+        /// </summary>
+        public int Quantity
+        {
+            get => _quantity;
+            set
+            {
+                if (SetProperty(ref _quantity, value))
+                    OnPropertyChanged(nameof(Amount));
+            }
+        }
+
         public string MerchantName { get; set; } = "";
         public long MerchantId { get; set; }
         public int Stock { get; set; }
 
         /// <summary>是否被勾选（用于结算选择）</summary>
-        public bool IsSelected { get; set; } = true;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
+
+        /// <summary>该行小计 = 单价 × 数量。</summary>
+        public decimal Amount => Price * Quantity;
 
         /// <summary>商品别名，等价于 ProductName</summary>
         public string Name { get => ProductName; set => ProductName = value; }
