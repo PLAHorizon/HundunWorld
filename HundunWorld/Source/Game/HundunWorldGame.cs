@@ -1184,7 +1184,10 @@ namespace HundunWorld.Game
             var rayStart = new Vector3(ecsX, 1000f, ecsY);
             var rayDir = Vector3.Down;
 
-            if (Physics.RayCast(rayStart, rayDir, out RayCastHit hit, 2000f, LayersMask.Default))
+            // hitTriggers=false：必须跳过触发器。POI 的 Discover 球形触发器半径达 700~1200m，
+            // 射线起点常落在球体内部，PhysX 会在距离 0 处返回退化命中（Point == 射线起点），
+            // 导致采样"地面"恒等于射线起点高度 1000，把角色钉死在半空（进入游戏后悬于半空的根因）。
+            if (Physics.RayCast(rayStart, rayDir, out RayCastHit hit, 2000f, LayersMask.Default, false))
             {
                 // 命中点的 Flax.Y 即对应 ECS.Z（地面高度）
                 return hit.Point.Y;
@@ -1217,6 +1220,7 @@ namespace HundunWorld.Game
             if (float.IsNaN(groundEcsZ))
             {
                 Debug.LogWarning($"[HundunWorldGame] RealignLocalPlayerToGround: 地面采样失败（NaN），保持当前高度。Pos=({flaxX:F2}, {flaxZ:F2})");
+                ScheduleGroundRealignRetry(characterId, flaxX, flaxZ);
                 return;
             }
 
@@ -1225,11 +1229,15 @@ namespace HundunWorld.Game
                 .WithAll<Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent, Horizon.Game.ECS.Arch.Components.PredictedTransformComponent>();
 
             bool found = false;
+            float predEcsX = flaxX, predEcsY = flaxZ, predYaw = 0f;
             _archWorld.Query(in query, (Arch.Core.Entity e, ref Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent nid, ref Horizon.Game.ECS.Arch.Components.PredictedTransformComponent pred) =>
             {
                 if (!nid.IsLocalPlayer || nid.EntityId != characterId) return;
                 if (found) return;
                 found = true;
+                predEcsX = pred.X;
+                predEcsY = pred.Y;
+                predYaw = pred.Yaw;
 
                 // 仅当当前高度与地面偏差超过 0.5m 时修正（避免每帧微小抖动）
                 if (MathF.Abs(pred.Z - groundEcsZ) > 0.5f)
@@ -1242,7 +1250,164 @@ namespace HundunWorld.Game
 
             if (!found)
             {
-                Debug.LogWarning($"[HundunWorldGame] RealignLocalPlayerToGround: 未找到本地玩家 ECS 实体 (CharacterId={characterId})");
+                Debug.LogWarning($"[HundunWorldGame] RealignLocalPlayerToGround: 未找到本地玩家 ECS 实体 (CharacterId={characterId})，稍后重试");
+                ScheduleGroundRealignRetry(characterId, flaxX, flaxZ);
+                return;
+            }
+
+            _hasPendingGroundRealign = false;
+
+            // ★ 修复「进入游戏后悬于半空」的服务端半边：贴地只改了本地 pred.Z，
+            // 服务端权威 Z 仍停在出生半空值或 Redis 持久化的旧悬空值（EnterWorldAsync 优先用后者，
+            // 会覆盖握手里已贴地的 InitialY）。玩家一移动 drift 即超阈值 → Correction 风暴
+            // 把角色反复拉回半空。复用快速旅行通道上报权威贴地（理由见 OnFastTravelRequested 注释）。
+            // 坐标：Flax X=ECS X（左右）、Flax Y=ECS Z（上下=groundEcsZ）、Flax Z=ECS Y（前后）。
+            SendFastTravelRequest(null, predEcsX, groundEcsZ, predEcsY, predYaw);
+        }
+
+        // 地面重对齐重试状态：Actor 创建瞬间地形碰撞体可能未就绪（流式 chunk 未加载），
+        // 采样返回 NaN 会让角色滞留在半空出生高度，每秒重试一次，最多 30 秒。
+        private bool _hasPendingGroundRealign;
+        private ulong _pendingGroundRealignCharacterId;
+        private float _pendingGroundRealignX;
+        private float _pendingGroundRealignZ;
+        private float _pendingGroundRealignNextTime;
+        private float _pendingGroundRealignDeadline;
+
+        private void ScheduleGroundRealignRetry(ulong characterId, float flaxX, float flaxZ)
+        {
+            if (_hasPendingGroundRealign && _pendingGroundRealignCharacterId == characterId)
+            {
+                // 已有针对同一角色的重试在排队：保留原超时截止，仅刷新坐标
+                _pendingGroundRealignX = flaxX;
+                _pendingGroundRealignZ = flaxZ;
+                return;
+            }
+
+            _hasPendingGroundRealign = true;
+            _pendingGroundRealignCharacterId = characterId;
+            _pendingGroundRealignX = flaxX;
+            _pendingGroundRealignZ = flaxZ;
+            _pendingGroundRealignNextTime = Time.GameTime + 1f;
+            _pendingGroundRealignDeadline = Time.GameTime + 30f;
+        }
+
+        /// <summary>
+        /// 处理 NarrativePro 的快速旅行请求：把目标位置写入 ECS 预测变换（本地玩家位置的单一事实源），
+        /// 并同步 Actor 位置以获得即时视觉反馈。
+        /// <para>
+        /// 轴映射与 <see cref="LocalPlayerActorSyncSystem"/> 保持一致：
+        /// Flax.X → ECS.X（左右）、Flax.Y → ECS.Z（上下）、Flax.Z → ECS.Y（前后）。
+        /// 之所以必须写 ECS 而不是只改 Actor：同步系统每帧用 ECS 值回写 <c>Actor.Position</c>，
+        /// 只改 Actor 会在下一帧被打回原处。
+        /// </para>
+        /// </summary>
+        private void OnFastTravelRequested(NarrativePro.Navigation.POIData poi, Transform destination)
+        {
+            var player = _localPlayerActor;
+            if (player == null)
+            {
+                Debug.LogWarning($"[FastTravel] 找不到本地玩家 Actor，取消传送到 {poi?.POITag}");
+                return;
+            }
+
+            if (_archWorld == null)
+            {
+                Debug.LogWarning("[FastTravel] ECS World 未就绪，取消传送");
+                return;
+            }
+
+            float flaxX = destination.Translation.X;
+            float flaxZ = destination.Translation.Z;
+
+            // 高度优先贴合地面；采样失败（NaN，例如该点无地形）时退回 POI 配置高度
+            float sampledEcsZ = SampleGroundHeightEcs(flaxX, flaxZ);
+            bool grounded = !float.IsNaN(sampledEcsZ);
+            float flaxY = grounded ? sampledEcsZ : destination.Translation.Y;
+
+            float yawRadians = destination.Orientation.EulerAngles.Y * Mathf.DegreesToRadians;
+
+            bool applied = false;
+            var query = new Arch.Core.QueryDescription()
+                .WithAll<Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent,
+                         Horizon.Game.ECS.Arch.Components.PredictedTransformComponent>();
+
+            _archWorld.Query(in query,
+                (Arch.Core.Entity e,
+                 ref Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent nid,
+                 ref Horizon.Game.ECS.Arch.Components.PredictedTransformComponent pred) =>
+                {
+                    if (!nid.IsLocalPlayer || applied) return;
+
+                    pred.X = flaxX;
+                    pred.Y = flaxZ;
+                    pred.Z = flaxY;
+                    pred.Yaw = yawRadians;
+                    pred.Vz = 0f; // 清零垂直速度，避免残留重力把玩家拽离落点
+                    applied = true;
+                });
+
+            if (!applied)
+            {
+                Debug.LogWarning("[FastTravel] 未找到本地玩家 ECS 实体，仅同步了客户端 Actor（可能被同步系统回写）");
+            }
+
+            player.Position = new Vector3(flaxX, flaxY, flaxZ);
+
+            // 上报服务端做权威应用：只改客户端预测会被 MovementValidator 判为瞬移（位移 > 100m）
+            // 并下发纠正把玩家拉回，因此必须让服务端也把权威位置对齐到目标点。
+            SendFastTravelRequest(poi, flaxX, flaxY, flaxZ, yawRadians);
+
+            Debug.Log($"[FastTravel] 已传送至 {poi?.POITag}（{poi?.POIDisplayName}）" +
+                      $"Flax=({flaxX:F1},{flaxY:F1},{flaxZ:F1})" +
+                      (grounded ? "，高度已贴地" : "，地面采样失败→使用配置高度"));
+        }
+
+        /// <summary>
+        /// 向服务端上报快速旅行请求（fire-and-forget；失败只告警，不影响本地预测表现）。
+        /// </summary>
+        private void SendFastTravelRequest(NarrativePro.Navigation.POIData poi, float flaxX, float flaxY, float flaxZ, float yawRadians)
+        {
+            if (_networkManager == null)
+            {
+                Debug.LogWarning("[FastTravel] NetworkManager 不可用，跳过服务端上报（位置可能被服务端纠正回滚）");
+                return;
+            }
+
+            var entityId = PlayerId;
+            if (entityId == 0)
+            {
+                Debug.LogWarning("[FastTravel] 本地玩家实体 Id 未知（握手未完成？），跳过服务端上报");
+                return;
+            }
+
+            var request = new Horizon.Game.Message.Network.FastTravelRequestMessage
+            {
+                EntityId = entityId,
+                PoiTag = poi?.POITag.TagName ?? "",
+                X = flaxX,
+                Y = flaxY,
+                Z = flaxZ,
+                Yaw = yawRadians,
+            };
+
+            _ = SendFastTravelRequestAsync(request);
+        }
+
+        private async System.Threading.Tasks.Task SendFastTravelRequestAsync(
+            Horizon.Game.Message.Network.FastTravelRequestMessage request)
+        {
+            try
+            {
+                var ok = await _networkManager.SendMessageAsync(request);
+                if (!ok)
+                {
+                    Debug.LogWarning($"[FastTravel] 服务端上报返回失败（{request.PoiTag}），位置可能被纠正回滚");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[FastTravel] 服务端上报异常（{request.PoiTag}）: {ex.Message}");
             }
         }
 
@@ -1739,6 +1904,25 @@ namespace HundunWorld.Game
                     _pendingRequestTime = 0;
                 }
             }
+
+            // 地面重对齐重试：地形碰撞体就绪后立即把角色从半空出生高度贴地并上报服务端
+            if (_hasPendingGroundRealign)
+            {
+                float now = Time.GameTime;
+                if (now >= _pendingGroundRealignDeadline)
+                {
+                    _hasPendingGroundRealign = false;
+                    Debug.LogWarning("[HundunWorldGame] 地面重对齐重试超时（30s），角色可能仍悬空");
+                }
+                else if (now >= _pendingGroundRealignNextTime)
+                {
+                    _pendingGroundRealignNextTime = now + 1f;
+                    RealignLocalPlayerToGround(_pendingGroundRealignCharacterId, _pendingGroundRealignX, _pendingGroundRealignZ);
+                }
+            }
+
+            // POI 发现：玩家进入 POI 的发现半径即标记已发现（内部自行限频）
+            Navigation.MapDiscoveryDriver.Tick(Time.DeltaTime, _localPlayerActor);
         }
 
         /// <summary>
@@ -2199,6 +2383,28 @@ namespace HundunWorld.Game
                 localPlayerSyncSystem = actor.AddScript<LocalPlayerActorSyncSystem>();
                 Debug.Log($"[HundunWorldGame] 已挂载 LocalPlayerActorSyncSystem: CharacterId={characterId}");
             }
+
+            // 头顶名牌组件（血条/名称/等级/称号）：挂在位置同步系统之后，投影时读到的是本帧最新位置。
+            if (actor.GetScript<HundunWorld.Game.UI.GameMain.NameplateUI>() == null)
+            {
+                actor.AddScript<HundunWorld.Game.UI.GameMain.NameplateUI>();
+            }
+
+            // 导航组件：承载 POI 发现状态与快速旅行（对应 UE5 挂在 PlayerController 上的 UNarrativeNavigationComponent）。
+            // 只挂脚本、不加碰撞体，因此不改变玩家物理与交互。
+            var navigationComponent = actor.GetScript<NarrativePro.Navigation.NarrativeNavigationComponent>();
+            if (navigationComponent == null)
+            {
+                navigationComponent = actor.AddScript<NarrativePro.Navigation.NarrativeNavigationComponent>();
+                Debug.Log($"[HundunWorldGame] 已挂载 NarrativeNavigationComponent: CharacterId={characterId}");
+            }
+
+            // 注入玩家 Actor 并接管快速旅行：
+            // 本项目的玩家位置由 ECS PredictedTransformComponent 单点驱动（LocalPlayerActorSyncSystem 每帧回写），
+            // 插件直接改 Actor.Position 会被覆盖，因此必须由本类写 ECS 组件。
+            navigationComponent.SetLocalPlayerActor(actor);
+            navigationComponent.OnFastTravelRequested -= OnFastTravelRequested;
+            navigationComponent.OnFastTravelRequested += OnFastTravelRequested;
 
             // ★ 修复「进入游戏后在天上飞」：重新对齐地面高度。
             // CreateLocalPlayerEntity 在角色选择场景中被调用（GameWorld 未加载），

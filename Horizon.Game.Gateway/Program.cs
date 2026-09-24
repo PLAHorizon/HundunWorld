@@ -547,6 +547,9 @@ namespace Horizon.Game.Gateway
                     services.AddSingleton<IClusterCoordinationService, ClusterCoordinationService>();
                     services.AddSingleton<HorizonMessageAdapter>();
 
+                    // 游戏内聊天出站推送（ChatHandler 依赖）：经连接管理器把聊天通知写到目标角色连接。
+                    services.AddSingleton<Horizon.Game.Core.Handlers.IChatPushService, Horizon.Game.Gateway.Services.ChatPushService>();
+
                     // 注册角色指纹服务（基于 Redis，防止同一角色同时在线）
                     services.AddSingleton<Horizon.Game.Core.Interfaces.ICharacterFingerprintService>(provider =>
                     {

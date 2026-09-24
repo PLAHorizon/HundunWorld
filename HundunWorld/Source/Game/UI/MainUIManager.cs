@@ -38,6 +38,7 @@ using HundunWorld.Game.UI.Ink.Pages.Team;
 using HundunWorld.Game.UI.Ink.Pages.Timing;
 using HundunWorld.Game.UI.StyleSystem;
 using HundunWorld.Game;
+using NameplateHost = HundunWorld.Game.UI.GameMain.NameplateHost;
 using System;
 using System.Collections.Generic;
 
@@ -69,6 +70,11 @@ namespace HundunWorld.Game.UI
         private InkPageRouter _inkPageRouter;
         /// <summary>承载水墨 UI 的专用 UICanvas</summary>
         private UICanvas _inkCanvas;
+        /// <summary>角色头顶名牌宿主容器（血条/名称/等级/称号）：挂在 _inkCanvas.GUI 根下并绘制在最上层。
+        /// 各角色 Actor 上的 NameplateUI 组件把自身名牌控件挂到本容器下，由本类按页面统一显隐。</summary>
+        private ContainerControl _nameplateHost;
+        /// <summary>玩家手动开关：头顶名牌是否显示（快捷键 "-" 切换），默认显示。</summary>
+        private bool _nameplateUserVisible = true;
 
         // 活跃的效果图标
         private readonly Dictionary<(ulong TargetId, int EffectId), EffectIconEntry> _activeEffectIcons = new();
@@ -253,6 +259,27 @@ namespace HundunWorld.Game.UI
                     {
                         FlaxEngine.Debug.LogError($"[MainUIManager] 打开 UI 画廊失败: {galleryEx.Message}");
                     }
+                }
+
+                // 快捷键 "-"（数字 0 右侧的减号键）：显示/隐藏角色头顶名牌。
+                // 仅在进入游戏世界（水墨 UI 已就绪）时生效，避免在登录/角色选择场景误触发。
+                if (_inkPageShell != null && Input.GetKeyDown(KeyboardKeys.Minus))
+                {
+                    _nameplateUserVisible = !_nameplateUserVisible;
+                    if (_nameplateHost != null)
+                        _nameplateHost.Visible = _nameplateUserVisible && _nameplateHost.Visible;
+                    FlaxEngine.Debug.Log($"[MainUIManager] 头顶名牌显示={_nameplateUserVisible}（快捷键 -）");
+                }
+
+                // 4. 角色头顶名牌：名牌控件由各角色上的 NameplateUI 组件自行投影定位，
+                //    本处仅统一控制宿主容器显隐——需玩家开关打开、处于战斗 HUD 现场页且水墨 UI 健康。
+                if (_nameplateHost != null)
+                {
+                    var pageDom = _inkPageRouter?.CurrentPageDomId;
+                    bool inField = pageDom == InkPageDomIds.CombatHud
+                                   || pageDom == InkPageDomIds.CombatHudV2
+                                   || pageDom == InkPageDomIds.CombatHudTraditional;
+                    _nameplateHost.Visible = _nameplateUserVisible && inField && IsInkUIHealthy();
                 }
             }
             catch (Exception ex)
@@ -590,6 +617,19 @@ namespace HundunWorld.Game.UI
                 {
                     FlaxEngine.Debug.LogError("[MainUIManager] Ink UICanvas.GUI 为 null，无法初始化水墨 UI");
                     return;
+                }
+
+                // 1b. 创建角色头顶名牌宿主容器：挂在水墨 Canvas 根下，
+                //     各角色上的 NameplateUI 组件把名牌控件挂到此处（画布末尾 → 绘制在最上层）。
+                if (_nameplateHost == null)
+                {
+                    _nameplateHost = new ContainerControl
+                    {
+                        AnchorPreset = AnchorPresets.StretchAll,
+                        Visible = false,
+                    };
+                    _inkCanvas.GUI.AddChild(_nameplateHost);
+                    NameplateHost.Current = _nameplateHost;
                 }
 
                 // 2. 初始化水墨主题字体
@@ -1030,6 +1070,15 @@ namespace HundunWorld.Game.UI
                     _inkPageRouter = null;
                 }
 
+                // 先解除静态宿主引用，再销毁容器（容器销毁会一并释放其中所有角色名牌控件）。
+                if (ReferenceEquals(NameplateHost.Current, _nameplateHost))
+                    NameplateHost.Current = null;
+                if (_nameplateHost != null)
+                {
+                    _nameplateHost.Dispose();
+                    _nameplateHost = null;
+                }
+
                 // 清理活动页面引用，避免悬空指针
                 _activeCombatHud = null;
                 _activeCombatHudV2 = null;
@@ -1110,7 +1159,17 @@ namespace HundunWorld.Game.UI
             {
                 // 统一导航：特殊动作 id 分流（back-hud → 返回战斗 HUD；cta-enter-world → 进入世界）。
                 // 必须在此集中处理：InkPageRouter.NavigateTo 只查页面工厂表，back-hud 未注册会直接告警失败。
-                if (domId == InkPageDomIds.BackHud)
+                // 装备变更通知（equipment-changed）：MenuEquipmentPage 装备后发出的 mock 状态通知，非导航目标——
+                // 在此吞掉并返回 true，避免误触发页面跳转与"未注册 domId"告警。
+                if (domId == InkPageDomIds.EquipmentChanged)
+                {
+                    return true;
+                }
+                // 战斗入场动作（enter-dungeon 进入秘境 / nav-battle-start 出战）：星型拓扑下无独立战斗场景，
+                // 终点恒为枢纽战斗 HUD（战斗现场），与 back-hud 同解。
+                if (domId == InkPageDomIds.BackHud
+                    || domId == InkPageDomIds.EnterDungeon
+                    || domId == InkPageDomIds.NavBattleStart)
                 {
                     if (_inkPageRouter != null && _inkPageRouter.NavigateToHud())
                     {
@@ -1122,6 +1181,37 @@ namespace HundunWorld.Game.UI
                 if (domId == InkPageDomIds.CtaEnterWorld)
                 {
                     domId = InkPageDomIds.CombatHudTraditional;
+                }
+                // 战斗 HUD 变体切换（沉浸式 ⇄ 传统式）：toggle-immersive / toggle-traditional 由 HUD 上
+                // 「切换沉浸模式 / 切换传统模式」按钮触发。二者非注册页面，必须在此分流——
+                // 据当前页在 CombatHudV2 与 CombatHudTraditional 间往返（两个 id 行为一致，均为对向切换）。
+                if (domId == InkPageDomIds.ToggleTraditional || domId == InkPageDomIds.ToggleImmersive)
+                {
+                    if (_inkPageRouter == null)
+                    {
+                        return false;
+                    }
+                    string target = _inkPageRouter.CurrentPageDomId == InkPageDomIds.CombatHudV2
+                        ? InkPageDomIds.CombatHudTraditional
+                        : InkPageDomIds.CombatHudV2;
+                    if (_inkPageRouter.NavigateTo(target))
+                    {
+                        _lastKnownDomId = target;
+                        return true;
+                    }
+                    return false;
+                }
+                // 跨页直达动作（game-ui-system §1.2）：action-* 前缀的合法直达路径交由
+                // NavigateToAction 解析目标页并触发墨韵涟漪；其余跨页跳转仍须经 HUD 中转。
+                if (domId.StartsWith("action-", System.StringComparison.Ordinal))
+                {
+                    if (_inkPageRouter != null && _inkPageRouter.NavigateToAction(domId))
+                    {
+                        // 记录解析后的真实目标页（而非 action-* 别名），供分辨率变化时的重绑逻辑匹配。
+                        _lastKnownDomId = _inkPageRouter.CurrentPageDomId ?? domId;
+                        return true;
+                    }
+                    return false;
                 }
                 if (_inkPageRouter != null && _inkPageRouter.NavigateTo(domId))
                 {

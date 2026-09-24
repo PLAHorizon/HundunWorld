@@ -1,20 +1,29 @@
 using FlaxEngine;
 using NarrativePro.Core;
+using NarrativePro.Items;
 
 namespace NarrativePro.Navigation
 {
     /// <summary>
-    /// 地图瓦片渲染组件。适配 UE5 UMapTileRenderingComponent（继承 UDebugDrawComponent）。
-    /// UE5 中通过 CreateDebugSceneProxy 在场景中绘制地图瓦片边界与网格。
-    /// Flax 中简化为 Script，通过 OnDebugDraw 绘制瓦片边界可视化。
+    /// 地图瓦片渲染组件。适配 UE5 UMapTileRenderingComponent（其 SceneProxy 负责绘制 POI 连线与包围盒）。
+    /// <para>
+    /// Flax 无 <c>FDebugRenderSceneProxy</c>，改用 <see cref="Script.OnDebugDraw"/> + <see cref="DebugDraw"/>，
+    /// 在编辑器视口与运行时绘制：
+    /// 1) 地图整体边界（XZ 正方形）；
+    /// 2) 瓦片网格（步长 = MapWidth / GridWidth，与世界单位一致）；
+    /// 3) POI 之间的 <c>LinkedPOIs</c> 连线（对应 UE5 的 ArrowLines）。
+    /// </para>
     /// </summary>
     public class MapTileRenderingComponent : Script
     {
-        /// <summary>瓦片边界绘制颜色</summary>
+        /// <summary>地图边界绘制颜色</summary>
         public Color TileBoundsColor = new Color(0.3f, 0.6f, 1f, 1f);
 
         /// <summary>瓦片网格绘制颜色</summary>
         public Color TileGridColor = new Color(0.3f, 0.6f, 1f, 0.4f);
+
+        /// <summary>POI 连线绘制颜色（对应 UE5 的红色 ArrowLines）</summary>
+        public Color POILinkColor = new Color(1f, 0.2f, 0.2f, 1f);
 
         /// <summary>调试绘制持续时间（秒，&lt;=0 表示每帧重绘）</summary>
         public float DebugDrawDuration = 0f;
@@ -22,18 +31,19 @@ namespace NarrativePro.Navigation
         /// <summary>是否绘制瓦片网格</summary>
         public bool bDrawTileGrid = true;
 
+        /// <summary>是否绘制 POI 连线</summary>
+        public bool bDrawPOILinks = true;
+
+        /// <summary>最大网格线数量（防止 GridWidth 误填导致每帧画数万条线）</summary>
+        public int MaxGridLines = 64;
+
         /// <summary>关联的地图瓦片边界 Actor（自动查找）</summary>
         public MapTileBoundsActor MapTileBounds { get; private set; }
 
         public override void OnEnable()
         {
             base.OnEnable();
-            // 优先从导航子系统获取，其次自动查找
-            MapTileBounds = NavigationSubsystem.Instance?.MapTileBounds;
-            if (MapTileBounds == null && Actor != null)
-            {
-                MapTileBounds = Actor.GetScript<MapTileBoundsActor>();
-            }
+            ResolveMapTileBounds();
         }
 
         public override void OnDisable()
@@ -42,36 +52,49 @@ namespace NarrativePro.Navigation
             base.OnDisable();
         }
 
-        /// <summary>
-        /// 调试绘制。对应 UE5 CreateDebugSceneProxy/CalcBounds 的可视化功能。
-        /// 在编辑器与运行时绘制地图瓦片边界与网格。
-        /// </summary>
+        private void ResolveMapTileBounds()
+        {
+            // 优先从导航子系统获取，其次场景查找
+            MapTileBounds = NavigationSubsystem.Instance?.MapTileBounds ?? Level.FindScript<MapTileBoundsActor>();
+        }
+
+#if FLAX_EDITOR
+        // `DebugDraw.*` 的绘制方法未导出到非编辑器目标，整段调试绘制只在编辑器编译。
         public override void OnDebugDraw()
         {
             base.OnDebugDraw();
 
             if (MapTileBounds == null)
             {
-                MapTileBounds = NavigationSubsystem.Instance?.MapTileBounds;
+                ResolveMapTileBounds();
                 if (MapTileBounds == null) return;
             }
 
-            // 绘制地图整体边界
             DrawMapBounds();
 
-            // 绘制瓦片网格
             if (bDrawTileGrid)
             {
                 DrawTileGrid();
             }
+
+            if (bDrawPOILinks)
+            {
+                DrawPOILinks();
+            }
         }
 
-        /// <summary>计算组件包围盒。适配 UE5 CalcBounds。</summary>
+        private void DrawMapBounds()
+        {
+            DebugDraw.DrawWireBox(CalcBounds(), TileBoundsColor, DebugDrawDuration, false);
+        }
+#endif
+
+        /// <summary>地图在世界空间的包围盒。适配 UE5 CalcBounds。</summary>
         public virtual BoundingBox CalcBounds()
         {
-            if (MapTileBounds != null && MapTileBounds.MapTileBoundsCollider != null)
+            if (MapTileBounds != null)
             {
-                return MapTileBounds.MapTileBoundsCollider.Box;
+                return MapTileBounds.GetWorldBounds();
             }
             if (Actor != null)
             {
@@ -80,76 +103,31 @@ namespace NarrativePro.Navigation
             return new BoundingBox(Vector3.Zero, Vector3.Zero);
         }
 
-        private void DrawMapBounds()
-        {
-            BoundingBox bounds = CalcBounds();
-            DrawBoundingBox(bounds, TileBoundsColor, DebugDrawDuration);
-        }
+#if FLAX_EDITOR
 
-        /// <summary>使用 DebugDraw.DrawLine 绘制包围盒的 12 条边。</summary>
-        protected void DrawBoundingBox(BoundingBox bounds, Color color, float duration)
-        {
-            Vector3 min = bounds.Minimum;
-            Vector3 max = bounds.Maximum;
-            Vector3 a = new Vector3(min.X, min.Y, min.Z);
-            Vector3 b = new Vector3(max.X, min.Y, min.Z);
-            Vector3 c = new Vector3(max.X, min.Y, max.Z);
-            Vector3 d = new Vector3(min.X, min.Y, max.Z);
-            Vector3 e = new Vector3(min.X, max.Y, min.Z);
-            Vector3 f = new Vector3(max.X, max.Y, min.Z);
-            Vector3 g = new Vector3(max.X, max.Y, max.Z);
-            Vector3 h = new Vector3(min.X, max.Y, max.Z);
-
-            // 底面 4 条边
-            DebugDraw.DrawLine(a, b, color, duration, false);
-            DebugDraw.DrawLine(b, c, color, duration, false);
-            DebugDraw.DrawLine(c, d, color, duration, false);
-            DebugDraw.DrawLine(d, a, color, duration, false);
-            // 顶面 4 条边
-            DebugDraw.DrawLine(e, f, color, duration, false);
-            DebugDraw.DrawLine(f, g, color, duration, false);
-            DebugDraw.DrawLine(g, h, color, duration, false);
-            DebugDraw.DrawLine(h, e, color, duration, false);
-            // 垂直 4 条边
-            DebugDraw.DrawLine(a, e, color, duration, false);
-            DebugDraw.DrawLine(b, f, color, duration, false);
-            DebugDraw.DrawLine(c, g, color, duration, false);
-            DebugDraw.DrawLine(d, h, color, duration, false);
-        }
-
+        /// <summary>
+        /// 绘制瓦片网格。步长取 <c>MapWidth / GridWidth</c>（世界单位），
+        /// 与 <c>TileImageSize</c>（像素分辨率）是两个不同量纲，不可混用。
+        /// </summary>
         private void DrawTileGrid()
         {
-            if (MapTileBounds.TileSet == null) return;
+            int gridWidth = MapTileBounds.TilesPerSide;
+            if (gridWidth <= 1) return;
 
-            float tileSize = MapTileBounds.TileSet.TileImageSize;
-            if (tileSize <= 0f) return;
-
-            int gridWidth = MapTileBounds.TileSet.GridWidth;
-            if (gridWidth <= 0) return;
-
-            BoundingBox bounds = CalcBounds();
-            Vector3 min = bounds.Minimum;
-            Vector3 max = bounds.Maximum;
-
-            // 在 XZ 平面绘制网格线（Flax 中 Y 为向上轴）
-            float extentX = max.X - min.X;
-            float extentZ = max.Z - min.Z;
-            if (extentX <= 0f || extentZ <= 0f) return;
-
-            float stepX = extentX / gridWidth;
-            float stepZ = extentZ / gridWidth;
-
-            // 沿 X 方向的网格线
-            for (int i = 0; i <= gridWidth; i++)
+            if (gridWidth > MaxGridLines)
             {
-                float z = min.Z + i * stepZ;
-                DebugDraw.DrawLine(
-                    new Vector3(min.X, min.Y, z),
-                    new Vector3(max.X, min.Y, z),
-                    TileGridColor, DebugDrawDuration, false);
+                NarrativeLog.LogWarning($"MapTileRenderingComponent: GridWidth={gridWidth} 超过绘制上限 {MaxGridLines}，跳过网格绘制");
+                return;
             }
 
-            // 沿 Z 方向的网格线
+            var bounds = CalcBounds();
+            Vector3 min = bounds.Minimum;
+            Vector3 max = bounds.Maximum;
+            float stepX = (max.X - min.X) / gridWidth;
+            float stepZ = (max.Z - min.Z) / gridWidth;
+            if (stepX <= 0f || stepZ <= 0f) return;
+
+            // Flax 为 Y-up，地图平面是 XZ
             for (int i = 0; i <= gridWidth; i++)
             {
                 float x = min.X + i * stepX;
@@ -157,7 +135,46 @@ namespace NarrativePro.Navigation
                     new Vector3(x, min.Y, min.Z),
                     new Vector3(x, min.Y, max.Z),
                     TileGridColor, DebugDrawDuration, false);
+
+                float z = min.Z + i * stepZ;
+                DebugDraw.DrawLine(
+                    new Vector3(min.X, min.Y, z),
+                    new Vector3(max.X, min.Y, z),
+                    TileGridColor, DebugDrawDuration, false);
             }
+        }
+
+        /// <summary>绘制 POI 之间的链接（对应 UE5 FMapTileRenderingSceneProxy 的 ArrowLines）。</summary>
+        private void DrawPOILinks()
+        {
+            var pois = MapTileBounds?.POIs;
+            if (pois == null || pois.Count < 2) return;
+
+            foreach (var poi in pois)
+            {
+                if (poi?.LinkedPOIs == null) continue;
+
+                foreach (var linkedTag in poi.LinkedPOIs)
+                {
+                    var linked = FindPOI(pois, linkedTag);
+                    if (linked == null) continue;
+
+                    DebugDraw.DrawLine(poi.POILocation, linked.POILocation, POILinkColor, DebugDrawDuration, false);
+                }
+            }
+        }
+#endif
+
+        private static POIData FindPOI(System.Collections.Generic.List<POIData> pois, GameplayTag tag)
+        {
+            if (!tag.IsValid()) return null;
+
+            for (int i = 0; i < pois.Count; i++)
+            {
+                var candidate = pois[i];
+                if (candidate != null && candidate.POITag == tag) return candidate;
+            }
+            return null;
         }
     }
 }

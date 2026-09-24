@@ -246,11 +246,19 @@ namespace NarrativePro.UnrealFramework
 
         /// <summary>快速旅行到 POI。对应 UE5 FastTravelToPOI（BlueprintImplementableEvent）。</summary>
         /// <param name="poi">目标 POI 数据。</param>
-        public virtual void FastTravelToPOI(POIData poi)
+        /// <returns>是否成功完成传送。</returns>
+        public virtual bool FastTravelToPOI(POIData poi)
         {
-            if (poi == null) return;
-            NarrativeLog.Log($"[NarrativePlayerController] FastTravelToPOI: {poi}");
-            // TODO [需接入快速旅行系统]: 实现快速旅行（传送玩家到 POI 位置）
+            if (poi == null) return false;
+
+            var navigation = Actor != null ? Actor.GetScript<NarrativeNavigationComponent>() : null;
+            if (navigation == null)
+            {
+                NarrativeLog.LogWarning($"[NarrativePlayerController] FastTravelToPOI: 本控制器上未挂载 NarrativeNavigationComponent，无法传送（{poi.POITag}）");
+                return false;
+            }
+
+            return navigation.RequestFastTravel(poi);
         }
 
         // ===== 伤害通知 =====

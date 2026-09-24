@@ -156,6 +156,7 @@ namespace HundunWorld.Game.Combat.Effects
         private Vector3 killCamFocusPosition;
         private Vector3 killCamOriginalCameraPos;
         private Quaternion killCamOriginalCameraRot;
+        private ThirdPersonCamera _thirdPersonCamera; // 接管期间挂起的第三方相机
 
         /// <summary>
         /// 初始化
@@ -839,6 +840,10 @@ namespace HundunWorld.Game.Combat.Effects
             killCamOriginalCameraPos = camera.Position;
             killCamOriginalCameraRot = camera.Orientation;
 
+            // 挂起第三方相机：否则它每帧都会覆盖这里的位姿，特写会被顶掉（两者写入顺序不确定）
+            _thirdPersonCamera = camera.GetScript<ThirdPersonCamera>();
+            _thirdPersonCamera?.SetExternalCameraControl(true);
+
             // 减速时间
             if (EnableTimeScale)
             {
@@ -915,8 +920,18 @@ namespace HundunWorld.Game.Combat.Effects
             var camera = Camera.MainCamera;
             if (camera != null)
             {
-                camera.Position = killCamOriginalCameraPos;
-                camera.Orientation = killCamOriginalCameraRot;
+                if (_thirdPersonCamera != null)
+                {
+                    // 交还控制权：第三方相机会在下一帧按角色重新计算，
+                    // 因此不写回 2 秒前的旧位姿，避免一帧跳变
+                    _thirdPersonCamera.SetExternalCameraControl(false);
+                    _thirdPersonCamera = null;
+                }
+                else
+                {
+                    camera.Position = killCamOriginalCameraPos;
+                    camera.Orientation = killCamOriginalCameraRot;
+                }
             }
 
             if (ShowDebug)
@@ -934,6 +949,14 @@ namespace HundunWorld.Game.Combat.Effects
         {
             // 恢复时间缩放
             Time.TimeScale = originalTimeScale;
+
+            // 若在特写中途被禁用，必须交还相机控制权，否则第三方相机将永久停写位姿
+            if (_thirdPersonCamera != null)
+            {
+                _thirdPersonCamera.SetExternalCameraControl(false);
+                _thirdPersonCamera = null;
+            }
+            isInKillCam = false;
         }
     }
 }

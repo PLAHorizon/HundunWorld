@@ -126,6 +126,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Variant = InkButtonVariant.Ghost,
                 TextColor = InkWashTheme.TextTertiary,
                 HorizontalAlignment = TextAlignment.Near,
+                Location = new Float2(4f, 12f),
                 Parent = _leftNav
             };
             // 返回战斗 HUD（设计隐藏出口 back-hud）
@@ -134,6 +135,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
             var logoMark = new ContainerControl
             {
                 Size = new Float2(36f, 36f),
+                Location = new Float2(16f, 60f),
                 BackgroundColor = InkWashTheme.GoldPrimary * 0.12f,
                 Parent = _leftNav
             };
@@ -143,6 +145,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Text = "混沌世界",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
                 TextColor = InkWashTheme.GoldBright,
+                Size = new Float2(164f, 26f),
+                Location = new Float2(60f, 58f),
                 Parent = _leftNav
             };
 
@@ -151,6 +155,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Text = "HUNDUN WORLD",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 TextColor = InkWashTheme.TextDisabled,
+                Size = new Float2(164f, 14f),
+                Location = new Float2(60f, 84f),
                 Parent = _leftNav
             };
 
@@ -158,6 +164,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
             {
                 Width = 208f,
                 Height = 1f,
+                Location = new Float2(16f, 106f),
                 Parent = _leftNav
             };
 
@@ -175,6 +182,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 InkPageDomIds.NavSettings,
             };
 
+            float navY = 118f;
             for (int i = 0; i < navItems.Length; i++)
             {
                 var navItem = new InkButton
@@ -184,6 +192,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                     Text = navItems[i],
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
+                    Location = new Float2(0f, navY),
                     Parent = _leftNav
                 };
 
@@ -202,12 +211,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 // 左栏项直达对应菜单（设计链路）
                 int navIndex = i;
                 navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
+                navY += 52f;
             }
 
+            float navH = _screenSize.Y;
             var footerDivider = new InkDivider
             {
                 Width = 208f,
                 Height = 1f,
+                Location = new Float2(16f, navH - 58f),
                 Parent = _leftNav
             };
 
@@ -216,6 +228,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Text = "v1.2.0 · 江湖公测",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextDisabled,
+                Size = new Float2(208f, 16f),
+                Location = new Float2(16f, navH - 44f),
                 Parent = _leftNav
             };
         }

@@ -129,6 +129,30 @@ public sealed class SimWorld
     }
 
     /// <summary>
+    /// 传送：把实体权威位置直接对齐到目标坐标并设置朝向，同时**丢弃传送前的待处理输入**。
+    /// <para>
+    /// 与 <see cref="SetPosition"/> 的关键区别：传送后若保留 <see cref="SimWorldEntity.PendingInputs"/>，
+    /// 那些"传送前"的输入会在新位置继续被回放，把玩家又走回原处（且会污染瞬移/漂移基线）。
+    /// 因此快速旅行、场景切换等主动传送必须走本方法。
+    /// </para>
+    /// </summary>
+    /// <param name="entityId">实体 Id</param>
+    /// <param name="x">目标 X（ECS：左右）</param>
+    /// <param name="y">目标 Y（ECS：前后）</param>
+    /// <param name="z">目标 Z（ECS：上下）</param>
+    /// <param name="yawRadians">目标朝向（弧度）</param>
+    public void TeleportTo(ulong entityId, float x, float y, float z, float yawRadians)
+    {
+        SetPosition(entityId, x, y, z);
+
+        if (_entities.TryGetValue(entityId, out var e))
+        {
+            e.Yaw = yawRadians;
+            e.PendingInputs.Clear();
+        }
+    }
+
+    /// <summary>
     /// 提交一帧客户端输入：入队到 <see cref="SimWorldEntity.PendingInputs"/>，
     /// 更新"客户端报告终点"（下一 tick drift 校验基准）与 RTT 估计（EMA）。
     /// <para>

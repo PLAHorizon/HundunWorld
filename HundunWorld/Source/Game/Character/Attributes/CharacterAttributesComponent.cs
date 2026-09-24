@@ -30,6 +30,12 @@ namespace Game.Character.Attributes
         [Tooltip("角色等级")]
         public int Level = 1;
 
+        [Tooltip("当前修为经验（服务端 EntityStateAuthComponent.Exp 同步）")]
+        public long Exp = 0;
+
+        [Tooltip("当前等级升级所需修为经验（由等级推导；服务端暂未下发上限）")]
+        public long MaxExp => 1000L + (long)Level * 500L;
+
         [Tooltip("角色昵称")]
         public string Nickname = "无名侠";
 

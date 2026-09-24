@@ -76,24 +76,24 @@
 			"TypeName": "HundunWorld.Game.ThirdPersonCamera",
 			"ParentID": "08bfdad94587b20e3098daabb0c9022c",
 			"V": {
-	"ZoomSpeed": 60.0,
-	"NormalStateConfig": {},
-	"CombatStateConfig": {},
-	"ClimbingStateConfig": {},
-	"SwimmingStateConfig": {},
-	"FlyingStateConfig": {},
-	"CutsceneStateConfig": {},
-	"OverShoulderStateConfig": {},
-	"LockOnStateConfig": {},
-	"BossBattleStateConfig": {},
-	"EnablePerformanceMonitoring": true,
-	"OutdoorConfig": {},
-	"IndoorConfig": {},
-	"UnderwaterConfig": {},
-	"AerialConfig": {},
-	"CaveConfig": {},
-	"CorridorConfig": {}
-}
+				"ZoomSpeed": 60.0,
+				"NormalStateConfig": {},
+				"CombatStateConfig": {},
+				"ClimbingStateConfig": {},
+				"SwimmingStateConfig": {},
+				"FlyingStateConfig": {},
+				"CutsceneStateConfig": {},
+				"OverShoulderStateConfig": {},
+				"LockOnStateConfig": {},
+				"BossBattleStateConfig": {},
+				"EnablePerformanceMonitoring": true,
+				"OutdoorConfig": {},
+				"IndoorConfig": {},
+				"UnderwaterConfig": {},
+				"AerialConfig": {},
+				"CaveConfig": {},
+				"CorridorConfig": {}
+			}
 		},
 		{
 			"ID": "5ccec44d43311662598c04b45e5cd8a8",
@@ -106,8 +106,8 @@
 			"TypeName": "HundunWorld.Game.Combat.Effects.CombatFeedbackSystem",
 			"ParentID": "5ccec44d43311662598c04b45e5cd8a8",
 			"V": {
-	"HitStopCurve": {}
-}
+				"HitStopCurve": {}
+			}
 		},
 		{
 			"ID": "b3d193a940d969393fd6258c06d74a21",
@@ -145,7 +145,7 @@
 				{
 					"X": 0,
 					"Z": 0,
-					"Offset": -0.000015259021893143654,
+					"Offset": -1.5259021893143654e-05,
 					"Height": 15.946303367614746,
 					"Heightmap": "31e524c748c446395aa9009cb16f3920",
 					"Splatmap0": "00000000000000000000000000000000",
@@ -265,217 +265,192 @@
 			"TypeName": "NarrativePro.Navigation.NavigationMarkerComponent",
 			"ParentID": "51c5c222407aedf48e6a92889b981942",
 			"V": {
-	"MarkerObject": {
-		"DefaultMarkerSettings": {
-			"bOverride_LocationDisplayName": false,
-			"bOverride_LocationIcon": false,
-			"bOverride_IconTint": false,
-			"bOverride_IconSize": false,
-			"bOverride_IconOffset": false,
-			"bOverride_bShowActorRotation": false,
-			"MarkerTitleText": "目标AAA",
-			"MarkerSubtitleText": "七零",
-			"LocationIconPath": "",
-			"IconTint": {
-				"R": 1.0,
-				"G": 1.0,
-				"B": 1.0,
-				"A": 1.0
-			},
-			"IconSize": {
-				"X": 20.0,
-				"Y": 20.0
-			},
-			"IconOffset": {
-				"X": 0.0,
-				"Y": 0.0,
-				"Z": 0.0
-			},
-			"bShowActorRotation": false
-		},
-		"WorldMapOverrideSettings": {
-			"bOverride_LocationDisplayName": false,
-			"bOverride_LocationIcon": false,
-			"bOverride_IconTint": false,
-			"bOverride_IconSize": false,
-			"bOverride_IconOffset": false,
-			"bOverride_bShowActorRotation": false,
-			"MarkerTitleText": "Location Marker",
-			"MarkerSubtitleText": "",
-			"LocationIconPath": "",
-			"IconTint": {
-				"R": 1.0,
-				"G": 1.0,
-				"B": 1.0,
-				"A": 1.0
-			},
-			"IconSize": {
-				"X": 20.0,
-				"Y": 20.0
-			},
-			"IconOffset": {
-				"X": 0.0,
-				"Y": 0.0,
-				"Z": 0.0
-			},
-			"bShowActorRotation": false
-		},
-		"MinimapOverrideSettings": {
-			"bOverride_LocationDisplayName": true,
-			"bOverride_LocationIcon": true,
-			"bOverride_IconTint": true,
-			"bOverride_IconSize": false,
-			"bOverride_IconOffset": false,
-			"bOverride_bShowActorRotation": false,
-			"MarkerTitleText": "目标AAA",
-			"MarkerSubtitleText": "七零",
-			"LocationIconPath": "8dd8fced431c3036988c10bf81d38504",
-			"IconTint": {
-				"R": 1.0,
-				"G": 1.0,
-				"B": 1.0,
-				"A": 1.0
-			},
-			"IconSize": {
-				"X": 20.0,
-				"Y": 20.0
-			},
-			"IconOffset": {
-				"X": 0.0,
-				"Y": 0.0,
-				"Z": 0.0
-			},
-			"bShowActorRotation": true
-		},
-		"CompassOverrideSettings": {
-			"bOverride_LocationDisplayName": false,
-			"bOverride_LocationIcon": true,
-			"bOverride_IconTint": false,
-			"bOverride_IconSize": false,
-			"bOverride_IconOffset": false,
-			"bOverride_bShowActorRotation": false,
-			"MarkerTitleText": "目标AAA",
-			"MarkerSubtitleText": "七零",
-			"LocationIconPath": "",
-			"IconTint": {
-				"R": 1.0,
-				"G": 0.30731112,
-				"B": 0.20799601,
-				"A": 1.0
-			},
-			"IconSize": {
-				"X": 20.0,
-				"Y": 20.0
-			},
-			"IconOffset": {
-				"X": 0.0,
-				"Y": 0.0,
-				"Z": 0.0
-			},
-			"bShowActorRotation": false
-		},
-		"ScreenspaceOverrideSettings": {
-			"bOverride_LocationDisplayName": false,
-			"bOverride_LocationIcon": false,
-			"bOverride_IconTint": false,
-			"bOverride_IconSize": false,
-			"bOverride_IconOffset": false,
-			"bOverride_bShowActorRotation": false,
-			"MarkerTitleText": "目标AAA",
-			"MarkerSubtitleText": "七零",
-			"LocationIconPath": "",
-			"IconTint": {
-				"R": 1.0,
-				"G": 1.0,
-				"B": 1.0,
-				"A": 1.0
-			},
-			"IconSize": {
-				"X": 20.0,
-				"Y": 20.0
-			},
-			"IconOffset": {
-				"X": 0.0,
-				"Y": 0.0,
-				"Z": 0.0
-			},
-			"bShowActorRotation": false
-		},
-		"MarkerTransform": {
-			"Translation": {
-				"X": 0.0,
-				"Y": 0.0,
-				"Z": 0.0
-			},
-			"Orientation": {
-				"X": 0.0,
-				"Y": 0.0,
-				"Z": 0.0,
-				"W": 1.0
-			},
-			"Scale": {
-				"X": 1.0,
-				"Y": 1.0,
-				"Z": 1.0
+				"MarkerObject": {
+					"DefaultMarkerSettings": {
+						"bOverride_LocationDisplayName": false,
+						"bOverride_LocationIcon": false,
+						"bOverride_IconTint": false,
+						"bOverride_IconSize": false,
+						"bOverride_IconOffset": false,
+						"bOverride_bShowActorRotation": false,
+						"MarkerTitleText": "目标AAA",
+						"MarkerSubtitleText": "七零",
+						"LocationIconPath": "",
+						"IconTint": {
+							"R": 1.0,
+							"G": 1.0,
+							"B": 1.0,
+							"A": 1.0
+						},
+						"IconSize": {
+							"X": 20.0,
+							"Y": 20.0
+						},
+						"IconOffset": {
+							"X": 0.0,
+							"Y": 0.0,
+							"Z": 0.0
+						},
+						"bShowActorRotation": false
+					},
+					"WorldMapOverrideSettings": {
+						"bOverride_LocationDisplayName": false,
+						"bOverride_LocationIcon": false,
+						"bOverride_IconTint": false,
+						"bOverride_IconSize": false,
+						"bOverride_IconOffset": false,
+						"bOverride_bShowActorRotation": false,
+						"MarkerTitleText": "Location Marker",
+						"MarkerSubtitleText": "",
+						"LocationIconPath": "",
+						"IconTint": {
+							"R": 1.0,
+							"G": 1.0,
+							"B": 1.0,
+							"A": 1.0
+						},
+						"IconSize": {
+							"X": 20.0,
+							"Y": 20.0
+						},
+						"IconOffset": {
+							"X": 0.0,
+							"Y": 0.0,
+							"Z": 0.0
+						},
+						"bShowActorRotation": false
+					},
+					"MinimapOverrideSettings": {
+						"bOverride_LocationDisplayName": true,
+						"bOverride_LocationIcon": true,
+						"bOverride_IconTint": true,
+						"bOverride_IconSize": false,
+						"bOverride_IconOffset": false,
+						"bOverride_bShowActorRotation": false,
+						"MarkerTitleText": "目标AAA",
+						"MarkerSubtitleText": "七零",
+						"LocationIconPath": "8dd8fced431c3036988c10bf81d38504",
+						"IconTint": {
+							"R": 1.0,
+							"G": 1.0,
+							"B": 1.0,
+							"A": 1.0
+						},
+						"IconSize": {
+							"X": 20.0,
+							"Y": 20.0
+						},
+						"IconOffset": {
+							"X": 0.0,
+							"Y": 0.0,
+							"Z": 0.0
+						},
+						"bShowActorRotation": true
+					},
+					"CompassOverrideSettings": {
+						"bOverride_LocationDisplayName": false,
+						"bOverride_LocationIcon": true,
+						"bOverride_IconTint": false,
+						"bOverride_IconSize": false,
+						"bOverride_IconOffset": false,
+						"bOverride_bShowActorRotation": false,
+						"MarkerTitleText": "目标AAA",
+						"MarkerSubtitleText": "七零",
+						"LocationIconPath": "",
+						"IconTint": {
+							"R": 1.0,
+							"G": 0.30731112,
+							"B": 0.20799601,
+							"A": 1.0
+						},
+						"IconSize": {
+							"X": 20.0,
+							"Y": 20.0
+						},
+						"IconOffset": {
+							"X": 0.0,
+							"Y": 0.0,
+							"Z": 0.0
+						},
+						"bShowActorRotation": false
+					},
+					"ScreenspaceOverrideSettings": {
+						"bOverride_LocationDisplayName": false,
+						"bOverride_LocationIcon": false,
+						"bOverride_IconTint": false,
+						"bOverride_IconSize": false,
+						"bOverride_IconOffset": false,
+						"bOverride_bShowActorRotation": false,
+						"MarkerTitleText": "目标AAA",
+						"MarkerSubtitleText": "七零",
+						"LocationIconPath": "",
+						"IconTint": {
+							"R": 1.0,
+							"G": 1.0,
+							"B": 1.0,
+							"A": 1.0
+						},
+						"IconSize": {
+							"X": 20.0,
+							"Y": 20.0
+						},
+						"IconOffset": {
+							"X": 0.0,
+							"Y": 0.0,
+							"Z": 0.0
+						},
+						"bShowActorRotation": false
+					},
+					"MarkerTransform": {
+						"Translation": {
+							"X": 0.0,
+							"Y": 0.0,
+							"Z": 0.0
+						},
+						"Orientation": {
+							"X": 0.0,
+							"Y": 0.0,
+							"Z": 0.0,
+							"W": 1.0
+						},
+						"Scale": {
+							"X": 1.0,
+							"Y": 1.0,
+							"Z": 1.0
+						}
+					},
+					"ActorOwner": "51c5c222407aedf48e6a92889b981942",
+					"bWantsOnPaint": false,
+					"DefaultMarkerActionText": "",
+					"ZOrder": 0,
+					"bPinToMapEdge": true,
+					"MarkerStartFadeOutDistance": 5000.0,
+					"MarkerStartFadeInDistance": 10000.0,
+					"MarkerDomain": {},
+					"OwnerNavComp": null,
+					"bDrawBreadcrumbs": true,
+					"UpdateNavDistanceThreshhold": 200.0,
+					"DistanceBetweenPoints": 300.0,
+					"UpdateNavPathRate": 4.0,
+					"BreadcrumbColor": {
+						"R": 0.5019608,
+						"G": 0.5019608,
+						"B": 0.5019608,
+						"A": 1.0
+					},
+					"BreadcrumbThickness": 5.0,
+					"BreadcrumbDashLength": 10.0
+				}
 			}
-		},
-		"ActorOwner": "51c5c222407aedf48e6a92889b981942",
-		"bWantsOnPaint": false,
-		"DefaultMarkerActionText": "",
-		"ZOrder": 0,
-		"bPinToMapEdge": true,
-		"MarkerStartFadeOutDistance": 5000.0,
-		"MarkerStartFadeInDistance": 10000.0,
-		"MarkerDomain": {},
-		"OwnerNavComp": null,
-		"bDrawBreadcrumbs": true,
-		"UpdateNavDistanceThreshhold": 200.0,
-		"DistanceBetweenPoints": 300.0,
-		"UpdateNavPathRate": 4.0,
-		"BreadcrumbColor": {
-			"R": 0.5019608,
-			"G": 0.5019608,
-			"B": 0.5019608,
-			"A": 1.0
-		},
-		"BreadcrumbThickness": 5.0,
-		"BreadcrumbDashLength": 10.0
-	}
-}
 		},
 		{
 			"ID": "e5a4cf33436e3dcb44953fb274d90411",
 			"TypeName": "FlaxEngine.EmptyActor",
 			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
-			"Name": "MapTileBoundsActor"
-		},
-		{
-			"ID": "5c24525d4f45e591552a84bbe969b262",
-			"TypeName": "NarrativePro.Navigation.NavigationSubsystem",
-			"ParentID": "e5a4cf33436e3dcb44953fb274d90411",
-			"V": {}
-		},
-		{
-			"ID": "a8fcffef4db86e1bc11a13ae742de8b1",
-			"TypeName": "NarrativePro.Navigation.MapTileBoundsActor",
-			"ParentID": "e5a4cf33436e3dcb44953fb274d90411",
-			"V": {
-	"TileSet": {
-		"GridWidth": 512,
-		"TileImageSize": 512.0
-	},
-	"POIs": [
-		{
-			"POITag": {},
-			"LinkedPOIs": [],
-			"POILocation": {
-				"X": 0.0,
-				"Y": 0.0,
-				"Z": 0.0
-			},
-			"POIFastTravelSpot": {
+			"Name": "MapTileBoundsActor",
+			"Transform": {
 				"Translation": {
-					"X": 0.0,
+					"X": -400.0,
 					"Y": 0.0,
 					"Z": 0.0
 				},
@@ -490,16 +465,392 @@
 					"Y": 1.0,
 					"Z": 1.0
 				}
-			},
-			"bNeedsMapMarker": true,
-			"bSupportsFastTravel": true,
-			"bIsDiscoverable": false,
-			"MapMarkerIconPath": "",
-			"POIDisplayName": "Point of Interest",
-			"POISubtitle": "Location"
-		}
-	]
-}
+			}
+		},
+		{
+			"ID": "5c24525d4f45e591552a84bbe969b262",
+			"TypeName": "NarrativePro.Navigation.NavigationSubsystem",
+			"ParentID": "e5a4cf33436e3dcb44953fb274d90411",
+			"V": {}
+		},
+		{
+			"ID": "a8fcffef4db86e1bc11a13ae742de8b1",
+			"TypeName": "NarrativePro.Navigation.MapTileBoundsActor",
+			"ParentID": "e5a4cf33436e3dcb44953fb274d90411",
+			"V": {
+				"TileSet": {
+					"GridWidth": 4,
+					"TileImageSize": 512.0
+				},
+				"MapWidth": 4000.0,
+				"NumTiles": 4,
+				"TilePixelSize": 512.0
+			}
+		},
+		{
+			"ID": "3253649c44ef256d35f86da2c5e1d25e",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_Kaifeng",
+			"Transform": {
+				"Translation": {
+					"X": -118.0,
+					"Y": 50.0,
+					"Z": -104.0
+				}
+			}
+		},
+		{
+			"ID": "6e426df84b7d95b80e43888eecc5c97e",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "3253649c44ef256d35f86da2c5e1d25e",
+			"V": {
+				"DiscoveryRadius": 900.0,
+				"POIDisplayName": "开封城",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.Qinghe",
+					"Navigator.PointOfInterest.YanbeiGuan",
+					"Navigator.PointOfInterest.Liangzhou"
+				],
+				"POITagName": "Navigator.PointOfInterest.Kaifeng",
+				"bIsDiscoverable": false
+			}
+		},
+		{
+			"ID": "08ec58274d895467dabc2ab9fe2d46ef",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "3253649c44ef256d35f86da2c5e1d25e",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 900.0
+		},
+		{
+			"ID": "6998efd6437af7834a7f58841ded6503",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_Qingyunshan",
+			"Transform": {
+				"Translation": {
+					"X": -1200.0,
+					"Y": 300.0,
+					"Z": 900.0
+				}
+			}
+		},
+		{
+			"ID": "5af381a946d422b4778649981f1f5f6c",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "6998efd6437af7834a7f58841ded6503",
+			"V": {
+				"DiscoveryRadius": 1200.0,
+				"POIDisplayName": "青云山",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.LuoyanFeng",
+					"Navigator.PointOfInterest.Kaifeng"
+				],
+				"POITagName": "Navigator.PointOfInterest.Qingyunshan",
+				"bIsDiscoverable": false
+			}
+		},
+		{
+			"ID": "c945655a453ec4b9df6e9fb8ceb58cca",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "6998efd6437af7834a7f58841ded6503",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 1200.0
+		},
+		{
+			"ID": "daacda6d484892a3f7d037ba1b6b04cc",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_Liangzhou",
+			"Transform": {
+				"Translation": {
+					"X": 900.0,
+					"Y": 40.0,
+					"Z": -700.0
+				}
+			}
+		},
+		{
+			"ID": "803d1fb14b2afd829c9e29bd81adf43a",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "daacda6d484892a3f7d037ba1b6b04cc",
+			"V": {
+				"DiscoveryRadius": 1200.0,
+				"POIDisplayName": "凉州",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.YanbeiGuan",
+					"Navigator.PointOfInterest.Guchangchang"
+				],
+				"POITagName": "Navigator.PointOfInterest.Liangzhou",
+				"bIsDiscoverable": false
+			}
+		},
+		{
+			"ID": "d2d8426f4a5b4b283a55abb86006838d",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "daacda6d484892a3f7d037ba1b6b04cc",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 1200.0
+		},
+		{
+			"ID": "1557130c46944a6a11f9248a085d31f2",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_Jiangnan",
+			"Transform": {
+				"Translation": {
+					"X": 600.0,
+					"Y": 20.0,
+					"Z": 1100.0
+				}
+			}
+		},
+		{
+			"ID": "d4c2f783402ae4da9f5831bba5e651cc",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "1557130c46944a6a11f9248a085d31f2",
+			"V": {
+				"DiscoveryRadius": 1200.0,
+				"POIDisplayName": "江南渡口",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.Qinghe",
+					"Navigator.PointOfInterest.YaowangGu"
+				],
+				"POITagName": "Navigator.PointOfInterest.Jiangnan",
+				"bIsDiscoverable": false
+			}
+		},
+		{
+			"ID": "a97cd9ca4639337985b7a197ab57b039",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "1557130c46944a6a11f9248a085d31f2",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 1200.0
+		},
+		{
+			"ID": "33bfe1e74715c1d4afd2d78972fb93e6",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_Qinghe",
+			"Transform": {
+				"Translation": {
+					"X": 200.0,
+					"Y": 30.0,
+					"Z": 500.0
+				}
+			}
+		},
+		{
+			"ID": "76c053064464eb784beab9b917f96ac1",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "33bfe1e74715c1d4afd2d78972fb93e6",
+			"V": {
+				"bSupportsFastTravel": false,
+				"DiscoveryRadius": 700.0,
+				"POIDisplayName": "清河村",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.Kaifeng",
+					"Navigator.PointOfInterest.Jiangnan"
+				],
+				"POITagName": "Navigator.PointOfInterest.Qinghe",
+				"bIsDiscoverable": true
+			}
+		},
+		{
+			"ID": "a75e165a4a0d3693ef4e27a94ef89ee8",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "33bfe1e74715c1d4afd2d78972fb93e6",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 700.0
+		},
+		{
+			"ID": "c15eb6a0434ec78d1bfceabcf553c1d9",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_LuoyanFeng",
+			"Transform": {
+				"Translation": {
+					"X": -700.0,
+					"Y": 420.0,
+					"Z": 400.0
+				}
+			}
+		},
+		{
+			"ID": "ce7b08d7422bc405b2c30faaefc49e55",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "c15eb6a0434ec78d1bfceabcf553c1d9",
+			"V": {
+				"bSupportsFastTravel": false,
+				"DiscoveryRadius": 700.0,
+				"POIDisplayName": "落雁峰",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.Qingyunshan",
+					"Navigator.PointOfInterest.Qinghe"
+				],
+				"POITagName": "Navigator.PointOfInterest.LuoyanFeng",
+				"bIsDiscoverable": true
+			}
+		},
+		{
+			"ID": "a43a65be41a15643be0208a5639d6ef9",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "c15eb6a0434ec78d1bfceabcf553c1d9",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 700.0
+		},
+		{
+			"ID": "77a70da34f3e8bc5eae9c383f8ba2298",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_BeishanDao",
+			"Transform": {
+				"Translation": {
+					"X": -1500.0,
+					"Y": 260.0,
+					"Z": -400.0
+				}
+			}
+		},
+		{
+			"ID": "2c087cbc4a04bb5b03a2d2a533fb7ea2",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "77a70da34f3e8bc5eae9c383f8ba2298",
+			"V": {
+				"bSupportsFastTravel": false,
+				"DiscoveryRadius": 700.0,
+				"POIDisplayName": "北山道",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.Kaifeng",
+					"Navigator.PointOfInterest.Qingyunshan"
+				],
+				"POITagName": "Navigator.PointOfInterest.BeishanDao",
+				"bIsDiscoverable": true
+			}
+		},
+		{
+			"ID": "55b4607a4807ffd8ec58acab2f4d3ec5",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "77a70da34f3e8bc5eae9c383f8ba2298",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 700.0
+		},
+		{
+			"ID": "8c9e5ea2480256fcc07227987b74a59c",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_Guchangchang",
+			"Transform": {
+				"Translation": {
+					"X": -400.0,
+					"Y": 60.0,
+					"Z": -1200.0
+				}
+			}
+		},
+		{
+			"ID": "dbe422c94f40294e8c2fd3ba57862b6a",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "8c9e5ea2480256fcc07227987b74a59c",
+			"V": {
+				"bSupportsFastTravel": false,
+				"POIDisplayName": "古战场遗迹",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.Liangzhou",
+					"Navigator.PointOfInterest.Kaifeng"
+				],
+				"POITagName": "Navigator.PointOfInterest.Guchangchang",
+				"bIsDiscoverable": true
+			}
+		},
+		{
+			"ID": "969ee6fa4c410243a55bff83b59e98b6",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "8c9e5ea2480256fcc07227987b74a59c",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 800.0
+		},
+		{
+			"ID": "e6cf85934d5734c3137224a6db5139ce",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_YanbeiGuan",
+			"Transform": {
+				"Translation": {
+					"X": 1100.0,
+					"Y": 180.0,
+					"Z": 300.0
+				}
+			}
+		},
+		{
+			"ID": "1e2322534e5517c4442bd5a984ec21ba",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "e6cf85934d5734c3137224a6db5139ce",
+			"V": {
+				"bSupportsFastTravel": false,
+				"DiscoveryRadius": 700.0,
+				"POIDisplayName": "燕北关",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.Liangzhou",
+					"Navigator.PointOfInterest.Kaifeng"
+				],
+				"POITagName": "Navigator.PointOfInterest.YanbeiGuan",
+				"bIsDiscoverable": true
+			}
+		},
+		{
+			"ID": "a47efe1a4d83cd6b01a9afa6e69b4433",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "e6cf85934d5734c3137224a6db5139ce",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 700.0
+		},
+		{
+			"ID": "5fb5460742c1bff8540e8789312f9564",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "POI_YaowangGu",
+			"Transform": {
+				"Translation": {
+					"X": -1900.0,
+					"Y": 150.0,
+					"Z": 1200.0
+				}
+			}
+		},
+		{
+			"ID": "9f7a31fc4db1fabd348bea9c8388d2c8",
+			"TypeName": "NarrativePro.Navigation.POIActor",
+			"ParentID": "5fb5460742c1bff8540e8789312f9564",
+			"V": {
+				"bSupportsFastTravel": false,
+				"POIDisplayName": "药王谷",
+				"LinkedPOIPaths": [
+					"Navigator.PointOfInterest.Qingyunshan",
+					"Navigator.PointOfInterest.Jiangnan"
+				],
+				"POITagName": "Navigator.PointOfInterest.YaowangGu",
+				"bIsDiscoverable": true
+			}
+		},
+		{
+			"ID": "8361e2034fd1dc18c4845db4427c9372",
+			"TypeName": "FlaxEngine.SphereCollider",
+			"ParentID": "5fb5460742c1bff8540e8789312f9564",
+			"Name": "Discover",
+			"IsTrigger": true,
+			"Radius": 800.0
 		}
 	]
 }

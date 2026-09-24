@@ -6,12 +6,24 @@ namespace NarrativePro.Items
     /// <summary>
     /// 轻量级 GameplayTag 实现，替代 UE5 FGameplayTag。
     /// 使用点分层级字符串（如 "Narrative.Equipment.Slot.Head"）标识分类标签。
+    /// <para>
+    /// 注意：本类型必须保持为**非 readonly** 结构体，且 <see cref="TagName"/> 必须是**可写属性**。
+    /// Flax 序列化器只写入/还原有 setter 的成员；若退回 <c>readonly struct</c> + 只读属性，
+    /// 资产与场景中会写成空对象 <c>{}</c>，标签值静默丢失（历史缺陷：POI 标签、地图层级均无法持久化）。
+    /// </para>
     /// </summary>
-    public readonly struct GameplayTag : IEquatable<GameplayTag>, IComparable<GameplayTag>
+    public struct GameplayTag : IEquatable<GameplayTag>, IComparable<GameplayTag>
     {
         public static readonly GameplayTag None = new GameplayTag("");
 
-        public string TagName { get; }
+        private string _tagName;
+
+        /// <summary>标签名。允许反序列化写入，读取时保证非 null。</summary>
+        public string TagName
+        {
+            get => _tagName ?? "";
+            set => _tagName = value ?? "";
+        }
 
         public GameplayTag(string tagName)
         {

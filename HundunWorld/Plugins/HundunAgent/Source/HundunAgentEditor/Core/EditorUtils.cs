@@ -39,32 +39,56 @@ namespace HundunAgent.Core
         /// <see cref="ProjectRoot"/> 或 <see cref="WorkspaceRoot"/> 之内。
         /// </summary>
         /// <remarks>
-        /// 先按工程目录解析，失败再回退工作区根：设计稿（<c>hundun-yy-ui/</c>）与临时分析产物
-        /// （<c>.compile-temp/</c>、<c>.dbg/</c>）都位于工程目录之外、工作区之内。
+        /// 相对路径按「工程目录优先、工作区根兜底」解析，且以**是否存在**为准：
+        /// 设计稿（<c>hundun-yy-ui/</c>）与临时分析产物（<c>.compile-temp/</c>、<c>.dbg/</c>）
+        /// 都位于工程目录之外，只在工程目录里拼路径会全部落空。
         /// </remarks>
         public static string ResolveWorkspacePath(string path, bool mustExist = false)
         {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentException("缺少 path 参数");
 
-            var isRooted = Path.IsPathRooted(path);
-            var full = isRooted
-                ? Path.GetFullPath(path)
-                : Path.GetFullPath(Path.Combine(ProjectRoot, path));
-
-            if (!IsInside(full, ProjectRoot))
+            if (Path.IsPathRooted(path))
             {
-                var workspace = WorkspaceRoot;
-                var candidate = isRooted ? full : Path.GetFullPath(Path.Combine(workspace, path));
-                if (!IsInside(candidate, workspace))
+                var rooted = Path.GetFullPath(path);
+                if (!IsInside(rooted, ProjectRoot) && !IsInside(rooted, WorkspaceRoot))
                     throw new UnauthorizedAccessException("路径越出工作区范围: " + path);
-                full = candidate;
+                if (mustExist && !Exists(rooted))
+                    throw new ArgumentException("路径不存在: " + path);
+                return rooted;
             }
 
-            if (mustExist && !File.Exists(full) && !Directory.Exists(full))
+            var inProject = Path.GetFullPath(Path.Combine(ProjectRoot, path));
+            var inWorkspace = Path.GetFullPath(Path.Combine(WorkspaceRoot, path));
+
+            if (Exists(inProject))
+                return inProject;
+            if (Exists(inWorkspace))
+                return inWorkspace;
+
+            if (mustExist)
                 throw new ArgumentException("路径不存在: " + path);
 
-            return full;
+            // 都不存在时优先按工程目录解释；若该相对路径属于工作区独有目录（如 hundun-yy-ui、.compile-temp），
+            // 工程目录下的拼接结果会多出一层，此时按工作区根解释更符合调用方意图。
+            return IsWorkspaceOnlyTopLevel(path) ? inWorkspace : inProject;
+        }
+
+        private static bool Exists(string path)
+        {
+            return File.Exists(path) || Directory.Exists(path);
+        }
+
+        /// <summary>判断相对路径的首层目录是否为工作区独有（工程目录下不存在同名目录）。</summary>
+        private static bool IsWorkspaceOnlyTopLevel(string relativePath)
+        {
+            var normalized = relativePath.Replace('\\', '/').TrimStart('/');
+            var slash = normalized.IndexOf('/');
+            if (slash <= 0)
+                return false;
+            var top = normalized.Substring(0, slash);
+            return Directory.Exists(Path.Combine(WorkspaceRoot, top)) &&
+                   !Directory.Exists(Path.Combine(ProjectRoot, top));
         }
 
         /// <summary>把绝对路径转为「工程根相对」或「工作区根相对」的展示用路径（正斜杠）。</summary>
@@ -222,6 +246,13 @@ namespace HundunAgent.Core
         {
             if (obj.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number)
                 return v.GetInt32();
+            return defaultValue;
+        }
+
+        public static double GetDouble(JsonElement obj, string name, double defaultValue)
+        {
+            if (obj.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number)
+                return v.GetDouble();
             return defaultValue;
         }
 

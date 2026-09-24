@@ -50,7 +50,7 @@ namespace HundunAgent.Tools
             ToolRegistry.Register(new AgentToolDescriptor
             {
                 Name = "asset_inspect",
-                Description = "直接解析 .flax 资产文件的二进制内容（不依赖内容数据库，可用于 .backup/损坏副本）：存储头与版本、资产 Guid 与类型名、" +
+                Description = "直接解析 .flax 资产文件的二进制内容（不依赖内容数据库，可用于 .backup/损坏副本）：存储头与版本、资产 Guid（同时给出 .NET 形式与引擎日志形式）与类型名、" +
                               "内嵌的导入设置 JSON（ImportPath/Scale/Rotation/ImportLODs 等，即「模型为何躺倒/尺度异常」的根因所在）、浮点值直方图（定位异常缩放常量）、" +
                               "可打印字符串与关键字计数。只读。",
                 InputSchemaJson = "{\"type\":\"object\",\"properties\":{" +
@@ -69,8 +69,8 @@ namespace HundunAgent.Tools
             ToolRegistry.Register(new AgentToolDescriptor
             {
                 Name = "asset_guid_find",
-                Description = "在资产文件（含 .backup 副本）中按字节定位 Guid，用于「某资产引用的 Guid 指向谁 / 是否已失效」。自动尝试两种字节序变体：" +
-                              "string（D 格式字面顺序）与 le（Guid.ToByteArray 的混合端序）。只读。",
+                Description = "在资产文件（含 .backup 副本）中按字节定位 Guid，用于「某资产引用的 Guid 指向谁 / 是否已失效」。自动尝试三种字节布局：" +
+                              "dotnet（C#/编辑器 UI 里的 Guid 字符串）、flax（引擎日志里打印的 32 位十六进制）、literal（字面顺序）。只读。",
                 InputSchemaJson = "{\"type\":\"object\",\"properties\":{" +
                                   "\"guids\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"一个或多个 Guid（D 格式或 32 位十六进制）\"}," +
                                   "\"root\":{\"type\":\"string\",\"description\":\"搜索根目录，默认 Content（工程内相对）\"}," +
@@ -96,8 +96,8 @@ namespace HundunAgent.Tools
                 keywords = DefaultKeywords.ToList();
             var includeStrings = EditorUtils.GetBool(args, "includeStrings", true);
             var includeFloats = EditorUtils.GetBool(args, "includeFloats", true);
-            var floatMin = (float)GetDouble(args, "floatMin", 0.0001);
-            var floatMax = (float)GetDouble(args, "floatMax", 100000.0);
+            var floatMin = (float)EditorUtils.GetDouble(args, "floatMin", 0.0001);
+            var floatMax = (float)EditorUtils.GetDouble(args, "floatMax", 100000.0);
             var maxStrings = Math.Clamp(EditorUtils.GetInt(args, "maxStrings", 40), 1, 500);
             var maxFloats = Math.Clamp(EditorUtils.GetInt(args, "maxFloats", 25), 1, 200);
 
@@ -194,7 +194,8 @@ namespace HundunAgent.Tools
 
             for (var i = 0; i < assetsCount && pos + EntrySize <= data.Length; i++)
             {
-                var entryGuid = new Guid(Sub(data, pos, 16));
+                var entryBytes = Sub(data, pos, 16);
+                var entryGuid = new Guid(entryBytes);
                 var typeName = ReadChar16(data, pos + 16, TypeNameChars);
                 var address = BitConverter.ToUInt32(data, pos + 16 + TypeNameChars * 2);
                 pos += EntrySize;
@@ -203,6 +204,8 @@ namespace HundunAgent.Tools
                 {
                     { "index", i },
                     { "guid", entryGuid.ToString() },
+                    { "guidFlaxLog", ToFlaxLogGuid(entryBytes) },
+                    { "rawBytes", ToHex(entryBytes) },
                     { "typeName", typeName },
                     { "address", address }
                 });
@@ -257,6 +260,8 @@ namespace HundunAgent.Tools
             }
 
             result["guid"] = new Guid(Sub(data, p, 16)).ToString();
+            result["guidFlaxLog"] = ToFlaxLogGuid(Sub(data, p, 16));
+            result["rawBytes"] = ToHex(Sub(data, p, 16));
             p += 16;
             result["typeName"] = ReadChar16(data, p, TypeNameChars);
             p += TypeNameChars * 2;
@@ -399,9 +404,12 @@ namespace HundunAgent.Tools
         }
 
         /// <summary>
-        /// 生成一个 Guid 的两种字节序变体：
-        /// string — D 格式字面顺序（文件里直接按文本 hex 写入时）；
-        /// le     — Guid.ToByteArray()（前三段小端的混合端序，Flax 序列化的实际写法）。
+        /// 生成一个 Guid 的三种字节布局候选：
+        /// dotnet  — Guid 字符串（D/N/B/P 任一形式）按 .NET 规则解析后的字节布局；
+        ///           C# 代码里的 Guid 常量、编辑器 UI、内容数据库都用这种字符串，文件里也就是它；
+        /// flax    — 引擎 C++ 侧 4 个小端 uint32 的布局（引擎日志里打印的 32 位十六进制）；
+        /// literal — 输入字符串按十六进制字面顺序直接落成的字节（少数直接写文本的场景）。
+        /// 三者都试，避免两侧字符串形式不同导致漏判。
         /// </summary>
         private static Dictionary<string, object> ParseGuidBytes(string raw)
         {
@@ -413,18 +421,50 @@ namespace HundunAgent.Tools
             for (var i = 0; i < 16; i++)
                 literal[i] = Convert.ToByte(clean.Substring(i * 2, 2), 16);
 
-            var guid = new Guid(literal);
+            // flax：每 8 位十六进制（4 字节）视为一个 uint32，按小端写入
+            var flax = new byte[16];
+            for (var group = 0; group < 4; group++)
+            {
+                for (var b = 0; b < 4; b++)
+                    flax[group * 4 + b] = literal[group * 4 + (3 - b)];
+            }
+
+            var parsed = new Guid(clean);
             var variants = new List<KeyValuePair<string, byte[]>>
             {
-                new KeyValuePair<string, byte[]>("string", literal),
-                new KeyValuePair<string, byte[]>("le", guid.ToByteArray())
+                new KeyValuePair<string, byte[]>("dotnet", parsed.ToByteArray()),
+                new KeyValuePair<string, byte[]>("flax", flax),
+                new KeyValuePair<string, byte[]>("literal", literal)
             };
 
             return new Dictionary<string, object>
             {
-                { "guid", guid.ToString() },
+                { "guid", parsed.ToString() },
                 { "variants", variants }
             };
+        }
+
+        /// <summary>Flax 引擎 C++ 侧 Guid 的 32 位十六进制形式（4 个小端 uint32 依次拼接）。</summary>
+        private static string ToFlaxLogGuid(byte[] raw16)
+        {
+            var sb = new StringBuilder(32);
+            for (var group = 0; group < 4; group++)
+            {
+                var value = (uint)(raw16[group * 4]
+                                   | (raw16[group * 4 + 1] << 8)
+                                   | (raw16[group * 4 + 2] << 16)
+                                   | (raw16[group * 4 + 3] << 24));
+                sb.Append(value.ToString("x8"));
+            }
+            return sb.ToString();
+        }
+
+        private static string ToHex(byte[] bytes)
+        {
+            var sb = new StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes)
+                sb.Append(b.ToString("x2"));
+            return sb.ToString();
         }
 
         private static IEnumerable<string> EnumerateFiles(string root, List<string> extensions, bool includeBackups)
@@ -645,13 +685,6 @@ namespace HundunAgent.Tools
             }
 
             return null;
-        }
-
-        private static double GetDouble(JsonElement obj, string name, double defaultValue)
-        {
-            if (obj.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number)
-                return v.GetDouble();
-            return defaultValue;
         }
 
         private static object RunIo(Func<object> action)

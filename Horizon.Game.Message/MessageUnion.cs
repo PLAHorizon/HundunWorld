@@ -239,6 +239,7 @@ namespace Horizon.Game.Message
     [MemoryPackUnion(223, typeof(Horizon.Game.Message.Network.VerificationCodeResponse))]
     [MemoryPackUnion(224, typeof(Horizon.Game.Message.Network.ServerListResponse))]
     [MemoryPackUnion(225, typeof(Horizon.Game.Message.ServiceToClientMessage))]
+    [MemoryPackUnion(226, typeof(Horizon.Game.Message.Network.FastTravelRequestMessage))]
     // </generated-union-block>
     public abstract partial class MessageUnion : INetworkMessage
     {

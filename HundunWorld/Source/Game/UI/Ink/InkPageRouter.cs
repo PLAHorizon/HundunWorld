@@ -56,6 +56,17 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>进入世界（从章节过场跳转战斗 HUD，调用 <c>NavigateTo("combat-hud")</c>）</summary>
         public const string CtaEnterWorld = "cta-enter-world";
 
+        /// <summary>进入秘境（DungeonEntryPage「进入秘境」按钮）— 战斗入场动作，解析为返回战斗 HUD（战斗现场）。
+        /// 星型拓扑下无独立秘境场景，故终点恒为枢纽 HUD（见 ui-architecture-spec §1 星型辐射）。</summary>
+        public const string EnterDungeon = "enter-dungeon";
+
+        /// <summary>出战（MenuBattlePrepPage「出战」按钮）— 战斗入场动作，解析为返回战斗 HUD（战斗现场）。</summary>
+        public const string NavBattleStart = "nav-battle-start";
+
+        /// <summary>装备已变更（MenuEquipmentPage 装备后发出的 mock 通知）— 非导航目标，
+        /// 由 NavigateToPage 识别为无操作通知，避免误触发页面跳转与"未注册 domId"告警。</summary>
+        public const string EquipmentChanged = "equipment-changed";
+
         /// <summary>战斗 HUD v2（含小地图/技能槽网格/队伍卡）</summary>
         public const string CombatHudV2 = "combat-hud-v2";
 
@@ -208,6 +219,11 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>战斗模式切换按钮（沉浸式 ⇄ 传统式）— 触发 toggle-traditional 动作</summary>
         public const string ToggleTraditional = "toggle-traditional";
 
+        /// <summary>战斗模式切换按钮（传统式 → 沉浸式）— 触发 toggle-immersive 动作。
+        /// 对应 combat-hud-traditional.html 的「切换沉浸模式」按钮；与 <see cref="ToggleTraditional"/> 互为反向，
+        /// 二者均由 MainUIManager.NavigateToPage 解析为在 CombatHudV2 ⇄ CombatHudTraditional 间往返。</summary>
+        public const string ToggleImmersive = "toggle-immersive";
+
         // --- ② 角色与背包子系统 ---
 
         /// <summary>角色面板 — 对应 character-panel.html，nav-character-v2 的别名（功能等价）</summary>
@@ -328,6 +344,8 @@ namespace HundunWorld.Game.UI.Ink
             InkPageDomIds.NavActivities,
             InkPageDomIds.NavShopRare,
             InkPageDomIds.NavSettingsAudio,
+            InkPageDomIds.NavTime,
+            InkPageDomIds.NavPersonalInfo,
         };
 
         /// <summary>

@@ -9,6 +9,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
 {
     public class MenuPersonalInfoPage : ContainerControl, IInkPage
     {
+        /// <summary>
+        /// 标准导航事件（对齐 Ink 页面契约，由工厂 HookNavigationRequested 挂钩后经路由器跳转）。
+        /// </summary>
+        public event Action<string> NavigationRequested;
+
         private Float2 _screenSize;
 
         private InkPanel _leftNav;
@@ -95,6 +100,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
+                Size = new Float2(240f, 40f),
+                Location = new Float2(0f, 20f),
                 Parent = _leftNav
             };
 
@@ -102,11 +109,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
             {
                 Width = 240f,
                 Height = 1f,
+                Location = new Float2(0f, 68f),
                 Parent = _leftNav
             };
 
             string[] navItems = { "角色", "装备", "外观", "备战", "门派", "个人信息", "时辰", "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店", "设置" };
             int[] disabledIndices = { 7, 8, 9, 10, 11, 12, 13, 14 };
+
+            // 左栏导航即设计链路：角色→装备→外观→备战→门派→个人信息(自身)→时辰。
+            // 索引 7+ 为禁用项（disabledIndices），不接线。
+            string[] navTargets =
+            {
+                InkPageDomIds.NavCharacterV2,
+                InkPageDomIds.NavEquipment,
+                InkPageDomIds.NavAppearance,
+                InkPageDomIds.NavBattlePrep,
+                InkPageDomIds.NavSect,
+                InkPageDomIds.NavPersonalInfo,
+                InkPageDomIds.NavTime,
+            };
 
             float y = 80f;
             for (int i = 0; i < navItems.Length; i++)
@@ -118,6 +139,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                     Text = navItems[i],
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
+                    Location = new Float2(0f, y),
                     Parent = _leftNav
                 };
 
@@ -139,6 +161,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                     navItem.TextColor = InkWashTheme.PaperBright;
                 }
 
+                // 左栏项直达对应菜单（禁用项 Enabled=false，点击不触发）。
+                if (i < navTargets.Length)
+                {
+                    int navIndex = i;
+                    navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
+                }
+
                 y += 40f;
 
                 if (i == 6 || i == 13)
@@ -147,6 +176,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                     {
                         Width = 240f,
                         Height = 1f,
+                        Location = new Float2(0f, y),
                         Parent = _leftNav
                     };
                     y += 8f;
@@ -172,6 +202,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                 Variant = InkButtonVariant.Ghost,
                 Parent = _topBar
             };
+            // 返回战斗 HUD（设计隐藏出口 back-hud）
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
 
             _playerAvatar = new ContainerControl
             {

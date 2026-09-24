@@ -802,7 +802,8 @@ namespace Horizon.Orleans.Grains
                         exp: info.Experience,
                         hp: (int)info.CurrentHealth,
                         maxHp: (int)info.MaxHealth,
-                        stateBits: info.IsAlive ? 0u : 1u  // bit0 = 死亡标志
+                        stateBits: info.IsAlive ? 0u : 1u,  // bit0 = 死亡标志
+                        nickname: info.CharacterName
                     );
                 }
             }

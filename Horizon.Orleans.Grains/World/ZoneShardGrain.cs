@@ -734,6 +734,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                         NetworkId = kv.Key,
                         EntityType = 0,
                         OwnerId = kv.Key,
+                        Nickname = e.Nickname,
                     },
                     Transform = new AuthTransformComponent
                     {
@@ -1045,6 +1046,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                         NetworkId = entityId,
                         EntityType = 0,
                         OwnerId = entityId,
+                        Nickname = entity.Nickname,
                     },
                     Transform = new AuthTransformComponent
                     {
@@ -1651,6 +1653,34 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         return Task.FromResult(_simulatedEntities.ContainsKey(entityId));
     }
 
+    /// <inheritdoc />
+    public Task<ulong[]> GetNearbyEntityIdsAsync(ulong selfEntityId, float radius, int maxCount)
+    {
+        if (radius <= 0f || _simulatedEntities.Count == 0)
+            return Task.FromResult(Array.Empty<ulong>());
+
+        if (!_simulatedEntities.TryGetValue(selfEntityId, out var self))
+            return Task.FromResult(Array.Empty<ulong>());
+
+        if (maxCount <= 0) maxCount = 256;
+
+        float r2 = radius * radius;
+        var result = new List<ulong>(Math.Min(maxCount, _simulatedEntities.Count));
+        foreach (var kv in _simulatedEntities)
+        {
+            if (kv.Key == selfEntityId) continue;
+
+            // 水平面为 X/Y（Z 为高度）
+            float dx = kv.Value.X - self.X;
+            float dy = kv.Value.Y - self.Y;
+            if (dx * dx + dy * dy > r2) continue;
+
+            result.Add(kv.Key);
+            if (result.Count >= maxCount) break;
+        }
+        return Task.FromResult(result.ToArray());
+    }
+
     /// <summary>
     /// 孤儿实体检测：扫描所有实体的 <see cref="SimulatedEntity.LeaseExpiry"/>，
     /// 清理超过租约期未续约的实体（网关崩溃/断线未清理的残留实体）。<br/>
@@ -1794,7 +1824,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         // 1) 给触发方 session 之外的所有订阅者广播触发实体的 Spawn/Despawn。
         var triggerEntityYaw = _simulatedEntities.TryGetValue(entityId, out var triggerEntity) ? triggerEntity.Yaw : 0f;
-        var triggerDelta = BuildEntityDelta(entityId, x, y, z, kind, triggerEntityYaw);
+        var triggerDelta = BuildEntityDelta(entityId, x, y, z, kind, triggerEntityYaw, triggerEntity.Nickname);
         var triggerChunkKey = WorldCoord.ToChunkMortonKey(x, y, z);
         var triggerDiff = BuildChunkDiff(new[] { triggerDelta }, triggerChunkKey, _tickCount);
 
@@ -1878,7 +1908,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             foreach (var kv in _simulatedEntities)
             {
                 var e = kv.Value;
-                existingDeltas.Add(BuildEntityDelta(kv.Key, e.X, e.Y, e.Z, EntityDeltaKind.Spawn, e.Yaw));
+                existingDeltas.Add(BuildEntityDelta(kv.Key, e.X, e.Y, e.Z, EntityDeltaKind.Spawn, e.Yaw, e.Nickname));
             }
 
             if (existingDeltas.Count > 0)
@@ -1900,7 +1930,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
     /// <summary>构造单实体 delta（Spawn/Despawn/Update），统一填充 Identity + Transform。</summary>
     /// <remarks>输入 x/y/z 为 ECS Z-up 坐标（Y=前后, Z=上下），输出 Transform 转换为 Flax Y-up（Y=上下, Z=前后）。</remarks>
-    private static EntityDelta BuildEntityDelta(ulong entityId, float x, float y, float z, EntityDeltaKind kind, float yaw = 0f)
+    private static EntityDelta BuildEntityDelta(ulong entityId, float x, float y, float z, EntityDeltaKind kind, float yaw = 0f, string? nickname = null)
     {
         return new EntityDelta
         {
@@ -1911,6 +1941,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 NetworkId = entityId,
                 EntityType = 0,
                 OwnerId = entityId,
+                Nickname = nickname,
             },
             Transform = new AuthTransformComponent
             {
@@ -1999,6 +2030,49 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             }
         }
         _correctionStormTrackers[entityId] = tracker;
+    }
+
+    /// <inheritdoc />
+    public Task<bool> RequestFastTravelAsync(ulong entityId, float x, float y, float z, float yawRadians)
+    {
+        if (!_simulatedEntities.TryGetValue(entityId, out var entity))
+        {
+            _logger.LogWarning(
+                "ZoneShard {ShardId}: 快速旅行失败——实体不存在 EntityId={EntityId}",
+                this.GetPrimaryKeyLong(), entityId);
+            return Task.FromResult(false);
+        }
+
+        // 客户端传 Flax 坐标（X 左右 / Y 上下 / Z 前后），SimWorld 用 ECS 坐标（X 左右 / Y 前后 / Z 上下）
+        var ecsX = x;
+        var ecsY = z;   // Flax Z → ECS Y
+        var ecsZ = y;   // Flax Y → ECS Z
+
+        // 权威位置对齐 + 重置瞬移/漂移基线 + 丢弃传送前的待处理输入
+        // （否则那些输入会在新位置继续回放，把玩家又走回原处）
+        _simWorld.TeleportTo(entityId, ecsX, ecsY, ecsZ, yawRadians);
+
+        // 同步广播/持久化用的实体镜像
+        entity.X = ecsX;
+        entity.Y = ecsY;
+        entity.Z = ecsZ;
+        entity.Vz = 0f;
+        entity.Yaw = yawRadians;
+        entity.ReportedEndX = ecsX;
+        entity.ReportedEndY = ecsY;
+        entity.ReportedEndZ = ecsZ;
+        entity.PendingInputs?.Clear();
+        entity.LeaseExpiry = DateTime.UtcNow + EntityLeaseDuration;
+        _simulatedEntities[entityId] = entity;
+
+        // 强制下一 tick 全量快照：静止实体本身靠 6 tick 心跳兜底，传送必须立即下发
+        _forceFullSnapshotNextTick = true;
+
+        _logger.LogInformation(
+            "ZoneShard {ShardId}: 快速旅行已应用 EntityId={EntityId} Flax=({X:F1},{Y:F1},{Z:F1}) Ecs=({Ex:F1},{Ey:F1},{Ez:F1}) Yaw={Yaw:F2}",
+            this.GetPrimaryKeyLong(), entityId, x, y, z, ecsX, ecsY, ecsZ, yawRadians);
+
+        return Task.FromResult(true);
     }
 
     /// <inheritdoc />
@@ -2737,7 +2811,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         int level = -1, long exp = -1,
         int stamina = -1, int maxStamina = -1,
         int hp = -1, int maxHp = -1,
-        uint stateBits = uint.MaxValue)
+        uint stateBits = uint.MaxValue,
+        string? nickname = null)
     {
         if (!_simulatedEntities.TryGetValue(entityId, out var entity))
         {
@@ -2756,6 +2831,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         if (hp >= 0) entity.Hp = hp;
         if (maxHp >= 0) entity.MaxHp = maxHp;
         if (stateBits != uint.MaxValue) entity.EntityStateBits = stateBits;
+        // 昵称随 Identity 于 Spawn 下发；此处仅缓存到权威实体状态，供后续 spawn 广播读取。
+        if (!string.IsNullOrEmpty(nickname)) entity.Nickname = nickname;
 
         _simulatedEntities[entityId] = entity;
         return Task.CompletedTask;
@@ -3288,6 +3365,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         public int Stamina;
         public int MaxStamina;
         public uint EntityStateBits;
+
+        /// <summary>角色昵称（玩家实体；NPC 为 null）。随 Identity 于 Spawn 下发给 AOI 客户端。</summary>
+        public string? Nickname;
 
         // ===== Task B.5：动画状态字段（AnimationStateAuthComponent） =====
         public uint AnimMontageId;

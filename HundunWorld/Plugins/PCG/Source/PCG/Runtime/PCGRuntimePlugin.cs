@@ -53,8 +53,12 @@ namespace PCG.Runtime
             int count = PCGNodeRegistration.RegisterAll();
             Debug.Log($"[PCG] runtime plugin initialized with {count} node type(s).");
 
+#if FLAX_EDITOR
+            // Level.ScriptsReload / ScriptsReloaded 是编辑器专属事件（未导出到非编辑器目标），
+            // 而脚本重载本身也只发生在编辑器，故整段订阅只在编辑器编译。
             Level.ScriptsReload += OnScriptsReload;
             Level.ScriptsReloaded += OnScriptsReloaded;
+#endif
 
             base.Initialize();
         }
@@ -62,8 +66,10 @@ namespace PCG.Runtime
         /// <inheritdoc />
         public override void Deinitialize()
         {
+#if FLAX_EDITOR
             Level.ScriptsReload -= OnScriptsReload;
             Level.ScriptsReloaded -= OnScriptsReloaded;
+#endif
 
             ClearCachedState();
 
@@ -72,6 +78,7 @@ namespace PCG.Runtime
             base.Deinitialize();
         }
 
+#if FLAX_EDITOR
         private void OnScriptsReload()
         {
             // Runs before the assembly is swapped, so release everything holding references into it.
@@ -85,6 +92,7 @@ namespace PCG.Runtime
             int count = PCGNodeRegistration.RegisterAll();
             Debug.Log($"[PCG] scripts reloaded: re-registered {count} node type(s).");
         }
+#endif
 
         /// <summary>
         /// Releases every piece of plugin static state.

@@ -352,6 +352,10 @@ namespace PCG.Runtime
             }
         }
 
+#if FLAX_EDITOR
+        // 以下调试绘制只在编辑器可用：`Actor.OnDebugDraw` 与 `DebugDraw.*` 的绘制方法均**未导出到非编辑器目标**
+        // （仅存在于编辑器程序集）。缺失该守卫会导致 Game 目标构建报 CS0115。
+
         /// <inheritdoc />
         public override void OnDebugDraw()
         {
@@ -431,6 +435,7 @@ namespace PCG.Runtime
         {
             DebugDraw.DrawWireBox(box, color, duration, depthTest);
         }
+#endif
 
         private static IEnumerable<string> GetErrorMessages(IReadOnlyList<PCGCompileDiagnostic> diagnostics)
         {

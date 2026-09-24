@@ -16,9 +16,11 @@ namespace HundunAgent.Tools
     /// 支持尾部读取、跨文件正则扫描与错误归组，供 AI 在「运行 → 观察 → 修正」循环中诊断问题。
     /// 日志行格式：[ 00:00:00.012 ]: [Info|Warning|Error|Fatal] ...
     ///
-    /// 编码注意：日志以 UTF-16LE 写入（带 BOM），但「增强日志桥」等少数写入方会把 UTF-8 字节
-    /// 直接写进同一条流，读出来就成了乱码。这类行可用「按 UTF-16LE 编回字节 → 按 UTF-8 解码」
-    /// 还原（见 <see cref="RepairMixedLine"/>），<c>log_scan</c> / <c>log_tail</c> 默认开启。
+    /// 编码与损坏处理（已按真实日志取证）：
+    ///   1) 日志以 UTF-16LE 写入并带 BOM，编码按 BOM 探测，无 BOM 时按「每第二个字节为 0」判定；
+    ///   2) 日志中会出现大段 NUL 填充与零星垃圾码元——这是并发写入的产物，不是编码混写。
+    ///      这类行直接按控制字符清洗，并单独计数报告，不假装能「还原」；
+    ///   3) 只有确实呈现「UTF-8 字节被当作 UTF-16 码元」特征的行才尝试还原。
     /// </summary>
     public static class LogTools
     {
@@ -26,22 +28,21 @@ namespace HundunAgent.Tools
         private const int MaxFilterScanLines = 3000;
         private const int MaxReadBytes = 64 * 1024 * 1024;
 
-        private static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
-
         public static void Register()
         {
             ToolRegistry.Register(new AgentToolDescriptor
             {
                 Name = "log_tail",
                 Description = "读取最新（或指定）运行日志的尾部内容。支持 filter（error/warning/info/all）与 keyword 过滤，lines 默认80（上限500）。" +
-                              "自动识别 UTF-16/UTF-8 编码并还原混合编码乱码行。编辑器运行中亦可读取。只读。",
+                              "自动识别 UTF-16/UTF-8 编码，清洗日志中的 NUL 填充异常并由 nullStrippedLines 报告。编辑器运行中亦可读取。只读。",
                 InputSchemaJson = "{\"type\":\"object\",\"properties\":{" +
                                   "\"lines\":{\"type\":\"integer\",\"description\":\"返回行数，默认80，上限500\"}," +
                                   "\"filter\":{\"type\":\"string\",\"description\":\"all（默认）/error/warning/info\"}," +
                                   "\"keyword\":{\"type\":\"string\",\"description\":\"可选关键字过滤\"}," +
                                   "\"file\":{\"type\":\"string\",\"description\":\"可选，日志文件名或路径，缺省取最新\"}," +
                                   "\"encoding\":{\"type\":\"string\",\"description\":\"auto（默认）/utf8/utf16\"}," +
-                                  "\"repairMixed\":{\"type\":\"boolean\",\"description\":\"是否还原混合编码乱码行，默认 true\"}}",
+                                  "\"repairMixed\":{\"type\":\"boolean\",\"description\":\"是否尝试还原编码混写行，默认 true\"}," +
+                                  "\"sanitize\":{\"type\":\"boolean\",\"description\":\"是否清洗控制字符（含 NUL），默认 true\"}}",
                 Execute = LogTailAsync
             });
 
@@ -56,8 +57,8 @@ namespace HundunAgent.Tools
             ToolRegistry.Register(new AgentToolDescriptor
             {
                 Name = "log_scan",
-                Description = "跨多个历史日志做正则/关键字扫描（这是 log_tail 做不到的：log_tail 只看最新日志的尾部）。返回 file:line:内容，可选上下文行与按归一化文本归组计数。" +
-                              "自动识别编码并还原混合编码乱码行。用于追踪「某个状态在多次运行里出现过几次 / 上次是什么时候」。只读。",
+                Description = "跨多个历史日志做正则/关键字扫描（这是 log_tail 做不到的：log_tail 只看最新日志的尾部，无法回答「这个问题在几次运行里出现过 / 上次是什么时候」）。" +
+                              "返回 file:line:内容，可选上下文行与按归一化文本归组计数。自动识别编码、清洗 NUL 填充。只读。",
                 InputSchemaJson = "{\"type\":\"object\",\"properties\":{" +
                                   "\"pattern\":{\"type\":\"string\",\"description\":\"检索内容\"}," +
                                   "\"isRegex\":{\"type\":\"boolean\",\"description\":\"是否按正则解释，默认 true\"}," +
@@ -68,7 +69,8 @@ namespace HundunAgent.Tools
                                   "\"maxMatches\":{\"type\":\"integer\",\"description\":\"命中上限，默认 100，上限 500\"}," +
                                   "\"group\":{\"type\":\"boolean\",\"description\":\"是否按归一化文本归组计数，默认 false\"}," +
                                   "\"encoding\":{\"type\":\"string\",\"description\":\"auto（默认）/utf8/utf16\"}," +
-                                  "\"repairMixed\":{\"type\":\"boolean\",\"description\":\"是否还原混合编码乱码行，默认 true\"}}," +
+                                  "\"repairMixed\":{\"type\":\"boolean\",\"description\":\"是否尝试还原编码混写行，默认 true\"}," +
+                                  "\"sanitize\":{\"type\":\"boolean\",\"description\":\"是否清洗控制字符（含 NUL），默认 true\"}}," +
                                   "\"required\":[\"pattern\"]}",
                 Execute = LogScanAsync
             });
@@ -82,8 +84,7 @@ namespace HundunAgent.Tools
             var filter = EditorUtils.GetString(args, "filter");
             var keyword = EditorUtils.GetString(args, "keyword");
             var fileArg = EditorUtils.GetString(args, "file");
-            var encodingKind = EditorUtils.GetString(args, "encoding", "auto");
-            var repairMixed = EditorUtils.GetBool(args, "repairMixed", true);
+            var options = ReadOptions.From(args);
 
             return Task.FromResult<object>(RunIo(() =>
             {
@@ -94,7 +95,7 @@ namespace HundunAgent.Tools
                 var hasKeyword = !string.IsNullOrEmpty(keyword);
                 var scanLines = (hasFilter || hasKeyword) ? MaxFilterScanLines : lines;
 
-                var tail = ReadLines(full, encodingKind, repairMixed, MaxReadBytes, out var encodingUsed);
+                var tail = ReadLines(full, options, out var encodingUsed, out var nullStripped);
                 if (tail.Count > scanLines)
                     tail = tail.Skip(tail.Count - scanLines).ToList();
 
@@ -116,6 +117,7 @@ namespace HundunAgent.Tools
                 {
                     file = full,
                     encoding = encodingUsed,
+                    nullStrippedLines = nullStripped,
                     totalScanned = tail.Count,
                     matched = filtered.Count,
                     returnedCount = returned.Count,
@@ -133,11 +135,12 @@ namespace HundunAgent.Tools
             return Task.FromResult<object>(RunIo(() =>
             {
                 var files = RecentLogFiles(fileCount);
+                var options = new ReadOptions { EncodingKind = "auto", RepairMixed = true, Sanitize = true };
                 var groups = new Dictionary<string, ErrorGroup>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var file in files)
                 {
-                    var all = ReadLines(file.FullName, "auto", true, MaxReadBytes, out _);
+                    var all = ReadLines(file.FullName, options, out _, out _);
                     for (var i = 0; i < all.Count; i++)
                     {
                         var line = all[i];
@@ -203,8 +206,7 @@ namespace HundunAgent.Tools
             var contextLines = Math.Clamp(EditorUtils.GetInt(args, "contextLines", 0), 0, 5);
             var maxMatches = Math.Clamp(EditorUtils.GetInt(args, "maxMatches", 100), 1, 500);
             var group = EditorUtils.GetBool(args, "group", false);
-            var encodingKind = EditorUtils.GetString(args, "encoding", "auto");
-            var repairMixed = EditorUtils.GetBool(args, "repairMixed", true);
+            var options = ReadOptions.From(args);
 
             return Task.FromResult<object>(RunIo(() =>
             {
@@ -234,7 +236,7 @@ namespace HundunAgent.Tools
                     if (file == null || !file.Exists)
                         continue;
 
-                    var lines = ReadLines(file.FullName, encodingKind, repairMixed, MaxReadBytes, out var encodingUsed);
+                    var lines = ReadLines(file.FullName, options, out var encodingUsed, out var nullStripped);
                     var fileHits = 0;
 
                     for (var i = 0; i < lines.Count; i++)
@@ -281,7 +283,14 @@ namespace HundunAgent.Tools
                         }
                     }
 
-                    scanned.Add(new { file = file.Name, encoding = encodingUsed, lineCount = lines.Count, hits = fileHits });
+                    scanned.Add(new
+                    {
+                        file = file.Name,
+                        encoding = encodingUsed,
+                        nullStrippedLines = nullStripped,
+                        lineCount = lines.Count,
+                        hits = fileHits
+                    });
                 }
 
                 var groupList = groups.Values
@@ -319,6 +328,23 @@ namespace HundunAgent.Tools
             public int Count;
         }
 
+        private sealed class ReadOptions
+        {
+            public string EncodingKind = "auto";
+            public bool RepairMixed = true;
+            public bool Sanitize = true;
+
+            public static ReadOptions From(JsonElement args)
+            {
+                return new ReadOptions
+                {
+                    EncodingKind = EditorUtils.GetString(args, "encoding", "auto"),
+                    RepairMixed = EditorUtils.GetBool(args, "repairMixed", true),
+                    Sanitize = EditorUtils.GetBool(args, "sanitize", true)
+                };
+            }
+        }
+
         private static string LogDir => Path.Combine(Globals.ProjectFolder, "Logs");
 
         private static List<FileInfo> RecentLogFiles(int count)
@@ -342,10 +368,7 @@ namespace HundunAgent.Tools
         private static string ResolveLogFile(string fileArg)
         {
             if (string.IsNullOrEmpty(fileArg))
-            {
-                var latest = RecentLogFiles(1)[0];
-                return latest.FullName;
-            }
+                return RecentLogFiles(1)[0].FullName;
 
             if (Path.IsPathRooted(fileArg) && File.Exists(fileArg))
                 return fileArg;
@@ -362,34 +385,39 @@ namespace HundunAgent.Tools
         }
 
         /// <summary>
-        /// 读取日志尾部最多 maxBytes 字节（FileShare 允许编辑器运行中读取），
-        /// 自动或按需确定编码，并还原混合编码行。
+        /// 读取日志（尾部最多 maxBytes 字节，FileShare 允许编辑器运行中读取），
+        /// 探测编码、清洗控制字符，并统计被清洗的行数。
         /// </summary>
-        private static List<string> ReadLines(string fullPath, string encodingKind, bool repairMixed, long maxBytes, out string encodingUsed)
+        private static List<string> ReadLines(string fullPath, ReadOptions options, out string encodingUsed, out int nullStripped)
         {
             using (var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
             {
-                var encoding = ResolveEncoding(fs, encodingKind, out var bomLength, out encodingUsed);
+                var encoding = ResolveEncoding(fs, options.EncodingKind, out var bomLength, out encodingUsed);
 
-                var start = Math.Max(bomLength, fs.Length - maxBytes);
+                var start = Math.Max(bomLength, fs.Length - MaxReadBytes);
                 // UTF-16 必须按码元对齐，否则整段错位
-                if (encoding is UnicodeEncoding && (start - bomLength) % 2 != 0)
-                    start--;
+                if (encoding.CodePage == 1200 || encoding.CodePage == 1201)
+                {
+                    if ((start - bomLength) % 2 != 0)
+                        start--;
+                }
 
                 fs.Seek(start, SeekOrigin.Begin);
 
                 var all = new List<string>();
+                var stripped = 0;
                 using (var reader = new StreamReader(fs, encoding, false))
                 {
                     string line;
                     while ((line = reader.ReadLine()) != null)
-                        all.Add(repairMixed ? RepairMixedLine(line) : line);
+                        all.Add(ProcessLine(line, options, ref stripped));
                 }
 
                 // 丢弃可能被截断的首行
                 if (start > bomLength && all.Count > 0)
                     all.RemoveAt(0);
 
+                nullStripped = stripped;
                 return all;
             }
         }
@@ -402,13 +430,13 @@ namespace HundunAgent.Tools
             var normalized = (kind ?? "auto").Trim().ToLowerInvariant();
             if (normalized == "utf8")
             {
-                bomLength = ReadBomLength(fs, new byte[] { 0xEF, 0xBB, 0xBF });
+                bomLength = BomLength(fs, new byte[] { 0xEF, 0xBB, 0xBF });
                 name = "utf8";
-                return new UTF8Encoding(false);
+                return Encoding.UTF8;
             }
             if (normalized == "utf16")
             {
-                bomLength = ReadBomLength(fs, new byte[] { 0xFF, 0xFE });
+                bomLength = BomLength(fs, new byte[] { 0xFF, 0xFE });
                 name = "utf16le";
                 return Encoding.Unicode;
             }
@@ -421,7 +449,7 @@ namespace HundunAgent.Tools
             {
                 bomLength = 3;
                 name = "utf8";
-                return new UTF8Encoding(false);
+                return Encoding.UTF8;
             }
             if (read >= 2 && probe[0] == 0xFF && probe[1] == 0xFE)
             {
@@ -446,10 +474,10 @@ namespace HundunAgent.Tools
 
             bomLength = 0;
             name = "utf8";
-            return new UTF8Encoding(false);
+            return Encoding.UTF8;
         }
 
-        private static int ReadBomLength(FileStream fs, byte[] bom)
+        private static int BomLength(FileStream fs, byte[] bom)
         {
             var probe = new byte[bom.Length];
             var read = fs.Read(probe, 0, probe.Length);
@@ -457,30 +485,102 @@ namespace HundunAgent.Tools
             if (read != bom.Length)
                 return 0;
             for (var i = 0; i < bom.Length; i++)
+            {
                 if (probe[i] != bom[i])
                     return 0;
+            }
             return bom.Length;
         }
 
-        /// <summary>
-        /// 还原混合编码行：把该行按 UTF-16LE 编回字节，再按 UTF-8 严格解码。
-        /// 严格解码失败说明这本来就是正常的 UTF-16 行，原样返回。
-        /// </summary>
-        private static string RepairMixedLine(string line)
+        /// <summary>清洗控制字符（保留制表符）并尝试还原编码混写行。</summary>
+        private static string ProcessLine(string line, ReadOptions options, ref int stripped)
         {
             if (string.IsNullOrEmpty(line))
                 return line;
 
-            try
+            if (options.RepairMixed && IsLikelyMojibake(line))
             {
-                var bytes = Encoding.Unicode.GetBytes(line);
-                var repaired = StrictUtf8.GetString(bytes);
-                return repaired.Length > 0 ? repaired : line;
+                var repaired = TryRepairMojibake(line);
+                if (repaired != null)
+                    line = repaired;
             }
-            catch (DecoderFallbackException)
+
+            if (options.Sanitize && HasControlChars(line))
             {
-                return line;
+                line = StripControlChars(line);
+                stripped++;
             }
+
+            return line;
+        }
+
+        /// <summary>
+        /// 判断该行是否呈现「UTF-8 字节被当作 UTF-16 码元」的特征：
+        /// 大量字符落在 ASCII 与中日韩范围之外（正常的 UTF-16 日志行几乎不会）。
+        /// </summary>
+        private static bool IsLikelyMojibake(string line)
+        {
+            if (line.Length < 4)
+                return false;
+
+            var weird = 0;
+            foreach (var c in line)
+            {
+                if (IsExpectedChar(c))
+                    continue;
+                weird++;
+            }
+
+            return weird >= 3 && weird * 3 >= line.Length;
+        }
+
+        private static bool IsExpectedChar(char c)
+        {
+            var code = (int)c;
+            if (code >= 0x20 && code < 0x7F) return true;   // ASCII 可打印
+            if (code < 0x20) return true;                   // 控制字符交给清洗环节
+            if (code >= 0x4E00 && code <= 0x9FFF) return true; // CJK
+            if (code >= 0x3000 && code <= 0x303F) return true; // CJK 标点
+            if (code >= 0xFF00 && code <= 0xFFEF) return true; // 全角
+            if (code >= 0x2010 && code <= 0x203B) return true; // 常用标点
+            return false;
+        }
+
+        /// <summary>
+        /// 还原：把该行按 UTF-16LE 编回字节，再按 UTF-8 解码。
+        /// 结果含替换字符或与原文相同时视为还原失败，返回 null。
+        /// </summary>
+        private static string TryRepairMojibake(string line)
+        {
+            var bytes = Encoding.Unicode.GetBytes(line);
+            var repaired = Encoding.UTF8.GetString(bytes);
+            if (repaired.Length == 0 || repaired == line || repaired.IndexOf('\uFFFD') >= 0)
+                return null;
+            return repaired;
+        }
+
+        private static bool HasControlChars(string line)
+        {
+            foreach (var c in line)
+            {
+                if (c == '\t')
+                    continue;
+                if (c < 0x20 || c == 0x7F)
+                    return true;
+            }
+            return false;
+        }
+
+        private static string StripControlChars(string line)
+        {
+            var sb = new StringBuilder(line.Length);
+            foreach (var c in line)
+            {
+                if (c != '\t' && (c < 0x20 || c == 0x7F))
+                    continue;
+                sb.Append(c);
+            }
+            return sb.ToString();
         }
 
         private static bool MatchesLevel(string line, string filter)

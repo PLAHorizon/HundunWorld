@@ -1478,6 +1478,59 @@ namespace Horizon.Game.Message.Network
     }
 
     /// <summary>
+    /// 快速旅行请求（客户端 → 服务端）
+    /// 由地图 UI 触发，请求把本地玩家传送到指定世界坐标。
+    /// <para>
+    /// 存在原因：客户端若只改本地预测位置，服务端 <c>MovementValidator</c> 会因水平位移超过
+    /// <c>TeleportDistanceThreshold</c> 判定为 <c>TeleportDetected</c> 并下发 CorrectionPacket 把玩家拉回。
+    /// 因此传送必须由服务端权威应用（写权威位置 + 重置瞬移/漂移基线 + 强制全量快照）。
+    /// </para>
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(226, Enums.ServiceType.Game)]
+    public partial class FastTravelRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>发起者实体 Id（与 session/角色 Id 一致；服务端据此路由分片并定位实体）</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong EntityId { get; set; }
+
+        /// <summary>目标传送点标签（用于服务端日志/审计，以及后续服务端侧合法性校验）</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string PoiTag { get; set; } = "";
+
+        /// <summary>目标位置 X（Flax 坐标系：X 左右）</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public float X { get; set; }
+
+        /// <summary>目标位置 Y（Flax：Y 上下）</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float Y { get; set; }
+
+        /// <summary>目标位置 Z（Flax：Z 前后）</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public float Z { get; set; }
+
+        /// <summary>目标朝向 Yaw（弧度，与 PredictedTransformComponent.Yaw 同一单位）</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float Yaw { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.FastTravelRequest;
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
     /// 小地图标记消息
     /// 服务端发送的小地图标记更新
     /// </summary>
@@ -1544,7 +1597,7 @@ namespace Horizon.Game.Message.Network
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
-    [NetworkMessage(183, Enums.ServiceType.Social)]
+    [NetworkMessage(183, Enums.ServiceType.Chat)]
     public partial class ChatSendMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
@@ -1566,7 +1619,7 @@ namespace Horizon.Game.Message.Network
         /// </summary>
         [MemoryPackOrder(2)]
         [Id(2)]
-        public ChatChannelType Channel { get; set; }
+        public ChatChannel Channel { get; set; }
 
         /// <summary>
         /// 消息内容
@@ -1576,7 +1629,7 @@ namespace Horizon.Game.Message.Network
         public string Content { get; set; } = "";
 
         /// <summary>
-        /// 目标角色ID（私聊时使用）
+        /// 目标角色ID（密聊时使用）
         /// </summary>
         [MemoryPackOrder(4)]
         [Id(4)]
@@ -1589,12 +1642,19 @@ namespace Horizon.Game.Message.Network
         [Id(5)]
         public long Timestamp { get; set; }
 
+        /// <summary>
+        /// 客户端消息ID（用于去重/回执关联；服务器原样回带）
+        /// </summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public string ClientMsgId { get; set; } = "";
+
         [MemoryPackOrder(6)]
         [Id(6)]
         public MessageType Type { get; set; } = MessageType.ChatSend;
         [MemoryPackOrder(7)]
         [Id(7)]
-        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+        public ServiceType ServiceType { get; set; } = ServiceType.Chat;
     }
 
     #endregion

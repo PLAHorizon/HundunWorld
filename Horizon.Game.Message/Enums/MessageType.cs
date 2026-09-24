@@ -829,6 +829,24 @@ namespace Horizon.Game.Message.Enums
         /// </summary>
         [Description("离开聊天频道")]
         ChatChannelLeave = 1372,
+
+        /// <summary>
+        /// 消息撤回请求（客户端 → 服务器）
+        /// </summary>
+        [Description("消息撤回请求")]
+        ChatRecallRequest = 1393,
+
+        /// <summary>
+        /// 消息撤回通知（服务器 → 客户端）
+        /// </summary>
+        [Description("消息撤回通知")]
+        ChatRecallNotify = 1394,
+
+        /// <summary>
+        /// 举报请求（客户端 → 服务器）
+        /// </summary>
+        [Description("举报请求")]
+        ChatReportRequest = 1395,
         #endregion
 
         #region Phase 10 - 交易、邮件、任务、副本、成就、排行榜客户端集成消息
@@ -965,6 +983,8 @@ namespace Horizon.Game.Message.Enums
         ArenaInfoRequest = 1404,
         [Description("ArenaInfoResponse")]
         ArenaInfoResponse = 1405,
+        [Description("快速旅行请求（客户端→服务端，按坐标传送）")]
+        FastTravelRequest = 1406,
         #endregion
 
         #region CrossServer

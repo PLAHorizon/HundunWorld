@@ -1315,7 +1315,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             // 触发导航请求（mock：通知外部装备已变更）
             try
             {
-                NavigationRequested?.Invoke("equipment-changed");
+                NavigationRequested?.Invoke(InkPageDomIds.EquipmentChanged);
             }
             catch (Exception ex)
             {

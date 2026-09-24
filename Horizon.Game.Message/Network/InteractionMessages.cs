@@ -124,7 +124,12 @@ namespace Horizon.Game.Message.Network
         /// <summary>
         /// 系统频道
         /// </summary>
-        System = 6
+        System = 6,
+
+        /// <summary>
+        /// 团队频道（团队/团队副本，与队伍区分）
+        /// </summary>
+        Raid = 7
     }
 
     /// <summary>
@@ -170,9 +175,23 @@ namespace Horizon.Game.Message.Network
         [Id(4)]
         public int Count { get; set; }
 
+        /// <summary>
+        /// 分页游标：返回该消息ID之前的历史（0=从最新开始）
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public long BeforeMessageId { get; set; }
+
+        /// <summary>
+        /// 密聊对端角色ID（仅 Private 频道历史使用；0 表示非密聊）
+        /// </summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public ulong PeerId { get; set; }
+
         [MemoryPackOrder(5)]
         [Id(5)]
-        public MessageType Type { get; set; } = MessageType.Chat;
+        public MessageType Type { get; set; } = MessageType.ChatHistory;
         [MemoryPackOrder(6)]
         [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Chat;
@@ -2756,6 +2775,20 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(8)]
         [Id(8)]
         public ServiceType ServiceType { get; set; } = ServiceType.Chat;
+
+        /// <summary>
+        /// 发送者等级（用于客户端展示）
+        /// </summary>
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public int SenderLevel { get; set; }
+
+        /// <summary>
+        /// 接收者角色ID（密聊时用于区分收发；0 表示频道消息）
+        /// </summary>
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public ulong ReceiverId { get; set; }
     }
 
     /// <summary>
@@ -2910,6 +2943,114 @@ namespace Horizon.Game.Message.Network
         public MessageType Type { get; set; } = MessageType.ChatChannelLeave;
         [MemoryPackOrder(3)]
         [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Chat;
+    }
+
+    /// <summary>
+    /// 聊天消息撤回请求（客户端 → 服务器）。仅允许撤回自己发送的消息。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(227, Enums.ServiceType.Chat)]
+    public partial class ChatRecallRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>目标频道</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ChatChannel Channel { get; set; }
+
+        /// <summary>要撤回的消息ID</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MessageId { get; set; }
+
+        /// <summary>操作者（须为原发送者）</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ulong SenderId { get; set; }
+
+        /// <summary>密聊对端ID（仅密聊撤回用于定位会话；0 表示频道消息）</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ulong ReceiverId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.ChatRecallRequest;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Chat;
+    }
+
+    /// <summary>
+    /// 聊天消息撤回通知（服务器 → 频道内客户端）：客户端据此移除该条消息。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(228, Enums.ServiceType.Chat)]
+    public partial class ChatRecallNotify : MessageUnion, INetworkMessage
+    {
+        /// <summary>频道</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ChatChannel Channel { get; set; }
+
+        /// <summary>被撤回的消息ID</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MessageId { get; set; }
+
+        /// <summary>原发送者ID</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ulong SenderId { get; set; }
+
+        /// <summary>接收者ID（密聊时用于定位会话；0 表示频道消息）</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ulong ReceiverId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.ChatRecallNotify;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Chat;
+    }
+
+    /// <summary>
+    /// 举报请求（客户端 → 服务器）：举报某条聊天消息。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(229, Enums.ServiceType.Chat)]
+    public partial class ChatReportRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>频道</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ChatChannel Channel { get; set; }
+
+        /// <summary>被举报的消息ID</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MessageId { get; set; }
+
+        /// <summary>举报者角色ID</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ulong ReporterId { get; set; }
+
+        /// <summary>举报原因（简短描述）</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Reason { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.ChatReportRequest;
+        [MemoryPackOrder(5)]
+        [Id(5)]
         public ServiceType ServiceType { get; set; } = ServiceType.Chat;
     }
 

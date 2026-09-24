@@ -662,7 +662,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             for (int i = 0; i < weeklyTasks.Length; i++)
             {
                 var t = weeklyTasks[i];
-                var item = BuildTaskItem(t[0], t[1], t[2], t[3], t[4], t[5], cursorY);
+                // 周常第 1 项「师门试炼·组队通关副本」按设计带「前往」按钮直达江湖秘境（action-mentor-to-dungeon）。
+                string goDomId = i == 0 ? InkPageDomIds.ActionMentorToDungeon : null;
+                var item = BuildTaskItem(t[0], t[1], t[2], t[3], t[4], t[5], cursorY, goDomId);
                 _taskItems.Add(item);
                 _taskListHost.AddChild(item);
                 cursorY += TaskItemHeight + TaskItemGap;
@@ -673,7 +675,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             BuildGraduationPanel(cursorY);
         }
 
-        private ContainerControl BuildTaskItem(string name, string desc, string reward, string status, string cur, string max, float yPos)
+        private ContainerControl BuildTaskItem(string name, string desc, string reward, string status, string cur, string max, float yPos, string goDomId = null)
         {
             var item = new ContainerControl
             {
@@ -767,8 +769,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             var rewardLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(310f, 26f),
-                Size = new Float2(140f, 32f),
+                // 有「前往」按钮时奖励文字上移至顶栏右侧，腾出中部右侧给按钮（对齐设计 mentor.html btn-go-dungeon）。
+                Location = goDomId != null ? new Float2(312f, 6f) : new Float2(310f, 26f),
+                Size = goDomId != null ? new Float2(138f, 20f) : new Float2(140f, 32f),
                 Text = reward,
                 TextColor = InkWashTheme.TextBrand,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
@@ -776,6 +779,22 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 VerticalAlignment = TextAlignment.Center,
             };
             item.AddChild(rewardLabel);
+
+            // 设计 mentor.html：周常「师门试炼·组队通关副本」卡右侧「前往」按钮 → 江湖秘境（action-mentor-to-dungeon）。
+            if (goDomId != null)
+            {
+                var goBtn = new InkButton
+                {
+                    Variant = InkButtonVariant.Secondary,
+                    ButtonSize = InkButtonSize.Sm,
+                    Text = "前往",
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(356f, 28f),
+                    Size = new Float2(92f, 32f),
+                };
+                goBtn.Clicked += () => { EmitGoldBurstAt(goBtn); NavigationRequested?.Invoke(goDomId); };
+                item.AddChild(goBtn);
+            }
 
             return item;
         }

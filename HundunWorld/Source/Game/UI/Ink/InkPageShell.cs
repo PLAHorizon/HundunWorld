@@ -342,15 +342,25 @@ namespace HundunWorld.Game.UI.Ink
             float designH = UILayout.RefHeight;
             float s = Mathf.Min(w / designW, h / designH);
 
-            _contentLayer.Size = new Float2(designW, designH);
             _contentLayer.Pivot = new Float2(0.5f, 0.5f);
             _contentLayer.Scale = new Float2(s, s);
 
-            // 非 16:9 窗口下缩放后的设计空间与窗口存在上下留边（窗口更高时留边在上、下两侧）。
-            // 默认上下居中；顶部对齐时整体上移一个留边高度，使设计坐标 y=0 贴合窗口上边缘。
-            float verticalSlack = (h - designH * s) * 0.5f;
-            float originY = (h - designH) * 0.5f - (_topAnchoredContent ? verticalSlack : 0f);
-            _contentLayer.Location = new Float2((w - designW) * 0.5f, originY);
+            if (_topAnchoredContent)
+            {
+                // 战斗 HUD：内容层尺寸扩到"恰好填满窗口"（等比缩放 s 不变），使
+                //   设计坐标 (0,0) = 窗口左上角、设计尺寸 = 窗口尺寸 / s。
+                // 否则非 16:9 窗口下会留出边距带，导致底部/右侧锚定的 HUD 元素（聊天框/功能钮/导航栏）
+                // 停在距窗口边缘一段距离处，无法真正贴边。
+                var fill = new Float2(w / s, h / s);
+                _contentLayer.Size = fill;
+                _contentLayer.Location = new Float2(-(fill.X * (1f - s)) * 0.5f, -(fill.Y * (1f - s)) * 0.5f);
+            }
+            else
+            {
+                // 菜单页：固定设计空间 1920×1080，等比缩放后在窗口中居中（保留上下留边）。
+                _contentLayer.Size = new Float2(designW, designH);
+                _contentLayer.Location = new Float2((w - designW) * 0.5f, (h - designH) * 0.5f);
+            }
 
             // 返回按钮留在最顶层（粒子层之上）不参与内容层子树，但位置与尺寸跟随设计坐标系缩放。
             if (_backButton != null)

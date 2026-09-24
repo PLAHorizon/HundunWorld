@@ -560,6 +560,10 @@
     <Reference Include="FlaxEngine.CSharp">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
     </Reference>
+    <ProjectReference Include="..\Plugins\NarrativePro\Source\NarrativePro.csproj">
+      <Project>{50C162E4-EB5C-4E6D-BA95-FC9230858D36}</Project>
+      <Name>NarrativePro</Name>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -775,6 +779,7 @@
     <Compile Include="Game\Services\GengDiAuthService.cs" />
     <Compile Include="Game\Services\HorizonGameIniReader.cs" />
     <Compile Include="Game\Services\UIStateManager.cs" />
+    <Compile Include="Game\Social\ChatClient.cs" />
     <Compile Include="Game\Social\ChatSystem.cs" />
     <Compile Include="Game\Social\TeamSystem.cs" />
     <Compile Include="Game\Social\TradeSystem.cs" />
@@ -869,6 +874,7 @@
     <Compile Include="Game\UI\GameMain\GameMainUI.cs" />
     <Compile Include="Game\UI\GameMain\GuildManagementUI.cs" />
     <Compile Include="Game\UI\GameMain\InventoryUI.cs" />
+    <Compile Include="Game\UI\GameMain\NameplateUI.cs" />
     <Compile Include="Game\UI\GameMain\SkillBarUI.cs" />
     <Compile Include="Game\UI\GameMain\TeamInviteUI.cs" />
     <Compile Include="Game\UI\GameSceneManager.cs" />
@@ -1006,7 +1012,9 @@
     <Compile Include="Game\UI\UISceneManager.cs" />
     <Compile Include="Game\UI\UIStateManager.cs" />
     <Compile Include="Game\UI\UIStyleTokens.cs" />
+    <Compile Include="Game\World\MapDiscoveryDriver.cs" />
     <Compile Include="Game\World\NavigationSystem.cs" />
+    <Compile Include="Game\World\PluginNavigationBridge.cs" />
     <Compile Include="Game\Worlds\EventBroadcaster.cs" />
     <Compile Include="Game\Worlds\PlayerPositionUpdater.cs" />
     <Compile Include="Game\Worlds\WorldDataManager.cs" />

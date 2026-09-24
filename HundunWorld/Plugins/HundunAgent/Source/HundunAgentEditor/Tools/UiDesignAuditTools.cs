@@ -134,7 +134,7 @@ namespace HundunAgent.Tools
                         entry["copyCount"] = outline.Copy.Count;
                         entry["copy"] = outline.Copy;
                     }
-                    if (mode == "domIds" || mode == "all")
+                    if (mode == "domids" || mode == "all")
                     {
                         entry["domIdCount"] = outline.DomIds.Count;
                         entry["domIds"] = outline.DomIds;
@@ -161,7 +161,7 @@ namespace HundunAgent.Tools
                 implAllGlobs = implGlobs;
             var mode = (EditorUtils.GetString(args, "mode", "all") ?? "all").ToLowerInvariant();
             var maxItems = Math.Clamp(EditorUtils.GetInt(args, "maxItems", 60), 1, 500);
-            var minCoverage = GetDouble(args, "minCoverage", 0.0);
+            var minCoverage = EditorUtils.GetDouble(args, "minCoverage", 0.0);
 
             return Task.FromResult<object>(RunIo(() =>
             {
@@ -219,7 +219,7 @@ namespace HundunAgent.Tools
                         coverageOfInterest = (double)((Dictionary<string, object>)copyResult)["coverage"];
                     }
 
-                    if (mode == "domId" || mode == "all")
+                    if (mode == "domid" || mode == "domids" || mode == "all")
                         entry["domIds"] = AnalyzeDomIds(outline.DomIds, ownText, maxItems);
 
                     if (mode == "data" || mode == "all")
@@ -373,6 +373,7 @@ namespace HundunAgent.Tools
             public readonly List<string> Lines = new List<string>();
             public readonly List<string> Copy = new List<string>();
             public readonly List<string> DomIds = new List<string>();
+            public readonly HashSet<string> CopySeen = new HashSet<string>(StringComparer.Ordinal);
         }
 
         private static HtmlOutline ParseHtml(string source, int maxLines, int maxCopy, int maxDomIds)
@@ -404,7 +405,7 @@ namespace HundunAgent.Tools
                             outline.Lines[bufferOwner] = current + " | " + text;
                     }
 
-                    if ((HasCjk(text) || text.Length > 3) && outline.Copy.Count < maxCopy)
+                    if ((HasCjk(text) || text.Length > 3) && outline.Copy.Count < maxCopy && outline.CopySeen.Add(text))
                         outline.Copy.Add(text);
                     continue;
                 }
@@ -745,13 +746,6 @@ namespace HundunAgent.Tools
         private static List<string> Take(List<string> items, int max)
         {
             return items.Count > max ? items.Take(max).ToList() : items;
-        }
-
-        private static double GetDouble(JsonElement obj, string name, double defaultValue)
-        {
-            if (obj.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number)
-                return v.GetDouble();
-            return defaultValue;
         }
 
         private static object RunIo(Func<object> action)

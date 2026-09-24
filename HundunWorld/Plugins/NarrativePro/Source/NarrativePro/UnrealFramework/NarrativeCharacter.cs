@@ -866,8 +866,8 @@ namespace NarrativePro.UnrealFramework
             // 子类可重写以清理资源
         }
 
-        /// <summary>传送成功时调用。对应 UE5 TeleportSucceeded。</summary>
-        protected virtual void OnTeleportSucceeded(bool bIsATest)
+        /// <summary>传送成功时调用。对应 UE5 TeleportSucceeded（UE5 中为 public，供传送系统在移动完成后回调）。</summary>
+        public virtual void OnTeleportSucceeded(bool bIsATest)
         {
             if (!bIsATest)
             {

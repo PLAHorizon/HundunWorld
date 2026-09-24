@@ -273,10 +273,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             for (int i = 0; i < 6; i++)
             {
                 bool del = i == 5;
+                // 飞鸽（index 4）→ 跨页直达飞鸽传书（game-ui-system §1.2 action-friends-to-mail）；
+                // 其余动作暂为页内占位（无独立目标页）。
+                Action cb = i == 4
+                    ? () => NavigationRequested?.Invoke(InkPageDomIds.ActionFriendsToMail)
+                    : () => { };
                 _acts[i] = NewBtn(actN[i], InkButtonVariant.Ghost, InkButtonSize.Sm,
                     del ? InkWashTheme.TextBlood : InkWashTheme.TextDefault,
                     del ? InkWashTheme.BorderVermilion : InkWashTheme.BorderGold,
-                    del ? Blood(0.08f) : Gold(0.06f), () => { }, _ctr);
+                    del ? Blood(0.08f) : Gold(0.06f), cb, _ctr);
             }
 
             _equipBox = NewP(Color.Transparent, _ctr);

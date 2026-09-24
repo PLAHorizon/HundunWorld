@@ -1,8 +1,10 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
+using HundunWorld.Game.Navigation;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
+using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Map
 {
@@ -445,12 +447,73 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
 
             private float _t;
 
+            /// <summary>罗盘上最多绘制的导航 POI 数量（避免拥挤破坏留白）</summary>
+            private const int MaxNavPois = 8;
+
+            /// <summary>导航 POI 刷新间隔（秒）</summary>
+            private const float NavRefreshInterval = 0.5f;
+
+            /// <summary>来自 NarrativePro 导航的 POI（方位角/字形/颜色/是否脉冲）；null 表示回退到内置演示点</summary>
+            private (float angleRad, string glyph, Color color, bool tracked)[] _navPois;
+
+            private float _navTimer;
+
             public CompassDial() { AutoFocus = false; }
 
             public override void Update(float dt)
             {
                 base.Update(dt);
                 _t += dt;
+
+                _navTimer += dt;
+                if (_navTimer >= NavRefreshInterval)
+                {
+                    _navTimer = 0f;
+                    RefreshFromNavigation();
+                }
+            }
+
+            /// <summary>
+            /// 从 NarrativePro 插件导航刷新罗盘 POI。
+            /// 方位角按世界正北（-Z）为 0° 计算，与刻度盘「上=北、右=东」的绘制约定一致。
+            /// 导航不可用时置空，绘制回退到内置演示点。
+            /// </summary>
+            private void RefreshFromNavigation()
+            {
+                _navPois = null;
+
+                var views = new List<MapMarkerView>();
+                if (!PluginNavigationBridge.TryGetMarkers(views)) return;
+                if (!PluginNavigationBridge.TryGetPlayerPose(out var playerPos, out _)) return;
+
+                var list = new List<(float angleRad, string glyph, Color color, bool tracked)>(views.Count);
+
+                foreach (var v in views)
+                {
+                    if (list.Count >= MaxNavPois) break;
+
+                    float dx = v.WorldPosition.X - playerPos.X;
+                    float dz = v.WorldPosition.Z - playerPos.Z;
+                    if (dx * dx + dz * dz < 1e-4f) continue;
+
+                    float angle = Mathf.Atan2(dx, -dz);
+
+                    if (v.SupportsFastTravel)
+                    {
+                        list.Add((angle, "◆", InkWashTheme.GoldBright, false));
+                    }
+                    else if (!v.Discovered)
+                    {
+                        // 未发现的 POI 用脉冲星吸引注意
+                        list.Add((angle, "★", InkWashTheme.JadeBright, true));
+                    }
+                    else
+                    {
+                        list.Add((angle, "●", InkWashTheme.GoldBright, false));
+                    }
+                }
+
+                if (list.Count > 0) _navPois = list.ToArray();
             }
 
             public override void Draw()
@@ -539,6 +602,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             {
                 var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 17f).GetFont();
                 if (font == null) return;
+
+                if (_navPois != null)
+                {
+                    foreach (var p in _navPois)
+                        DrawPoi(font, c, p.angleRad, p.glyph, p.color, p.tracked);
+                    return;
+                }
+
+                // 回退：内置演示点（NarrativePro 导航不可用时保持既有观感）
                 DrawPoi(font, c, 0f, "◆", InkWashTheme.GoldBright, false);
                 DrawPoi(font, c, 135f * Mathf.DegreesToRadians, "●", InkWashTheme.GoldBright, false);
                 DrawPoi(font, c, 270f * Mathf.DegreesToRadians, "★", InkWashTheme.JadeBright, true);

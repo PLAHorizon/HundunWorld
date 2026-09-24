@@ -190,13 +190,15 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     /// <param name="hp">当前生命值（-1 表示不更新）。</param>
     /// <param name="maxHp">最大生命值（-1 表示不更新）。</param>
     /// <param name="stateBits">状态位掩码（uint.MaxValue 表示不更新）。</param>
+    /// <param name="nickname">角色昵称（null 表示不更新；随 Identity 于 Spawn 下发给 AOI 客户端，供头顶名牌显示）。</param>
     Task UpdateCharacterAttributesAsync(
         ulong entityId,
         int mana = -1, int maxMana = -1,
         int level = -1, long exp = -1,
         int stamina = -1, int maxStamina = -1,
         int hp = -1, int maxHp = -1,
-        uint stateBits = uint.MaxValue);
+        uint stateBits = uint.MaxValue,
+        string? nickname = null);
 
     /// <summary>
     /// Task B.5.2：更新角色移动状态（移动模式/水平速度）。
@@ -219,6 +221,21 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     /// <param name="intentBits">交互意图状态位（低 4 位有效，参考 <see cref="SceneObjectStateBits"/>）。</param>
     /// <returns>true 表示交互成功并已下发；false 表示校验失败。</returns>
     Task<bool> HandleSceneObjectInteract(ulong interactorId, ulong objectId, uint intentBits);
+
+    /// <summary>
+    /// 快速旅行：把玩家权威位置直接对齐到目标坐标（服务端权威，避免被瞬移检测纠正回滚）。
+    /// <para>
+    /// 内部会走 <c>SimWorld.TeleportTo</c>（对齐权威位置 + 重置瞬移/漂移基线 + 丢弃传送前的待处理输入），
+    /// 并镜像到广播用的实体表、强制下一 tick 下发全量快照。
+    /// </para>
+    /// </summary>
+    /// <param name="entityId">玩家实体 Id（与 session/角色 Id 一致）</param>
+    /// <param name="x">目标位置 X（Flax：左右）</param>
+    /// <param name="y">目标位置 Y（Flax：上下）</param>
+    /// <param name="z">目标位置 Z（Flax：前后）</param>
+    /// <param name="yawRadians">目标朝向（弧度）</param>
+    /// <returns>true 表示已应用；false 表示实体不存在等失败原因。</returns>
+    Task<bool> RequestFastTravelAsync(ulong entityId, float x, float y, float z, float yawRadians);
 
     /// <summary>
     /// Task C.4：注册场景对象到本分片（初始化时由上层调用，填充内部状态表）。
@@ -244,6 +261,15 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     /// 然后重新调用 EnterWorldAsync 恢复实体。
     /// </summary>
     Task<ulong[]> GetRegisteredEntityIdsAsync();
+
+    /// <summary>
+    /// 返回以 <paramref name="selfEntityId"/> 为中心、水平半径 <paramref name="radius"/> 内的其它实体 ID（不含自身）。
+    /// 供聊天「附近」频道解析收件人；水平面为 X/Y（Z 为高度，见 <c>SimulatedEntity.Vz</c>）。
+    /// </summary>
+    /// <param name="selfEntityId">发起者实体 ID（不在结果中）。</param>
+    /// <param name="radius">水平半径（与分片内位置同单位）。</param>
+    /// <param name="maxCount">最多返回数量（防止超大分片扇出；&lt;=0 时取默认上限）。</param>
+    Task<ulong[]> GetNearbyEntityIdsAsync(ulong selfEntityId, float radius, int maxCount);
 
     /// <summary>
     /// 查询指定实体 ID 是否已在当前分片中注册（用于交互等场景的身份防伪校验）。

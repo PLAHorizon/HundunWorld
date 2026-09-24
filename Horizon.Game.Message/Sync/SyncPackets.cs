@@ -53,8 +53,13 @@ public static class SyncProtocolVersion
     ///        追加在末尾且为引用类型类成员，MemoryPack 前向容错（旧读取端跳过未知尾部成员），
     ///        配合过渡期软校验（版本 != Current 仅告警不拒绝）保证 v9 客户端不中断。
     ///        <see cref="SyncProtocolVersion.MinimumSupported"/> 保持 5 不变。
+    ///   v11 = <see cref="NetworkIdentityAuthComponent"/> 新增 <see cref="NetworkIdentityAuthComponent.Nickname"/>
+    ///        字段（角色昵称，spawn-only 随 Identity 一次性下发，不进每 tick 通道）：使远程玩家头顶名牌
+    ///        显示真实昵称而非 Player_&lt;id&gt; 占位。追加于结构末尾（order 3），旧字段 0/1/2 编号不变，
+    ///        MemoryPack 前向容错（旧读取端跳过未知尾部成员）。<see cref="SyncProtocolVersion.MinimumSupported"/>
+    ///        保持 5 不变，过渡期软校验保证旧客户端不中断。
     /// </summary>
-    public const int Current = 10;
+    public const int Current = 11;
 
     /// <summary>
     /// 服务器支持的最低协议版本。低于此版本的客户端握手将被拒绝并收到 <see cref="HandshakeRejectPacket"/>，

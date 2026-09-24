@@ -25,6 +25,15 @@ public partial struct NetworkIdentityAuthComponent
     [MemoryPackOrder(2)]
     [Id(2)]
     public ulong OwnerId;
+
+    /// <summary>
+    /// 角色昵称（仅玩家实体有效，NPC 为空）。随 Identity 于 Spawn 一次性下发（Identity 为 spawn-only，
+    /// 不进每 tick 的 Transform/State 通道），故对带宽影响可忽略。旧字段 NetworkId/EntityType/OwnerId
+    /// 编号 0/1/2 保持不变，新字段仅追加于末尾以维持向后兼容。
+    /// </summary>
+    [MemoryPackOrder(3)]
+    [Id(3)]
+    public string Nickname;
 }
 
 /// <summary>

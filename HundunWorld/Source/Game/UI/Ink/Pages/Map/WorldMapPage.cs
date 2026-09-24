@@ -1,8 +1,10 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
+using HundunWorld.Game.Navigation;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
+using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Map
 {
@@ -772,9 +774,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
         {
             private enum Mk { Teleport, Oddity, Chest, Npc, Monster, Player }
 
-            private struct MData { public Mk Kind; public float X, Y; }
+            private struct MData { public Mk Kind; public string Tag; public float X, Y; }
 
-            private static readonly MData[] Markers =
+            /// <summary>内置演示标记（NarrativePro 导航不可用时的回退，保证既有观感不变）</summary>
+            private static readonly MData[] DemoMarkers =
             {
                 new MData { Kind = Mk.Teleport, X = 0.30f, Y = 0.30f },
                 new MData { Kind = Mk.Teleport, X = 0.64f, Y = 0.58f },
@@ -796,24 +799,118 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 new MData { Kind = Mk.Player,   X = 0.52f, Y = 0.54f },
             };
 
-            private static readonly (string text, float x, float y)[] Places =
+            private static readonly (string text, float x, float y)[] DemoPlaces =
             {
                 ("清河", 0.26f, 0.20f),
                 ("落雁峰", 0.60f, 0.64f),
                 ("北山道", 0.80f, 0.30f),
             };
 
+            /// <summary>地图内边距（与 Draw 中的 mx/my 保持一致，命中测试复用）</summary>
+            private const float Pad = 16f;
+
+            /// <summary>传送点点击命中半径（像素）</summary>
+            private const float TeleportHitRadius = 16f;
+
+            /// <summary>地名标签最大数量（避免 POI 过多时标签堆叠、破坏留白设计）</summary>
+            private const int MaxPlaceLabels = 6;
+
+            private MData[] _markers = DemoMarkers;
+            private (string text, float x, float y)[] _places = DemoPlaces;
+
             private float _pulse;
 
             public MapCanvas()
             {
                 AutoFocus = false;
+                BuildMarkerData();
+            }
+
+            /// <summary>
+            /// 标记数据源：优先取 NarrativePro 插件导航中的 POI（世界坐标 → 归一化地图坐标），
+            /// 不可用时保留内置演示数据。视觉样式与既有设计完全一致，仅数据来源变化。
+            /// </summary>
+            private void BuildMarkerData()
+            {
+                var views = new List<MapMarkerView>();
+                if (!PluginNavigationBridge.TryGetMarkers(views))
+                {
+                    return; // 保持演示数据
+                }
+
+                var markers = new List<MData>(views.Count + 1);
+                var places = new List<(string text, float x, float y)>(views.Count);
+
+                foreach (var v in views)
+                {
+                    float x = Mathf.Clamp(v.Normalized.X, 0.02f, 0.98f);
+                    float y = Mathf.Clamp(v.Normalized.Y, 0.02f, 0.98f);
+
+                    // 支持快速旅行 → 界碑（传送点）；已发现 → NPC；未发现 → 异闻
+                    Mk kind = v.SupportsFastTravel ? Mk.Teleport : (v.Discovered ? Mk.Npc : Mk.Oddity);
+                    markers.Add(new MData { Kind = kind, Tag = v.Tag, X = x, Y = y });
+
+                    if (places.Count < MaxPlaceLabels && !string.IsNullOrEmpty(v.Title))
+                    {
+                        places.Add((v.Title, x, y));
+                    }
+                }
+
+                if (PluginNavigationBridge.TryGetPlayerNormalizedPosition(out var player))
+                {
+                    markers.Add(new MData
+                    {
+                        Kind = Mk.Player,
+                        X = Mathf.Clamp(player.X, 0.02f, 0.98f),
+                        Y = Mathf.Clamp(player.Y, 0.02f, 0.98f),
+                    });
+                }
+
+                _markers = markers.ToArray();
+                _places = places.ToArray();
             }
 
             public override void Update(float dt)
             {
                 base.Update(dt);
                 _pulse += dt;
+            }
+
+            /// <summary>
+            /// 点击传送点（界碑）触发快速旅行。命中测试复用 Draw 中的同一套归一化→像素映射。
+            /// </summary>
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _markers != null)
+                {
+                    float mx = Pad, my = Pad;
+                    float mw = Width - Pad * 2f, mh = Height - Pad * 2f;
+
+                    if (mw > 0f && mh > 0f)
+                    {
+                        for (int i = _markers.Length - 1; i >= 0; i--)
+                        {
+                            var m = _markers[i];
+                            if (m.Kind != Mk.Teleport || string.IsNullOrEmpty(m.Tag)) continue;
+
+                            var pos = new Float2(mx + m.X * mw, my + m.Y * mh);
+                            if (Float2.Distance(pos, location) > TeleportHitRadius) continue;
+
+                            if (PluginNavigationBridge.TryRequestFastTravel(m.Tag))
+                            {
+                                Debug.Log($"[WorldMapPage] 已请求快速旅行至 {m.Tag}");
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"[WorldMapPage] 无法传送到 {m.Tag}（未发现/不支持快速旅行/无安全落点）");
+                            }
+
+                            return true;
+                        }
+                    }
+                }
+
+                return base.OnMouseUp(location, button);
             }
 
             public override void Draw()
@@ -823,12 +920,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
 
                 DrawBase();
 
-                float mx = 16f, my = 16f;
-                float mw = Width - 32f, mh = Height - 32f;
+                float mx = Pad, my = Pad;
+                float mw = Width - Pad * 2f, mh = Height - Pad * 2f;
                 if (mw <= 0f || mh <= 0f) return;
 
                 DrawPlaces(mx, my, mw, mh);
-                foreach (var m in Markers)
+                foreach (var m in _markers)
                     DrawMarker(new Float2(mx + m.X * mw, my + m.Y * mh), m.Kind);
 
                 DrawCompass();
@@ -868,7 +965,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f).GetFont();
                 if (font == null) return;
                 var c = new Color(InkWashTheme.TextDefault.R, InkWashTheme.TextDefault.G, InkWashTheme.TextDefault.B, 0.55f);
-                foreach (var p in Places)
+                foreach (var p in _places)
                 {
                     float x = mx + p.x * mw;
                     float y = my + p.y * mh;

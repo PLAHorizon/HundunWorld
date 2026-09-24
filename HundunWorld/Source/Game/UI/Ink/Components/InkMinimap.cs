@@ -1,5 +1,6 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using HundunWorld.Game.Navigation;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
 
@@ -94,6 +95,62 @@ namespace HundunWorld.Game.UI.Ink.Components
         public void ClearEntities()
         {
             _entities.Clear();
+        }
+
+        /// <summary>小地图显示半径（世界单位）：以玩家为中心，超出该半径的标记不显示。</summary>
+        public float NavigationRange { get; set; } = 30000f;
+
+        /// <summary>从 NarrativePro 导航刷新点位的时间间隔（秒）。</summary>
+        public float NavigationRefreshInterval { get; set; } = 0.5f;
+
+        private float _navRefreshTimer;
+
+        public override void Update(float dt)
+        {
+            base.Update(dt);
+
+            _navRefreshTimer += dt;
+            if (_navRefreshTimer < NavigationRefreshInterval) return;
+
+            _navRefreshTimer = 0f;
+            RefreshFromNavigation();
+        }
+
+        /// <summary>
+        /// 从 NarrativePro 插件导航刷新玩家位置/朝向与 POI 点位（玩家为圆心，坐标归一化到 -1~1）。
+        /// <para>
+        /// 插件导航不可用（场景无 MapTileBoundsActor / 无 POI / 无导航组件）时返回 false 且**不清空**现有点位，
+        /// 因此既有调用方（AddEntity 手工喂数据）的展示不受影响。
+        /// </para>
+        /// </summary>
+        /// <returns>是否完成刷新。</returns>
+        public bool RefreshFromNavigation()
+        {
+            var views = new System.Collections.Generic.List<MapMarkerView>();
+            if (!PluginNavigationBridge.TryGetMarkers(views)) return false;
+            if (!PluginNavigationBridge.TryGetPlayerPose(out var playerPos, out var yaw)) return false;
+
+            PlayerYaw = yaw;
+            ClearEntities();
+
+            AddEntity(InkMinimapEntityType.Player, 0f, 0f);
+
+            float range = NavigationRange <= 0f ? 1f : NavigationRange;
+            foreach (var v in views)
+            {
+                // 迷雾语义：小地图只显示已发现的目标；未发现的 POI 由世界地图以「？」提示方位
+                if (v.IsDiscoverable && !v.Discovered) continue;
+
+                float x = (v.WorldPosition.X - playerPos.X) / range;
+                float z = (v.WorldPosition.Z - playerPos.Z) / range;
+                if (x < -1f || x > 1f || z < -1f || z > 1f) continue;
+
+                // 支持快速旅行的 POI 用翡翠色（友方样式）区分，其余按 NPC 样式
+                var type = v.SupportsFastTravel ? InkMinimapEntityType.Friendly : InkMinimapEntityType.NPC;
+                AddEntity(type, x, z);
+            }
+
+            return true;
         }
 
         /// <summary>

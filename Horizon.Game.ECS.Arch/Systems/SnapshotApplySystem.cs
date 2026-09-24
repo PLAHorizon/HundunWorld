@@ -1118,6 +1118,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         {
             EntityId = delta.EntityId,
             IsLocalPlayer = delta.Identity.Value.OwnerId == LocalPlayerOwnerId && LocalPlayerOwnerId != 0,
+            Nickname = delta.Identity.Value.Nickname,
         };
 
         var authTransform = delta.Transform != null

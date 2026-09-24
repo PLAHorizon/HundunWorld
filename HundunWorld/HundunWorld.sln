@@ -13,6 +13,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Flax", "Flax", "{B8CB0DF9-CA77-4403-8449-8F1B0EDD026B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game", "Source\Game.csproj", "{5A36E585-C5C1-EA12-380A-58952A1E4BC2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{50C162E4-EB5C-4E6D-BA95-FC9230858D36} = {50C162E4-EB5C-4E6D-BA95-FC9230858D36}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NarrativePro", "Plugins\NarrativePro\Source\NarrativePro.csproj", "{50C162E4-EB5C-4E6D-BA95-FC9230858D36}"
 EndProject

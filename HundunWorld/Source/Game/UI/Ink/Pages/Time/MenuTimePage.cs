@@ -9,6 +9,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 {
     public class MenuTimePage : ContainerControl, IInkPage
     {
+        /// <summary>
+        /// 标准导航事件（对齐 Ink 页面契约，由工厂 HookNavigationRequested 挂钩后经路由器跳转）。
+        /// </summary>
+        public event Action<string> NavigationRequested;
+
         private Float2 _screenSize;
 
         private InkPanel _leftNav;
@@ -121,6 +126,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 FontSize = 22f,
                 Width = 30f,
                 Height = 100f,
+                Location = new Float2(105f, 16f),
                 Parent = _leftNav
             };
 
@@ -128,11 +134,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
             {
                 Width = 240f,
                 Height = 1f,
+                Location = new Float2(0f, 128f),
                 Parent = _leftNav
             };
 
             string[] navItems = { "角色", "装备", "外观", "备战", "门派", "个人信息", "时间", "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店", "设置" };
             int[] disabledIndices = { 7, 8, 9, 10, 11, 12, 13, 14 };
+
+            // 左栏导航即设计链路：角色→装备→外观→备战→门派→个人信息→时间(自身)。
+            // 索引 7+ 为禁用项（disabledIndices），不接线。
+            string[] navTargets =
+            {
+                InkPageDomIds.NavCharacterV2,
+                InkPageDomIds.NavEquipment,
+                InkPageDomIds.NavAppearance,
+                InkPageDomIds.NavBattlePrep,
+                InkPageDomIds.NavSect,
+                InkPageDomIds.NavPersonalInfo,
+                InkPageDomIds.NavTime,
+            };
 
             float y = 140f;
             for (int i = 0; i < navItems.Length; i++)
@@ -144,6 +164,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                     Text = navItems[i],
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
+                    Location = new Float2(0f, y),
                     Parent = _leftNav
                 };
 
@@ -165,6 +186,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                     navItem.TextColor = InkWashTheme.PaperBright;
                 }
 
+                // 左栏项直达对应菜单（禁用项 Enabled=false，点击不触发）。
+                if (i < navTargets.Length)
+                {
+                    int navIndex = i;
+                    navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
+                }
+
                 y += 40f;
 
                 if (i == 6 || i == 13)
@@ -173,6 +201,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                     {
                         Width = 240f,
                         Height = 1f,
+                        Location = new Float2(0f, y),
                         Parent = _leftNav
                     };
                     y += 8f;
@@ -198,6 +227,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 Variant = InkButtonVariant.Ghost,
                 Parent = _topBar
             };
+            // 返回战斗 HUD（设计隐藏出口 back-hud）
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
 
             _playerAvatar = new ContainerControl
             {
@@ -237,6 +268,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 Text = "逍遥派",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.GoldBright,
+                Size = new Float2(80f, 20f),
+                Location = new Float2(196f, 16f),
                 Parent = _topBar
             };
 
@@ -248,6 +281,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 Variant = InkButtonVariant.Ghost,
                 Parent = _topBar
             };
+            // 顶栏任务入口 → 任务菜单
+            _questButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.NavQuests);
 
             _currencyCoinLabel = new Label
             {
@@ -609,6 +644,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 _playerNameLabel.Location = new Float2(124f, 10f);
             if (_playerLevelLabel != null)
                 _playerLevelLabel.Location = new Float2(280f, 12f);
+            // 顶栏「任务」入口（→ nav-quests）与货币标签：原未定位会堆叠在 (0,0) 压住返回键，此处显式排布。
+            if (_questButton != null)
+                _questButton.Location = new Float2(350f, 16f);
+            if (_currencyCoinLabel != null)
+                _currencyCoinLabel.Location = new Float2(sw - 240f - 250f, 20f);
+            if (_currencyIngotLabel != null)
+                _currencyIngotLabel.Location = new Float2(sw - 240f - 120f, 20f);
 
             float dialWidth = (sw - 240f) * 0.55f;
             if (_dialSection != null)

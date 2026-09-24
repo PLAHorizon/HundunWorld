@@ -8,6 +8,7 @@ using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.ECS.Arch.Systems;
 using Horizon.Game.Message.Sync.Components;
+using Game.Character.Attributes;
 using HundunWorld.Game.Character;
 using HundunWorld.Game.Network;
 
@@ -514,6 +515,12 @@ namespace HundunWorld.Game
                     remotePlayerScript.PlayerName = $"Player_{entityId}";
                 }
 
+                // 6. 挂载头顶名牌组件：每帧把自身头顶投影到屏幕，在共享宿主内绘制血条/名称/等级/称号。
+                if (actor.GetScript<HundunWorld.Game.UI.GameMain.NameplateUI>() == null)
+                {
+                    actor.AddScript<HundunWorld.Game.UI.GameMain.NameplateUI>();
+                }
+
                 return actor;
             }
             catch (Exception ex)
@@ -825,6 +832,38 @@ namespace HundunWorld.Game
                     {
                         actor.Orientation = Quaternion.Euler(0, yawDeg, 0);
                         _entityIdToLastYaw[entityId] = yawDeg;
+                    }
+
+                    // 2b) 同步昵称 + 血量/等级到 Actor，供头顶名牌（NameplateUI）读取真实值：
+                    //   - 昵称：经 RemotePlayerActor.PlayerName 兜底显示（Spawn 时赋值）。
+                    //   - 血量/等级：EntityStateAuthComponent 已由 SnapshotApplySystem 从网络写入 ECS（1Hz 心跳 + 变化触发）。
+                    var attrs = actor.GetScript<CharacterAttributesComponent>();
+                    if (attrs == null)
+                    {
+                        attrs = actor.AddScript<CharacterAttributesComponent>();
+                        // 组件默认昵称是本地占位"无名侠"，会遮蔽远程显示名；新建时先对齐该 Actor 的名称。
+                        var rpaInit = actor.GetScript<RemotePlayerActor>();
+                        if (rpaInit != null) attrs.Nickname = rpaInit.PlayerName;
+                    }
+                    if (attrs != null)
+                    {
+                        // 直读 NetworkIdentityComponent.Nickname 需先部署含该字段的 Horizon.Game.ECS.Arch.dll；
+                        // 当前 Flax Tools 内为旧版 DLL（无此字段，引用会 CS1061），故昵称经 RemotePlayerActor 兜底。
+                        var rpa = actor.GetScript<RemotePlayerActor>();
+                        if (rpa != null && !string.IsNullOrEmpty(rpa.PlayerName) && attrs.Nickname != rpa.PlayerName)
+                            attrs.Nickname = rpa.PlayerName;
+
+                        if (_archWorld.Has<EntityStateAuthComponent>(entity))
+                        {
+                            ref var stateAuth = ref _archWorld.Get<EntityStateAuthComponent>(entity);
+                            if (stateAuth.MaxHealth > 0)
+                                attrs.MaxHealth = stateAuth.MaxHealth;
+                            attrs.CurrentHealth = stateAuth.Health;
+                            if (stateAuth.Level > 0)
+                                attrs.Level = stateAuth.Level;
+                            if (stateAuth.Exp > 0)
+                                attrs.Exp = stateAuth.Exp;
+                        }
                     }
 
                     // 3) 同步动画：根据 MovementStateAuthComponent 控制动画状态

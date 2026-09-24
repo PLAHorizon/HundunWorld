@@ -82,11 +82,14 @@ namespace HundunAgent.Core
 
             Tools.SceneActorTools.Register();
             Tools.MaterialAssetTools.Register();
+            Tools.AssetIntrospectTools.Register();
+            Tools.AssetForensicsTools.Register();
             Tools.ViewportEnvTools.Register();
             Tools.CodeTools.Register();
             Tools.TaskTools.Register();
             Tools.UiDesignTools.Register();
             Tools.UiPrefabTools.Register();
+            Tools.UiDesignAuditTools.Register();
             Tools.SimulationTools.Register();
             Tools.LogTools.Register();
             Tools.LevelDesignTools.Register();

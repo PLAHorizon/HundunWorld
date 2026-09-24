@@ -493,6 +493,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,
                 Size = new Float2(MinimapDiscSize, MinimapDiscSize),
+                // 小地图显示半径（世界单位）：以玩家为圆心仅显示附近标记；
+                // 默认 30000 过大，会让 POI 全部挤在圆心附近而不可见。
+                NavigationRange = 1200f,
             };
 
             // 地形快照（墨色山水意象）

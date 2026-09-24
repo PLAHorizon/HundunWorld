@@ -30,6 +30,9 @@ namespace NarrativePro.Spawners
             base.OnDisable();
         }
 
+#if FLAX_EDITOR
+        // `DebugDraw.*` 的绘制方法未导出到非编辑器目标（仅存在于编辑器程序集），故整段调试绘制只在编辑器编译。
+
         /// <summary>
         /// 调试绘制。对应 UE5 CreateSceneProxy/CalcBounds 的可视化功能。
         /// 在编辑器与运行时绘制生成范围圆圈，便于直观查看生成器覆盖区域。
@@ -79,5 +82,6 @@ namespace NarrativePro.Spawners
                 center + new Vector3(0, 0, crossSize),
                 VisualizerColor, 0f, false);
         }
+#endif
     }
 }

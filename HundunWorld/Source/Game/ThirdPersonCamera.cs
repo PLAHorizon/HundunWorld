@@ -22,28 +22,6 @@ namespace HundunWorld.Game
     }
     
     /// <summary>
-    /// 异步检测结果
-    /// </summary>
-    [Serializable]
-    public class AsyncDetectionResult
-    {
-        /// <summary>是否检测到地面</summary>
-        public bool GroundDetected;
-        
-        /// <summary>地面高度</summary>
-        public float GroundHeight;
-        
-        /// <summary>检测完成时间</summary>
-        public float DetectionTime;
-        
-        /// <summary>是否有效（未超时）</summary>
-        public bool IsValid(float currentTime, float timeout = 0.2f)
-        {
-            return (currentTime - DetectionTime) < timeout;
-        }
-    }
-    
-    /// <summary>
     /// 异步碰撞检测结果
     /// </summary>
     [Serializable]
@@ -140,8 +118,14 @@ namespace HundunWorld.Game
         /// <summary>缓存的安全距离（厘米）</summary>
         public float SafeDistance;
         
+        /// <summary>上次检测的偏航角（度）</summary>
+        public float LastYaw;
+        
+        /// <summary>上次检测的俯仰角（度）</summary>
+        public float LastPitch;
+        
         /// <summary>缓存是否有效</summary>
-        public bool IsValid(Vector3 currentPosition, float currentDistance, float currentTime)
+        public bool IsValid(Vector3 currentPosition, float currentDistance, float currentYaw, float currentPitch, float currentTime)
         {
             // 时间条件：当前时间 - CacheTime < 0.1秒
             if (currentTime - CacheTime > 0.1f)
@@ -153,6 +137,13 @@ namespace HundunWorld.Game
             
             // 距离条件：|当前距离 - LastDistance| < 20cm
             if (Mathf.Abs(currentDistance - LastDistance) > 20.0f)
+                return false;
+            
+            // 角度条件：位置容差 50cm 在远距离下允许十几度的角度漂移，
+            // 复用一个明显不同视角的结果会让相机穿插或跳动，因此单独校验角度
+            if (Mathf.Abs(Mathf.DeltaAngle(currentYaw, LastYaw)) > 2.0f)
+                return false;
+            if (Mathf.Abs(currentPitch - LastPitch) > 2.0f)
                 return false;
             
             return true;
@@ -269,8 +260,8 @@ namespace HundunWorld.Game
         [Tooltip("相机跟随的目标Actor")]
         public Actor Target;
 
-        [Tooltip("相机聚焦点相对于目标的位置偏移")]
-        public Vector3 FocusOffset = new Vector3(0, 1.8f, 0);
+        [Tooltip("相机聚焦点相对于目标的位置偏移（Y 与下面的聚焦高度同单位）")]
+        public Vector3 FocusOffset = new Vector3(0, 170f, 0);
 
         [Tooltip("启用动态聚焦高度（近距离时聚焦点上移至上半身）")]
         public bool EnableDynamicFocusHeight = true;
@@ -369,15 +360,6 @@ namespace HundunWorld.Game
 
         [Tooltip("地面最小高度（相机与地面的最小距离，厘米）")]
         public float MinGroundHeight = 50.0f;
-
-        [Tooltip("地面高度调整平滑速度")]
-        public float GroundHeightAdjustSpeed = 10.0f;
-
-        [Tooltip("启用地面高度预测")]
-        public bool EnableGroundHeightPrediction = true;
-
-        [Tooltip("地面高度预测距离（厘米）")]
-        public float GroundPredictionDistance = 200.0f;
         
         [Header("天花板检测（室内场景）")]
         [Tooltip("启用天花板检测（防止相机穿透天花板）")]
@@ -515,6 +497,9 @@ namespace HundunWorld.Game
         
         [Tooltip("飞行状态FOV偏移")]
         public float FlyingFOVOffset = 10f;
+
+        [Tooltip("判定进入飞行状态的\"离地高度\"阈值（世界单位，与焦点高度等常量同单位）")]
+        public float FlyingMinHeightAboveGround = 300f;
         
         [Header("相机状态机系统")]
         [Tooltip("启用相机状态机(根据游戏场景自动切换相机模式)")]
@@ -704,7 +689,7 @@ namespace HundunWorld.Game
         [Tooltip("Boss检测标签")]
         public string BossTag = "Boss";
 
-        [Tooltip("锁定目标层掩码")]
+        [Tooltip("锁定目标层掩码（掩码为 0 时不做层级过滤）")]
         public LayersMask LockOnTargetLayers = LayersMask.Default;
         
         [Tooltip("启用性能监控统计")]
@@ -713,14 +698,8 @@ namespace HundunWorld.Game
         [Tooltip("性能统计重置间隔（秒）")]
         public float StatsResetInterval = 60f;
         
-        [Header("异步棄测系统")]
-        [Tooltip("启用异步地面检测（减少主线程压力）")]
-        public bool EnableAsyncGroundDetection = true;
-        
-        [Tooltip("启用异步环境检测（减少主线程压力）")]
-        public bool EnableAsyncEnvironmentDetection = true;
-        
-        [Tooltip("启用异步碰撞检测（适用于高质量模式）")]
+        [Header("异步检测系统")]
+        [Tooltip("启用异步碰撞检测（实验性：在线程池做物理查询，仅在需要极高检测频率时开启）")]
         public bool EnableAsyncCollisionDetection = false;
         
         [Tooltip("异步检测间隔（秒，避免频繁检测）")]
@@ -765,13 +744,6 @@ namespace HundunWorld.Game
         [Tooltip("雾天视距衰减系数(0-1)")]
         [Range(0.3f, 1f)]
         public float FogVisibilityFactor = 0.6f;
-        
-        [Tooltip("启用光照条件检测")]
-        public bool EnableLightDetection = true;
-        
-        [Tooltip("暗环境阈值(低于此亮度视为暗环境)")]
-        [Range(0f, 1f)]
-        public float DarkEnvironmentThreshold = 0.3f;
         
         [Tooltip("Outdoor环境配置")]
         public EnvironmentConfig OutdoorConfig = new EnvironmentConfig
@@ -846,16 +818,15 @@ namespace HundunWorld.Game
         #region 私有字段
         
         private Camera _camera;
-        private InputManager _inputManager;
         private float _currentCollisionDistance;
         private Vector3[] _collisionRayDirections;
         private Actor _lockOnTarget;
         private bool _isInCombat;
-        private List<Actor> _potentialTargets = new List<Actor>();
         private Actor _softLockTarget;
+        private float _lastSoftLockScanTime; // 上次软锁定候选扫描时间
+        private const float SoftLockScanInterval = 0.15f; // 软锁定候选刷新间隔（秒）
         private float _lockOnLostTimer;
         private bool _isLockOnActive;
-        private Vector3 _lockOnTargetLastPosition;
         private float _currentShoulderOffset;
         private float _targetShoulderOffset;
         private bool _isOverShoulderFallback;
@@ -865,13 +836,12 @@ namespace HundunWorld.Game
         private bool _isHeavyHit;
         private float _combatPushFOV;
         private Vector3 _dodgeOffset;
-        private Vector3 _dodgeDirection;
         private bool _isDodging;
         private Vector3 _hitReactionOffset;
-        private Vector3 _hitDirection;
         private float _hitReactionTimer;
         private bool _isHitReacting;
         private bool _isExecutionCamera;
+        private bool _externalCameraControl; // 外部镜头特效接管中（此时不写相机位姿）
         private float _executionTimer;
         private float _preExecutionDistance;
         private float _preExecutionPitch;
@@ -882,7 +852,6 @@ namespace HundunWorld.Game
         private float _gameTime = 0f; // 游戏运行时间
         
         // 动态距离调整相关
-        private float _lastObstructionDistance = float.MaxValue; // 上次障碍物距离
         private bool _wasColliding = false; // 上一帧是否碰撞
         private float _collisionStateChangeTime = 0f; // 碰撞状态改变时间
         private const float CollisionStateStableTime = 0.1f; // 碰撞状态稳定时间（秒）- 优化：降低延迟
@@ -894,20 +863,34 @@ namespace HundunWorld.Game
         
         // 相机抖动相关
         private float _currentShakeIntensity;
+        private float _shakeDecaySpeed; // 当前抖动的衰减速度（由 TriggerShake 的 duration 推导，不覆写配置项）
         private float _shakeTime;
         private Vector3 _shakeOffset;
         
-        // 地面穿透防护相关
-        private float _currentGroundHeight;
-        private float _targetGroundHeight;
-        private bool _isGroundDetected;
-        private float _lastGroundCheckTime;
-        private Vector3 _lastCameraPosition;
+        // 地面托底平滑（探针 0.1s 刷新为台阶值，直接套用会让相机 10Hz 抽动）
+        private float _smoothedFloorY;
+        private bool _smoothedFloorValid;
         private const float GroundCheckInterval = 0.1f; // 每0.1秒检查一次地面
+
+        // 地面/悬崖探针缓存：向下找地面是静态几何查询，按 GroundCheckInterval 刷新即可，
+        // 避免每帧在“安全位置”“地面高度调整”“悬崖检测”等处各发一条射线
+        private bool _groundProbeValid;
+        private float _groundProbeTime;
+        private bool _hasGroundUnderCamera;
+        private float _groundHeightUnderCamera;
+        private bool _hasGroundUnderCharacter;
+        private float _groundHeightUnderCharacter;
         
         // 智能避障相关
-        private float _targetPitch; // 目标俯仰角（用于平滑过渡）
-        private bool _isColliding; // 当前是否在碰撞状态
+        private bool _smartAvoidanceActive;      // 是否已确认切换到避障俯仰角
+        private float _smartAvoidanceDistance;   // 上次在避障俯仰角下测得的安全距离
+        private float _lastSmartAvoidanceCheckTime; // 上次避障试探时间
+        private Vector3 _lastSmartAvoidanceFocus;   // 上次避障试探的聚焦点
+        private const float SmartAvoidanceCheckInterval = 0.1f;  // 避障试探复用间隔（秒）
+        private const float SmartAvoidanceFocusTolerance = 30f;  // 聚焦点移动超过该距离则强制重测
+        // 弹性跟随的速度分档阈值（世界单位/秒；本工程为 cm/s，对应"静止 / 行走 / 跑与冲刺"）
+        private const float ElasticityStillSpeed = 50f;
+        private const float ElasticitySlowSpeed = 600f;
         
         // 自动对齐相关
         private bool _isAligning = false;        // 是否正在自动对齐
@@ -923,6 +906,10 @@ namespace HundunWorld.Game
         
         // 弹性跟随相关
         private Vector3 _lastTargetPosition; // 上一帧角色位置
+        private Vector3 _elasticFocus;       // 上一帧平滑后的聚焦点（不再从相机位置反推，见 OnUpdate 弹性跟随注释）
+        private bool _elasticFocusValid;     // _elasticFocus 是否可用（目标切换/基准恢复/关闭弹性后需重新对齐）
+        private const float ElasticFocusSnapDistance = 1000f; // 期望焦点与平滑焦点超过该距离（cm）视为传送，直接吸附
+        private Actor _lastTarget;           // 上一帧的跟踪目标（用于目标首次就绪时同步基准位置）
         private Vector3 _targetVelocity;     // 角色移动速度
         private Vector3 _cameraInertia;      // 相机惯性速度
         private float _smoothYaw;            // 平滑后的Yaw角
@@ -932,7 +919,6 @@ namespace HundunWorld.Game
         private float _targetFOV;            // 目标FOV值
         
         // 状态机相关
-        private CameraState _previousState;  // 上一个状态
         private Dictionary<CameraState, CameraStateConfig> _stateConfigs; // 状态配置字典
         private bool _isTransitioning;       // 是否正在状态切换中
         private float _stateTargetDistance;  // 状态目标距离
@@ -943,24 +929,14 @@ namespace HundunWorld.Game
         private PlayerController _playerController;
         
         // 环境感知相关
-        private EnvironmentType _previousEnvironment; // 上一个环境
         private Dictionary<EnvironmentType, EnvironmentConfig> _environmentConfigs; // 环境配置字典
         private float _environmentDetectionTimer; // 环境检测计时器
-        private float _currentLightLevel;     // 当前光照级别(0-1)
         private float _environmentMaxDistance; // 环境限制的最大距离
         private float _environmentMinDistance; // 环境限制的最小距离
         private float _environmentElasticCoefficient = 1.0f; // 环境弹性系数
         private float _weatherVisibilityFactor; // 天气影响的可见度系数
         
-        // 异步检测相关
-        private Task<AsyncDetectionResult> _groundDetectionTask; // 地面检测任务
-        private AsyncDetectionResult _lastGroundResult; // 最后一次地面检测结果
-        private float _lastAsyncGroundCheckTime; // 最后一次异步地面检测时间
-        
-        private Task<AsyncDetectionResult> _environmentDetectionTask; // 环境检测任务
-        private AsyncDetectionResult _lastEnvironmentResult; // 最后一次环境检测结果
-        private float _lastAsyncEnvironmentCheckTime; // 最后一次异步环境检测时间
-        
+        // 异步碰撞检测相关
         private Task<AsyncCollisionResult> _collisionDetectionTask; // 碰撞检测任务
         private AsyncCollisionResult _lastCollisionResult; // 最后一次碰撞检测结果
         private float _lastAsyncCollisionCheckTime; // 最后一次异步碰撞检测时间
@@ -989,8 +965,6 @@ namespace HundunWorld.Game
                 return;
             }
 
-            // 查找InputManager
-            _inputManager = Actor.Parent?.GetScript<InputManager>();
 
             // 自动计算初始参数（基于场景中相机的当前位置）
             if (AutoCalculateInitialParameters && Target != null)
@@ -1002,7 +976,6 @@ namespace HundunWorld.Game
             _currentCollisionDistance = Distance;
             _gameTime = 0f; // 初始化游戏时间
             _wasColliding = false;
-            _lastObstructionDistance = float.MaxValue;
             InitializeCollisionRays();
             
             //Debug.Log($"[ThirdPersonCamera] 碰撞检测初始化 - EnableCameraCollision={EnableCameraCollision}, Quality={CollisionDetectionQuality}, EnableSphereCheck={EnableSphereCollisionCheck}, CollisionLayerMask={CollisionLayerMask}, EnableSmartAvoidance={EnableSmartAvoidance}");
@@ -1011,10 +984,7 @@ namespace HundunWorld.Game
             _currentShakeIntensity = 0f;
             _shakeTime = 0f;
             _shakeOffset = Vector3.Zero;
-            
-            // 初始化智能避障
-            _targetPitch = Pitch;
-            _isColliding = false;
+            _shakeDecaySpeed = ShakeDecaySpeed;
             
             _isCombatPushing = false;
             _isDodging = false;
@@ -1039,6 +1009,7 @@ namespace HundunWorld.Game
             _isLockOnActive = false;
             _lockOnLostTimer = 0f;
             _softLockTarget = null;
+            _lastSoftLockScanTime = -SoftLockScanInterval; // 允许首次进入战斗时立即扫描
             
             if (Target != null)
             {
@@ -1074,6 +1045,15 @@ namespace HundunWorld.Game
         public override void OnUpdate()
         {
             if (Target == null || _camera == null) return;
+
+            // 目标首次就绪（或切换）时同步基准位置：Target 是在场景加载后才由生成流程异步赋值的，
+            // OnStart 时多为 null，_lastTargetPosition 会留在零向量上，导致首帧算出一个巨大的移动速度、FOV 突跳。
+            if (Target != _lastTarget)
+            {
+                _lastTarget = Target;
+                _lastTargetPosition = Target.Position;
+                _elasticFocusValid = false; // 换目标（重生/切换角色）后焦点重新锚定
+            }
             
             // 性能监控：开始帧计时
             if (EnablePerformanceMonitoring)
@@ -1088,10 +1068,6 @@ namespace HundunWorld.Game
             // 更新FPS监控（用于性能LOD）
             UpdateFPSMonitoring();
             
-            // 启动异步检测任务（在后台运行）
-            StartAsyncGroundDetection();
-            StartAsyncEnvironmentDetection();
-
             // 1. 环境感知系统更新
             if (EnableEnvironmentAwareness)
             {
@@ -1146,32 +1122,58 @@ namespace HundunWorld.Game
             if (EnableElasticFollow && !_isResetting)
             {
                 // ✅ 启用弹性跟随
-                Vector3 currentFocusPoint = Actor.Position - CalculateCameraOffsetWithShoulder(Pitch, _smoothYaw, _currentCollisionDistance, _currentShoulderOffset);
-                
-                // 动态计算弹性系数（基于速度）
-                float currentElasticity = PositionElasticity;
-                float velocityLength = _targetVelocity.Length;
-                if (velocityLength < 1.0f)
+                // 聚焦点必须逐帧持久化，绝不能从 Actor.Position 反推：
+                // 实际写入的相机位置在定位后被多处改写（战斗偏移 GetCombatCameraOffset、
+                // 地面/天花板/悬崖高度钳制、智能避障的 effectivePitch≠Pitch、抖动偏移、肩部偏移时序差），
+                // 反推会把这些修正全部错误吸收进聚焦点，而下一帧的钳制/避障又以该聚焦点发射线，
+                // 形成逐帧闭环反馈——表现为遮挡物边缘与坡地附近的持续晃动。
+                Vector3 desiredFocus = targetPosition + GetDynamicFocusOffset();
+                if (!_elasticFocusValid || Vector3.Distance(_elasticFocus, desiredFocus) > ElasticFocusSnapDistance)
                 {
-                    currentElasticity = 0.95f; // 静止时几乎完全跟随
-                }
-                else if (velocityLength < 10.0f)
-                {
-                    currentElasticity = 0.85f; // 慢速移动
+                    // 首帧/目标传送/接管恢复：直接吸附，避免远距离回拉过程
+                    _elasticFocus = desiredFocus;
+                    _elasticFocusValid = true;
                 }
                 else
                 {
-                    currentElasticity = 0.75f; // 快速移动
+                    // 动态计算弹性系数（基于速度）
+                    // 注意：_targetVelocity 是世界单位/秒（本工程 cm/s），而策划口径的移动速度以 m/s 计
+                    // （PlayerController：走 5 / 跑 10 / 冲刺 12.5 m/s ⇒ 500 / 1000 / 1250 cm/s）。
+                    // 原阈值 1.0 / 10.0 在该单位下等于"几乎静止 / 任何移动"，中档 0.85 永远不可达；
+                    // 现按实测速度量级重设阈值，保留作者的三档取值（0.95 / 0.85 / 0.75）。
+                    float currentElasticity = PositionElasticity;
+                    float velocityLength = _targetVelocity.Length;
+                    if (velocityLength < ElasticityStillSpeed)
+                    {
+                        currentElasticity = 0.95f; // 静止时几乎完全跟随
+                    }
+                    else if (velocityLength < ElasticitySlowSpeed)
+                    {
+                        currentElasticity = 0.85f; // 慢速移动（约行走及以下）
+                    }
+                    else
+                    {
+                        currentElasticity = 0.75f; // 快速移动（跑/冲刺）
+                    }
+
+                    // 应用环境弹性系数调整
+                    currentElasticity = Mathf.Clamp(currentElasticity * _environmentElasticCoefficient, 0.1f, 1.0f);
+
+                    // 状态级弹性覆盖（面板 CameraStateConfig.ElasticityOverride；<=0 表示不覆盖，默认为 0 故当前行为不变）
+                    float stateElasticity = GetCurrentStateConfig().ElasticityOverride;
+                    if (stateElasticity > 0f)
+                    {
+                        currentElasticity = Mathf.Clamp(stateElasticity, 0.1f, 1f);
+                    }
+
+                    _elasticFocus = Vector3.Lerp(
+                        _elasticFocus,
+                        desiredFocus,
+                        currentElasticity
+                    );
                 }
-                
-                // 应用环境弹性系数调整
-                currentElasticity = Mathf.Clamp(currentElasticity * _environmentElasticCoefficient, 0.1f, 1.0f);
-                
-                focusPoint = Vector3.Lerp(
-                    currentFocusPoint,
-                    targetPosition + GetDynamicFocusOffset(),
-                    currentElasticity
-                );
+
+                focusPoint = _elasticFocus;
                 
                 // 应用惯性效果
                 if (EnableInertia)
@@ -1188,6 +1190,7 @@ namespace HundunWorld.Game
             {
                 // ❌ 禁用弹性跟随,直接使用目标位置
                 focusPoint = targetPosition + GetDynamicFocusOffset();
+                _elasticFocusValid = false; // 下次回到弹性跟随时重新锚定
                 _smoothYaw = Yaw;
                 _cameraInertia = Vector3.Zero;
             }
@@ -1215,7 +1218,6 @@ namespace HundunWorld.Game
                 if (EnableAsyncCollisionDetection && TryGetAsyncCollisionResult(out hasCollision, out collisionDistance))
                 {
                     // 使用异步结果
-                    _isColliding = hasCollision;
                 }
                 else
                 {
@@ -1227,7 +1229,6 @@ namespace HundunWorld.Game
                     
                     // 执行同步碰撞检测
                     hasCollision = CheckCollision(focusPoint, Pitch, out collisionDistance);
-                    _isColliding = hasCollision;
                 }
                 
                 if (CurrentState == CameraState.OverShoulder && hasCollision && collisionDistance <= MinDistance)
@@ -1244,6 +1245,13 @@ namespace HundunWorld.Game
                 }
 
                 // 优先级控制：设置碰撞优先级（已移除优化代码，此处保留空逻辑）
+
+                // 一旦不再受阻，清空避障缓存，下次受阻时立即重新试探
+                if (!hasCollision)
+                {
+                    _smartAvoidanceActive = false;
+                    _smartAvoidanceDistance = 0f;
+                }
                 
                 if (hasCollision)
                 {
@@ -1253,22 +1261,35 @@ namespace HundunWorld.Game
                     // 只有当碰撞距离小于最小距离时，才考虑调整角度
                     if (collisionDistance <= MinDistance && EnableSmartAvoidance)
                     {
-                        //Debug.LogWarning($"[SmartAvoidance] 碰撞距离过小({collisionDistance:F2} <= {MinDistance:F2}), 尝试调整角度到{SmartAvoidancePitch}°...");
-                        
-                        // 检查智能避障角度是否能提供更大距离
-                        bool hasCollisionAtAvoidance = CheckCollision(focusPoint, SmartAvoidancePitch, out float collisionDistanceAtAvoidance);
-                        
-                        // 只有当新角度提供的距离明显更大时才切换
-                        if (collisionDistanceAtAvoidance > collisionDistance * 1.2f) // 至少增加20%
+                        // 避障试探要再跑一遍完整的多射线检测，按间隔复用结果：
+                        // 目标点移动超过阈值、间隔到期、或上次测得的避障距离本身很小（贴墙）时才重测，
+                        // 最后一种情况保持逐帧重测以保证安全。
+                        bool probeStale = _gameTime - _lastSmartAvoidanceCheckTime >= SmartAvoidanceCheckInterval;
+                        bool focusMoved = Vector3.Distance(focusPoint, _lastSmartAvoidanceFocus) > SmartAvoidanceFocusTolerance;
+                        bool tooCloseToPersist = _smartAvoidanceDistance <= MinDistance * 1.5f;
+
+                        if (probeStale || focusMoved || tooCloseToPersist)
+                        {
+                            _lastSmartAvoidanceCheckTime = _gameTime;
+                            _lastSmartAvoidanceFocus = focusPoint;
+
+                            // 检查智能避障角度是否能提供更大距离
+                            CheckCollision(focusPoint, SmartAvoidancePitch, out float collisionDistanceAtAvoidance, allowCache: false);
+                            _smartAvoidanceDistance = collisionDistanceAtAvoidance;
+                            _smartAvoidanceActive = collisionDistanceAtAvoidance > collisionDistance * 1.2f; // 至少增加20%
+                        }
+
+                        if (_smartAvoidanceActive)
                         {
                             effectivePitch = SmartAvoidancePitch;
-                            collisionDistance = collisionDistanceAtAvoidance;
-                            //Debug.Log($"[SmartAvoidance] ✅ 切换到{SmartAvoidancePitch}°视角, 距离从{collisionDistance:F2}cm增加到{collisionDistanceAtAvoidance:F2}cm");
+                            collisionDistance = Mathf.Max(_smartAvoidanceDistance, collisionDistance);
+                            //Debug.Log($"[SmartAvoidance] ✅ 切换到{SmartAvoidancePitch}°视角, 距离:{collisionDistance:F2}cm");
                         }
-                        else
-                        {
-                            //Debug.Log($"[SmartAvoidance] ✖️ {SmartAvoidancePitch}°视角未改善({collisionDistanceAtAvoidance:F2}cm), 保持当前角度");
-                        }
+                    }
+                    else
+                    {
+                        // 距离已足够，无需避障
+                        _smartAvoidanceActive = false;
                     }
                 }
                 
@@ -1322,7 +1343,6 @@ namespace HundunWorld.Game
                             smoothSpeed = effectiveCollisionSmoothSpeed * 1.5f;
                         }
                         
-                        _lastObstructionDistance = collisionDistance;
                     }
                     else
                     {
@@ -1335,10 +1355,12 @@ namespace HundunWorld.Game
                     
                     _wasColliding = stableCollisionState;
                     
+                    // t 必须钳位：smoothSpeed 高档可达 60（12*5），低帧率下 dt*60 > 1，
+                    // Mathf.Lerp 不钳位会外推过冲，表现为贴墙时距离来回泵动
                     _currentCollisionDistance = Mathf.Lerp(
                         _currentCollisionDistance,
                         collisionDistance,
-                        Time.DeltaTime * smoothSpeed
+                        Mathf.Clamp(Time.DeltaTime * smoothSpeed, 0f, 1f)
                     );
                     
                     // ✅ 关键：碰撞距离可以突破环境限制以确保相机可见性
@@ -1353,7 +1375,6 @@ namespace HundunWorld.Game
                 // 没有启用碰撞检测时,直接使用理想距离
                 effectiveDistance = Distance;
                 _currentCollisionDistance = Distance;
-                _isColliding = false;
             }
 
             // 6. 计算相机位置(使用有效俯仰角和平滑Yaw角，避免重影)
@@ -1375,13 +1396,16 @@ namespace HundunWorld.Game
                 cameraPosition += _shakeOffset;
             }
 
-            // 8. 设置相机位置和朝向
-            Actor.Position = cameraPosition + GetCombatCameraOffset();
-            
-            // 计算朝向向量
-            Vector3 direction = focusPoint - cameraPosition;
-            direction.Normalize();
-            Actor.Orientation = Quaternion.LookRotation(direction, Vector3.Up);
+            // 8. 设置相机位置和朝向（外部镜头特效接管期间不写入，避免两者逐帧互相覆盖）
+            if (!_externalCameraControl)
+            {
+                Actor.Position = cameraPosition + GetCombatCameraOffset();
+
+                // 计算朝向向量
+                Vector3 direction = focusPoint - cameraPosition;
+                direction.Normalize();
+                Actor.Orientation = Quaternion.LookRotation(direction, Vector3.Up);
+            }
             
             // 9. 更新FOV
             if (EnableDynamicFOV)
@@ -1389,11 +1413,11 @@ namespace HundunWorld.Game
                 UpdateDynamicFOV();
             }
             
-            // 10. 更新地面穿透防护系统（在设置相机位置后）
-            if (EnableGroundPenetrationProtection)
-            {
-                UpdateGroundPenetrationProtection();
-            }
+            // 10.（已并入第 6.5 步 GetSafeCameraPosition 的托底钳制）
+            // 原"地面穿透防护"在 Actor.Position/Orientation 写完后又对 Y 做二次拉高：
+            // 下一帧第 8 步又从焦点整体重算位置，二次修正被抹除又重施，且其预测项
+            // 在俯视角贴地时逐帧抖动 ±25cm——正是贴地/坡面晃动的主通道。托底改由
+            // GetSafeCameraPosition 一次性完成（含相机自身地面探针 + 时间平滑）。
             
             // 11. 性能监控：结束帧计时和统计更新
             if (EnablePerformanceMonitoring)
@@ -1413,97 +1437,36 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
-        /// 更新地面穿透防护
+        /// 刷新地面探针（相机下方 / 角色脚下），按 GroundCheckInterval 节流。
+        /// 两条探针都是"向下找地面"的静态几何查询，10Hz 足够；
+        /// 相机 X/Z 与最终位置一致（高度钳制只改 Y），因此可用候选位置探测。
         /// </summary>
-        private void UpdateGroundPenetrationProtection()
+        private void RefreshGroundProbes(Vector3 cameraPosition)
         {
-            if (!EnableGroundPenetrationProtection || Target == null || _camera == null)
+            if (_groundProbeValid && _gameTime - _groundProbeTime < GroundCheckInterval)
                 return;
 
-            // 限制检测频率，避免性能问题
-            float currentTime = Time.DeltaTime;
-            if (currentTime - _lastGroundCheckTime < GroundCheckInterval)
-                return;
+            _groundProbeValid = true;
+            _groundProbeTime = _gameTime;
 
-            _lastGroundCheckTime = currentTime;
-            
+            _hasGroundUnderCamera = Physics.RayCast(cameraPosition, Vector3.Down, out RayCastHit cameraHit, GroundCheckDistance, GroundLayers);
+            _groundHeightUnderCamera = _hasGroundUnderCamera ? cameraHit.Point.Y : 0f;
+
+            if (Target != null)
+            {
+                _hasGroundUnderCharacter = Physics.RayCast(Target.Position, Vector3.Down, out RayCastHit characterHit, CliffCheckDistance, GroundLayers);
+                _groundHeightUnderCharacter = _hasGroundUnderCharacter ? characterHit.Point.Y : 0f;
+            }
+            else
+            {
+                _hasGroundUnderCharacter = false;
+            }
+
             // 性能监控：地面检测计数
             if (EnablePerformanceMonitoring)
             {
                 _performanceStats.GroundCheckCount++;
             }
-
-            // 获取相机当前位置
-            Vector3 cameraPosition = Actor.Position;
-            
-            // 向下发射射线检测地面
-            Vector3 rayStart = cameraPosition;
-            Vector3 rayDirection = Vector3.Down;
-            
-            if (Physics.RayCast(rayStart, rayDirection, out RayCastHit hit, GroundCheckDistance, GroundLayers))
-            {
-                _isGroundDetected = true;
-                _targetGroundHeight = hit.Point.Y + MinGroundHeight;
-                
-                // 如果启用地面高度预测，计算预测位置
-                if (EnableGroundHeightPrediction)
-                {
-                    // 计算相机移动方向
-                    Vector3 cameraVelocity = (cameraPosition - _lastCameraPosition) / Mathf.Max(Time.DeltaTime, 0.001f);
-                    _lastCameraPosition = cameraPosition;
-                    
-                    // 如果相机正在向下移动，提前调整高度
-                    if (cameraVelocity.Y < -0.1f)
-                    {
-                        // 预测相机在下一帧的位置
-                        Vector3 predictedPosition = cameraPosition + cameraVelocity * Time.DeltaTime * GroundPredictionDistance;
-                        
-                        // 检查预测位置是否会穿透地面
-                        if (WillPenetrateGround(predictedPosition))
-                        {
-                            // 提前调整高度，提供更大的安全距离
-                            _targetGroundHeight += MinGroundHeight * 0.5f;
-                        }
-                    }
-                }
-                
-                // 平滑调整相机高度
-                if (cameraPosition.Y < _targetGroundHeight)
-                {
-                    float newY = Mathf.Lerp(cameraPosition.Y, _targetGroundHeight, Time.DeltaTime * GroundHeightAdjustSpeed);
-                    Actor.Position = new Vector3(cameraPosition.X, newY, cameraPosition.Z);
-                }
-            }
-            else
-            {
-                _isGroundDetected = false;
-            }
-            
-            // 更新当前地面高度（用于平滑过渡）
-            _currentGroundHeight = Mathf.Lerp(_currentGroundHeight, _targetGroundHeight, Time.DeltaTime * GroundHeightAdjustSpeed);
-        }
-
-        /// <summary>
-        /// 检查指定位置是否会穿透地面
-        /// </summary>
-        /// <param name="position">要检查的位置</param>
-        /// <returns>是否会穿透地面</returns>
-        private bool WillPenetrateGround(Vector3 position)
-        {
-            if (!EnableGroundPenetrationProtection)
-                return false;
-
-            // 向下发射射线检测地面
-            Vector3 rayStart = position;
-            Vector3 rayDirection = Vector3.Down;
-            
-            if (Physics.RayCast(rayStart, rayDirection, out RayCastHit hit, GroundCheckDistance, GroundLayers))
-            {
-                // 如果相机位置低于地面加上最小高度，则会穿透
-                return position.Y < hit.Point.Y + MinGroundHeight;
-            }
-            
-            return false;
         }
 
         /// <summary>
@@ -1521,6 +1484,9 @@ namespace HundunWorld.Game
                 return position;
 
             Vector3 adjustedPosition = position;
+
+            // 地面/悬崖探针（按间隔节流，供下方各分支复用）
+            RefreshGroundProbes(position);
             
             // === 1. 室内场景：天花板检测 ===
             if (EnableCeilingDetection && (CurrentEnvironment == EnvironmentType.Indoor || CurrentEnvironment == EnvironmentType.Cave || CurrentEnvironment == EnvironmentType.Corridor))
@@ -1590,51 +1556,51 @@ namespace HundunWorld.Game
                 }
             }
             
-            // === 3. 悬崖边缘：从角色脚下检测 ===
+            // === 3. 地面托底：角色侧与相机侧取更高者，再做时间平滑 ===
+            // 原结构是"if 悬崖检测则只看角色脚下 else 才看相机下方"，本项目 EnableCliffDetection
+            // 默认开启 ⇒ 相机自身地面钳制分支常年不生效，俯视角贴地时相机扎进坡体，
+            // 只能靠（已删除的）第 10 步每帧事后拉高，与第 8 步的整帧重算互相抹除 → 持续晃动。
+            float rawFloorY = float.MinValue;
             if (EnableCliffDetection && Target != null)
             {
-                // 从角色脚下位置向下检测
-                Vector3 characterFootPosition = Target.Position;
-                Vector3 cliffRayDirection = Vector3.Down;
-                
-                bool hasGroundBelowCharacter = Physics.RayCast(characterFootPosition, cliffRayDirection, out RayCastHit cliffHit, CliffCheckDistance, GroundLayers);
-                
-                if (!hasGroundBelowCharacter)
+                if (!_hasGroundUnderCharacter)
                 {
-                    // 角色下方没有地面，可能是悬崖边缘
-                    // 使用角色当前高度作为最低高度
-                    float safeCliffY = characterFootPosition.Y + MinGroundHeight;
-                    if (adjustedPosition.Y < safeCliffY)
-                    {
-                        adjustedPosition.Y = safeCliffY;
-                        //Debug.LogWarning($"[悬崖检测] 角色下方无地面，调整相机高度: {position.Y:F2} -> {safeCliffY:F2}");
-                    }
+                    // 角色下方没有地面，可能是悬崖边缘：以角色当前高度作为最低高度
+                    rawFloorY = Target.Position.Y + MinGroundHeight;
                 }
                 else
                 {
-                    // 检测到地面，使用地面高度
-                    float safeGroundY = cliffHit.Point.Y + MinGroundHeight;
-                    if (adjustedPosition.Y < safeGroundY)
-                    {
-                        adjustedPosition.Y = safeGroundY;
-                    }
+                    rawFloorY = _groundHeightUnderCharacter + MinGroundHeight;
+                }
+            }
+            if (_hasGroundUnderCamera)
+            {
+                rawFloorY = Mathf.Max(rawFloorY, _groundHeightUnderCamera + MinGroundHeight);
+            }
+
+            if (rawFloorY > float.MinValue)
+            {
+                if (!_smoothedFloorValid || Mathf.Abs(rawFloorY - _smoothedFloorY) > 1000f)
+                {
+                    // 首帧/传送/落差巨大的跳变：直接吸附，不做长途回拉
+                    _smoothedFloorY = rawFloorY;
+                    _smoothedFloorValid = true;
+                }
+                else
+                {
+                    // 探针按 0.1s 节流，原始托底是台阶值；直接套用会以 10Hz 顿挫相机，
+                    // 插值把台阶变成连续坡（速率需快于探针节奏，否则上坡时穿模变深）
+                    _smoothedFloorY = Mathf.Lerp(_smoothedFloorY, rawFloorY, Mathf.Clamp(Time.DeltaTime * 15f, 0f, 1f));
+                }
+                if (adjustedPosition.Y < _smoothedFloorY)
+                {
+                    adjustedPosition.Y = _smoothedFloorY;
                 }
             }
             else
             {
-                // === 4. 普通地面检测 ===
-                Vector3 rayStart = adjustedPosition;
-                Vector3 rayDirection = Vector3.Down;
-                
-                if (Physics.RayCast(rayStart, rayDirection, out RayCastHit hit, GroundCheckDistance, GroundLayers))
-                {
-                    // 如果相机位置低于地面加上最小高度，则调整位置
-                    float safeY = hit.Point.Y + MinGroundHeight;
-                    if (adjustedPosition.Y < safeY)
-                    {
-                        adjustedPosition.Y = safeY;
-                    }
-                }
+                // 角色与相机下方都探不到地面（跳崖/悬空）：撤掉托底并丢弃历史
+                _smoothedFloorValid = false;
             }
             
             return adjustedPosition;
@@ -1650,8 +1616,8 @@ namespace HundunWorld.Game
                 return;
             }
             
-            // 检查一键恢复基准视角
-            if (EnableBaselineReset && Input.GetKeyDown(ResetKey))
+            // 检查一键恢复基准视角（外部镜头特效接管时不响应，避免恢复过程与特写抢位姿）
+            if (EnableBaselineReset && !_externalCameraControl && Input.GetKeyDown(ResetKey))
             {
                 ResetToBaseline();
                 return;
@@ -1799,6 +1765,7 @@ namespace HundunWorld.Game
             }
             
             // 5射线模式：中心 + 上下左右
+            // 注意：偏移的含义是"视线右方(X) / 视线上方(Y)"，使用处会按当前视线方向展开（见 BuildRayBasis）
             if (rayCount >= 5)
             {
                 _collisionRayDirections[1] = new Vector3(0, CollisionRadius, 0);   // 上
@@ -1827,13 +1794,34 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
+        /// 构造垂直于射线的横截面基（右/上），供多射线探针在视平面上展开偏移。
+        /// 若直接用世界轴偏移，当视线接近某条世界轴时偏移会退化成沿射线的冗余采样，
+        /// 导致该朝向下细小障碍漏检、相机穿插。
+        /// </summary>
+        private static void BuildRayBasis(Vector3 direction, out Vector3 right, out Vector3 up)
+        {
+            right = Vector3.Cross(Vector3.Up, direction);
+            if (right.LengthSquared < 1e-6f)
+            {
+                // 视线与世界上方平行时的回退
+                right = Vector3.Cross(Vector3.Forward, direction);
+            }
+            right = Vector3.Normalize(right);
+            up = Vector3.Normalize(Vector3.Cross(direction, right));
+        }
+
+        /// <summary>
         /// 检查指定角度下的碰撞情况
         /// </summary>
         /// <param name="focusPoint">聚焦点</param>
         /// <param name="pitch">检测使用的俯仰角</param>
         /// <param name="safeDistance">输出的安全距离</param>
+        /// <param name="allowCache">
+        /// 是否允许读写碰撞缓存。缓存不区分俯仰角，智能避障的试探射线必须传 false，
+        /// 否则会用一个角度的结果污染另一个角度的检测。
+        /// </param>
         /// <returns>是否有碰撞</returns>
-        private bool CheckCollision(Vector3 focusPoint, float pitch, out float safeDistance)
+        private bool CheckCollision(Vector3 focusPoint, float pitch, out float safeDistance, bool allowCache = true)
         {
             safeDistance = Distance;
             
@@ -1867,7 +1855,7 @@ namespace HundunWorld.Game
             direction.Normalize();
 
             // === 步骤1：检查缓存是否可用 ===
-            if (_collisionCache.IsValid(idealCameraPos, Distance, _gameTime))
+            if (allowCache && _collisionCache.IsValid(idealCameraPos, Distance, Yaw, pitch, _gameTime))
             {
                 safeDistance = _collisionCache.SafeDistance;
                 
@@ -1892,14 +1880,15 @@ namespace HundunWorld.Game
             // === 步骤2：执行多重射线检测 ===
             // 多射线检测
             bool hasCollision = false;
-            int collisionCount = 0;
-            string collisionObject = "";
             float minDistance = Distance;
+
+            // 探针横截面基：让偏移构成视平面上的十字/米字，而不是固定世界轴
+            BuildRayBasis(direction, out Vector3 rayRight, out Vector3 rayUp);
             
             foreach (var offset in _collisionRayDirections)
             {
-                // 起始点：聚焦点 + 偏移
-                Vector3 startPoint = focusPoint + offset;
+                // 起始点：聚焦点 + 视平面偏移（offset.X 沿视线右方，offset.Y 沿视线上方）
+                Vector3 startPoint = focusPoint + rayRight * offset.X + rayUp * offset.Y;
 
                 // 使用Distance作为射线检测距离，使用层级掩码排除角色
                 if (Physics.RayCast(startPoint, direction, out RayCastHit hit, Distance, CollisionLayerMask))
@@ -1916,24 +1905,26 @@ namespace HundunWorld.Game
                             continue; // 跳过此碰撞
                         }
                     }
+
+                    // 忽略"视线下方的上表面"（地形/台阶面）：俯视角时视线从焦点斜向后上方扫出，
+                    // 擦到身后坡面会产生"假遮挡"，逐帧推动碰撞距离形成沿视线的抽插晃动。
+                    // 相机真正入坡由 GetSafeCameraPosition 的地面托底负责，不靠这条视线射线。
+                    if (hit.Normal.Y > 0.7f && hit.Point.Y < focusPoint.Y)
+                    {
+                        continue;
+                    }
                     
                     // 关键修复：计算碰撞点到聚焦点的距离（沿着相机方向）
                     Vector3 hitToFocus = hit.Point - focusPoint;
                     float hitDistance = hitToFocus.Length;
                     
-                    // ⚠️ 关键：检查是否是"从内部碰撞"
-                    // 动态计算内部碰撞阈值：使用当前相机距离的 30%，但不小于 50cm
-                    float innerCollisionThreshold = Mathf.Max(_currentCollisionDistance * 0.3f, 50.0f);
+                    // 内部碰撞阈值必须是常量：原写法 `Max(_currentCollisionDistance*0.3, 50)`
+                    // 引用了被本函数驱动的状态量——贴墙时"命中被忽略→距离恢复→命中又被计入"
+                    // 形成自激振荡；角色胶囊半径有限，固定 50cm 足以滤掉身上挂件。
+                    float innerCollisionThreshold = 50.0f;
                     
                     if (hitDistance < innerCollisionThreshold)
                     {
-                        // 记录内部碰撞但不使用
-                        if (hit.Collider != null)
-                        {
-                            var actor = hit.Collider.AttachedRigidBody?.Parent ?? hit.Collider.Parent;
-                            string objName = actor != null ? actor.Name : "Unknown";
-                            //Debug.LogWarning($"[Collision] 检测到内部碰撞 {objName} @{hitDistance:F2}cm (阈值:{innerCollisionThreshold:F2}cm, 已忽略)");
-                        }
                         continue; // 忽略内部碰撞
                     }
                     
@@ -1948,14 +1939,6 @@ namespace HundunWorld.Game
                     {
                         minDistance = hitDistance;
                         hasCollision = true;
-                        collisionCount++;
-                        
-                        // 记录碰撞物体名称和距离信息
-                        if (hit.Collider != null)
-                        {
-                            var actor = hit.Collider.AttachedRigidBody?.Parent ?? hit.Collider.Parent;
-                            collisionObject = $"{(actor != null ? actor.Name : "Unknown")} @{hitDistance:F2}cm";
-                        }
                     }
                 }
             }
@@ -1983,15 +1966,19 @@ namespace HundunWorld.Game
             safeDistance = minDistance;
             
             // === 步骤5：更新缓存 ===
-            _collisionCache.LastPosition = idealCameraPos;
-            _collisionCache.LastDistance = Distance;
-            _collisionCache.CacheTime = _gameTime;
-            _collisionCache.HasObstruction = hasCollision;
-            _collisionCache.SafeDistance = safeDistance;
+            if (allowCache)
+            {
+                _collisionCache.LastPosition = idealCameraPos;
+                _collisionCache.LastDistance = Distance;
+                _collisionCache.LastYaw = Yaw;
+                _collisionCache.LastPitch = pitch;
+                _collisionCache.CacheTime = _gameTime;
+                _collisionCache.HasObstruction = hasCollision;
+                _collisionCache.SafeDistance = safeDistance;
+            }
             
-            // 调试日志(总是输出,方便调试)
-            string hitInfo = hasCollision ? $", 碰撞物:{collisionObject}" : "";
-            //Debug.Log($"[Collision@{pitch:F0}°] 碰撞:{hasCollision}, 碰撞数:{collisionCount}{hitInfo}, 安全距离:{minDistance:F2}, 理想距离:{Distance:F2}");
+            // 调试日志(需要时手动开启,避免每帧构造字符串)
+            //Debug.Log($"[Collision@{pitch:F0}°] 碰撞:{hasCollision}, 安全距离:{minDistance:F2}, 理想距离:{Distance:F2}");
             
             // 性能监控：结束计时
             if (EnablePerformanceMonitoring)
@@ -2091,13 +2078,15 @@ namespace HundunWorld.Game
                         stateFOVOffset = FlyingFOVOffset;
                         break;
                     default:
-                        // 检查是否在冲刺（通过PlayerController或速度判断）
-                        bool isSprinting = _playerController != null && _playerController.IsSprinting();
-                        if (!isSprinting)
-                        {
-                            float currentSpeed = _targetVelocity.Length;
-                            isSprinting = currentSpeed > MaxSpeed * 0.8f;
-                        }
+                        // 冲刺判定优先用控制器；只有拿不到控制器时才退回按速度判断。
+                        // 原实现在控制器明确回答"未冲刺"后仍会再按速度判一次，而 MaxSpeed(=50) 与
+                        // _targetVelocity 的世界单位（本工程为 cm/s，普通行走就有数百）不同量级，
+                        // 于是"走路"也被当成冲刺、FOV 无差别 +10。Shift 同时绑定 Run/Sprint，
+                        // 因此真冲刺仍会走控制器分支，不受影响。
+                        bool isSprinting = _playerController != null
+                            ? _playerController.IsSprinting()
+                            : _targetVelocity.Length > MaxSpeed * 0.8f;
+
                         if (isSprinting)
                         {
                             stateFOVOffset = SprintFOVOffset; // +10°
@@ -2155,7 +2144,11 @@ namespace HundunWorld.Game
             _shakeOffset = new Vector3(x, y, z);
 
             // 衰减抖动强度
-            _currentShakeIntensity = Mathf.Max(0f, _currentShakeIntensity - ShakeDecaySpeed * Time.DeltaTime);
+            _currentShakeIntensity = Mathf.Max(0f, _currentShakeIntensity - _shakeDecaySpeed * Time.DeltaTime);
+            if (_currentShakeIntensity <= 0f)
+            {
+                _shakeDecaySpeed = ShakeDecaySpeed; // 抖动结束后恢复为配置的衰减速度
+            }
         }
 
         /// <summary>
@@ -2170,8 +2163,33 @@ namespace HundunWorld.Game
 
             if (duration > 0f)
             {
-                ShakeDecaySpeed = intensity / duration;
+                _shakeDecaySpeed = intensity / duration;
             }
+        }
+
+        /// <summary>
+        /// 锁定目标候选校验。
+        /// 必须排除本地玩家自身及其子物体（模型/挂点/名牌）与相机自身及其子物体，
+        /// 否则 Level.GetActors 会把场景里的灯光、天空、导航标记等一并当成可锁定目标；
+        /// 同时按 LockOnTargetLayers 掩码过滤（掩码为 0 时不启用层级过滤）。
+        /// </summary>
+        private bool IsValidLockOnCandidate(Actor actor)
+        {
+            if (actor == null || actor == Target || actor == Actor)
+                return false;
+
+            // 排除目标与相机自身的子物体（玩家模型/挂点/名牌、相机挂点）
+            if (IsChildOf(actor, Target) || IsChildOf(actor, Actor))
+                return false;
+
+            // 排除目标与相机自身的祖先（挂载容器、脚本宿主、场景根等无实体的容器 Actor）
+            if (IsChildOf(Target, actor) || IsChildOf(Actor, actor))
+                return false;
+
+            if ((uint)LockOnTargetLayers != 0 && !LockOnTargetLayers.HasLayer(actor.Layer))
+                return false;
+
+            return true;
         }
 
         /// <summary>
@@ -2212,7 +2230,6 @@ namespace HundunWorld.Game
         {
             if (!EnableCombatCameraEffects) return;
             _isDodging = true;
-            _dodgeDirection = dodgeDirection;
             _dodgeOffset = dodgeDirection * DodgeOffsetStrength;
         }
 
@@ -2220,7 +2237,6 @@ namespace HundunWorld.Game
         {
             if (!EnableCombatCameraEffects) return;
             _isHitReacting = true;
-            _hitDirection = hitDirection;
             _hitReactionOffset = hitDirection * HitReactionStrength * Mathf.Clamp(damage, 0.5f, 3f);
             _hitReactionTimer = HitReactionDuration;
         }
@@ -2403,17 +2419,12 @@ namespace HundunWorld.Game
             _baselinePitch = 35.0f;
             
             // 2. 角色正后方（相机与地面保持水平，Roll=0）
-            if (Target != null)
-            {
-                // 获取角色当前朝向的Yaw角
-                float characterYaw = Target.Orientation.EulerAngles.Y;
-                // 正后方 = 角色朝向 + 180°
-                _baselineYaw = (characterYaw + 180f) % 360f;
-            }
-            else
-            {
-                _baselineYaw = 180f; // 默认后方
-            }
+            // 与 UpdateAutoAlign 同一套推导：本文件 offset 水平分量 = (h·sinYaw, −h·cosYaw)，
+            // 角色前向 = (sinψ, 0, cosψ)（Flax: Euler(0,ψ,0) 作用于 Forward=(0,0,1)），
+            // "相机在角色正后方" ⇔ 偏移 = −(角色前向) ⇒ Yaw = −ψ。
+            // 原来的 ψ+180 会把相机放到角色正面（ψ=0 时相机落到 +Z，而角色也朝 +Z）。
+            float characterYaw = Target.Orientation.EulerAngles.Y;
+            _baselineYaw = (360f - characterYaw) % 360f;
             
             // 3. 根据环境自适应距离（单位：厝米cm）
             switch (CurrentEnvironment)
@@ -2447,7 +2458,7 @@ namespace HundunWorld.Game
             
             // 4. 碰撞检测微调（确保不会被遮挡）
             Vector3 testFocusPoint = Target.Position + GetDynamicFocusOffset();
-            if (CheckCollision(testFocusPoint, _baselinePitch, out float safeDistance))
+            if (CheckCollision(testFocusPoint, _baselinePitch, out float safeDistance, allowCache: false))
             {
                 // 如果基准距离会碰撞，使用安全距离
                 _baselineDistance = Mathf.Min(_baselineDistance, safeDistance);
@@ -2467,15 +2478,23 @@ namespace HundunWorld.Game
             // 检查是否正在手动旋转
             bool isManualRotating = Input.GetMouseButton(MouseButton.Right);
             
-            // 检查是否在战斗中（如果启用了此选项）
-            bool isInCombat = DisableAlignInCombat && (CurrentState == CameraState.Combat || CurrentState == CameraState.OverShoulder);
+            // Yaw 已被其他系统接管的场合必须退出自动对齐：
+            // UpdateLockOn 先于本方法执行，若不排除，自动对齐会在同一帧把 Yaw 拉向角色背后，
+            // 锁定结果被覆盖（表现为锁定目标"脱靶"）。
+            // 战斗姿态是否排除仍遵循面板开关，锁定状态则一律排除。
+            bool isRotationOwnedByOtherSystem = _isLockOnActive
+                || _isExecutionCamera
+                || CurrentState == CameraState.LockOn
+                || CurrentState == CameraState.BossBattle
+                || CurrentState == CameraState.Cutscene
+                || (DisableAlignInCombat && (CurrentState == CameraState.Combat || CurrentState == CameraState.OverShoulder));
             
             // 检查角色移动速度
             float characterSpeed = _targetVelocity.Length;
             bool isCharacterMoving = characterSpeed > AlignMinSpeed;
             
-            // 如果正在手动旋转、处于战斗中或角色静止，重置计时器
-            if (isManualRotating || isInCombat || !isCharacterMoving)
+            // 如果正在手动旋转、Yaw 被其他系统接管或角色静止，重置计时器
+            if (isManualRotating || isRotationOwnedByOtherSystem || !isCharacterMoving)
             {
                 _alignTimer = 0f;
                 _isAligning = false;
@@ -2501,8 +2520,13 @@ namespace HundunWorld.Game
                 if (!_isAligning)
                 {
                     // 开始对齐，计算目标角度
+                    // "相机在角色正后方" ⇔ 相机相对焦点的水平偏移 = −(角色前向)。
+                    // 由本文件 CalculateCameraOffset：offset 水平分量 = (h·sinYaw, −h·cosYaw)；
+                    // 由 Flax 定义：角色前向 = (sinψ, 0, cosψ)（Euler(0,ψ,0) 作用于 Forward=(0,0,1)）。
+                    // 代入解得 Yaw = −ψ。原先的 ψ+180 会把相机放到角色**正面**
+                    // （ψ=0 时相机落到 +Z，而角色正向也是 +Z），与"正后方"的意图相反。
                     float characterYaw = Target.Orientation.EulerAngles.Y;
-                    _targetAlignYaw = (characterYaw + 180f) % 360f; // 角色正后方
+                    _targetAlignYaw = (360f - characterYaw) % 360f; // 角色正后方
                     _isAligning = true;
                     //Debug.Log($"[自动对齐] 开始对齐到角色后方 - 当前:{Yaw:F1}°, 目标:{_targetAlignYaw:F1}°");
                 }
@@ -2569,6 +2593,10 @@ namespace HundunWorld.Game
         private void UpdateBaselineReset()
         {
             if (Target == null) return;
+
+            // 外部镜头特效接管期间不要写入位姿，否则会与特写互相覆盖；
+            // 保持 _isResetting 为 true，等接管结束后继续恢复
+            if (_externalCameraControl) return;
             
             // 平滑过渡到基准值
             float lerpSpeed = Time.DeltaTime * ResetSmoothSpeed;
@@ -2623,6 +2651,7 @@ namespace HundunWorld.Game
                 _smoothYaw = _baselineYaw;
                 _currentCollisionDistance = _baselineDistance;
                 _isResetting = false;
+                _elasticFocusValid = false; // 恢复期间相机位姿由基准恢复直接写入，回到弹性跟随时需重新锚定
                 
                 //Debug.Log($"[BaselineReset] ✅ 基准视角恢复完成");
             }
@@ -2652,7 +2681,6 @@ namespace HundunWorld.Game
             };
             
             // 初始化状态
-            _previousState = CurrentState;
             _isTransitioning = false;
             
             // 初始化目标值
@@ -2691,7 +2719,7 @@ namespace HundunWorld.Game
         /// </summary>
         private CameraState DetectCameraState()
         {
-            if (_lockOnTarget != null && _lockOnTarget.Tag == "Boss")
+            if (_lockOnTarget != null && _lockOnTarget.HasTag(BossTag))
             {
                 return CameraState.BossBattle;
             }
@@ -2712,11 +2740,15 @@ namespace HundunWorld.Game
                 return CameraState.Climbing;
             }
             
-            // 速度检测
-            float speed = _targetVelocity.Length;
-            
-            // 高速移动且在高处可能是飞行
-            if (speed > 30f && Target.Position.Y > 10f)
+            // 飞行判定：不能再用"绝对速度 + 绝对高度"。本工程移动速度以 m/s 计（PlayerController.ComputeCurrentMaxSpeed），
+            // 而世界坐标单位是 cm（本文件焦点高度 170=1.7m 等常量都按 cm 取值，日志中玩家 Y≈1000），
+            // 于是常态奔跑的 _targetVelocity 就有数百单位/秒（>30 恒成立）、Y≈1000（>10 恒成立）：
+            // 地面移动一律被判成 Flying，Flying 配置（Pitch 20 / Distance 20 / FOV 70）反复覆盖 Normal 的（30 / 15 / 60），
+            // 并在每次起步/停止时把玩家手动设置的 Pitch 拖走。
+            // 改为"明显离地且未着地"：地面高度取自相机自身的探针，与本文件其它常量同单位。
+            if (_hasGroundUnderCharacter
+                && (Target.Position.Y - _groundHeightUnderCharacter) > FlyingMinHeightAboveGround
+                && _playerController != null && !_playerController.IsGrounded)
             {
                 return CameraState.Flying;
             }
@@ -2747,7 +2779,6 @@ namespace HundunWorld.Game
                 return; // 已经是目标状态
             }
             
-            _previousState = CurrentState;
             CurrentState = newState;
             
             // 获取新状态配置
@@ -2761,7 +2792,6 @@ namespace HundunWorld.Game
             // 开始过渡
             _isTransitioning = true;
             
-            //Debug.Log($"[状态机] 切换状态: {_previousState} → {CurrentState}");
         }
         
         /// <summary>
@@ -2847,8 +2877,7 @@ namespace HundunWorld.Game
                 _lockOnTarget = bestTarget;
                 _isLockOnActive = true;
                 _lockOnLostTimer = 0f;
-                _lockOnTargetLastPosition = bestTarget.Position;
-                if (bestTarget.Tag == BossTag)
+                if (bestTarget.HasTag(BossTag))
                 {
                     SwitchState(CameraState.BossBattle);
                 }
@@ -2878,12 +2907,11 @@ namespace HundunWorld.Game
             if (nextTarget != null)
             {
                 _lockOnTarget = nextTarget;
-                _lockOnTargetLastPosition = nextTarget.Position;
-                if (nextTarget.Tag == BossTag && CurrentState != CameraState.BossBattle)
+                if (nextTarget.HasTag(BossTag) && CurrentState != CameraState.BossBattle)
                 {
                     SwitchState(CameraState.BossBattle);
                 }
-                else if (nextTarget.Tag != BossTag && CurrentState == CameraState.BossBattle)
+                else if (!nextTarget.HasTag(BossTag) && CurrentState == CameraState.BossBattle)
                 {
                     SwitchState(CameraState.LockOn);
                 }
@@ -2908,14 +2936,13 @@ namespace HundunWorld.Game
         private Actor FindBestLockOnTarget()
         {
             if (Target == null) return null;
-            _potentialTargets.Clear();
-            Vector3 forward = _camera != null ? _camera.Direction : Vector3.Forward;
+            Vector3 forward = _camera != null ? _camera.Transform.Forward : Vector3.Forward;
             Vector3 cameraPos = Target.Position + GetDynamicFocusOffset();
             float bestScore = float.MinValue;
             Actor bestTarget = null;
             foreach (var actor in Level.GetActors<Actor>())
             {
-                if (actor == Target) continue;
+                if (!IsValidLockOnCandidate(actor)) continue;
                 if (!actor.IsActiveInHierarchy) continue;
                 Vector3 toTarget = actor.Position - cameraPos;
                 float distance = toTarget.Length;
@@ -2924,7 +2951,7 @@ namespace HundunWorld.Game
                 float angle = Mathf.Acos(Vector3.Dot(forward, dirToTarget)) * Mathf.RadiansToDegrees;
                 if (angle > LockOnDetectionAngle) continue;
                 float score = -distance - angle * 10f;
-                if (actor.Tag == BossTag) score += 1000f;
+                if (actor.HasTag(BossTag)) score += 1000f;
                 if (score > bestScore)
                 {
                     bestScore = score;
@@ -2944,7 +2971,7 @@ namespace HundunWorld.Game
             Actor bestTarget = null;
             foreach (var actor in Level.GetActors<Actor>())
             {
-                if (actor == Target || actor == _lockOnTarget) continue;
+                if (actor == _lockOnTarget || !IsValidLockOnCandidate(actor)) continue;
                 if (!actor.IsActiveInHierarchy) continue;
                 Vector3 toTarget = actor.Position - Target.Position;
                 float distance = toTarget.Length;
@@ -2989,42 +3016,111 @@ namespace HundunWorld.Game
             }
             Vector3 targetDir = _lockOnTarget.Position - Target.Position;
             float targetYaw = Mathf.Atan2(targetDir.X, targetDir.Z) * Mathf.RadiansToDegrees;
-            Yaw = Mathf.Lerp(Yaw, targetYaw, Time.DeltaTime * LockOnSmoothSpeed);
-            _lockOnTargetLastPosition = _lockOnTarget.Position;
+
+            // 必须走最短路径：Yaw 归一化在 [0,360)，而 Atan2 返回 (-180,180]，
+            // 直接 Lerp 会在 0/360 交界处绕远路（最多 360°，镜头会转一大圈）
+            float lockYawDelta = Mathf.DeltaAngle(Yaw, targetYaw);
+            Yaw += lockYawDelta * Mathf.Clamp(Time.DeltaTime * LockOnSmoothSpeed, 0f, 1f);
+
+            if (Yaw < 0f) Yaw += 360f;
+            else if (Yaw >= 360f) Yaw -= 360f;
         }
 
         private void UpdateSoftLock()
         {
             if (!EnableLockOn || _isLockOnActive) return;
-            _softLockTarget = null;
-            if (Target == null || _camera == null) return;
-            Vector3 forward = _camera.Direction;
-            Vector3 cameraPos = Target.Position + GetDynamicFocusOffset();
-            float bestScore = float.MinValue;
-            foreach (var actor in Level.GetActors<Actor>())
+
+            // 软锁定只服务于战斗中的准心吸附，非战斗状态无需做全场景扫描
+            if (!_isInCombat)
             {
-                if (actor == Target) continue;
-                if (!actor.IsActiveInHierarchy) continue;
-                Vector3 toTarget = actor.Position - cameraPos;
-                float distance = toTarget.Length;
-                if (distance > LockOnMaxDistance) continue;
-                Vector3 dirToTarget = Vector3.Normalize(toTarget);
-                float angle = Mathf.Acos(Vector3.Dot(forward, dirToTarget)) * Mathf.RadiansToDegrees;
-                if (angle > SoftLockAngle) continue;
-                float score = -distance;
-                if (score > bestScore)
+                _softLockTarget = null;
+                return;
+            }
+
+            if (Target == null || _camera == null) return;
+
+            // 全场景枚举开销大（Level.GetActors 每次都会分配数组），软锁定无需逐帧刷新候选目标
+            if (_gameTime - _lastSoftLockScanTime >= SoftLockScanInterval)
+            {
+                _lastSoftLockScanTime = _gameTime;
+
+                _softLockTarget = null;
+                Vector3 forward = _camera.Transform.Forward;
+                Vector3 cameraPos = Target.Position + GetDynamicFocusOffset();
+                float bestScore = float.MinValue;
+                foreach (var actor in Level.GetActors<Actor>())
                 {
-                    bestScore = score;
-                    _softLockTarget = actor;
+                    if (!IsValidLockOnCandidate(actor)) continue;
+                    if (!actor.IsActiveInHierarchy) continue;
+                    Vector3 toTarget = actor.Position - cameraPos;
+                    float distance = toTarget.Length;
+                    if (distance > LockOnMaxDistance) continue;
+                    Vector3 dirToTarget = Vector3.Normalize(toTarget);
+                    float angle = Mathf.Acos(Vector3.Dot(forward, dirToTarget)) * Mathf.RadiansToDegrees;
+                    if (angle > SoftLockAngle) continue;
+                    float score = -distance;
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        _softLockTarget = actor;
+                    }
                 }
             }
-            if (_softLockTarget != null && _isInCombat)
+
+            if (_softLockTarget != null)
             {
                 Vector3 toSoftTarget = _softLockTarget.Position - Target.Position;
                 float softYaw = Mathf.Atan2(toSoftTarget.X, toSoftTarget.Z) * Mathf.RadiansToDegrees;
                 float yawDiff = Mathf.DeltaAngle(Yaw, softYaw);
                 Yaw += yawDiff * SoftLockInfluence * Time.DeltaTime;
+
+                // 维持 Yaw 在 [0,360) 约定，避免持续单向吸附造成角度漂移出界
+                if (Yaw < 0f) Yaw += 360f;
+                else if (Yaw >= 360f) Yaw -= 360f;
             }
+        }
+
+        /// <summary>
+        /// 设置战斗状态。进入/退出战斗时由战斗或技能系统调用，驱动 OverShoulder 相机姿态与软锁定吸附。
+        /// </summary>
+        public void SetCombatState(bool inCombat)
+        {
+            _isInCombat = inCombat;
+        }
+
+        /// <summary>
+        /// 外部镜头特效（击杀特写、剧情演出等）接管相机时调用。
+        /// 置为 true 后本相机仍继续做跟随计算，但不再写入位置与朝向，
+        /// 避免与外部镜头逐帧互相覆盖（谁是最后写入者不确定）。
+        /// </summary>
+        public void SetExternalCameraControl(bool active)
+        {
+            _externalCameraControl = active;
+
+            if (!active)
+            {
+                // 交还控制权时同步跟随缓存：特写期间角色已移动，
+                // 否则恢复首帧会因位置差过大算出巨量的移动速度，导致 FOV 突变
+                if (Target != null) _lastTargetPosition = Target.Position;
+                _groundProbeValid = false;   // 特写机位的地面探针已作废，交还后重新探测
+                _smoothedFloorValid = false; // 托底高度重新锚定，避免从特写机位长距离回拉
+            }
+        }
+
+        /// <summary>
+        /// 当前是否有外部系统接管相机
+        /// </summary>
+        public bool IsExternalCameraControlActive()
+        {
+            return _externalCameraControl;
+        }
+
+        /// <summary>
+        /// 当前是否处于战斗状态
+        /// </summary>
+        public bool GetCombatState()
+        {
+            return _isInCombat;
         }
 
         public Vector3 GetCameraRelativeMoveDirection(Vector2 inputDirection)
@@ -3042,7 +3138,7 @@ namespace HundunWorld.Game
             }
             else if (CurrentState == CameraState.OverShoulder && _camera != null)
             {
-                forward = _camera.Direction;
+                forward = _camera.Transform.Forward;
                 forward.Y = 0;
                 if (forward.Length < 0.01f) forward = Vector3.Forward;
                 forward = Vector3.Normalize(forward);
@@ -3084,9 +3180,7 @@ namespace HundunWorld.Game
             };
             
             // 初始化环境状态
-            _previousEnvironment = CurrentEnvironment;
             _environmentDetectionTimer = 0f;
-            _currentLightLevel = 1.0f; // 默认明亮
             
             // 应用初始环境配置
             ApplyEnvironmentConfig(CurrentEnvironment);
@@ -3124,13 +3218,7 @@ namespace HundunWorld.Game
                 {
                     SwitchEnvironment(detectedEnvironment);
                 }
-                
-                // 检测光照级别
-                if (EnableLightDetection)
-                {
-                    DetectLightLevel();
-                }
-            }
+                            }
             
             // 应用环境限制(每帧更新)
             ApplyEnvironmentLimits();
@@ -3199,16 +3287,9 @@ namespace HundunWorld.Game
             
             // 多方向射线检测(上、前、后、左、右5个方向)
             // 注意:不检测向下,因为地面总是存在的,不应计入封闭度
-            Vector3[] directions = new Vector3[]
-            {
-                Vector3.Up,       // 上(检测天花板/屋顶)
-                Vector3.Forward,  // 前
-                Vector3.Backward, // 后
-                Vector3.Left,     // 左
-                Vector3.Right     // 右
-            };
+            Vector3[] directions = EnclosedSpaceDirections;
             
-            float[] distances = new float[] { 100f, 50f, 50f, 50f, 50f };
+            float[] distances = EnclosedSpaceDistances;
             
             int blockedCount = 0;
             float blockedTotalDistance = 0f; // 只统计有障碍物的距离
@@ -3278,16 +3359,13 @@ namespace HundunWorld.Game
         {
             if (Target == null) return 1000f;
             
-            Vector3 targetPos = Target.Position + Vector3.Up * 1.0f;
+            // 与 DetectEnclosedSpace 保持一致：起点抬到头顶之外、带层级掩码、并排除角色自身碰撞体。
+            // 否则射线从角色身体内部（脚上 1m 处）出发、且不带掩码，会立刻命中自己（约等于胶囊半径），
+            // 使平均距离恒小于 10，于是任何封闭空间都被误判成 Corridor。
+            Vector3 targetPos = Target.Position + Vector3.Up * 2.0f;
             
             // 水平四个方向发射射线
-            Vector3[] directions = new Vector3[]
-            {
-                Vector3.Forward,
-                Vector3.Backward,
-                Vector3.Left,
-                Vector3.Right
-            };
+            Vector3[] directions = SpaceSizeDirections;
             
             float totalDistance = 0f;
             int hitCount = 0;
@@ -3295,90 +3373,47 @@ namespace HundunWorld.Game
             
             foreach (var dir in directions)
             {
-                if (Physics.RayCast(targetPos, dir, out RayCastHit hit, maxDetectionDistance))
+                // 未命中障碍时按"开阔"计入最大距离
+                float distance = maxDetectionDistance;
+                
+                if (Physics.RayCast(targetPos, dir, out RayCastHit hit, maxDetectionDistance, CollisionLayerMask))
                 {
-                    totalDistance += hit.Distance;
-                    hitCount++;
+                    var hitActor = hit.Collider?.AttachedRigidBody?.Parent ?? hit.Collider?.Parent;
+                    bool selfHit = AutoExcludeTargetCollision && Target != null && hit.Collider != null
+                                   && (hitActor == Target || IsChildOf(hitActor, Target));
+                    
+                    // 命中角色自身不算"墙"
+                    if (!selfHit)
+                    {
+                        distance = hit.Distance;
+                    }
                 }
-                else
-                {
-                    // 未检测到障碍,认为是开阔空间
-                    totalDistance += maxDetectionDistance;
-                    hitCount++;
-                }
+                
+                totalDistance += distance;
+                hitCount++;
             }
             
             // 返回平均距离作为空间大小指标
             return hitCount > 0 ? totalDistance / hitCount : maxDetectionDistance;
         }
         
-        private const float DirectionalLightWeight = 0.5f;
-        private const float PointLightMaxRange = 50f;
-        
-        /// <summary>
-        /// 检测光照级别
-        /// </summary>
-        private void DetectLightLevel()
+        // 环境检测方向常量：避免每次检测都分配数组
+        private static readonly Vector3[] EnclosedSpaceDirections = new Vector3[]
         {
-            // 尝试采样场景中的光源来估算光照级别
-            if (Target != null)
-            {
-                var lights = Level.GetActors<Light>();
-                if (lights != null && lights.Length > 0)
-                {
-                    float totalIntensity = 0f;
-                    int nearbyLights = 0;
-                    var targetPos = Target.Position;
-                    
-                    foreach (var light in lights)
-                    {
-                        if (light is DirectionalLight dirLight)
-                        {
-                            // 方向光影响全场景
-                            totalIntensity += dirLight.Color.A * DirectionalLightWeight;
-                            nearbyLights++;
-                        }
-                        else
-                        {
-                            // 点光源/聚光灯：根据距离衰减
-                            float dist = Vector3.Distance(targetPos, light.Position);
-                            if (dist < PointLightMaxRange)
-                            {
-                                float attenuation = Mathf.Saturate(1f - dist / PointLightMaxRange);
-                                totalIntensity += attenuation;
-                                nearbyLights++;
-                            }
-                        }
-                    }
-                    
-                    if (nearbyLights > 0)
-                    {
-                        _currentLightLevel = Mathf.Saturate(totalIntensity / nearbyLights);
-                        return;
-                    }
-                }
-            }
-            
-            // 回退：根据环境类型设置默认亮度
-            switch (CurrentEnvironment)
-            {
-                case EnvironmentType.Outdoor:
-                    _currentLightLevel = 1.0f;
-                    break;
-                case EnvironmentType.Indoor:
-                    _currentLightLevel = 0.7f;
-                    break;
-                case EnvironmentType.Cave:
-                    _currentLightLevel = 0.2f;
-                    break;
-                case EnvironmentType.Underwater:
-                    _currentLightLevel = 0.5f;
-                    break;
-                default:
-                    _currentLightLevel = 0.8f;
-                    break;
-            }
-        }
+            Vector3.Up,       // 上(检测天花板/屋顶)
+            Vector3.Forward,  // 前
+            Vector3.Backward, // 后
+            Vector3.Left,     // 左
+            Vector3.Right     // 右
+        };
+        private static readonly float[] EnclosedSpaceDistances = new float[] { 100f, 50f, 50f, 50f, 50f };
+        private static readonly Vector3[] SpaceSizeDirections = new Vector3[]
+        {
+            Vector3.Forward,
+            Vector3.Backward,
+            Vector3.Left,
+            Vector3.Right
+        };
         
         /// <summary>
         /// 切换环境
@@ -3390,13 +3425,11 @@ namespace HundunWorld.Game
                 return;
             }
             
-            _previousEnvironment = CurrentEnvironment;
             CurrentEnvironment = newEnvironment;
             
             // 应用新环境配置
             ApplyEnvironmentConfig(newEnvironment);
             
-            //Debug.Log($"[环境感知] 环境切换: {_previousEnvironment} → {CurrentEnvironment}");
         }
         
         /// <summary>
@@ -3506,22 +3539,6 @@ namespace HundunWorld.Game
             return CurrentEnvironment;
         }
         
-        /// <summary>
-        /// 获取当前光照级别
-        /// </summary>
-        public float GetCurrentLightLevel()
-        {
-            return _currentLightLevel;
-        }
-        
-        /// <summary>
-        /// 是否处于暗环境
-        /// </summary>
-        public bool IsInDarkEnvironment()
-        {
-            return _currentLightLevel < DarkEnvironmentThreshold;
-        }
-
         #endregion
         
         #region 异步检测系统
@@ -3531,65 +3548,9 @@ namespace HundunWorld.Game
         /// </summary>
         private void InitializeAsyncDetection()
         {
-            _lastGroundResult = new AsyncDetectionResult();
-            _lastEnvironmentResult = new AsyncDetectionResult();
             _lastCollisionResult = new AsyncCollisionResult();
-            
-            _lastAsyncGroundCheckTime = 0f;
-            _lastAsyncEnvironmentCheckTime = 0f;
+
             _lastAsyncCollisionCheckTime = 0f;
-            
-            //Debug.Log($"[异步检测] 初始化完成 - Ground:{EnableAsyncGroundDetection}, Environment:{EnableAsyncEnvironmentDetection}, Collision:{EnableAsyncCollisionDetection}");
-        }
-        
-        /// <summary>
-        /// 异步地面检测
-        /// </summary>
-        private async Task<AsyncDetectionResult> DetectGroundAsync(Vector3 position, float checkDistance)
-        {
-            var result = new AsyncDetectionResult();
-            
-            // 在后台线程执行射线检测
-            await Task.Run(() =>
-            {
-                result.GroundDetected = Physics.RayCast(position, Vector3.Down, out RayCastHit hit, checkDistance, GroundLayers);
-                result.GroundHeight = result.GroundDetected ? hit.Point.Y : 0f;
-                result.DetectionTime = _gameTime;
-            });
-            
-            if (EnablePerformanceMonitoring)
-            {
-                _performanceStats.GroundCheckCount++;
-            }
-            
-            return result;
-        }
-        
-        /// <summary>
-        /// 异步环境检测（天花板、水面等）
-        /// </summary>
-        private async Task<AsyncDetectionResult> DetectEnvironmentAsync(Vector3 position)
-        {
-            var result = new AsyncDetectionResult();
-            
-            await Task.Run(() =>
-            {
-                // 检测天花板
-                if (EnableCeilingDetection)
-                {
-                    result.GroundDetected = Physics.RayCast(position, Vector3.Up, out RayCastHit hit, CeilingCheckDistance, CollisionLayerMask);
-                    result.GroundHeight = result.GroundDetected ? hit.Point.Y : float.MaxValue;
-                }
-                
-                result.DetectionTime = _gameTime;
-            });
-            
-            if (EnablePerformanceMonitoring)
-            {
-                _performanceStats.EnvironmentCheckCount++;
-            }
-            
-            return result;
         }
         
         /// <summary>
@@ -3598,7 +3559,10 @@ namespace HundunWorld.Game
         private async Task<AsyncCollisionResult> DetectCollisionAsync(Vector3 focusPoint, float pitch, float yaw, float distance)
         {
             var result = new AsyncCollisionResult();
-            
+
+            // 在主线程取时间戳，避免工作线程读取主线程字段
+            float detectionTime = _gameTime;
+
             await Task.Run(() =>
             {
                 Vector3 idealCameraPos = CalculateCameraPosition(focusPoint, pitch, yaw, distance);
@@ -3609,7 +3573,7 @@ namespace HundunWorld.Game
                 {
                     result.HasCollision = false;
                     result.SafeDistance = distance;
-                    result.DetectionTime = _gameTime;
+                    result.DetectionTime = detectionTime;
                     return;
                 }
                 
@@ -3617,11 +3581,14 @@ namespace HundunWorld.Game
                 
                 bool hasCollision = false;
                 float minDistance = distance;
-                
+
+                // 与同步检测一致的视平面探针基
+                BuildRayBasis(direction, out Vector3 rayRight, out Vector3 rayUp);
+
                 // 执行多重射线检测
                 foreach (var offset in _collisionRayDirections)
                 {
-                    Vector3 startPoint = focusPoint + offset;
+                    Vector3 startPoint = focusPoint + rayRight * offset.X + rayUp * offset.Y;
                     
                     if (Physics.RayCast(startPoint, direction, out RayCastHit hit, distance, CollisionLayerMask))
                     {
@@ -3657,56 +3624,10 @@ namespace HundunWorld.Game
                 
                 result.HasCollision = hasCollision;
                 result.SafeDistance = minDistance;
-                result.DetectionTime = _gameTime;
+                result.DetectionTime = detectionTime;
             });
             
-            if (EnablePerformanceMonitoring)
-            {
-                _performanceStats.CollisionCheckCount++;
-            }
-            
             return result;
-        }
-        
-        /// <summary>
-        /// 启动异步地面检测任务
-        /// </summary>
-        private void StartAsyncGroundDetection()
-        {
-            if (!EnableAsyncGroundDetection || Target == null)
-                return;
-            
-            // 检查是否需要重新检测
-            if (_gameTime - _lastAsyncGroundCheckTime < AsyncDetectionInterval)
-                return;
-            
-            // 检查是否有正在运行的任务
-            if (_groundDetectionTask != null && !_groundDetectionTask.IsCompleted)
-                return;
-            
-            // 启动新的检测任务
-            Vector3 cameraPos = Actor.Position;
-            _groundDetectionTask = DetectGroundAsync(cameraPos, GroundCheckDistance);
-            _lastAsyncGroundCheckTime = _gameTime;
-        }
-        
-        /// <summary>
-        /// 启动异步环境检测任务
-        /// </summary>
-        private void StartAsyncEnvironmentDetection()
-        {
-            if (!EnableAsyncEnvironmentDetection || Target == null)
-                return;
-            
-            if (_gameTime - _lastAsyncEnvironmentCheckTime < AsyncDetectionInterval)
-                return;
-            
-            if (_environmentDetectionTask != null && !_environmentDetectionTask.IsCompleted)
-                return;
-            
-            Vector3 cameraPos = Actor.Position;
-            _environmentDetectionTask = DetectEnvironmentAsync(cameraPos);
-            _lastAsyncEnvironmentCheckTime = _gameTime;
         }
         
         /// <summary>
@@ -3728,52 +3649,6 @@ namespace HundunWorld.Game
         }
         
         /// <summary>
-        /// 获取异步地面检测结果
-        /// </summary>
-        private bool TryGetAsyncGroundResult(out float groundHeight)
-        {
-            groundHeight = 0f;
-            
-            // 检查任务是否完成
-            if (_groundDetectionTask != null && _groundDetectionTask.IsCompleted)
-            {
-                _lastGroundResult = _groundDetectionTask.Result;
-                _groundDetectionTask = null; // 清理已完成的任务
-            }
-            
-            // 检查结果是否有效
-            if (_lastGroundResult.IsValid(_gameTime))
-            {
-                groundHeight = _lastGroundResult.GroundHeight;
-                return _lastGroundResult.GroundDetected;
-            }
-            
-            return false;
-        }
-        
-        /// <summary>
-        /// 获取异步环境检测结果
-        /// </summary>
-        private bool TryGetAsyncEnvironmentResult(out float ceilingHeight)
-        {
-            ceilingHeight = float.MaxValue;
-            
-            if (_environmentDetectionTask != null && _environmentDetectionTask.IsCompleted)
-            {
-                _lastEnvironmentResult = _environmentDetectionTask.Result;
-                _environmentDetectionTask = null;
-            }
-            
-            if (_lastEnvironmentResult.IsValid(_gameTime))
-            {
-                ceilingHeight = _lastEnvironmentResult.GroundHeight;
-                return _lastEnvironmentResult.GroundDetected;
-            }
-            
-            return false;
-        }
-        
-        /// <summary>
         /// 获取异步碰撞检测结果
         /// </summary>
         private bool TryGetAsyncCollisionResult(out bool hasCollision, out float safeDistance)
@@ -3784,7 +3659,13 @@ namespace HundunWorld.Game
             if (_collisionDetectionTask != null && _collisionDetectionTask.IsCompleted)
             {
                 _lastCollisionResult = _collisionDetectionTask.Result;
-                _collisionDetectionTask = null;
+                _collisionDetectionTask = null; // 清理已完成的任务
+
+                // 统计在主线程累加，避免后台线程与 OnUpdate 竞争写 _performanceStats
+                if (EnablePerformanceMonitoring)
+                {
+                    _performanceStats.CollisionCheckCount++;
+                }
             }
             
             if (_lastCollisionResult.IsValid(_gameTime))

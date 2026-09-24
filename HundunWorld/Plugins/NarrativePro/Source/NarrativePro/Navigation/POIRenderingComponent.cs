@@ -45,6 +45,9 @@ namespace NarrativePro.Navigation
             base.OnDisable();
         }
 
+#if FLAX_EDITOR
+        // `DebugDraw.*` 的绘制方法未导出到非编辑器目标（仅存在于编辑器程序集），故整段调试绘制只在编辑器编译。
+
         /// <summary>
         /// 调试绘制。在场景中绘制 POI 位置标记，便于直观查看 POI 分布。
         /// 已发现 POI 使用 POIDebugColor，未发现 POI 使用 UndiscoveredColor。
@@ -95,5 +98,6 @@ namespace NarrativePro.Navigation
                 center + new Vector3(0, r, 0),
                 drawColor, DebugDrawDuration, false);
         }
+#endif
     }
 }

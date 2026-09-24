@@ -449,7 +449,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                 AutoFocus = false,
             });
             var enter = new EnterBtn { Location = new Float2(16f, BodyH - 77f), Size = new Float2(cw, 42f) };
-            enter.Clicked += () => { EmitGoldAtControl(enter); NavigationRequested?.Invoke("enter-dungeon"); };
+            enter.Clicked += () => { EmitGoldAtControl(enter); NavigationRequested?.Invoke(InkPageDomIds.EnterDungeon); };
             right.AddChild(enter);
             right.AddChild(MakeLabel("ⓘ 进入后将消耗今日次数", 16f, BodyH - 27f, cw, 14f,
                 InkWashTheme.TextTertiary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Center));

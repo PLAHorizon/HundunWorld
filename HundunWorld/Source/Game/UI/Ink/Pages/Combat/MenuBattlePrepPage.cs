@@ -1783,7 +1783,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// <param name="button">触发事件的按钮（未使用）</param>
         private void OnBattleButtonClicked(Button button)
         {
-            RequestNavigation("nav-battle-start");
+            RequestNavigation(InkPageDomIds.NavBattleStart);
         }
 
         /// <summary>

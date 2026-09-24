@@ -132,6 +132,12 @@ namespace NarrativePro.Navigation
         public float BreadcrumbThickness { get; set; } = 5f;
         public float BreadcrumbDashLength { get; set; } = 10f;
 
+        // 面包屑运行时状态（不序列化）
+        private Actor _ownerNavActor;
+        private float _pathRefreshTimer;
+        private Vector3 _cachedLocation = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        private readonly List<Vector3> _navPath = new List<Vector3>();
+
         // 事件
         public event Action OnRefreshRequired;
         public event Action<NarrativeNavigationComponent> OnSelected;
@@ -164,10 +170,11 @@ namespace NarrativePro.Navigation
             OwnerNavComp = null;
         }
 
-        /// <summary>启用/禁用绘制到标记的路径。</summary>
+        /// <summary>启用/禁用绘制到标记的路径（面包屑）。对应 UE5 UMapMarker::SetDrawMarkerPathEnabled（作用于 bWantsOnPaint）。</summary>
         public void SetDrawMarkerPathEnabled(bool enabled)
         {
-            bDrawBreadcrumbs = enabled;
+            bWantsOnPaint = enabled;
+            if (!enabled) CleanupBreadcrumb();
         }
 
         /// <summary>Owner 销毁时调用。</summary>
@@ -176,16 +183,24 @@ namespace NarrativePro.Navigation
             RemoveMarker();
         }
 
-        /// <summary>标记被添加到导航器时调用。</summary>
+        /// <summary>标记被添加到导航器时调用。对应 UE5 OnMarkerAdded_Implementation（此处初始化面包屑）。</summary>
         public virtual void OnMarkerAdded(NarrativeNavigationComponent ownerNavComp)
         {
             OwnerNavComp = ownerNavComp;
+
+            if (ActorOwner != null)
+            {
+                InitializeBreadcrumb(ownerNavComp?.Actor);
+            }
         }
 
-        /// <summary>标记从导航器移除时调用。</summary>
+        /// <summary>标记从导航器移除时调用。对应 UE5 OnMarkerRemoved_Implementation（此处清理面包屑）。</summary>
         public virtual void OnMarkerRemoved(NarrativeNavigationComponent ownerNavComp)
         {
             if (OwnerNavComp == ownerNavComp) OwnerNavComp = null;
+
+            bWantsOnPaint = false;
+            CleanupBreadcrumb();
         }
 
         /// <summary>获取指定导航器类型的设置（含覆盖）。</summary>
@@ -339,14 +354,14 @@ namespace NarrativePro.Navigation
         public virtual int GetMarkerZOrder() => ZOrder;
 
         /// <summary>获取标记在地图本地空间的位置。
-        /// MapOrigin 为地图中心的世界位置，MapPan 为当前地图平移量。</summary>
+        /// MapOrigin 为地图中心的世界 XZ（Flax 为 Y-up，地图平面是 XZ），MapPan 为当前地图平移量。</summary>
         public Float2 GetMarkerMapLocalPosition(Float2 mapOrigin, Float2 mapPan)
         {
             var transform = GetMarkerTransform();
-            // 将世界 X,Y 投影到地图空间
+            // 将世界 XZ 投影到地图空间（Y 是高度轴，不参与投影）
             float worldX = transform.Translation.X;
-            float worldY = transform.Translation.Y;
-            return new Float2(worldX - mapOrigin.X + mapPan.X, worldY - mapOrigin.Y + mapPan.Y);
+            float worldZ = transform.Translation.Z;
+            return new Float2(worldX - mapOrigin.X + mapPan.X, worldZ - mapOrigin.Y + mapPan.Y);
         }
 
         /// <summary>获取标记在绘制空间左上角的位置。</summary>
@@ -359,47 +374,103 @@ namespace NarrativePro.Navigation
             return new Float2(mapTopLeft.X + markerLocal.X - iconSize.X * 0.5f, mapTopLeft.Y + markerLocal.Y - iconSize.Y * 0.5f);
         }
 
-        /// <summary>当 bWantsOnPaint 为 true 时，由 UI 控件调用。使用 Render2D 静态类绘制。</summary>
+        /// <summary>当 bWantsOnPaint 为 true 时，由 UI 控件调用。对应 UE5 MarkerOnPaint_Implementation。</summary>
         public virtual void MarkerOnPaint(MarkerOnPaintData onPaintData)
         {
-            // 默认不绘制，子类可覆盖
+            DrawBreadcrumb(onPaintData);
         }
 
         /// <summary>设置是否绘制面包屑路径。</summary>
         public void SetDrawBreadcrumbs(bool bCanDrawBreadcrumbs)
         {
             bDrawBreadcrumbs = bCanDrawBreadcrumbs;
+            if (!bCanDrawBreadcrumbs) CleanupBreadcrumb();
             RefreshMarker();
         }
 
-        /// <summary>初始化面包屑路径。</summary>
+        /// <summary>
+        /// 每帧驱动（由 <see cref="NarrativeNavigationComponent.OnUpdate"/> 调用）。
+        /// Flax 无 FTimerManager，改用时间累加实现 UE5 中按 <c>UpdateNavPathRate</c> 的定时刷新。
+        /// </summary>
+        public virtual void Tick(float deltaTime)
+        {
+            if (!bDrawBreadcrumbs || !bWantsOnPaint || _ownerNavActor == null) return;
+
+            _pathRefreshTimer += deltaTime;
+            float interval = UpdateNavPathRate > 0f ? 1f / UpdateNavPathRate : 0.25f;
+            if (_pathRefreshTimer < interval) return;
+
+            _pathRefreshTimer = 0f;
+            UpdateBreadcrumbNavPath();
+        }
+
+        /// <summary>初始化面包屑路径。对应 UE5 UMapMarker::InitializeBreadcrumb。</summary>
         protected virtual void InitializeBreadcrumb(Actor navActor)
         {
-            // Flax 中 NavMesh API 不同，简化为直线路径
-            // Flax-不兼容: UE5 的 NavMesh 面包屑路径在 Flax 无对应物，保留占位。原文 TODO: 接入 Flax 导航系统后实现实际路径
+            _ownerNavActor = navActor;
+            _cachedLocation = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            _pathRefreshTimer = 0f;
+            UpdateBreadcrumbNavPath();
         }
 
-        /// <summary>清理面包屑路径。</summary>
+        /// <summary>清理面包屑路径。对应 UE5 UMapMarker::CleanupBreadcrumb。</summary>
         protected virtual void CleanupBreadcrumb()
         {
+            _ownerNavActor = null;
+            _navPath.Clear();
+            _cachedLocation = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            _pathRefreshTimer = 0f;
         }
 
-        /// <summary>更新面包屑导航路径。Flax 中简化为直线。</summary>
+        /// <summary>
+        /// 更新面包屑导航路径。对应 UE5 UMapMarker::UpdateBreadcrumbNavPath：
+        /// 使用 <see cref="FlaxEngine.Navigation.FindPath"/> 求路径后按 <see cref="DistanceBetweenPoints"/> 重采样。
+        /// <para>
+        /// Flax 的导航查询是**同步**的（无 FindPathAsync），因此必须依赖 <c>UpdateNavPathRate</c> 限频
+        /// 与 <c>UpdateNavDistanceThreshhold</c> 距离门控，避免每帧查询拖慢主线程。
+        /// </para>
+        /// </summary>
         protected virtual void UpdateBreadcrumbNavPath()
         {
-            // Flax-不兼容: UE5 的 NavMesh 路径查询在 Flax 无对应物，保留占位。原文 TODO: 接入 Flax NavMesh 后实现实际路径查询
+            if (!bDrawBreadcrumbs) return;
+            if (_ownerNavActor == null) return;
+            if (!bWantsOnPaint) return;
+
+            Vector3 actorLocation = _ownerNavActor.Position;
+
+            // 只有移动足够远才重新计算
+            if (Vector3.Distance(actorLocation, _cachedLocation) < UpdateNavDistanceThreshhold) return;
+
+            if (!NavigatorStatics.IsNavigationReady()) return;
+
+            _cachedLocation = actorLocation;
+            Vector3 targetLocation = GetMarkerTransform().Translation;
+
+            if (!NavigatorStatics.TryFindPath(actorLocation, targetLocation, out var corners)) return;
+
+            if (NavigatorStatics.ResamplePath(corners, DistanceBetweenPoints, out var resampled))
+            {
+                GeneratePath(resampled);
+            }
         }
 
-        /// <summary>生成路径。</summary>
+        /// <summary>生成路径（写入本标记的面包屑点列）。对应 UE5 UMapMarker::GeneratePath。</summary>
         protected virtual void GeneratePath(List<Vector3> navPath)
         {
-            // Flax-不兼容: UE5 的 NavMesh 路径生成在 Flax 无对应物，保留占位。原文 TODO: 接入 Flax NavMesh 后填充实际路径
+            _navPath.Clear();
+            if (navPath != null)
+            {
+                _navPath.AddRange(navPath);
+            }
         }
 
-        /// <summary>绘制面包屑路径。使用 Render2D 静态类绘制。</summary>
+        /// <summary>取面包屑点列（只读），供 UI 绘制使用。</summary>
+        public IReadOnlyList<Vector3> GetBreadcrumbPath() => _navPath;
+
+        /// <summary>绘制面包屑路径。由 UI 控件在 <see cref="MarkerOnPaint"/> 中调用。</summary>
         protected virtual void DrawBreadcrumb(MarkerOnPaintData onPaintData)
         {
-            // 默认不绘制
+            // 默认不绘制：Flax 无 FPaintContext，虚线绘制由地图 UI 控件按 GetBreadcrumbPath() 完成
         }
     }
 }

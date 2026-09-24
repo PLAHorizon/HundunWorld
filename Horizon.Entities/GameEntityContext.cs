@@ -87,6 +87,7 @@ namespace Horizon.Entities
         public DbSet<ChatPrivateMessageEntity> ChatPrivateMessages { get; set; }
         public DbSet<ChatChannelSettingEntity> ChatChannelSettings { get; set; }
         public DbSet<ChatBlacklistEntity> ChatBlacklists { get; set; }
+        public DbSet<ChatReportEntity> ChatReports { get; set; }
         public DbSet<GuildEntity> Guilds { get; set; }
         public DbSet<ActivityEntity> Activities { get; set; }
         public DbSet<SetItemEntity> SetItems { get; set; }
@@ -182,6 +183,7 @@ namespace Horizon.Entities
         public DbSet<ChatPrivateMessageEntity> ChatPrivateMessages { get; set; }
         public DbSet<ChatChannelSettingEntity> ChatChannelSettings { get; set; }
         public DbSet<ChatBlacklistEntity> ChatBlacklists { get; set; }
+        public DbSet<ChatReportEntity> ChatReports { get; set; }
         public DbSet<GuildEntity> Guilds { get; set; }
         public DbSet<ActivityEntity> Activities { get; set; }
         public DbSet<SetItemEntity> SetItems { get; set; }

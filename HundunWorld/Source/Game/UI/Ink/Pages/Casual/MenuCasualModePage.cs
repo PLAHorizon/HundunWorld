@@ -229,6 +229,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
             var logoMark = new ContainerControl
             {
                 Size = new Float2(36f, 36f),
+                Location = new Float2(16f, 20f),
                 BackgroundColor = InkWashTheme.GoldPrimary * 0.12f,
                 Parent = _leftNav
             };
@@ -238,6 +239,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Text = "混沌世界",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 18f),
                 TextColor = InkWashTheme.GoldBright,
+                Size = new Float2(164f, 22f),
+                Location = new Float2(60f, 20f),
                 Parent = _leftNav
             };
 
@@ -246,6 +249,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Text = "HUNDUN WORLD",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 8f),
                 TextColor = InkWashTheme.TextDisabled,
+                Size = new Float2(164f, 12f),
+                Location = new Float2(60f, 42f),
                 Parent = _leftNav
             };
 
@@ -253,6 +258,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
             {
                 Width = 208f,
                 Height = 1f,
+                Location = new Float2(16f, 66f),
                 Parent = _leftNav
             };
 
@@ -272,6 +278,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 InkPageDomIds.NavSettings,
             };
 
+            float navY = 78f;
             for (int i = 0; i < navItems.Length; i++)
             {
                 var navItem = new InkButton
@@ -281,6 +288,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                     Text = navItems[i],
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
+                    Location = new Float2(0f, navY),
                     Parent = _leftNav
                 };
 
@@ -304,6 +312,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                         Text = badgeValues[idx].ToString(),
                         Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                         TextColor = InkWashTheme.PaperBright,
+                        Size = new Float2(28f, 16f),
+                        Location = new Float2(204f, 18f),
+                        HorizontalAlignment = TextAlignment.Center,
+                        VerticalAlignment = TextAlignment.Center,
                         Parent = navItem
                     };
                 }
@@ -311,18 +323,22 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 // 左栏项直达对应菜单（设计链路）
                 int navIndex = i;
                 navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
+                navY += 52f;
             }
 
+            float navH = _screenSize.Y;
             var footerDivider = new InkDivider
             {
                 Width = 208f,
                 Height = 1f,
+                Location = new Float2(16f, navH - 70f),
                 Parent = _leftNav
             };
 
             var serverDot = new ContainerControl
             {
                 Size = new Float2(6f, 6f),
+                Location = new Float2(16f, navH - 53f),
                 BackgroundColor = InkWashTheme.JadeBright,
                 Parent = _leftNav
             };
@@ -332,6 +348,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Text = "江南 · 烟雨楼",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextDisabled,
+                Size = new Float2(196f, 16f),
+                Location = new Float2(28f, navH - 59f),
                 Parent = _leftNav
             };
 
@@ -340,6 +358,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Text = "v 2.4.1 · 烽火连城",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 TextColor = InkWashTheme.TextDisabled,
+                Size = new Float2(208f, 14f),
+                Location = new Float2(16f, navH - 38f),
                 Parent = _leftNav
             };
         }

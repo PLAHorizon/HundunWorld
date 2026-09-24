@@ -17,6 +17,9 @@ public class Game : GameModule
 
         options.ScriptingAPI.IgnoreMissingDocumentationWarnings = true;
 
+        // NarrativePro 插件（任务/对话/地图导航）——游戏侧 UI 需直接读取其导航数据（POI/标记/瓦片）
+        options.PublicDependencies.Add("NarrativePro");
+
         string outputPath = AppDomain.CurrentDomain.BaseDirectory;
 
         // Common DLLs shared between editor and runtime builds

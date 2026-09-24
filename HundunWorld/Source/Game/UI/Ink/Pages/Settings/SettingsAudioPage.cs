@@ -110,6 +110,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
+                Size = new Float2(240f, 40f),
+                Location = new Float2(0f, 20f),
                 Parent = _leftNav
             };
 
@@ -117,6 +119,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
             {
                 Width = 208f,
                 Height = 1f,
+                Location = new Float2(16f, 68f),
                 Parent = _leftNav
             };
 
@@ -134,6 +137,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                 InkPageDomIds.NavSettings,
             };
 
+            float navY = 80f;
             for (int i = 0; i < navItems.Length; i++)
             {
                 var navItem = new InkButton
@@ -143,6 +147,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                     Text = navItems[i],
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
+                    Location = new Float2(0f, navY),
                     Parent = _leftNav
                 };
 
@@ -161,12 +166,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                 // 左栏项直达对应菜单（设计链路）
                 int navIndex = i;
                 navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
+                navY += 52f;
             }
 
+            float navH = _screenSize.Y;
             var footerDivider = new InkDivider
             {
                 Width = 208f,
                 Height = 1f,
+                Location = new Float2(16f, navH - 58f),
                 Parent = _leftNav
             };
 
@@ -176,6 +184,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Settings
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextDisabled,
                 HorizontalAlignment = TextAlignment.Center,
+                Size = new Float2(240f, 16f),
+                Location = new Float2(0f, navH - 44f),
                 Parent = _leftNav
             };
         }

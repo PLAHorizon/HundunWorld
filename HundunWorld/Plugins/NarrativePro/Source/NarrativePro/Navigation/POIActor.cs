@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using FlaxEngine;
+using NarrativePro.Core;
 using NarrativePro.Items;
 
 namespace NarrativePro.Navigation
@@ -14,11 +15,36 @@ namespace NarrativePro.Navigation
         /// <summary>POI 标签</summary>
         public GameplayTag POITag { get; set; } = GameplayTag.None;
 
+        /// <summary>
+        /// POI 标签的**字符串**形式（如 <c>Navigator.PointOfInterest.Kaifeng</c>）。
+        /// <para>
+        /// 存在原因：<see cref="GameplayTag"/> 是自定义结构体，编辑器工具链（反射式属性写入）无法写入它，
+        /// 而字符串可以。填写本字段后 <see cref="BuildPOIData"/> 会以它作为 POITag；
+        /// 两者都填时以 <see cref="POITag"/> 优先（便于代码侧直接指定）。
+        /// </para>
+        /// </summary>
+        public string POITagName { get; set; } = "";
+
         /// <summary>是否创建地图标记</summary>
         public bool bCreateMapMarker { get; set; } = true;
 
         /// <summary>是否支持快速旅行</summary>
         public bool bSupportsFastTravel { get; set; } = true;
+
+        /// <summary>
+        /// 发现半径（世界单位，XZ 平面）。玩家进入该半径即视为已发现。
+        /// <see cref="DiscoveryCollider"/> 存在时以触发器为准（触发器可用时），本半径用于距离判定。
+        /// </summary>
+        public float DiscoveryRadius { get; set; } = 800f;
+
+        /// <summary>
+        /// 是否需要玩家探索才会显示（未发现时地图上显示为「？」且不可快速旅行）。
+        /// <para>
+        /// 传送点通常设为 false（传送网络默认已知、可立即使用）；
+        /// 村落/遗迹等兴趣点保持 true，构成探索玩法。
+        /// </para>
+        /// </summary>
+        public bool bIsDiscoverable { get; set; } = true;
 
         /// <summary>UI 显示名</summary>
         public string POIDisplayName { get; set; } = "Point of Interest";
@@ -49,20 +75,43 @@ namespace NarrativePro.Navigation
             // 注册到导航子系统
             NavigationSubsystem.Instance?.RegisterPOI(POIDataCache);
 
-            // 注册碰撞体重叠事件
+            // 注册碰撞体重叠事件（Collider 是 Actor，必须用 GetChild 而非 GetScript）
+            if (DiscoveryCollider == null)
+            {
+                DiscoveryCollider = FindDiscoveryCollider();
+            }
+
             if (DiscoveryCollider != null)
             {
                 DiscoveryCollider.TriggerEnter += OnDiscoveryTriggerEnter;
             }
             else
             {
-                // 自动查找碰撞体
-                DiscoveryCollider = Actor.GetScript<Collider>();
-                if (DiscoveryCollider != null)
-                {
-                    DiscoveryCollider.TriggerEnter += OnDiscoveryTriggerEnter;
-                }
+                NarrativeLog.LogWarning($"POIActor[{POIDisplayName}]: 未找到发现触发器碰撞体，POI 将无法通过重叠自动发现");
             }
+        }
+
+        /// <summary>
+        /// 自动查找用于发现判定的子碰撞体：优先取非快速旅行落点的触发器碰撞体。
+        /// </summary>
+        private Collider FindDiscoveryCollider()
+        {
+            if (Actor == null) return null;
+
+            var colliders = Actor.GetChildren<Collider>();
+            if (colliders == null || colliders.Length == 0) return null;
+
+            Collider fallback = null;
+            foreach (var collider in colliders)
+            {
+                if (collider == null) continue;
+                if (FastTravelCapsule != null && collider == FastTravelCapsule) continue;
+
+                if (collider.IsTrigger) return collider;
+                if (fallback == null) fallback = collider;
+            }
+
+            return fallback;
         }
 
         public override void OnDisable()
@@ -71,20 +120,31 @@ namespace NarrativePro.Navigation
             {
                 DiscoveryCollider.TriggerEnter -= OnDiscoveryTriggerEnter;
             }
+
+            if (POIDataCache != null && POIDataCache.POITag.IsValid())
+            {
+                NavigationSubsystem.Instance?.UnregisterPOI(POIDataCache.POITag);
+            }
+
             base.OnDisable();
         }
 
         /// <summary>构建 POI 数据。</summary>
         protected virtual POIData BuildPOIData()
         {
+            // 标签来源：代码侧直接给的 POITag 优先；编辑器里填写的是字符串 POITagName
+            var tag = POITag.IsValid() ? POITag : new GameplayTag(POITagName);
+
             var data = new POIData
             {
-                POITag = POITag,
+                POITag = tag,
                 POILocation = Actor != null ? Actor.Position : Vector3.Zero,
-                POIFastTravelSpot = Actor != null ? Actor.Transform : Transform.Identity,
+                POIFastTravelSpot = GetFastTravelTransform(),
                 bNeedsMapMarker = bCreateMapMarker,
                 bSupportsFastTravel = bSupportsFastTravel,
-                bIsDiscoverable = true,
+                // 显式写 this.：对象初始化器里左右同名，避免歧义
+                bIsDiscoverable = this.bIsDiscoverable,
+                DiscoveryRadius = this.DiscoveryRadius,
                 MapMarkerIconPath = POIIconPath,
                 POIDisplayName = POIDisplayName,
                 POISubtitle = ""

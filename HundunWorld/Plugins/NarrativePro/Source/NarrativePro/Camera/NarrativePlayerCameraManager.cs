@@ -102,6 +102,11 @@ namespace NarrativePro.Camera
 
         public override void OnUpdate()
         {
+            // 仅在通过 InitializeFor 绑定控制器后才接管相机。
+            // 该脚本实例常驻 RootScene 且没有任何调用方：一旦 OnEnable 时 Camera.MainCamera 非空，
+            // 它就会逐帧用 ViewYaw/ViewPitch 覆盖第三方相机（ThirdPersonCamera）写好的朝向。
+            if (OwningController == null) return;
+
             DoUpdateCamera(Time.DeltaTime);
         }
     }

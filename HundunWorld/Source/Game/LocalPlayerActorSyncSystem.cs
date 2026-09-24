@@ -1,6 +1,7 @@
 using System;
 using Arch.Core;
 using FlaxEngine;
+using Game.Character.Attributes;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.Message.Sync.Components;
 using HundunWorld.Game.Character;
@@ -143,6 +144,9 @@ namespace HundunWorld.Game
                 float yawDeg = pred.Yaw * Mathf.RadiansToDegrees;
                 Actor.Orientation = Quaternion.Euler(0, yawDeg, 0);
 
+                // 同步权威 RPG 属性（HP/等级/修为经验）到本地 Actor 组件，供顶部血条 / 底部修为经验条读取
+                ApplyAuthoritativeAttributes();
+
                 // 首帧诊断日志
                 if (_firstFrameDiag)
                 {
@@ -211,6 +215,25 @@ namespace HundunWorld.Game
             _animationParamsInitialized = true;
             Debug.Log("[LocalPlayerActorSyncSystem] 动画资源检查完成");
             return true;
+        }
+
+        /// <summary>
+        /// 把 ECS 权威实体状态（<see cref="EntityStateAuthComponent"/>）同步到本地 Actor 的
+        /// <see cref="CharacterAttributesComponent"/>：HP/MaxHP/Level/Exp（修为经验）。
+        /// 与 <c>FlaxActorSyncSystem</c> 对远程角色的桥接同一语义，使本地与远程走同一数据源。
+        /// </summary>
+        private void ApplyAuthoritativeAttributes()
+        {
+            if (!_archWorld!.Has<EntityStateAuthComponent>(_localPlayerEntity)) return;
+
+            var attrs = Actor.GetScript<CharacterAttributesComponent>();
+            if (attrs == null) return;
+
+            ref var state = ref _archWorld.Get<EntityStateAuthComponent>(_localPlayerEntity);
+            if (state.MaxHealth > 0) attrs.MaxHealth = state.MaxHealth;
+            attrs.CurrentHealth = state.Health;
+            if (state.Level > 0) attrs.Level = state.Level;
+            if (state.Exp > 0) attrs.Exp = state.Exp;
         }
 
         /// <summary>

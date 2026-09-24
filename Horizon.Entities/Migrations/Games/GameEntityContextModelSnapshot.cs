@@ -1424,6 +1424,138 @@ namespace Horizon.Entities.Migrations.Games
                         });
                 });
 
+            modelBuilder.Entity("Horizon.Model.GameModel.ChatReportEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id")
+                        .HasColumnOrder(1)
+                        .HasComment("记录ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AreaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int")
+                        .HasColumnName("channel")
+                        .HasColumnOrder(3)
+                        .HasComment("消息所在频道");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("datetime")
+                        .HasColumnName("create_time")
+                        .HasColumnOrder(8)
+                        .HasComment("举报时间");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GameUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsValid")
+                        .HasColumnType("bit")
+                        .HasColumnOrder(59);
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("message_id")
+                        .HasColumnOrder(2)
+                        .HasComment("被举报的消息ID");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("reason")
+                        .HasColumnOrder(6)
+                        .HasComment("举报原因");
+
+                    b.Property<long>("ReporterId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("reporter_id")
+                        .HasColumnOrder(4)
+                        .HasComment("举报者角色ID");
+
+                    b.Property<int>("ServerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int")
+                        .HasColumnName("status")
+                        .HasColumnOrder(7)
+                        .HasComment("处理状态 0-待处理 1-已处理 2-已驳回");
+
+                    b.Property<long>("TargetId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("target_id")
+                        .HasColumnOrder(5)
+                        .HasComment("被举报者角色ID");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Game_HunduShijie_ChatReport", t =>
+                        {
+                            t.HasComment("聊天举报记录表");
+                        });
+                });
+
+            modelBuilder.Entity("Horizon.Model.GameModel.ChunkStateEntity", b =>
+                {
+                    b.Property<byte>("MortonBucket")
+                        .HasColumnType("tinyint")
+                        .HasColumnName("morton_bucket")
+                        .HasColumnOrder(2)
+                        .HasComment("Morton 哈希桶（morton_key % N，分区列）");
+
+                    b.Property<long>("MortonKey")
+                        .HasColumnType("bigint")
+                        .HasColumnName("morton_key")
+                        .HasColumnOrder(1)
+                        .HasComment("Morton 编码键（chunk 空间坐标）");
+
+                    b.Property<byte[]>("StateBin")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)")
+                        .HasColumnName("state_bin")
+                        .HasColumnOrder(6)
+                        .HasComment("MemoryPack 二进制状态副本（快速批量加载）");
+
+                    b.Property<string>("StateJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("state_json")
+                        .HasColumnOrder(5)
+                        .HasComment("JSON 状态副本（诊断用）");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2(3)")
+                        .HasColumnName("updated_at")
+                        .HasColumnOrder(4)
+                        .HasDefaultValueSql("SYSUTCDATETIME()")
+                        .HasComment("最近写入 UTC 时间");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint")
+                        .HasColumnName("version")
+                        .HasColumnOrder(3)
+                        .HasComment("状态版本号，乐观并发");
+
+                    b.HasKey("MortonBucket", "MortonKey")
+                        .HasName("PK_chunk_state");
+
+                    b.HasIndex("MortonKey")
+                        .HasDatabaseName("IX_chunk_state_morton_key");
+
+                    b.ToTable("chunk_state", t =>
+                        {
+                            t.HasComment("世界 Chunk 权威状态快照表（按 Morton 键哈希分区）");
+                        });
+                });
+
             modelBuilder.Entity("Horizon.Model.GameModel.CurrencyEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -1480,6 +1612,68 @@ namespace Horizon.Entities.Migrations.Games
                     b.ToTable("Game_HunduShijie_Currency", t =>
                         {
                             t.HasComment("货币信息表");
+                        });
+                });
+
+            modelBuilder.Entity("Horizon.Model.GameModel.DiffLogEntity", b =>
+                {
+                    b.Property<byte>("MortonBucket")
+                        .HasColumnType("tinyint")
+                        .HasColumnName("morton_bucket")
+                        .HasColumnOrder(3)
+                        .HasComment("Morton 哈希桶（分区列）");
+
+                    b.Property<long>("Seq")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("seq")
+                        .HasColumnOrder(1)
+                        .HasComment("全局单调序列号（IDENTITY）");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Seq"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2(3)")
+                        .HasColumnName("created_at")
+                        .HasColumnOrder(6)
+                        .HasDefaultValueSql("SYSUTCDATETIME()")
+                        .HasComment("写入 UTC 时间（供过期清理使用）");
+
+                    b.Property<long>("MortonKey")
+                        .HasColumnType("bigint")
+                        .HasColumnName("morton_key")
+                        .HasColumnOrder(2)
+                        .HasComment("Morton 编码键（chunk 空间坐标）");
+
+                    b.Property<byte>("OpKind")
+                        .HasColumnType("tinyint")
+                        .HasColumnName("op_kind")
+                        .HasColumnOrder(4)
+                        .HasComment("VoxelOp 操作类型（VoxelOpKind）");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)")
+                        .HasColumnName("payload")
+                        .HasColumnOrder(5)
+                        .HasComment("MemoryPack 序列化的 VoxelOp payload");
+
+                    b.HasKey("MortonBucket", "Seq")
+                        .HasName("PK_diff_log");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_diff_log_created_at");
+
+                    b.HasIndex("Seq")
+                        .HasDatabaseName("IX_diff_log_seq");
+
+                    b.HasIndex("MortonKey", "Seq")
+                        .HasDatabaseName("IX_diff_log_morton_key");
+
+                    b.ToTable("diff_log", t =>
+                        {
+                            t.HasComment("世界 Diff 追加日志表（IDENTITY seq，按 Morton 键哈希分区）");
                         });
                 });
 
@@ -2497,18 +2691,18 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at")
-                        .HasComment("����ʱ��");
+                        .HasComment("创建时间");
 
                     b.Property<int>("CurrentPlayers")
                         .HasColumnType("int")
                         .HasColumnName("current_players")
-                        .HasComment("��ǰ�����");
+                        .HasComment("当前玩家数");
 
                     b.Property<string>("IpAddress")
                         .IsRequired()
                         .HasColumnType("varchar(255)")
                         .HasColumnName("ip_address")
-                        .HasComment("IP��ַ");
+                        .HasComment("IP地址");
 
                     b.Property<bool>("IsValid")
                         .HasColumnType("bit")
@@ -2517,40 +2711,40 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<int>("MaxPlayers")
                         .HasColumnType("int")
                         .HasColumnName("max_players")
-                        .HasComment("��������");
+                        .HasComment("最大玩家数");
 
                     b.Property<int>("Port")
                         .HasColumnType("int")
                         .HasColumnName("port")
-                        .HasComment("�˿�");
+                        .HasComment("端口");
 
                     b.Property<string>("ServerName")
                         .IsRequired()
                         .HasColumnType("varchar(255)")
                         .HasColumnName("server_name")
-                        .HasComment("����������");
+                        .HasComment("服务器名称");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("varchar(50)")
                         .HasColumnName("status")
-                        .HasComment("������״̬");
+                        .HasComment("服务器状态");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at")
-                        .HasComment("����ʱ��");
+                        .HasComment("更新时间");
 
                     b.Property<int>("ZoneId")
                         .HasColumnType("int")
                         .HasColumnName("zone_id")
-                        .HasComment("����ID");
+                        .HasComment("分区ID");
 
                     b.HasKey("Id");
 
                     b.ToTable("Game_HunduShijie_Server", t =>
                         {
-                            t.HasComment("��Ϸ��������Ϣ��");
+                            t.HasComment("游戏服务器信息表");
                         });
                 });
 
@@ -3606,9 +3800,9 @@ namespace Horizon.Entities.Migrations.Games
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Id")
+                    b.HasIndex("AccountName")
                         .IsUnique()
-                        .HasDatabaseName("IX_User_Id");
+                        .HasDatabaseName("IX_User_AccountName");
 
                     b.HasIndex("LastLoginTime")
                         .HasDatabaseName("IX_User_LastLoginTime");
@@ -3631,18 +3825,18 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at")
-                        .HasComment("����ʱ��");
+                        .HasComment("创建时间");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("varchar(500)")
                         .HasColumnName("description")
-                        .HasComment("��������");
+                        .HasComment("分区描述");
 
                     b.Property<int>("GameId")
                         .HasColumnType("int")
                         .HasColumnName("game_id")
-                        .HasComment("��ϷId");
+                        .HasComment("游戏Id");
 
                     b.Property<bool>("IsValid")
                         .HasColumnType("bit")
@@ -3651,19 +3845,19 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at")
-                        .HasComment("����ʱ��");
+                        .HasComment("更新时间");
 
                     b.Property<string>("ZoneName")
                         .IsRequired()
                         .HasColumnType("varchar(255)")
                         .HasColumnName("zone_name")
-                        .HasComment("��������");
+                        .HasComment("分区名称");
 
                     b.HasKey("Id");
 
                     b.ToTable("Game_HunduShijie_Zone", t =>
                         {
-                            t.HasComment("��Ϸ������Ϣ��");
+                            t.HasComment("游戏分区信息表");
                         });
                 });
 #pragma warning restore 612, 618

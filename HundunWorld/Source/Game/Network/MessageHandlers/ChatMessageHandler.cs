@@ -18,7 +18,8 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             MessageType.Chat,
             MessageType.ChatHistory,
-            MessageType.ChatNotify
+            MessageType.ChatNotify,
+            MessageType.ChatRecallNotify
         };
 
         public override ServiceType ServiceType => ServiceType.Chat;
@@ -37,6 +38,11 @@ namespace ManagedHundunWorld.Network.Handlers
         /// 收到聊天通知事件
         /// </summary>
         public event Action<ChatNotifyMessage> ChatNotifyReceived;
+
+        /// <summary>
+        /// 收到消息撤回通知事件
+        /// </summary>
+        public event Action<ChatRecallNotify> ChatRecallReceived;
 
         public ChatMessageHandler() : base(MessageType.Chat)
         {
@@ -64,6 +70,10 @@ namespace ManagedHundunWorld.Network.Handlers
                     HandleChatHistory(historyResponse);
                     break;
 
+                case ChatRecallNotify recallNotify:
+                    HandleChatRecall(recallNotify);
+                    break;
+
                 default:
                     Debug.LogWarning($"[ChatMessageHandler] 未知的消息体类型: {message.Body.GetType().Name}");
                     break;
@@ -88,6 +98,12 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             Debug.Log($"[ChatMessageHandler] 收到聊天通知: 频道={chatNotify.Channel}, 发送者={chatNotify.SenderName}, 系统消息={chatNotify.IsSystemMessage}");
             ChatNotifyReceived?.Invoke(chatNotify);
+        }
+
+        private void HandleChatRecall(ChatRecallNotify recallNotify)
+        {
+            Debug.Log($"[ChatMessageHandler] 收到撤回通知: 频道={recallNotify.Channel}, 消息ID={recallNotify.MessageId}");
+            ChatRecallReceived?.Invoke(recallNotify);
         }
     }
 }
