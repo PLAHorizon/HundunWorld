@@ -148,11 +148,26 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// <summary>场景天空是否已接入离屏渲染任务（避免重复接入）</summary>
         private bool _sceneSkyBound;
 
+        /// <summary>预览 Actor 与场景 Sky 所属的宿主场景（场景卸载断链判定用）</summary>
+        private FlaxEngine.Scene _hostScene;
+
         /// <summary>
         /// UI 侧天空渐变的自定义回退开关：为 false 时，若场景内没有 Sky，
         /// 仍会绘制 UI 侧自然天空渐变，保证预览背景不是纯黑。
         /// </summary>
         public bool UseSkyBackdrop = true;
+
+        /// <summary>
+        /// 取景距离系数。1 = 自动取景（全身完整入画、留 18% 边距）；
+        /// 小于 1 把相机推近做头肩特写。默认 1，对既有调用方完全等价于原行为。
+        /// </summary>
+        public float FramingScale = 1f;
+
+        /// <summary>
+        /// 取景瞄准高度占身高的比例。0.5 = 躯干中央（全身构图）；约 0.78 对准头肩。
+        /// 仅在 <see cref="FramingScale"/> 推近后才明显影响构图。默认 0.5 即原行为。
+        /// </summary>
+        public float FramingHeightFrac = 0.5f;
 
         /// <summary>天空渐变：天顶（上）</summary>
         private static readonly Color SkyZenith = new Color(0.27f, 0.45f, 0.76f, 1f);
@@ -437,6 +452,7 @@ namespace HundunWorld.Game.UI.Ink.Components
 
             var desc = GPUTextureDescription.New2D(width, height, PixelFormat.R8G8B8A8_UNorm);
             _renderTexture = new GPUTexture();
+            // 注意：GPUTexture.Init 返回 true 表示失败（0=成功），下方 ! 判断是正确的
             if (!_renderTexture.Init(ref desc))
             {
                 _textureBrush = new GPUTextureBrush(_renderTexture);
@@ -535,6 +551,13 @@ namespace HundunWorld.Game.UI.Ink.Components
             //    必须把场景内的 Sky 显式加入渲染列表，离屏视图才会绘制自然天空背景 ──
             BindSceneSky(scene);
             _renderTask.Enabled = true;
+
+            // 宿主场景断链防护：场景卸载（退世界/切场景/PIE停止）会销毁预览 Actor，
+            // 而 SceneRenderTask 白名单里的原生指针不会自动清除，下一帧 DrawAll 解引用
+            // 野指针即崩溃（Array.h Last() 断言 / 0xe06d7363）。见 OnLevelSceneUnloading。
+            _hostScene = scene;
+            Level.SceneUnloading -= OnLevelSceneUnloading; // InitializeActors 可能重试，防重复订阅
+            Level.SceneUnloading += OnLevelSceneUnloading;
 
             UpdateCameraTransform();
 
@@ -1261,8 +1284,10 @@ namespace HundunWorld.Game.UI.Ink.Components
             float horizontalHalf = Mathf.Max(box.Size.X, box.Size.Z) * 0.5f;
             float distV = (h * 0.5f) / halfTan;
             float distH = horizontalHalf / (halfTan * aspect);
-            _fitDistance = Mathf.Max(distV, distH) * 1.18f;
-            _fitCenterY = h * 0.5f;
+            // 取景系数默认 1 / 0.5，此时与原始公式逐项相等（既有调用方行为不变）
+            float framingScale = FramingScale <= 0f ? 1f : FramingScale;
+            _fitDistance = Mathf.Max(distV, distH) * 1.18f * framingScale;
+            _fitCenterY = h * Mathf.Clamp(FramingHeightFrac, 0.05f, 0.98f);
 
             // ③ 裁剪面随取景距离自适应（防近平面裁切/远平面丢失）
             if (_camera != null)
@@ -1285,11 +1310,52 @@ namespace HundunWorld.Game.UI.Ink.Components
         // 生命周期 & 清理
         // =======================================================================
 
+        /// <summary>
+        /// 宿主场景卸载防护：在 Actor 真正被销毁前把离屏渲染任务断链并降级为"待重建"。
+        /// <para>
+        /// 没有本守卫时，场景卸载销毁 _modelRoot/_lightRoot/_cameraRoot/场景 Sky 后，
+        /// Enabled 的 SceneRenderTask 仍持有这些原生指针，下一帧 RenderTask::DrawAll 在
+        /// CollectPostFxVolumes(dynamic_cast) / OnCollectDrawCalls(AddActor) 处解引用野指针，
+        /// 表现为 Array.h Last() 断言弹窗或 0xe06d7363 未处理异常崩溃。
+        /// </para>
+        /// </summary>
+        private void OnLevelSceneUnloading(FlaxEngine.Scene scene, Guid sceneId)
+        {
+            if (_renderTask == null || scene == null || scene != _hostScene)
+                return;
+
+            FlaxEngine.Debug.Log("[CharacterPreview3D] 宿主场景正在卸载，断开离屏渲染任务以防野指针崩溃");
+
+            _renderTask.Enabled = false;
+            _renderTask.CustomActors = null;
+            _renderTask.Camera = null;
+            Level.SceneUnloading -= OnLevelSceneUnloading;
+
+            // Actor 随场景销毁：清空全部引用， OnDestroy 的兜底销毁会自动跳过，避免二次销毁失效句柄
+            _animatedModel = null;
+            _camera = null;
+            _keyLight = null;
+            _fillLight = null;
+            _rimLight = null;
+            _modelRoot = null;
+            _lightRoot = null;
+            _cameraRoot = null;
+            _sceneSky = null;
+            _sceneSkyBound = false;
+            _hostScene = null;
+            _framed = false;
+            _idlePoseCaptured = false;
+            _uprightVerified = false;
+            _initialized = false; // RefreshLayout 在新场景就绪后走重试路径重建
+        }
+
         /// <inheritdoc />
         public override void OnDestroy()
         {
             try
             {
+                Level.SceneUnloading -= OnLevelSceneUnloading;
+
                 if (_renderTask != null)
                 {
                     _renderTask.Enabled = false;

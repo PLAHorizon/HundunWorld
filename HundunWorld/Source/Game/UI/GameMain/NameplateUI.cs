@@ -79,7 +79,7 @@ namespace HundunWorld.Game.UI.GameMain
             _widget.SetVisible(true);
             _widget.Location = new Float2(screen.X - NameplateWidget.PlateWidth * 0.5f,
                                           screen.Y - NameplateWidget.PlateHeight);
-            _widget.SetContent(name, level, curHp / maxHp);
+            _widget.SetContent(name, level, curHp / maxHp, attrs?.Title);
         }
 
         public override void OnDestroy()
@@ -162,11 +162,12 @@ namespace HundunWorld.Game.UI.GameMain
 
         internal void SetVisible(bool visible) => _root.Visible = visible;
 
-        internal void SetContent(string name, int level, float hpRatio)
+        internal void SetContent(string name, int level, float hpRatio, string title = null)
         {
             hpRatio = Mathf.Clamp(hpRatio, 0f, 1f);
 
-            _title.Text = TitleForLevel(level);
+            // 服务端下发的称号优先；未佩戴/旧服务端无此字段时回退按等级推导的阶梯称号。
+            _title.Text = string.IsNullOrEmpty(title) ? TitleForLevel(level) : title;
             _title.TextColor = TitleColorForLevel(level);
             _name.Text = level > 0 ? $"{name} Lv.{level}" : name;
 

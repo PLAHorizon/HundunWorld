@@ -163,11 +163,20 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>元素视野页面（高亮元素标记）</summary>
         public const string NavElementVision = "nav-element-vision";
 
-        /// <summary>创角捏脸页面（参数调整）</summary>
-        public const string CcFaceCustomize = "cc-face-customize";
+        /// <summary>角色选择页（登录后的行囊 / 角色列表，也是创角流程入口）</summary>
+        public const string CcRoleList = "cc-role-list";
 
-        /// <summary>创角命名页面（姓名输入）</summary>
-        public const string CcNaming = "cc-naming";
+        /// <summary>创角第一步：性别（水墨笔触双档「男 / 女」）</summary>
+        public const string CcGender = "cc-gender";
+
+        /// <summary>创角第二步：面容风格预设（风雅 / 写实竖版水墨卡）</summary>
+        public const string CcFacePreset = "cc-face-preset";
+
+        /// <summary>创角第三步：捏脸（捏脸 / 智能捏脸页签 + 预设列表 + 更多面容）</summary>
+        public const string CcFaceSculpt = "cc-face-sculpt";
+
+        /// <summary>创角最后一步：命名（不提供门派选择，门派由游戏内加入后再显示）</summary>
+        public const string CcName = "cc-name";
 
         /// <summary>音频设置子页面</summary>
         public const string NavSettingsAudio = "nav-settings-audio";
@@ -349,6 +358,19 @@ namespace HundunWorld.Game.UI.Ink
         };
 
         /// <summary>
+        /// 自带舞台的页面：自己铺雾白背景、自己画返回入口（创角 / 选角流程），
+        /// 因此不叠加外壳的墨底背景层与暗角层，也不显示外壳返回按钮。
+        /// </summary>
+        private static readonly System.Collections.Generic.HashSet<string> SelfDressedPages = new System.Collections.Generic.HashSet<string>
+        {
+            InkPageDomIds.CcRoleList,
+            InkPageDomIds.CcGender,
+            InkPageDomIds.CcFacePreset,
+            InkPageDomIds.CcFaceSculpt,
+            InkPageDomIds.CcName,
+        };
+
+        /// <summary>
         /// 当前页面 dom-id。
         /// </summary>
         public string CurrentPageDomId => _currentPageDomId;
@@ -505,11 +527,16 @@ namespace HundunWorld.Game.UI.Ink
                 // 覆盖层弹窗（popup-*）：叠加在战斗 HUD 之上，不能开启全屏墨背景/暗角——
                 // 否则墨底与底部深墨渐变会叠在游戏场景上形成"阴影区域"，且弹窗关闭不触发导航、残留不消失。
                 bool isOverlayPopup = domId.StartsWith("popup-", StringComparison.Ordinal);
+                // 创角 / 选角页自铺雾白舞台，不叠外壳的墨底背景层与暗角层。
+                bool selfDressed = SelfDressedPages.Contains(domId);
                 // 自带返回/侧栏的页面隐藏外壳返回，避免与页面自身控件重叠遮挡。
-                bool suppressShellBack = ShellBackSuppressedPages.Contains(domId);
+                bool suppressShellBack = selfDressed || ShellBackSuppressedPages.Contains(domId);
                 _shell.ShowBackButton(!isHud && !suppressShellBack);
+                // 外壳背景层**不**为自铺页面关闭：内容层是居中缩放的 1920×1080 且 ClipChildren=true，
+                // 页面自己的雾白底铺不到信箱区；关掉这层会让非 16:9 窗口的上下/左右黑边露出 3D 场景。
+                // 16:9 全屏时该层被页面完全盖住，视觉无差别；暗角层则确实要关（会压在浅色舞台上留黑边）。
                 _shell.ShowBackgroundLayer(!isHud && !isOverlayPopup);
-                _shell.ShowVignette(!isHud && !isOverlayPopup);
+                _shell.ShowVignette(!isHud && !isOverlayPopup && !selfDressed);
 
                 // 触发 PanelShow 事件：通知粒子系统在屏幕中心绘制墨韵涟漪。
                 // 屏幕中心坐标由粒子系统在事件回调中通过 PointFromScreen 转换为控件局部坐标，

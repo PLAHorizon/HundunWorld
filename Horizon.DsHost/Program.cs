@@ -139,6 +139,9 @@ public static class Program
         // 会话结束：网关在客户端断线时经同一条上行连接下发通知，DS 据此回收玩家实体。
         // 不接线的话 DS 会永久保留已断线的玩家并持续广播快照给死会话。
         uplink.SessionEndReceived += runner.NotifySessionEnded;
+        // 链路断开（网关崩溃/强杀/重启）：不会再有任何"会话结束"通知到达，
+        // DS 必须全量回收玩家会话，否则离线角色作为幽灵永久驻留并被广播（服务端残留根因）。
+        uplink.LinkLost += runner.NotifyLinkLost;
 
         using var shutdown = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) =>

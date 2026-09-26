@@ -250,7 +250,20 @@ public sealed class DsDataPlaneHost : IAsyncDisposable
             {
                 var characterId = handshake.LocalCharacterId;
                 var sessionId = (long)characterId;
-                if (!_world.AddPlayer(sessionId, characterId, handshake.InitialX, handshake.InitialY, handshake.InitialZ, out var reason))
+
+                // 坐标系修复：握手 InitialX/Y/Z 是 Flax Y-up（来自 CharacterInfo.Position，
+                // 服务端下发前已换成 Flax 空间；客户端地面对齐后的 Y 也是 Flax 上下）。
+                // SimWorld 与 ZoneShard 同源，约定 ECS Z-up——Orleans 通道的对偶换轴在
+                // RegisterEntityAsync 内部完成，DS 入口此前漏做，导致"上下"被当成"前后"种进
+                // 模拟世界：重登恢复/远程角色都会错一个轴，且错值会随写回缓存逐轮放大。
+                // 快照输出侧（BuildPlayerDelta 的 ECS→Flax）保持不变，此处补齐输入侧配对偶变换：
+                // ecsX=flaxX（左右）, ecsY=flaxZ（前后）, ecsZ=flaxY（上下）。
+                var ecsX = handshake.InitialX;
+                var ecsY = handshake.InitialZ;
+                var ecsZ = handshake.InitialY;
+
+                if (!_world.AddPlayer(sessionId, characterId, ecsX, ecsY, ecsZ, out var reason,
+                        nickname: handshake.Nickname, level: handshake.Level, title: handshake.Title))
                 {
                     _log?.Invoke($"DsDataPlaneHost：握手被拒。CharacterId={characterId} Reason={reason}");
                 }

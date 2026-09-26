@@ -429,6 +429,10 @@ namespace Horizon.Entities.Migrations.Games
                         .HasColumnType("int")
                         .HasColumnName("earth_attack");
 
+                    b.Property<int>("EarthPoint")
+                        .HasColumnType("int")
+                        .HasColumnName("earth_point");
+
                     b.Property<int>("EarthResistance")
                         .HasColumnType("int")
                         .HasColumnName("earth_resistance");
@@ -448,6 +452,10 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<int>("FireAttack")
                         .HasColumnType("int")
                         .HasColumnName("fire_attack");
+
+                    b.Property<int>("FirePoint")
+                        .HasColumnType("int")
+                        .HasColumnName("fire_point");
 
                     b.Property<int>("FireResistance")
                         .HasColumnType("int")
@@ -495,6 +503,10 @@ namespace Horizon.Entities.Migrations.Games
                         .HasColumnType("int")
                         .HasColumnName("metal_attack");
 
+                    b.Property<int>("MetalPoint")
+                        .HasColumnType("int")
+                        .HasColumnName("metal_point");
+
                     b.Property<int>("MetalResistance")
                         .HasColumnType("int")
                         .HasColumnName("metal_resistance");
@@ -530,6 +542,10 @@ namespace Horizon.Entities.Migrations.Games
                         .HasColumnType("int")
                         .HasColumnName("water_attack");
 
+                    b.Property<int>("WaterPoint")
+                        .HasColumnType("int")
+                        .HasColumnName("water_point");
+
                     b.Property<int>("WaterResistance")
                         .HasColumnType("int")
                         .HasColumnName("water_resistance");
@@ -537,6 +553,10 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<int>("WoodAttack")
                         .HasColumnType("int")
                         .HasColumnName("wood_attack");
+
+                    b.Property<int>("WoodPoint")
+                        .HasColumnType("int")
+                        .HasColumnName("wood_point");
 
                     b.Property<int>("WoodResistance")
                         .HasColumnType("int")

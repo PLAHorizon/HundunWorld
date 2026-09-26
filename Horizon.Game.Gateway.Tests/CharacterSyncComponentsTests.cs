@@ -1,4 +1,5 @@
 using System.Reflection;
+using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Components;
 using MemoryPack;
 
@@ -454,6 +455,170 @@ public class CharacterSyncComponentsTests
         var idData = attrs.FirstOrDefault(a => a.AttributeType.Name == "IdAttribute");
         Assert.NotNull(idData);
         Assert.Equal(expected, Convert.ToInt32(idData!.ConstructorArguments[0].Value));
+    }
+
+    #endregion
+
+    #region 远程玩家基础档案（昵称/等级/称号）—— v12 追加字段的兼容性与往返
+
+    /// <summary>
+    /// 旧字段 NetworkId/EntityType/OwnerId 的编号 0/1/2 是协议硬约束，发布后永不可变。
+    /// </summary>
+    [Fact]
+    public void NetworkIdentityAuthComponent_BackwardCompat_OldFields_PreserveMemoryPackOrderAndId()
+    {
+        var type = typeof(NetworkIdentityAuthComponent);
+
+        AssertFieldOrderAndId(type, nameof(NetworkIdentityAuthComponent.NetworkId), 0);
+        AssertFieldOrderAndId(type, nameof(NetworkIdentityAuthComponent.EntityType), 1);
+        AssertFieldOrderAndId(type, nameof(NetworkIdentityAuthComponent.OwnerId), 2);
+    }
+
+    /// <summary>
+    /// 昵称（order 3）与称号（order 4）必须追加在旧字段之后且连续，不得占用旧编号。
+    /// </summary>
+    [Fact]
+    public void NetworkIdentityAuthComponent_BackwardCompat_ProfileFields_AppendedAfterLegacyFields()
+    {
+        var type = typeof(NetworkIdentityAuthComponent);
+
+        AssertFieldOrderAndId(type, nameof(NetworkIdentityAuthComponent.Nickname), 3);
+        AssertFieldOrderAndId(type, nameof(NetworkIdentityAuthComponent.Title), 4);
+    }
+
+    /// <summary>
+    /// 称号随 Identity 端到端往返：spawn-only 字段一旦在序列化中丢失，
+    /// 远程玩家头顶就会静默退回按等级推导的假称号，因此必须有断言覆盖。
+    /// </summary>
+    [Fact]
+    public void NetworkIdentityAuthComponent_Title_RoundTrip()
+    {
+        var original = new NetworkIdentityAuthComponent
+        {
+            NetworkId = 4242UL,
+            EntityType = 0,
+            OwnerId = 4242UL,
+            Nickname = "叶惊鸿",
+            Title = "内门弟子",
+        };
+
+        var bytes = MemoryPackSerializer.Serialize(original);
+        var restored = MemoryPackSerializer.Deserialize<NetworkIdentityAuthComponent>(bytes);
+
+        Assert.Equal("叶惊鸿", restored.Nickname);
+        Assert.Equal("内门弟子", restored.Title);
+    }
+
+    /// <summary>
+    /// 网关在转发握手给 DS 前会无条件覆盖这三字段（权威注入）。
+    /// MemoryPackOrder 必须落在既有 ShardId(8) 之后（9/10/11），保证旧 DS 能跳过未知尾部。
+    /// 注意：HandshakePacket 的 MemoryPackOrder 与 Orleans [Id] 从一开始就不同轨
+    /// （ShardId = order 8 / id 6），故两者分别断言，不能套用同一个数字。
+    /// </summary>
+    [Fact]
+    public void HandshakePacket_ProfileFields_AppendedAtTail_AndRoundTrip()
+    {
+        var type = typeof(HandshakePacket);
+
+        AssertPropertyOrderAndId(type, nameof(HandshakePacket.ShardId), 8, 6);
+        AssertPropertyOrderAndId(type, nameof(HandshakePacket.Nickname), 9, 7);
+        AssertPropertyOrderAndId(type, nameof(HandshakePacket.Level), 10, 8);
+        AssertPropertyOrderAndId(type, nameof(HandshakePacket.Title), 11, 9);
+
+        var packet = new HandshakePacket
+        {
+            LocalCharacterId = 77UL,
+            ShardId = 3L,
+            Nickname = "集结号",
+            Level = 42,
+            Title = "杂役",
+        };
+
+        var bytes = MemoryPackSerializer.Serialize<SyncPacket>(packet);
+        var restored = MemoryPackSerializer.Deserialize<SyncPacket>(bytes) as HandshakePacket;
+
+        Assert.NotNull(restored);
+        Assert.Equal("集结号", restored!.Nickname);
+        Assert.Equal(42, restored.Level);
+        Assert.Equal("杂役", restored.Title);
+    }
+
+    /// <summary>
+    /// 与 <see cref="AssertFieldOrderAndId"/> 同语义，但作用于属性（HandshakePacket 用自动属性），
+    /// 且允许 <c>[MemoryPackOrder]</c> 与 <c>[Id]</c> 编号不同轨。
+    /// </summary>
+    private static void AssertPropertyOrderAndId(Type type, string propertyName, int expectedOrder, int expectedId)
+    {
+        var property = type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+        Assert.NotNull(property);
+
+        var attrs = CustomAttributeData.GetCustomAttributes(property!);
+
+        var mpOrderData = attrs.FirstOrDefault(a => a.AttributeType.Name == "MemoryPackOrderAttribute");
+        Assert.NotNull(mpOrderData);
+        Assert.Equal(expectedOrder, Convert.ToInt32(mpOrderData!.ConstructorArguments[0].Value));
+
+        var idData = attrs.FirstOrDefault(a => a.AttributeType.Name == "IdAttribute");
+        Assert.NotNull(idData);
+        Assert.Equal(expectedId, Convert.ToInt32(idData!.ConstructorArguments[0].Value));
+    }
+
+    /// <summary>
+    /// v13 档案增量通道：Profile 必须挂在 EntityDelta 末尾（order/Id 7），
+    /// 且"未变更 = null、空串 = 明确取消佩戴"这一语义能被序列化保真——
+    /// 若 null 与 "" 混淆，改名后其他客户端会把昵称清空。
+    /// </summary>
+    [Fact]
+    public void EntityDelta_Profile_AppendedAtOrderSeven()
+    {
+        AssertFieldOrderAndId(typeof(EntityDelta), nameof(EntityDelta.Profile), 7);
+    }
+
+    [Fact]
+    public void ProfileAuthComponent_DistinguishesUnchangedFromExplicitEmpty()
+    {
+        // 只改了称号：昵称留 null。
+        var partial = new ProfileAuthComponent { Nickname = null, Title = "", Level = 0 };
+        var restoredPartial = MemoryPackSerializer.Deserialize<ProfileAuthComponent>(
+            MemoryPackSerializer.Serialize(partial));
+
+        Assert.Null(restoredPartial.Nickname);
+        Assert.Equal("", restoredPartial.Title);
+
+        // 完整下发：空串与有值都能保真。
+        var full = new ProfileAuthComponent { Nickname = "叶惊鸿", Title = "内门弟子", Level = 37 };
+        var restoredFull = MemoryPackSerializer.Deserialize<ProfileAuthComponent>(
+            MemoryPackSerializer.Serialize(full));
+
+        Assert.Equal("叶惊鸿", restoredFull.Nickname);
+        Assert.Equal("内门弟子", restoredFull.Title);
+        Assert.Equal(37, restoredFull.Level);
+    }
+
+    /// <summary>
+    /// Profile 作为可空字段整体往返（delta 不带 Profile 时必须保持 null，不能变成"全空档案"）。
+    /// </summary>
+    [Fact]
+    public void EntityDelta_ProfileNull_RoundTripsAsNull()
+    {
+        var without = new EntityDelta { EntityId = 5UL, Kind = EntityDeltaKind.Update };
+        var restored = MemoryPackSerializer.Deserialize<EntityDelta>(
+            MemoryPackSerializer.Serialize(without));
+
+        Assert.Null(restored.Profile);
+
+        var with = new EntityDelta
+        {
+            EntityId = 5UL,
+            Kind = EntityDeltaKind.Update,
+            Profile = new ProfileAuthComponent { Nickname = "新名字" },
+        };
+        var restoredWith = MemoryPackSerializer.Deserialize<EntityDelta>(
+            MemoryPackSerializer.Serialize(with));
+
+        Assert.NotNull(restoredWith.Profile);
+        Assert.Equal("新名字", restoredWith.Profile!.Value.Nickname);
+        Assert.Null(restoredWith.Profile!.Value.Title);
     }
 
     #endregion

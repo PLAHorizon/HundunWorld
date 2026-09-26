@@ -139,6 +139,15 @@ namespace HundunWorld.Game.UI.Character
         /// </summary>
         private void TryCreateUI()
         {
+            // 选角 / 创角已由水墨页面（InkPageRouter 的 cc-* 页）承载，本控制器不再构建旧面板栈，
+            // 否则两套 UI 会同时铺在同一个 Character.scene 上。
+            if (HundunWorld.Game.UI.MainUIManager.UseInkCharacterFlow)
+            {
+                _initialized = true;
+                Debug.Log("[CharacterSceneController] 选角/创角由水墨 UI 承载，跳过旧面板栈构建");
+                return;
+            }
+
             if (_uiCreated)
             {
                 _initialized = true;

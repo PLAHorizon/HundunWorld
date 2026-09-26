@@ -4,6 +4,7 @@ using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Sect
 {
@@ -76,8 +77,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
         private string[] _sectNames = { "逍遥派", "少林寺", "武当派", "峨眉派", "华山派", "丐帮", "唐门", "全真教" };
         private string[] _sectEmblems = { "逍", "少", "武", "峨", "华", "丐", "唐", "全" };
-        private string[] _sectDescs = { "逍遥自在 · 已加入", "外家正宗 · 未加入", "内家太极 · 未加入", "剑法灵动 · 未加入", "剑气冲霄 · 未加入", "降龙掌法 · 未加入", "暗器机关 · 未加入", "先天功法 · 未加入" };
-        private bool[] _sectJoined = { true, false, false, false, false, false, false, false };
+        private string[] _sectFlavors = { "逍遥自在", "外家正宗", "内家太极", "剑法灵动", "剑气冲霄", "降龙掌法", "暗器机关", "先天功法" };
+        /// <summary>列表副标题（风味描述 · 加入状态），由 <see cref="InitSectMembership"/> 按真实数据生成。</summary>
+        private string[] _sectDescs;
+        /// <summary>各门派的加入状态，由 <see cref="InitSectMembership"/> 按角色真实门派生成。</summary>
+        private bool[] _sectJoined;
         private string[] _sectRanks = { "内门弟子", "", "", "", "", "", "", "" };
         private int[] _sectContributions = { 3200, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -106,6 +110,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
         private string[] _dailyTaskProgress = { "2 / 5", "1 / 3", "0 / 1" };
         private string[] _dailyTaskRewards = { "贡献 +200", "贡献 +150", "贡献 +500" };
 
+        /// <summary>
+        /// 门派成员身份取自角色真实数据：创角不再选门派，未加入前所有门派都显示「未加入」。
+        /// 这里原本写死「逍遥派已加入」，会让无门派角色一打开门派页就以为自己已入门派。
+        /// </summary>
+        private void InitSectMembership()
+        {
+            _sectJoined = new bool[_sectNames.Length];
+            _sectDescs = new string[_sectNames.Length];
+
+            var role = global::Game.UI.Character.CharacterManager.Instance?.SelectedCharacter;
+            string current = global::HundunWorld.Game.UI.Ink.Pages.CharacterCreation.CcSectNames.Get(
+                role?.Profession ?? Horizon.Game.Message.Enums.Profession.None);
+
+            for (int i = 0; i < _sectNames.Length; i++)
+            {
+                _sectJoined[i] = !string.IsNullOrEmpty(current) && _sectNames[i] == current;
+                _sectDescs[i] = $"{_sectFlavors[i]} · {(_sectJoined[i] ? "已加入" : "未加入")}";
+            }
+        }
+
         public MenuSectPage()
         {
             _screenSize = FlaxEngine.Screen.Size;
@@ -119,6 +143,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
             ClipChildren = false;
             AutoFocus = false;
             Location = Float2.Zero;
+
+            // 门派成员身份必须在 BuildUI 画列表之前按真实数据算好
+            InitSectMembership();
             Size = _screenSize;
 
             try
@@ -969,12 +996,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                     }
                     else if (child is Label label)
                     {
-                        if (_dailyTaskNames.Contains(label.Text) && label.TextColor == InkWashTheme.PaperBright)
+                        if (_dailyTaskNames.Contains(label.Text.ToString()) && label.TextColor == InkWashTheme.PaperBright)
                         {
                             child.Location = new Float2(taskX, 8f);
                             taskX += 100f;
                         }
-                        else if (_dailyTaskDescs.Contains(label.Text))
+                        else if (_dailyTaskDescs.Contains(label.Text.ToString()))
                         {
                             if (taskX < 140f)
                             {
@@ -991,7 +1018,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                                 child.Location = new Float2(detailW - PanelPadding * 2f - 60f, 30f);
                             }
                         }
-                        else if (_dailyTaskStatus.Contains(label.Text) && label.TextColor == InkWashTheme.GoldBright)
+                        else if (_dailyTaskStatus.Contains(label.Text.ToString()) && label.TextColor == InkWashTheme.GoldBright)
                         {
                             child.Location = new Float2(detailW - PanelPadding * 2f - 50f, 8f);
                         }

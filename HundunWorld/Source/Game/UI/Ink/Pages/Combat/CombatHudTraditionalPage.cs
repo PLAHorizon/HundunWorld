@@ -70,15 +70,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         private const float PartyHeight = 150f;    // 28 + 4*30 - 6 + 8
 
         // --- 右上：小地图 ---
-        private const float MinimapContainerSize = 200f;
-        private const float MinimapMapSize = 160f;
-        private const float MinimapBtnSize = 28f;
+        /// <summary>小地图整体缩放系数（1.0 = 设计稿：160px 圆形地图 + 200px 容器 + 28px 圆钮）。</summary>
+        private const float MinimapScale = 1.2f;
+        private const float MinimapContainerSize = 200f * MinimapScale;
+        private const float MinimapMapSize = 160f * MinimapScale;
+        private const float MinimapBtnSize = 28f * MinimapScale;
         private const float CoordBarHeight = 24f;
 
         // --- 右侧：任务追踪 ---
         private const float QuestWidth = 220f;
-        private const float QuestTop = 260f;
+        /// <summary>任务追踪顶边：紧随小地图容器（含坐标条）之下，留 20px 间距。</summary>
+        private const float QuestTop = Edge + MinimapContainerSize + 4f + CoordBarHeight + 20f;
         private const float QuestHeight = 117f;
+        /// <summary>任务追踪折叠后仅保留标题行的高度。</summary>
+        private const float QuestCollapsedHeight = 30f;
 
         // --- 底部：导航栏 ---
         private const float NavBtnW = 50f;
@@ -119,13 +124,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         // 子控件引用
         // =======================================================================
 
-        private InkPanel _targetPanel;
+        private ContainerControl _targetPanel;
         private InkBar _targetHpBar;
         private Label _targetHpValueLabel;
         private CompassBar _compassBar;
 
         /// <summary>罗盘带导航标记刷新间隔（秒）——POI 方位与玩家位置均变化缓慢，无需每帧重算。</summary>
         private const float CompassRefreshInterval = 0.4f;
+
+        /// <summary>坐标条刷新间隔（秒）：比罗盘更高频，保证移动时读数跟手</summary>
+        private const float CoordRefreshInterval = 0.25f;
 
         /// <summary>罗盘带上最多绘制的地图标记数（避免拥挤遮挡八方位标签）。</summary>
         private const int CompassMaxMarkers = 8;
@@ -141,10 +149,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
         private float _compassRefreshTimer;
 
-        private InkPanel _charPanel;
+        private float _coordRefreshTimer;
+
+        private ContainerControl _charPanel;
         private InkCircle _charAvatar;
         private Label _charAvatarGlyph;
         private Label _charNameLabel;
+        private Label _sectLabel;
         private InkCircle _levelBadge;
         private InkBar _hpBar;
         private Label _hpValueLabel;
@@ -153,14 +164,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         private InkBar _expBar;
         private Label _expPercentLabel;
 
-        private InkPanel _partyPanel;
+        private ContainerControl _partyPanel;
 
         private ContainerControl _minimapContainer;
         private InkMinimap _minimap;
         private Label _areaLabel;
         private Label _coordLabel;
 
-        private InkPanel _questPanel;
+        private ContainerControl _questPanel;
+        private readonly List<InkNavButton> _questRows = new();
+        private InkNavButton _questToggleBtn;
+        private Label _questToggleLabel;
+        private bool _questCollapsed;
 
         private ContainerControl _navRow;
 
@@ -193,12 +208,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
         private ContainerControl _funcColumn;
 
+        /// <summary>右下角"退出游戏"圆钮（功能列左侧，底对齐）</summary>
+        private InkCircle _exitGameButton;
+        private const float ExitBtnSize = 44f;
+
         // ===================================================================
         // mock 数据（对齐 combat-hud-traditional.html）
         // =======================================================================
 
         private string _playerName = "逍遥客";
-        private string _sectName = "武当";
+        /// <summary>门派名。创角不再选门派，未加入前显示「无门派」，由 <see cref="SetSectName"/> 注入真实值。</summary>
+        private string _sectName = "无门派";
         private int _playerLevel = 60;
         private int _hpCurrent = 12450;
         private int _hpMax = 15000;
@@ -242,6 +262,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         public void BindSkills(SkillBase[] slots)
         {
             _boundSkills = slots;
+        }
+
+        /// <summary>
+        /// 注入门派名。创角不再选择门派，未加入前传入「无门派」；
+        /// 角色在游戏内创建 / 加入门派之后才显示门派名。
+        /// </summary>
+        public void SetSectName(string sectName)
+        {
+            _sectName = string.IsNullOrEmpty(sectName) ? "无门派" : sectName;
+            if (_sectLabel != null)
+                _sectLabel.Text = _sectName;
         }
 
         private void RefreshBoundCharacterDisplay()
@@ -896,11 +927,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// </summary>
         private void BuildTargetInfo()
         {
-            _targetPanel = new InkPanel
+            // 无背景、无边框：用透明容器承载（头像/名称/血条直接浮于场景之上）
+            _targetPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(TargetWidth, TargetHeight),
-                Radius = InkWashTheme.RadiusLg,
+                BackgroundColor = Color.Transparent,
+                ClipChildren = false,
             };
 
             // 38 圆形头像（blood-faint 底 + blood-primary 边 + 17px 血亮字）
@@ -1049,14 +1082,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 }
 
                 var rect = new Rectangle(0f, 0f, Width, Height);
-                InkRenderHelper.FillRoundedRectangle(rect, InkWashTheme.RadiusMd, InkWashTheme.Scrim);
-                InkRenderHelper.DrawRoundedRectangle(rect, InkWashTheme.RadiusMd, InkWashTheme.BorderGoldSubtle, 1f);
+                // 底色：青金色（青与金混合），透明度 0.3（低底以凸显文字与图标）；无边框。
+                // 整块平铺而不用 FillRoundedRectangle——后者按"十字带 + 四角圆"分次叠加绘制，
+                // 半透明色在重叠区会被叠两次（0.3 叠成 0.51），四边留下一圈比内部更暗的假边框。
+                var compassChrome = new Color(0.68f, 0.72f, 0.42f, 0.30f);
+                Render2D.FillRectangle(rect, compassChrome);
 
                 float cx = Width * 0.5f;
                 float pxPerDeg = Width / DegSpan;
                 float half = DegSpan * 0.5f;
 
-                // 底部度数刻度（每 15° 小刻度，45° 大刻度）
+                // 底部度数刻度（每 15° 小刻度，45° 大刻度）——统一灰白，去掉金色，避免被看成"金色边框"
                 for (float a = 0f; a < 360f; a += 15f)
                 {
                     float d = Delta(a, PlayerYaw);
@@ -1065,7 +1101,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                     bool major = a % 45f < 0.01f;
                     float th = major ? 7f : 4f;
                     Render2D.DrawLine(new Float2(x, Height - 3f), new Float2(x, Height - 3f - th),
-                        major ? InkWashTheme.GoldDeep : InkWashTheme.TextTertiary, 1f);
+                        major ? InkWashTheme.TextDefault : InkWashTheme.TextTertiary, 1f);
                 }
 
                 // 中带：八方位标签（主方位金亮大字，隅方位纸色小字）
@@ -1099,9 +1135,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                     }
                 }
 
-                // 中央朝向指针（金色倒三角）
-                Render2D.DrawLine(new Float2(cx - 5f, Height - 2f), new Float2(cx, Height - 7f), InkWashTheme.GoldPrimary, 2f);
-                Render2D.DrawLine(new Float2(cx, Height - 7f), new Float2(cx + 5f, Height - 2f), InkWashTheme.GoldPrimary, 2f);
+                // 中央朝向指针（白灰倒三角，去金色）
+                Render2D.DrawLine(new Float2(cx - 5f, Height - 2f), new Float2(cx, Height - 7f), InkWashTheme.TextDefault, 2f);
+                Render2D.DrawLine(new Float2(cx, Height - 7f), new Float2(cx + 5f, Height - 2f), InkWashTheme.TextDefault, 2f);
 
                 // 半透明遮罩：水平中心全透明，两端约 0.2 透明度（内容向边缘渐隐）
                 const int MaskSlices = 24;
@@ -1130,11 +1166,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// </summary>
         private void BuildCharacterPanel()
         {
-            _charPanel = new InkPanel
+            // 无背景、无边框：透明容器承载（头像/名称/血条/Buff 直接浮于场景之上）
+            _charPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(CharWidth, CharHeight),
-                Radius = InkWashTheme.RadiusLg,
+                BackgroundColor = Color.Transparent,
+                ClipChildren = false,
             };
 
             // 72 圆形头像（BaseTertiary 底 + BgMist 叠加，2px 金边 + 金辉光）
@@ -1170,8 +1208,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             _charNameLabel = MakeLabel(_playerName, CharInfoX, CharPadding, 150f, 22f,
                 InkWashTheme.TextDefault, 18f, InkWashTheme.FontRole.Display);
             _charPanel.AddChild(_charNameLabel);
-            _charPanel.AddChild(MakeLabel(_sectName, CharInfoX + 150f, CharPadding, 60f, 22f,
-                InkWashTheme.JadeBright, 12f, InkWashTheme.FontRole.Body, TextAlignment.Far));
+            _sectLabel = MakeLabel(_sectName, CharInfoX + 150f, CharPadding, 60f, 22f,
+                InkWashTheme.JadeBright, 12f, InkWashTheme.FontRole.Body, TextAlignment.Far);
+            _charPanel.AddChild(_sectLabel);
 
             // 血条行：标签"血" + 16px 条（金边，数值居中覆盖）
             float hpY = CharPadding + 22f + 5f;
@@ -1237,11 +1276,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// </summary>
         private void BuildPartyPanel()
         {
-            _partyPanel = new InkPanel
+            // 无背景、无边框：透明容器承载（成员行直接浮于场景之上）
+            _partyPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(PartyWidth, PartyHeight),
-                Radius = InkWashTheme.RadiusLg,
+                BackgroundColor = Color.Transparent,
+                ClipChildren = false,
             };
 
             // 标题行：users 图标（以"队"字替代）+ 队伍 + 4/5
@@ -1294,7 +1335,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         // ===================================================================
 
         /// <summary>
-        /// 右上方形小地图：200x200 容器内 160 圆形地图（20,20）+ 8 个 28px 圆形环绕按钮 + 坐标条。
+        /// 右上角小地图：240x240 容器内 192 圆形地图（24,24）+ 圆形功能钮 + 坐标条。
+        /// 所有尺寸由 <see cref="MinimapScale"/> 统一缩放。
         /// </summary>
         private void BuildMinimap()
         {
@@ -1306,10 +1348,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 ClipChildren = false,
             };
 
-            // 160 圆形地图（InkMinimap 内置径向渐变底 + 2px 金边 + 标记点）
+            // 192 圆形地图（InkMinimap 普通圆形：圆内透明 + 细圆环；外框可换成贴图，见 InkMinimap.FrameTexture）
             _minimap = new InkMinimap
             {
-                Location = new Float2(20f, 20f),
+                Location = new Float2(20f * MinimapScale, 20f * MinimapScale),
                 Size = new Float2(MinimapMapSize, MinimapMapSize),
                 AnchorPreset = AnchorPresets.TopLeft,
             };
@@ -1327,16 +1369,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 _minimapContainer.AddChild(_minimap);
 
             // 8 个 28px 圆形功能按钮环绕（bg-ink + border-gold + 金字）
+            // 环绕圆钮：仅保留「+」「−」（其余入口移除）。
+            // "+" 钮中心落在小地图圆环右上 45° 斜线上（与 "−" 同样"骑"在边框上），
+            // 由半径反推，改 MinimapScale/地图尺寸时自动跟随，不再用魔数。
+            float mapCenter = 20f * MinimapScale + MinimapMapSize * 0.5f;
+            float ringDiag = MinimapMapSize * 0.5f * 0.7071f; // sin45° = cos45°
             var btnDefs = new[]
             {
-                (x: 86f, y: 0f, glyph: "图", domId: InkPageDomIds.NavWorldMap),
-                (x: 162f, y: 10f, glyph: "+", domId: (string)null),
-                (x: 172f, y: 86f, glyph: "−", domId: (string)null),
-                (x: 162f, y: 162f, glyph: "任", domId: InkPageDomIds.NavQuestLog),
-                (x: 86f, y: 172f, glyph: "队", domId: (string)null),
-                (x: 10f, y: 162f, glyph: "邮", domId: InkPageDomIds.NavSocialMail),
-                (x: 0f, y: 86f, glyph: "设", domId: InkPageDomIds.NavSettings),
-                (x: 10f, y: 10f, glyph: "助", domId: (string)null),
+                (x: mapCenter + ringDiag - MinimapBtnSize * 0.5f,
+                 y: mapCenter - ringDiag - MinimapBtnSize * 0.5f,
+                 glyph: "+", domId: (string)null),
+                (x: 172f * MinimapScale, y: 86f * MinimapScale, glyph: "−", domId: (string)null),
             };
 
             foreach (var def in btnDefs)
@@ -1353,17 +1396,19 @@ _minimapContainer.AddChild(_minimap);
             }
 
             // 坐标条（200x24，radius-4，洛阳城 + 坐标）
-            var coordBar = new InkPanel
+            // 坐标条：无背景、无边框（透明容器承载 区域名 + 坐标）
+            var coordBar = new ContainerControl
             {
                 Location = new Float2(0f, MinimapContainerSize + 4f), // mt-1
                 Size = new Float2(MinimapContainerSize, CoordBarHeight),
-                Radius = InkWashTheme.RadiusMd,
+                BackgroundColor = Color.Transparent,
+                ClipChildren = false,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _areaLabel = MakeLabel("洛阳城", 10f, 4f, 100f, 16f,
+            _areaLabel = MakeLabel("洛阳城", 10f * MinimapScale, 4f, 100f * MinimapScale, 16f,
                 InkWashTheme.GoldBright, 11f, InkWashTheme.FontRole.Display);
             coordBar.AddChild(_areaLabel);
-            _coordLabel = MakeLabel("1234, 567", 110f, 4f, 80f, 16f,
+            _coordLabel = MakeLabel("--, --", 110f * MinimapScale, 4f, 80f * MinimapScale, 16f,
                 InkWashTheme.TextTertiary, 10f, InkWashTheme.FontRole.Number, TextAlignment.Far);
             coordBar.AddChild(_coordLabel);
             _minimapContainer.AddChild(coordBar);
@@ -1380,20 +1425,35 @@ _minimapContainer.AddChild(_minimap);
         /// </summary>
         private void BuildQuestTracker()
         {
-            _questPanel = new InkPanel
+            // 无背景、无边框：透明容器承载（标题/任务名/计数/进度条直接浮于场景之上）
+            _questPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(QuestWidth, QuestHeight),
-                Radius = InkWashTheme.RadiusLg,
+                BackgroundColor = Color.Transparent,
+                ClipChildren = false,
             };
 
-            // 标题行：scroll-text 图标（以"任"字替代）+ 任务追踪 12px 金亮
+            // 标题行："任"字图标 + 任务追踪 12px 金亮 + 折叠开关
             _questPanel.AddChild(MakeLabel("任", 10f, 8f, 12f, 14f,
                 InkWashTheme.GoldPrimary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Center));
             _questPanel.AddChild(MakeLabel("任务追踪", 28f, 8f, 120f, 14f,
                 InkWashTheme.GoldBright, 12f, InkWashTheme.FontRole.Display));
 
-            // 3 任务：进度条颜色分别为青/金/血
+            _questToggleBtn = new InkNavButton(16f, 14f)
+            {
+                Location = new Float2(QuestWidth - 12f - 16f, 8f),
+                AnchorPreset = AnchorPresets.TopLeft,
+                FillColor = Color.Transparent,
+                BorderColor = Color.Transparent,
+            };
+            _questToggleLabel = MakeLabel("-", 0f, 0f, 16f, 14f,
+                InkWashTheme.GoldBright, 12f, InkWashTheme.FontRole.Body, TextAlignment.Center);
+            _questToggleBtn.AddChild(_questToggleLabel);
+            _questToggleBtn.Clicked += _ => ToggleQuestCollapsed();
+            _questPanel.AddChild(_questToggleBtn);
+
+            // 3 任务：整行可点击（导航到任务地点，TODO）；进度条颜色分别为青/金/血
             var quests = new[]
             {
                 (name: "黑风寨剿匪", count: "8/10", progress: 0.80f, color: InkWashTheme.JadeBright, variant: InkBarFillVariant.Jade),
@@ -1404,16 +1464,49 @@ _minimapContainer.AddChild(_minimap);
             float qY = 30f;
             foreach (var q in quests)
             {
-                _questPanel.AddChild(MakeLabel(q.name, 10f, qY, 140f, 16f,
+                string questName = q.name;
+                var row = new InkNavButton(QuestWidth - 20f, 21f)
+                {
+                    Location = new Float2(10f, qY - 1f),
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    FillColor = Color.Transparent,
+                    BorderColor = Color.Transparent,
+                };
+                row.AddChild(MakeLabel(questName, 0f, 0f, 130f, 16f,
                     InkWashTheme.TextDefault, 11f, InkWashTheme.FontRole.Display));
-                _questPanel.AddChild(MakeLabel(q.count, 150f, qY, 60f, 16f,
+                row.AddChild(MakeLabel(q.count, 140f, 0f, 50f, 16f,
                     q.color, 9f, InkWashTheme.FontRole.Number, TextAlignment.Far));
-                _questPanel.AddChild(MakeBar(10f, qY + 18f, 200f, 3f, q.progress,
+                row.AddChild(MakeBar(0f, 17f, 180f, 3f, q.progress,
                     q.variant, InkWashTheme.Abyss, Color.Transparent));
+                row.Clicked += _ => OnQuestClicked(questName);
+                _questPanel.AddChild(row);
+                _questRows.Add(row);
                 qY += 29f; // 21 + gap-2(8)
             }
 
             AddChild(_questPanel);
+        }
+
+        /// <summary>折叠/展开任务追踪（折叠后仅保留标题行）。</summary>
+        private void ToggleQuestCollapsed()
+        {
+            _questCollapsed = !_questCollapsed;
+            if (_questPanel != null)
+                _questPanel.Size = new Float2(QuestWidth, _questCollapsed ? QuestCollapsedHeight : QuestHeight);
+            foreach (var row in _questRows)
+                row.Visible = !_questCollapsed;
+            if (_questToggleLabel != null)
+                _questToggleLabel.Text = _questCollapsed ? "+" : "-";
+        }
+
+        /// <summary>
+        /// TODO（任务导航）：点击任务条目应导航到任务地点。
+        /// 地图导航尚未完善，先只打日志占位；后续接入 <c>PluginNavigationBridge</c> / 寻路系统后，
+        /// 在此发起寻路并在地图与罗盘上标记任务点。
+        /// </summary>
+        private void OnQuestClicked(string questName)
+        {
+            FlaxEngine.Debug.Log($"[CombatHudTraditionalPage][TODO] 导航到任务地点：{questName}（寻路功能待接入）");
         }
 
         // ===================================================================
@@ -2071,6 +2164,29 @@ _minimapContainer.AddChild(_minimap);
             }
 
             AddChild(_funcColumn);
+
+            // 退出游戏圆钮：功能列左侧、与其底对齐；点击返回角色选择（同断线超时流程）。
+            _exitGameButton = MakeCircle(0f, 0f, ExitBtnSize,
+                InkWashTheme.PanelSolid, InkWashTheme.BorderGold, 1f,
+                "退", InkWashTheme.BloodBright, 14f, InkWashTheme.FontRole.Body);
+            _exitGameButton.Clicked += () => ExitGameToCharacterSelection();
+            AddChild(_exitGameButton);
+        }
+
+        /// <summary>
+        /// 退出游戏：返回角色选择界面并切换全局状态。
+        /// 与 <c>HundunWorldGame</c> 断线超时/重连失败的回退路径保持同一流程；
+        /// 服务端随后经断线感知完成 Despawn/离线（位置缓存由 DS 写回/ZoneShard tick 保持新鲜）。
+        /// </summary>
+        private void ExitGameToCharacterSelection()
+        {
+            var sceneManager = HundunWorld.Game.UI.GameSceneManager.Instance;
+            if (sceneManager != null)
+                sceneManager.TransitionTo(Horizon.Game.Message.Enums.SceneType.CharacterSelection);
+
+            var gameState = HundunWorld.Game.Core.GameStateManager.Instance;
+            if (gameState != null)
+                gameState.ChangeState(HundunWorld.Game.Core.GameState.CharacterSelect);
         }
 
         // ===================================================================
@@ -2160,7 +2276,15 @@ _minimapContainer.AddChild(_minimap);
                 _chatPanel.Location = new Float2(Edge, sh - EdgeBottom - ChatHeight);
 
             if (_funcColumn != null)
+            {
                 _funcColumn.Location = new Float2(sw - FuncColW - Edge, sh - EdgeBottom - FuncColH);
+
+                // 退出钮贴功能列左侧、底对齐
+                if (_exitGameButton != null)
+                    _exitGameButton.Location = new Float2(
+                        sw - Edge - FuncColW - 8f - ExitBtnSize,
+                        sh - EdgeBottom - ExitBtnSize);
+            }
 
             if (_expBottomBar != null)
             {
@@ -2189,6 +2313,18 @@ _minimapContainer.AddChild(_minimap);
                 {
                     _compassRefreshTimer = 0f;
                     RefreshCompassMarkers();
+                }
+            }
+
+            // 坐标条：显示角色实际世界坐标（X, Z 水平面），与 minimap 同源（插件导航位姿）
+            if (_coordLabel != null)
+            {
+                _coordRefreshTimer += deltaTime;
+                if (_coordRefreshTimer >= CoordRefreshInterval)
+                {
+                    _coordRefreshTimer = 0f;
+                    if (PluginNavigationBridge.TryGetPlayerPose(out var pose, out _))
+                        _coordLabel.Text = $"{Mathf.RoundToInt(pose.X)}, {Mathf.RoundToInt(pose.Z)}";
                 }
             }
 

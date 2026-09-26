@@ -1733,6 +1733,17 @@ namespace HundunWorld.Game
         /// </summary>
         public void RequestCreateLocalPlayerActor(ulong characterId, float x, float y, float z)
         {
+            // 新会话开始：清掉上一会话遗留的远程角色 Actor。
+            // FlaxActorSyncSystem 挂在常驻 RootScene 上，退世界不会触发其 OnDestroy，
+            // 旧 Actor 若不在此处主动清理，会跨会话堆积成"离线/不存在角色"的幽灵。
+            // （本地玩家 Actor 有下方的显式销毁，远程角色此前无人负责。）
+            var flaxSyncForPurge = FlaxActorSyncSystem.Instance;
+            if (flaxSyncForPurge != null)
+            {
+                flaxSyncForPurge.ClearAllActors();
+                Debug.Log("[HundunWorldGame] 新会话开始，已清理上一会话遗留的远程角色 Actor");
+            }
+
             // 若已存在本地玩家 Actor，先销毁
             if (_localPlayerActor != null)
             {
@@ -2322,6 +2333,13 @@ namespace HundunWorld.Game
                     appearance.BodyEquipmentId,
                     appearance.AccessoryIds,
                     appearance.WeaponIds);
+
+                // 本地缓存只用于"进场景瞬间有得看"；随后向服务端要权威装备清单，
+                // 回包由 RoleEquipmentSyncHandler 应用（失败则保持本地渲染不动）。
+                _ = Network.Handlers.RoleEquipmentSyncHandler.RequestAsync((ulong)characterId);
+
+                // 背包同理：拉服务端权威清单；若服务端为空且本地有货，处理器会一次性迁移上去。
+                _ = Network.MessageHandlers.RoleInventorySyncHandler.RequestAsync((ulong)characterId);
 
                 Debug.Log($"[HundunWorldGame] 已初始化 CharacterEquipmentManager: CharacterId={characterId}, Body={appearance.BodyEquipmentId}, Accessories=[{string.Join(",", appearance.AccessoryIds)}], Weapons=[{string.Join(",", appearance.WeaponIds)}]");
             }

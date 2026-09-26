@@ -71,6 +71,42 @@ public abstract class MessageHandlerBase : IMessageHandler
         public IClusterClient OrleansClient => _clusterClient;
 
         /// <summary>
+        /// 把穿/卸装备命令落到权威背包 grain，并回传真实结果。
+        /// <para>
+        /// 此前 <c>HandleEquipItemAsync</c> 在 ItemHandler 与 CharacterHandler 里各自硬编码
+        /// <c>Success = true</c> 直接回"装备成功"，从不触碰任何 grain —— 客户端以为穿上的装备
+        /// 服务端一无所知，重登即消失。现统一走这里。
+        /// </para>
+        /// </summary>
+        /// <param name="characterId">角色 ID（消息体携带）。</param>
+        /// <param name="itemId">背包实例 ID；客户端不掌握该编号空间，通常留 0。</param>
+        /// <param name="templateId">装备定义 ID（客户端编号）；非 0 时优先按它解析。</param>
+        /// <param name="slot">装备槽位（0..14，边界由 grain 侧校验）。</param>
+        /// <param name="unequip">true = 卸下该槽位。</param>
+        protected async Task<(bool Success, string Message)> ApplyEquipCommandAsync(
+            ulong characterId, long itemId, int templateId, int slot, bool unequip)
+        {
+            if (characterId == 0UL)
+                return (false, "角色ID无效");
+
+            // 背包 grain 以 Guid 为键；换算集中在 GrainKeyMapper（勿另写一套）。
+            var inventory = OrleansClient.GetGrain<Horizon.Orleans.Interface.IInventoryGrain>(
+                Horizon.Game.Core.Sim.Server.GrainKeyMapper.ToInventoryKey(characterId));
+
+            bool ok;
+            if (unequip)
+                ok = await inventory.UnequipItemAsync(slot);
+            else if (templateId > 0)
+                ok = await inventory.EquipByTemplateAsync(templateId, slot);
+            else
+                ok = await inventory.EquipItemAsync(itemId, slot);
+
+            return ok
+                ? (true, unequip ? "卸下成功" : "装备成功")
+                : (false, unequip ? "卸下失败：槽位为空或背包已满" : "装备失败：物品不存在或槽位无效");
+        }
+
+        /// <summary>
         /// 当前请求的客户端连接（AsyncLocal，按 async 调用链隔离）。<br/>
         /// 修复 BUG（_gameClient 竞态导致 A 角色心跳被误判为 B 角色离线）：<br/>
         /// 原实现 <c>_gameClient</c> 为 public 实例字段，由于 <c>GameNetworkServer</c>(Singleton)

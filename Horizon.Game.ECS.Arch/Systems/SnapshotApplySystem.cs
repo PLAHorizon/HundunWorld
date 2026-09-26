@@ -1119,7 +1119,15 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             EntityId = delta.EntityId,
             IsLocalPlayer = delta.Identity.Value.OwnerId == LocalPlayerOwnerId && LocalPlayerOwnerId != 0,
             Nickname = delta.Identity.Value.Nickname,
+            Title = delta.Identity.Value.Title,
         };
+
+        // Spawn 同帧带 Profile 时以 Profile 为准（服务端在 spawn 那一刻档案刚变更）。
+        if (delta.Profile is { } spawnProfile)
+        {
+            if (spawnProfile.Nickname != null) netId.Nickname = spawnProfile.Nickname;
+            if (spawnProfile.Title != null) netId.Title = spawnProfile.Title;
+        }
 
         var authTransform = delta.Transform != null
             ? delta.Transform.Value
@@ -1396,6 +1404,20 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             {
                 world.Add(archEntity, newState);
             }
+        }
+
+        // v13：玩家档案变更（改名/换称号/握手时档案晚到）。
+        // 只就地改写已存在实体上的 NetworkIdentityComponent —— 绝不因档案变化重建实体，
+        // 否则远程角色会闪断（重复 Spawn 销毁重建是已知缺陷）。
+        if (delta.Profile != null && world.Has<NetworkIdentityComponent>(archEntity))
+        {
+            var profile = delta.Profile.Value;
+            ref var netIdForProfile = ref world.Get<NetworkIdentityComponent>(archEntity);
+            // null 表示"本次未变更"，保留原值；空串是明确值（如取消佩戴称号）。
+            if (profile.Nickname != null) netIdForProfile.Nickname = profile.Nickname;
+            if (profile.Title != null) netIdForProfile.Title = profile.Title;
+            // 结构体组件需显式写回，避免依赖 Arch 的 ref 语义。
+            world.Set(archEntity, ref netIdForProfile);
         }
 
         // Task B.6.1：应用移动状态（MovementMode + 水平速度 + 落地标志）。

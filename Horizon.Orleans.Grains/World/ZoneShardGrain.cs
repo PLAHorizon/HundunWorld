@@ -735,6 +735,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                         EntityType = 0,
                         OwnerId = kv.Key,
                         Nickname = e.Nickname,
+                        Title = e.Title,
                     },
                     Transform = new AuthTransformComponent
                     {
@@ -1047,6 +1048,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                         EntityType = 0,
                         OwnerId = entityId,
                         Nickname = entity.Nickname,
+                        Title = entity.Title,
                     },
                     Transform = new AuthTransformComponent
                     {
@@ -1100,6 +1102,24 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     entity.PrevStamina = entity.Stamina;
                     entity.PrevHp = entity.Hp;
                     entity.PrevEntityStateBits = entity.EntityStateBits;
+                }
+
+                // v13：昵称/称号变更走独立增量通道。Identity 是 spawn-only 语义，
+                // 客户端 HandleUpdate 不应用 Identity；运行中改名/换称号若只能靠重发 Spawn 生效，
+                // 会让远程角色销毁重建（闪断），故此处按需挂 Profile。
+                var nicknameChanged = entity.Nickname != entity.PrevNickname;
+                var titleChanged = entity.Title != entity.PrevTitle;
+                if (nicknameChanged || titleChanged)
+                {
+                    delta.Profile = new ProfileAuthComponent
+                    {
+                        // 未变化的字段留 null，客户端保留原值（空串才是"明确取消"）。
+                        Nickname = nicknameChanged ? entity.Nickname : null,
+                        Title = titleChanged ? entity.Title : null,
+                        Level = 0,
+                    };
+                    entity.PrevNickname = entity.Nickname;
+                    entity.PrevTitle = entity.Title;
                 }
 
                 if (hasPendingAnimation)
@@ -1824,7 +1844,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         // 1) 给触发方 session 之外的所有订阅者广播触发实体的 Spawn/Despawn。
         var triggerEntityYaw = _simulatedEntities.TryGetValue(entityId, out var triggerEntity) ? triggerEntity.Yaw : 0f;
-        var triggerDelta = BuildEntityDelta(entityId, x, y, z, kind, triggerEntityYaw, triggerEntity.Nickname);
+        var triggerDelta = BuildEntityDelta(entityId, x, y, z, kind, triggerEntityYaw, triggerEntity.Nickname, triggerEntity.Title);
         var triggerChunkKey = WorldCoord.ToChunkMortonKey(x, y, z);
         var triggerDiff = BuildChunkDiff(new[] { triggerDelta }, triggerChunkKey, _tickCount);
 
@@ -1908,7 +1928,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             foreach (var kv in _simulatedEntities)
             {
                 var e = kv.Value;
-                existingDeltas.Add(BuildEntityDelta(kv.Key, e.X, e.Y, e.Z, EntityDeltaKind.Spawn, e.Yaw, e.Nickname));
+                existingDeltas.Add(BuildEntityDelta(kv.Key, e.X, e.Y, e.Z, EntityDeltaKind.Spawn, e.Yaw, e.Nickname, e.Title));
             }
 
             if (existingDeltas.Count > 0)
@@ -1930,7 +1950,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
     /// <summary>构造单实体 delta（Spawn/Despawn/Update），统一填充 Identity + Transform。</summary>
     /// <remarks>输入 x/y/z 为 ECS Z-up 坐标（Y=前后, Z=上下），输出 Transform 转换为 Flax Y-up（Y=上下, Z=前后）。</remarks>
-    private static EntityDelta BuildEntityDelta(ulong entityId, float x, float y, float z, EntityDeltaKind kind, float yaw = 0f, string? nickname = null)
+    private static EntityDelta BuildEntityDelta(ulong entityId, float x, float y, float z, EntityDeltaKind kind, float yaw = 0f, string? nickname = null, string? title = null)
     {
         return new EntityDelta
         {
@@ -1942,6 +1962,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 EntityType = 0,
                 OwnerId = entityId,
                 Nickname = nickname,
+                Title = title,
             },
             Transform = new AuthTransformComponent
             {
@@ -2812,7 +2833,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         int stamina = -1, int maxStamina = -1,
         int hp = -1, int maxHp = -1,
         uint stateBits = uint.MaxValue,
-        string? nickname = null)
+        string? nickname = null,
+        string? title = null)
     {
         if (!_simulatedEntities.TryGetValue(entityId, out var entity))
         {
@@ -2833,6 +2855,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         if (stateBits != uint.MaxValue) entity.EntityStateBits = stateBits;
         // 昵称随 Identity 于 Spawn 下发；此处仅缓存到权威实体状态，供后续 spawn 广播读取。
         if (!string.IsNullOrEmpty(nickname)) entity.Nickname = nickname;
+        // 称号同上：仅在有值时覆盖，避免"未佩戴"把已缓存称号冲掉。
+        if (!string.IsNullOrEmpty(title)) entity.Title = title;
 
         _simulatedEntities[entityId] = entity;
         return Task.CompletedTask;
@@ -3369,6 +3393,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         /// <summary>角色昵称（玩家实体；NPC 为 null）。随 Identity 于 Spawn 下发给 AOI 客户端。</summary>
         public string? Nickname;
 
+        /// <summary>角色称号名（null/空 = 未佩戴）。随 Identity 于 Spawn 下发给 AOI 客户端。</summary>
+        public string? Title;
+
         // ===== Task B.5：动画状态字段（AnimationStateAuthComponent） =====
         public uint AnimMontageId;
         public uint AnimInstanceId;
@@ -3388,6 +3415,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         public int PrevStamina;
         public int PrevHp;
         public uint PrevEntityStateBits;
+
+        /// <summary>上次已广播给观察者的昵称/称号（v13 变更检测基线；null = 从未广播）。</summary>
+        public string? PrevNickname;
+        public string? PrevTitle;
 
         /// <summary>上次属性心跳的服务器 tick（用于 1Hz 心跳判断）。</summary>
         public long LastAttributeHeartbeatTick;

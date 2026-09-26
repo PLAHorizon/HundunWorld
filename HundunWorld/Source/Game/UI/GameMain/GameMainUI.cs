@@ -141,8 +141,44 @@ namespace HundunWorld.Game.UI.GameMain
 
         #endregion
 
+        /// <summary>
+        /// 当前活动实例。网络回包（服务端权威背包）需要把数据交给已建好的 UI，
+        /// 而 <c>SceneController</c> 持有的是场景内动态创建的 Script，无法静态访问。
+        /// </summary>
+        public static GameMainUI Instance { get; private set; }
+
+        /// <summary>
+        /// 用服务端权威背包覆盖当前清单。
+        /// <para>
+        /// 映射规则：<c>InventoryItemData.ItemId</c> 存的就是客户端装备定义表 ID，
+        /// 与服务端 <c>ItemInfo.TemplateId</c> 同一编号空间；服务端自增实例 ID 不参与渲染，
+        /// 因此这里刻意取 TemplateId 而不是 ItemId。
+        /// </para>
+        /// </summary>
+        public void ApplyServerInventory(List<Horizon.Game.Message.Network.ItemInfo> items, int capacity)
+        {
+            if (items == null) return;
+
+            _characterInventoryItems = new List<InventoryItemData>(items.Count);
+            foreach (var item in items)
+            {
+                if (item.TemplateId <= 0) continue;
+                _characterInventoryItems.Add(new InventoryItemData
+                {
+                    ItemId = item.TemplateId,
+                    Count = Math.Max(1, item.Count),
+                });
+            }
+
+            // 面板可能还没打开；打开时会直接读这份已换源的数据。
+            if (_characterPanel != null)
+                RefreshInventory();
+        }
+
         public override void OnStart()
         {
+            Instance = this;
+
             InitializeManagers();
             InitializeUI();
             InitializeData();
@@ -2220,6 +2256,13 @@ namespace HundunWorld.Game.UI.GameMain
                 {
                     await CharacterPersistenceService.Instance.SaveAppearanceAsync(characterId, _characterAppearanceData);
                     await CharacterPersistenceService.Instance.SaveInventoryAsync(characterId, _characterInventoryItems);
+
+                    // 上报服务端权威背包。发不出去只记日志：本地仍会渲染，
+                    // 下次进场景以服务端清单为准（RoleEquipmentSyncHandler）。
+                    var reported = await Network.Handlers.RoleEquipmentSyncHandler
+                        .SendEquipAsync(characterId, itemId, slot);
+                    if (!reported)
+                        Debug.LogWarning($"[GameMainUI] 装备上报未发出: Item={itemId}, Slot={slot}");
                 }
 
                 // 刷新 UI
@@ -2266,6 +2309,12 @@ namespace HundunWorld.Game.UI.GameMain
                 {
                     await CharacterPersistenceService.Instance.SaveAppearanceAsync(characterId, _characterAppearanceData);
                     await CharacterPersistenceService.Instance.SaveInventoryAsync(characterId, _characterInventoryItems);
+
+                    // 上报服务端权威背包（按槽位卸下，无需物品 ID）。
+                    var reported = await Network.Handlers.RoleEquipmentSyncHandler
+                        .SendUnequipAsync(characterId, slot);
+                    if (!reported)
+                        Debug.LogWarning($"[GameMainUI] 卸下上报未发出: Slot={slot}");
                 }
 
                 // 刷新 UI

@@ -109,7 +109,42 @@ namespace Horizon.Orleans.Interface
         /// 返回 null 表示无有效位置数据（首次创建角色或数据过期）。
         /// </summary>
         Task<(float X, float Y, float Z, float Yaw)?> GetLastPositionAsync();
+
+        /// <summary>
+        /// 获取远程玩家头顶名牌所需的**权威档案**（昵称/等级/称号）。
+        /// <para>
+        /// DS 灰度通道下握手由网关直接转发给 DS，不经过 <see cref="OnEnterZoneAsync"/> 的属性推送，
+        /// 因此 DS 侧完全没有档案来源。网关在转发前调用本方法取权威值并写入握手包，
+        /// 使远程玩家显示真实昵称与等级，而非 <c>Player_&lt;id&gt;</c> / <c>Lv.1</c> 占位。
+        /// </para>
+        /// </summary>
+        Task<CharacterSyncProfile> GetSyncProfileAsync();
+
+        /// <summary>
+        /// 属性加点：提交**期望终态**（九项全量，全零即重置），服务端校验后写 grain 状态（Redis 缓存）
+        /// 并 upsert <c>Game_HunduShijie_CharacterAttribute</c>（落库）。
+        /// <para>
+        /// 校验失败时不落库、不改缓存，响应里回当前权威分配，客户端据此回滚预览，因此无需额外的查询接口。
+        /// </para>
+        /// </summary>
+        Task<AttributeAllocateResponse> AllocateAttributeAsync(ulong characterId, AttributeAllocationData desired);
     }
 
-    
+    /// <summary>
+    /// 远程玩家基础档案（昵称/等级/称号）。称号为空表示未佩戴。
+    /// </summary>
+    [GenerateSerializer]
+    public sealed class CharacterSyncProfile
+    {
+        /// <summary>角色昵称。</summary>
+        [Id(0)] public string Nickname { get; set; } = "";
+
+        /// <summary>角色等级。</summary>
+        [Id(1)] public int Level { get; set; }
+
+        /// <summary>当前称号名（空 = 未佩戴称号）。</summary>
+        [Id(2)] public string Title { get; set; } = "";
+    }
+
+
 }

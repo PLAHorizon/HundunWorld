@@ -364,8 +364,19 @@ public sealed class DsUplinkClient : IDsDownlinkSender, IDsGameplayEventSender, 
             {
                 pending.TrySetResult(new DsControlAck { Ok = false, Reason = "connection_closed" });
             }
+            // 链路断开事件：网关被强杀/崩溃时没有任何"会话结束"通知可达 DS，
+            // 宿主必须借此回收全部玩家会话（否则 DS 永久保留离线玩家并持续广播幽灵角色）。
+            // **在读循环线程上触发**——订阅方负责投递到 tick 线程。
+            try { LinkLost?.Invoke(); }
+            catch (Exception ex) { _log?.Invoke($"DsUplinkClient：LinkLost 回调异常：{ex.Message}"); }
         }
     }
+
+    /// <summary>
+    /// 与网关的上行链路断开（读循环退出）。宿主应在此回收全部玩家会话：
+    /// 网关重启后所有客户端连接也已失效，会重新握手，保留旧会话只会成为幽灵。
+    /// </summary>
+    public event Action? LinkLost;
 
     /// <summary>
     /// 收到「会话结束」通知（网关 → DS）。**在读循环线程上触发**——

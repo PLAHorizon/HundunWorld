@@ -191,6 +191,37 @@ namespace Horizon.Model.GameModel
         public int EarthResistance { get; set; }
         
         /// <summary>
+        /// 金系已分配点数（与 strength/agility/constitution/internal_force 同属"加点"口径，
+        /// 区别于 *_attack / *_resistance 的派生值）
+        /// </summary>
+        [Column("metal_point")]
+        public int MetalPoint { get; set; }
+        
+        /// <summary>
+        /// 木系已分配点数
+        /// </summary>
+        [Column("wood_point")]
+        public int WoodPoint { get; set; }
+        
+        /// <summary>
+        /// 水系已分配点数
+        /// </summary>
+        [Column("water_point")]
+        public int WaterPoint { get; set; }
+        
+        /// <summary>
+        /// 火系已分配点数
+        /// </summary>
+        [Column("fire_point")]
+        public int FirePoint { get; set; }
+        
+        /// <summary>
+        /// 土系已分配点数
+        /// </summary>
+        [Column("earth_point")]
+        public int EarthPoint { get; set; }
+        
+        /// <summary>
         /// 内功攻击
         /// </summary>
         [Column("internal_attack")]

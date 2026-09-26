@@ -87,6 +87,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
@@ -236,6 +241,11 @@
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
     <Reference Include="Microsoft.Extensions.ObjectPool">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.ObjectPool.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
@@ -391,6 +401,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
@@ -540,6 +555,11 @@
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
     <Reference Include="Microsoft.Extensions.ObjectPool">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.ObjectPool.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
@@ -695,6 +715,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
@@ -844,6 +869,11 @@
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
     <Reference Include="Microsoft.Extensions.ObjectPool">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.ObjectPool.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">

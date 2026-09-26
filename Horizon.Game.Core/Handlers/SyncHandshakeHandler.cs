@@ -7,6 +7,7 @@ using Horizon.Game.Core.World;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Server;
 using Horizon.Game.Sim;
+using Horizon.Orleans.Interface;
 using Horizon.Orleans.Interface.World;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -154,6 +155,8 @@ public sealed class SyncHandshakeHandler : SyncPacketFlowHandlerBase
         // 阶段 2.2：UE5 DS 灰度路由（协议/公式版本校验与握手幂等通过后、触碰 Orleans grain 前）。
         // UseDS 开启且该 shard 有已注册 DS 时，握手直接转发 DS（实体注册到 DS 侧 SimWorld），
         // 网关回显握手确认；无可用 DS / 转发失败 → 回退下方 Orleans 路径（灰度期双轨，任一时点可回切）。
+        await StampAuthoritativeProfileAsync(handshake, characterId);
+
         if (await TryRouteToDsAsync(handshake, characterId))
         {
             return new HandshakePacket
@@ -265,6 +268,39 @@ public sealed class SyncHandshakeHandler : SyncPacketFlowHandlerBase
             InitialClientTick = handshake.InitialClientTick,
             ShardId = ShardRouter.Resolve(characterId),
         };
+    }
+
+    /// <summary>
+    /// 在把握手包转发给 DS 之前，用 CharacterGrain 的**权威档案**覆盖 Nickname/Level/Title 三字段。
+    /// <para>
+    /// 为什么必须在这里做：DS 灰度通道下握手不经过 <c>ZoneShardGrain</c>，DS 侧因此完全没有档案来源
+    /// （<c>DsPlayer</c> 只有 HP 常量），远程玩家头顶只能显示 <c>Player_&lt;id&gt;</c> 与 <c>Lv.1</c>。
+    /// <see cref="SyncPacketFlowHandlerBase.TryRouteToDsAsync"/> 是**重新编码解码后的对象**而非透传原始字节，
+    /// 所以在此写入即可随握手原子到达 DS——不需要额外的网关→DS 通知通道，也不会出现
+    /// "Spawn 已下发、档案后到" 的乱序（那会要求重发 Spawn，而重复 Spawn 会销毁重建远程角色）。
+    /// </para>
+    /// <para>
+    /// 三字段无条件覆盖：客户端即使自行填入也会被权威值冲掉，故不构成昵称/等级伪造入口。
+    /// </para>
+    /// </summary>
+    private async Task StampAuthoritativeProfileAsync(HandshakePacket handshake, long characterId)
+    {
+        // Orleans 通道的档案由 CharacterGrain.OnEnterZoneAsync 直接推给 ZoneShard，无需此次查询。
+        if (DsDataPlane is not { IsEnabled: true }) return;
+
+        try
+        {
+            var profile = await ClusterClient.GetGrain<ICharacterGrain>(characterId).GetSyncProfileAsync();
+            handshake.Nickname = profile.Nickname ?? "";
+            handshake.Level = profile.Level;
+            handshake.Title = profile.Title ?? "";
+        }
+        catch (Exception ex)
+        {
+            // 取档失败不阻断握手：DS 会回退占位名，宁可少显示昵称也不能让玩家进不去游戏。
+            Logger.LogWarning(ex,
+                "Sync握手：取权威档案失败，DS 侧将回退占位昵称。CharacterId={CharacterId}", characterId);
+        }
     }
 
     /// <summary>

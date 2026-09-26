@@ -19,6 +19,9 @@ namespace Horizon.Orleans.Grains
         private const string USER_SESSIONS_KEY_PREFIX = "USER:SESSIONS:";
         private const int DEFAULT_SESSION_TIMEOUT_MINUTES = 1440; // 24 hours
 
+        /// <summary>USER:SESSIONS 集合的兜底 TTL：远超会话寿命（24h），每次新登录刷新。</summary>
+        private static readonly TimeSpan UserSessionsSetTtl = TimeSpan.FromDays(7);
+
         public SessionManager(ILogger logger)
         {
             _logger = logger;
@@ -53,6 +56,10 @@ namespace Horizon.Orleans.Grains
                 // 将会话ID添加到用户的会话集合
                 string userSessionsKey = GetUserSessionsKey(sessionInfo.PassportId);
                 await Cache.AddItemToSetAsync(userSessionsKey, sessionInfo.SessionId);
+                // 兜底 TTL：SESSION:{id} 键靠自身过期，但集合成员不会随之移除（Redis 无按键空间通知），
+                // 长期不活跃用户的集合会永久残留悬挂会话 ID。给集合设一个远超会话寿命的过期时间，
+                // 用户再次登录即刷新；彻底不登录的用户集合自动消失。
+                await Cache.ExpireEntryInAsync(userSessionsKey, UserSessionsSetTtl);
 
                 _logger.LogInformation("会话创建成功: SessionId={SessionId}, PassportId={PassportId}", 
                     sessionInfo.SessionId, sessionInfo.PassportId);
@@ -220,6 +227,12 @@ namespace Horizon.Orleans.Grains
                     if (session != null && session.IsActive)
                     {
                         sessions.Add(session);
+                    }
+                    else
+                    {
+                        // 读时修剪悬挂成员：SESSION:{id} 已过期（或已终止）的引用不会随 Redis
+                        // 键过期自动从集合移除，不清理就会永久残留"幽灵会话列表"。
+                        await Cache.RemoveItemFromSetAsync(userSessionsKey, sessionId);
                     }
                 }
 

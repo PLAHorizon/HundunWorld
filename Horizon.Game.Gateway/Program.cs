@@ -471,10 +471,20 @@ namespace Horizon.Game.Gateway
                     {
                         var fanout = sp.GetRequiredService<Services.GatewayZoneShardFanoutSource>();
                         var logger = sp.GetRequiredService<ILogger<Horizon.Game.Core.Sim.Server.DsDownlinkIngress>>();
+                        // 旁路观察者：DS 通道玩家权威位置写回 CharacterGrain 缓存
+                        // （UseDS 下 ZoneShardGrain 的每秒落缓存不生效，位置持久化由本链路补齐）。
+                        var writeback = sp.GetRequiredService<Services.DsPositionWritebackService>();
                         return new Horizon.Game.Core.Sim.Server.DsDownlinkIngress(
                             fanout,
-                            reason => logger.LogDebug("DsDownlinkIngress：条目丢弃。Reason={Reason}", reason));
+                            reason => logger.LogDebug("DsDownlinkIngress：条目丢弃。Reason={Reason}", reason),
+                            writeback.Observe);
                     });
+                    // DS 通道位置写回服务（5s 周期冲刷）。
+                    // 注意：AddHostedService<T>() 只注册 IHostedService 映射，**不注册具体类型**，
+                    // 而上面的 DsDownlinkIngress 工厂要按具体类型解析它的 Observe 回调，
+                    // 故先显式注册单例，再让 IHostedService 复用同一实例（否则启动即抛 InvalidOperationException）。
+                    services.AddSingleton<Services.DsPositionWritebackService>();
+                    services.AddHostedService(sp => sp.GetRequiredService<Services.DsPositionWritebackService>());
                     // MMORPG 开发计划 M4.3/M4.4 收尾：DS 跨层玩法事件 → 真实业务 Grain。
                     // 在此之前 IInventoryGrain / 玩家维度 IQuestGrain 全仓无生产调用方；
                     // 本注册是它们的首个真实调用方（掉落→背包、击杀→任务进度）。

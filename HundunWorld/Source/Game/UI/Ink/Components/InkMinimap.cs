@@ -27,9 +27,24 @@ namespace HundunWorld.Game.UI.Ink.Components
     }
 
     /// <summary>
-    /// 圆形墨色边框小地图。
-    /// 在 <see cref="Draw"/> 中绘制圆形背景（BaseSecondary）+ 金色边框（BorderGold），
-    /// 并按 <see cref="AddEntity"/> 添加的实体点位绘制对应颜色的小圆点。
+    /// 圆形小地图外框样式。
+    /// </summary>
+    public enum InkMinimapFrameStyle
+    {
+        /// <summary>普通圆形（默认）：圆内透明，仅一圈细圆环轮廓 + 方位字，场景可从圆内透出。</summary>
+        Plain,
+
+        /// <summary>雷达：在圆内叠加同心圆网格、十字线与四方位点（旧样式）。</summary>
+        Radar,
+
+        /// <summary>贴图：用 <see cref="InkMinimap.FrameTexture"/> 作外框贴图，取代矢量细圆环。</summary>
+        Texture
+    }
+
+    /// <summary>
+    /// 圆形小地图。
+    /// 默认 <see cref="InkMinimapFrameStyle.Plain"/>：圆内透明、只保留一圈细圆环，
+    /// 实体点位与地形快照直接浮于场景之上；另有雷达网格样式与贴图外框（预留）。
     /// 实体坐标 relativeX/relativeZ 范围为 -1~1，线性映射到小地图半径内。
     /// </summary>
     public class InkMinimap : ContainerControl
@@ -37,8 +52,21 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// <summary>圆形边框的分段数（越大越圆滑）</summary>
         private const int CircleSegments = 64;
 
-        /// <summary>边框厚度（像素）</summary>
-        private const float BorderThickness = 2f;
+        /// <summary>细圆环厚度（像素）</summary>
+        private const float RingThickness = 1f;
+
+        /// <summary>外框样式。默认普通圆形。</summary>
+        public InkMinimapFrameStyle FrameStyle { get; set; } = InkMinimapFrameStyle.Plain;
+
+        /// <summary>
+        /// 外框贴图（预留接口）。<see cref="FrameStyle"/> 为 <see cref="InkMinimapFrameStyle.Texture"/> 时生效：
+        /// 按控件矩形（再外扩 <see cref="FrameTextureInflate"/> 像素）拉伸绘制，取代矢量细圆环；
+        /// 未赋值时自动回退为细圆环。贴图可用 <c>Content.LoadAsync&lt;Texture&gt;(路径)</c> 载入。
+        /// </summary>
+        public Texture FrameTexture { get; set; }
+
+        /// <summary>外框贴图相对控件矩形的外扩像素（贴图自带外扩装饰时使用）。</summary>
+        public float FrameTextureInflate { get; set; }
 
         /// <summary>实体点位距边框的内边距，避免点位贴边</summary>
         private const float EntityPadding = 8f;
@@ -189,27 +217,17 @@ namespace HundunWorld.Game.UI.Ink.Components
             if (radius <= 0f)
                 return;
 
-            float innerRadius = Mathf.Max(0f, radius - BorderThickness);
-            float entityRadius = Mathf.Max(0f, radius - BorderThickness - EntityPadding);
+            float innerRadius = Mathf.Max(0f, radius - RingThickness);
+            float entityRadius = Mathf.Max(0f, radius - RingThickness - EntityPadding);
 
-            // 1. 外圈阴影（突出层次感）
-            InkRenderHelper.FillCircle(center, radius + 2f, new Color(0f, 0f, 0f, 0.35f));
+            // 1. 雷达样式专属：四方位点 + 同心圆网格（普通圆形不画，保持圆内干净）
+            if (FrameStyle == InkMinimapFrameStyle.Radar)
+            {
+                DrawCompassMarks(center, radius);
+                DrawRangeRings(center, innerRadius);
+            }
 
-            // 2. 圆形背景（BaseSecondary 带 90% 不透明度）
-            Color bgColor = new Color(
-                InkWashTheme.BaseSecondary.R,
-                InkWashTheme.BaseSecondary.G,
-                InkWashTheme.BaseSecondary.B,
-                0.92f);
-            InkRenderHelper.FillCircle(center, radius, bgColor);
-
-            // 3. 方位标记圈（东南西北四个方位点）
-            DrawCompassMarks(center, radius);
-
-            // 4. 同心圆网格（3 圈）
-            DrawRangeRings(center, innerRadius);
-
-            // 5. 地形快照 / 兴趣点（半透明块）
+            // 2. 地形快照 / 兴趣点（半透明块）
             for (int i = 0; i < _landmarks.Count; i++)
             {
                 var lm = _landmarks[i];
@@ -220,7 +238,7 @@ namespace HundunWorld.Game.UI.Ink.Components
                 InkRenderHelper.FillCircle(pos, lmR, lm.color);
             }
 
-            // 6. 实体点位
+            // 3. 实体点位
             for (int i = 0; i < _entities.Count; i++)
             {
                 var entity = _entities[i];
@@ -244,10 +262,19 @@ namespace HundunWorld.Game.UI.Ink.Components
                 InkRenderHelper.FillCircle(pos, dotRadius, color);
             }
 
-            // 7. 金色边框（最上层，覆盖所有内容）
-            DrawCircleOutline(center, radius, InkWashTheme.BorderGold, BorderThickness);
+            // 4. 外框（最上层，覆盖所有内容）：优先用贴图，否则细圆环
+            if (FrameStyle == InkMinimapFrameStyle.Texture && FrameTexture != null)
+            {
+                float pad = FrameTextureInflate;
+                var frameRect = new Rectangle(-pad, -pad, Width + pad * 2f, Height + pad * 2f);
+                Render2D.DrawTexture(FrameTexture, frameRect, Color.White);
+            }
+            else
+            {
+                DrawCircleOutline(center, radius, InkWashTheme.BorderGold, RingThickness);
+            }
 
-            // 8. 方向标签（N/E/S/W）
+            // 5. 方向标签（N/E/S/W）
             DrawDirectionLabels(center, radius);
         }
 

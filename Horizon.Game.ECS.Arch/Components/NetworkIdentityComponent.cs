@@ -13,4 +13,7 @@ public struct NetworkIdentityComponent
 
     /// <summary>角色昵称（随 Identity 于 Spawn 下发；NPC 为空）。供头顶名牌显示远程玩家名称。</summary>
     public string Nickname;
+
+    /// <summary>角色称号名（随 Identity 于 Spawn 下发；空 = 未佩戴）。供头顶名牌显示称号。</summary>
+    public string Title;
 }

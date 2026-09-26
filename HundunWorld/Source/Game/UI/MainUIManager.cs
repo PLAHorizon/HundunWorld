@@ -99,6 +99,10 @@ namespace HundunWorld.Game.UI
         /// <summary>页面间待传数据：导航到武学详情弹窗前，由来源页捕获选中武学概要。</summary>
         private PopupMartialDetail.MartialDetailInfo _pendingMartial;
 
+        // 水墨 UI 收敛自愈节流：初始化持续失败时避免逐帧重建风暴，正常态零开销。
+        private const double InkRecoverIntervalSeconds = 0.5;
+        private double _nextInkRecoverAt = -1.0;
+
         public override void OnStart()
         {
             InitializeInstance();
@@ -118,24 +122,16 @@ namespace HundunWorld.Game.UI
             float deltaTime = Time.DeltaTime;
             try
             {
-                // 0. 水墨 UI 健康自愈：检测 Canvas/Shell 被意外销毁并自动重建
-                //    仅当 _inkPageShell 非 null（已首次创建过）且健康检查失败时触发，
-                //    避免在 Login 场景每帧尝试创建
-                if (_inkPageShell != null && !IsInkUIHealthy())
-                {
-                    FlaxEngine.Debug.LogWarning("[MainUIManager] 检测到水墨 UI 已损坏，触发自愈重建");
-                    string lastDom = _lastKnownDomId;
-                    DestroyInkWashUI();
-                    InitializeInkWashUI();
-                    if (_inkPageRouter != null && !string.IsNullOrEmpty(lastDom))
-                    {
-                        _inkPageRouter.NavigateTo(lastDom);
-                    }
-                    if (_localPlayerReady && _cachedAttributes != null)
-                    {
-                        RebindActivePageData();
-                    }
-                }
+                // 0. 水墨 UI 收敛自愈：只要"当前场景应显示水墨 UI"而实际缺失/损坏/被乱序事件隐藏，
+                //    就重建或恢复。覆盖三类丢失路径（登录→选角偶发整屏无 UI 的根因）：
+                //    a) SceneChanged 恰在 Flax 关卡切换窗口到达，Canvas.GUI 未就绪 → InitializeInkWashUI
+                //       提前 return，shell 停留为 null；随后完成回调被 UIStateManager 的
+                //       "已在目标场景跳过切换"吞掉，事件不会再补发；
+                //    b) 多条 CharacterSelection 切换路径（LoginResponse/CharacterList/Authentication）
+                //       与 GameSceneManager 的 _isTransitioning 互斥互相竞争，事件错过订阅窗口；
+                //    c) 乱序的旧 SceneChanged 把刚建好的壳 Hide 掉。
+                //    节流：每 InkRecoverIntervalSeconds 最多尝试一次，避免初始化持续失败时逐帧重建。
+                TryRecoverInkUI();
 
                 // 1. 检测本地玩家从 null → 非 null 的状态翻转
                 if (!_localPlayerReady)
@@ -147,6 +143,9 @@ namespace HundunWorld.Game.UI
                         if (TryGetLocalPlayerSkills(out var skills))
                             _cachedSkills = skills;
                         FlaxEngine.Debug.Log("[MainUIManager] 本地玩家已就绪，下次导航到 combat-hud/nav-character-v2 时将自动绑定");
+
+                        // 属性加点：把登录时下发的服务端权威分配灌进刚就绪的组件。
+                        Services.AttributeAllocationService.Instance.ApplyToComponent();
 
                         // 若当前已打开 MenuCharAttributesV2Page 但创建时玩家未就绪（使用 mock 数据），立即重绑真实数据
                         if (_activeMenuCharAttributesV2 != null)
@@ -466,8 +465,10 @@ namespace HundunWorld.Game.UI
 
             try
             {
-                // 离开 GameWorld 场景时隐藏水墨 UI（不销毁，保留控件树与页面状态）
-                if (previousScene == SceneType.GameWorld)
+                // 离开 GameWorld 场景时隐藏水墨 UI（不销毁，保留控件树与页面状态）。
+                // 选角 / 创角场景同样要隐藏：水墨壳现在会在进世界之前就被创建，
+                // 若切回登录等场景时不收起，行囊页会直接盖在登录界面上。
+                if (previousScene == SceneType.GameWorld || IsCcFlowScene(previousScene))
                 {
                     HideInkWashUI();
                 }
@@ -482,6 +483,17 @@ namespace HundunWorld.Game.UI
                 if (newScene == SceneType.GameWorld)
                 {
                     InitializeInkWashUI();
+
+                    // 水墨外壳若是在选角 / 创角场景里建的，内容层还停在创角页上，
+                    // 进世界时要把内容层切回枢纽 HUD。
+                    if (_inkPageRouter != null && IsCcFlowScene(previousScene))
+                        _inkPageRouter.NavigateToHud();
+                }
+                else if (IsCcFlowScene(newScene) && UseInkCharacterFlow)
+                {
+                    // 选角 / 创角改走水墨页面：建壳并直接以角色选择页为首页。
+                    EnsureCcFlowSubscriptions();
+                    InitializeInkWashUI(InkPageDomIds.CcRoleList);
                 }
 
                 // 更新当前活动UI
@@ -589,7 +601,7 @@ namespace HundunWorld.Game.UI
         /// 在进入 GameWorld 场景时调用，创建专用 UICanvas 承载 Ink UI，
         /// 默认导航到战斗 HUD 页面。所有初始化代码 try/catch 包裹，失败记录日志但不抛异常。
         /// </summary>
-        private void InitializeInkWashUI()
+        private void InitializeInkWashUI(string initialPageDomId = null)
         {
             try
             {
@@ -607,6 +619,11 @@ namespace HundunWorld.Game.UI
                     _inkPageShell.Visible = true;
                     if (_inkCanvas?.GUI != null)
                         _inkCanvas.GUI.Visible = true;
+
+                    // 复用已有外壳时，内容层还停在上次访问的页面上，需切到调用方期望的页面。
+                    if (!string.IsNullOrEmpty(initialPageDomId))
+                        NavigateToPage(initialPageDomId);
+
                     FlaxEngine.Debug.Log("[MainUIManager] 水墨 UI 已存在，仅恢复可见性");
                     return;
                 }
@@ -669,12 +686,13 @@ namespace HundunWorld.Game.UI
                 // 6. 注册全部 19 个页面
                 RegisterInkPages();
 
-                // 7. 默认导航到战斗 HUD
-                FlaxEngine.Debug.Log("[MainUIManager] 准备导航到 CombatHud...");
-                bool navSuccess = NavigateToPage(InkPageDomIds.CombatHudTraditional); // 默认页：传统式战斗 HUD（主界面）
+                // 7. 默认导航到战斗 HUD；选角 / 创角场景由调用方指定首页，避免先建 HUD 再跳走的闪帧。
+                string initialPage = string.IsNullOrEmpty(initialPageDomId) ? InkPageDomIds.CombatHudTraditional : initialPageDomId;
+                FlaxEngine.Debug.Log($"[MainUIManager] 准备导航到 {initialPage}...");
+                bool navSuccess = NavigateToPage(initialPage); // 默认页：传统式战斗 HUD（主界面）
                 if (!navSuccess)
                 {
-                    FlaxEngine.Debug.LogError("[MainUIManager] 首次导航到 CombatHud 失败，Ink UI 可能仅显示空背景");
+                    FlaxEngine.Debug.LogError($"[MainUIManager] 首次导航到 {initialPage} 失败，Ink UI 可能仅显示空背景");
                 }
 
                 FlaxEngine.Debug.Log($"[MainUIManager] 水墨主题 UI 初始化完成，Canvas.ChildrenCount={_inkCanvas.GUI.ChildrenCount}, 导航结果={navSuccess}");
@@ -883,8 +901,11 @@ namespace HundunWorld.Game.UI
             _inkPageRouter.RegisterPage(InkPageDomIds.NavMultiplayer, () => CreateMultiplayer());
             _inkPageRouter.RegisterPage(InkPageDomIds.NavPhotoMode, () => CreatePhotoMode());
             _inkPageRouter.RegisterPage(InkPageDomIds.NavElementVision, () => CreateElementVision());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CcFaceCustomize, () => CreateCcFaceCustomize());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CcNaming, () => CreateCcNaming());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcRoleList, () => CreateCcRoleList());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcGender, () => CreateCcGender());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcFacePreset, () => CreateCcFacePreset());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcFaceSculpt, () => CreateCcFaceSculpt());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcName, () => CreateCcName());
             _inkPageRouter.RegisterPage(InkPageDomIds.NavSettingsAudio, () => CreateSettingsAudio());
             _inkPageRouter.RegisterPage(InkPageDomIds.NavEquipment, () => CreateMenuEquipment());
             _inkPageRouter.RegisterPage(InkPageDomIds.UIGallery, () =>CreateUIGallery());
@@ -1007,6 +1028,53 @@ namespace HundunWorld.Game.UI
         /// 因此用 try/catch 兜底，确保任何异常情况都返回 false 触发自愈。
         /// </summary>
         /// <returns>健康返回 true；任一资源为 null 或已释放返回 false</returns>
+        /// <summary>
+        /// 水墨 UI 收敛自愈：当前场景应当显示水墨 UI（选角/创角/GameWorld），但壳缺失、
+        /// 已损坏或被乱序事件误隐藏时，重建或恢复并导航到期望页面。
+        /// 登录→选角偶发"整屏无 UI"的根因是事件竞争（详见 OnUpdate 调用点注释），
+        /// 事件侧无法保证不丢，这里做**结果侧收敛**：只要场景对、UI 不在，就补建。
+        /// 旧自愈只认 "shell != null 且不健康"，覆盖不了 "shell 从未建起来" 与 "被隐藏" 两种形态。
+        /// </summary>
+        private void TryRecoverInkUI()
+        {
+            var scene = _stateManager != null ? _stateManager.CurrentScene : SceneType.Start;
+            bool wantsInk = scene == SceneType.GameWorld || IsCcFlowScene(scene);
+            if (!wantsInk) return;
+
+            bool shellPresent = _inkPageShell != null;
+            bool shellHealthy = shellPresent && IsInkUIHealthy();
+            if (shellHealthy && _inkPageShell.Visible) return;   // 正常态，零成本返回
+
+            if (Time.GameTime < _nextInkRecoverAt) return;
+            _nextInkRecoverAt = Time.GameTime + InkRecoverIntervalSeconds;
+
+            string expectedPage = IsCcFlowScene(scene) ? InkPageDomIds.CcRoleList : null;
+
+            if (shellHealthy)
+            {
+                // 只是被乱序事件误隐藏：恢复可见并校正页面，不重建控件树。
+                FlaxEngine.Debug.LogWarning($"[MainUIManager] 水墨 UI 在场景 {scene} 被误隐藏，已恢复显示");
+                _inkPageShell.Visible = true;
+                if (_inkCanvas?.GUI != null) _inkCanvas.GUI.Visible = true;
+                if (_inkPageRouter != null)
+                {
+                    if (expectedPage != null) _inkPageRouter.NavigateTo(expectedPage);
+                    else if (!string.IsNullOrEmpty(_lastKnownDomId)) _inkPageRouter.NavigateTo(_lastKnownDomId);
+                }
+            }
+            else
+            {
+                FlaxEngine.Debug.LogWarning($"[MainUIManager] 水墨 UI 在场景 {scene} 缺失/损坏，触发自愈重建");
+                if (shellPresent) DestroyInkWashUI();
+                InitializeInkWashUI(expectedPage);
+                // GameWorld 重建后回到用户最后所在页（与旧自愈语义一致）；CC 场景固定回选角首页。
+                if (expectedPage == null && _inkPageRouter != null && !string.IsNullOrEmpty(_lastKnownDomId))
+                    _inkPageRouter.NavigateTo(_lastKnownDomId);
+                if (_localPlayerReady && _cachedAttributes != null)
+                    RebindActivePageData();
+            }
+        }
+
         private bool IsInkUIHealthy()
         {
             try
@@ -1383,6 +1451,12 @@ namespace HundunWorld.Game.UI
         private CombatHudTraditionalPage CreateCombatHudTraditional()
         {
             var page = new CombatHudTraditionalPage();
+
+            // 门派：创角不再选门派，未加入前显示「无门派」，加入后才显示门派名。
+            var selectedRole = global::Game.UI.Character.CharacterManager.Instance?.SelectedCharacter;
+            string sect = CcSectNames.Get(selectedRole?.Profession ?? Profession.None);
+            page.SetSectName(string.IsNullOrEmpty(sect) ? "无门派" : sect);
+
             // 注入粒子系统引用
             if (_inkPageShell?.ParticleSystem != null)
             {
@@ -2577,29 +2651,204 @@ namespace HundunWorld.Game.UI
             return page;
         }
 
+        // ===================================================================
+        // 选角 / 创角流程（水墨舞台页，取代旧 Flax GUI 面板栈）
+        // =======================================================================
+
         /// <summary>
-        /// 创建创角捏脸页面。
+        /// 选角 / 创角是否由水墨页面承载。
+        /// 置 false 可退回 <c>CharacterSceneController</c> 构建的旧 Flax GUI 面板栈；
+        /// 新流程确认无回归后即可整体删除旧栈。
         /// </summary>
-        private CharacterFaceCustomizePage CreateCcFaceCustomize()
+        public const bool UseInkCharacterFlow = true;
+
+        /// <summary>是否为选角 / 创角流程场景（两者共用 Content/Maps/Character.scene）。</summary>
+        private static bool IsCcFlowScene(SceneType scene)
         {
-            var page = new CharacterFaceCustomizePage();
-            HookNavigationRequested(page);
-            // 创建流程：进入游戏 → 战斗 HUD（枢纽，经 back-hud 别名）；随机外貌为页内表现。
-            page.EnterGameRequested += () => NavigateToPage(InkPageDomIds.BackHud);
-            return page;
+            return scene == SceneType.CharacterSelection || scene == SceneType.CharacterCreation;
         }
 
         /// <summary>
-        /// 创建创角命名页面。
+        /// 角色选择页：进入 / 创建 / 删除三种动作在此发起，页面本身不碰网络。
         /// </summary>
-        private CharacterNamingPage CreateCcNaming()
+        private CcRoleListPage CreateCcRoleList()
         {
-            var page = new CharacterNamingPage();
-            HookNavigationRequested(page);
-            // 创建流程：返回 → 战斗 HUD（枢纽）；下一步 → 捏脸页。
-            page.BackRequested += () => NavigateToPage(InkPageDomIds.BackHud);
-            page.NextRequested += () => NavigateToPage(InkPageDomIds.CcFaceCustomize);
+            var page = new CcRoleListPage();
+            page.CreateRequested += OnCcCreateRequested;
+            page.EnterRequested += OnCcEnterRequested;
+            page.DeleteRequested += OnCcDeleteRequested;
+            page.LogoutRequested += OnCcLogoutRequested;
+            ApplyCcWatermark(page);
             return page;
+        }
+
+        /// <summary>创角第一步：性别。</summary>
+        private CcGenderPage CreateCcGender()
+        {
+            var page = new CcGenderPage();
+            page.BackRequested += () => NavigateToPage(InkPageDomIds.CcRoleList);
+            page.ConfirmRequested += () => NavigateToPage(InkPageDomIds.CcFacePreset);
+            ApplyCcWatermark(page);
+            return page;
+        }
+
+        /// <summary>创角第二步：面容风格预设。</summary>
+        private CcFacePresetPage CreateCcFacePreset()
+        {
+            var page = new CcFacePresetPage();
+            page.BackRequested += () => NavigateToPage(InkPageDomIds.CcGender);
+            page.ConfirmRequested += () => NavigateToPage(InkPageDomIds.CcFaceSculpt);
+            ApplyCcWatermark(page);
+            return page;
+        }
+
+        /// <summary>创角第三步：捏脸。</summary>
+        private CcFaceSculptPage CreateCcFaceSculpt()
+        {
+            var page = new CcFaceSculptPage();
+            page.BackRequested += () => NavigateToPage(InkPageDomIds.CcFacePreset);
+            page.ConfirmRequested += () => NavigateToPage(InkPageDomIds.CcName);
+            ApplyCcWatermark(page);
+            return page;
+        }
+
+        /// <summary>创角最后一步：命名（无门派）。</summary>
+        private CcNamePage CreateCcName()
+        {
+            var page = new CcNamePage();
+            page.BackRequested += () => NavigateToPage(InkPageDomIds.CcFaceSculpt);
+            page.ConfirmRequested += () => RequestCreateCharacter(page.CharacterName);
+            ApplyCcWatermark(page);
+            return page;
+        }
+
+        /// <summary>给流程页统一注入左下角 ID 水印（参考图「ID: 0126998214」）。</summary>
+        private static void ApplyCcWatermark(CcStagePage page)
+        {
+            var network = HundunWorldGame.Instance?.NetworkManager;
+            page.WatermarkText = network == null ? string.Empty : $"ID: {network.UserId:D10}";
+        }
+
+        /// <summary>选角页「创建角色」：重置本次会话，进入创角第一步。</summary>
+        private void OnCcCreateRequested()
+        {
+            var manager = global::Game.UI.Character.CharacterManager.Instance;
+            // 服务端 MAX_CHARACTER_COUNT=5 会直接拒掉第 6 个角色；先挡住，别让流程白跑到命名页才失败。
+            if (manager != null && manager.CharacterList.Count >= CcRoleListPage.MaxRoles)
+            {
+                UIHelper.ShowToast($"角色数量已达上限（{CcRoleListPage.MaxRoles}个），请删除不需要的角色后再创建。", ToastType.Warning);
+                return;
+            }
+
+            CcSession.Current.Reset();
+            NavigateToPage(InkPageDomIds.CcGender);
+        }
+
+        /// <summary>选角页确认：选中该角色并请求进入游戏。</summary>
+        private async void OnCcEnterRequested(Horizon.Game.Message.Network.CharacterInfo info)
+        {
+            var manager = global::Game.UI.Character.CharacterManager.Instance;
+            if (manager == null || manager.IsProcessing)
+                return;
+
+            if (!manager.SelectCharacter(info))
+            {
+                FlaxEngine.Debug.LogWarning("[MainUIManager] 选择角色失败，未发起进入游戏");
+                return;
+            }
+
+            await manager.EnterGameAsync();
+        }
+
+        /// <summary>选角页删除角色。</summary>
+        private async void OnCcDeleteRequested(Horizon.Game.Message.Network.CharacterInfo info)
+        {
+            var manager = global::Game.UI.Character.CharacterManager.Instance;
+            if (manager == null || manager.IsProcessing)
+                return;
+
+            await manager.DeleteCharacterAsync(info.CharacterId);
+        }
+
+        /// <summary>
+        /// 退出登录：切回登录场景。等价于旧选角界面的「返回登录」
+        /// （<c>CharacterSceneController.OnBackBtnClicked</c>），少了它玩家进了选角页就没有回头路。
+        /// </summary>
+        private void OnCcLogoutRequested()
+        {
+            GameSceneManager.Instance?.TransitionTo(SceneType.Login);
+        }
+
+        /// <summary>
+        /// 命名页确认：以<b>无门派</b>创建角色。
+        /// <para>
+        /// 门派不再由玩家创角时选择，<see cref="Profession.None"/> 一路传到服务端；
+        /// 服务端创建成功后会自动切回选角场景，新角色出现在行囊中，由玩家自行「进入游戏」。
+        /// </para>
+        /// </summary>
+        private async void RequestCreateCharacter(string characterName)
+        {
+            var manager = global::Game.UI.Character.CharacterManager.Instance;
+            if (manager == null || manager.IsProcessing)
+                return;
+
+            // 与服务端 ValidateAndCleanCharacterName 的下界一致（trim 后 ≥2 字），
+            // 避免把注定被拒的请求发出去后让玩家对着没反应的界面干等。
+            string name = (characterName ?? string.Empty).Trim();
+            if (name.Length < 2)
+            {
+                UIHelper.ShowToast("姓名至少需要两个字", ToastType.Warning);
+                return;
+            }
+
+            int preset = CcSession.Current.FacePresetIndex;
+            var appearance = new Horizon.Game.Message.Network.AppearanceInfo
+            {
+                HairModel = preset,
+                FaceModel = preset,
+                // HairStyle 不跟面容索引走：那是发型字段，等真有发型数据再填，
+                // 沿用旧流程的 0 比把面容号写进发型更诚实。
+                HairStyle = 0,
+                Clothing = CcSession.Current.BodyIndex,
+                HairColor = CcSession.Current.HairColorIndex,
+                EyeColor = CcSession.Current.EyeColorIndex,
+                SkinColor = CcSession.Current.SkinColorIndex,
+            };
+
+            await manager.CreateCharacterAsync(name, (int)Profession.None, CcSession.Current.Gender, appearance);
+        }
+
+        private bool _ccFlowSubscribed;
+
+        /// <summary>
+        /// 订阅创建成功事件（只订一次）。
+        /// <para>
+        /// 创角与选角同处 Content/Maps/Character.scene，服务端创建回执后
+        /// <c>UIStateManager.TransitionToScene</c> 对"目标场景与当前场景相同"是直接跳过的，
+        /// 因此必须自己把内容层从命名页切回角色选择页，否则玩家会停在最后一步不动。
+        /// </para>
+        /// </summary>
+        private void EnsureCcFlowSubscriptions()
+        {
+            if (_ccFlowSubscribed)
+                return;
+
+            var manager = global::Game.UI.Character.CharacterManager.Instance;
+            if (manager == null)
+                return;
+
+            manager.CharacterCreated += OnCcCharacterCreated;
+            _ccFlowSubscribed = true;
+        }
+
+        /// <summary>创建成功：把新角色设为当前选中，并回到角色选择页。</summary>
+        private void OnCcCharacterCreated(Horizon.Game.Message.Network.CharacterInfo info)
+        {
+            if (!UseInkCharacterFlow || info == null)
+                return;
+
+            global::Game.UI.Character.CharacterManager.Instance?.SelectCharacter(info);
+            NavigateToPage(InkPageDomIds.CcRoleList);
         }
 
         /// <summary>

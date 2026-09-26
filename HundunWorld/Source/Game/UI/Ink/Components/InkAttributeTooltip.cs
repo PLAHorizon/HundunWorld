@@ -29,11 +29,14 @@ namespace HundunWorld.Game.UI.Ink.Components
         // 布局常量
         // =======================================================================
 
-        /// <summary>控件固定宽度（像素）</summary>
+        /// <summary>控件宽度下限（像素，内容更窄时保持此宽）</summary>
         private const float TooltipWidth = 240f;
 
+        /// <summary>内容自适应宽度的上限（像素，超过后长行走截断/换行由 Label 自身处理）</summary>
+        private const float MaxTooltipWidth = 420f;
+
         /// <summary>控件最小高度（像素）</summary>
-        private const float MinHeight = 180f;
+        private const float MinHeight = 120f;
 
         /// <summary>左右内边距（像素）</summary>
         private const float Padding = 12f;
@@ -106,6 +109,39 @@ namespace HundunWorld.Game.UI.Ink.Components
 
         /// <summary>当前 Tooltip 的品质强调色（null 表示使用默认金色边框）</summary>
         private Color? _qualityBorderColor;
+
+        /// <summary>当前实际宽度（初值 = TooltipWidth，ApplyLayout 按内容测量后自适应）</summary>
+        private float _width = TooltipWidth;
+
+        /// <summary>
+        /// 深墨配色开关：true 时面板用 BaseSecondary 深底 + 浅色文字（配暗色 Ink 页面），
+        /// false（默认）保持纸色面板（popup-verification 规范）。赋值即重刷已建 Label 配色。
+        /// </summary>
+        public bool DarkTheme
+        {
+            get => _darkTheme;
+            set
+            {
+                if (_darkTheme == value) return;
+                _darkTheme = value;
+                ApplyThemeColors();
+            }
+        }
+        private bool _darkTheme;
+
+        private Color NameTextColor => _darkTheme ? InkWashTheme.GoldBright : InkWashTheme.TextOnPaper;
+        private Color CoreTextColor => _darkTheme ? InkWashTheme.PaperBright : InkWashTheme.TextOnPaper;
+        private Color AdditionalTextColor => _darkTheme ? InkWashTheme.TextSecondary : InkWashTheme.PaperDark;
+
+        /// <summary>把当前主题的配色应用到全部已建 Label（构造后切换 DarkTheme 时由 setter 调用）。</summary>
+        private void ApplyThemeColors()
+        {
+            if (_nameLabel != null) _nameLabel.TextColor = NameTextColor;
+            if (_coreLabel != null) _coreLabel.TextColor = CoreTextColor;
+            if (_additionalLabel != null) _additionalLabel.TextColor = AdditionalTextColor;
+            for (int i = 0; i < _appendLabels.Count; i++)
+                if (_appendLabels[i] != null) _appendLabels[i].TextColor = AdditionalTextColor;
+        }
 
         // ===================================================================
         // 子控件引用
@@ -180,36 +216,36 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// </summary>
         private void BuildLabels()
         {
-            // 头部属性名 Label（纸色背景上用 TextOnPaper + 金色强调）
+            // 头部属性名 Label（深墨主题用金色强调；纸色主题用纸上文字色）
             _nameLabel = new Label
             {
                 Text = string.Empty,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
-                TextColor = InkWashTheme.TextOnPaper,
+                TextColor = NameTextColor,
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
             AddChild(_nameLabel);
 
-            // 中部核心信息 Label（纸色背景上用 TextOnPaper）
+            // 中部核心信息 Label
             _coreLabel = new Label
             {
                 Text = string.Empty,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, CoreFontSize),
-                TextColor = InkWashTheme.TextOnPaper,
+                TextColor = CoreTextColor,
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Near,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
             AddChild(_coreLabel);
 
-            // 下部附加信息 Label（纸色背景上用 PaperDark，弱化层级）
+            // 下部附加信息 Label（弱化层级）
             _additionalLabel = new Label
             {
                 Text = string.Empty,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, AdditionalFontSize),
-                TextColor = InkWashTheme.PaperDark,
+                TextColor = AdditionalTextColor,
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Near,
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -245,7 +281,7 @@ namespace HundunWorld.Game.UI.Ink.Components
                 {
                     Text = "· " + item,
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, AdditionalFontSize),
-                    TextColor = InkWashTheme.PaperDark,
+                    TextColor = AdditionalTextColor,
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Near,
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -384,19 +420,27 @@ namespace HundunWorld.Game.UI.Ink.Components
         // =======================================================================
 
         /// <summary>
-        /// 根据当前文本内容重新计算各 Label 位置与控件总高度。
-        /// 宽度固定 240px，高度按"头部 + 中部 + 下部 + 底部内边距"累加，最小 180px。
+        /// 根据当前文本内容重新计算宽度（按最长行测量，240~420 自适应）与各 Label 位置、总高度。
         /// </summary>
         private void ApplyLayout()
         {
-            float contentWidth = TooltipWidth - Padding * 2f;
+            // 0. 宽度自适应：取"头部图标+名 / 核心信息 / 附加信息 / 追加项"最长行 + 边距
+            float nameX = Padding + IconSize + SectionGap;
+            float required = TooltipWidth;
+            required = Mathf.Max(required, nameX + Padding + MeasureMaxLine(_name, _nameLabel?.Font));
+            required = Mathf.Max(required, Padding * 2f + MeasureMaxLine(_coreInfo, _coreLabel?.Font));
+            required = Mathf.Max(required, Padding * 2f + MeasureMaxLine(_additionalInfo, _additionalLabel?.Font));
+            for (int i = 0; i < _appendLabels.Count; i++)
+                required = Mathf.Max(required, Padding * 2f + MeasureMaxLine(_appendLabels[i]?.Text, _appendLabels[i]?.Font));
+            _width = Mathf.Min(required, MaxTooltipWidth);
+
+            float contentWidth = _width - Padding * 2f;
 
             // 1. 头部：属性名 Label（图标在 Draw 中绘制）
-            float nameX = Padding + IconSize + SectionGap;
             if (_nameLabel != null)
             {
                 _nameLabel.Location = new Float2(nameX, 0f);
-                _nameLabel.Size = new Float2(TooltipWidth - nameX - Padding, HeaderHeight);
+                _nameLabel.Size = new Float2(_width - nameX - Padding, HeaderHeight);
             }
 
             // 2. 中部：核心信息 Label
@@ -437,7 +481,26 @@ namespace HundunWorld.Game.UI.Ink.Components
             // 5. 总高度（含底部内边距），不小于 MinHeight
             float bottomY = appendY + appendCount * AppendLineHeight + BottomPadding;
             float totalHeight = Mathf.Max(bottomY, MinHeight);
-            Size = new Float2(TooltipWidth, totalHeight);
+            Size = new Float2(_width, totalHeight);
+        }
+
+        /// <summary>按 '\n' 拆行测量最长行的像素宽；字体不可用时按字符数粗估（CJK 约 1em/字）。</summary>
+        private static float MeasureMaxLine(string text, FontReference fontRef)
+        {
+            if (string.IsNullOrEmpty(text)) return 0f;
+            float max = 0f;
+            int longestLen = 0;
+            Font font = null;
+            try { font = fontRef.GetFont(); } catch { font = null; }
+            foreach (var line in text.Split('\n'))
+            {
+                if (line.Length > longestLen) longestLen = line.Length;
+                if (font == null) continue;
+                float w = font.MeasureText(line).X;
+                if (w > max) max = w;
+            }
+            if (font == null) max = longestLen * CoreFontSize;
+            return max;
         }
 
         /// <summary>
@@ -471,22 +534,52 @@ namespace HundunWorld.Game.UI.Ink.Components
 
             var bounds = new Rectangle(0, 0, Width, Height);
 
-            // 1. 外阴影（右下偏移 4px，半透明黑色，参考 popup-verification 的 paper-panel-shadow）
+            // 1. 外阴影（右下偏移 4px；深墨主题加深，让浮窗从暗底页面中"浮"出来）
             Render2D.FillRectangle(
                 new Rectangle(ShadowOffset, ShadowOffset, Width, Height),
-                ShadowColor);
+                _darkTheme ? new Color(0f, 0f, 0f, 0.45f) : ShadowColor);
 
-            // 2. 纸色面板背景（参考 popup-verification.html 的 ink-paper-panel，半透明纸色）
-            Render2D.FillRectangle(bounds, InkWashTheme.PaperPanelBg);
+            // 2. 面板背景：深墨主题 = BaseSecondary→BaseTertiary 纵向微渐变；否则纸色面板
+            if (_darkTheme)
+            {
+                var top = InkWashTheme.BaseTertiary;
+                var bot = InkWashTheme.BaseSecondary;
+                int bands = 6;
+                float bh = Height / bands;
+                for (int i = 0; i < bands; i++)
+                {
+                    float t = bands == 1 ? 0f : i / (bands - 1f);
+                    var c = new Color(
+                        top.R + (bot.R - top.R) * t,
+                        top.G + (bot.G - top.G) * t,
+                        top.B + (bot.B - top.B) * t,
+                        0.97f);
+                    Render2D.FillRectangle(new Rectangle(0, i * bh, Width, bh + 1f), c);
+                }
+            }
+            else
+            {
+                Render2D.FillRectangle(bounds, InkWashTheme.PaperPanelBg);
+            }
 
-            // 3. 纸色质感叠加层（模拟 noise 纹理，用淡灰色细密点阵增加纸质感）
-            DrawPaperTexture();
+            // 3. 质感层：纸色主题叠纸纹；深墨主题画顶部微高光 + 左侧金色饰带
+            if (!_darkTheme)
+            {
+                DrawPaperTexture();
+            }
+            else
+            {
+                Render2D.FillRectangle(new Rectangle(0, 0, Width, 2f),
+                    new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.18f));
+                Render2D.FillRectangle(new Rectangle(0, HeaderHeight, 2f, Height - HeaderHeight),
+                    new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.28f));
+            }
 
-            // 4. 内描边高亮（距外边框 1px，GoldBright 1px，模拟纸色面板的内框装饰）
+            // 4. 内描边高亮（距外边框 1px，1px；深墨主题降亮度避免过闪）
             Render2D.DrawRectangle(
                 new Rectangle(InnerBorderInset, InnerBorderInset,
                     Width - InnerBorderInset * 2f, Height - InnerBorderInset * 2f),
-                InkWashTheme.GoldBright,
+                _darkTheme ? InkWashTheme.BorderGoldSubtle : InkWashTheme.GoldBright,
                 InnerBorderThickness);
 
             // 5. 外边框（品质色优先，否则默认金色，2px）
@@ -496,8 +589,9 @@ namespace HundunWorld.Game.UI.Ink.Components
             // 6. 四角金色 L 型装饰（参考 popup-verification.html 的 corner-ornament）
             DrawCornerOrnaments();
 
-            // 7. 顶部装饰带（参考 modal-top-band：金色渐变线 + 中心点）
-            DrawTopBand();
+            // 7. 顶部装饰带（仅纸色主题；深墨主题该位置让给头部金线，避免横穿属性名）
+            if (!_darkTheme)
+                DrawTopBand();
 
             // 8. 头部图标 / 元素色圆点占位
             float iconY = (HeaderHeight - IconSize) * 0.5f;
@@ -618,7 +712,18 @@ namespace HundunWorld.Game.UI.Ink.Components
             float y = HeaderHeight - 1f;
             float x = Padding;
             float w = Width - Padding * 2f;
-            float midX = x + w * 0.5f;
+
+            if (_darkTheme)
+            {
+                // 深墨主题：中段提亮为 2px 金线（兼作顶部饰带），两端淡出
+                float segW = w / 3f;
+                var faint = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.10f);
+                var bright = new Color(InkWashTheme.GoldBright.R, InkWashTheme.GoldBright.G, InkWashTheme.GoldBright.B, 0.85f);
+                Render2D.FillRectangle(new Rectangle(x, y, segW, 1f), faint);
+                Render2D.FillRectangle(new Rectangle(x + segW, y - 0.5f, segW, 2f), bright);
+                Render2D.FillRectangle(new Rectangle(x + segW * 2f, y, segW, 1f), faint);
+                return;
+            }
 
             // 左半段（淡到实）
             Color leftColor = new Color(
@@ -629,10 +734,10 @@ namespace HundunWorld.Game.UI.Ink.Components
             Color rightColor = leftColor;
 
             // 简化：左中右三段渐变模拟
-            float segW = w / 3f;
-            Render2D.FillRectangle(new Rectangle(x, y, segW, 1f), leftColor);
-            Render2D.FillRectangle(new Rectangle(x + segW, y, segW, 1f), midColor);
-            Render2D.FillRectangle(new Rectangle(x + segW * 2f, y, segW, 1f), rightColor);
+            float seg = w / 3f;
+            Render2D.FillRectangle(new Rectangle(x, y, seg, 1f), leftColor);
+            Render2D.FillRectangle(new Rectangle(x + seg, y, seg, 1f), midColor);
+            Render2D.FillRectangle(new Rectangle(x + seg * 2f, y, seg, 1f), rightColor);
         }
 
         /// <summary>
@@ -644,20 +749,23 @@ namespace HundunWorld.Game.UI.Ink.Components
             float y = Height - BottomPadding * 0.5f;
             float lineHalfWidth = Mathf.Min(BottomBandLineMaxWidth * 0.5f, (Width - Padding * 2f) * 0.35f);
             float centerX = Width * 0.5f;
+            var lineColor = _darkTheme
+                ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.45f)
+                : InkWashTheme.GoldDeep;
 
             // 中心金色圆点
             var dotRect = new Rectangle(centerX - 2f, y - 2f, 4f, 4f);
-            Render2D.FillRectangle(dotRect, InkWashTheme.GoldDeep);
+            Render2D.FillRectangle(dotRect, lineColor);
 
             // 左侧金色线
             var leftLineRect = new Rectangle(
                 centerX - lineHalfWidth, y - 0.5f, lineHalfWidth - 6f, 1f);
-            Render2D.FillRectangle(leftLineRect, InkWashTheme.GoldDeep);
+            Render2D.FillRectangle(leftLineRect, lineColor);
 
             // 右侧金色线
             var rightLineRect = new Rectangle(
                 centerX + 6f, y - 0.5f, lineHalfWidth - 6f, 1f);
-            Render2D.FillRectangle(rightLineRect, InkWashTheme.GoldDeep);
+            Render2D.FillRectangle(rightLineRect, lineColor);
         }
     }
 }

@@ -23,6 +23,13 @@ namespace HundunWorld.Game.UI.Components
         private int _initWaitFrames = 0;
         private FlaxEngine.Scene _targetScene;
 
+        // 预览渲染任务实际绑定的宿主场景（CustomScenes 成员或相机所属场景）。
+        // 该场景卸载时必须先给 _renderTask 断链，否则引擎 DrawAll 解引用已销毁 Actor 崩溃。
+        private FlaxEngine.Scene _previewHostScene;
+
+        // 场景卸载断链后的自愈状态：等待新场景就绪后重建离屏渲染管线（不重建 UI 子控件）
+        private bool _previewBroken = false;
+
         // === 相机过渡（基于 OrbitCamera 的薄包装，保留 TransitionCamera 公开签名）===
         // 旧的固定相机位姿过渡已被 OrbitCamera 系统取代；这里仅保留一个延迟回调机制。
         private Action _onCameraTransitionComplete;
@@ -165,6 +172,18 @@ namespace HundunWorld.Game.UI.Components
                 {
                     _initialized = true;
                     CreateUIElements();
+                    InitializeCameraSystem();
+                }
+            }
+
+            // 宿主场景卸载断链后的自愈：稍等新场景加载完成后仅重建渲染管线
+            if (_previewBroken)
+            {
+                _initWaitFrames++;
+                if (_initWaitFrames >= 60)
+                {
+                    _previewBroken = false;
+                    _initWaitFrames = 0;
                     InitializeCameraSystem();
                 }
             }
@@ -392,6 +411,7 @@ namespace HundunWorld.Game.UI.Components
             {
                 _renderTask.ActorsSource = ActorsSources.Scenes;
                 _renderTask.CustomScenes = new FlaxEngine.Scene[] { _targetScene };
+                _previewHostScene = _targetScene;
             }
             else
             {
@@ -400,6 +420,11 @@ namespace HundunWorld.Game.UI.Components
                 {
                     _renderTask.ActorsSource = ActorsSources.CustomActors;
                     _renderTask.CustomActors = new Actor[] { _cameraSystem.CameraActor };
+                    _previewHostScene = _cameraSystem.CameraActor.Scene;
+                }
+                else
+                {
+                    _previewHostScene = null;
                 }
             }
 
@@ -428,6 +453,12 @@ namespace HundunWorld.Game.UI.Components
             if (_renderTask != null)
             {
                 _renderTask.Enabled = true;
+
+                // 宿主场景断链防护：场景卸载（退世界/切场景/PIE停止）会销毁绑定给
+                // CustomScenes/CustomActors/Camera 的原生对象，而渲染任务白名单不会自动清除，
+                // 下一帧 RenderTask::DrawAll 解引用野指针即崩溃（Array.h Last() 断言 / 0xe06d7363）。
+                Level.SceneUnloading -= OnLevelSceneUnloading; // InitializeCameraSystem 会重试，防重复订阅
+                Level.SceneUnloading += OnLevelSceneUnloading;
             }
 
             // 重置交互状态
@@ -439,20 +470,69 @@ namespace HundunWorld.Game.UI.Components
         }
 
         /// <summary>
+        /// 宿主场景卸载防护：在预览 Actor / 目标场景被引擎销毁之前给渲染任务断链。
+        /// 未断链的 CustomScenes/CustomActors/Camera 原生指针会让下一帧
+        /// RenderTask::DrawAll 在 CollectPostFxVolumes(dynamic_cast) 或
+        /// OnCollectDrawCalls(SceneRendering::AddActor) 处解引用野指针崩溃
+        /// （Array.h Last() 断言弹窗 / 0xe06d7363 未处理异常）。
+        /// </summary>
+        private void OnLevelSceneUnloading(FlaxEngine.Scene scene, Guid sceneId)
+        {
+            if (scene == null || _renderTask == null)
+                return;
+            if (scene != _previewHostScene && scene != _targetScene)
+                return;
+
+            FlaxEngine.Debug.Log("[CharacterPreviewPanel] 宿主场景正在卸载，断开离屏渲染任务以防野指针崩溃");
+
+            _renderTask.Enabled = false;
+            _renderTask.CustomScenes = null;
+            _renderTask.CustomActors = null;
+            _renderTask.Camera = null;
+            FlaxEngine.Object.Destroy(_renderTask);
+            _renderTask = null;
+            Level.SceneUnloading -= OnLevelSceneUnloading;
+
+            // 相机系统及其 Actor 随场景一并销毁：只清引用，不 Dispose（避免触碰失效句柄）
+            _cameraSystem = null;
+            _textureBrush = null;
+            if (_renderTexture != null)
+            {
+                _renderTexture.ReleaseGPU();
+                _renderTexture = null;
+            }
+            if (scene == _targetScene)
+                _targetScene = null;
+            _previewHostScene = null;
+            _previewBroken = true;
+            _initWaitFrames = 0;
+        }
+
+        /// <summary>
         /// 当目标场景变化时重新初始化相机系统
         /// </summary>
         private void ReinitializeCameraSystem()
         {
             if (_cameraSystem == null) return;
 
+            Level.SceneUnloading -= OnLevelSceneUnloading;
+
             _cameraSystem.Dispose();
             _cameraSystem = null;
 
             if (_renderTask != null)
             {
+                // 必须先断链清引用，再销毁任务，顺序不可颠倒（防一帧野指针窗口）
                 _renderTask.Enabled = false;
+                _renderTask.CustomScenes = null;
+                _renderTask.CustomActors = null;
+                _renderTask.Camera = null;
+                FlaxEngine.Object.Destroy(_renderTask);
                 _renderTask = null;
             }
+            _previewHostScene = null;
+            _previewBroken = false;
+
             if (_renderTexture != null)
             {
                 _renderTexture.ReleaseGPU();
@@ -874,6 +954,9 @@ namespace HundunWorld.Game.UI.Components
         {
             base.OnDestroy();
 
+            Level.SceneUnloading -= OnLevelSceneUnloading;
+            _previewBroken = false;
+
             if (_cameraSystem != null)
             {
                 _cameraSystem.Dispose();
@@ -882,9 +965,15 @@ namespace HundunWorld.Game.UI.Components
 
             if (_renderTask != null)
             {
+                // 先断链清引用，再销毁任务本体
                 _renderTask.Enabled = false;
+                _renderTask.CustomScenes = null;
+                _renderTask.CustomActors = null;
+                _renderTask.Camera = null;
+                FlaxEngine.Object.Destroy(_renderTask);
                 _renderTask = null;
             }
+            _previewHostScene = null;
 
             if (_renderTexture != null)
             {

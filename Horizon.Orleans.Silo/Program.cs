@@ -319,6 +319,10 @@ namespace Horizon.Orleans.Silo
                         // 注册订单超时定时任务激活服务
                         services.AddHostedService<OrderTimeoutStartupService>();
 
+                        // 角色位置归档：Redis 热缓存超过 24h 无新位置更新 → 落库 SQL Server 并清除缓存，
+                        // 进场读路径为 Redis 命中优先、未命中回退 SQL（CharacterGrain.GetLastPositionAsync）。
+                        services.AddHostedService<Services.CharacterPositionArchiveService>();
+
                         // 阶段 6.3 P2：修正计数跨进程汇聚（Silo→Redis→网关自动回滚门修正率信号）。
                         // 与 Clustering/存储共用同一 Redis 实例（Redis:ConnectionString）；
                         // 未配置连接串则跳过（修正率信号缺位，网关侧以回退率+延迟双信号运行）。

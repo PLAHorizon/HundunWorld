@@ -245,6 +245,9 @@ public sealed class DsHostRunner : IAsyncDisposable
     /// </summary>
     private readonly System.Collections.Concurrent.ConcurrentQueue<long> _pendingSessionEnds = new();
 
+    /// <summary>会话输入租约：超过该时长未收到任何输入的会话被兜底回收（见 RunSingleTickAsync 扫描）。</summary>
+    private static readonly TimeSpan SessionInputLease = TimeSpan.FromSeconds(120);
+
     /// <summary>累计因会话来结束而移除的玩家数。</summary>
     public long SessionsRemoved { get; private set; }
 
@@ -265,6 +268,24 @@ public sealed class DsHostRunner : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// 与网关的上行链路断开（由 <c>DsUplinkClient.LinkLost</c> 订阅，可能在读循环线程上调用）。
+    /// <para>
+    /// 网关被强杀/崩溃时不可能再发来任何"会话结束"通知，DS 若继续保留玩家，
+    /// 就会对早已消失的会话持续 20Hz 广播，并被后续进入世界的其他客户端
+    /// 收到 Spawn 而表现为"服务端残留的离线幽灵角色"。
+    /// 链路断开时所有客户端连接必然也已随网关失效（重连后走重新握手），
+    /// 因此全量回收是安全且必要的。只入队，由 tick 线程消费（世界非线程安全）。
+    /// </para>
+    /// </summary>
+    public void NotifyLinkLost()
+    {
+        var ids = _world.GetSessionIds();
+        if (ids.Count == 0) return;
+        for (var i = 0; i < ids.Count; i++) _pendingSessionEnds.Enqueue(ids[i]);
+        _log?.Invoke($"DsHostRunner：与网关链路断开，回收全部 {ids.Count} 个玩家会话（等待 tick 线程移除）。");
+    }
+
     /// <summary>执行恰好一个 tick（测试与"单步驱动"入口）。</summary>
     public async Task<DsTickResult> RunSingleTickAsync()
     {
@@ -275,6 +296,20 @@ public sealed class DsHostRunner : IAsyncDisposable
             {
                 SessionsRemoved++;
                 _log?.Invoke($"会话结束：已从世界移除玩家 sessionId={endedSessionId}（剩余 {_world.PlayerCount} 人）。");
+            }
+        }
+
+        // 输入租约兜底扫描（每秒一次）：网关"会话结束"通知丢失（崩溃窗口之外的罕见路径，
+        // 如通知帧本身丢失）时，长时间收不到输入的会话也会被回收，杜绝永久幽灵。
+        // 阈值 120s 远大于 presence TTL(90s) 与网关 15s 重连宽限期，不会误伤挂机玩家
+        //（客户端 InputPacket 为定频上行，在线即有输入）。
+        if ((TicksExecuted + 1) % Math.Max(1, _options.TicksPerSecond) == 0)
+        {
+            var starved = _world.CollectInputStarvedSessions(DateTime.UtcNow, SessionInputLease);
+            for (var i = 0; i < starved.Count; i++)
+            {
+                _pendingSessionEnds.Enqueue(starved[i]);
+                _log?.Invoke($"DsHostRunner：会话 {starved[i]} 超过 {SessionInputLease.TotalSeconds:F0}s 无任何输入，投递回收。");
             }
         }
 

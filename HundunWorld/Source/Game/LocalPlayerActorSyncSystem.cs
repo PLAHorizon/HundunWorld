@@ -230,8 +230,13 @@ namespace HundunWorld.Game
             if (attrs == null) return;
 
             ref var state = ref _archWorld.Get<EntityStateAuthComponent>(_localPlayerEntity);
-            if (state.MaxHealth > 0) attrs.MaxHealth = state.MaxHealth;
+            attrs.MaxHealth = state.MaxHealth;
             attrs.CurrentHealth = state.Health;
+            // 服务端基值不含装备生命加成（战斗仍按全局配置结算）。若服务端报告"满血"
+            // （Health>=基值MaxHealth），把当前生命抬到含装备的 MaxHealth，避免穿戴后
+            // 血条凭空缺一截；真正受伤时（Health<基值）仍按服务端权威值显示。
+            if (state.MaxHealth > 0 && state.Health >= state.MaxHealth)
+                attrs.CurrentHealth = attrs.MaxHealth;
             if (state.Level > 0) attrs.Level = state.Level;
             if (state.Exp > 0) attrs.Exp = state.Exp;
         }

@@ -34,6 +34,14 @@ public partial struct NetworkIdentityAuthComponent
     [MemoryPackOrder(3)]
     [Id(3)]
     public string Nickname;
+
+    /// <summary>
+    /// 角色称号名（仅玩家实体有效，NPC 为空）。与 <see cref="Nickname"/> 同为 spawn-only。
+    /// 空表示"未佩戴称号"——客户端据此回退到本地默认表现，不得把空值当成"无名"。
+    /// </summary>
+    [MemoryPackOrder(4)]
+    [Id(4)]
+    public string Title;
 }
 
 /// <summary>
@@ -125,6 +133,38 @@ public static class EntityStateBits
     public const uint Stunned = 1u << 2;
     public const uint Hidden = 1u << 3;
     public const uint Frozen = 1u << 4;
+}
+
+/// <summary>
+/// 玩家基础档案的**变更通道**（v13）。
+/// <para>
+/// 与 <see cref="NetworkIdentityAuthComponent"/> 里的 Nickname/Title 分工：Identity 是 spawn-only，
+/// 只在实体首次出现时携带；本组件专供"运行中变了"的场合（改名、换称号、握手时档案没取到后来才取到），
+/// 仅在字段与上次下发不一致时随 delta 出现，因此对稳态带宽几乎无影响。
+/// </para>
+/// <para>
+/// 之所以不复用 Identity 承载变更：DS 通道只在 Spawn 那一帧构造 Identity，要在运行中改昵称就得重发
+/// Spawn，而重复 Spawn 在客户端会销毁重建远程角色（视觉表现为闪一下/位置重置）。
+/// </para>
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public partial struct ProfileAuthComponent
+{
+    /// <summary>角色昵称（null = 本次未变更，客户端保留原值）。</summary>
+    [MemoryPackOrder(0)]
+    [Id(0)]
+    public string Nickname;
+
+    /// <summary>角色称号名（null = 本次未变更；空串 = 明确"未佩戴"）。</summary>
+    [MemoryPackOrder(1)]
+    [Id(1)]
+    public string Title;
+
+    /// <summary>角色等级（0 = 本次未变更）。</summary>
+    [MemoryPackOrder(2)]
+    [Id(2)]
+    public int Level;
 }
 
 /// <summary>

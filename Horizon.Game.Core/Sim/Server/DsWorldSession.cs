@@ -118,6 +118,46 @@ public sealed class DsPlayer
     /// <summary>最大生命值。</summary>
     public int MaxHp { get; set; }
 
+    /// <summary>
+    /// 角色昵称（网关在握手时从 CharacterGrain 取的权威值）。
+    /// 空 = 档案未取到，spawn 时由客户端回退 <c>Player_&lt;id&gt;</c> 占位。
+    /// </summary>
+    public string Nickname { get; set; } = "";
+
+    /// <summary>角色等级（权威；0 = 未知，不下发）。</summary>
+    public int Level { get; set; }
+
+    /// <summary>角色称号名（空 = 未佩戴）。</summary>
+    public string Title { get; set; } = "";
+
+    /// <summary>上次已随快照广播出去的昵称/称号（v13 变更检测基线；null = 从未广播）。</summary>
+    private string? _sentNickname;
+    private string? _sentTitle;
+
+    /// <summary>
+    /// 若档案与上次广播不一致则返回增量（v13）。未变化的字段留 null，客户端据此保留原值。
+    /// 昵称/称号在 Identity 里是 spawn-only，运行中变更只能走这条通道，
+    /// 否则要靠重发 Spawn 生效，而重复 Spawn 会让客户端销毁重建远程角色。
+    /// </summary>
+    /// <param name="spawnedThisFrame">本帧已发 Spawn 时 Identity 自带档案，只需对齐基线、不再重复下发</param>
+    public ProfileAuthComponent? TakeProfileChange(bool spawnedThisFrame = false)
+    {
+        var nicknameChanged = Nickname != _sentNickname;
+        var titleChanged = Title != _sentTitle;
+        if (!nicknameChanged && !titleChanged) return null;
+
+        _sentNickname = Nickname;
+        _sentTitle = Title;
+        if (spawnedThisFrame) return null;
+
+        return new ProfileAuthComponent
+        {
+            Nickname = nicknameChanged ? Nickname : null,
+            Title = titleChanged ? Title : null,
+            Level = 0,
+        };
+    }
+
     /// <summary>是否已在**共享广播路径**下发过 Spawn（用于首次全量 vs 后续 Update）。</summary>
     /// <remarks>
     /// 实体级全局标志，不代表"每个会话都见过"——晚加入/重连会话由
@@ -139,6 +179,13 @@ public sealed class DsPlayer
 
     /// <summary>是否处于死亡状态。</summary>
     public bool IsDead => Hp <= 0;
+
+    /// <summary>
+    /// 最近一次收到该会话输入的 UTC 墙钟（会话存活判据，非模拟确定性输入）。
+    /// 客户端 InputPacket 为定频上行（挂机也持续发送），长时间无输入 = 连接早已消失
+    /// 而网关未能送达"会话结束"通知（如网关崩溃/强杀）→ 宿主按租约回收，防幽灵角色。
+    /// </summary>
+    public DateTime LastInputUtc;
 
     // ---- AOI 订阅状态（仅 <see cref="DsWorldSessionOptions.EnableAoiFilter"/> 为 true 时有效）----
 
@@ -431,7 +478,8 @@ public sealed class DsWorldSession
     /// <param name="y">初始 Y。</param>
     /// <param name="z">初始 Z。</param>
     /// <param name="reason">失败原因。</param>
-    public bool AddPlayer(long sessionId, ulong characterId, float x, float y, float z, out string reason)
+    public bool AddPlayer(long sessionId, ulong characterId, float x, float y, float z, out string reason,
+        string nickname = "", int level = 0, string title = "")
     {
         reason = string.Empty;
 
@@ -475,6 +523,10 @@ public sealed class DsWorldSession
             {
                 // 幂等重连：同一会话重复握手。客户端重连后已重建本地 ECS 世界（实体全清），
                 // 必须登记首包强制 Spawn 补发，否则重连后只能收到 Update、远端实体不再出现。
+                // 档案随本次握手重新下发（改名/换称号后重连也能拿到新值），空值不覆盖已有缓存。
+                if (!string.IsNullOrEmpty(nickname)) existing.Nickname = nickname;
+                if (level > 0) existing.Level = level;
+                if (!string.IsNullOrEmpty(title)) existing.Title = title;
                 _pendingInitialSpawnSessions.Add(sessionId);
                 return true;
             }
@@ -488,12 +540,16 @@ public sealed class DsWorldSession
             EntityId = characterId,
             Hp = _options.PlayerDefaultMaxHp,
             MaxHp = _options.PlayerDefaultMaxHp,
+            Nickname = nickname ?? "",
+            Level = level,
+            Title = title ?? "",
             // 去重水位初始为 -1：客户端首帧的 ClientTick 可能为 0，
             // 若从 0 起算会把**第一帧输入**误判为重复而丢弃（角色"起步不动"）。
             LastQueuedClientTick = -1L,
             SpawnX = x,
             SpawnY = y,
             SpawnZ = z,
+            LastInputUtc = DateTime.UtcNow,
         };
 
         _playersBySession[sessionId] = player;
@@ -546,6 +602,26 @@ public sealed class DsWorldSession
         return true;
     }
 
+    /// <summary>当前全部玩家会话 ID（链路断开时宿主全量回收用）。</summary>
+    public IReadOnlyList<long> GetSessionIds() => _playersBySession.Keys.ToList();
+
+    /// <summary>
+    /// 收集"输入租约过期"的会话：超过 <paramref name="lease"/> 未收到任何输入的玩家。
+    /// 客户端输入为定频上行，长时间无输入即连接早已消失而网关未能通知（崩溃/强杀窗口），
+    /// 由宿主投递回 tick 线程 RemovePlayer，防止幽灵角色永久驻留 DS 世界。
+    /// </summary>
+    public IReadOnlyList<long> CollectInputStarvedSessions(DateTime utcNow, TimeSpan lease)
+    {
+        if (_playersBySession.Count == 0) return Array.Empty<long>();
+        List<long>? starved = null;
+        foreach (var kv in _playersBySession)
+        {
+            if (utcNow - kv.Value.LastInputUtc > lease)
+                (starved ??= new List<long>()).Add(kv.Key);
+        }
+        return starved ?? (IReadOnlyList<long>)Array.Empty<long>();
+    }
+
     /// <summary>
     /// 提交一帧玩家输入（对应网关的 Input 上行）。
     /// <para>
@@ -572,6 +648,7 @@ public sealed class DsWorldSession
         }
 
         player.LastQueuedClientTick = input.ClientTick;
+        player.LastInputUtc = DateTime.UtcNow;
 
         _simWorld.SubmitInput(
             player.EntityId,
@@ -1147,16 +1224,21 @@ public sealed class DsWorldSession
             var e = _simWorld.GetEntity(entityId);
 
             var isSpawn = !player.SpawnedToClients;
+            // 档案变更增量（v13）：Spawn 帧由 Identity 自带，此处只对齐基线。
+            var profileChange = player.TakeProfileChange(isSpawn);
             deltas.Add(new EntityDelta
             {
                 EntityId = entityId,
                 Kind = isSpawn ? EntityDeltaKind.Spawn : EntityDeltaKind.Update,
+                Profile = profileChange,
                 Identity = isSpawn
                     ? new NetworkIdentityAuthComponent
                     {
                         NetworkId = entityId,
                         EntityType = EntityTypePlayer,
                         OwnerId = player.CharacterId,
+                        Nickname = player.Nickname,
+                        Title = player.Title,
                     }
                     : null,
                 Transform = new AuthTransformComponent
@@ -1174,6 +1256,9 @@ public sealed class DsWorldSession
                 {
                     Health = player.Hp,
                     MaxHealth = player.MaxHp,
+                    Level = player.Level,
+                    // 死亡位由 DS 权威血量决定：远程客户端据此立刻看到倒下/复活（v13）。
+                    StateBits = player.IsDead ? EntityStateBits.Dead : 0u,
                 },
                 MovementState = new MovementStateAuthComponent
                 {
@@ -1542,12 +1627,16 @@ public sealed class DsWorldSession
         {
             EntityId = entityId,
             Kind = isSpawn ? EntityDeltaKind.Spawn : EntityDeltaKind.Update,
+            // 档案变更增量（v13）：Spawn 帧由 Identity 自带，此处只对齐基线。
+            Profile = player.TakeProfileChange(isSpawn),
             Identity = isSpawn
                 ? new NetworkIdentityAuthComponent
                 {
                     NetworkId = entityId,
                     EntityType = EntityTypePlayer,
                     OwnerId = player.CharacterId,
+                    Nickname = player.Nickname,
+                    Title = player.Title,
                 }
                 : null,
             Transform = new AuthTransformComponent
@@ -1565,6 +1654,9 @@ public sealed class DsWorldSession
             {
                 Health = player.Hp,
                 MaxHealth = player.MaxHp,
+                Level = player.Level,
+                // 死亡位由 DS 权威血量决定：远程客户端据此立刻看到倒下/复活（v13）。
+                StateBits = player.IsDead ? EntityStateBits.Dead : 0u,
             },
             MovementState = new MovementStateAuthComponent
             {

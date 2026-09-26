@@ -463,16 +463,16 @@ namespace HundunWorld.Game
                 }
 
                 // 2) Spawn Prefab 到目标场景（与本地玩家一致）
+                // 修复（幽灵角色堆积根因之一）：原实现算出 targetScene 却两个分支走同样的
+                // PrefabManager.SpawnPrefab —— 远程角色实际总落在常驻 RootScene（切场景不卸载）。
+                // 本系统挂在 RootScene 上，退世界时 OnDestroy/ClearAllActors 不会触发，
+                // 落在 RootScene 的旧 Actor 因此跨会话堆积成"离线/不存在角色"的幽灵。
+                // 与本地玩家对齐：生成后若不在目标场景则移入 World 场景，随场景卸载自然销毁。
                 var targetScene = FindGameWorldScene();
-                Actor actor;
-                if (targetScene != null)
+                Actor actor = PrefabManager.SpawnPrefab(prefab, position, Quaternion.Identity);
+                if (actor != null && targetScene != null && actor.Scene != targetScene)
                 {
-                    // SpawnPrefab 本身会注册到主场景；这里仅用于日志校验
-                    actor = PrefabManager.SpawnPrefab(prefab, position, Quaternion.Identity);
-                }
-                else
-                {
-                    actor = PrefabManager.SpawnPrefab(prefab, position, Quaternion.Identity);
+                    Level.SpawnActor(actor, targetScene);
                 }
 
                 if (actor == null)
@@ -834,24 +834,29 @@ namespace HundunWorld.Game
                         _entityIdToLastYaw[entityId] = yawDeg;
                     }
 
-                    // 2b) 同步昵称 + 血量/等级到 Actor，供头顶名牌（NameplateUI）读取真实值：
-                    //   - 昵称：经 RemotePlayerActor.PlayerName 兜底显示（Spawn 时赋值）。
-                    //   - 血量/等级：EntityStateAuthComponent 已由 SnapshotApplySystem 从网络写入 ECS（1Hz 心跳 + 变化触发）。
+                    // 2b) 同步昵称/称号 + 血量/等级到 Actor，供头顶名牌（NameplateUI）读取真实值：
+                    //   - 昵称/称号：随 Identity 于 Spawn 下发，SnapshotApplySystem 已写入 NetworkIdentityComponent，此处直读。
+                    //   - 血量/等级：EntityStateAuthComponent 由 SnapshotApplySystem 从网络写入 ECS（1Hz 心跳 + 变化触发）。
                     var attrs = actor.GetScript<CharacterAttributesComponent>();
                     if (attrs == null)
                     {
                         attrs = actor.AddScript<CharacterAttributesComponent>();
-                        // 组件默认昵称是本地占位"无名侠"，会遮蔽远程显示名；新建时先对齐该 Actor 的名称。
-                        var rpaInit = actor.GetScript<RemotePlayerActor>();
-                        if (rpaInit != null) attrs.Nickname = rpaInit.PlayerName;
                     }
                     if (attrs != null)
                     {
-                        // 直读 NetworkIdentityComponent.Nickname 需先部署含该字段的 Horizon.Game.ECS.Arch.dll；
-                        // 当前 Flax Tools 内为旧版 DLL（无此字段，引用会 CS1061），故昵称经 RemotePlayerActor 兜底。
-                        var rpa = actor.GetScript<RemotePlayerActor>();
-                        if (rpa != null && !string.IsNullOrEmpty(rpa.PlayerName) && attrs.Nickname != rpa.PlayerName)
-                            attrs.Nickname = rpa.PlayerName;
+                        // 服务端未下发昵称时（旧服务端/档案查询失败）才退回 Actor 侧占位名。
+                        if (!string.IsNullOrEmpty(netId.Nickname))
+                        {
+                            if (attrs.Nickname != netId.Nickname) attrs.Nickname = netId.Nickname;
+                        }
+                        else
+                        {
+                            var rpa = actor.GetScript<RemotePlayerActor>();
+                            if (rpa != null && !string.IsNullOrEmpty(rpa.PlayerName) && attrs.Nickname != rpa.PlayerName)
+                                attrs.Nickname = rpa.PlayerName;
+                        }
+
+                        if (attrs.Title != netId.Title) attrs.Title = netId.Title ?? "";
 
                         if (_archWorld.Has<EntityStateAuthComponent>(entity))
                         {

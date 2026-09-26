@@ -177,6 +177,12 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(3)] [Id(3)] public float LastPositionZ { get; set; }
         [MemoryPackOrder(4)] [Id(4)] public float LastYaw { get; set; }
         [MemoryPackOrder(5)] [Id(5)] public DateTime LastPositionUpdateUtc { get; set; }
+
+        /// <summary>
+        /// 属性加点（服务端权威缓存层）。Redis 重激活时直接可用；
+        /// 为空表示尚未加载，CharacterGrain 会从 <c>Game_HunduShijie_CharacterAttribute</c> 回填。
+        /// </summary>
+        [MemoryPackOrder(6)] [Id(6)] public AttributeAllocationData Allocation { get; set; }
     }
 
     #endregion
@@ -206,6 +212,19 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(3)]
         [Id(3)]
         public Dictionary<int, long> EquippedItems { get; set; } = new();
+
+        /// <summary>
+        /// 已装备物品的**完整**信息（槽位 → ItemInfo）。
+        /// <para>
+        /// 只有 <see cref="EquippedItems"/>（槽位→物品ID）是不够的：装备会把物品从
+        /// <see cref="Items"/> 移除，卸下时若只凭物品ID重建 <c>ItemInfo</c>，
+        /// Count/TemplateId/Name 等字段就永久丢失（实测一叠 5 件穿再卸会变成 1 件）。
+        /// 本字典与 <see cref="EquippedItems"/> 同步维护，卸下/换装时据此原样还原。
+        /// </para>
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public Dictionary<int, ItemInfo> EquippedItemDetails { get; set; } = new();
     }
 
     #endregion

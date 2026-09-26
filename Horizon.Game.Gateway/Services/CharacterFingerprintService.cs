@@ -15,6 +15,16 @@ namespace Horizon.Game.Gateway.Services
         private readonly string _gatewayId;
         private readonly IConnectionManager? _connectionManager;
         private readonly TimeSpan _fingerprintExpiry = TimeSpan.FromMinutes(5);
+        /// <summary>
+        /// connection:characters 集合的兜底 TTL。
+        /// <para>
+        /// 注意：指纹键本身没有心跳续期调用方（RefreshAsync 全仓零调用），登录 5 分钟后即自然过期，
+        /// 在线权威实际由 presence 键（90s TTL + 心跳）承担；因此本集合的 TTL 不能按"会话时长 + 续期"设计，
+        /// 取 24h 覆盖一个游戏日：正常断线走 ReleaseByConnectionAsync 即时删除，
+        /// 网关崩溃/强杀漏掉的映射最迟一天后自愈（本次线上观察到的永久残留即此路径）。
+        /// </para>
+        /// </summary>
+        private static readonly TimeSpan ConnectionSetTtl = TimeSpan.FromHours(24);
         private const int MaxRetryAttempts = 3;
         private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(300);
         private static readonly TimeSpan LockTimeout = TimeSpan.FromSeconds(5);
@@ -127,6 +137,8 @@ namespace Horizon.Game.Gateway.Services
                     var json = JsonSerializer.Serialize(fingerprint);
                     await RedisCache.SetAsync(fingerprintKey, json, _fingerprintExpiry);
                     await RedisCache.AddItemToSetAsync(connectionSetKey, characterId.ToString());
+                    // 集合兜底 TTL（心跳侧续期见 RefreshAsync；断线正常清理见 ReleaseByConnectionAsync）
+                    await RedisCache.KeyExpireAsync(connectionSetKey, ConnectionSetTtl);
 
                     _logger.LogInformation(
                         "角色指纹创建成功: CharacterId={CharacterId}, ConnectionId={ConnectionId}",
@@ -179,6 +191,12 @@ namespace Horizon.Game.Gateway.Services
                     var json = JsonSerializer.Serialize(fingerprint);
                     await RedisCache.SetAsync(fingerprintKey, json, _fingerprintExpiry);
 
+                    // 刷新连接映射集合的兜底 TTL（若仍在线可再续一天；正常路径由断线清理即时删除）
+                    if (!string.IsNullOrEmpty(fingerprint.ConnectionId))
+                    {
+                        await RedisCache.KeyExpireAsync(GetConnectionSetKey(fingerprint.ConnectionId), ConnectionSetTtl);
+                    }
+
                     _logger.LogDebug("角色指纹已刷新: CharacterId={CharacterId}", characterId);
                     return true;
                 }
@@ -218,6 +236,13 @@ namespace Horizon.Game.Gateway.Services
                         {
                             var connectionSetKey = GetConnectionSetKey(fingerprint.ConnectionId);
                             await RedisCache.RemoveItemFromSetAsync(connectionSetKey, characterId.ToString());
+                            // 集合空了就显式删除（Redis 的 SET 不会因成员移除自动删除时，留 TTL 兜底；
+                            // 这里主动清理让"最后一个离开的角色"不留下空壳映射）
+                            var remaining = await RedisCache.GetAllItemsFromSetAsync(connectionSetKey);
+                            if (remaining.Count == 0)
+                            {
+                                await RedisCache.RemoveAsync(connectionSetKey);
+                            }
                         }
                     }
 

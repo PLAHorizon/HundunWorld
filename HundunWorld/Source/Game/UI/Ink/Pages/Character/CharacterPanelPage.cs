@@ -1,10 +1,13 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
+using HundunWorld.Game.Inventory;
+using HundunWorld.Game.Services;
 using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
+using ClientSlot = HundunWorld.Game.Equipment.EquipmentSlot;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Character
 {
@@ -50,6 +53,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private Label _modelPlaceholder;
         private CharacterPreview3D _preview3D;
         private InkEquipSlot[] _slots;
+        private string[] _slotBaseGlyphs;
         private float[] _slotXFrac, _slotXPx, _slotYFrac, _slotYPx;
         private bool[] _slotXRight, _slotYBottom;
         private ContainerControl _previewBadge;
@@ -75,8 +79,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private InvCell[] _invCells;
         private CellData[] _invCellData;
         private int _invSelected = -1;
+        private int _invFilterIndex;              // 0=全部 1=武器 2=防具 3=丹药 4=材料 5=任务
         private InvFilterChip[] _invFilterChips;
         private ContainerControl _invCapFill;
+        private Label _invCountLabel;
         // 物品详情
         private DetailIconBox _invDetailIcon;
         private Label _invDetailName;
@@ -87,10 +93,68 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private Label _invMetaElement;
         private Label _invMetaBind;
         private Label _invMetaDura;
+        private ContainerControl _invDuraFill;
+        private ContainerControl _invBaseAttrHost;
+        private ContainerControl _invDescHost;
+        private Label _invSetLabel;
+        private Label _invSetDescLabel;
+        private InkButton _invUseBtn;
+        private InkButton _invEquipBtn;
+        private InkButton _invDropBtn;
+        private Label _invStatusLabel;
+        private ContainerControl _invGemTitle;
+        private ContainerControl _invGemRowHost;
+
+        // 宝石选择窗（点宝石槽弹出；列出背包里全部宝石 + 空槽时可选"卸下"）
+        private ContainerControl _gemPickerOverlay;
+        private ContainerControl _gemPickerPanel;
+        private Label _gemPickerTitle;
+        private ContainerControl _gemPickerRows;
+        private long _gemPickerEquipItemId;
+        private int _gemPickerSlot = -1;
+        private int _gemPickerCurrentTemplate;
 
         // ===== 装备槽 Tooltip =====
         private InkItemTooltip _slotTooltip;
-        private InkTooltipData[] _slotTooltipData;
+
+        // ===== 属性卡绑定（组件值 = 基值 + 装备加成） =====
+        private Label[] _baseStatValueLabels;      // 攻/防/暴击率/暴伤/命中/闪避
+        private Label _combatPowerLabel;
+        private Label[] _combatValueLabels;        // 境界/门派/阵营/侠义/恶名/经验
+        private float[] _wuxingRadarValues;        // 五行雷达（0..100 归一，InkRadarChart 每帧读数组）
+        private string[] _wuxingRadarTexts;        // 五行雷达顶点对应的真实亲和数值文本
+        private float[] _fiveDimValues;            // 五维雷达（体/御/敏/势/劲，0..100 归一）
+        private string[] _fiveDimTexts;            // 五维雷达顶点显示文本
+
+        // 属性加点（合并卡的右栏；左栏为基础属性）。pending = 本次未提交的预览点数。
+        // 九行分两列；所有子控件一律 TopLeft 锚（非原点锚点在构造期会按未定的父尺寸固化位置，
+        // 曾导致 －/＋/确认 整体不渲染），位置全部由 LayoutCards 在父尺寸已知后显式重排。
+        private ContainerControl _attrLeftCol;
+        private ContainerControl _attrRightCol;
+        private ContainerControl _allocColLeft;
+        private ContainerControl _allocColRight;
+        private readonly List<ContainerControl> _allocRows = new List<ContainerControl>();
+        private readonly List<Control> _allocMinusButtons = new List<Control>();
+        private readonly List<Control> _allocPlusButtons = new List<Control>();
+        private Label _allocSummaryLabel;
+        private Label[] _allocSpentLabels;
+        private Label[] _allocPendingLabels;
+        private readonly int[] _allocPending = new int[9];
+        /// <summary>已把期望终态发给服务端、回执未回：期间锁住预览与提交，避免重复发单。</summary>
+        private bool _allocSubmitting;
+        private Control _allocConfirmBtn;
+        private Control _allocResetBtn;
+        private InkAttributeTooltip _allocTooltip;
+
+        // 13 个浮动槽对应的真实装备槽位（自上而下、左右成对；暂不展示肩部与腰部）。
+        private static readonly ClientSlot[] SlotClientIds =
+        {
+            ClientSlot.Neck, ClientSlot.Head, ClientSlot.Face,
+            ClientSlot.RightHand, ClientSlot.LeftHand,
+            ClientSlot.RightWrist, ClientSlot.LeftWrist,
+            ClientSlot.RightRing, ClientSlot.LeftRing,
+            ClientSlot.Back, ClientSlot.Body, ClientSlot.Legs, ClientSlot.Feet,
+        };
 
         public CharacterPanelPage()
         {
@@ -105,20 +169,306 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             BuildRightColumn();
             BuildItemDetailPopup();   // 物品详情弹窗浮层（根节点上层，独立于卡片流）
             if (_slotTooltip != null) AddChild(_slotTooltip);   // Tooltip 挂页面根节点（最上层绘制，不被左右栏裁剪）
+            BuildGemPickerPopup();    // 宝石选择窗（最顶层，压在详情弹窗之上）
+
+            // 权威背包/装备快照驱动 UI：页面由路由器缓存、进程内单实例，构造期订阅一次即可。
+            PlayerInventoryService.Instance.Changed += RefreshInventoryView;
+            PlayerInventoryService.Instance.OperationFinished += OnItemOperationFinished;
+            if (!PlayerInventoryService.Instance.HasServerData)
+                PlayerInventoryService.Instance.RequestFullRefresh();
+
+            // 属性加点同样走服务端权威：回执只订阅一次，页面销毁时退订。
+            Services.AttributeAllocationService.Instance.OperationFinished += OnAllocationOperationFinished;
+        }
+
+        public override void OnDestroy()
+        {
+            PlayerInventoryService.Instance.Changed -= RefreshInventoryView;
+            PlayerInventoryService.Instance.OperationFinished -= OnItemOperationFinished;
+            Services.AttributeAllocationService.Instance.OperationFinished -= OnAllocationOperationFinished;
+            if (_boundCharacter != null) _boundCharacter.AttributesChanged -= OnAttributesChanged;
+            base.OnDestroy();
         }
 
         private static Color WithAlpha(Color c, float a) => new Color(c.R, c.G, c.B, a);
 
         public void BindCharacter(CharacterAttributesComponent component)
         {
+            // 换绑时退订旧组件，避免重复订阅与访问已销毁对象。
+            if (!ReferenceEquals(_boundCharacter, component))
+            {
+                if (_boundCharacter != null) _boundCharacter.AttributesChanged -= OnAttributesChanged;
+            }
             _boundCharacter = component;
             if (component != null)
             {
                 if (_nameLabel != null) _nameLabel.Text = component.Nickname;
                 if (_levelLabel != null) _levelLabel.Text = "Lv." + component.Level.ToString();
+                component.AttributesChanged += OnAttributesChanged;
             }
             // 绑定实时 3D 角色模型（场景未就绪时组件内部会暂存并重放）
             _preview3D?.SetCharacter(component);
+            // 换绑角色时丢弃未提交的预览点数，并把属性卡/五行雷达按当前（含装备加成）真值刷新一次。
+            System.Array.Clear(_allocPending, 0, _allocPending.Length);
+            RefreshAttributeCards();
+        }
+
+        private void OnAttributesChanged()
+        {
+            RefreshAttributeCards();
+        }
+
+        /// <summary>把基础属性卡、战斗属性卡的攻/防与五行雷达刷新为组件真值（基值+装备加成）。</summary>
+        private void RefreshAttributeCards()
+        {
+            try
+            {
+                var c = _boundCharacter;
+                if (c == null) return;
+
+                // 基础属性卡：攻击力=物攻+法攻，防御力=物防+法防；暴击率/暴伤接加点衍生真值；
+                // 命中/闪避无数据来源，保持"-"。
+                if (_baseStatValueLabels != null && _baseStatValueLabels.Length >= 4)
+                {
+                    _baseStatValueLabels[0].Text = FormatStat(c.PhysicalAttack + c.MagicAttack);
+                    _baseStatValueLabels[1].Text = FormatStat(c.PhysicalDefense + c.MagicDefense);
+                    _baseStatValueLabels[2].Text = $"{c.CritRatePercent:0.##}%";
+                    _baseStatValueLabels[3].Text = $"+{c.CritDamageBonusPercent:0.##}%";
+                }
+
+                // 战斗属性卡：境界=成长阶段真值，修炼经验=Exp/MaxExp（其余项暂无数据源，保持"-"）。
+                if (_combatValueLabels != null)
+                {
+                    if (_combatValueLabels.Length > CombatIdxStage)
+                        _combatValueLabels[CombatIdxStage].Text = StageName(c.CurrentStage);
+                    if (_combatValueLabels.Length > CombatIdxExp)
+                    {
+                        double pct = c.MaxExp > 0 ? Mathf.Clamp((double)c.Exp * 100.0 / c.MaxExp, 0.0, 100.0) : 0.0;
+                        _combatValueLabels[CombatIdxExp].Text = $"{pct:0}%";
+                    }
+                }
+
+                // 战斗力（32px 主数值）：攻防生命合成的占位口径。
+                if (_combatPowerLabel != null)
+                {
+                    float power = (c.PhysicalAttack + c.MagicAttack) * 2f
+                                  + (c.PhysicalDefense + c.MagicDefense) * 1.5f
+                                  + c.MaxHealth * 0.2f;
+                    _combatPowerLabel.Text = System.Math.Round(power).ToString("N0");
+                }
+
+                RefreshWuxingRadar(c);
+                RefreshFiveDimRadar(c);
+                RefreshAllocationRows();
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[CharacterPanelPage] RefreshAttributeCards: {ex.Message}");
+            }
+        }
+
+        private static string FormatStat(float v)
+            => v >= 1000f ? v.ToString("N0") : v.ToString("0.#");
+
+        // 战斗属性卡行索引（与 BuildCombatCard 的 names 数组一致）。
+        private const int CombatIdxStage = 0;
+        private const int CombatIdxExp = 5;
+
+        private static string StageName(CharacterStage stage) => stage switch
+        {
+            CharacterStage.Wuxia => "武侠",
+            CharacterStage.Xianxia => "仙侠",
+            CharacterStage.Xuanhuan => "玄幻",
+            _ => stage.ToString(),
+        };
+
+        /// <summary>五行雷达图接组件亲和真值：数值文本=亲和值，多边形长度按 max(100, 最高亲和) 归一。</summary>
+        private void RefreshWuxingRadar(CharacterAttributesComponent c)        {
+            if (_wuxingRadarValues == null || _wuxingRadarTexts == null) return;
+
+            int[] aff = { c.MetalAffinity, c.WoodAffinity, c.WaterAffinity, c.FireAffinity, c.EarthAffinity };
+            float maxV = 100f;
+            for (int i = 0; i < aff.Length; i++)
+                if (aff[i] > maxV) maxV = aff[i];
+
+            for (int i = 0; i < aff.Length; i++)
+            {
+                _wuxingRadarValues[i] = aff[i] * 100f / maxV;
+                _wuxingRadarTexts[i] = aff[i].ToString();
+            }
+        }
+
+        // 五维归一口径（页内展示用标尺，非服务端定义）：体=生命上限/2000、御=物防+法防/500、
+        // 劲=物攻+法攻/500，映射到 0..100；敏/势无权威数据源，顶点留空。穿戴装备后三轴实时增长。
+        private const float FiveDimBodyCap = 2000f;
+        private const float FiveDimDefenseCap = 500f;
+        private const float FiveDimAttackCap = 500f;
+
+        private void RefreshFiveDimRadar(CharacterAttributesComponent c)
+        {
+            if (_fiveDimValues == null || _fiveDimTexts == null) return;
+
+            float body = c.MaxHealth;
+            float defense = c.PhysicalDefense + c.MagicDefense;
+            float attack = c.PhysicalAttack + c.MagicAttack;
+
+            _fiveDimValues[0] = Mathf.Clamp(body / FiveDimBodyCap * 100f, 0f, 100f);
+            _fiveDimValues[1] = Mathf.Clamp(defense / FiveDimDefenseCap * 100f, 0f, 100f);
+            _fiveDimValues[2] = 0f;                       // 敏：无数据源
+            _fiveDimValues[3] = 0f;                       // 势：无数据源
+            _fiveDimValues[4] = Mathf.Clamp(attack / FiveDimAttackCap * 100f, 0f, 100f);
+
+            _fiveDimTexts[0] = FormatStat(body);
+            _fiveDimTexts[1] = FormatStat(defense);
+            _fiveDimTexts[2] = "-";
+            _fiveDimTexts[3] = "-";
+            _fiveDimTexts[4] = FormatStat(attack);
+        }
+
+        // ===================================================================
+        // 属性加点（基值 + 装备 + 加点 三层合一；换算常量以组件为单一来源）
+        // ===================================================================
+
+        private static readonly (string Label, CharacterAttributesComponent.AllocationKind Kind, string Desc)[] AllocationRowDefs =
+        {
+            ("力量", CharacterAttributesComponent.AllocationKind.Strength, "每点：气血上限+20\n每点：攻击力+10"),
+            ("敏捷", CharacterAttributesComponent.AllocationKind.Agility, "每点：防御+20\n每点：速度+3"),
+            ("体质", CharacterAttributesComponent.AllocationKind.Health, "每点：气血上限+100"),
+            ("内力", CharacterAttributesComponent.AllocationKind.Energy, "每点：内力上限+10"),
+            ("金",   CharacterAttributesComponent.AllocationKind.Metal, "每点：攻击+50、金伤+30、金防+5\n破木防+30、暴击率+0.1%、暴伤+3%\n另：金亲和+10"),
+            ("木",   CharacterAttributesComponent.AllocationKind.Wood, "每点：气血+300、木伤+20、木防+5\n破土防+30、回血+15/秒\n毒伤几率+0.1%、治疗量+0.2%\n另：木亲和+10"),
+            ("水",   CharacterAttributesComponent.AllocationKind.Water, "每点：内力+200、水伤+30、水防+5\n破火防+30、冰冻几率+0.1%\n减速+0.2%（上限70%）\n另：水亲和+10"),
+            ("火",   CharacterAttributesComponent.AllocationKind.Fire, "每点：攻速+2、火伤+30、破金防+30\n移速+5、极速攻击几率+0.1%\n（触发时3倍攻速）\n另：火亲和+10"),
+            ("土",   CharacterAttributesComponent.AllocationKind.Earth, "每点：防御+50、土伤+30、土防+5\n破水防+30、反伤几率+0.1%\n（反弹目标实际攻击的10%）\n另：土亲和+10"),
+        };
+
+        private static int AllocationSpentOf(in CharacterAttributesComponent.AttributeAllocation a,
+            CharacterAttributesComponent.AllocationKind kind)
+        {
+            switch (kind)
+            {
+                case CharacterAttributesComponent.AllocationKind.Strength: return a.Strength;
+                case CharacterAttributesComponent.AllocationKind.Agility: return a.Agility;
+                case CharacterAttributesComponent.AllocationKind.Health: return a.Health;
+                case CharacterAttributesComponent.AllocationKind.Energy: return a.Energy;
+                case CharacterAttributesComponent.AllocationKind.Metal: return a.Metal;
+                case CharacterAttributesComponent.AllocationKind.Wood: return a.Wood;
+                case CharacterAttributesComponent.AllocationKind.Water: return a.Water;
+                case CharacterAttributesComponent.AllocationKind.Fire: return a.Fire;
+                default: return a.Earth;
+            }
+        }
+
+        private int PendingTotal()
+        {
+            int t = 0;
+            for (int i = 0; i < _allocPending.Length; i++) t += _allocPending[i];
+            return t;
+        }
+
+        /// <summary>＋：往预览池加一点（受 可用点 − 已预览总数 约束），不直接改属性。</summary>
+        private void OnAllocPlus(int row)
+        {
+            var c = _boundCharacter;
+            if (c == null) { UIHelper.ShowToast("角色数据未就绪", ToastType.Info); return; }
+            if (_allocSubmitting) return;
+            if (_allocPending[row] + PendingTotal() > 0 || c.AllocationPointsAvailable > PendingTotal())
+                _allocPending[row]++;
+            else
+                UIHelper.ShowToast("没有可用的自由点", ToastType.Warning);
+            RefreshAllocationRows();
+        }
+
+        /// <summary>－：撤回预览点（仅限本次预览量，不动已提交加点）。</summary>
+        private void OnAllocMinus(int row)
+        {
+            if (_allocSubmitting) return;
+            if (_allocPending[row] > 0) _allocPending[row]--;
+            RefreshAllocationRows();
+        }
+
+        /// <summary>
+        /// 确认：把"当前权威分配 + 预览增量"作为期望终态提交给服务端（服务端校验点池后缓存 + 落库）。
+        /// 本地不预先改组件——属性变化一律由回执驱动，避免客户端算出一套、服务端算出另一套。
+        /// </summary>
+        private void OnConfirmAllocation()
+        {
+            var c = _boundCharacter;
+            if (c == null) { UIHelper.ShowToast("角色数据未就绪", ToastType.Info); return; }
+            if (_allocSubmitting) return;
+            int pending = PendingTotal();
+            if (pending == 0) { UIHelper.ShowToast("没有待确认的加点", ToastType.Info); return; }
+
+            var alloc = c.Allocation;
+            var desired = new int[AllocationRowDefs.Length];
+            for (int i = 0; i < AllocationRowDefs.Length; i++)
+                desired[i] = AllocationSpentOf(in alloc, AllocationRowDefs[i].Kind) + _allocPending[i];
+
+            _allocSubmitting = true;
+            _ = Services.AttributeAllocationService.Instance.RequestAllocateAsync(
+                Services.AttributeAllocationService.FromRowValues(desired));
+            RefreshAllocationRows();
+        }
+
+        /// <summary>重置：提交全零终态（服务端据此返还全部点数），预览同时清空。</summary>
+        private void OnResetAllocation()
+        {
+            var c = _boundCharacter;
+            System.Array.Clear(_allocPending, 0, _allocPending.Length);
+            if (c == null || c.Allocation.Spent == 0 || _allocSubmitting)
+            {
+                RefreshAllocationRows();
+                return;
+            }
+
+            _allocSubmitting = true;
+            _ = Services.AttributeAllocationService.Instance.RequestAllocateAsync(
+                Services.AttributeAllocationService.FromRowValues(new int[AllocationRowDefs.Length]));
+            RefreshAllocationRows();
+        }
+
+        /// <summary>
+        /// 加点回执：服务端已把权威分配灌进组件（AttributesChanged 会带动本卡刷新），
+        /// 这里只负责清预览、解除提交中状态并提示结果。
+        /// </summary>
+        private void OnAllocationOperationFinished(bool success, string message)
+        {
+            _allocSubmitting = false;
+            System.Array.Clear(_allocPending, 0, _allocPending.Length);
+            UIHelper.ShowToast(
+                success ? (string.IsNullOrEmpty(message) ? "加点已生效" : message)
+                        : (string.IsNullOrEmpty(message) ? "加点失败" : message),
+                success ? ToastType.Success : ToastType.Warning);
+            RefreshAllocationRows();
+        }
+
+        /// <summary>刷新加点行：可用点数（扣预览）、各行预览增量与已提交量；无预览或提交中时禁用确认。</summary>
+        private void RefreshAllocationRows()
+        {
+            var c = _boundCharacter;
+            int pending = PendingTotal();
+            if (_allocSummaryLabel != null)
+                _allocSummaryLabel.Text = c == null ? "-"
+                    : $"{c.AllocationPointsAvailable - pending} / {c.AllocationPointsTotal}";
+            if (_allocSpentLabels == null || c == null) return;
+
+            var alloc = c.Allocation;
+            for (int i = 0; i < _allocSpentLabels.Length && i < AllocationRowDefs.Length; i++)
+            {
+                int spent = AllocationSpentOf(in alloc, AllocationRowDefs[i].Kind);
+                _allocSpentLabels[i].Text = spent == 0 ? "未分配" : $"已分配 {spent}";
+                if (_allocPendingLabels != null && i < _allocPendingLabels.Length)
+                {
+                    _allocPendingLabels[i].Text = _allocPending[i] > 0 ? $"+{_allocPending[i]}" : "·";
+                    _allocPendingLabels[i].TextColor = _allocPending[i] > 0
+                        ? InkWashTheme.GoldBright : InkWashTheme.TextTertiary;
+                }
+            }
+            if (_allocConfirmBtn != null)
+            {
+                // Control.Enabled=false 只屏蔽交互、不影响渲染（Flax GUI 语义）
+                _allocConfirmBtn.Enabled = pending > 0 && !_allocSubmitting;
+            }
         }
 
         public void RefreshLayout()
@@ -272,6 +622,36 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 if (row.Parent != null)
                     row.Size = new Float2(row.Parent.Width - 24f, row.Height);
             }
+            // 属性合并卡双栏：右栏（属性加点）随卡片宽度贴右缘；两子列与行尾控件在父尺寸已知后显式重排
+            if (_attrRightCol != null && _attrRightCol.Parent != null)
+            {
+                float rw = _attrRightCol.Parent.Width - 320f - CardPad * 2f;
+                if (rw < 470f) rw = 470f;
+                _attrRightCol.Location = new Float2(_attrRightCol.Parent.Width - CardPad - rw, _attrRightCol.Location.Y);
+                _attrRightCol.Size = new Float2(rw, _attrRightCol.Height);
+
+                float colW = (rw - 10f) * 0.5f;
+                if (_allocColLeft != null) _allocColLeft.Size = new Float2(colW, _allocColLeft.Height);
+                if (_allocColRight != null)
+                {
+                    _allocColRight.Location = new Float2(colW + 10f, _allocColRight.Location.Y);
+                    _allocColRight.Size = new Float2(rw - colW - 10f, _allocColRight.Height);
+                }
+
+                // 行容器铺满列宽；行尾 －/预览/＋ 随列宽贴右缘
+                for (int i = 0; i < _allocRows.Count && i < AllocationRowDefs.Length; i++)
+                {
+                    var rowCtl = _allocRows[i];
+                    float w = i < 5 ? _allocColLeft.Width : _allocColRight.Width;
+                    rowCtl.Size = new Float2(w, rowCtl.Height);
+                    _allocPlusButtons[i].Location = new Float2(w - 26f, 2f);
+                    if (_allocPendingLabels[i] != null) _allocPendingLabels[i].Location = new Float2(w - 58f, 3f);
+                    _allocMinusButtons[i].Location = new Float2(w - 86f, 2f);
+                }
+
+                if (_allocConfirmBtn != null)
+                    _allocConfirmBtn.Location = new Float2(rw - 100f, _allocConfirmBtn.Location.Y);
+            }
             // 滚动内容高度 = 卡片总高，并夹取滚动位置
             _rightScroll.Size = new Float2(_rightScroll.Width, cy);
             if (_rightPanel != null)
@@ -406,42 +786,42 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// </summary>
         private void BuildFloatingSlots()
         {
-            // (glyph, xFrac, xPx, xRight, yFrac, yPx, yBottom, state, quality)
-            var defs = new (string g, float xf, float xp, bool xr, float yf, float yp, bool yb,
-                            InkEquipSlot.SlotState st, InkWashTheme.InkQuality q)[]
+            // (glyph, xFrac, xPx, xRight, yFrac, yPx, yBottom)；状态/品质由服务端装备快照驱动。
+            var defs = new (string g, float xf, float xp, bool xr, float yf, float yp, bool yb)[]
             {
-                ("环", 0.30f, 0f,  false, -1f,   12f, false, InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Common),
-                ("头", 0.50f, 0f,  false, -1f,   12f, false, InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Epic),
-                ("环", 0.70f, 0f,  false, -1f,   12f, false, InkEquipSlot.SlotState.Empty,    InkWashTheme.InkQuality.Common),
-                ("武", -1f,   12f, false, 0.30f, 0f,  false, InkEquipSlot.SlotState.Selected, InkWashTheme.InkQuality.Legendary),
-                ("链", -1f,   12f, true,  0.30f, 0f,  false, InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Rare),
-                ("主", -1f,   8f,  false, 0.48f, 0f,  false, InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Legendary),
-                ("副", -1f,   8f,  true,  0.48f, 0f,  false, InkEquipSlot.SlotState.Empty,    InkWashTheme.InkQuality.Common),
-                ("戒", -1f,   12f, false, 0.66f, 0f,  false, InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Epic),
-                ("戒", -1f,   12f, true,  0.66f, 0f,  false, InkEquipSlot.SlotState.Empty,    InkWashTheme.InkQuality.Common),
-                ("手", 0.18f, 0f,  false, -1f,   64f, true,  InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Common),
-                ("胸", 0.38f, 0f,  false, -1f,   64f, true,  InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Legendary),
-                ("腿", 0.58f, 0f,  false, -1f,   64f, true,  InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Uncommon),
-                ("脚", 0.78f, 0f,  false, -1f,   64f, true,  InkEquipSlot.SlotState.Equipped, InkWashTheme.InkQuality.Uncommon),
+                ("链", 0.30f, 0f,  false, -1f,   12f, false),
+                ("头", 0.50f, 0f,  false, -1f,   12f, false),
+                ("面", 0.70f, 0f,  false, -1f,   12f, false),
+                ("武", -1f,   12f, false, 0.30f, 0f,  false),
+                ("副", -1f,   12f, true,  0.30f, 0f,  false),
+                ("腕", -1f,   8f,  false, 0.48f, 0f,  false),
+                ("腕", -1f,   8f,  true,  0.48f, 0f,  false),
+                ("戒", -1f,   12f, false, 0.66f, 0f,  false),
+                ("戒", -1f,   12f, true,  0.66f, 0f,  false),
+                ("披", 0.18f, 0f,  false, -1f,   64f, true),
+                ("衣", 0.38f, 0f,  false, -1f,   64f, true),
+                ("腿", 0.58f, 0f,  false, -1f,   64f, true),
+                ("脚", 0.78f, 0f,  false, -1f,   64f, true),
             };
 
             int n = defs.Length;
             _slots = new InkEquipSlot[n];
+            _slotBaseGlyphs = new string[n];
             _slotXFrac = new float[n]; _slotXPx = new float[n]; _slotXRight = new bool[n];
             _slotYFrac = new float[n]; _slotYPx = new float[n]; _slotYBottom = new bool[n];
 
-            _slotTooltipData = new InkTooltipData[n];
             for (int i = 0; i < n; i++)
             {
                 var d = defs[i];
-                var slot = new InkEquipSlot(d.st, InkWashTheme.QualityColor(d.q), d.g);
+                var slot = new InkEquipSlot(InkEquipSlot.SlotState.Empty,
+                    InkWashTheme.QualityColor(InkWashTheme.InkQuality.Common), d.g);
                 int captured = i;
                 slot.Clicked += () => OnSlotClicked(captured);
                 slot.HoverEnter += () => OnSlotHoverEnter(captured);
                 slot.HoverLeave += () => OnSlotHoverLeave(captured);
                 _slots[i] = slot;
+                _slotBaseGlyphs[i] = d.g;
                 _modelStage.AddChild(slot);
-                _slotTooltipData[i] = MakeSlotTooltipData(d.g, d.st, d.q);
 
                 _slotXFrac[i] = d.xf; _slotXPx[i] = d.xp; _slotXRight[i] = d.xr;
                 _slotYFrac[i] = d.yf; _slotYPx[i] = d.yp; _slotYBottom[i] = d.yb;
@@ -454,8 +834,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 ShowIcon = true,
                 ShowTags = true,
                 ShowMeta = true,
-                ShowDurability = true,
+                ShowDurability = false,
                 ShowAttrs = true,
+                ShowGems = true,
+                ShowDesc = true,
                 ShowSetEffect = false,
                 ShowButtons = false,
             });
@@ -534,10 +916,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             _rightPanel.AddChild(_rightScroll);
             AddChild(_rightPanel);
 
-            _cards.Add(BuildBaseStatsCard());      // 1. 基础属性
-            _cards.Add(BuildAttrOverviewCard());   // 2. 属性总览（五维/五行并排）
+            _cards.Add(BuildAttrOverviewCard());   // 1. 属性总览（五维/五行并排）
+            _cards.Add(BuildAttributeCard());      // 2. 属性：左基础属性 + 右属性加点（双栏合一卡）
             _cards.Add(BuildCombatCard());         // 3. 战斗属性
-            _cards.Add(BuildInventoryCard());      // 4. 行囊
+            _cards.Add(BuildInventoryCard());      // 5. 行囊
             _cards.Add(BuildTiaoLvCard());         // 5. 调律
             _cards.Add(BuildDingYinCard());        // 6. 定音
             _cards.Add(BuildDieYinCard());         // 7. 叠音
@@ -548,8 +930,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             // 物品详情：改为浮层弹窗承载（不占卡片流；点击行囊物品时弹出，见 BuildItemDetailPopup）
             _itemDetailCard = BuildItemDetailCard();
 
-            // 初始化首格高亮与数据（不弹窗）
-            ApplyInvSelection(0);
+            // 初始化：有真实数据才选中首格（快照晚到时由 Changed 事件补刷新）
+            if (_invCellData != null && _invCellData.Length > 0 && _invCellData[0].HasItem)
+                ApplyInvSelection(0, emitGold: false);
+            else
+                UpdateDetailButtons(null);
+            RefreshEquipSlots();
         }
 
         // ===================================================================
@@ -623,13 +1009,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 var localPos = _particleSystem.PointFromScreen(screenPos);
                 _particleSystem.EmitGoldBurst(localPos, count: 8, isLarge: false);
             }
+
+            // 已装备的槽位：点击 = 向服务端发起卸下（成功回执后快照刷新，物品回到行囊、3D 外观同步更新）。
+            var slot = SlotClientIds[index];
+            if (PlayerInventoryService.Instance.TryGetEquipped(slot, out _))
+            {
+                _ = PlayerInventoryService.Instance.RequestUnequipAsync(slot);
+                SetInvStatus("卸下中…", false);
+            }
         }
 
         private void OnSlotHoverEnter(int index)
         {
-            if (_slots == null || _slotTooltip == null || _slotTooltipData == null) return;
-            if (index < 0 || index >= _slots.Length || index >= _slotTooltipData.Length) return;
-            _slotTooltip.Populate(_slotTooltipData[index]);
+            if (_slots == null || _slotTooltip == null) return;
+            if (index < 0 || index >= _slots.Length) return;
+            _slotTooltip.Populate(BuildSlotTooltip(index));
             PositionSlotTooltip(_slots[index]);
             _slotTooltip.Visible = true;
         }
@@ -658,68 +1052,90 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             _slotTooltip.Location = new Float2(x, y);
         }
 
-        /// <summary>生成装备槽 Tooltip 演示数据（纯 UI 展示层，后续可替换为真实装备数据绑定）。</summary>
-        private static InkTooltipData MakeSlotTooltipData(string glyph, InkEquipSlot.SlotState state, InkWashTheme.InkQuality quality)
+        /// <summary>把 0..4 品质值映射到 InkQuality 序数（越界夹取）。</summary>
+        private static InkWashTheme.InkQuality ToInkQuality(int quality)
+            => (InkWashTheme.InkQuality)Mathf.Clamp(quality, 0, 4);
+
+        /// <summary>
+        /// 依据服务端装备快照构建第 <paramref name="index"/> 个浮动槽的 Tooltip 数据。
+        /// 空槽显示占位名；已装备则展示真实定义（名称/类型/品质/五行/属性）。
+        /// </summary>
+        private InkTooltipData BuildSlotTooltip(int index)
         {
-            var (name, type) = glyph switch
-            {
-                "环" => ("翠玉环", "饰品"),
-                "头" => ("云纹冠", "头盔"),
-                "武" => ("玄铁剑", "武器"),
-                "链" => ("璎珞链", "饰品"),
-                "主" => ("青霜刃", "武器"),
-                "副" => ("玄铁盾", "副手"),
-                "戒" => ("素银戒", "饰品"),
-                "手" => ("精铁护腕", "护手"),
-                "胸" => ("锁子甲", "胸甲"),
-                "腿" => ("行军护腿", "护腿"),
-                "脚" => ("踏云靴", "靴子"),
-                _ => ("未知装备", "装备"),
-            };
+            var slot = SlotClientIds[index];
+            if (!PlayerInventoryService.Instance.TryGetEquipped(slot, out var entry) || entry.TemplateId <= 0)
+                return new InkTooltipData
+                {
+                    Glyph = _slotBaseGlyphs != null && index < _slotBaseGlyphs.Length ? _slotBaseGlyphs[index] : "",
+                    Name = ItemCatalog.SlotDisplayName(slot),
+                    Type = "装备",
+                    IsEmpty = true,
+                };
 
-            if (state == InkEquipSlot.SlotState.Empty)
-                return new InkTooltipData { Glyph = glyph, Name = name, Type = type, IsEmpty = true };
+            var def = ItemCatalog.Resolve(entry.TemplateId);
+            var attrs = new (string, string, bool)[def.Stats.Count];
+            for (int i = 0; i < attrs.Length; i++)
+                attrs[i] = (def.Stats[i].Label, def.Stats[i].Value, false);
 
-            int tier = quality switch
+            // 宝石槽：孔数取装备定义，内容取服务端权威 entry.Gems（-1=空槽）。
+            string[] gemLines = null;
+            string gemSummary = null;
+            if (def.GemSlots > 0)
             {
-                InkWashTheme.InkQuality.Legendary => 5,
-                InkWashTheme.InkQuality.Epic => 4,
-                InkWashTheme.InkQuality.Rare => 3,
-                InkWashTheme.InkQuality.Uncommon => 2,
-                _ => 1,
-            };
-
-            // 五行（按字形首字符稳定映射，避免 GetHashCode 随机化）
-            var elements = new (string name, Color color)[]
-            {
-                ("金", InkWashTheme.ElementMetal), ("木", InkWashTheme.ElementWood),
-                ("水", InkWashTheme.ElementWater), ("火", InkWashTheme.ElementFire),
-                ("土", InkWashTheme.ElementEarth),
-            };
-            var elem = elements[glyph.Length > 0 ? glyph[0] % 5 : 0];
-
-            bool isWeapon = type == "武器" || type == "副手";
-            var attrs = new List<(string, string, bool)>
-            {
-                (isWeapon ? "攻击力" : "防御力", "+" + (30 * tier), false),
-                ("暴击率", "+" + (2 * tier) + "%", true),
-            };
-            if (tier >= 4) attrs.Add(("会心率", "+" + tier + "%", true));
+                gemLines = new string[def.GemSlots];
+                int filled = 0;
+                for (int i = 0; i < def.GemSlots; i++)
+                {
+                    int gemTemplate = entry.Gems != null && i < entry.Gems.Count ? entry.Gems[i] : -1;
+                    if (gemTemplate <= 0)
+                    {
+                        gemLines[i] = "空槽";
+                        continue;
+                    }
+                    var gem = ItemCatalog.Resolve(gemTemplate);
+                    filled++;
+                    gemLines[i] = $"{gem.Name} · {gem.Element}亲和 +{gem.GemAffinityBonus}";
+                }
+                gemSummary = $"{filled}/{def.GemSlots}";
+            }
 
             return new InkTooltipData
             {
-                Glyph = glyph,
-                Name = name,
-                Type = type,
-                Quality = quality,
-                Enhance = "+" + (3 * tier),
-                Element = elem.name,
-                ElementColor = elem.color,
-                Bind = tier >= 3 ? "拾取绑定" : "未绑定",
-                Durability = (500 + 100 * tier) + "/" + (500 + 100 * tier),
-                DurabilityFrac = Mathf.Clamp(0.45f + 0.11f * tier, 0f, 1f),
-                Attrs = attrs.ToArray(),
+                Glyph = def.Glyph,
+                Name = def.Name,
+                Type = def.TypeName,
+                Quality = ToInkQuality(def.Quality),
+                Element = def.Element,
+                ElementColor = def.ElementColor,
+                // 绑定/强化/耐久服务端暂无权威字段，留空由组件显示 "-"，不编造值。
+                Attrs = attrs,
+                SlotName = ItemCatalog.SlotDisplayName(slot),
+                GemLines = gemLines,
+                GemSummary = gemSummary,
+                Desc = string.IsNullOrEmpty(def.Description) ? null : def.Description,
             };
+        }
+
+        /// <summary>按服务端权威装备快照刷新 13 个浮动槽的三态与品质色。</summary>
+        private void RefreshEquipSlots()
+        {
+            if (_slots == null) return;
+            var service = PlayerInventoryService.Instance;
+            for (int i = 0; i < _slots.Length; i++)
+            {
+                var slot = SlotClientIds[i];
+                if (service.TryGetEquipped(slot, out var entry) && entry.TemplateId > 0)
+                {
+                    var def = ItemCatalog.Resolve(entry.TemplateId);
+                    _slots[i].SetContent(InkEquipSlot.SlotState.Equipped,
+                        InkWashTheme.QualityColor(ToInkQuality(def.Quality)), def.Glyph);
+                }
+                else
+                {
+                    _slots[i].SetContent(InkEquipSlot.SlotState.Empty,
+                        InkWashTheme.QualityColor(InkWashTheme.InkQuality.Common), _slotBaseGlyphs[i]);
+                }
+            }
         }
 
         private void OnAppearanceTabClicked(int index)
@@ -733,47 +1149,61 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         // 背包区块（合并自 InventoryPage）
         // ===================================================================
 
-        /// <summary>初始化背包格子演示数据（8x5，15 件物品）。</summary>
+        /// <summary>
+        /// 从服务端权威背包快照构建 8x5 格子数据（超过 40 件先截断展示；筛选按物品大类）。
+        /// </summary>
         private void InitInvCellData()
         {
             const int cols = 8, rows = 5;
             _invCellData = new CellData[cols * rows];
-            var items = new (string glyph, string name, string type, InkWashTheme.InkQuality q,
-                             string enh, string qty, bool quest)[]
-            {
-                ("剑", "玄铁剑",   "武器", InkWashTheme.InkQuality.Legendary, "+12", null, false),
-                ("刀", "寒铁刀",   "武器", InkWashTheme.InkQuality.Epic,      "+8",  null, false),
-                ("腕", "精铁护腕", "防具", InkWashTheme.InkQuality.Rare,      "+5",  null, false),
-                ("衣", "布衣",     "防具", InkWashTheme.InkQuality.Common,    null,  null, false),
-                ("剑", "铁剑",     "武器", InkWashTheme.InkQuality.Common,    null,  null, false),
-                ("甲", "皮甲",     "防具", InkWashTheme.InkQuality.Common,    null,  null, false),
-                ("药", "生命药水", "丹药", InkWashTheme.InkQuality.Uncommon,  null,  "9", false),
-                ("液", "内力药水", "丹药", InkWashTheme.InkQuality.Uncommon,  null,  "3", false),
-                ("丹", "活血丹",   "丹药", InkWashTheme.InkQuality.Uncommon,  null,  "5", false),
-                ("矿", "铁矿",     "材料", InkWashTheme.InkQuality.Common,    null,  "3", false),
-                ("草", "草药",     "材料", InkWashTheme.InkQuality.Common,    null,  "5", false),
-                ("皮", "兽皮",     "材料", InkWashTheme.InkQuality.Common,    null,  "2", false),
-                ("矿", "铁矿",     "材料", InkWashTheme.InkQuality.Common,    null,  "4", false),
-                ("草", "草药",     "材料", InkWashTheme.InkQuality.Common,    null,  "2", false),
-                ("信", "密信",     "任务", InkWashTheme.InkQuality.Common,    null,  null, true),
-            };
-            int[] slots = { 0, 1, 2, 3, 4, 5, 8, 9, 10, 16, 17, 18, 19, 20, 24 };
             for (int i = 0; i < _invCellData.Length; i++)
                 _invCellData[i] = new CellData { Quality = InkWashTheme.InkQuality.Common, HasItem = false };
-            for (int k = 0; k < items.Length; k++)
+
+            var service = PlayerInventoryService.Instance;
+            int placed = 0;
+            foreach (var item in service.Items)
             {
-                var it = items[k];
-                _invCellData[slots[k]] = new CellData
+                if (placed >= _invCellData.Length) break;
+                if (item.TemplateId <= 0 || item.Count <= 0) continue;
+                if (!PassesFilter(item.TemplateId)) continue;
+
+                var def = ItemCatalog.Resolve(item.TemplateId);
+                string name = !string.IsNullOrEmpty(item.Name) ? item.Name : def.Name;
+                // 可堆叠类（丹药/材料）始终显示数量角标——包括 1：否则 2→1 时角标消失，
+                // 看起来像"使用没扣数"。装备单件不显示。
+                bool stackable = def.Kind == ItemKind.Consumable || def.Kind == ItemKind.Material;
+                _invCellData[placed++] = new CellData
                 {
-                    Quality = it.q,
-                    Glyph = it.glyph,
-                    Enhance = it.enh,
-                    Qty = it.qty,
-                    IsQuest = it.quest,
+                    Quality = ToInkQuality(def.Quality),
+                    Glyph = def.Glyph,
+                    Enhance = null,
+                    Qty = (stackable || item.Count > 1) ? item.Count.ToString() : null,
+                    IsQuest = def.Kind == ItemKind.Quest,
                     HasItem = true,
-                    Name = it.name,
-                    Type = it.type,
+                    Name = name,
+                    Type = def.TypeName,
+                    TemplateId = item.TemplateId,
+                    ServerItemId = item.ItemId,
+                    Kind = def.Kind,
                 };
+            }
+        }
+
+        /// <summary>当前筛选片是否放行该模板物品（索引对应 BuildInventoryCard 的 filters 数组）。</summary>
+        private bool PassesFilter(int templateId)
+        {
+            if (_invFilterIndex == 0) return true;
+            var def = ItemCatalog.Resolve(templateId);
+            bool handWeapon = def.Kind == ItemKind.Equipment &&
+                              (def.EquipSlot == ClientSlot.RightHand || def.EquipSlot == ClientSlot.LeftHand);
+            switch (_invFilterIndex)
+            {
+                case 1: return handWeapon;
+                case 2: return def.Kind == ItemKind.Equipment && !handWeapon;
+                case 3: return def.Kind == ItemKind.Consumable;
+                case 4: return def.Kind == ItemKind.Material;
+                case 5: return def.Kind == ItemKind.Quest;
+                default: return true;
             }
         }
 
@@ -886,8 +1316,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             });
             footer.AddChild(MakeLabel("格子", 12f, 0f, 40f, footerH,
                 InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            footer.AddChild(MakeLabel("15/80", 56f, 0f, 60f, footerH,
-                InkWashTheme.PaperBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+            _invCountLabel = MakeLabel("0/50", 56f, 0f, 60f, footerH,
+                InkWashTheme.PaperBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near);
+            footer.AddChild(_invCountLabel);
             var capTrack = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -1001,23 +1432,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             return c;
         }
 
-        /// <summary>背包属性区块：标题 + 属性行，返回下一段 y。</summary>
-        private float AddInvAttrSection(ContainerControl parent, float x, float y, float w,
-            string title, (string label, string val)[] rows, Color[] valColors)
-        {
-            parent.AddChild(MakeInvSectionTitle(title, x, y, w));
-            y += 20f + 4f + 8f;
-            for (int i = 0; i < rows.Length; i++)
-            {
-                parent.AddChild(MakeLabel(rows[i].label, x, y, w * 0.5f, 20f,
-                    InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-                parent.AddChild(MakeLabel(rows[i].val, x + w * 0.5f, y, w * 0.5f, 20f,
-                    valColors[i], 14f, InkWashTheme.FontRole.Number, TextAlignment.Far));
-                y += 20f + 6f;
-            }
-            y += 8f;
-            return y;
-        }
         /// <summary>物品详情卡片（合并自 InventoryPage）：大图标 + 名称标签 + 元信息 + 属性 + 套装 + 宝石槽 + 操作。</summary>
         private ContainerControl BuildItemDetailCard()
         {
@@ -1123,22 +1537,40 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 BackgroundColor = InkWashTheme.BorderFaint,
             };
             detail.AddChild(duraTrack);
-            duraTrack.AddChild(new ContainerControl
+            _invDuraFill = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,
-                Size = new Float2((innerW - 4f) * 0.85f, 4f),
+                Size = new Float2(0f, 4f),
                 BackgroundColor = InkWashTheme.GoldPrimary,
-            });
+            };
+            duraTrack.AddChild(_invDuraFill);
             dy += 4f + 14f;
 
-            // 基础属性 / 附加属性
-            dy = AddInvAttrSection(detail, cx, dy, innerW, "基础属性",
-                new[] { ("攻击力", "+120"), ("暴击率", "+5%") },
-                new[] { InkWashTheme.PaperBright, InkWashTheme.PaperBright });
-            dy = AddInvAttrSection(detail, cx, dy, innerW, "附加属性",
-                new[] { ("会心率", "+3%") },
-                new[] { InkWashTheme.TextJade });
+            // 基础属性 / 说明（动态内容，切换选中物品时由 PopulateInvDetail 重建）
+            detail.AddChild(MakeInvSectionTitle("基础属性", cx, dy, innerW));
+            dy += 20f + 4f + 8f;
+            _invBaseAttrHost = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx, dy),
+                Size = new Float2(innerW, 2 * 26f + 8f),
+                BackgroundColor = Color.Transparent,
+            };
+            detail.AddChild(_invBaseAttrHost);
+            dy += _invBaseAttrHost.Height;
+
+            detail.AddChild(MakeInvSectionTitle("说明", cx, dy, innerW));
+            dy += 20f + 4f + 8f;
+            _invDescHost = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx, dy),
+                Size = new Float2(innerW, 44f),
+                BackgroundColor = Color.Transparent,
+            };
+            detail.AddChild(_invDescHost);
+            dy += 44f + 8f;
 
             // 套装效果
             detail.AddChild(MakeInvSectionTitle("套装效果", cx, dy, innerW));
@@ -1157,42 +1589,33 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 4f));
             setBox.AddChild(MakeLabel("◆", 12f, 8f, 14f, 18f,
                 InkWashTheme.GoldPrimary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Center));
-            setBox.AddChild(MakeLabel("玄铁套", 30f, 8f, 80f, 18f,
-                InkWashTheme.GoldPrimary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            setBox.AddChild(MakeLabel("2/4", 112f, 8f, 40f, 18f,
-                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Number, TextAlignment.Near));
-            setBox.AddChild(MakeLabel("2件套：攻击力 +10%", 12f, 32f, innerW - 24f, 18f,
-                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            _invSetLabel = MakeLabel("暂无套装", 30f, 8f, innerW - 42f, 18f,
+                InkWashTheme.GoldPrimary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near);
+            setBox.AddChild(_invSetLabel);
+            _invSetDescLabel = MakeLabel("", 12f, 32f, innerW - 24f, 18f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near);
+            setBox.AddChild(_invSetDescLabel);
             dy += 60f + 12f;
 
-            // 宝石槽（并入自原宝石卡片）：分区标题 + 5 个宝石槽
-            detail.AddChild(MakeInvSectionTitle("宝石槽", cx, dy, innerW));
+            // 宝石槽（动态：孔数=装备品质规则，内容=服务端权威 ItemInfo.Gems）
+            _invGemTitle = MakeInvSectionTitle("宝石槽", cx, dy, innerW);
+            detail.AddChild(_invGemTitle);
             dy += 20f + 4f + 8f;
-            var gemRow = new ContainerControl
+            _invGemRowHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cx, dy),
-                Size = new Float2(184f, 32f),
+                Size = new Float2(200f, 32f),
                 BackgroundColor = Color.Transparent,
             };
-            var gems = new (InkWashTheme.InkQuality q, bool filled)[]
-            {
-                (InkWashTheme.InkQuality.Rare, true),
-                (InkWashTheme.InkQuality.Epic, true),
-                (InkWashTheme.InkQuality.Legendary, true),
-                (InkWashTheme.InkQuality.Common, false),
-                (InkWashTheme.InkQuality.Common, false),
-            };
-            for (int i = 0; i < gems.Length; i++)
-                gemRow.AddChild(new GemSlot(gems[i].q, gems[i].filled) { Location = new Float2(i * 38f, 0f) });
-            detail.AddChild(gemRow);
+            detail.AddChild(_invGemRowHost);
             dy += 32f + 12f;
 
             // 操作按钮行（使用/装备/丢弃）
             detail.AddChild(MakeFaintHairline(cx, dy, innerW));
             dy += 1f + 12f;
             float btnW = (innerW - 24f) / 3f;
-            var useBtn = new InkButton
+            _invUseBtn = new InkButton
             {
                 Variant = InkButtonVariant.Brand,
                 ButtonSize = InkButtonSize.Lg,
@@ -1200,10 +1623,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cx, dy),
                 Size = new Float2(btnW, 36f),
+                Enabled = false,
             };
-            useBtn.ButtonClicked += (b) => EmitGoldAtControl(useBtn);
-            detail.AddChild(useBtn);
-            var equipBtn = new InkButton
+            _invUseBtn.ButtonClicked += (b) => OnUseSelected();
+            detail.AddChild(_invUseBtn);
+            _invEquipBtn = new InkButton
             {
                 Variant = InkButtonVariant.Secondary,
                 ButtonSize = InkButtonSize.Lg,
@@ -1211,10 +1635,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cx + btnW + 12f, dy),
                 Size = new Float2(btnW, 36f),
+                Enabled = false,
             };
-            equipBtn.ButtonClicked += (b) => EmitGoldAtControl(equipBtn);
-            detail.AddChild(equipBtn);
-            var dropBtn = new InkButton
+            _invEquipBtn.ButtonClicked += (b) => OnEquipSelected();
+            detail.AddChild(_invEquipBtn);
+            _invDropBtn = new InkButton
             {
                 Variant = InkButtonVariant.Danger,
                 ButtonSize = InkButtonSize.Lg,
@@ -1222,9 +1647,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cx + (btnW + 12f) * 2f, dy),
                 Size = new Float2(btnW, 36f),
+                Enabled = false,
             };
-            dropBtn.ButtonClicked += (b) => EmitGoldAtControl(dropBtn);
-            detail.AddChild(dropBtn);
+            // 丢弃需要网关新增 ItemDiscard 路由（服务端消息已定义但未接入），暂不开放。
+            _invDropBtn.ButtonClicked += (b) => SetInvStatus("丢弃功能暂未开放", true);
+            detail.AddChild(_invDropBtn);
+
+            // 操作状态行（使用/装备/卸下的服务端回执显示在这里）
+            _invStatusLabel = MakeLabel("", cx, dy + 36f + 4f, innerW, 18f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Center);
+            detail.AddChild(_invStatusLabel);
 
             return card;
         }
@@ -1238,6 +1670,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             if (_invFilterChips == null) return;
             for (int i = 0; i < _invFilterChips.Length; i++)
                 _invFilterChips[i].IsActive = (i == index);
+            _invFilterIndex = index;
+            _invSelected = -1;
+            RefreshInventoryView();
         }
 
         /// <summary>构建物品详情弹窗浮层：全屏半透明遮罩（点击关闭）+ 详情卡 + 右上角关闭钮。</summary>
@@ -1336,30 +1771,38 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         }
 
         /// <summary>仅应用选中高亮与详情数据填充（不弹出弹窗，供初始化使用）。</summary>
-        private void ApplyInvSelection(int index)
+        private void ApplyInvSelection(int index, bool emitGold = true)
         {
             if (_invCells == null) return;
             for (int i = 0; i < _invCells.Length; i++)
                 _invCells[i].IsSelected = (i == index);
             _invSelected = index;
             PopulateInvDetail(index);
-            if (index >= 0 && index < _invCells.Length)
+            if (emitGold && index >= 0 && index < _invCells.Length)
                 EmitGoldAtControl(_invCells[index]);
         }
 
         private void PopulateInvDetail(int index)
         {
-            if (_invCellData == null || index < 0 || index >= _invCellData.Length || !_invCellData[index].HasItem) return;
-            var data = _invCellData[index];
-            string qualityName = data.IsQuest ? "任务" : data.Quality switch
+            if (_invCellData == null || index < 0 || index >= _invCellData.Length || !_invCellData[index].HasItem)
             {
-                InkWashTheme.InkQuality.Legendary => "传说",
-                InkWashTheme.InkQuality.Epic => "史诗",
-                InkWashTheme.InkQuality.Rare => "稀有",
-                InkWashTheme.InkQuality.Uncommon => "良好",
+                UpdateDetailButtons(null);
+                return;
+            }
+            var data = _invCellData[index];
+            var def = ItemCatalog.Resolve(data.TemplateId);
+            PlayerInventoryService.Instance.TryGetItemByServerId(data.ServerItemId, out var info);
+
+            bool isQuest = data.Kind == ItemKind.Quest;
+            string qualityName = isQuest ? "任务" : def.Quality switch
+            {
+                4 => "传说",
+                3 => "史诗",
+                2 => "稀有",
+                1 => "良好",
                 _ => "普通",
             };
-            Color qColor = data.IsQuest ? InkWashTheme.Warning : InkWashTheme.QualityColor(data.Quality);
+            Color qColor = isQuest ? InkWashTheme.Warning : InkWashTheme.QualityColor(data.Quality);
             if (_invDetailName != null)
             {
                 _invDetailName.Text = data.Name;
@@ -1371,14 +1814,398 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 _invTagQuality.SetColors(WithAlpha(qColor, 0.12f), qColor, WithAlpha(qColor, 0.25f));
             }
             if (_invTagType != null) _invTagType.SetText(data.Type);
-            if (_invTagQty != null) _invTagQty.SetText("数量 " + (data.Qty ?? "1"));
+            if (_invTagQty != null) _invTagQty.SetText("数量 " + (info != null ? info.Count : 1));
             if (_invDetailIcon != null) _invDetailIcon.SetGlyph(data.Glyph, qColor);
             if (_invMetaEnhance != null)
             {
                 _invMetaEnhance.Text = data.Enhance ?? "-";
                 _invMetaEnhance.TextColor = data.Enhance != null ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary;
             }
-            if (_invMetaDura != null) _invMetaDura.Text = data.Enhance != null ? "850/1000" : "-/-";
+            if (_invMetaElement != null)
+            {
+                _invMetaElement.Text = def.Element ?? "-";
+                _invMetaElement.TextColor = def.Element != null ? def.ElementColor : InkWashTheme.TextSecondary;
+            }
+            if (_invMetaBind != null) _invMetaBind.Text = "未绑定";
+            if (_invMetaDura != null) _invMetaDura.Text = "-/-";
+            if (_invDuraFill != null) _invDuraFill.Size = new Float2(0f, 4f);
+            if (_invSetLabel != null) _invSetLabel.Text = "暂无套装";
+            if (_invSetDescLabel != null) _invSetDescLabel.Text = "";
+
+            PopulateInvAttrRows(def);
+            PopulateInvDescription(def);
+            RebuildGemRow(data, def, info);
+            UpdateDetailButtons(def);
+            SetInvStatus("", false);
+        }
+
+        /// <summary>详情"基础属性"区：按物品定义重建属性行。</summary>
+        private void PopulateInvAttrRows(ItemDefinition def)
+        {
+            if (_invBaseAttrHost == null) return;
+            _invBaseAttrHost.DisposeChildren();
+            float y = 0f;
+            int shown = 0;
+            foreach (var stat in def.Stats)
+            {
+                if (shown >= 2) break;   // 高度按两行预留，多余属性折叠
+                _invBaseAttrHost.AddChild(MakeLabel(stat.Label, 0f, y, 140f, 20f,
+                    InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+                _invBaseAttrHost.AddChild(MakeLabel(stat.Value, 140f, y, _invBaseAttrHost.Width - 140f, 20f,
+                    InkWashTheme.PaperBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Far));
+                y += 26f;
+                shown++;
+            }
+            if (shown == 0)
+                _invBaseAttrHost.AddChild(MakeLabel("无属性加成", 0f, 0f, _invBaseAttrHost.Width, 20f,
+                    InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+        }
+
+        /// <summary>详情"说明"区：物品描述文本（两行截断）。</summary>
+        private void PopulateInvDescription(ItemDefinition def)
+        {
+            if (_invDescHost == null) return;
+            _invDescHost.DisposeChildren();
+            _invDescHost.AddChild(MakeLabel(
+                string.IsNullOrEmpty(def.Description) ? "暂无说明" : def.Description,
+                0f, 0f, _invDescHost.Width, 44f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+        }
+
+        /// <summary>按物品定义启用对应的操作按钮；null（未选中）时全部禁用。</summary>
+        private void UpdateDetailButtons(ItemDefinition def)
+        {
+            if (_invUseBtn != null) _invUseBtn.Enabled = def != null && def.IsUsable;
+            if (_invEquipBtn != null) _invEquipBtn.Enabled = def != null && def.IsEquippable;
+            if (_invDropBtn != null) _invDropBtn.Enabled = false;   // 丢弃路由未开通
+        }
+
+        private void OnUseSelected()
+        {
+            var item = GetSelectedServerItem();
+            if (item == null) return;
+            EmitGoldAtControl(_invUseBtn);
+            SetInvStatus("使用中…", false);
+            _ = PlayerInventoryService.Instance.RequestUseItemAsync(item);
+        }
+
+        private void OnEquipSelected()
+        {
+            var item = GetSelectedServerItem();
+            if (item == null) return;
+            EmitGoldAtControl(_invEquipBtn);
+            SetInvStatus("穿戴中…", false);
+            _ = PlayerInventoryService.Instance.RequestEquipAsync(item);
+        }
+
+        /// <summary>取当前选中格对应的服务端权威物品条目（快照已变化时给出提示并返回 null）。</summary>
+        private Horizon.Game.Message.Network.ItemInfo GetSelectedServerItem()
+        {
+            if (_invCellData == null || _invSelected < 0 || _invSelected >= _invCellData.Length
+                || !_invCellData[_invSelected].HasItem)
+                return null;
+            var cell = _invCellData[_invSelected];
+            if (PlayerInventoryService.Instance.TryGetItemByServerId(cell.ServerItemId, out var info))
+                return info;
+            SetInvStatus("物品数据已更新，请重新选择", true);
+            return null;
+        }
+
+        /// <summary>服务端回执：把结果写到详情弹窗状态行（弹窗关闭时仅记日志）。</summary>
+        private void OnItemOperationFinished(ItemOperationResult result)
+        {
+            string text;
+            if (result.Operation == ItemOperationKind.GemSocket)
+            {
+                // 服务端对宝石操作的话术已含语义（宝石已镶嵌/已交换/已卸下/失败原因），直接呈现。
+                text = string.IsNullOrEmpty(result.Message) ? "宝石操作完成" : result.Message;
+            }
+            else
+            {
+                string verb = result.Operation switch
+                {
+                    ItemOperationKind.Use => "使用",
+                    ItemOperationKind.Equip => "穿戴",
+                    _ => "卸下",
+                };
+                text = result.Success ? verb + "成功" : verb + "失败：" + result.Message;
+            }
+            FlaxEngine.Debug.Log($"[CharacterPanelPage] {text}");
+            if (_detailOverlay != null && _detailOverlay.Visible)
+                SetInvStatus(text, !result.Success);
+        }
+
+        private void SetInvStatus(string text, bool failed)
+        {
+            if (_invStatusLabel == null) return;
+            _invStatusLabel.Text = text;
+            _invStatusLabel.TextColor = failed ? InkWashTheme.Warning : InkWashTheme.TextJade;
+        }
+
+        // ===================================================================
+        // 宝石镶嵌：槽位渲染 / 选择窗 / 请求
+        // ===================================================================
+
+        /// <summary>按选中物品重建宝石行：装备按目录孔数规则显示几颗，内容取服务端权威 <c>ItemInfo.Gems</c>。</summary>
+        private void RebuildGemRow(CellData data, ItemDefinition def, Horizon.Game.Message.Network.ItemInfo info)
+        {
+            if (_invGemRowHost == null) return;
+            bool show = data.HasItem && def != null && def.Kind == ItemKind.Equipment && def.GemSlots > 0;
+            if (_invGemTitle != null) _invGemTitle.Visible = show;
+            _invGemRowHost.Visible = show;
+            if (!show) return;
+
+            _invGemRowHost.DisposeChildren();
+            var gems = info?.Gems;
+            for (int i = 0; i < def.GemSlots; i++)
+            {
+                int gemTemplate = gems != null && i < gems.Count ? gems[i] : ItemCatalog.EmptyGemSlot;
+                bool filled = gemTemplate > ItemCatalog.EmptyGemSlot;
+                var gemDef = filled ? ItemCatalog.Resolve(gemTemplate) : null;
+                var slot = new GemSlot(
+                    filled ? ToInkQuality(gemDef.Quality) : InkWashTheme.InkQuality.Common,
+                    filled,
+                    filled ? gemDef.Glyph : null)
+                {
+                    Location = new Float2(i * 38f, 0f),
+                };
+                int captured = i;
+                var capturedCell = data;
+                slot.Clicked += () => OnGemSlotClicked(captured, capturedCell);
+                _invGemRowHost.AddChild(slot);
+            }
+        }
+
+        private void OnGemSlotClicked(int slotIndex, CellData cell)
+        {
+            if (!PlayerInventoryService.Instance.TryGetItemByServerId(cell.ServerItemId, out var info))
+            {
+                SetInvStatus("物品数据已更新，请重新选择", true);
+                return;
+            }
+            var gems = info.Gems;
+            int current = gems != null && slotIndex >= 0 && slotIndex < gems.Count
+                ? gems[slotIndex] : ItemCatalog.EmptyGemSlot;
+            OpenGemPicker(info.ItemId, slotIndex, current);
+        }
+
+        private void BuildGemPickerPopup()
+        {
+            _gemPickerOverlay = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                Visible = false,
+                AutoFocus = false,
+            };
+            AddChild(_gemPickerOverlay);
+
+            var backdrop = new DetailBackdrop();   // 空白处点击 = 关选择窗（不关详情弹窗）
+            backdrop.AnchorPreset = AnchorPresets.StretchAll;
+            backdrop.Offsets = Margin.Zero;
+            backdrop.Clicked += CloseGemPicker;
+            _gemPickerOverlay.AddChild(backdrop);
+
+            _gemPickerPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(360f, 380f),
+            };
+            _gemPickerPanel.AddChild(new InvRoundedBox(
+                WithAlpha(InkWashTheme.Void, 0.94f), InkWashTheme.BorderGoldSubtle, 6f));
+            _gemPickerTitle = MakeLabel("选择宝石", 16f, 10f, 280f, 26f,
+                InkWashTheme.GoldPrimary, 15f, InkWashTheme.FontRole.Display, TextAlignment.Near);
+            _gemPickerPanel.AddChild(_gemPickerTitle);
+
+            var closeBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "×",
+                AnchorPreset = AnchorPresets.TopRight,
+                Location = new Float2(-40f, 8f),
+                Size = new Float2(30f, 30f),
+            };
+            closeBtn.Clicked += CloseGemPicker;
+            _gemPickerPanel.AddChild(closeBtn);
+
+            _gemPickerRows = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(16f, 46f),
+                Size = new Float2(328f, 282f),
+                BackgroundColor = Color.Transparent,
+            };
+            _gemPickerPanel.AddChild(_gemPickerRows);
+
+            var cancelBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Secondary,
+                ButtonSize = InkButtonSize.Md,
+                Text = "取消",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2((360f - 120f) * 0.5f, 380f - 44f),
+                Size = new Float2(120f, 32f),
+            };
+            cancelBtn.Clicked += CloseGemPicker;
+            _gemPickerPanel.AddChild(cancelBtn);
+
+            _gemPickerOverlay.AddChild(_gemPickerPanel);
+        }
+
+        /// <summary>打开宝石选择窗：列出背包内全部宝石（选新宝石=交换，旧宝石回背包可再用），槽内已有宝石时提供"卸下"。</summary>
+        private void OpenGemPicker(long equipItemId, int slotIndex, int currentTemplate)
+        {
+            if (_gemPickerRows == null) return;
+            _gemPickerEquipItemId = equipItemId;
+            _gemPickerSlot = slotIndex;
+            _gemPickerCurrentTemplate = currentTemplate;
+
+            _gemPickerRows.DisposeChildren();
+            const float rowH = 40f;
+            const float rowGap = 6f;
+            float y = 0f;
+
+            var counts = new Dictionary<int, int>();
+            foreach (var item in PlayerInventoryService.Instance.Items)
+            {
+                var d = ItemCatalog.Resolve(item.TemplateId);
+                if (d.Kind != ItemKind.Gem || item.Count <= 0) continue;
+                counts.TryGetValue(item.TemplateId, out var c);
+                counts[item.TemplateId] = c + item.Count;
+            }
+
+            if (counts.Count == 0)
+            {
+                _gemPickerRows.AddChild(MakeLabel("背包中没有宝石", 4f, y, 320f, rowH,
+                    InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+                y += rowH + rowGap;
+            }
+            else
+            {
+                foreach (var kv in counts)
+                {
+                    int templateId = kv.Key;
+                    var d = ItemCatalog.Resolve(templateId);
+                    var btn = new InkButton
+                    {
+                        Variant = templateId == currentTemplate ? InkButtonVariant.Brand : InkButtonVariant.Secondary,
+                        ButtonSize = InkButtonSize.Md,
+                        Text = $"{d.Glyph} {d.Name} ×{kv.Value}",
+                        AnchorPreset = AnchorPresets.TopLeft,
+                        Location = new Float2(0f, y),
+                        Size = new Float2(328f, rowH),
+                    };
+                    int captured = templateId;
+                    btn.ButtonClicked += (b) => RequestGemSocket(captured);
+                    _gemPickerRows.AddChild(btn);
+                    y += rowH + rowGap;
+                }
+            }
+
+            if (currentTemplate > ItemCatalog.EmptyGemSlot)
+            {
+                var cur = ItemCatalog.Resolve(currentTemplate);
+                var removeBtn = new InkButton
+                {
+                    Variant = InkButtonVariant.Danger,
+                    ButtonSize = InkButtonSize.Md,
+                    Text = $"卸下 {cur.Name}",
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, y),
+                    Size = new Float2(328f, rowH),
+                };
+                removeBtn.ButtonClicked += (b) => RequestGemSocket(0);   // 协议约定 0 = 卸下该槽
+                _gemPickerRows.AddChild(removeBtn);
+            }
+
+            CenterGemPicker();
+            _gemPickerOverlay.Visible = true;
+        }
+
+        private void RequestGemSocket(int gemTemplateId)
+        {
+            CloseGemPicker();
+            SetInvStatus(gemTemplateId == 0 ? "卸下中…" : "镶嵌中…", false);
+            _ = PlayerInventoryService.Instance.RequestSocketGemAsync(_gemPickerEquipItemId, _gemPickerSlot, gemTemplateId);
+        }
+
+        private void CenterGemPicker()
+        {
+            if (_gemPickerPanel == null) return;
+            float pw = Width > 0f ? Width : 1920f;
+            float ph = Height > 0f ? Height : 1080f;
+            _gemPickerPanel.Location = new Float2(
+                (pw - _gemPickerPanel.Width) * 0.5f,
+                Mathf.Max((ph - _gemPickerPanel.Height) * 0.5f, 12f));
+        }
+
+        private void CloseGemPicker()
+        {
+            if (_gemPickerOverlay != null) _gemPickerOverlay.Visible = false;
+        }
+
+        /// <summary>
+        /// 权威快照变化后的整体刷新：重建格子数据→同步到控件→容量/装备槽→保持选中。
+        /// 由 <c>PlayerInventoryService.Changed</c> 事件驱动（已在主线程）。
+        /// </summary>
+        private void RefreshInventoryView()
+        {
+            try
+            {
+                if (_invCells == null || _invCellData == null) return;
+
+                long previousSelectedId = _invSelected >= 0 && _invSelected < _invCellData.Length
+                    ? _invCellData[_invSelected].ServerItemId : 0;
+
+                InitInvCellData();
+                for (int i = 0; i < _invCells.Length; i++)
+                    _invCells[i].SetData(_invCellData[i]);
+                UpdateCapacityFooter();
+                RefreshEquipSlots();
+                // 穿戴快照驱动的 Changed 事件里，装备加成已由桥写入组件（ApplyEquipmentSnapshot
+                // 先重算后发事件），此处把属性卡/五行雷达同步到新值。
+                RefreshAttributeCards();
+
+                int keep = -1;
+                if (previousSelectedId != 0)
+                {
+                    for (int i = 0; i < _invCellData.Length; i++)
+                    {
+                        if (_invCellData[i].HasItem && _invCellData[i].ServerItemId == previousSelectedId)
+                        {
+                            keep = i;
+                            break;
+                        }
+                    }
+                }
+                if (keep >= 0)
+                    ApplyInvSelection(keep, emitGold: false);
+                else
+                {
+                    for (int i = 0; i < _invCells.Length; i++)
+                        _invCells[i].IsSelected = false;
+                    _invSelected = -1;
+                    UpdateDetailButtons(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[CharacterPanelPage] RefreshInventoryView: {ex.Message}");
+            }
+        }
+
+        private void UpdateCapacityFooter()
+        {
+            var service = PlayerInventoryService.Instance;
+            int count = service.Items.Count;
+            if (_invCountLabel != null)
+                _invCountLabel.Text = $"{count}/{service.Capacity}";
+            if (_invCapFill != null && _invCapFill.Parent != null)
+            {
+                float frac = service.Capacity > 0 ? Mathf.Clamp((float)count / service.Capacity, 0f, 1f) : 0f;
+                _invCapFill.Size = new Float2(_invCapFill.Parent.Width * frac, 4f);
+            }
         }
 
         /// <summary>在指定控件中心发射金粉粒子（屏幕坐标转换）。</summary>
@@ -1426,11 +2253,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             row.AddChild(MakeLabel("五维属性", 0f, 0f, 120f, 20f,
                 InkWashTheme.GoldPrimary, 14f, InkWashTheme.FontRole.Display, TextAlignment.Near));
             row.AddChild(MakeFaintHairline(0f, 23f, radarS));
+            // 五维雷达：体/御/劲接组件真实值（RefreshFiveDimRadar 归一），敏/势暂无权威数据源标"-"。
+            // 数组引用常驻，InkRadarChart.DrawChart 每帧读取 → 穿戴后无需重建控件。
+            _fiveDimValues = new float[] { 0f, 0f, 0f, 0f, 0f };
+            _fiveDimTexts = new string[] { "-", "-", "-", "-", "-" };
             var fiveRadar = new InkRadarChart(
                 5,
-                new[] { 60f, 45f, 80f, 50f, 95f },
+                _fiveDimValues,
                 new[] { "体", "御", "敏", "势", "劲" },
-                new[] { "60", "45", "80", "50", "95" },
+                _fiveDimTexts,
                 new[]
                 {
                     InkWashTheme.GoldBright, InkWashTheme.JadeBright, InkWashTheme.GoldBright,
@@ -1448,11 +2279,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             row.AddChild(MakeLabel("五行属性", col2X, 0f, 120f, 20f,
                 InkWashTheme.GoldPrimary, 14f, InkWashTheme.FontRole.Display, TextAlignment.Near));
             row.AddChild(MakeFaintHairline(col2X, 23f, radarS));
+            // 五行雷达接组件真值（数组引用常驻，DrawChart 每帧读取 → 穿戴后无需重建控件）。
+            _wuxingRadarValues = new float[] { 0f, 0f, 0f, 0f, 0f };
+            _wuxingRadarTexts = new string[] { "0", "0", "0", "0", "0" };
             var wuxingRadar = new InkRadarChart(
                 5,
-                new[] { 75f, 60f, 80f, 65f, 70f },
+                _wuxingRadarValues,
                 new[] { "金", "木", "水", "火", "土" },
-                new[] { "75", "60", "80", "65", "70" },
+                _wuxingRadarTexts,
                 new[]
                 {
                     InkWashTheme.GoldBright, InkWashTheme.GoldBright, InkWashTheme.GoldBright,
@@ -1495,33 +2329,249 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             return card;
         }
 
-        /// <summary>3. 基础属性：3 列网格 6 项（暴击率/暴击伤害金色）。</summary>
-        private ContainerControl BuildBaseStatsCard()
+        /// <summary>
+        /// "属性"合并卡：左栏基础属性（攻/防/暴击率/暴击伤害接组件真值，命中/闪避无源"-"），
+        /// 右栏属性加点（力量/敏捷/体质/内力 + 五行九行，每行带完整每点效果说明）。
+        /// 属性口径 = 基值 + 装备 + 加点，任何一层变化后由 <see cref="RefreshAttributeCards"/> 统一刷新。
+        /// </summary>
+        private ContainerControl BuildAttributeCard()
         {
-            var card = MakeCard(150f);
-            AddCardHeader(card, "基础属性", "BASE STATS", CardPad);
+            const float leftRowH = 24f;
+            float secY = CardPad + 26f;
+
+            float leftH = 26f + leftRowH * 6f;
+            // 右栏两列：标题26 + 汇总24 + 发丝线 + 5行×30 + 操作区38
+            float rightH = 26f + 30f + 30f * 5 + 10f + 28f + 6f;
+            var card = MakeCard(secY + Mathf.Max(leftH, rightH) + CardPad);
+            AddCardHeader(card, "属性", "ATTRIBUTES", CardPad);
+
+            // ── 左栏：基础属性 ──
+            _attrLeftCol = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(CardPad, secY),
+                Size = new Float2(300f, leftH),
+                BackgroundColor = Color.Transparent,
+            };
+            card.AddChild(_attrLeftCol);
+            _attrLeftCol.AddChild(MakeInvSectionTitle("基础属性", 0f, 0f, 290f));
 
             string[] names = { "攻击力", "防御力", "暴击率", "暴击伤害", "命中率", "闪避率" };
-            string[] vals = { "1234", "567", "45%", "250%", "95%", "12%" };
             bool[] goldVal = { false, false, true, true, false, false };
-            float gy = CardPad + 26f;
-            const float rowH = 38f;
+            _baseStatValueLabels = new Label[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
-                int col = i % 3, row = i / 3;
-                float x = CardPad + col * 118f;
-                float y = gy + row * rowH;
-                card.AddChild(MakeLabel(names[i], x, y, 110f, 14f,
-                    InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-                card.AddChild(MakeLabel(vals[i], x, y + 15f, 110f, 18f,
+                float y = 26f + i * leftRowH;
+                _attrLeftCol.AddChild(MakeLabel(names[i], 0f, y, 74f, leftRowH,
+                    InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+                _baseStatValueLabels[i] = MakeLabel("-", 78f, y, 210f, leftRowH,
                     goldVal[i] ? InkWashTheme.GoldBright : InkWashTheme.TextDefault,
-                    14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+                    13f, InkWashTheme.FontRole.Number, TextAlignment.Near);
+                _attrLeftCol.AddChild(_baseStatValueLabels[i]);
             }
 
-            var hairline = MakeHairline(CardPad, card.Height - CardPad, 2000f);
-            _fullWidthHairlines.Add(hairline);
-            card.AddChild(hairline);
+            // ── 右栏：属性加点（两列排布；每点说明收进"？"悬停 Tooltip） ──
+            // 全部子控件 TopLeft 锚；位置由 LayoutCards 在父尺寸已知后显式重排。
+            _attrRightCol = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(320f, secY),
+                Size = new Float2(500f, rightH),
+                BackgroundColor = Color.Transparent,
+            };
+            card.AddChild(_attrRightCol);
+            _attrRightCol.AddChild(MakeInvSectionTitle("属性加点", 0f, 0f, 480f));
+
+            _attrRightCol.AddChild(MakeLabel("自由可用点", 0f, 26f, 80f, 22f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            _allocSummaryLabel = MakeLabel("-", 84f, 26f, 300f, 22f,
+                InkWashTheme.GoldPrimary, 13f, InkWashTheme.FontRole.Number, TextAlignment.Near);
+            _attrRightCol.AddChild(_allocSummaryLabel);
+            _attrRightCol.AddChild(MakeFaintHairline(0f, 50f, 480f));
+
+            const float rowsY = 56f;
+            const float rowPitch = 30f;
+            const int leftRows = 5;   // 左列：力量/敏捷/体质/内力/金；右列：木/水/火/土
+
+            _allocSpentLabels = new Label[AllocationRowDefs.Length];
+            _allocPendingLabels = new Label[AllocationRowDefs.Length];
+
+            _allocColLeft = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, rowsY),
+                Size = new Float2(240f, rowPitch * leftRows),
+                BackgroundColor = Color.Transparent,
+            };
+            _attrRightCol.AddChild(_allocColLeft);
+            _allocColRight = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(250f, rowsY),
+                Size = new Float2(240f, rowPitch * leftRows),
+                BackgroundColor = Color.Transparent,
+            };
+            _attrRightCol.AddChild(_allocColRight);
+
+            for (int i = 0; i < AllocationRowDefs.Length; i++)
+            {
+                var (label, kind, desc) = AllocationRowDefs[i];
+                var parentCol = i < leftRows ? _allocColLeft : _allocColRight;
+                float y = (i < leftRows ? i : i - leftRows) * rowPitch;
+                BuildAllocRow(parentCol, y, i, label, kind);
+            }
+
+            float actionY = rowsY + rowPitch * leftRows + 10f;
+            var resetBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                Text = "重置",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, actionY),
+                BorderColor = InkWashTheme.BorderGoldSubtle,
+                BorderThickness = 1f,
+            };
+            resetBtn.Height = 28f;
+            resetBtn.Width = 72f;
+            resetBtn.Clicked += OnResetAllocation;
+            _attrRightCol.AddChild(resetBtn);
+            _allocResetBtn = resetBtn;
+
+            var confirmBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Brand,
+                Text = "确认加点",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(400f, actionY),
+            };
+            confirmBtn.Height = 28f;
+            confirmBtn.Width = 100f;
+            confirmBtn.Clicked += OnConfirmAllocation;
+            _attrRightCol.AddChild(confirmBtn);
+            _allocConfirmBtn = confirmBtn;
+
+            _attrRightCol.AddChild(MakeLabel($"点池 = 等级 × {CharacterAttributesComponent.AllocationPointsPerLevel}，重置全额返还",
+                82f, actionY + 6f, 240f, 18f, InkWashTheme.TextTertiary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+
+            RefreshAllocationRows();
             return card;
+        }
+
+        /// <summary>
+        /// 单行加点控件：名称 + 已分配 + "？"(悬停说明) ｜ 行尾 － [预览+n] ＋。
+        /// 全部 TopLeft 锚 + 设计宽(246)定位；列变宽时由 LayoutCards 把行尾三件套重排到右缘。
+        /// </summary>
+        private void BuildAllocRow(ContainerControl col, float y, int row, string label,
+            CharacterAttributesComponent.AllocationKind kind)
+        {
+            var rowCtl = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, y),
+                Size = new Float2(246f, 28f),
+                BackgroundColor = Color.Transparent,
+            };
+            col.AddChild(rowCtl);
+            _allocRows.Add(rowCtl);
+
+            // 行底：极淡墨条（五行行再叠一层元素色 6% 底，增强辨识度）
+            rowCtl.AddChild(new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(246f, 28f),
+                BackgroundColor = kind >= CharacterAttributesComponent.AllocationKind.Metal
+                    ? WithAlpha(InkWashTheme.ElementColor(ElementOf(kind)), 0.05f)
+                    : new Color(1f, 1f, 1f, 0.02f),
+            });
+
+            rowCtl.AddChild(MakeLabel(label, 8f, 2f, 40f, 18f,
+                InkWashTheme.TextDefault, 12f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+
+            _allocSpentLabels[row] = MakeLabel("未分配", 52f, 3f, 82f, 18f,
+                InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near);
+            rowCtl.AddChild(_allocSpentLabels[row]);
+
+            AllocHelpDot help = null;
+            help = new AllocHelpDot(row, r => ShowAllocTooltip(help, r), HideAllocTooltip)
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(134f, 6f),
+            };
+            rowCtl.AddChild(help);
+
+            var minus = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                Text = "－",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(160f, 2f),
+                BorderColor = InkWashTheme.BorderGoldSubtle,
+                BorderThickness = 1f,
+            };
+            minus.Height = 22f;
+            minus.Width = 24f;
+            minus.Clicked += () => OnAllocMinus(row);
+            rowCtl.AddChild(minus);
+            _allocMinusButtons.Add(minus);
+
+            _allocPendingLabels[row] = MakeLabel("·", 188f, 3f, 30f, 20f,
+                InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Number, TextAlignment.Center);
+            rowCtl.AddChild(_allocPendingLabels[row]);
+
+            var plus = new InkButton
+            {
+                Variant = InkButtonVariant.Secondary,
+                Text = "＋",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(220f, 2f),
+            };
+            plus.Height = 22f;
+            plus.Width = 24f;
+            plus.Clicked += () => OnAllocPlus(row);
+            rowCtl.AddChild(plus);
+            _allocPlusButtons.Add(plus);
+        }
+
+        /// <summary>五行加点行 → 元素色（力量/敏捷等基础行不参与）。</summary>
+        private static InkWashTheme.InkElement ElementOf(CharacterAttributesComponent.AllocationKind kind)
+        {
+            switch (kind)
+            {
+                case CharacterAttributesComponent.AllocationKind.Metal: return InkWashTheme.InkElement.Metal;
+                case CharacterAttributesComponent.AllocationKind.Wood: return InkWashTheme.InkElement.Wood;
+                case CharacterAttributesComponent.AllocationKind.Water: return InkWashTheme.InkElement.Water;
+                case CharacterAttributesComponent.AllocationKind.Fire: return InkWashTheme.InkElement.Fire;
+                default: return InkWashTheme.InkElement.Earth;
+            }
+        }
+
+        /// <summary>"？"悬停：弹出该属性的每点效果说明（Tooltip 挂页面根，最上层绘制）。</summary>
+        private void ShowAllocTooltip(Control anchor, int row)
+        {
+            if (_allocTooltip == null)
+            {
+                // 深墨配色：与角色面板暗色底一致（组件默认是纸色 popup 风格）
+                _allocTooltip = new InkAttributeTooltip { AnchorPreset = AnchorPresets.TopLeft, DarkTheme = true };
+                AddChild(_allocTooltip);
+            }
+            var def = AllocationRowDefs[row];
+            int spent = 0;
+            if (_boundCharacter != null)
+            {
+                var alloc = _boundCharacter.Allocation;
+                spent = AllocationSpentOf(in alloc, def.Kind);
+            }
+            // 未分配时不显示附加行（"当前未分配"是噪声）；已分配才补一行小字。
+            string spentText = spent > 0 ? $"已分配 {spent} 点" : string.Empty;
+            _allocTooltip.SetData(null, def.Label, def.Desc, spentText, null);
+            _allocTooltip.SetQualityBorderColor(null);
+            _allocTooltip.Show(anchor.PointToScreen(new Float2(anchor.Width * 0.5f, anchor.Height)));
+        }
+
+        private void HideAllocTooltip()
+        {
+            if (_allocTooltip != null) _allocTooltip.Visible = false;
         }
 
         /// <summary>4. 战斗属性：战斗力 32px 金色 + 2 列 6 项。</summary>
@@ -1530,9 +2580,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             var card = MakeCard(204f);
             AddCardHeader(card, "战斗属性", "COMBAT STATS", CardPad);
 
-            // 战斗力（32px DIN 金色）
-            card.AddChild(MakeLabel("45,678", CardPad, CardPad + 22f, 200f, 40f,
-                InkWashTheme.GoldBright, 32f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+            // 战斗力（32px DIN 金色）——由 RefreshAttributeCards 按属性合成刷新。
+            _combatPowerLabel = MakeLabel("-", CardPad, CardPad + 22f, 200f, 40f,
+                InkWashTheme.GoldBright, 32f, InkWashTheme.FontRole.Number, TextAlignment.Near);
+            card.AddChild(_combatPowerLabel);
             card.AddChild(MakeLabel("战斗力", CardPad + 128f, CardPad + 42f, 80f, 18f,
                 InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
@@ -1541,7 +2592,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             card.AddChild(hairline);
 
             string[] names = { "境界", "门派", "阵营", "侠义值", "恶名值", "修炼经验" };
-            string[] vals = { "筑基后期", "武当派", "正派", "1200", "0", "82%" };
+            // 门派取自真实角色数据：创角不再选门派，未加入前显示「无门派」。
+            // 境界/修炼经验由 RefreshAttributeCards 写组件真值；阵营/侠义/恶名无数据来源，显示 "-"。
+            var ownerRole = global::Game.UI.Character.CharacterManager.Instance?.SelectedCharacter;
+            string ownerSect = global::HundunWorld.Game.UI.Ink.Pages.CharacterCreation.CcSectNames.Get(
+                ownerRole?.Profession ?? Horizon.Game.Message.Enums.Profession.None);
+            string[] vals = { "-", string.IsNullOrEmpty(ownerSect) ? "无门派" : ownerSect, "-", "-", "-", "-" };
             Color[] vcolors =
             {
                 InkWashTheme.TextDefault, InkWashTheme.TextDefault, InkWashTheme.JadeBright,
@@ -1549,6 +2605,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             };
             float gy = CardPad + 78f;
             const float rowH = 30f;
+            _combatValueLabels = new Label[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
                 int col = i % 2, row = i / 2;
@@ -1556,8 +2613,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 float y = gy + row * rowH;
                 card.AddChild(MakeLabel(names[i], x, y, 64f, 16f,
                     InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-                card.AddChild(MakeLabel(vals[i], x + 66f, y, 110f, 16f,
-                    vcolors[i], 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+                _combatValueLabels[i] = MakeLabel(vals[i], x + 66f, y, 110f, 16f,
+                    vcolors[i], 12f, InkWashTheme.FontRole.Body, TextAlignment.Near);
+                card.AddChild(_combatValueLabels[i]);
             }
             return card;
         }
@@ -1832,9 +2890,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         {
             public enum SlotState { Equipped, Selected, Empty }
 
-            private readonly SlotState _state;
-            private readonly Color _qualityColor;
-            private readonly string _glyph;
+            private SlotState _state;
+            private Color _qualityColor;
+            private string _glyph;
             private bool _isHovered;
             private bool _isPressed;
             private float _pulseTime;
@@ -1850,6 +2908,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 _glyph = glyph;
                 Size = new Float2(SlotSize, SlotSize);
                 AutoFocus = false;
+            }
+
+            /// <summary>穿戴/卸下快照刷新时更新三态、品质色与图标字。</summary>
+            public void SetContent(SlotState state, Color qualityColor, string glyph)
+            {
+                _state = state;
+                _qualityColor = qualityColor;
+                _glyph = glyph;
+                if (_state != SlotState.Selected) _pulseTime = 0f;
             }
 
             public override void Update(float deltaTime)
@@ -2102,6 +3169,52 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
+        /// <summary>加点说明入口"？"圆钮：悬停触发 OnShow（弹出每点效果说明），离开触发 OnHide。</summary>
+        internal class AllocHelpDot : Control
+        {
+            private const float Radius = 8f;
+            private readonly int _row;
+            private readonly Action<int> _onShow;
+            private readonly Action _onHide;
+            private bool _hovered;
+
+            public AllocHelpDot(int row, Action<int> onShow, Action onHide)
+            {
+                _row = row;
+                _onShow = onShow;
+                _onHide = onHide;
+                Size = new Float2(Radius * 2f, Radius * 2f);
+                BackgroundColor = Color.Transparent;
+                AutoFocus = false;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                var c = new Float2(Radius, Radius);
+                InkRenderHelper.FillCircle(c, Radius, _hovered ? InkWashTheme.GoldPrimary : InkWashTheme.BorderGoldSubtle);
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 11f).GetFont();
+                Render2D.DrawText(font, "?", new Rectangle(0f, -1f, Radius * 2f, Radius * 2f),
+                    _hovered ? InkWashTheme.PaperDark : InkWashTheme.TextSecondary,
+                    TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
+
+            public override void OnMouseEnter(Float2 location)
+            {
+                base.OnMouseEnter(location);
+                _hovered = true;
+                _onShow?.Invoke(_row);
+            }
+
+            public override void OnMouseLeave()
+            {
+                base.OnMouseLeave();
+                _hovered = false;
+                _onHide?.Invoke();
+            }
+        }
+
         /// <summary>左边框条目：2px 左边框 + 浅色底 + 名称 + 数值（可选激活标签）。宽度随父容器拉伸。</summary>
         internal class StatEntry : Control
         {
@@ -2190,17 +3303,31 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         }
 
         /// <summary>宝石槽：32x32，已镶嵌（品质色边框 + 辉光 + 宝石字符）/ 空槽（虚化暗底 + 加号）。</summary>
+        /// <summary>宝石槽（可点击开宝石选择窗；吞掉鼠标事件避免冒泡关闭详情弹窗）。</summary>
         internal class GemSlot : Control
         {
-            private readonly InkWashTheme.InkQuality _quality;
-            private readonly bool _filled;
+            private InkWashTheme.InkQuality _quality;
+            private bool _filled;
+            private string _glyph;
+            private bool _isPressed;
 
-            public GemSlot(InkWashTheme.InkQuality quality, bool filled)
+            public event Action Clicked;
+
+            public GemSlot(InkWashTheme.InkQuality quality, bool filled, string glyph = null)
             {
                 _quality = quality;
                 _filled = filled;
+                _glyph = glyph;
                 Size = new Float2(32f, 32f);
                 AutoFocus = false;
+            }
+
+            /// <summary>快照刷新时更新槽内容（孔数不变时可复用控件，避免重建）。</summary>
+            public void SetContent(InkWashTheme.InkQuality quality, bool filled, string glyph)
+            {
+                _quality = quality;
+                _filled = filled;
+                _glyph = glyph;
             }
 
             public override void Draw()
@@ -2217,7 +3344,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     InkRenderHelper.DrawRoundedRectangle(rect, 4f, qc, 1f);
                     var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f).GetFont();
                     if (font != null)
-                        Render2D.DrawText(font, "◆", rect, InkWashTheme.QualityTextColor(_quality),
+                        Render2D.DrawText(font, string.IsNullOrEmpty(_glyph) ? "◆" : _glyph, rect, InkWashTheme.QualityTextColor(_quality),
                             TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
                 }
                 else
@@ -2230,6 +3357,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                         Render2D.DrawText(font, "+", rect, InkWashTheme.TextTertiary,
                             TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
                 }
+            }
+
+            // 关键：宝石槽必须"吃掉"鼠标事件。此前 GemSlot 无输入处理，按下事件向上冒泡
+            // 触发详情弹窗遮罩的"点击任意处关闭"，点宝石槽会把整个弹窗关掉。
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && ContainsPoint(ref location))
+                {
+                    _isPressed = true;
+                    return true;
+                }
+                return true;   // 任何落在槽上的按下都不冒泡
+            }
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _isPressed && ContainsPoint(ref location))
+                    Clicked?.Invoke();
+                _isPressed = false;
+                return true;
             }
         }
 
@@ -2248,6 +3395,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             public bool HasItem;
             public string Name;
             public string Type;
+            /// <summary>客户端定义表 ID（= 服务端 TemplateId），穿戴/使用按它解析。</summary>
+            public int TemplateId;
+            /// <summary>服务端背包实例 ID（请求携带；快照重拉后用于保持选中）。</summary>
+            public long ServerItemId;
+            public ItemKind Kind;
         }
 
         /// <summary>自绘圆角背景 + 边框（StretchAll 填充父容器）。</summary>
@@ -2328,7 +3480,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>背包格子（品质边框六态 + 图标字 + 强化/数量角标 + 选中金色辉光）。</summary>
         internal class InvCell : Control
         {
-            private readonly CellData _data;
+            private CellData _data;
             private bool _isSelected;
             private bool _isHovered;
 
@@ -2341,6 +3493,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 _data = data;
                 AutoFocus = false;
             }
+
+            /// <summary>快照刷新时整体替换格子数据（Draw 每帧读取最新值）。</summary>
+            public void SetData(CellData data) => _data = data;
 
             public override void Draw()
             {
@@ -2542,6 +3697,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             public bool ShowAttrs = true;
             /// <summary>套装效果（默认关）。</summary>
             public bool ShowSetEffect = false;
+            /// <summary>宝石槽明细（默认关；装备槽悬停开启）。</summary>
+            public bool ShowGems = false;
+            /// <summary>说明文本段（默认关；装备槽悬停开启）。</summary>
+            public bool ShowDesc = false;
             /// <summary>操作按钮行（默认关，悬停场景不宜放按钮）。</summary>
             public bool ShowButtons = false;
             /// <summary>可选标题文本（null = 不显示标题栏）。</summary>
@@ -2570,6 +3729,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             public string SetName = null;
             public string SetCount = null;
             public string SetDesc = null;
+            /// <summary>装备部位（如 "武器 · 主手"）；非装备为 null。</summary>
+            public string SlotName = null;
+            /// <summary>宝石槽明细行（每行一颗：已镶=宝石名+五行+亲和，空槽=空槽）。</summary>
+            public string[] GemLines = null;
+            /// <summary>已镶/总孔摘要（如 "2/3"），用于元信息行。</summary>
+            public string GemSummary = null;
+            /// <summary>物品说明文本。</summary>
+            public string Desc = null;
             /// <summary>空槽位 / 未装备占位标记。</summary>
             public bool IsEmpty = false;
         }
@@ -2690,6 +3857,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                         d.Element != null ? d.ElementColor : InkWashTheme.TextSecondary);
                     y = AddMetaPair(y, cx, halfW, "绑定", d.Bind ?? "-", InkWashTheme.PaperBright,
                         col2X, halfW, "耐久", d.Durability ?? "-", InkWashTheme.PaperBright);
+                    if (!string.IsNullOrEmpty(d.SlotName) || !string.IsNullOrEmpty(d.GemSummary))
+                    {
+                        y = AddMetaPair(y, cx, halfW, "部位", d.SlotName ?? "-", InkWashTheme.PaperBright,
+                            col2X, halfW, "宝石", d.GemSummary ?? "-", InkWashTheme.PaperBright);
+                    }
                     AddChild(MakeFaintHairline(cx, y, innerW));
                     y += 1f + 8f;
                 }
@@ -2734,6 +3906,44 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                         y += 20f + 4f;
                     }
                     y += 4f;
+                }
+
+                // 宝石槽明细（每孔一行；空槽弱化显示）
+                if (_opts.ShowGems && d.GemLines != null && d.GemLines.Length > 0)
+                {
+                    AddChild(MakeLabel("宝石槽", cx, y, 120f, 20f,
+                        InkWashTheme.GoldPrimary, 14f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+                    y += 20f + 4f;
+                    AddChild(MakeFaintHairline(cx, y, innerW));
+                    y += 1f + 8f;
+                    for (int i = 0; i < d.GemLines.Length; i++)
+                    {
+                        string line = d.GemLines[i] ?? "";
+                        bool empty = line == "空槽";
+                        AddChild(MakeLabel(line, cx, y, innerW, 20f,
+                            empty ? InkWashTheme.TextTertiary : InkWashTheme.PaperBright,
+                            12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+                        y += 20f + 2f;
+                    }
+                    y += 6f;
+                }
+
+                // 说明（详情卡片同源的描述文本，最多 3 行）
+                if (_opts.ShowDesc && !string.IsNullOrEmpty(d.Desc))
+                {
+                    AddChild(MakeLabel("说明", cx, y, 120f, 20f,
+                        InkWashTheme.GoldPrimary, 14f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+                    y += 20f + 4f;
+                    AddChild(MakeFaintHairline(cx, y, innerW));
+                    y += 1f + 8f;
+                    // 说明按字数估行（CJK 12px ≈ 22 字/行，最多 4 行），保证不溢出也不留空腔
+                    int descLines = Mathf.Clamp((d.Desc.Length + 21) / 22, 1, 4);
+                    float descH = descLines * 18f;
+                    var descLabel = MakeLabel(d.Desc, cx, y, innerW, descH,
+                        InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near);
+                    descLabel.Wrapping = TextWrapping.WrapWords;
+                    AddChild(descLabel);
+                    y += descH + 4f;
                 }
 
                 // 套装效果（可选）

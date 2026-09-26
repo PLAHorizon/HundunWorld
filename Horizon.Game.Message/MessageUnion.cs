@@ -240,6 +240,16 @@ namespace Horizon.Game.Message
     [MemoryPackUnion(224, typeof(Horizon.Game.Message.Network.ServerListResponse))]
     [MemoryPackUnion(225, typeof(Horizon.Game.Message.ServiceToClientMessage))]
     [MemoryPackUnion(226, typeof(Horizon.Game.Message.Network.FastTravelRequestMessage))]
+    [MemoryPackUnion(227, typeof(Horizon.Game.Message.Network.ChatRecallRequest))]
+    [MemoryPackUnion(228, typeof(Horizon.Game.Message.Network.ChatRecallNotify))]
+    [MemoryPackUnion(229, typeof(Horizon.Game.Message.Network.ChatReportRequest))]
+    [MemoryPackUnion(230, typeof(Horizon.Game.Message.Network.RoleEquipmentSyncMessage))]
+    [MemoryPackUnion(231, typeof(Horizon.Game.Message.Network.RoleInventorySyncMessage))]
+    [MemoryPackUnion(232, typeof(Horizon.Game.Message.Network.InventoryGrantMessage))]
+    [MemoryPackUnion(233, typeof(Horizon.Game.Message.Network.GemSocketRequest))]
+    [MemoryPackUnion(234, typeof(Horizon.Game.Message.Network.GemSocketResponse))]
+    [MemoryPackUnion(235, typeof(Horizon.Game.Message.Network.AttributeAllocateRequest))]
+    [MemoryPackUnion(236, typeof(Horizon.Game.Message.Network.AttributeAllocateResponse))]
     // </generated-union-block>
     public abstract partial class MessageUnion : INetworkMessage
     {

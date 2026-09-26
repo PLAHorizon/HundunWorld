@@ -1,0 +1,17 @@
+{
+  "//": "连接串模板：真实值须通过环境变量注入（见仓库根 .env.example）。",
+  "//_legacy": "原始含凭据版本已备份为 repository.json.bak，禁止提交真实凭据。",
+  "ConnectionStrings": {
+    "SqlServer": "${DB_ARTICLE_CONNECTION_STRING}",
+    "BasicSqlServer": "${DB_BASIC_CONNECTION_STRING}",
+    "GameSqlServer": "${DB_GAME_CONNECTION_STRING}",
+    "IMSqlServer": "${DB_IM_CONNECTION_STRING}",
+    "MySQL": "${ORLEANS_MYSQL_CONNECTION_STRING}",
+    "Oracle": "${ORLEANS_ORACLE_CONNECTION_STRING}",
+    "PostgreSqlBasic": "${ORLEANS_NPGSQL_CONNECTION_STRING}",
+    "PostgreSqlArticle": "${ORLEANS_NPGSQL_CONNECTION_STRING}",
+    "PostgreSqlSupports": "${ORLEANS_NPGSQL_CONNECTION_STRING}",
+    "PostgreSqlXingguang": "${ORLEANS_NPGSQL_CONNECTION_STRING}",
+    "FlowerSqlServer": "${DB_FLOWER_CONNECTION_STRING}"
+  }
+}

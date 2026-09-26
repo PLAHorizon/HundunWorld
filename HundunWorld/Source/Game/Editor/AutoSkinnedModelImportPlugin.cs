@@ -67,6 +67,16 @@ namespace HundunWorld.Game.Editor
             };
         }
 
+        /// <summary>
+        /// 一次性重建标记。资产文件被移出工程（几何块数据损坏且 git 历史里同样损坏、无法回退）后写入，
+        /// 存在时允许走"新建资产"导入——这会分配**新 GUID**，所以必须同时更新按 GUID 的代码引用。
+        /// 正常启动路径绝不触碰它。
+        /// </summary>
+        private const string FreshImportMarkerPath = "Content/Character/Models/.force-fresh-skm-import";
+
+        /// <summary>重建目标所在的 Content 目录</summary>
+        private const string TargetFolderVirtualPath = "Content/Character/Models";
+
         public override void InitializeEditor()
         {
             base.InitializeEditor();
@@ -79,6 +89,98 @@ namespace HundunWorld.Game.Editor
             {
                 Debug.LogError($"[AutoSkinnedModelImport] 初始化异常: {ex.Message}\n{ex.StackTrace}");
             }
+
+            // 插件初始化阶段 ContentDatabase 的目录树还没建完，重建请求留到编辑器初始化结束后再发。
+            FlaxEditor.Editor.Instance.InitializationEnd += OnEditorReadyTryFreshImport;
+        }
+
+        private void OnEditorReadyTryFreshImport()
+        {
+            FlaxEditor.Editor.Instance.InitializationEnd -= OnEditorReadyTryFreshImport;
+            if (!HasFreshImportMarker()) return;
+
+            try
+            {
+                RequestFreshImportFromSource();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[AutoSkinnedModelImport] 重建导入异常: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        private static bool HasFreshImportMarker() =>
+            System.IO.File.Exists(System.IO.Path.Combine(ProjectDirectory, FreshImportMarkerPath));
+
+        private static string ProjectDirectory => StringUtils.NormalizePath(Globals.ProjectFolder);
+
+        /// <summary>
+        /// 资产已不存在时，从原始源文件重建。先订阅导入结束事件，好把新 GUID 直接打到日志里，
+        /// 免得再去二进制里猜。
+        /// </summary>
+        private void RequestFreshImportFromSource()
+        {
+            var src = System.IO.Path.Combine(ProjectDirectory, SourceFilePath);
+            if (!System.IO.File.Exists(src))
+            {
+                Debug.LogError($"[AutoSkinnedModelImport] 重建失败：源文件不存在 {src}");
+                return;
+            }
+
+            var folder = FindTargetFolder();
+            if (folder == null)
+            {
+                FlaxEditor.Editor.Instance.ContentDatabase.Rebuild(true);
+                folder = FindTargetFolder();
+            }
+
+            if (folder == null)
+            {
+                Debug.LogError($"[AutoSkinnedModelImport] 无法定位目标目录，已放弃重建: {TargetFolderVirtualPath}");
+                return;
+            }
+
+            var options = ModelTool.Options.Default;
+            options.Type = ModelTool.ModelType.SkinnedModel;
+            options.Scale = CorrectImportScale;
+            options.Rotation = Quaternion.Identity;
+
+            var importing = FlaxEditor.Editor.Instance.ContentImporting;
+            importing.ImportFileEnd += OnFreshImportFileEnd;
+            importing.Import(src, folder, true, options);
+
+            var marker = System.IO.Path.Combine(ProjectDirectory, FreshImportMarkerPath);
+            System.IO.File.Delete(marker);
+
+            Debug.LogWarning(
+                $"[AutoSkinnedModelImport] 已提交重建导入（资产此前不存在）：{SourceFilePath} → {TargetFolderVirtualPath}，" +
+                "将生成**新的资产 GUID**，导入结束后请在日志中读取新 ID 并回填代码引用。");
+        }
+
+        private void OnFreshImportFileEnd(IFileEntryAction entry, bool failed)
+        {
+            FlaxEditor.Editor.Instance.ContentImporting.ImportFileEnd -= OnFreshImportFileEnd;
+
+            if (failed)
+            {
+                Debug.LogError($"[AutoSkinnedModelImport] 重建导入失败: {entry?.ResultUrl}");
+                return;
+            }
+
+            var abs = StringUtils.NormalizePath(System.IO.Path.Combine(ProjectDirectory, AssetPath));
+            if (FlaxEditor.Editor.Instance.ContentDatabase.Find(abs) is BinaryAssetItem item)
+            {
+                Debug.Log($"[AutoSkinnedModelImport] 重建完成：{AssetPath} 新 GUID={item.ID:N}");
+                return;
+            }
+
+            Debug.LogWarning($"[AutoSkinnedModelImport] 导入已结束但内容库尚未登记该资产，请重启编辑器后确认: {AssetPath}");
+        }
+
+        private static ContentFolder FindTargetFolder()
+        {
+            var abs = StringUtils.NormalizePath(System.IO.Path.Combine(ProjectDirectory, TargetFolderVirtualPath));
+            return FlaxEditor.Editor.Instance.ContentDatabase.Find(abs) as ContentFolder;
         }
 
         /// <summary>

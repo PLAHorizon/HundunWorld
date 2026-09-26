@@ -1086,6 +1086,39 @@ namespace Horizon.Game.Message.Enums
         [Description("IM聊天记录查询")]
         IMChatHistory = 1650,
 
+        /// <summary>
+        /// 角色已装备清单同步（客户端拉取 / 服务端回包，同一类型双向）。
+        /// 客户端 3D 换装的数据源从本地 SQLite 迁到服务端权威存储时需要它——
+        /// 既有的 <c>EquipmentInfo</c> 只是把请求字段原样回显，给不出"穿了哪件在哪个槽"。
+        /// </summary>
+        [Description("角色已装备清单同步")]
+        RoleEquipmentSync = 1651,
+
+        /// <summary>
+        /// 角色背包清单同步（客户端拉取 / 服务端回包）。<br/>
+        /// 既有 <c>InventoryInfo</c> 类型两侧都没有接线，无法用于换源。
+        /// </summary>
+        [Description("角色背包清单同步")]
+        RoleInventorySync = 1652,
+
+        /// <summary>
+        /// 按模板批量发放物品（用于把玩家历史本地背包一次性迁移到服务端权威存储）。
+        /// </summary>
+        [Description("按模板批量发放物品")]
+        InventoryGrant = 1653,
+
+        /// <summary>
+        /// 宝石镶嵌/卸下（装备实例 × 宝石模板，服务端权威落库）。
+        /// </summary>
+        [Description("宝石镶嵌")]
+        GemSocket = 1654,
+
+        /// <summary>
+        /// 角色属性加点（提交期望终态，服务端校验后缓存 + 落库）。
+        /// </summary>
+        [Description("属性加点")]
+        AttributeAllocate = 1655,
+
         #endregion
     }
 }

@@ -209,8 +209,11 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     new GalleryItem("加载页 1", "loading-1", "进度条加载", InkWashTheme.GoldPrimary),
                     new GalleryItem("加载页 2", "loading-2", "水墨晕染加载", InkWashTheme.GoldBright),
                     new GalleryItem("章节过场", "chapter-transition", "章节标题", InkWashTheme.GoldDeep),
-                    new GalleryItem("创角捏脸", "cc-face-customize", "参数调整", InkWashTheme.PaperAged),
-                    new GalleryItem("创角命名", "cc-naming", "姓名输入", InkWashTheme.PaperBright),
+                    new GalleryItem("角色选择", "cc-role-list", "行囊 / 进入游戏", InkWashTheme.PaperAged),
+                    new GalleryItem("创角·性别", "cc-gender", "水墨笔触双档", InkWashTheme.PaperBright),
+                    new GalleryItem("创角·面容", "cc-face-preset", "风雅 / 写实", InkWashTheme.PaperBright),
+                    new GalleryItem("创角·捏脸", "cc-face-sculpt", "预设 + 更多面容", InkWashTheme.PaperBright),
+                    new GalleryItem("创角·命名", "cc-name", "不含门派", InkWashTheme.PaperBright),
                 }
             });
 

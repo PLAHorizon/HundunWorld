@@ -98,6 +98,14 @@ namespace ManagedHundunWorld.Network.Handlers
                             }
 
                             FlaxEngine.Debug.Log($"角色 [{response.CharacterInfo?.CharacterName}] 成功进入游戏世界");
+
+                            // 属性加点随 CharacterInfo 一并下发（服务端权威）。此处只缓存快照：
+                            // 本地玩家 Actor 通常还没随场景创建出来，灌进组件由 MainUIManager 在玩家就绪时补做。
+                            if (response.CharacterInfo != null)
+                            {
+                                HundunWorld.Game.Services.AttributeAllocationService.Instance
+                                    .ApplyFromCharacterInfo(response.CharacterInfo.Allocation, response.CharacterInfo.Level);
+                            }
                             
                             // 更新 UIStateManager 的选中角色信息
                             var stateManager = HundunWorld.Game.UI.UIStateManager.Instance;

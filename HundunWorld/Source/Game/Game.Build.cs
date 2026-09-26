@@ -35,6 +35,10 @@ public class Game : GameModule
                 "Horizon.Game.World.dll",
                 "Horizon.Core.Abstract.dll",
             "Microsoft.Extensions.ObjectPool.dll",
+            // Horizon.Game.ECS.Arch 的每个 System.Update 都调用 ILogger 扩展方法（Log?.LogDebug），
+            // 即使接收者为 null，JIT 仍要解析声明程序集；不在清单里就不会被复制到客户端输出目录，
+            // 表现为 PIE 每帧刷 "Could not load file or assembly 'Microsoft.Extensions.Logging.Abstractions, Version=10.0.0.0'"
+            "Microsoft.Extensions.Logging.Abstractions.dll",
             "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
             "Microsoft.Extensions.Options.dll",
             "Microsoft.Extensions.Primitives.dll",

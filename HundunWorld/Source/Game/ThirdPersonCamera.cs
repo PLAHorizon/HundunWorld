@@ -855,6 +855,16 @@ namespace HundunWorld.Game
         private bool _wasColliding = false; // 上一帧是否碰撞
         private float _collisionStateChangeTime = 0f; // 碰撞状态改变时间
         private const float CollisionStateStableTime = 0.1f; // 碰撞状态稳定时间（秒）- 优化：降低延迟
+
+        // 受阻期间的距离锁存：只允许继续收近，不允许因单帧漏检而瞬间外扩
+        private bool _obstructionLatched;
+        private float _latchedObstructionDistance;
+
+        /// <summary>系统绝对最小机位距离（cm = 2 米），防止相机钻进角色</summary>
+        private const float EffectiveMinDistance = 200f;
+
+        /// <summary>碰撞距离单帧最大插值比例：高档倍率(dt*60)在 60fps 下恰好等于 1，等于不插值</summary>
+        private const float MaxCollisionLerpPerFrame = 0.3f;
         
         // 性能统计相关
         private CameraPerformanceStats _performanceStats = new CameraPerformanceStats();
@@ -1081,7 +1091,8 @@ namespace HundunWorld.Game
             }
             
             // 3. 处理状态过渡
-            if (EnableStateMachine && _isTransitioning)
+            // 基准视角恢复期间不跑状态过渡：两者都会写 Distance/Pitch，同帧互相拉扯
+            if (EnableStateMachine && _isTransitioning && !_isResetting)
             {
                 UpdateStateTransition();
             }
@@ -1353,20 +1364,46 @@ namespace HundunWorld.Game
                         smoothSpeed = effectiveCollisionSmoothSpeed * 0.5f;
                     }
                     
+                    // === 插值目标：受阻期间锁存"最近距离"，杜绝闪动 ===
+                    // 闪动根因：碰撞探针是一条从聚焦点射向理想机位的细射线（面板 CollisionRadius
+                    // 默认 0.3，八条辅助射线的横向偏移等于 0.3cm，实际退化成单条射线），在栏杆、
+                    // 植被、瓦缝、台阶边缘这类薄遮挡物旁会逐帧"命中/漏检"交替。原实现把每帧测量值
+                    // 直接当作插值目标，且受阻高档倍率为 CollisionSmoothSpeed*5 = 60 ⇒ dt*60 在
+                    // 60fps 下恰好为 1（Mathf.Lerp 不钳位时等于瞬移），而无碰撞时只用 *0.5 慢速外推，
+                    // 于是每一轮"命中→瞬移拉近""漏检→缓慢推远"就是用户看到的突然拉近又远离。
+                    // 现有 0.1s 去抖只切换了插值倍率，并没有约束插值目标，所以压不住跳变。
+                    if (stableCollisionState)
+                    {
+                        float desired = collisionDistance;
+                        if (_obstructionLatched)
+                        {
+                            // 已确认受阻：只允许继续收近，单帧漏检测到的大距离不外扩
+                            desired = Mathf.Min(desired, _latchedObstructionDistance);
+                        }
+                        _obstructionLatched = true;
+                        _latchedObstructionDistance = desired;
+                        collisionDistance = desired;
+                    }
+                    else
+                    {
+                        _obstructionLatched = false;
+                        _latchedObstructionDistance = 0f;
+                    }
+                    
                     _wasColliding = stableCollisionState;
                     
-                    // t 必须钳位：smoothSpeed 高档可达 60（12*5），低帧率下 dt*60 > 1，
-                    // Mathf.Lerp 不钳位会外推过冲，表现为贴墙时距离来回泵动
+                    // t 必须钳位：smoothSpeed 高档=dt*60，低帧率下 >1 会外推过冲；
+                    // 即便恰好等于 1（60fps）也等于放弃平滑 → 单帧瞬移。上限 0.3 让收近
+                    // 在约 3 帧内完成，快而不跳。
                     _currentCollisionDistance = Mathf.Lerp(
                         _currentCollisionDistance,
                         collisionDistance,
-                        Mathf.Clamp(Time.DeltaTime * smoothSpeed, 0f, 1f)
+                        Mathf.Clamp(Time.DeltaTime * smoothSpeed, 0f, MaxCollisionLerpPerFrame)
                     );
                     
                     // ✅ 关键：碰撞距离可以突破环境限制以确保相机可见性
                     // 只需保证不小于系统绝对最小值(200cm = 2m)
-                    float systemMinDistance = 200.0f;
-                    _currentCollisionDistance = Mathf.Max(_currentCollisionDistance, systemMinDistance);
+                    _currentCollisionDistance = Mathf.Max(_currentCollisionDistance, EffectiveMinDistance);
                     effectiveDistance = _currentCollisionDistance;
                 }
             }
@@ -1661,6 +1698,10 @@ namespace HundunWorld.Game
                 Pitch -= mouseDelta.Y * RotationSpeed;
                 Pitch = Mathf.Clamp(Pitch, MinPitch, MaxPitch);
 
+                // 手动俯仰优先于状态机默认值：否则任何一次状态切换都会把视角拖回
+                // 该状态的 TargetPitch（Normal 30° / Flying 20°…），表现为"自己会动"
+                _stateTargetPitch = Pitch;
+
                 // 规范化Yaw
                 while (Yaw < 0) Yaw += 360;
                 while (Yaw >= 360) Yaw -= 360;
@@ -1676,7 +1717,14 @@ namespace HundunWorld.Game
                     
                     // ✅ 正确：滚轮缩放受环境限制约束
                     // MinDistance/MaxDistance由ApplyEnvironmentLimits设置为环境建议值
-                    Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+                    // 下界再与系统最小机位取小：环境建议下界是 5~10cm 量级，远低于相机
+                    // 实际不会靠近的 200cm，直接用会让前几格滚轮毫无反应（"调距离没用"）
+                    float zoomMin = Mathf.Min(MinDistance, Mathf.Min(EffectiveMinDistance, MaxDistance));
+                    Distance = Mathf.Clamp(Distance, zoomMin, MaxDistance);
+                    
+                    // 手动缩放优先于状态机默认距离：否则一次状态切换就会把 Distance 拖回
+                    // 该状态的 TargetDistance（4~20cm，全部低于机位下限 ⇒ 强行拉回 2 米）
+                    _stateTargetDistance = Distance;
                     
                     //Debug.Log($"[滚轮缩放] 目标距离: {Distance:F2}m, 环境范围:[{MinDistance:F1}-{MaxDistance:F1}]");
                 }
@@ -1833,7 +1881,11 @@ namespace HundunWorld.Game
             }
             
             // 计算相机方向
-            Vector3 idealCameraPos = CalculateCameraPosition(focusPoint, pitch, Yaw, Distance);
+            // 探针长度必须与实际机位下界一致：Distance 默认 15cm，而机位永远不低于
+            // EffectiveMinDistance(200cm)，用 Distance 探射线会让碰撞检测在常用缩放下整体空转
+            // （射线只有 15cm，什么都碰不到），实际贴墙的相机却毫无保护。
+            float probeDistance = Mathf.Max(Distance, EffectiveMinDistance);
+            Vector3 idealCameraPos = CalculateCameraPosition(focusPoint, pitch, Yaw, probeDistance);
             Vector3 shoulderAdjustedFocusPoint = focusPoint;
             if (CurrentState == CameraState.OverShoulder || CurrentState == CameraState.LockOn)
             {
@@ -1880,7 +1932,7 @@ namespace HundunWorld.Game
             // === 步骤2：执行多重射线检测 ===
             // 多射线检测
             bool hasCollision = false;
-            float minDistance = Distance;
+            float minDistance = probeDistance;
 
             // 探针横截面基：让偏移构成视平面上的十字/米字，而不是固定世界轴
             BuildRayBasis(direction, out Vector3 rayRight, out Vector3 rayUp);
@@ -1890,8 +1942,8 @@ namespace HundunWorld.Game
                 // 起始点：聚焦点 + 视平面偏移（offset.X 沿视线右方，offset.Y 沿视线上方）
                 Vector3 startPoint = focusPoint + rayRight * offset.X + rayUp * offset.Y;
 
-                // 使用Distance作为射线检测距离，使用层级掩码排除角色
-                if (Physics.RayCast(startPoint, direction, out RayCastHit hit, Distance, CollisionLayerMask))
+                // 使用探针距离作为射线检测距离，使用层级掩码排除角色
+                if (Physics.RayCast(startPoint, direction, out RayCastHit hit, probeDistance, CollisionLayerMask))
                 {
                     // 检查是否需要排除Target的碰撞
                     if (AutoExcludeTargetCollision && Target != null && hit.Collider != null)
@@ -1961,8 +2013,7 @@ namespace HundunWorld.Game
             // 确保距离在合法范围内
             // ✅ 关键：碰撞检测只需要确保安全距离大于系统绝对最小值
             // 不额外限制最大距离，让环境限制和用户输入去控制
-            float systemMinDistance = 200.0f; // 系统绝对最小值 200cm = 2米
-            minDistance = Mathf.Max(minDistance, systemMinDistance);
+            minDistance = Mathf.Max(minDistance, EffectiveMinDistance);
             safeDistance = minDistance;
             
             // === 步骤5：更新缓存 ===

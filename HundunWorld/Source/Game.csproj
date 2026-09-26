@@ -503,6 +503,9 @@
     <Reference Include="Microsoft.Extensions.ObjectPool">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.ObjectPool.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
@@ -584,6 +587,7 @@
     <Compile Include="Game\Character\CharacterStats.cs" />
     <Compile Include="Game\Character\ControlStateManager.cs" />
     <Compile Include="Game\Character\EnhancedAnimationController.cs" />
+    <Compile Include="Game\Character\EquipmentAttributeBridge.cs" />
     <Compile Include="Game\Character\ICharacterAttributeManager.cs" />
     <Compile Include="Game\Character\Movement\QinggongSystem.cs" />
     <Compile Include="Game\ClimbingSystem\ClimbDetector.cs" />
@@ -677,6 +681,7 @@
     <Compile Include="Game\InputConfigurationManager.cs" />
     <Compile Include="Game\InputManager.cs" />
     <Compile Include="Game\Inventory\InventoryManager.cs" />
+    <Compile Include="Game\Inventory\ItemCatalog.cs" />
     <Compile Include="Game\LocalPlayerActorSyncSystem.cs" />
     <Compile Include="Game\Modules\BaseModule.cs" />
     <Compile Include="Game\Modules\ChatModule.cs" />
@@ -715,12 +720,15 @@
     <Compile Include="Game\Network\MessageHandlers\EnterGameHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\FriendMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\HeartbeatResponseHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\ItemOperationResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\LoginResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\MailMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\MessageProcessor.cs" />
     <Compile Include="Game\Network\MessageHandlers\QuestMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\RankingMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\RegisterResponseHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\RoleEquipmentSyncHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\RoleInventorySyncHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\SkillCastResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\SkillInterruptHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\SyncPacketMessageHandler.cs" />
@@ -778,6 +786,7 @@
     <Compile Include="Game\Services\GameConfigurationService.cs" />
     <Compile Include="Game\Services\GengDiAuthService.cs" />
     <Compile Include="Game\Services\HorizonGameIniReader.cs" />
+    <Compile Include="Game\Services\PlayerInventoryService.cs" />
     <Compile Include="Game\Services\UIStateManager.cs" />
     <Compile Include="Game\Social\ChatClient.cs" />
     <Compile Include="Game\Social\ChatSystem.cs" />
@@ -914,8 +923,10 @@
     <Compile Include="Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs" />
     <Compile Include="Game\UI\Ink\Pages\Character\MenuEquipmentPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Character\SkillPanelPage.cs" />
-    <Compile Include="Game\UI\Ink\Pages\CharacterCreation\CharacterFaceCustomizePage.cs" />
-    <Compile Include="Game\UI\Ink\Pages\CharacterCreation\CharacterNamingPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\CharacterCreation\CcControls.cs" />
+    <Compile Include="Game\UI\Ink\Pages\CharacterCreation\CcCreationPages.cs" />
+    <Compile Include="Game\UI\Ink\Pages\CharacterCreation\CcRoleListPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\CharacterCreation\CcStagePage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Combat\AcupointPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Combat\CombatHudTraditionalPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Combat\CombatHudV2Page.cs" />

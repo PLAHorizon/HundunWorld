@@ -639,27 +639,43 @@ namespace HundunWorld.Game.UI
     }
 
     /// <summary>
-    /// Toast管理器（简单实现）
+    /// Toast管理器（薄封装）：统一转发到 Components.ToastManager 共享画布
+    /// （右上角自动消失浮条）。此前实现弹 ConfirmDialog 模态框，会打断操作，已弃用。
     /// </summary>
     public class ToastManager
     {
+        private static Components.ToastManager Shared => ToastMessageManager;
+
+        private static readonly Components.ToastManager ToastMessageManager = CreateShared();
+
+        private static Components.ToastManager CreateShared()
+        {
+            var canvas = new UICanvas { Name = "ToastCanvas" };
+            FlaxEngine.Level.SpawnActor(canvas);
+            var manager = new Components.ToastManager();
+            if (canvas.GUI != null)
+                canvas.GUI.AddChild(manager);
+            else
+                FlaxEngine.Debug.LogError("[ToastManager] ToastCanvas.GUI 为 null，toast 将无法显示");
+            return manager;
+        }
+
         public void ShowSuccess(string message)
         {
             FlaxEngine.Debug.Log($"[Toast成功] {message}");
-            new ConfirmDialog().ShowAdvanced("成功", message);
-
+            FlaxEngine.Scripting.InvokeOnUpdate(() => Shared.ShowSuccess(message));
         }
 
         public void ShowError(string message)
         {
             FlaxEngine.Debug.LogError($"[Toast错误] {message}");
-            new ConfirmDialog().ShowAdvanced("失败", message);
+            FlaxEngine.Scripting.InvokeOnUpdate(() => Shared.ShowError(message));
         }
 
         public void ShowInfo(string message)
         {
             FlaxEngine.Debug.Log($"[Toast信息] {message}");
-            new ConfirmDialog().ShowAdvanced("信息", message);
+            FlaxEngine.Scripting.InvokeOnUpdate(() => Shared.ShowInfo(message));
         }
 
         public void ShowToast(string message, ToastType toastType = ToastType.Info)

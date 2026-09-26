@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Message.Sync;
+using Horizon.Game.Message.Sync.Components;
 using Horizon.Game.Sim;
 using Xunit;
 
@@ -80,6 +81,77 @@ public class DsWorldSessionTests
         Assert.Equal(5f, delta.Transform!.Value.X, 4);
         Assert.Equal(0f, delta.Transform!.Value.Y, 4);
         Assert.Equal(6f, delta.Transform!.Value.Z, 4);
+    }
+
+    /// <summary>
+    /// DS 通道此前 spawn 只带 HP，昵称与等级完全缺失，远程玩家头顶只能显示
+    /// Player_&lt;id&gt; 与 Lv.1。档案由网关在握手时权威注入，回归防线：三字段必须随 Spawn 出现。
+    /// </summary>
+    [Fact]
+    public void AddPlayer_WithProfile_SpawnCarriesNicknameTitleAndLevel()
+    {
+        var world = new DsWorldSession(MakeOptions());
+
+        Assert.True(world.AddPlayer(1001, 1001, 0f, 0f, 0f, out var reason,
+            nickname: "叶惊鸿", level: 37, title: "内门弟子"), reason);
+
+        var result = TickUntilSnapshotDue(world);
+        var delta = Assert.Single(result.WorldSnapshot!.Deltas);
+
+        Assert.Equal("叶惊鸿", delta.Identity!.Value.Nickname);
+        Assert.Equal("内门弟子", delta.Identity!.Value.Title);
+        Assert.Equal(37, delta.State!.Value.Level);
+    }
+
+    /// <summary>
+    /// v13 运行期档案变更：改名/换称号必须在**不重发 Spawn** 的前提下让 AOI 内其他客户端看到。
+    /// 同时要求只在变化的那一帧下发一次，之后回到 null（否则每帧多带两个字符串，白烧带宽）。
+    /// </summary>
+    [Fact]
+    public void PlayerProfileChanged_EmitsProfileOnceThenStops()
+    {
+        var world = new DsWorldSession(MakeOptions());
+        world.AddPlayer(1001, 1001, 0f, 0f, 0f, out _, nickname: "旧名", level: 5, title: "杂役");
+
+        // Spawn 帧：档案走 Identity，Profile 应为 null（不重复下发）。
+        var spawn = TickUntilSnapshotDue(world);
+        Assert.Null(spawn.WorldSnapshot!.Deltas[0].Profile);
+        Assert.Equal("旧名", spawn.WorldSnapshot!.Deltas[0].Identity!.Value.Nickname);
+
+        // 无变化的帧：仍为 null。
+        var steady = TickUntilSnapshotDue(world);
+        Assert.Null(steady.WorldSnapshot!.Deltas[0].Profile);
+
+        // 变更帧：只带真正变化的字段。
+        Assert.True(world.TryGetPlayer(1001, out var renamed));
+        renamed.Nickname = "新名";
+        var changed = TickUntilSnapshotDue(world);
+        var profile = changed.WorldSnapshot!.Deltas[0].Profile;
+        Assert.NotNull(profile);
+        Assert.Equal("新名", profile!.Value.Nickname);
+        Assert.Null(profile!.Value.Title);
+
+        // 收敛：变化只下发一次。
+        var settled = TickUntilSnapshotDue(world);
+        Assert.Null(settled.WorldSnapshot!.Deltas[0].Profile);
+    }
+
+    /// <summary>
+    /// 死亡状态位由 DS 权威血量派生，必须实时下发——否则远程客户端看不到别人倒下。
+    /// </summary>
+    [Fact]
+    public void PlayerDeath_CarriesDeadStateBit()
+    {
+        var world = new DsWorldSession(MakeOptions());
+        world.AddPlayer(1001, 1001, 0f, 0f, 0f, out _);
+
+        var alive = TickUntilSnapshotDue(world);
+        Assert.Equal(0u, alive.WorldSnapshot!.Deltas[0].State!.Value.StateBits);
+
+        Assert.True(world.TryGetPlayer(1001, out var victim));
+        victim.Hp = 0;
+        var dead = TickUntilSnapshotDue(world);
+        Assert.True((dead.WorldSnapshot!.Deltas[0].State!.Value.StateBits & EntityStateBits.Dead) != 0u);
     }
 
     [Fact]

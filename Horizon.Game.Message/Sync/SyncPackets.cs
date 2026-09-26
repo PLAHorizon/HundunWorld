@@ -58,8 +58,20 @@ public static class SyncProtocolVersion
     ///        显示真实昵称而非 Player_&lt;id&gt; 占位。追加于结构末尾（order 3），旧字段 0/1/2 编号不变，
     ///        MemoryPack 前向容错（旧读取端跳过未知尾部成员）。<see cref="SyncProtocolVersion.MinimumSupported"/>
     ///        保持 5 不变，过渡期软校验保证旧客户端不中断。
+    ///   v12 = 远程玩家"基础档案"端到端同步：<see cref="NetworkIdentityAuthComponent"/> 追加
+    ///        <see cref="NetworkIdentityAuthComponent.Title"/>（称号名，order 4，spawn-only），
+    ///        以及 <see cref="HandshakePacket"/> 追加由**网关权威填充**的
+    ///        Nickname/Level/Title（order 9/10/11）——DS 灰度通道此前既不填昵称也不填等级，
+    ///        导致远程玩家头顶只剩 Player_&lt;id&gt; 与 Lv.1。均为末尾追加，旧字段编号不变，
+    ///        MemoryPack 前向容错。<see cref="MinimumSupported"/> 保持 5 不变。
+    ///   v13 = <see cref="EntityDelta"/> 追加 <see cref="EntityDelta.Profile"/>（order 7，
+    ///        承载 <see cref="Horizon.Game.Message.Sync.Components.ProfileAuthComponent"/>）：
+    ///        昵称/称号此前只能随 spawn-only 的 Identity 下发，运行中改名或换称号无法告知
+    ///        AOI 内其他客户端；补一条"仅变化时携带"的增量通道，避免为重发 Spawn 而销毁重建远程角色。
+    ///        同时 DS 通道开始填 <see cref="EntityStateAuthComponent.StateBits"/>（死亡位），
+    ///        使远程玩家倒下/复活即时可见。
     /// </summary>
-    public const int Current = 11;
+    public const int Current = 13;
 
     /// <summary>
     /// 服务器支持的最低协议版本。低于此版本的客户端握手将被拒绝并收到 <see cref="HandshakeRejectPacket"/>，
@@ -204,6 +216,26 @@ public sealed partial class HandshakePacket : SyncPacket
     [MemoryPackOrder(8)]
     [Id(6)]
     public long ShardId { get; set; }
+
+    // 以下三字段是 **网关→DS 的权威注入通道**，不是客户端上行字段：
+    // 网关在转发握手前无条件用 CharacterGrain 查得的档案覆盖它们
+    // （见 SyncHandshakeHandler）。客户端即便自行填入也会被覆盖，故不构成伪造入口。
+    // DS 侧在 AddPlayer 时落到 DsPlayer，spawn 时经 Identity/State 下发给 AOI 内其他客户端。
+
+    /// <summary>角色昵称（网关权威填充；DS 通道专用）。</summary>
+    [MemoryPackOrder(9)]
+    [Id(7)]
+    public string Nickname { get; set; } = "";
+
+    /// <summary>角色等级（网关权威填充；DS 通道专用）。</summary>
+    [MemoryPackOrder(10)]
+    [Id(8)]
+    public int Level { get; set; }
+
+    /// <summary>角色称号名（网关权威填充，空=未佩戴；DS 通道专用）。</summary>
+    [MemoryPackOrder(11)]
+    [Id(9)]
+    public string Title { get; set; } = "";
 
     public HandshakePacket() { Kind = SyncPacketKind.Handshake; }
 }
@@ -362,6 +394,13 @@ public partial struct EntityDelta
 
     /// <summary>动画状态（仅 Montage 触发/结束事件时携带，循环动画由客户端根据 MovementState 驱动）。</summary>
     [MemoryPackOrder(6)] [Id(6)] public AnimationStateAuthComponent? AnimationState;
+
+    /// <summary>
+    /// 玩家基础档案变更（v13，仅玩家实体、仅变化时携带）。
+    /// 昵称/称号在 Identity 里是 spawn-only，运行中改名/换称号必须另开通道，
+    /// 否则只能重发 Spawn —— 而重复 Spawn 会让客户端销毁重建远程角色。
+    /// </summary>
+    [MemoryPackOrder(7)] [Id(7)] public ProfileAuthComponent? Profile;
 }
 
 /// <summary>实体增量种类。</summary>

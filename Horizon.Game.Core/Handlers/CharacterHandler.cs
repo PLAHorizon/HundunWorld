@@ -70,6 +70,7 @@ namespace Horizon.Game.Core.Handlers
             MessageType.PlayerAnimation,
             MessageType.PlayerSpawn,
             MessageType.AttributeUpdate,
+            MessageType.AttributeAllocate,
             MessageType.Attack,
             MessageType.SkillCast,
             MessageType.QingGong,
@@ -158,6 +159,8 @@ namespace Horizon.Game.Core.Handlers
                     return await CharacterEnterGameAsync(message);
                 case MessageType.Movement:
                     return await HandleMovementAsync(message);
+                case MessageType.AttributeAllocate:
+                    return await HandleAttributeAllocateAsync(message);
                 case MessageType.Attack:
                     return await HandleAttackAsync(message);
                 case MessageType.SkillCast:
@@ -636,6 +639,39 @@ namespace Horizon.Game.Core.Handlers
         }
 
         /// <summary>
+        /// 属性加点：转发到权威 <see cref="ICharacterGrain.AllocateAttributeAsync"/>（校验 + Redis 缓存 + 落库）。
+        /// 响应始终回服务端当前权威分配与点池，客户端据此收敛显示，失败即回滚预览。
+        /// </summary>
+        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleAttributeAllocateAsync(HorizonMessagePacket message)
+        {
+            var request = message.Body as AttributeAllocateRequest;
+            var response = new AttributeAllocateResponse
+            {
+                CharacterId = request?.CharacterId ?? 0UL,
+                Allocation = new AttributeAllocationData(),
+            };
+
+            try
+            {
+                if (request is null || request.CharacterId == 0UL || request.Allocation is null)
+                {
+                    response.Message = "请求参数无效";
+                    return (true, CreateHorizonMessage(response));
+                }
+
+                var grain = _clusterClient.GetGrain<ICharacterGrain>((long)request.CharacterId);
+                var result = await grain.AllocateAttributeAsync(request.CharacterId, request.Allocation);
+                return (true, CreateHorizonMessage(result));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "处理属性加点消息失败。CharacterId={CharacterId}", request?.CharacterId ?? 0);
+                response.Message = "加点失败，请稍后重试";
+                return (true, CreateHorizonMessage(response));
+            }
+        }
+
+        /// <summary>
         /// 异步处理移动消息（阶段 3.3 后为拒绝路径）。<br/>
         /// 移动权威已迁移至空间权威（ZoneShardGrain + SimWorld），
         /// 旧 <see cref="MessageType.Movement"/> 写路径（CharacterGrain.MoveAsync）已下线，
@@ -771,14 +807,20 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 EquipItemMessage equipItemMessage = message.Body as EquipItemMessage;
-                // 处理装备物品逻辑
+                // 落到权威背包；失败时如实回传，不再无条件报"装备成功"。
+                var (ok, text) = await ApplyEquipCommandAsync(
+                    equipItemMessage.CharacterId, equipItemMessage.ItemId, equipItemMessage.TemplateId,
+                    equipItemMessage.Slot, equipItemMessage.Unequip);
+
                 var response = new EquipItemMessage
                 {
                     CharacterId = equipItemMessage.CharacterId,
                     ItemId = equipItemMessage.ItemId,
                     Slot = equipItemMessage.Slot,
-                    Success = true,
-                    Message = "装备成功"
+                    Unequip = equipItemMessage.Unequip,
+                    TemplateId = equipItemMessage.TemplateId,
+                    Success = ok,
+                    Message = text
                 };
                 var tem = CreateHorizonMessage(response);
                 return (true, tem);

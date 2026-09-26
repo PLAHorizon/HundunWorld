@@ -671,11 +671,30 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
                 ApplyLayout();
                 RefreshAllData();
+
+                // 装备/背包/属性全部以服务端权威快照为准：订阅变化并在无数据时主动拉取。
+                PlayerInventoryService.Instance.Changed += OnInventoryChanged;
+                PlayerInventoryService.Instance.OperationFinished += OnItemOperationFinished;
+                if (!PlayerInventoryService.Instance.HasServerData)
+                    PlayerInventoryService.Instance.RequestFullRefresh();
             }
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[MenuCharAttributesV2Page] 初始化失败: {ex.Message}\n{ex.StackTrace}");
             }
+        }
+
+        public override void OnDestroy()
+        {
+            PlayerInventoryService.Instance.Changed -= OnInventoryChanged;
+            PlayerInventoryService.Instance.OperationFinished -= OnItemOperationFinished;
+            base.OnDestroy();
+        }
+
+        private void OnItemOperationFinished(HundunWorld.Game.Services.ItemOperationResult result)
+        {
+            if (!result.Success)
+                FlaxEngine.Debug.LogWarning($"[MenuCharAttributesV2Page] 装备操作失败: {result.Operation} — {result.Message}");
         }
 
         // ===================================================================
@@ -2662,9 +2681,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
-        /// <summary>刷新全部数据（属性、装备、武学、战力）。</summary>
+        /// <summary>刷新全部数据（装备、属性、武学、战力）。</summary>
         private void RefreshAllData()
         {
+            LoadFromInventoryService();
             RecalculateAttributes();
             RefreshAdvancedAttributes();
             RefreshMartialArts();
@@ -2675,56 +2695,55 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         // ===================================================================
 
         /// <summary>
-        /// 初始化 mock 装备数据。
+        /// 从 <see cref="PlayerInventoryService"/> 权威快照重建装备槽与背包装备视图。
+        /// <para>
+        /// 原 <c>InitializeMockEquipment</c>（硬编码"穿上全部默认装+塞满背包"）为死代码且与服务端
+        /// 权威存储冲突，已删除。本页背包视图只展示能解析为装备定义的条目（丹药/材料等消耗品
+        /// 属"行囊"页职责，不在此列出）；服务端没有扩展袋概念，<c>_equippedBags</c> 保持为空。
+        /// </para>
         /// </summary>
-        private void InitializeMockEquipment()
+        private void LoadFromInventoryService()
         {
             try
             {
                 _equippedItems.Clear();
                 _backpackItems.Clear();
+                _equippedBags.Clear();
 
-                var allEquipments = EquipmentDatabase.GetAllEquipments();
-                if (allEquipments != null)
+                var service = PlayerInventoryService.Instance;
+
+                foreach (EquipmentSlot slot in (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot)))
                 {
-                    _backpackItems.AddRange(allEquipments);
+                    if (service.TryGetEquipped(slot, out var entry) && entry.TemplateId > 0)
+                    {
+                        var equippedData = EquipmentDatabase.GetEquipment(entry.TemplateId);
+                        if (equippedData != null)
+                            _equippedItems[slot] = equippedData;
+                    }
                 }
 
-                EquipFromBackpack(EquipmentDatabase.DefaultBody);
-                EquipFromBackpack(EquipmentDatabase.DefaultLongsword);
-                EquipFromBackpack(EquipmentDatabase.DefaultHeadScarf);
-                EquipFromBackpack(EquipmentDatabase.DefaultNecklace);
-                EquipFromBackpack(EquipmentDatabase.DefaultShoulderGuard);
-                EquipFromBackpack(EquipmentDatabase.DefaultCloak);
-                EquipFromBackpack(EquipmentDatabase.DefaultBelt);
-                EquipFromBackpack(EquipmentDatabase.DefaultLeggings);
-                EquipFromBackpack(EquipmentDatabase.DefaultShoes);
-                EquipFromBackpack(EquipmentDatabase.DefaultDagger);
-
-                // 默认装备 1 个小包到背包槽 0（演示魔兽世界式背包系统）
-                _equippedBags.Clear();
-                _backpackItems.Remove(EquipmentDatabase.SmallClothBag);
-                _equippedBags.Add(new EquippedBag(0, EquipmentDatabase.SmallClothBagId, EquipmentDatabase.SmallClothBag.ExtraSlots));
+                foreach (var item in service.Items)
+                {
+                    if (item.TemplateId <= 0) continue;
+                    var equipmentData = EquipmentDatabase.GetEquipment(item.TemplateId);
+                    if (equipmentData != null)
+                        _backpackItems.Add(equipmentData);
+                }
 
                 RefreshEquipmentSlots();
                 RefreshBackpack();
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogError($"[MenuCharAttributesV2Page] InitializeMockEquipment 失败: {ex.Message}");
+                FlaxEngine.Debug.LogError($"[MenuCharAttributesV2Page] LoadFromInventoryService 失败: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// 将装备从背包装备到对应槽位（仅初始化用，不触发刷新）。
-        /// </summary>
-        private void EquipFromBackpack(EquipmentData equipment)
+        /// <summary>权威快照变化（穿戴/卸下/新物品）：重建装备/背包显示并按组件重算属性。</summary>
+        private void OnInventoryChanged()
         {
-            if (equipment == null)
-                return;
-
-            _backpackItems.Remove(equipment);
-            _equippedItems[equipment.Slot] = equipment;
+            LoadFromInventoryService();
+            RecalculateAttributes();
         }
 
         /// <summary>刷新所有装备槽显示。</summary>
@@ -2818,21 +2837,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 if (!_equippedItems.ContainsKey(slot))
                     return;
 
-                if (_backpackGrid != null && _backpackGrid.IsFull)
-                {
-                    FlaxEngine.Debug.LogWarning("[MenuCharAttributesV2Page] 背包已满，无法卸下装备");
-                    return;
-                }
-
-                EquipmentData equipment = _equippedItems[slot];
-                _equippedItems.Remove(slot);
-                _backpackItems.Add(equipment);
-
-                RecalculateAttributes();
-                RefreshEquipmentSlots();
-                RefreshBackpack();
-
-                FlaxEngine.Debug.Log($"[MenuCharAttributesV2Page] 卸下装备: {equipment.Name} (槽位: {slot})");
+                // 卸下走服务端权威背包（grain 会校验槽位/容量）；本页不再本地改 _equippedItems，
+                // 服务端回包→重拉快照→Changed 事件驱动 LoadFromInventoryService 完成视觉更新。
+                _ = PlayerInventoryService.Instance.RequestUnequipAsync(slot);
+                FlaxEngine.Debug.Log($"[MenuCharAttributesV2Page] 卸下请求已发送: {slot}");
             }
             catch (Exception ex)
             {
@@ -2854,41 +2862,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 if (equipment == null)
                     return;
 
-                // 背包类型物品 → 装备到背包槽（魔兽世界式扩展背包系统）
-                if (equipment.Type == EquipmentType.Bag)
-                {
-                    EquipBagFromBackpack(cellIndex, equipment);
-                    return;
-                }
-
-                int characterLevel = _boundCharacter?.Level ?? _mockLevel;
+                int characterLevel = _boundCharacter != null ? _boundCharacter.Level : _mockLevel;
                 if (equipment.RequiredLevel > characterLevel)
                 {
                     FlaxEngine.Debug.LogWarning($"[MenuCharAttributesV2Page] 等级不足，需要 Lv.{equipment.RequiredLevel}，当前 Lv.{characterLevel}");
                     return;
                 }
 
-                EquipmentSlot targetSlot = equipment.Slot;
-
-                EquipmentData previousEquipment = null;
-                if (_equippedItems.ContainsKey(targetSlot))
-                {
-                    previousEquipment = _equippedItems[targetSlot];
-                }
-
-                _equippedItems[targetSlot] = equipment;
-                _backpackItems.RemoveAt(cellIndex);
-
-                if (previousEquipment != null)
-                {
-                    _backpackItems.Add(previousEquipment);
-                }
-
-                RecalculateAttributes();
-                RefreshEquipmentSlots();
-                RefreshBackpack();
-
-                FlaxEngine.Debug.Log($"[MenuCharAttributesV2Page] 装备: {equipment.Name} (槽位: {targetSlot})");
+                // 穿戴走服务端（按模板 ID 解析实例）；结果由服务端回包→快照重拉驱动刷新。
+                _ = PlayerInventoryService.Instance.RequestEquipByTemplateAsync(equipment.Id);
+                FlaxEngine.Debug.Log($"[MenuCharAttributesV2Page] 穿戴请求已发送: {equipment.Name} (槽位: {equipment.Slot})");
             }
             catch (Exception ex)
             {
@@ -3055,9 +3038,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         // ===================================================================
 
         /// <summary>
-        /// 重新计算角色属性：基础属性 = 角色基础值 + 装备 BaseStats 加成；
-        /// 五行属性 = 角色基础值 + 装备 WuxingBonus 加成。
-        /// 更新基础属性条、雷达图、战力数值。
+        /// 重新计算角色属性。
+        /// <para>
+        /// <b>组件即权威</b>：<see cref="CharacterAttributes.FromComponent"/> 读到的攻/防/HP/MP/五行
+        /// 已由 <c>EquipmentAttributeBridge</c> 把穿戴快照合成为"基值+装备加成"，
+        /// 因此这里<b>不再</b>遍历 <c>_equippedItems</c> 二次叠加装备加成（旧实现会双重计算，数值虚高）。
+        /// 气血/攻击/防御取真实值；暴击无权威数据源，标"-"; 五行雷达接亲和真值。
+        /// </para>
         /// </summary>
         private void RecalculateAttributes()
         {
@@ -3070,35 +3057,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 _basicAttrBaseValues[0] = attr.HP;
                 _basicAttrBaseValues[1] = attr.Attack;
                 _basicAttrBaseValues[2] = attr.Defense;
-                _basicAttrBaseValues[3] = 15f;
-
                 for (int i = 0; i < BasicAttrCount; i++)
-                {
                     _basicAttrBonusValues[i] = 0f;
-                }
 
-                foreach (var kvp in _equippedItems)
-                {
-                    EquipmentData equipment = kvp.Value;
-                    if (equipment?.BaseStats == null)
-                        continue;
+                // 组件值已含装备最终加成，直接作为总值；暴击(索引3)无数据源标记为 -1 以显示"-"。
+                _basicAttrTotalValues[0] = attr.HP;
+                _basicAttrTotalValues[1] = attr.Attack;
+                _basicAttrTotalValues[2] = attr.Defense;
+                _basicAttrTotalValues[3] = -1f;
 
-                    if (equipment.BaseStats.ContainsKey("HP"))
-                        _basicAttrBonusValues[0] += equipment.BaseStats["HP"];
-                    if (equipment.BaseStats.ContainsKey("Attack"))
-                        _basicAttrBonusValues[1] += equipment.BaseStats["Attack"];
-                    if (equipment.BaseStats.ContainsKey("Defense"))
-                        _basicAttrBonusValues[2] += equipment.BaseStats["Defense"];
-                    if (equipment.BaseStats.ContainsKey("CritRate"))
-                        _basicAttrBonusValues[3] += equipment.BaseStats["CritRate"];
-                }
-
-                for (int i = 0; i < BasicAttrCount; i++)
-                {
-                    _basicAttrTotalValues[i] = _basicAttrBaseValues[i] + _basicAttrBonusValues[i];
-                }
+                // 五行雷达接真实亲和值。
+                _wuxingTotalValues[0] = attr.Metal;
+                _wuxingTotalValues[1] = attr.Wood;
+                _wuxingTotalValues[2] = attr.Water;
+                _wuxingTotalValues[3] = attr.Fire;
+                _wuxingTotalValues[4] = attr.Earth;
 
                 RefreshBasicAttributes();
+                RefreshRadarChart();
                 RefreshCombatPower();
             }
             catch (Exception ex)
@@ -3107,7 +3083,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
-        /// <summary>刷新基础属性 4 项的数值 Label。</summary>
+        /// <summary>刷新基础属性 4 项的数值 Label（负值 = 无数据源，显示"-"）。</summary>
         private void RefreshBasicAttributes()
         {
             if (_basicAttrValueLabels == null)
@@ -3115,13 +3091,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             for (int i = 0; i < BasicAttrCount; i++)
             {
+                if (_basicAttrValueLabels[i] == null) continue;
                 float total = _basicAttrTotalValues[i];
-                if (_basicAttrValueLabels[i] != null)
+                if (total < 0f)
                 {
-                    _basicAttrValueLabels[i].Text = BasicAttrIsPercent[i]
-                        ? $"{total:F1}"
-                        : $"{(int)total}";
+                    _basicAttrValueLabels[i].Text = "-";
+                    continue;
                 }
+                _basicAttrValueLabels[i].Text = BasicAttrIsPercent[i] ? $"{total:F1}" : $"{(int)total}";
             }
         }
 
@@ -3140,12 +3117,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     _wuxingTotalValues[3],
                     _wuxingTotalValues[4]);
 
-                float attack = _basicAttrTotalValues[0] * 0.1f;
-                float defense = _basicAttrTotalValues[1];
-                float hp = _basicAttrTotalValues[0] * 0.1f;
-                float crit = _mockAdvancedAttrValues[0] * 100f;
-                float hit = _mockAdvancedAttrValues[2] * 100f;
-                float dodge = _mockAdvancedAttrValues[3] * 100f;
+                // 关键属性轴：攻/防/气血取组件权威值（气血/10 折算到攻防量级）；
+                // 暴击/命中/闪避无权威数据源 → 顶点 0，不再用 _mockAdvancedAttrValues 充数。
+                float attack = _basicAttrTotalValues[1] > 0f ? _basicAttrTotalValues[1] : 0f;
+                float defense = _basicAttrTotalValues[2] > 0f ? _basicAttrTotalValues[2] : 0f;
+                float hp = _basicAttrTotalValues[0] > 0f ? _basicAttrTotalValues[0] / 10f : 0f;
+                float crit = 0f;
+                float hit = 0f;
+                float dodge = 0f;
 
                 _radarChart.SetKeyAttributeValues(new float[] { attack, defense, hp, crit, hit, dodge });
 
@@ -3155,6 +3134,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     if (_wuxingTotalValues[i] > maxVal)
                         maxVal = _wuxingTotalValues[i];
                 }
+                if (attack > maxVal) maxVal = attack;
                 _radarChart.MaxValue = maxVal;
             }
             catch (Exception ex)
@@ -3169,15 +3149,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             if (_advancedAttrValueLabels == null)
                 return;
 
+            // 暴伤/命中/闪避等进阶属性在角色组件与服务端均无权威数据源，
+            // 统一显示"-"而不是静态 mock 表（AdvancedAttrValues）里的假数字。
             for (int i = 0; i < AdvancedAttrCount; i++)
             {
                 if (i < _advancedAttrValueLabels.Length && _advancedAttrValueLabels[i] != null)
-                {
-                    string valueText = AdvancedAttrIsPercent[i]
-                        ? $"{AdvancedAttrValues[i]}"
-                        : $"{(int)AdvancedAttrValues[i]}";
-                    _advancedAttrValueLabels[i].Text = valueText;
-                }
+                    _advancedAttrValueLabels[i].Text = "-";
             }
         }
 
@@ -3203,7 +3180,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             float sum = 0f;
             for (int i = 0; i < BasicAttrCount; i++)
             {
-                sum += _basicAttrTotalValues[i];
+                // 负值 = 无权威数据源的占位（如暴击），不计入战力。
+                if (_basicAttrTotalValues[i] > 0f)
+                    sum += _basicAttrTotalValues[i];
             }
             int combatPower = (int)(sum * 10f);
             _combatPowerValue.Text = combatPower.ToString("N0");
@@ -3268,7 +3247,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 Float2 screenPos = _advancedAttrNameLabels[attrIndex] != null
                     ? _advancedAttrNameLabels[attrIndex].PointToScreen(localPos)
                     : FlaxEngine.Input.MouseScreenPosition;
-                float percent = _mockAdvancedAttrValues[attrIndex] * 100f;
                 string name = attrIndex < _mockAdvancedAttrNames.Length ? _mockAdvancedAttrNames[attrIndex] : "未知";
 
                 string[] descriptions = {
@@ -3279,7 +3257,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 };
                 string additionalInfo = attrIndex < descriptions.Length ? descriptions[attrIndex] : string.Empty;
 
-                string coreInfo = $"当前：{percent:F0}%\n具体数值：{percent * 10:F0}";
+                // 进阶属性在角色组件/服务端均无权威数据源：与卡片的"-"保持一致，不再显示 mock 百分比。
+                string coreInfo = "暂无权威数据";
                 _tooltip.SetData(null, name, coreInfo, additionalInfo, null);
                 _tooltip.SetQualityBorderColor(null);
                 _tooltip.Show(screenPos);
@@ -3423,18 +3402,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     string[] keyAttrNames = { "攻击", "防御", "气血", "暴击", "命中", "闪避" };
                     string name = index < keyAttrNames.Length ? keyAttrNames[index] : "未知";
 
-                    float value = 0f;
+                    // 攻击/防御/气血接组件权威值（与 RefreshRadarChart 口径一致）；暴击/命中/闪避无源。
+                    string coreInfo;
                     switch (index)
                     {
-                        case 0: value = _basicAttrTotalValues[0] * 0.1f; break;
-                        case 1: value = _basicAttrTotalValues[1]; break;
-                        case 2: value = _basicAttrTotalValues[0] * 0.1f; break;
-                        case 3: value = _mockAdvancedAttrValues[0] * 100f; break;
-                        case 4: value = _mockAdvancedAttrValues[2] * 100f; break;
-                        case 5: value = _mockAdvancedAttrValues[3] * 100f; break;
+                        case 0: coreInfo = $"数值：{_basicAttrTotalValues[1]:F0}"; break;
+                        case 1: coreInfo = $"数值：{_basicAttrTotalValues[2]:F0}"; break;
+                        case 2: coreInfo = $"数值：{_basicAttrTotalValues[0]:F0}"; break;
+                        default: coreInfo = "暂无权威数据"; break;
                     }
-
-                    string coreInfo = $"数值：{value:F0}";
                     string additionalInfo = $"关键战斗属性：{name}";
                     _tooltip.SetData(null, name, coreInfo, additionalInfo, null);
                 }

@@ -10,6 +10,10 @@ namespace Horizon.Orleans.Interface
 {
     /// <summary>
     /// 物品系统Grain接口 - 负责物品管理、背包操作
+    /// <para>
+    /// Grain Primary Key = 由 <c>GrainKeyMapper.ToInventoryKey(characterId)</c> 换算出的 <see cref="Guid"/>
+    /// （ulong 角色 ID → Guid 的换算集中在该映射器，勿各处各写一套）。
+    /// </para>
     /// </summary>
     [global::Orleans.CodeGeneration.Version(1)]
     public interface IInventoryGrain : IGrainWithGuidKey
@@ -71,14 +75,38 @@ namespace Horizon.Orleans.Interface
         Task<bool> EquipItemAsync(long itemId, int slot);
 
         /// <summary>
+        /// 按模板 ID（客户端装备定义 ID）装备到指定槽位；服务端负责解析成背包实例 ID。
+        /// </summary>
+        Task<bool> EquipByTemplateAsync(int templateId, int slot);
+
+        /// <summary>
         /// 从指定槽位卸下装备
         /// </summary>
         Task<bool> UnequipItemAsync(int slot);
 
         /// <summary>
-        /// 获取所有已装备物品
+        /// 获取所有已装备物品（槽位 → 物品ID）。
         /// </summary>
         Task<Dictionary<int, long>> GetEquippedItemsAsync();
+
+        /// <summary>
+        /// 获取所有已装备物品的完整信息（含 Count/TemplateId/Name 等）。
+        /// 装备外观/属性结算需要完整条目，只有物品ID不够。
+        /// </summary>
+        Task<List<ItemInfo>> GetEquippedItemInfosAsync();
+
+        /// <summary>
+        /// 槽位 → 完整物品信息。客户端按槽位渲染换装，扁平列表会丢"哪件在哪个槽"。
+        /// </summary>
+        Task<Dictionary<int, ItemInfo>> GetEquippedSlotsAsync();
+
+        /// <summary>
+        /// 宝石镶嵌/卸下（服务端权威）：从背包扣一颗 <paramref name="gemTemplateId"/> 宝石镶入
+        /// 装备实例指定槽位；槽内已有宝石则换下并放回背包（可再利用）。
+        /// <paramref name="gemTemplateId"/> 传 0 表示单纯卸下该槽宝石放回背包。
+        /// 返回操作后该装备的完整宝石数组（-1=空槽）。
+        /// </summary>
+        Task<(bool Success, string Message, List<int> Gems)> SocketGemAsync(long equipmentItemId, int gemSlot, int gemTemplateId);
     }
 
     /// <summary>

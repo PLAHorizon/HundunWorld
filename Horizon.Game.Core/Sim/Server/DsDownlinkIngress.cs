@@ -39,14 +39,20 @@ public sealed class DsDownlinkIngress
 {
     private readonly IDsDownlinkSink _sink;
     private readonly Action<string>? _onDrop;
+    private readonly Action<SyncPacket, long[]>? _onPacketDecoded;
 
     /// <summary>创建下行入口。</summary>
     /// <param name="sink">落地的分发管线（通常为网关的 fanout source）。</param>
     /// <param name="onDrop">丢弃回调（诊断/指标）；可为 null。</param>
-    public DsDownlinkIngress(IDsDownlinkSink sink, Action<string>? onDrop = null)
+    /// <param name="onPacketDecoded">
+    /// 解码成功后的只读观察回调（包 + 受众会话）；可为 null。
+    /// 供宿主挂接旁路消费者（如 DS 玩家位置写回持久层）；回调异常被吞，绝不影响投递主链路。
+    /// </param>
+    public DsDownlinkIngress(IDsDownlinkSink sink, Action<string>? onDrop = null, Action<SyncPacket, long[]>? onPacketDecoded = null)
     {
         _sink = sink ?? throw new ArgumentNullException(nameof(sink));
         _onDrop = onDrop;
+        _onPacketDecoded = onPacketDecoded;
     }
 
     /// <summary>累计成功投递的事件数。</summary>
@@ -60,6 +66,9 @@ public sealed class DsDownlinkIngress
 
     /// <summary>累计空受众（无目标会话）被跳过的条目数。</summary>
     public long SkippedEmptyAudienceCount { get; private set; }
+
+    /// <summary>累计旁路观察回调抛异常被吞的次数（不影响投递，仅诊断旁路消费者健康度）。</summary>
+    public long ObserverFailureCount { get; private set; }
 
     /// <summary>
     /// 摄取一批 DS 下行帧。
@@ -105,6 +114,20 @@ public sealed class DsDownlinkIngress
                 DecodeFailureCount++;
                 _onDrop?.Invoke("decode_failed");
                 continue;
+            }
+
+            // 只读观察旁路（如玩家位置持久化）：异常吞掉，绝不影响实时投递主链路。
+            if (_onPacketDecoded is not null)
+            {
+                try
+                {
+                    _onPacketDecoded(packet, item.SessionIds);
+                }
+                catch
+                {
+                    // 旁路消费者失败与实时链路隔离；计数供诊断。
+                    ObserverFailureCount++;
+                }
             }
 
             var evt = new FanoutEvent

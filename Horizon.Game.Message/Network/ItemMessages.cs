@@ -187,6 +187,18 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(12)]
         [Id(12)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
+
+        /// <summary>
+        /// 已镶宝石（按槽位顺序存宝石模板 ID，-1 = 空槽）。
+        /// <para>
+        /// 长度即该装备开放的孔数：客户端按装备品质规则渲染，服务端不建物品表、
+        /// 只按 <c>GemSocketRequest</c> 落库（上界 <c>InventoryGrain.MaxGemSlots</c> 兜底）。
+        /// 语义上只对装备条目有意义；消耗品/材料恒为空。
+        /// </para>
+        /// </summary>
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public List<int> Gems { get; set; } = new();
     }
 
     /// <summary>
@@ -232,9 +244,220 @@ namespace Horizon.Game.Message.Network
         [Id(4)]
         public string Message { get; set; } = "";
 
+        /// <summary>
+        /// true = 从 <see cref="Slot"/> 卸下装备（此时 <see cref="ItemId"/> 忽略）；
+        /// false/缺省 = 把 <see cref="ItemId"/> 装到 <see cref="Slot"/>。
+        /// <para>
+        /// 之所以复用同一条消息而不是新增一条：客户端卸下装备本就走同一个交互入口，
+        /// 且缺省值 false 让旧客户端的既包语义保持不变（向后兼容）。
+        /// </para>
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool Unequip { get; set; }
+
+        /// <summary>
+        /// 装备**定义/模板** ID（客户端编号空间，如 10001..30001）。
+        /// <para>
+        /// <see cref="ItemId"/> 是服务端背包 grain 的自增实例 ID，客户端并不掌握该编号空间。
+        /// 因此客户端发起的穿戴一律填本字段、<see cref="ItemId"/> 留 0；服务端优先按本字段解析。
+        /// </para>
+        /// </summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public int TemplateId { get; set; }
+
         [MemoryPackOrder(5)]
         [Id(5)]
         public MessageType Type { get; set; } = MessageType.EquipItem;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 单个已装备条目（服务端权威 → 客户端渲染）。
+    /// <para>
+    /// <b>必须带 TemplateId</b>：服务端 <c>ItemInfo.ItemId</c> 是背包 grain 的自增**实例** ID
+    /// （从 1 起），而客户端 <c>EquipmentDatabase.GetEquipment(int)</c> 的入参是定义表 ID
+    /// （10001..30001，即 TemplateId 语义）。只回 ItemId 会让客户端全部解析成 null（角色光身子）。
+    /// </para>
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class EquippedSlotEntry
+    {
+        /// <summary>装备槽位，取值与客户端 <c>EquipmentSlot</c> 枚举一致（0..14，14=Face）。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int Slot { get; set; }
+
+        /// <summary>背包内物品实例 ID（用于回发卸下/换装）。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ItemId { get; set; }
+
+        /// <summary>物品模板 ID = 客户端装备定义表 ID，3D 换装按它解析。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int TemplateId { get; set; }
+
+        /// <summary>数量（装备通常 1，但保真起见一并下发）。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Count { get; set; }
+
+        /// <summary>品质。</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Quality { get; set; }
+
+        /// <summary>
+        /// 已镶宝石（槽位序，-1=空槽）。客户端把"镶嵌宝石的五行加成"计入角色属性，
+        /// 必须随装备条目一起下发——只给模板 ID 列表的话，五行/属性加成会随换装丢失。
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public List<int> Gems { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 角色已装备清单同步：客户端只填 <see cref="CharacterId"/> 请求，服务端回填
+    /// <see cref="Entries"/>。<br/>
+    /// 存在理由：客户端 3D 换装此前只读本地 SQLite，服务端换了装备客户端并不知道；
+    /// 既有的 <c>EquipmentInfoMessage</c> 处理器只把请求字段原样回显，给不出真实装备态。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(230, Enums.ServiceType.Game)]
+    public partial class RoleEquipmentSyncMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>目标角色 ID。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>已装备条目（请求时为空头）。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public List<EquippedSlotEntry> Entries { get; set; } = new();
+
+        /// <summary>是否成功。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public bool Success { get; set; }
+
+        /// <summary>失败原因。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.RoleEquipmentSync;
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 角色背包清单同步：客户端只填 <see cref="CharacterId"/> 请求，服务端回填 <see cref="Items"/>。
+    /// <para>
+    /// <see cref="Success"/> 与"空清单"必须能区分开：<c>Success=true 且 Items 为空</c> 表示服务端
+    /// 确认背包为空（客户端可以安全地把历史本地清单迁移进来）；<c>Success=false</c> 表示 grain
+    /// 不可用/查询失败，此时客户端**绝不能**上传，否则每次断线重连都会重复播种一份物品。
+    /// </para>
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(231, Enums.ServiceType.Game)]
+    public partial class RoleInventorySyncMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>目标角色 ID。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>背包内物品（服务端权威；请求时为空）。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public List<ItemInfo> Items { get; set; } = new();
+
+        /// <summary>背包容量上限。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Capacity { get; set; }
+
+        /// <summary>是否成功（false 时客户端应保持本地渲染、且不得迁移）。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.RoleInventorySync;
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>批量发放条目：只带模板 ID 与数量（客户端编号空间）。</summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class InventoryGrantEntry
+    {
+        /// <summary>物品模板 ID = 客户端定义表 ID。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int TemplateId { get; set; }
+
+        /// <summary>数量（同模板多件应先在客户端聚合，服务端按 TemplateId+Quality 堆叠）。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Count { get; set; }
+    }
+
+    /// <summary>
+    /// 按模板批量发放物品。当前唯一用途是把玩家改动前的本地背包一次性迁到服务端权威存储。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(232, Enums.ServiceType.Game)]
+    public partial class InventoryGrantMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>目标角色 ID。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>待发放条目。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public List<InventoryGrantEntry> Entries { get; set; } = new();
+
+        /// <summary>实际发放成功的条目数。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int GrantedCount { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.InventoryGrant;
+
         [MemoryPackOrder(6)]
         [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
@@ -1465,6 +1688,94 @@ namespace Horizon.Game.Message.Network
         public MessageType Type { get; set; } = MessageType.InventoryExpand;
         [MemoryPackOrder(5)]
         [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 宝石镶嵌消息
+
+    /// <summary>
+    /// 宝石镶嵌/卸下请求。
+    /// <para>
+    /// <see cref="EquipmentItemId"/> 是服务端背包的装备**实例** ID——客户端物品详情本就持有
+    /// 权威 <c>ItemInfo.ItemId</c>，镶嵌是针对单件装备实例的操作，不能用模板 ID 寻址。
+    /// <see cref="GemTemplateId"/> 用模板 ID（=客户端定义表 ID）：服务端按它扣/还堆叠，
+    /// 与穿戴接口的"客户端只说模板 ID"约定一致。0 = 卸下 <see cref="GemSlot"/> 的宝石放回背包。
+    /// </para>
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(233, Enums.ServiceType.Game)]
+    public partial class GemSocketRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>角色ID</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>目标装备的背包实例 ID</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long EquipmentItemId { get; set; }
+
+        /// <summary>宝石槽位下标（0 起，上界见服务端 MaxGemSlots）</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int GemSlot { get; set; }
+
+        /// <summary>要镶入的宝石模板 ID；0 = 卸下该槽</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int GemTemplateId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.GemSocket;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 宝石镶嵌/卸下响应。携带操作后的完整 <see cref="Gems"/>，客户端可直接更新该条目，
+    /// 无需等服务端再回推一次背包全量。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(234, Enums.ServiceType.Game)]
+    public partial class GemSocketResponse : MessageUnion, INetworkMessage
+    {
+        /// <summary>是否成功</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        /// <summary>结果说明</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>回显：目标装备实例 ID</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long EquipmentItemId { get; set; }
+
+        /// <summary>回显：槽位</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int GemSlot { get; set; }
+
+        /// <summary>操作后该装备的宝石数组（-1=空槽）；失败时为操作前原状。</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public List<int> Gems { get; set; } = new();
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.GemSocket;
+        [MemoryPackOrder(6)]
+        [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
     }
 

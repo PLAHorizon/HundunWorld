@@ -467,6 +467,14 @@ namespace Horizon.Game.Message.Network
         public float DamageReduction { get; set; }
 
         /// <summary>
+        /// 属性加点（服务端权威）。随 EnterGameResponse 一并下发，客户端据此重建第三层属性来源，
+        /// 无需再发一次查询；未加点时为全零而非 null，避免客户端到处判空。
+        /// </summary>
+        [MemoryPackOrder(22)]
+        [Id(22)]
+        public AttributeAllocationData Allocation { get; set; } = new();
+
+        /// <summary>
         /// 最后受伤时间
         /// </summary>
         [MemoryPackOrder(12)]

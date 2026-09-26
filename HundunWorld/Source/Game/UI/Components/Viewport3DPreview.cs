@@ -24,6 +24,8 @@ namespace HundunWorld.Game.UI.Components
         private FlaxEngine.Scene _targetScene;
         private bool _viewportCreated = false; // 视口渲染资源是否已创建
         private bool _actorsSpawned = false;   // Actor 是否已生成到场景
+        private EmptyActor _previewCameraActor; // 预览相机根 Actor（必须在卸载场景前销毁/断链）
+        private FlaxEngine.Scene _hostScene;     // 预览 Actor 所属场景（断链判定）
         public FlaxEngine.Scene TargetScene
         {
             get => _targetScene;
@@ -157,6 +159,7 @@ namespace HundunWorld.Game.UI.Components
                 var cameraActor = new EmptyActor();
                 cameraActor.Name = "PreviewCamera";
                 Level.SpawnActor(cameraActor, scene);
+                _previewCameraActor = cameraActor;
                 
                 _camera = cameraActor.AddChild<Camera>();
                 _camera.FieldOfView = 60f;
@@ -170,7 +173,13 @@ namespace HundunWorld.Game.UI.Components
                 _renderTask.ActorsSource = ActorsSources.CustomActors;
                 _renderTask.CustomActors = new Actor[] { cameraActor };
                 _renderTask.Enabled = true;
-                
+
+                // 宿主场景断链防护：场景卸载会销毁相机/模型 Actor，而 SceneRenderTask
+                // 白名单中的原生指针不会自动清除，下一帧 DrawAll 解引用即崩溃。
+                _hostScene = scene;
+                Level.SceneUnloading -= OnLevelSceneUnloading;
+                Level.SceneUnloading += OnLevelSceneUnloading;
+
                 _actorsSpawned = true;
                 FlaxEngine.Debug.Log($"[Viewport3DPreview] 相机Actor已生成到场景: {scene.Name}");
             }
@@ -204,22 +213,18 @@ namespace HundunWorld.Game.UI.Components
         {
             if (_modelActor != null)
             {
-                // 从渲染任务中移除模型
+                // 必须先从渲染任务白名单里摘除，再销毁 Actor：
+                // 反过来的话中间帧 DrawAll 会解引用已销毁的原生指针（野指针崩溃）
                 if (_renderTask != null && _renderTask.CustomActors != null)
                 {
                     var actors = _renderTask.CustomActors;
-                    // 创建新数组，排除_modelActor
-                    var newActors = new Actor[actors.Length > 1 ? actors.Length - 1 : 0];
-                    int index = 0;
+                    var kept = new System.Collections.Generic.List<Actor>(actors.Length);
                     foreach (var actor in actors)
                     {
-                        if (actor != _modelActor && actor != _camera?.Parent)
-                        {
-                            if (index < newActors.Length)
-                                newActors[index++] = actor;
-                        }
+                        if (actor != null && actor != _modelActor && actor != _previewCameraActor)
+                            kept.Add(actor);
                     }
-                    _renderTask.CustomActors = newActors;
+                    _renderTask.CustomActors = kept.ToArray();
                 }
                 
                 // 销毁模型Actor
@@ -537,17 +542,55 @@ namespace HundunWorld.Game.UI.Components
             base.OnEndMouseCapture();
         }
         
+        /// <summary>
+        /// 宿主场景卸载防护：在 Actor 被场景销毁之前断开渲染任务并清空白名单，
+        /// 否则下一帧 RenderTask::DrawAll 解引用野指针崩溃（Array.h Last() 断言 / 0xe06d7363）。
+        /// </summary>
+        private void OnLevelSceneUnloading(FlaxEngine.Scene scene, Guid sceneId)
+        {
+            if (_renderTask == null || scene == null || scene != _hostScene)
+                return;
+
+            FlaxEngine.Debug.Log("[Viewport3DPreview] 宿主场景正在卸载，断开离屏渲染任务");
+
+            _renderTask.Enabled = false;
+            _renderTask.CustomActors = null;
+            Level.SceneUnloading -= OnLevelSceneUnloading;
+
+            // Actor 随场景销毁：清引用， OnDestroy 兜底销毁会自动跳过
+            _camera = null;
+            _previewCameraActor = null;
+            _hostScene = null;
+            _modelActor = null;
+            _staticModel = null;
+            _animatedModel = null;
+            _animator = null;
+            _actorsSpawned = false;
+        }
+
         public override void OnDestroy()
         {
-            // 清理资源
-            ClearModel();
-            
+            Level.SceneUnloading -= OnLevelSceneUnloading;
+
+            // 先摘渲染任务，再销毁 Actor（顺序反了会留一帧野指针窗口）
             if (_renderTask != null)
             {
                 _renderTask.Enabled = false;
+                _renderTask.CustomActors = null;
+                FlaxEngine.Object.Destroy(_renderTask);
                 _renderTask = null;
             }
-            
+
+            ClearModel();
+
+            if (_previewCameraActor != null)
+            {
+                FlaxEngine.Object.Destroy(_previewCameraActor);
+                _previewCameraActor = null;
+            }
+            _camera = null;
+            _hostScene = null;
+
             if (_renderTexture != null)
             {
                 _renderTexture.ReleaseGPU();

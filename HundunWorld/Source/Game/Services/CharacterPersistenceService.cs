@@ -82,7 +82,10 @@ namespace HundunWorld.Game.Services
                 {
                     new InventoryItemData { ItemId = 10001, Count = 1 },
                     new InventoryItemData { ItemId = 20001, Count = 1 },
-                    new InventoryItemData { ItemId = 30001, Count = 1 }
+                    new InventoryItemData { ItemId = 30001, Count = 1 },
+                    // 新手消耗品：随迁移种子上到服务端权威背包，保证"使用物品"有可玩内容。
+                    new InventoryItemData { ItemId = 50001, Count = 2 },
+                    new InventoryItemData { ItemId = 50002, Count = 1 }
                 }
             };
         }
@@ -456,6 +459,108 @@ namespace HundunWorld.Game.Services
                 return CharacterAttributes.GetDefault();
             }
         }
+
+        /// <summary>
+        /// 本地背包是否已迁移到服务端权威存储。
+        /// <para>
+        /// 迁移必须"只发生一次"：服务端背包为空时才上传，且上传后置位。
+        /// 没有这个标记，玩家每次进游戏都会再播种一份，物品被无限累加。
+        /// </para>
+        /// </summary>
+        public const string InventoryMigratedAttributeKey = "InventoryMigrated";
+
+        /// <summary>读取"背包已迁移"标记；读不到角色数据时按未迁移处理（宁可少迁，不可重复迁）。</summary>
+        public async Task<bool> IsInventoryMigratedAsync(ulong characterId)
+        {
+            try
+            {
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+                if (characterData?.Attributes == null) return false;
+                return characterData.Attributes.TryGetValue(InventoryMigratedAttributeKey, out var raw)
+                       && raw?.ToString() == "1";
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[CharacterPersistence] 读取背包迁移标记失败，按未迁移处理: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>置位"背包已迁移"标记。</summary>
+        public Task<bool> MarkInventoryMigratedAsync(ulong characterId)
+            => UpdateCharacterAttributeAsync(characterId, InventoryMigratedAttributeKey, "1");
+
+        public const string StarterKitGrantedAttributeKey = "StarterKitGranted";
+
+        /// <summary>读取"新手消耗品已补发"标记；读不到角色数据时按未发放处理。</summary>
+        public async Task<bool> IsStarterKitGrantedAsync(ulong characterId)
+        {
+            try
+            {
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+                if (characterData?.Attributes == null) return false;
+                return characterData.Attributes.TryGetValue(StarterKitGrantedAttributeKey, out var raw)
+                       && raw?.ToString() == "1";
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[CharacterPersistence] 读取新手补发标记失败，按未发放处理: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>置位"新手消耗品已补发"标记。</summary>
+        public Task<bool> MarkStarterKitGrantedAsync(ulong characterId)
+            => UpdateCharacterAttributeAsync(characterId, StarterKitGrantedAttributeKey, "1");
+
+        public const string StarterEquipGrantedAttributeKey = "StarterEquipGranted";
+
+        /// <summary>读取"新手装备已补发"标记；读不到角色数据时按未发放处理。</summary>
+        public async Task<bool> IsStarterEquipGrantedAsync(ulong characterId)
+        {
+            try
+            {
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+                if (characterData?.Attributes == null) return false;
+                return characterData.Attributes.TryGetValue(StarterEquipGrantedAttributeKey, out var raw)
+                       && raw?.ToString() == "1";
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[CharacterPersistence] 读取新手装备标记失败，按未发放处理: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>置位"新手装备已补发"标记。</summary>
+        public Task<bool> MarkStarterEquipGrantedAsync(ulong characterId)
+            => UpdateCharacterAttributeAsync(characterId, StarterEquipGrantedAttributeKey, "1");
+
+        public const string StarterGemsGrantedAttributeKey = "StarterGemsGranted";
+
+        /// <summary>读取"新手宝石已补发"标记；读不到角色数据时按未发放处理。</summary>
+        public async Task<bool> IsStarterGemsGrantedAsync(ulong characterId)
+        {
+            try
+            {
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+                if (characterData?.Attributes == null) return false;
+                return characterData.Attributes.TryGetValue(StarterGemsGrantedAttributeKey, out var raw)
+                       && raw?.ToString() == "1";
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[CharacterPersistence] 读取新手宝石标记失败，按未发放处理: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>置位"新手宝石已补发"标记。</summary>
+        public Task<bool> MarkStarterGemsGrantedAsync(ulong characterId)
+            => UpdateCharacterAttributeAsync(characterId, StarterGemsGrantedAttributeKey, "1");
+
+        // 属性加点不在此持久化：已上收为服务端权威（CharacterGrain → Redis + 属性表），
+        // 客户端只缓存回执并经 AttributeAllocationService 灌进属性组件。
 
         /// <summary>
         /// 保存角色背包数据

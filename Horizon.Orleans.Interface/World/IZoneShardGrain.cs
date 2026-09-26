@@ -198,7 +198,8 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
         int stamina = -1, int maxStamina = -1,
         int hp = -1, int maxHp = -1,
         uint stateBits = uint.MaxValue,
-        string? nickname = null);
+        string? nickname = null,
+        string? title = null);
 
     /// <summary>
     /// Task B.5.2：更新角色移动状态（移动模式/水平速度）。

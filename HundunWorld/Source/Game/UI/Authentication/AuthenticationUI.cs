@@ -42,16 +42,26 @@ namespace HundunWorld.Game.UI.Authentication
         private LoadingIndicator _loadingIndicator;
 
         // 状态
-        private bool _isProcessing = false;
+        /// <summary>登录/注册的重入闸门；主线程置位，await 续体（线程池）复位，故声明为 volatile。</summary>
+        private volatile bool _isProcessing = false;
         private bool _isFirstLogin = true;
         private bool _isNetworkConnected = false;
         private bool _autoLoginAttempted = false;
         private System.Threading.CancellationTokenSource _statusCheckCts;
 
+        /// <summary>
+        /// 主（更新）线程 ID，在 <see cref="OnStart"/> 里记录。
+        /// Flax 主循环不安装 SynchronizationContext，所以 await 之后的续体、
+        /// Task.Run 与网络回调都会落到线程池线程，触碰 GUI / 场景层级即抛
+        /// "Editing scene hierarchy is only allowed on a main thread"。
+        /// </summary>
+        private int _mainThreadId = -1;
+
         public ContainerControl MainContainer { get => _mainContainer; set => _mainContainer = value; }
         public override void OnStart()
         {
-            FlaxEngine.Debug.Log($"[AuthenticationUI] 开始初始化");
+            _mainThreadId = System.Environment.CurrentManagedThreadId;
+            FlaxEngine.Debug.Log($"[AuthenticationUI] 开始初始化（主线程 ID={_mainThreadId}）");
             InitializeManagers();
             InitializeUI();
             SubscribeEvents();
@@ -74,17 +84,14 @@ namespace HundunWorld.Game.UI.Authentication
                 if (result.IsSuccess)
                 {
                     FlaxEngine.Debug.Log("[AuthenticationUI] 自动登录成功，隐藏登录界面");
-                    Scripting.InvokeOnUpdate(() =>
-                    {
-                        HideAuthenticationUI();
-                    });
+                    RunOnMainThread(HideAuthenticationUI);
                 }
                 else
                 {
                     FlaxEngine.Debug.Log($"[AuthenticationUI] 自动登录失败或未启用: {result.ErrorMessage}");
                     if (AuthenticationManager.IsLaunchedFromGengDi)
                     {
-                        Scripting.InvokeOnUpdate(() =>
+                        RunOnMainThread(() =>
                         {
                             if (_loginPanel != null)
                                 _loginPanel.SetStatus("登录已过期，请重新登录", UIStyleTokens.StatusWarning);
@@ -96,6 +103,34 @@ namespace HundunWorld.Game.UI.Authentication
             {
                 FlaxEngine.Debug.LogError($"[AuthenticationUI] 自动登录异常: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 把一段 GUI / 场景操作切回主线程执行：已在主线程则立即运行（行为不变），
+        /// 否则排队到下一帧更新。所有可能被 await 续体或后台线程调用的入口都要经过它。
+        /// </summary>
+        private void RunOnMainThread(Action action)
+        {
+            if (action == null)
+                return;
+
+            if (_mainThreadId < 0 || System.Environment.CurrentManagedThreadId == _mainThreadId)
+            {
+                action();
+                return;
+            }
+
+            FlaxEngine.Scripting.InvokeOnUpdate(() =>
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[AuthenticationUI] 主线程回调执行失败: {ex.Message}");
+                }
+            });
         }
 
         /// <summary>
@@ -196,38 +231,46 @@ namespace HundunWorld.Game.UI.Authentication
         }
 
         /// <summary>
-        /// 场景切换事件处理
+        /// 场景切换事件处理。
+        /// <para>
+        /// 事件源（UIStateManager / GameSceneManager）的 await 续体可能在线程池线程上触发，
+        /// 因此整个处理过程先切回主线程；面板显示自身的异步取数由
+        /// <see cref="ShowLoginPanelInternal"/> 负责回切。
+        /// </para>
         /// </summary>
-        private async void OnSceneChanged(SceneType previousScene, SceneType newScene)
+        private void OnSceneChanged(SceneType previousScene, SceneType newScene)
         {
-            FlaxEngine.Debug.Log($"[AuthenticationUI] OnSceneChanged: {previousScene} -> {newScene}");
-            
-            // 场景切换时立即停止所有可能的 UI 动画
-            if (_animationManager != null && _mainContainer != null)
+            RunOnMainThread(() =>
             {
-                _animationManager.StopAnimations(_mainContainer);
-                if (_loginPanel != null) _animationManager.StopAnimations(_loginPanel);
-                if (_registerPanel != null) _animationManager.StopAnimations(_registerPanel);
-            }
+                FlaxEngine.Debug.Log($"[AuthenticationUI] OnSceneChanged: {previousScene} -> {newScene}");
 
-            switch (newScene)
-            {
-                case SceneType.Login:
-                    if (_loginPanel != null) _loginPanel.SetStatus("请输入账户信息", UIStyleTokens.StatusAlert);
-                    await ShowLoginPanel();
-                    break;
-                case SceneType.Register:
-                    if (_registerPanel != null) _registerPanel.SetStatus("请输入注册信息", UIStyleTokens.StatusAlert);
-                    ShowRegisterPanel();
-                    break;
-                case SceneType.CharacterSelection:
-                    FlaxEngine.Debug.Log("[AuthenticationUI] 登录成功，立即隐藏认证UI");
-                    HideAuthenticationUI();
-                    break;
-                default:
-                    HideAuthenticationUI();
-                    break;
-            }
+                // 场景切换时立即停止所有可能的 UI 动画
+                if (_animationManager != null && _mainContainer != null)
+                {
+                    _animationManager.StopAnimations(_mainContainer);
+                    if (_loginPanel != null) _animationManager.StopAnimations(_loginPanel);
+                    if (_registerPanel != null) _animationManager.StopAnimations(_registerPanel);
+                }
+
+                switch (newScene)
+                {
+                    case SceneType.Login:
+                        if (_loginPanel != null) _loginPanel.SetStatus("请输入账户信息", UIStyleTokens.StatusAlert);
+                        _ = ShowLoginPanel();
+                        break;
+                    case SceneType.Register:
+                        if (_registerPanel != null) _registerPanel.SetStatus("请输入注册信息", UIStyleTokens.StatusAlert);
+                        ShowRegisterPanel();
+                        break;
+                    case SceneType.CharacterSelection:
+                        FlaxEngine.Debug.Log("[AuthenticationUI] 登录成功，立即隐藏认证UI");
+                        HideAuthenticationUI();
+                        break;
+                    default:
+                        HideAuthenticationUI();
+                        break;
+                }
+            });
         }
 
         /// <summary>
@@ -235,14 +278,17 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         private void OnLoadingStateChanged(bool isLoading)
         {
-            if (isLoading)
+            RunOnMainThread(() =>
             {
-                _loadingIndicator.Show("正在处理请求...");
-            }
-            else
-            {
-                _loadingIndicator.Hide();
-            }
+                if (isLoading)
+                {
+                    _loadingIndicator.Show("正在处理请求...");
+                }
+                else
+                {
+                    _loadingIndicator.Hide();
+                }
+            });
         }
 
         /// <summary>
@@ -250,9 +296,12 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         private void OnErrorOccurred(string errorMessage)
         {
-            if (_stateManager.CurrentScene == SceneType.Start || _stateManager.CurrentScene == SceneType.Login)
-                _loginPanel.SetStatus(errorMessage,UIStyleTokens.StatusError);
-            new ToastManager().ShowError(errorMessage);
+            RunOnMainThread(() =>
+            {
+                if (_stateManager.CurrentScene == SceneType.Start || _stateManager.CurrentScene == SceneType.Login)
+                    _loginPanel.SetStatus(errorMessage, UIStyleTokens.StatusError);
+                new ToastManager().ShowError(errorMessage);
+            });
         }
 
         /// <summary>
@@ -265,15 +314,18 @@ namespace HundunWorld.Game.UI.Authentication
         }
 
         /// <summary>
-        /// 网络连接状态变化处理
+        /// 网络连接状态变化处理（NetworkManager 的 IO 线程也可能触发）
         /// </summary>
         private void OnNetworkConnectionStatusChanged(ConnectionStatus status)
         {
-            FlaxEngine.Debug.Log($"[AuthenticationUI] 网络连接状态变化: {status}");
-            _isNetworkConnected = (status == ConnectionStatus.Connected);
-            
-            // 更新按钮状态
-            UpdateButtonStates();
+            RunOnMainThread(() =>
+            {
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 网络连接状态变化: {status}");
+                _isNetworkConnected = (status == ConnectionStatus.Connected);
+
+                // 更新按钮状态
+                UpdateButtonStates();
+            });
         }
 
         /// <summary>
@@ -336,9 +388,16 @@ namespace HundunWorld.Game.UI.Authentication
         }
 
         /// <summary>
-        /// 初始化用户界面
+        /// 初始化用户界面。
+        /// <para>
+        /// 全程同步：这里一旦 await，续体就会落到线程池线程（Flax 主循环不安装
+        /// SynchronizationContext），随后 <see cref="CreateFallbackUICanvas"/> 里的
+        /// Level.SpawnActor 会抛 "Editing scene hierarchy is only allowed on a main thread"。
+        /// 原先的 await Task.Delay(50) 注释称要等 "InitializeUIAsync"，该方法并不存在，属于无依据的等待，已移除。
+        /// 需要异步取数的部分交给 <see cref="ShowLoginPanelInternal"/>，它自己负责回切主线程。
+        /// </para>
         /// </summary>
-        private async void InitializeUI()
+        private void InitializeUI()
         {
             // 创建主容器 - 优化背景效果
             _mainContainer = new ContainerControl
@@ -352,10 +411,6 @@ namespace HundunWorld.Game.UI.Authentication
             _loadingIndicator = LoadingIndicator.Create();
             _loginPanel = LoginPanel.Create();
             _registerPanel = RegisterPanel.Create();
-                    
-            // 等待一帧，确保异步InitializeUIAsync执行
-            await Task.Delay(50);
-            FlaxEngine.Debug.Log("[AuthenticationUI] 等待50ms后，尝试设置按钮为启用状态");
 
             // 修复：初始化时即启用按钮，由业务层在点击后处理连接，避免网络未就绪时无响应。
             _loginPanel?.EnableButtons();
@@ -388,8 +443,8 @@ namespace HundunWorld.Game.UI.Authentication
             _mainContainer.AddChild(_loginPanel);
             _mainContainer.AddChild(_registerPanel);
         
-            // 默认显示登录界面 - 使用await确保正确显示
-            await ShowLoginPanelInternal();
+            // 默认显示登录界面（内部方法自行处理异步取数与主线程回切）
+            _ = ShowLoginPanelInternal();
         }
 
         private void MainContainer_SizeChanged(Control obj)
@@ -447,19 +502,26 @@ namespace HundunWorld.Game.UI.Authentication
                 );
 
                 // 根据结果更新提示信息（仅更新状态标签，不弹窗）
-                if (result.IsSuccess)
+                // await 之后的续体不保证在主线程，回写面板必须回切
+                RunOnMainThread(() =>
                 {
-                    loginPanel.SetStatus("正在登录...", UIStyleTokens.StatusAlert);
-                }
-                else
-                {
-                    loginPanel.SetStatus(result.ErrorMessage ?? "登录失败，请检查用户名和密码", UIStyleTokens.StatusError);
-                }
+                    if (result.IsSuccess)
+                    {
+                        loginPanel.SetStatus("正在登录...", UIStyleTokens.StatusAlert);
+                    }
+                    else
+                    {
+                        loginPanel.SetStatus(result.ErrorMessage ?? "登录失败，请检查用户名和密码", UIStyleTokens.StatusError);
+                    }
+                });
             }
             catch (Exception ex)
             {
-                loginPanel.SetStatus($"错误: {ex.Message}", UIStyleTokens.StatusError);
-                _errorManager.HandleError($"登录过程中发生错误: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
+                RunOnMainThread(() =>
+                {
+                    loginPanel.SetStatus($"错误: {ex.Message}", UIStyleTokens.StatusError);
+                    _errorManager.HandleError($"登录过程中发生错误: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
+                });
             }
             finally
             {
@@ -508,30 +570,37 @@ namespace HundunWorld.Game.UI.Authentication
                 FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册异步调用完成，结果: {result.IsSuccess}");
 
                 // 根据结果更新提示信息（仅更新状态标签，不弹窗）
-                if (result.IsSuccess)
+                // await 之后的续体不保证在主线程，读输入框与回写面板必须回切
+                RunOnMainThread(() =>
                 {
-                    FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册成功，更新Passport信息");
-                    if (AuthenticationManager.Instance.Passport == null)
-                        AuthenticationManager.Instance.Passport = new();
-                    AuthenticationManager.Instance.Passport.PassportId = registerPanel.UsernameInput.Text;
-                    AuthenticationManager.Instance.Passport.Password = registerPanel.PasswordInput.Text;
+                    if (result.IsSuccess)
+                    {
+                        FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册成功，更新Passport信息");
+                        if (AuthenticationManager.Instance.Passport == null)
+                            AuthenticationManager.Instance.Passport = new();
+                        AuthenticationManager.Instance.Passport.PassportId = registerPanel.UsernameInput.Text;
+                        AuthenticationManager.Instance.Passport.Password = registerPanel.PasswordInput.Text;
 
-                    registerPanel.SetStatus("注册成功！请使用新账户登录", UIStyleTokens.StatusSuccess);
-                    FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册成功，状态已更新");
-                    //切换到登录界面，将新注册的用户名自动填入登录框,待数据处理完在跳转
-                    //_stateManager.TransitionToScene(SceneType.Login);
-                }
-                else
-                {
-                    FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册失败: {result.ErrorMessage}");
-                    registerPanel.SetStatus(result.ErrorMessage ?? "注册失败，请稍后重试", UIStyleTokens.StatusError);
-                }
+                        registerPanel.SetStatus("注册成功！请使用新账户登录", UIStyleTokens.StatusSuccess);
+                        FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册成功，状态已更新");
+                        //切换到登录界面，将新注册的用户名自动填入登录框,待数据处理完在跳转
+                        //_stateManager.TransitionToScene(SceneType.Login);
+                    }
+                    else
+                    {
+                        FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册失败: {result.ErrorMessage}");
+                        registerPanel.SetStatus(result.ErrorMessage ?? "注册失败，请稍后重试", UIStyleTokens.StatusError);
+                    }
+                });
             }
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[OnRegisterButtonClicked] 注册过程中发生异常: {ex.Message}\n{ex.StackTrace}");
-                registerPanel.SetStatus($"错误: {ex.Message}", UIStyleTokens.StatusError);
-                _errorManager.HandleError($"注册过程中发生错误: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
+                RunOnMainThread(() =>
+                {
+                    registerPanel.SetStatus($"错误: {ex.Message}", UIStyleTokens.StatusError);
+                    _errorManager.HandleError($"注册过程中发生错误: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
+                });
             }
             finally
             {
@@ -548,11 +617,12 @@ namespace HundunWorld.Game.UI.Authentication
             try
             {
                 await _authManager.SendVerificationCodeAsync(registerPanel.EmailInput.Text, registerPanel.PhoneInput.Text);
-                UIHelper.ShowInfo("验证码已发送");
+                RunOnMainThread(() => UIHelper.ShowInfo("验证码已发送"));
             }
             catch (Exception ex)
             {
-                _errorManager.HandleError($"发送验证码失败: {ex.Message}", ErrorType.Network, ErrorSeverity.Warning, "AuthenticationUI");
+                RunOnMainThread(() =>
+                    _errorManager.HandleError($"发送验证码失败: {ex.Message}", ErrorType.Network, ErrorSeverity.Warning, "AuthenticationUI"));
             }
         }
 
@@ -606,25 +676,33 @@ namespace HundunWorld.Game.UI.Authentication
 
         /// <summary>
         /// 处理登录响应
+        /// <para>
+        /// WebApi 登录路径由 AuthenticationManager.FinalizeLoginAsync 触发该事件，
+        /// 而它运行在 await 之后的线程池线程上（旧 TCP 路径才预先 InvokeOnUpdate），
+        /// 所以这里必须自行回切主线程。
+        /// </para>
         /// </summary>
         private void OnLoginResponseReceived(LoginResponse response)
         {
-            FlaxEngine.Debug.Log($"[AuthenticationUI] 收到登录响应: IsSuccess={response.IsSuccess}");
-            
-            if (_loginPanel == null) return;
+            RunOnMainThread(() =>
+            {
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 收到登录响应: IsSuccess={response.IsSuccess}");
 
-            if (response.IsSuccess)
-            {
-                // 按需求移除"登录成功"提示文案：不再显示状态提示，直接禁用交互等待场景切换。
-                _loginPanel.Enabled = false; // 禁用交互，等待场景切换
-                _animationManager?.StopAnimations(_loginPanel);
-            }
-            else
-            {
-                _loginPanel.SetStatus(response.Message ?? "登录失败，请检查账户信息", UIStyleTokens.StatusError);
-                _animationManager?.Shake(_loginPanel, 0.5f);
-                _loginPanel.Enabled = true;
-            }
+                if (_loginPanel == null) return;
+
+                if (response.IsSuccess)
+                {
+                    // 按需求移除"登录成功"提示文案：不再显示状态提示，直接禁用交互等待场景切换。
+                    _loginPanel.Enabled = false; // 禁用交互，等待场景切换
+                    _animationManager?.StopAnimations(_loginPanel);
+                }
+                else
+                {
+                    _loginPanel.SetStatus(response.Message ?? "登录失败，请检查账户信息", UIStyleTokens.StatusError);
+                    _animationManager?.Shake(_loginPanel, 0.5f);
+                    _loginPanel.Enabled = true;
+                }
+            });
         }
 
         /// <summary>
@@ -632,114 +710,127 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         private void OnRegisterResponseReceived(RegisterResponse response)
         {
-            try
+            RunOnMainThread(() =>
             {
-                if (response == null)
+                try
                 {
-                    FlaxEngine.Debug.LogError("[OnRegisterResponseReceived] 注册响应为空");
-                    return;
-                }
-
-                if (response.IsSuccess)
-                {
-                    // 播放成功动画并切换到登录界面
-                    if (_registerPanel != null && _animationManager != null)
+                    if (response == null)
                     {
-                        _animationManager.SlideOut(_registerPanel, new Float2(300, 0), 0.5f, EasingType.EaseOut, onComplete: () =>
+                        FlaxEngine.Debug.LogError("[OnRegisterResponseReceived] 注册响应为空");
+                        return;
+                    }
+
+                    if (response.IsSuccess)
+                    {
+                        // 播放成功动画并切换到登录界面
+                        if (_registerPanel != null && _animationManager != null)
                         {
+                            _animationManager.SlideOut(_registerPanel, new Float2(300, 0), 0.5f, EasingType.EaseOut, onComplete: () =>
+                            {
+                                if (_stateManager != null)
+                                {
+                                    _stateManager.TransitionToScene(SceneType.Login);
+                                }
+                            });
+                        }
+                        else
+                        {
+                            FlaxEngine.Debug.LogWarning("[OnRegisterResponseReceived] 注册面板或动画管理器为空，直接转换场景");
                             if (_stateManager != null)
                             {
                                 _stateManager.TransitionToScene(SceneType.Login);
                             }
-                        });
+                        }
                     }
                     else
                     {
-                        FlaxEngine.Debug.LogWarning("[OnRegisterResponseReceived] 注册面板或动画管理器为空，直接转换场景");
-                        if (_stateManager != null)
+                        // 更新状态标签显示错误信息并播放错误动画
+                        if (_registerPanel != null)
                         {
-                            _stateManager.TransitionToScene(SceneType.Login);
+                            _registerPanel.SetStatus(response.ErrorMessage ?? "注册失败，请稍后重试", UIStyleTokens.StatusError);
+                        }
+
+                        if (_animationManager != null && _registerPanel != null)
+                        {
+                            _animationManager.Shake(_registerPanel, 0.5f);
                         }
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    // 更新状态标签显示错误信息并播放错误动画
-                    if (_registerPanel != null)
+                    FlaxEngine.Debug.LogError($"[OnRegisterResponseReceived] 处理注册响应异常: {ex.Message}\n{ex.StackTrace}");
+                    if (_errorManager != null)
                     {
-                        _registerPanel.SetStatus(response.ErrorMessage ?? "注册失败，请稍后重试", UIStyleTokens.StatusError);
-                    }
-
-                    if (_animationManager != null && _registerPanel != null)
-                    {
-                        _animationManager.Shake(_registerPanel, 0.5f);
+                        _errorManager.HandleError($"处理注册响应失败: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[OnRegisterResponseReceived] 处理注册响应异常: {ex.Message}\n{ex.StackTrace}");
-                if (_errorManager != null)
-                {
-                    _errorManager.HandleError($"处理注册响应失败: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
-                }
-            }
+            });
         }
 
         #region 面板显示控制
 
         /// <summary>
         /// 显示登录面板（内部异步方法）
+        /// <para>
+        /// await 取护照之后的续体在线程池线程，回填 GUI 的那一段必须经
+        /// <see cref="RunOnMainThread"/> 回切，否则会命中主线程断言。
+        /// </para>
         /// </summary>
         private async Task ShowLoginPanelInternal()
         {
             FlaxEngine.Debug.Log($"[ShowLoginPanelInternal] 开始执行, _loginPanel={((_loginPanel != null) ? "not null" : "null")}");
-            
-            if (_loginPanel == null)
+
+            RunOnMainThread(() =>
             {
-                _loginPanel = LoginPanel.Create();
-                _mainContainer.AddChild(_loginPanel);
-                _loginPanel.LoginButtonClicked += OnLoginButtonClicked;
-                _loginPanel.SwitchToRegisterClicked += OnSwitchToRegisterClicked;
-            }
+                if (_loginPanel == null)
+                {
+                    _loginPanel = LoginPanel.Create();
+                    _mainContainer.AddChild(_loginPanel);
+                    _loginPanel.LoginButtonClicked += OnLoginButtonClicked;
+                    _loginPanel.SwitchToRegisterClicked += OnSwitchToRegisterClicked;
+                }
 
-            // 1. 停止动画并彻底重置物理状态
-            _animationManager?.StopAnimations(_loginPanel);
-            
-            _registerPanel.Visible = false;
-            _loginPanel.Visible = true;
-            _loginPanel.Enabled = true;
-            FlaxEngine.Debug.Log($"[ShowLoginPanelInternal] 设置_loginPanel.Enabled = true");
+                // 1. 停止动画并彻底重置物理状态
+                _animationManager?.StopAnimations(_loginPanel);
 
-            // 2. 强制中心对齐，彻底修复位置错误
-            _loginPanel.Size = ChineseClassicalTheme.GoldenRatioLayout.CalculateLoginPanelSize(); // 确保正确的尺寸
-            _loginPanel.AnchorPreset = AnchorPresets.MiddleCenter;
-            _loginPanel.Pivot = new Float2(0f, 0.5f);
-            _loginPanel.Location = new Float2(-_loginPanel.Size.X / 2f, 0);
-            _loginPanel.Scale = Float2.One;
+                _registerPanel.Visible = false;
+                _loginPanel.Visible = true;
+                _loginPanel.Enabled = true;
+                FlaxEngine.Debug.Log($"[ShowLoginPanelInternal] 设置_loginPanel.Enabled = true");
 
-            // 3. 加载护照数据
+                // 2. 强制中心对齐，彻底修复位置错误
+                _loginPanel.Size = ChineseClassicalTheme.GoldenRatioLayout.CalculateLoginPanelSize(); // 确保正确的尺寸
+                _loginPanel.AnchorPreset = AnchorPresets.MiddleCenter;
+                _loginPanel.Pivot = new Float2(0f, 0.5f);
+                _loginPanel.Location = new Float2(-_loginPanel.Size.X / 2f, 0);
+                _loginPanel.Scale = Float2.One;
+            });
+
+            // 3. 加载护照数据，取回后再切主线程回填
             var passport = await DatabaseManager.GetPassport();
-            if (passport != null)
+            RunOnMainThread(() =>
             {
-                _loginPanel.UsernameInput.Text = passport.PassportId;
-                _loginPanel.PasswordInput.Text = passport.Password;
-                _loginPanel.RememberPasswordCheckBox.Checked = passport.RememberPassword;
-            }
+                if (passport != null)
+                {
+                    _loginPanel.UsernameInput.Text = passport.PassportId;
+                    _loginPanel.PasswordInput.Text = passport.Password;
+                    _loginPanel.RememberPasswordCheckBox.Checked = passport.RememberPassword;
+                }
 
-            _mainContainer.Visible = true;
-            _mainContainer.Enabled = true;
+                _mainContainer.Visible = true;
+                _mainContainer.Enabled = true;
 
-            // 4. 检查并更新按钮状态
-            FlaxEngine.Debug.Log($"[ShowLoginPanelInternal] 即将调用CheckAndUpdateButtonStates");
-            CheckAndUpdateButtonStates();
+                // 4. 检查并更新按钮状态
+                FlaxEngine.Debug.Log($"[ShowLoginPanelInternal] 即将调用CheckAndUpdateButtonStates");
+                CheckAndUpdateButtonStates();
 
-            FlaxEngine.Debug.Log("[ShowLoginPanelInternal] 登录面板已重置并居中");
+                FlaxEngine.Debug.Log("[ShowLoginPanelInternal] 登录面板已重置并居中");
 
-            if (_animationManager != null)
-            {
-                _animationManager.SlideIn(_loginPanel, new Float2(300, 0), 0.4f);
-            }
+                if (_animationManager != null)
+                {
+                    _animationManager.SlideIn(_loginPanel, new Float2(300, 0), 0.4f);
+                }
+            });
         }
 
         /// <summary>
@@ -755,19 +846,22 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         public void ShowCharacterPanel()
         {
-            FlaxEngine.Debug.Log("[ShowCharacterPanel] 准备切换到角色选择界面");
-
-            // 隐藏登录和注册面板，并播放淡出动画
-            _animationManager.FadeOut(_mainContainer, 0.3f, EasingType.EaseOut, onComplete: () =>
+            RunOnMainThread(() =>
             {
-                _loginPanel.Visible = false;
-                _registerPanel.Visible = false;
-                _mainContainer.Visible = false;
+                FlaxEngine.Debug.Log("[ShowCharacterPanel] 准备切换到角色选择界面");
 
-                FlaxEngine.Debug.Log("[ShowCharacterPanel] 认证UI已隐藏，触发角色选择场景切换");
+                // 隐藏登录和注册面板，并播放淡出动画
+                _animationManager.FadeOut(_mainContainer, 0.3f, EasingType.EaseOut, onComplete: () =>
+                {
+                    _loginPanel.Visible = false;
+                    _registerPanel.Visible = false;
+                    _mainContainer.Visible = false;
 
-                // 通过状态管理器切换到角色选择界面
-                _stateManager.TransitionToScene(SceneType.CharacterSelection);
+                    FlaxEngine.Debug.Log("[ShowCharacterPanel] 认证UI已隐藏，触发角色选择场景切换");
+
+                    // 通过状态管理器切换到角色选择界面
+                    _stateManager.TransitionToScene(SceneType.CharacterSelection);
+                });
             });
         }
 
@@ -776,9 +870,12 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         public void HideLoginPanel()
         {
-            _animationManager.FadeOut(_loginPanel, 0.3f, EasingType.EaseOut, onComplete: () =>
+            RunOnMainThread(() =>
             {
-                _loginPanel.Visible = false;
+                _animationManager.FadeOut(_loginPanel, 0.3f, EasingType.EaseOut, onComplete: () =>
+                {
+                    _loginPanel.Visible = false;
+                });
             });
         }
 
@@ -787,43 +884,46 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         public void ShowRegisterPanel()
         {
-            if (_registerPanel == null)
+            RunOnMainThread(() =>
             {
-                _registerPanel = RegisterPanel.Create();
-                _mainContainer.AddChild(_registerPanel);
-                _registerPanel.RegisterButtonClicked += OnRegisterButtonClicked;
-                _registerPanel.SwitchToLoginClicked += OnSwitchToLoginClicked;
-                _registerPanel.SendVerificationCodeClicked += OnSendVerificationCodeClicked;
-            }
+                if (_registerPanel == null)
+                {
+                    _registerPanel = RegisterPanel.Create();
+                    _mainContainer.AddChild(_registerPanel);
+                    _registerPanel.RegisterButtonClicked += OnRegisterButtonClicked;
+                    _registerPanel.SwitchToLoginClicked += OnSwitchToLoginClicked;
+                    _registerPanel.SendVerificationCodeClicked += OnSendVerificationCodeClicked;
+                }
 
-            // 1. 停止动画并彻底重置物理状态
-            _animationManager?.StopAnimations(_registerPanel);
+                // 1. 停止动画并彻底重置物理状态
+                _animationManager?.StopAnimations(_registerPanel);
 
-            if (_loginPanel != null) _loginPanel.Visible = false;
-            _registerPanel.Visible = true;
-            _registerPanel.Enabled = true;
+                if (_loginPanel != null) _loginPanel.Visible = false;
+                _registerPanel.Visible = true;
+                _registerPanel.Enabled = true;
 
-            // 2. 强制中心对齐，修复可能的位置偏差
-            _registerPanel.Size = ChineseClassicalTheme.GoldenRatioLayout.CalculateRegisterPanelSize(); // 确保正确的尺寸
-            _registerPanel.AnchorPreset = AnchorPresets.MiddleCenter;
-            _registerPanel.Pivot = new Float2(0f, 0.5f);
-            _registerPanel.Location = new Float2(-_registerPanel.Size.X / 2f, 0);
-            _registerPanel.Scale = Float2.One;
+                // 2. 强制中心对齐，修复可能的位置偏差
+                _registerPanel.Size = ChineseClassicalTheme.GoldenRatioLayout.CalculateRegisterPanelSize(); // 确保正确的尺寸
+                _registerPanel.AnchorPreset = AnchorPresets.MiddleCenter;
+                _registerPanel.Pivot = new Float2(0f, 0.5f);
+                _registerPanel.Location = new Float2(-_registerPanel.Size.X / 2f, 0);
+                _registerPanel.Scale = Float2.One;
 
-            _registerPanel.BackgroundColor = UIStyleTokens.BgPanel; // 墨水深背景面板（--ink-bg-panel）
+                _registerPanel.BackgroundColor = UIStyleTokens.BgPanel; // 墨水深背景面板（--ink-bg-panel）
 
-            _mainContainer.Visible = true;
-            _mainContainer.Enabled = true;
+                _mainContainer.Visible = true;
+                _mainContainer.Enabled = true;
 
-            // 检查并更新按钮状态
-            CheckAndUpdateButtonStates();
+                // 检查并更新按钮状态
+                CheckAndUpdateButtonStates();
 
-            FlaxEngine.Debug.Log("[ShowRegisterPanel] 注册面板已重置并居中");
+                FlaxEngine.Debug.Log("[ShowRegisterPanel] 注册面板已重置并居中");
 
-            if (_animationManager != null)
-            {
-                _animationManager.SlideIn(_registerPanel, new Float2(300, 0), 0.4f);
-            }
+                if (_animationManager != null)
+                {
+                    _animationManager.SlideIn(_registerPanel, new Float2(300, 0), 0.4f);
+                }
+            });
         }
 
         /// <summary>
@@ -831,20 +931,26 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         public void HideRegisterPanel()
         {
-            _animationManager.FadeOut(_registerPanel, 0.3f, EasingType.EaseOut, onComplete: () =>
+            RunOnMainThread(() =>
             {
-                _registerPanel.Visible = false;
+                _animationManager.FadeOut(_registerPanel, 0.3f, EasingType.EaseOut, onComplete: () =>
+                {
+                    _registerPanel.Visible = false;
+                });
             });
         }
 
         /// <summary>
         /// 显示认证界面
         /// </summary>
-        public async void ShowAuthenticationUI()
+        public void ShowAuthenticationUI()
         {
-            _mainContainer.Visible = true;
-            _mainContainer.Enabled = true;
-            await ShowLoginPanelInternal();
+            RunOnMainThread(() =>
+            {
+                _mainContainer.Visible = true;
+                _mainContainer.Enabled = true;
+                _ = ShowLoginPanelInternal();
+            });
         }
 
         /// <summary>
@@ -852,20 +958,23 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         public void HideAuthenticationUI()
         {
-            if (_mainContainer == null) return;
-            
-            // 彻底放弃淡出动画，改为立即隐藏，确保在场景切换时无残留
-            _animationManager?.StopAnimations(_mainContainer);
-            if (_loginPanel != null) _animationManager?.StopAnimations(_loginPanel);
-            if (_registerPanel != null) _animationManager?.StopAnimations(_registerPanel);
+            RunOnMainThread(() =>
+            {
+                if (_mainContainer == null) return;
 
-            _mainContainer.Visible = false;
-            _mainContainer.Enabled = false;
-            
-            if (_loginPanel != null) _loginPanel.Visible = false;
-            if (_registerPanel != null) _registerPanel.Visible = false;
+                // 彻底放弃淡出动画，改为立即隐藏，确保在场景切换时无残留
+                _animationManager?.StopAnimations(_mainContainer);
+                if (_loginPanel != null) _animationManager?.StopAnimations(_loginPanel);
+                if (_registerPanel != null) _animationManager?.StopAnimations(_registerPanel);
 
-            FlaxEngine.Debug.Log("[AuthenticationUI] 认证UI已立即隐藏");
+                _mainContainer.Visible = false;
+                _mainContainer.Enabled = false;
+
+                if (_loginPanel != null) _loginPanel.Visible = false;
+                if (_registerPanel != null) _registerPanel.Visible = false;
+
+                FlaxEngine.Debug.Log("[AuthenticationUI] 认证UI已立即隐藏");
+            });
         }
 
         #endregion

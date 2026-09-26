@@ -80,6 +80,18 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>粒子池容量上限（超过则丢弃最老的）</summary>
         private const int MaxParticles = 256;
 
+        /// <summary>
+        /// 装饰性金粉/环境微粒总开关。默认关闭。
+        /// <para>
+        /// 这两个发射器（<see cref="EmitGoldBurst"/> 点击爆发、<see cref="EmitAmbientInternal"/>
+        /// 环境微粒）在 20 处交互点被调用，且部分与导航/购买等业务逻辑写在同一个 lambda 里
+        /// （如 MentorPage 的 goBtn），逐个删改风险远大于收益，故在此集中一处。
+        /// 与 <see cref="InkWashTheme.ReducedMotion"/> 的区别：后者会把所有动效时长压到 0，
+        /// 影响页面切换等必要反馈；本开关只关掉这两类纯装饰的黄点。
+        /// </para>
+        /// </summary>
+        public static bool DecorativeParticlesEnabled = false;
+
         /// <summary>环境微粒是否启用</summary>
         private bool _ambientEnabled;
 
@@ -211,6 +223,7 @@ namespace HundunWorld.Game.UI.Ink
         {
             try
             {
+                if (!DecorativeParticlesEnabled) return;
                 if (InkWashTheme.ReducedMotion) return;
 
                 float maxLife = InkWashTheme.GetDuration(InkWashTheme.DurationGoldBurst);
@@ -378,6 +391,7 @@ namespace HundunWorld.Game.UI.Ink
         {
             try
             {
+                if (!DecorativeParticlesEnabled) return;
                 if (InkWashTheme.ReducedMotion) return;
                 if (_particles.Count >= MaxParticles) return;
 

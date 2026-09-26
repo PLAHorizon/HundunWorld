@@ -39,6 +39,17 @@ namespace Horizon.Orleans.Grains
 
         private readonly IDataContext<GameEntityContext, UserEntity, long> _gameUserContext;
         private readonly IDataContext<GameEntityContext, CharacterEntity, long> _gameCharacterContext;
+        private readonly IDataContext<GameEntityContext, TitleEntity, long> _gameTitleContext;
+
+        /// <summary>
+        /// 属性加点落库通道（表 <c>Game_HunduShijie_CharacterAttribute</c>）。
+        /// Redis grain 状态是热缓存，此表是权威持久层。
+        /// </summary>
+        private readonly IDataContext<GameEntityContext, CharacterAttributeEntity, long> _gameAttributeContext;
+
+        /// <summary>属性点池：每级发放的自由点数（与客户端展示口径一致，服务端为权威）。</summary>
+        private const int AllocationPointsPerLevel = 5;
+        private const int AllocationKindCount = 9;
         private readonly IMapper _mapper;
 
         private ulong CharacterId { get; set; } = 0;
@@ -66,6 +77,8 @@ namespace Horizon.Orleans.Grains
 
             IDataContext<GameEntityContext, UserEntity, long> gameUserContext,
             IDataContext<GameEntityContext, CharacterEntity, long> gameCharacterContext,
+            IDataContext<GameEntityContext, TitleEntity, long> gameTitleContext,
+            IDataContext<GameEntityContext, CharacterAttributeEntity, long> gameAttributeContext,
             IMapper mapper)
         {
             _logger = logger;
@@ -77,6 +90,8 @@ namespace Horizon.Orleans.Grains
             _mapper = mapper;
             _gameUserContext = gameUserContext;
             _gameCharacterContext = gameCharacterContext;
+            _gameTitleContext = gameTitleContext;
+            _gameAttributeContext = gameAttributeContext;
         }
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -124,6 +139,10 @@ namespace Horizon.Orleans.Grains
                     _isOnline = false;
                 }
             }
+
+            // ===== 属性加点：grain 状态为空时从 SQL 权威层回填（Redis 只是热缓存） =====
+            // 典型触发场景：Redis 被清空/换环境、或该角色首次启用加点功能。
+            await EnsureAllocationLoadedAsync();
 
             // ===== 从 Redis 永久存储加载角色位置（双轨制架构） =====
             // 服务器重启后 Grain 重新激活时，从 Redis 恢复角色最后位置到内存缓存。
@@ -377,6 +396,9 @@ namespace Horizon.Orleans.Grains
                 //    服务端 ZoneShardGrain.EnterWorldAsync 也会优先从 CharacterGrain.GetLastPositionAsync()
                 //    读取同一权威源，保证两端初始位置一致。
                 await EnrichCharacterInfo(_characterState.State.CharacterInfo);
+                // 加点随 CharacterInfo 一并下发：客户端无需再发查询即可重建第三层属性来源。
+                await EnsureAllocationLoadedAsync();
+                _characterState.State.CharacterInfo.Allocation = CurrentAllocation();
                 return new EnterGameResponse
                 {
                     Success = true,
@@ -779,6 +801,151 @@ namespace Horizon.Orleans.Grains
 
         #endregion
 
+        #region 属性加点（服务端权威：Redis 缓存 + SQL 落库）
+
+        /// <summary>
+        /// 属性加点：校验期望终态后同时更新 grain 状态（Redis 持久缓存）与属性表（SQL 权威落库）。
+        /// <para>
+        /// 采用"提交终态"而非"增量"：客户端是预览式批量确认，终态提交让请求幂等，
+        /// 且服务端只需一次总和校验；全零即重置。校验失败不改任何一层，直接把当前权威值回给客户端回滚预览。
+        /// </para>
+        /// </summary>
+        public async Task<AttributeAllocateResponse> AllocateAttributeAsync(ulong characterId, AttributeAllocationData desired)
+        {
+            var info = _characterState.State.CharacterInfo;
+            if (info == null)
+                return AllocationResponse(false, "角色数据未加载。", characterId, new AttributeAllocationData(), 0, 0);
+
+            desired ??= new AttributeAllocationData();
+
+            var total = AllocationPointsPerLevel * Math.Max(1, info.Level);
+            var values = new[]
+            {
+                desired.Strength, desired.Agility, desired.Health, desired.Energy,
+                desired.Metal, desired.Wood, desired.Water, desired.Fire, desired.Earth
+            };
+            var spent = values.Sum();
+
+            if (spent < 0 || values.Any(v => v < 0))
+                return AllocationResponse(false, "加点数不能为负。", characterId, CurrentAllocation(), total, total - AllocationSpent(CurrentAllocation()));
+
+            if (spent > total)
+                return AllocationResponse(false, $"点数超出上限（已用 {spent} / 点池 {total}）。",
+                    characterId, CurrentAllocation(), total, total - AllocationSpent(CurrentAllocation()));
+
+            _characterState.State.Allocation = desired;
+            await _characterState.WriteStateAsync();
+
+            // 落库失败不回滚缓存：Redis 仍是当前会话的权威显示源，
+            // 但必须显式告警——否则玩家下次冷启动会看到点数"缩水"回旧值。
+            var persisted = await PersistAllocationToDatabaseAsync(characterId, desired);
+
+            _logger.LogInformation(
+                "属性加点: CharacterId={CharacterId}, 已用 {Spent}/{Total}, 落库={Persisted}",
+                characterId, spent, total, persisted);
+
+            return AllocationResponse(true, persisted ? "加点成功。" : "加点已生效，但落库失败（重启后可能回退）。",
+                characterId, desired, total, total - spent);
+        }
+
+        /// <summary>当前权威分配（grain 状态；为空按未分配处理）。</summary>
+        private AttributeAllocationData CurrentAllocation()
+            => _characterState.State.Allocation ??= new AttributeAllocationData();
+
+        private static int AllocationSpent(AttributeAllocationData a)
+            => a.Strength + a.Agility + a.Health + a.Energy + a.Metal + a.Wood + a.Water + a.Fire + a.Earth;
+
+        private static AttributeAllocateResponse AllocationResponse(
+            bool success, string message, ulong characterId,
+            AttributeAllocationData allocation, int total, int available)
+            => new AttributeAllocateResponse
+            {
+                Success = success,
+                Message = message,
+                CharacterId = characterId,
+                Allocation = allocation,
+                TotalPoints = total,
+                AvailablePoints = available,
+            };
+
+        /// <summary>
+        /// grain 状态里没有加点数据时，从属性表回填。
+        /// 触发时机：Redis 被清空 / 换环境 / 角色首次启用加点。属性表也无记录时保持全零。
+        /// </summary>
+        private async Task EnsureAllocationLoadedAsync()
+        {
+            if (_characterState.State.Allocation != null) return;
+
+            try
+            {
+                var row = await _gameAttributeContext.QueryFirstOrDefaultAsync(a => a.CharacterId == CharacterId);
+                _characterState.State.Allocation = row == null
+                    ? new AttributeAllocationData()
+                    : new AttributeAllocationData
+                    {
+                        Strength = row.Strength,
+                        Agility = row.Agility,
+                        Health = row.Constitution,
+                        Energy = row.InternalForce,
+                        Metal = row.MetalPoint,
+                        Wood = row.WoodPoint,
+                        Water = row.WaterPoint,
+                        Fire = row.FirePoint,
+                        Earth = row.EarthPoint,
+                    };
+            }
+            catch (Exception ex)
+            {
+                // 属性表可能尚未应用迁移（列不存在）：降级为"未分配"，不阻断角色激活。
+                _logger.LogWarning(ex, "加载属性加点失败，按未分配处理: CharacterId={CharacterId}", CharacterId);
+                _characterState.State.Allocation = new AttributeAllocationData();
+            }
+        }
+
+        /// <summary>把分配写回属性表（有行则更新，无行则插入）。返回是否落库成功。</summary>
+        private async Task<bool> PersistAllocationToDatabaseAsync(ulong characterId, AttributeAllocationData a)
+        {
+            try
+            {
+                var row = await _gameAttributeContext.QueryFirstOrDefaultAsync(x => x.CharacterId == characterId);
+                if (row == null)
+                {
+                    // 只写加点相关列：该表其余属性列由各自的属性系统接入时维护，此处不越界初始化。
+                    row = new CharacterAttributeEntity { CharacterId = characterId };
+                    ApplyAllocationToRow(row, a);
+                    row.UpdateTime = DateTime.Now;
+                    await _gameAttributeContext.AddAsync(row);
+                }
+                else
+                {
+                    ApplyAllocationToRow(row, a);
+                    row.UpdateTime = DateTime.Now;
+                    await _gameAttributeContext.UpdateAsync(row, row.Id);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "属性加点落库失败: CharacterId={CharacterId}", characterId);
+                return false;
+            }
+        }
+
+        private static void ApplyAllocationToRow(CharacterAttributeEntity row, AttributeAllocationData a)
+        {
+            row.Strength = a.Strength;
+            row.Agility = a.Agility;
+            row.Constitution = a.Health;
+            row.InternalForce = a.Energy;
+            row.MetalPoint = a.Metal;
+            row.WoodPoint = a.Wood;
+            row.WaterPoint = a.Water;
+            row.FirePoint = a.Fire;
+            row.EarthPoint = a.Earth;
+        }
+
+        #endregion
+
         #region P1.1 统一角色状态模型：空间生命周期钩子
 
         /// <inheritdoc />
@@ -803,7 +970,8 @@ namespace Horizon.Orleans.Grains
                         hp: (int)info.CurrentHealth,
                         maxHp: (int)info.MaxHealth,
                         stateBits: info.IsAlive ? 0u : 1u,  // bit0 = 死亡标志
-                        nickname: info.CharacterName
+                        nickname: info.CharacterName,
+                        title: await ResolveCurrentTitleNameAsync()
                     );
                 }
             }
@@ -813,6 +981,62 @@ namespace Horizon.Orleans.Grains
                     "CharacterGrain {CharacterId}: 推送 RPG 属性到 ZoneShard={ZoneShardId} 失败。",
                     CharacterId, zoneShardId);
             }
+        }
+
+        /// <summary>
+        /// 当前称号名的激活期缓存（null = 未查过；空串 = 查过且未佩戴）。
+        /// 称号只在角色主动切换时变化，Grain 激活期内的重复查询没有价值。
+        /// </summary>
+        private string? _titleNameCache;
+
+        /// <summary>
+        /// 解析角色当前佩戴的称号名：CharacterEntity.CurrentTitleId → TitleEntity.TitleName。
+        /// 未佩戴、称号行被删或查询异常时返回空串（客户端据此回退默认表现），不抛异常。
+        /// </summary>
+        private async Task<string> ResolveCurrentTitleNameAsync()
+        {
+            if (_titleNameCache != null) return _titleNameCache;
+
+            var titleName = string.Empty;
+            try
+            {
+                var character = await _gameCharacterContext.QueryFirstOrDefaultAsync(c => c.Id == (long)CharacterId);
+                var titleId = character?.CurrentTitleId ?? 0;
+                if (titleId > 0)
+                {
+                    var title = await _gameTitleContext.QueryFirstOrDefaultAsync(t => t.Id == titleId);
+                    if (!string.IsNullOrEmpty(title?.TitleName))
+                        titleName = title!.TitleName;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "CharacterGrain {CharacterId}: 解析当前称号名失败，按未佩戴处理。", CharacterId);
+            }
+
+            _titleNameCache = titleName;
+            return titleName;
+        }
+
+        /// <inheritdoc />
+        public async Task<CharacterSyncProfile> GetSyncProfileAsync()
+        {
+            var info = _characterState.State?.CharacterInfo;
+            if (info == null)
+            {
+                _logger.LogWarning(
+                    "CharacterGrain {CharacterId}: 档案状态为空，返回空昵称/等级 0（DS 侧将回退占位名）。",
+                    CharacterId);
+                return new CharacterSyncProfile { Nickname = "", Level = 0, Title = "" };
+            }
+
+            return new CharacterSyncProfile
+            {
+                Nickname = info.CharacterName ?? "",
+                Level = info.Level,
+                Title = await ResolveCurrentTitleNameAsync(),
+            };
         }
 
         /// <inheritdoc />
@@ -957,7 +1181,7 @@ namespace Horizon.Orleans.Grains
         /// <inheritdoc />
         public async Task<(float X, float Y, float Z, float Yaw)?> GetLastPositionAsync()
         {
-            // 优先从 Redis 读取（权威源，永久存储，无过期）
+            // 优先从 Redis 读取（热缓存；24h 无更新会被归档服务清到 SQL）
             try
             {
                 var redisPosition = await _positionStore.GetPositionAsync((long)CharacterId);
@@ -968,10 +1192,30 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "CharacterGrain {CharacterId} 从 Redis 读取位置失败，降级到内存缓存", CharacterId);
+                _logger.LogWarning(ex, "CharacterGrain {CharacterId} 从 Redis 读取位置失败，降级到 SQL Server 归档", CharacterId);
             }
 
-            // 降级：Redis 不可用或无数据时，回退到内存缓存（CharacterState.LastPosition*）
+            // Redis 未命中：读 SQL Server 归档位置（CharacterPositionArchiveService 落库的 Flax Y-up 列），
+            // 转回本方法约定的 ECS Z-up：ecsX=flaxX, ecsY=flaxZ, ecsZ=flaxY。
+            // 全零视为"从未有位置数据"（新建角色默认出生点即 (0,0,0)），交给调用方回退握手坐标。
+            try
+            {
+                var entity = await _gameCharacterContext.QueryFirstOrDefaultAsync(c => c.Id == (long)CharacterId);
+                if (entity != null &&
+                    (entity.PositionX != 0f || entity.PositionY != 0f || entity.PositionZ != 0f))
+                {
+                    _logger.LogInformation(
+                        "CharacterGrain {CharacterId} Redis 未命中，从 SQL Server 归档恢复位置 Flax({PX:F2},{PY:F2},{PZ:F2})。",
+                        CharacterId, entity.PositionX, entity.PositionY, entity.PositionZ);
+                    return (entity.PositionX, entity.PositionZ, entity.PositionY, entity.Rotation);
+                }
+            }
+            catch (Exception sqlEx)
+            {
+                _logger.LogWarning(sqlEx, "CharacterGrain {CharacterId} 读取 SQL Server 归档位置失败，降级到内存缓存", CharacterId);
+            }
+
+            // 降级：Redis 与 SQL 均无数据时，回退到内存缓存（CharacterState.LastPosition*）
             var state = _characterState.State;
             if (state == null || state.LastPositionUpdateUtc == default)
             {
