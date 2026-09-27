@@ -23,7 +23,10 @@ namespace HundunWorld.Game.UI.Ink.Components
         Enemy,
 
         /// <summary>NPC — 鎏金亮色</summary>
-        NPC
+        NPC,
+
+        /// <summary>点击移动的目的地 — 纸白实心点 + 环描边，与阵营/交互点区分</summary>
+        Destination
     }
 
     /// <summary>
@@ -91,6 +94,10 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// <summary>当前玩家朝向角度（度），0=正北，顺时针增加</summary>
         public float PlayerYaw { get; set; } = 0f;
 
+        /// <summary>导航路径的世界点列（空表示当前没有自动移动）</summary>
+        private readonly System.Collections.Generic.List<Vector3> _navPathWorld
+            = new System.Collections.Generic.List<Vector3>();
+
         /// <summary>
         /// 构造函数：透明背景、不裁剪子控件。
         /// 默认尺寸 160x160，可由外部修改 <see cref="Control.Size"/>。
@@ -133,6 +140,13 @@ namespace HundunWorld.Game.UI.Ink.Components
 
         private float _navRefreshTimer;
 
+        /// <summary>投影后的路径像素坐标（每帧复用，避免逐帧分配）</summary>
+        private readonly System.Collections.Generic.List<Float2> _navPathScreen
+            = new System.Collections.Generic.List<Float2>();
+
+        private Vector3 _navPathOrigin = Vector3.Zero;
+        private bool _hasNavPathOrigin;
+
         public override void Update(float dt)
         {
             base.Update(dt);
@@ -142,6 +156,31 @@ namespace HundunWorld.Game.UI.Ink.Components
 
             _navRefreshTimer = 0f;
             RefreshFromNavigation();
+            RefreshNavigationPath();
+        }
+
+        /// <summary>
+        /// 刷新自动移动的面包屑路径。与点位刷新同频：路径本身由插件按 4Hz 重算，
+        /// 这里再高频也没有新数据。目的地清除后路径随之清空。
+        /// </summary>
+        private void RefreshNavigationPath()
+        {
+            if (!PluginNavigationBridge.TryGetMoveDestinationPath(_navPathWorld))
+            {
+                _hasNavPathOrigin = false;
+                return;
+            }
+
+            // 世界点列必须锚在与点位同一个玩家坐标上，否则路径与目的地圆点会互相错位
+            if (!PluginNavigationBridge.TryGetPlayerPose(out var playerPos, out _))
+            {
+                _navPathWorld.Clear();
+                _hasNavPathOrigin = false;
+                return;
+            }
+
+            _navPathOrigin = playerPos;
+            _hasNavPathOrigin = true;
         }
 
         /// <summary>
@@ -173,8 +212,11 @@ namespace HundunWorld.Game.UI.Ink.Components
                 float z = (v.WorldPosition.Z - playerPos.Z) / range;
                 if (x < -1f || x > 1f || z < -1f || z > 1f) continue;
 
-                // 支持快速旅行的 POI 用翡翠色（友方样式）区分，其余按 NPC 样式
-                var type = v.SupportsFastTravel ? InkMinimapEntityType.Friendly : InkMinimapEntityType.NPC;
+                // 支持快速旅行的 POI 用翡翠色（友方样式）区分，其余按 NPC 样式；
+                // 移动目的地走独立样式（实心点 + 环）
+                var type = v.Tag == PluginNavigationBridge.MoveDestinationTag
+                    ? InkMinimapEntityType.Destination
+                    : (v.SupportsFastTravel ? InkMinimapEntityType.Friendly : InkMinimapEntityType.NPC);
                 AddEntity(type, x, z);
             }
 
@@ -238,7 +280,10 @@ namespace HundunWorld.Game.UI.Ink.Components
                 InkRenderHelper.FillCircle(pos, lmR, lm.color);
             }
 
-            // 3. 实体点位
+            // 3. 导航路径（自动移动中）：线画在点位之下，目的地圆点压在线端上
+            DrawNavPath(center, entityRadius);
+
+            // 4. 实体点位
             for (int i = 0; i < _entities.Count; i++)
             {
                 var entity = _entities[i];
@@ -260,9 +305,13 @@ namespace HundunWorld.Game.UI.Ink.Components
                 }
 
                 InkRenderHelper.FillCircle(pos, dotRadius, color);
+
+                // 目的地：外套一圈环描边，避免与 NPC 的金色点混淆
+                if (entity.type == InkMinimapEntityType.Destination)
+                    DrawCircleOutline(pos, dotRadius + 4f, color, 1.5f);
             }
 
-            // 4. 外框（最上层，覆盖所有内容）：优先用贴图，否则细圆环
+            // 5. 外框（最上层，覆盖所有内容）：优先用贴图，否则细圆环
             if (FrameStyle == InkMinimapFrameStyle.Texture && FrameTexture != null)
             {
                 float pad = FrameTextureInflate;
@@ -274,8 +323,42 @@ namespace HundunWorld.Game.UI.Ink.Components
                 DrawCircleOutline(center, radius, InkWashTheme.BorderGold, RingThickness);
             }
 
-            // 5. 方向标签（N/E/S/W）
+            // 6. 方向标签（N/E/S/W）
             DrawDirectionLabels(center, radius);
+        }
+
+        /// <summary>
+        /// 绘制自动移动的面包屑路径：纸白虚线 + 半透明垫底，按小地图圆盘裁剪。
+        /// 投影与 <see cref="RefreshFromNavigation"/> 的点位共用同一玩家锚点与范围，
+        /// 所以线与目的地圆点不会各走各的。
+        /// </summary>
+        private void DrawNavPath(Float2 center, float drawRadius)
+        {
+            if (!_hasNavPathOrigin || drawRadius <= 0f || _navPathWorld.Count < 2) return;
+
+            float range = NavigationRange <= 0f ? 1f : NavigationRange;
+            _navPathScreen.Clear();
+
+            for (int i = 0; i < _navPathWorld.Count; i++)
+            {
+                var world = _navPathWorld[i];
+                float x = (world.X - _navPathOrigin.X) / range;
+                float z = (world.Z - _navPathOrigin.Z) / range;
+                _navPathScreen.Add(center + new Float2(x, z) * drawRadius);
+            }
+
+            var baseColor = InkWashTheme.PaperBright;
+
+            // 垫底：圆内是透出的场景，细虚线单独放上去对比度不够
+            InkNavPathPainter.DrawInDisc(_navPathScreen, center, drawRadius,
+                new Color(baseColor.R, baseColor.G, baseColor.B, 0.22f),
+                InkNavPathPainter.DefaultThickness + 3f,
+                InkNavPathPainter.DefaultDashLength, InkNavPathPainter.DefaultGapLength);
+
+            InkNavPathPainter.DrawInDisc(_navPathScreen, center, drawRadius,
+                new Color(baseColor.R, baseColor.G, baseColor.B, 0.85f),
+                InkNavPathPainter.DefaultThickness,
+                InkNavPathPainter.DefaultDashLength, InkNavPathPainter.DefaultGapLength);
         }
 
         /// <summary>
@@ -404,6 +487,7 @@ namespace HundunWorld.Game.UI.Ink.Components
                 InkMinimapEntityType.Friendly => InkWashTheme.JadeBright,
                 InkMinimapEntityType.Enemy => InkWashTheme.VermilionBright,
                 InkMinimapEntityType.NPC => InkWashTheme.GoldBright,
+                InkMinimapEntityType.Destination => InkWashTheme.PaperBright,
                 _ => InkWashTheme.GoldBright
             };
         }

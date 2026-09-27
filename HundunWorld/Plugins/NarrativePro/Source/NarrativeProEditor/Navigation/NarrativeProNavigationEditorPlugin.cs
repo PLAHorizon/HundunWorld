@@ -10,10 +10,12 @@ namespace NarrativePro.Editor.Navigation
     /// <summary>
     /// NarrativePro 导航工具编辑器插件。
     /// <para>
-    /// 提供两个菜单命令（Tools 菜单）：
+    /// 提供菜单命令（Tools 菜单）：
     /// <list type="bullet">
     /// <item>重新生成地图瓦片网格 —— 由 MapWidth / NumTiles 生成瓦片集与边界盒；</item>
-    /// <item>烘焙地图瓦片贴图 —— 正交相机逐块离屏渲染世界、落盘 PNG、导入为 Texture 资产并回填瓦片集。</item>
+    /// <item>烘焙地图瓦片贴图 —— 正交相机逐块离屏渲染世界、落盘 PNG、导入为 Texture 资产并回填瓦片集；</item>
+    /// <item>创建/校正导航体积 —— 按地图边界摆一个 <c>NavMeshBoundsVolume</c>，可先在视口里调范围；</item>
+    /// <item>烘焙导航网格（NavMesh）—— 触发引擎的 Recast 烘焙并保存，之后 FindPath/TestPath 才会返回真实路径。</item>
     /// </list>
     /// 烘焙任务按帧推进（挂接 <c>Editor.EditorUpdate</c>），不会阻塞编辑器。
     /// </para>
@@ -21,6 +23,7 @@ namespace NarrativePro.Editor.Navigation
     public class NarrativeProNavigationEditorPlugin : EditorPlugin
     {
         private readonly List<MapTileBakeJob> _activeJobs = new List<MapTileBakeJob>();
+        private readonly List<NavMeshBakeJob> _navJobs = new List<NavMeshBakeJob>();
         private bool _menuAdded;
 
         public NarrativeProNavigationEditorPlugin()
@@ -62,6 +65,12 @@ namespace NarrativePro.Editor.Navigation
                     job.Cancel();
                 }
                 _activeJobs.Clear();
+
+                foreach (var job in _navJobs)
+                {
+                    job.Cancel();
+                }
+                _navJobs.Clear();
             }
             catch { }
 
@@ -85,6 +94,17 @@ namespace NarrativePro.Editor.Navigation
                     _activeJobs.RemoveAt(i);
                 }
             }
+
+            for (int i = _navJobs.Count - 1; i >= 0; i--)
+            {
+                var job = _navJobs[i];
+                job.Tick();
+
+                if (job.IsFinished)
+                {
+                    _navJobs.RemoveAt(i);
+                }
+            }
         }
 
         private void TryAddMenuButtons()
@@ -97,6 +117,8 @@ namespace NarrativePro.Editor.Navigation
 
                 Editor.UI.AddMenuButton("Tools", "NarrativePro: 重新生成地图瓦片网格", RegenerateTiles);
                 Editor.UI.AddMenuButton("Tools", "NarrativePro: 烘焙地图瓦片贴图", StartBake);
+                Editor.UI.AddMenuButton("Tools", "NarrativePro: 创建/校正导航体积", PrepareNavVolume);
+                Editor.UI.AddMenuButton("Tools", "NarrativePro: 烘焙导航网格（NavMesh）", StartNavMeshBake);
 
                 _menuAdded = true;
                 Debug.Log("[NarrativePro] 导航工具菜单已添加：Tools → NarrativePro: ...");
@@ -158,6 +180,56 @@ namespace NarrativePro.Editor.Navigation
             _activeJobs.Add(job);
             Debug.Log($"[NarrativePro] 已启动地图瓦片烘焙（层 {layer}）。渲染与导入将分帧进行，进度见日志。");
         }
+
+        /// <summary>
+        /// 只按地图边界创建/校正 <see cref="NavMeshBoundsVolume"/>，不烘焙。
+        /// 用于先在视口里把体积范围调到覆盖真正可走的区域，再执行烘焙。
+        /// </summary>
+        private static void PrepareNavVolume()
+        {
+            if (!NavMeshBakeJob.PrepareVolume(DefaultVerticalExtent, DefaultAreaPadding,
+                    DefaultFallbackExtent, out var volume, out var failure))
+            {
+                Debug.LogError($"[NarrativePro] {failure}");
+                return;
+            }
+
+            Debug.Log($"[NarrativePro] 导航体积已就绪：{volume.Name} @ " +
+                      $"({volume.Position.X:F0},{volume.Position.Y:F0},{volume.Position.Z:F0}) " +
+                      $"尺寸 ({volume.Size.X:F0},{volume.Size.Y:F0},{volume.Size.Z:F0})。" +
+                      "确认它罩住全部可行走地面后，再执行 Tools → NarrativePro: 烘焙导航网格（NavMesh）。");
+        }
+
+        /// <summary>启动导航网格烘焙（分帧轮询引擎进度，完成后保存场景与资产）。</summary>
+        private void StartNavMeshBake()
+        {
+            var job = new NavMeshBakeJob
+            {
+                VerticalExtent = DefaultVerticalExtent,
+                AreaPaddingScale = DefaultAreaPadding,
+                FallbackXZExtent = DefaultFallbackExtent,
+            };
+            job.Start();
+
+            if (job.Phase == NavMeshBakePhase.Idle)
+            {
+                Debug.LogError($"[NarrativePro] 导航网格烘焙未能启动：{job.Message}");
+                return;
+            }
+
+            if (job.IsFinished)
+            {
+                // 启动即结束（体积缺失/播放模式），已被 job 记过日志
+                return;
+            }
+
+            _navJobs.Add(job);
+        }
+
+        // 导航体积默认参数：MapWidth 由场景里的 MapTileBoundsActor 提供，这里只给外扩与厚度
+        private const float DefaultVerticalExtent = 20000f;
+        private const float DefaultAreaPadding = 1.25f;
+        private const float DefaultFallbackExtent = 40000f;
     }
 }
 #endif

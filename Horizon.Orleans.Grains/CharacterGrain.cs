@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Horizon.Core.Abstract;
 using Horizon.Core.Helper;
 using Horizon.Entities;
+using Horizon.Game.Core.Combat;
 using Horizon.Game.Core.Interfaces;
 using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Message;
@@ -1077,7 +1078,9 @@ namespace Horizon.Orleans.Grains
             if (actualDelta < 0 && damageType != Horizon.Orleans.Interface.World.DamageType.True)
             {
                 // 防御减免：defense / (defense + 100)，与 CombatCalculator 公式一致。
-                float defenseReduction = CombatCalculator.CalculateDefenseReduction(info.Defense);
+                // 有效防御 = 基础防御 + 加点派生（敏捷/土系，AttributeDerivation 单一来源）。
+                var effectiveDefense = info.Defense + AttributeDerivation.Derive(_characterState.State.Allocation).DefenseBonus;
+                float defenseReduction = CombatCalculator.CalculateDefenseReduction(effectiveDefense);
                 float mitigated = actualDelta * (1 - defenseReduction);
 
                 // 减伤 Buff 叠加（0~1）。

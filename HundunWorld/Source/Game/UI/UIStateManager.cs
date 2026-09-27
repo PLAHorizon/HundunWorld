@@ -109,8 +109,20 @@ namespace HundunWorld.Game.UI
                 return;
             }
             
-            // 重置当前场景状态
-            ResetSceneState();
+            // 冷启动才重置。RootScene 在场景切换中被卸载重载时本脚本会重新 OnAwake，
+            // 而无条件重置会把已经在飞的逻辑状态抹回 Start：随后 OnStart 建的快照也是 Start，
+            // 一旦被 SnapshotRecovery 回灌成 TransitionToScene(Start)，MainUIManager 就会收起
+            // 选角的水墨壳 → 整屏空白。真实场景归属由 GameSceneManager 权威持有，按它对齐。
+            var authoritativeScene = GameSceneManager.Instance?.CurrentSceneType ?? SceneType.Start;
+            if (authoritativeScene == SceneType.Start)
+            {
+                ResetSceneState();
+            }
+            else
+            {
+                _currentScene = authoritativeScene;
+                FlaxEngine.Debug.Log($"UI状态管理器初始化：跟随当前真实场景 {authoritativeScene}（不重置）");
+            }
         }
 
         public override void OnStart()

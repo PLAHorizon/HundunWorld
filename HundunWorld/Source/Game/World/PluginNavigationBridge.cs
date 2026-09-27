@@ -90,8 +90,28 @@ namespace HundunWorld.Game.Navigation
             var registered = NavigationSubsystem.Instance?.GetAllPOIs();
             Collect(registered, origin, mapWidth, navigation, seen, results);
 
+            // 移动目的地也作为一种标记进入同一列表：小地图 / 世界地图 / 罗盘都只认这个出口，
+            // 若只挂在插件的 Markers 集合上，游戏侧 UI 并不会显示它。
+            if (TryGetMoveDestination(out var destination))
+            {
+                results.Add(new MapMarkerView
+                {
+                    Tag = MoveDestinationTag,
+                    Title = "移动目标",
+                    Subtitle = "",
+                    WorldPosition = destination,
+                    Normalized = NavigatorStatics.WorldToNormalizedMapPosition(destination, origin, mapWidth),
+                    SupportsFastTravel = false,
+                    IsDiscoverable = false,
+                    Discovered = true,
+                });
+            }
+
             return results.Count > 0;
         }
+
+        /// <summary>移动目的地在地图视图里的固定标签（UI 据此选用目的地样式）。</summary>
+        public const string MoveDestinationTag = "MoveDestination";
 
         private static void Collect(List<POIData> pois, Float2 origin, float mapWidth,
             NarrativeNavigationComponent navigation, HashSet<string> seen, List<MapMarkerView> results)
@@ -192,6 +212,121 @@ namespace HundunWorld.Game.Navigation
 
             var navigation = FindNavigationComponent();
             return navigation != null && navigation.GetPointOfInterest(out poi, new GameplayTag(poiTag));
+        }
+
+        // ===================================================================
+        // 点击移动目的地（与 NarrativePro 标记/面包屑管线共用一份数据源）
+        // ===================================================================
+
+        private static ClickToMoveDestinationMarker _moveDestinationMarker;
+
+        /// <summary>当前移动目的地标记（无目的地时为 null）。</summary>
+        public static MapMarker MoveDestinationMarker => _moveDestinationMarker;
+
+        /// <summary>
+        /// 设置/更新移动目的地：在导航组件上挂一个带面包屑的目的地标记。
+        /// <para>
+        /// 标记由 <see cref="NarrativeNavigationComponent"/> 统一 Tick 重算面包屑（限频 4Hz），
+        /// 世界地图 / 罗盘 / 小地图都从这同一条标记管线取数，所以点一次地图与角色走的路劲一致。
+        /// 导航组件不可用时返回 false——目的地显示降级，但角色跟随仍可直线执行。
+        /// </para>
+        /// </summary>
+        public static bool TrySetMoveDestination(Vector3 worldLocation)
+        {
+            var navigation = FindNavigationComponent();
+            if (navigation == null) return false;
+
+            if (_moveDestinationMarker == null)
+            {
+                _moveDestinationMarker = new ClickToMoveDestinationMarker();
+                if (!navigation.AddMarker(_moveDestinationMarker))
+                {
+                    _moveDestinationMarker = null;
+                    return false;
+                }
+            }
+
+            _moveDestinationMarker.SetDestination(worldLocation);
+            // 起点绑定到本地玩家：角色前进时面包屑随之缩短，而不是停在初始位置
+            _moveDestinationMarker.BindBreadcrumbsTo(HundunWorldGame.Instance?.LocalPlayerActor);
+            return true;
+        }
+
+        /// <summary>清除移动目的地标记（到达、玩家接管或超时）。</summary>
+        public static void ClearMoveDestination()
+        {
+            if (_moveDestinationMarker == null) return;
+
+            var navigation = FindNavigationComponent();
+            navigation?.RemoveMarker(_moveDestinationMarker);
+            _moveDestinationMarker = null;
+        }
+
+        /// <summary>取当前移动目的地世界坐标。</summary>
+        public static bool TryGetMoveDestination(out Vector3 worldLocation)
+        {
+            worldLocation = Vector3.Zero;
+            if (_moveDestinationMarker == null) return false;
+
+            // 标记挂在本地玩家的导航组件上，而本字段是静态的：
+            // 场景切换 / 玩家 Actor 销毁后导航组件已不在，此时必须自我清理，
+            // 否则地图会一直显示一个指向已销毁对象的目的地。
+            if (FindNavigationComponent() == null)
+            {
+                ClearMoveDestination();
+                return false;
+            }
+
+            worldLocation = _moveDestinationMarker.GetMarkerTransform().Translation;
+            return true;
+        }
+
+        /// <summary>
+        /// 取面包屑点列（等弧长重采样后的路径），供需要画线的 UI 使用。
+        /// <para>
+        /// 导航网格尚未烘焙时插件算不出面包屑（<c>IsNavigationReady</c> 为 false），此时退化成
+        /// 「角色→目的地」的单段直线——这与角色实际走的兜底行为一致，
+        /// 否则点了地图却一条线都不画，看起来像是功能坏了。
+        /// 无目的地时返回 false 且清空列表。
+        /// </para>
+        /// </summary>
+        public static bool TryGetMoveDestinationPath(List<Vector3> points)
+        {
+            points?.Clear();
+            if (points == null) return false;
+            if (!TryGetMoveDestination(out var destination)) return false;
+
+            var breadcrumb = _moveDestinationMarker.GetBreadcrumbPath();
+            if (breadcrumb != null && breadcrumb.Count > 1)
+            {
+                for (int i = 0; i < breadcrumb.Count; i++) points.Add(breadcrumb[i]);
+                return true;
+            }
+
+            if (!TryGetPlayerPose(out var playerPosition, out _)) return false;
+
+            points.Add(playerPosition);
+            points.Add(destination);
+            return true;
+        }
+
+        /// <summary>
+        /// 把世界坐标点列投影为大地图的归一化坐标（0~1，左上为原点）。
+        /// 地图未配置时返回 false 且清空结果。UI 侧只走这个出口，不直接依赖插件投影函数。
+        /// </summary>
+        public static bool TryProjectToWorldMapNormalized(List<Vector3> worldPoints, List<Float2> results)
+        {
+            results?.Clear();
+            if (worldPoints == null || results == null || worldPoints.Count == 0) return false;
+
+            if (!TryGetMapProjection(out var origin, out var mapWidth)) return false;
+
+            for (int i = 0; i < worldPoints.Count; i++)
+            {
+                results.Add(NavigatorStatics.WorldToNormalizedMapPosition(worldPoints[i], origin, mapWidth));
+            }
+
+            return results.Count > 0;
         }
     }
 }

@@ -468,7 +468,15 @@ namespace HundunWorld.Game.UI
                 // 离开 GameWorld 场景时隐藏水墨 UI（不销毁，保留控件树与页面状态）。
                 // 选角 / 创角场景同样要隐藏：水墨壳现在会在进世界之前就被创建，
                 // 若切回登录等场景时不收起，行囊页会直接盖在登录界面上。
-                if (previousScene == SceneType.GameWorld || IsCcFlowScene(previousScene))
+                // 例外：逻辑状态"倒退到 Start"而真实场景仍停在 CC/世界时不能收 ——
+                // 那是 UIStateManager 随 RootScene 重载重建后的假信号，收了屏幕就只剩天空。
+                var realScene = GameSceneManager.Instance?.CurrentSceneType ?? newScene;
+                bool stateRegressionWhileStillInWorld =
+                    newScene == SceneType.Start
+                    && (realScene == SceneType.GameWorld || IsCcFlowScene(realScene));
+
+                if (!stateRegressionWhileStillInWorld
+                    && (previousScene == SceneType.GameWorld || IsCcFlowScene(previousScene)))
                 {
                     HideInkWashUI();
                 }

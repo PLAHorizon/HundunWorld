@@ -83,6 +83,8 @@ namespace HundunWorld.Game.UI
 
         private const string RootSceneName = "RootScene";
         private static readonly string RootScenePath = "Content/Maps/RootScene.scene";
+        /// <summary>选角与创角共用的场景资产（其 Camera 等 Actor 由本类兜底补建）。</summary>
+        private static readonly string CharacterScenePath = "Content/Maps/Character.scene";
         private static readonly string TransitionScenePath = "Content/Maps/TransitionScene.scene";
         private const string TransitionSceneName = "TransitionScene";
 
@@ -1554,12 +1556,39 @@ namespace HundunWorld.Game.UI
         /// 注意：SceneController.CreateUIComponent() 也可能创建 CharacterSceneController，
         /// 因此在创建前必须使用 Level.FindScript 全局检查，避免重复创建
         /// </summary>
+        /// <summary>Character.scene 的资产 ID 缓存（一次解析，避免每次场景加载都查资产）。</summary>
+        private Guid? _characterSceneAssetId;
+
+        /// <summary>
+        /// 该场景是否为选角/创角共用的 Character.scene：按资产 ID 比对，
+        /// 仅在资产查不到时退回按名字判断（兼容场景根对象被改名的工程副本）。
+        /// </summary>
+        private bool IsCharacterScene(FlaxEngine.Scene scene)
+        {
+            if (_characterSceneAssetId == null)
+            {
+                if (Content.GetAssetInfo(CharacterScenePath, out var info))
+                    _characterSceneAssetId = info.ID;
+                else
+                    _characterSceneAssetId = Guid.Empty;
+            }
+
+            if (_characterSceneAssetId.Value != Guid.Empty)
+                return scene.ID == _characterSceneAssetId.Value;
+
+            return (scene.Name ?? "") == "Character";
+        }
+
         private void InitializeCharacterSceneIfNeeded(FlaxEngine.Scene scene)
         {
             if (scene == null) return;
 
-            var sceneName = scene.Name ?? "";
-            if (sceneName != "Character") return;
+            // 判定必须走场景资产 ID：Flax 里 Scene.Name 是场景根对象名（本工程为 "Scene"），
+            // 与资产文件名 Character.scene 无关。原先按 sceneName != "Character" 直接 return，
+            // 导致这段"补建 Camera/LightingRoot/…"的兜底从未执行过，
+            // 而 Content/Maps/Character.scene 本身不含任何相机 Actor → PIE 报 "No camera" →
+            // ScreenSpace 的 UICanvas 无处渲染 → 整屏空白（水墨 UI 其实已建成，只是没有相机）。
+            if (!IsCharacterScene(scene)) return;
 
             Debug.Log($"[GameSceneManager] InitializeCharacterSceneIfNeeded: 开始初始化 Character 场景");
 

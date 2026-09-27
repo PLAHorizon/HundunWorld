@@ -2,6 +2,7 @@ using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
 using HundunWorld.Game.Navigation;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
@@ -769,10 +770,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             }
         }
 
-        /// <summary>地图画布（水墨底 + 标记 + 罗盘/缩放/图例，全部自绘）。</summary>
+        /// <summary>地图画布（水墨底 + 标记 + 导航路径 + 罗盘/缩放/图例，全部自绘）。</summary>
         private sealed class MapCanvas : Control
         {
-            private enum Mk { Teleport, Oddity, Chest, Npc, Monster, Player }
+            private enum Mk { Teleport, Oddity, Chest, Npc, Monster, Player, Destination }
 
             private struct MData { public Mk Kind; public string Tag; public float X, Y; }
 
@@ -818,6 +819,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             private MData[] _markers = DemoMarkers;
             private (string text, float x, float y)[] _places = DemoPlaces;
 
+            /// <summary>导航路径的归一化坐标点列（0~1，空表示当前没有自动移动）</summary>
+            private readonly List<Float2> _navPath = new List<Float2>();
+
+            /// <summary>导航路径的世界坐标缓冲</summary>
+            private readonly List<Vector3> _navPathWorld = new List<Vector3>();
+
+            /// <summary>标记与路径的刷新节流（秒）。只在地图真正打开时计时。</summary>
+            private float _navRefreshTimer;
+
+            private const float NavRefreshInterval = 0.35f;
+
             private float _pulse;
 
             public MapCanvas()
@@ -846,11 +858,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                     float x = Mathf.Clamp(v.Normalized.X, 0.02f, 0.98f);
                     float y = Mathf.Clamp(v.Normalized.Y, 0.02f, 0.98f);
 
-                    // 支持快速旅行 → 界碑（传送点）；已发现 → NPC；未发现 → 异闻
-                    Mk kind = v.SupportsFastTravel ? Mk.Teleport : (v.Discovered ? Mk.Npc : Mk.Oddity);
+                    // 移动目的地独立样式（与小地图一致）；其余：支持快速旅行 → 界碑，已发现 → NPC，未发现 → 异闻
+                    Mk kind = v.Tag == PluginNavigationBridge.MoveDestinationTag
+                        ? Mk.Destination
+                        : (v.SupportsFastTravel ? Mk.Teleport : (v.Discovered ? Mk.Npc : Mk.Oddity));
                     markers.Add(new MData { Kind = kind, Tag = v.Tag, X = x, Y = y });
 
-                    if (places.Count < MaxPlaceLabels && !string.IsNullOrEmpty(v.Title))
+                    // 目的地不配地名标签，否则会盖住真实 POI 的名字
+                    if (places.Count < MaxPlaceLabels && !string.IsNullOrEmpty(v.Title) && kind != Mk.Destination)
                     {
                         places.Add((v.Title, x, y));
                     }
@@ -874,6 +889,29 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             {
                 base.Update(dt);
                 _pulse += dt;
+
+                // 关闭状态一律不刷新：标记与路径都来自运行时导航数据，
+                // 但只有打开地图时才需要（也才看得见），避免白烧 CPU。
+                if (!VisibleInHierarchy) return;
+
+                _navRefreshTimer += dt;
+                if (_navRefreshTimer < NavRefreshInterval) return;
+
+                _navRefreshTimer = 0f;
+                BuildMarkerData();
+                RefreshNavigationPath();
+            }
+
+            /// <summary>
+            /// 刷新自动移动路径（世界点列 → 归一化地图坐标）。目的地清空后路径随之消失。
+            /// </summary>
+            private void RefreshNavigationPath()
+            {
+                if (!PluginNavigationBridge.TryGetMoveDestinationPath(_navPathWorld)
+                    || !PluginNavigationBridge.TryProjectToWorldMapNormalized(_navPathWorld, _navPath))
+                {
+                    _navPath.Clear();
+                }
             }
 
             /// <summary>
@@ -925,6 +963,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 if (mw <= 0f || mh <= 0f) return;
 
                 DrawPlaces(mx, my, mw, mh);
+                DrawNavPath(mx, my, mw, mh);
                 foreach (var m in _markers)
                     DrawMarker(new Float2(mx + m.X * mw, my + m.Y * mh), m.Kind);
 
@@ -974,6 +1013,38 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 }
             }
 
+            /// <summary>导航路径的画布像素坐标缓冲（每帧复用）</summary>
+            private readonly List<Float2> _navPathScreen = new List<Float2>();
+
+            /// <summary>
+            /// 绘制自动移动路径：纸白虚线 + 半透明垫底，按地图绘图区矩形裁剪。
+            /// 归一化→像素与标记命中测试用的是同一套映射，所以线端与目的地圆点必然重合。
+            /// </summary>
+            private void DrawNavPath(float mx, float my, float mw, float mh)
+            {
+                if (_navPath.Count < 2) return;
+
+                _navPathScreen.Clear();
+                for (int i = 0; i < _navPath.Count; i++)
+                {
+                    var n = _navPath[i];
+                    _navPathScreen.Add(new Float2(mx + n.X * mw, my + n.Y * mh));
+                }
+
+                var clip = new Rectangle(mx, my, mw, mh);
+                var baseColor = InkWashTheme.PaperBright;
+
+                InkNavPathPainter.DrawInRect(_navPathScreen, clip,
+                    new Color(baseColor.R, baseColor.G, baseColor.B, 0.20f),
+                    InkNavPathPainter.DefaultThickness + 3f,
+                    InkNavPathPainter.DefaultDashLength, InkNavPathPainter.DefaultGapLength);
+
+                InkNavPathPainter.DrawInRect(_navPathScreen, clip,
+                    new Color(baseColor.R, baseColor.G, baseColor.B, 0.85f),
+                    InkNavPathPainter.DefaultThickness,
+                    InkNavPathPainter.DefaultDashLength, InkNavPathPainter.DefaultGapLength);
+            }
+
             private void DrawMarker(Float2 pos, Mk kind)
             {
                 switch (kind)
@@ -1005,6 +1076,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                         break;
                     case Mk.Player:
                         DrawPlayer(pos);
+                        break;
+                    case Mk.Destination:
+                        // 与小地图同一语义：纸白实心点 + 一圈描边，压住虚线路径的末端
+                        InkRenderHelper.FillCircle(pos, 4.5f, InkWashTheme.PaperBright);
+                        InkRenderHelper.DrawCircle(pos, 8f, InkWashTheme.PaperBright, 1.5f);
                         break;
                 }
             }

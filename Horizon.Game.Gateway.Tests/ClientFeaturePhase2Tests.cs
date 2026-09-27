@@ -563,10 +563,10 @@ namespace Horizon.Game.Gateway.Tests
         }
 
         [Fact]
-        public void ChatSendMessage_DefaultServiceType_IsSocial()
+        public void ChatSendMessage_DefaultServiceType_IsChat()
         {
             var msg = new ChatSendMessage();
-            Assert.Equal(ServiceType.Social, msg.ServiceType);
+            Assert.Equal(ServiceType.Chat, msg.ServiceType);
         }
 
         [Fact]
@@ -575,7 +575,7 @@ namespace Horizon.Game.Gateway.Tests
             var msg = new ChatSendMessage();
             Assert.Equal(0UL, msg.SenderId);
             Assert.Equal("", msg.SenderName);
-            Assert.Equal(ChatChannelType.World, msg.Channel);
+            Assert.Equal(ChatChannel.World, msg.Channel);
             Assert.Equal("", msg.Content);
             Assert.Equal(0UL, msg.TargetId);
             Assert.Equal(0L, msg.Timestamp);
@@ -598,8 +598,8 @@ namespace Horizon.Game.Gateway.Tests
         [Fact]
         public void ChatSendMessage_CanSetChannel()
         {
-            var msg = new ChatSendMessage { Channel = ChatChannelType.Guild };
-            Assert.Equal(ChatChannelType.Guild, msg.Channel);
+            var msg = new ChatSendMessage { Channel = ChatChannel.Guild };
+            Assert.Equal(ChatChannel.Guild, msg.Channel);
         }
 
         [Fact]
@@ -616,14 +616,14 @@ namespace Horizon.Game.Gateway.Tests
             {
                 SenderId = 100UL,
                 SenderName = "张无忌",
-                Channel = ChatChannelType.Whisper,
+                Channel = ChatChannel.Private,
                 TargetId = 200UL,
                 Content = "你好，我们组队吧",
                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             };
 
             Assert.Equal(100UL, msg.SenderId);
-            Assert.Equal(ChatChannelType.Whisper, msg.Channel);
+            Assert.Equal(ChatChannel.Private, msg.Channel);
             Assert.Equal(200UL, msg.TargetId);
             Assert.Equal("你好，我们组队吧", msg.Content);
             Assert.True(msg.Timestamp > 0);
@@ -637,12 +637,12 @@ namespace Horizon.Game.Gateway.Tests
             {
                 SenderId = 300UL,
                 SenderName = "令狐冲",
-                Channel = ChatChannelType.World,
+                Channel = ChatChannel.World,
                 Content = "世界频道消息测试",
                 Timestamp = 1707400000000L
             };
 
-            Assert.Equal(ChatChannelType.World, msg.Channel);
+            Assert.Equal(ChatChannel.World, msg.Channel);
             Assert.Equal("世界频道消息测试", msg.Content);
             Assert.Equal(0UL, msg.TargetId); // 世界频道不需要目标
         }

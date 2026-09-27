@@ -239,7 +239,9 @@ namespace HundunWorld.Game.UI.Character
         public void UpdateButtonHover()
         {
             if (_isCreationMode) return;
-
+            // 走水墨选角流程时旧面板栈不创建，_selectionUI 恒为 null；
+            // 控制器仍每帧调进来，不守卫就会刷出一整屏 NRE 警告。
+            if (_selectionUI == null) return;
             UpdateButtonHover(_selectionUI.BackBtn, UIStyleTokens.BgElevated, UIStyleTokens.BgPaper);
             UpdateButtonHover(_selectionUI.CreateBtn, UIStyleTokens.BgPaper, UIStyleTokens.BgHover);
             if (_selectionUI.EnterBtn != null)

@@ -69,17 +69,18 @@ namespace Game.Character.Attributes
         /// </summary>
         /// <param name="attackElement">攻击属性</param>
         /// <param name="defenseElement">防御属性</param>
-        /// <returns>伤害系数：克制+50%，被克-30%，相同1.0</returns>
+        /// <returns>伤害系数：克制×1.25，被克×0.8，相同或无关系1.0</returns>
+        /// <remarks>倍率与服务端权威 CombatCore.GetWuxingMultiplier 对齐（1.25/0.8）；表现层预览仅供参考，结算以服务端为准。</remarks>
         public static float CalculateCounterMultiplier(WuxingElement attackElement, WuxingElement defenseElement)
         {
             if (attackElement == WuxingElement.None || defenseElement == WuxingElement.None)
                 return 1.0f;
 
             if (GetCounterElement(attackElement) == defenseElement)
-                return 1.5f; // 克制：伤害+50%
+                return 1.25f; // 克制：伤害+25%（服务端权威口径）
 
             if (GetCounterElement(defenseElement) == attackElement)
-                return 0.7f; // 被克：伤害-30%
+                return 0.8f; // 被克：伤害-20%（服务端权威口径）
 
             return 1.0f; // 相同或无关系：正常伤害
         }
@@ -89,11 +90,12 @@ namespace Game.Character.Attributes
         /// </summary>
         /// <param name="firstElement">前一个技能属性</param>
         /// <param name="secondElement">后一个技能属性</param>
-        /// <returns>相生加成：+30%，否则1.0</returns>
+        /// <returns>相生加成：×1.15，否则1.0</returns>
+        /// <remarks>对齐服务端 CombatCalculator.GetWuxingSynergyMultiplier 相生对口径（1.15）。</remarks>
         public static float CalculateGenerateBonus(WuxingElement firstElement, WuxingElement secondElement)
         {
             if (GetGenerateElement(firstElement) == secondElement)
-                return 1.3f; // 相生：伤害+30%
+                return 1.15f; // 相生：伤害+15%（服务端协同口径）
 
             return 1.0f; // 无相生关系
         }

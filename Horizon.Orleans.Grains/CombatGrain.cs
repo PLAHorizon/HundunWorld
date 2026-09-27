@@ -2,6 +2,7 @@ using AutoMapper;
 using Horizon.Core.Abstract;
 using Horizon.Core.Helper;
 using Horizon.Entities;
+using Horizon.Game.Core.Combat;
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
@@ -30,6 +31,12 @@ namespace Horizon.Orleans.Grains
         private readonly IPersistentState<CombatState> _combatState;
 
         private readonly IDataContext<GameEntityContext, CharacterEntity, long> _characterContext;
+
+        /// <summary>
+        /// 属性表上下文（加点持久层）。可为 null（单测/降级），null 时按"未分配"处理。
+        /// </summary>
+        private readonly IDataContext<GameEntityContext, CharacterAttributeEntity, long>? _attributeContext;
+
         private readonly IMapper _mapper;
 
         /// <summary>
@@ -43,13 +50,15 @@ namespace Horizon.Orleans.Grains
             [PersistentState("combat", "GameStore")] IPersistentState<CombatState> combatState,
             IDataContext<GameEntityContext, CharacterEntity, long> characterContext,
             IMapper mapper,
-            Func<ulong, ICharacterGrain>? characterGrainProvider = null)
+            Func<ulong, ICharacterGrain>? characterGrainProvider = null,
+            IDataContext<GameEntityContext, CharacterAttributeEntity, long>? attributeContext = null)
         {
             _logger = logger;
             _combatState = combatState;
             _characterContext = characterContext;
             _mapper = mapper;
             _characterGrainProvider = characterGrainProvider ?? (id => GrainFactory.GetGrain<ICharacterGrain>((long)id));
+            _attributeContext = attributeContext;
         }
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -651,7 +660,12 @@ namespace Horizon.Orleans.Grains
         #region Private Helper Methods
 
         /// <summary>
-        /// 获取或创建战斗信息
+        /// 获取或创建战斗信息。
+        /// <para>
+        /// 战斗属性 = 角色基础值 + 加点派生加成（<see cref="AttributeDerivation"/>，服务端单一来源）；
+        /// 暴击/闪避/格挡优先取属性表列值（未落列时保留历史默认 0.1/0.05/0.1），再叠加加点。
+        /// 属性表不可用（上下文未注入/表未迁移）时降级为"未分配"，行为与接入前一致。
+        /// </para>
         /// </summary>
         private async Task<CombatInfo> GetOrCreateCombatInfo(ulong characterId)
         {
@@ -659,23 +673,32 @@ namespace Horizon.Orleans.Grains
             {
                 // 从数据库加载角色信息
                 var characterEntity = await _characterContext.QueryFirstOrDefaultAsync(c => c.Id == (long)characterId);
-                
+
+                var attrRow = await LoadAttributeRowAsync(characterId);
+                var bonuses = AttributeDerivation.Derive(ToAllocation(attrRow));
+
                 if (characterEntity != null)
                 {
+                    var baseCritRate = attrRow != null && attrRow.CriticalRate > 0f ? attrRow.CriticalRate : 0.1f;
+                    var baseDodgeRate = attrRow != null && attrRow.DodgeRate > 0f ? attrRow.DodgeRate : 0.05f;
+                    var baseBlockRate = attrRow != null && attrRow.BlockRate > 0f ? attrRow.BlockRate : 0.1f;
+                    var baseCritDamage = attrRow != null && attrRow.CriticalDamage > 0f ? attrRow.CriticalDamage : 0f;
+
+                    var maxEnergy = 100f + bonuses.MaxEnergyBonus;
                     var combatInfo = new CombatInfo
                     {
                         CharacterId = characterId,
                         Health = characterEntity.Health,
-                        MaxHealth = characterEntity.MaxHealth,
-                        AttackPower = characterEntity.AttackPower,
-                        Defense = characterEntity.Defense,
+                        MaxHealth = characterEntity.MaxHealth + bonuses.MaxHealthBonus,
+                        AttackPower = characterEntity.AttackPower + bonuses.AttackBonus,
+                        Defense = characterEntity.Defense + bonuses.DefenseBonus,
                         WuxingElement = characterEntity.WuxingElement,
-                        Energy = 100,
-                        MaxEnergy = 100,
-                        DodgeRate = 0.05f,
-                        BlockRate = 0.1f,
-                        CritRate = 0.1f,
-                        CritDamageMultiplier = 1.5f,
+                        Energy = maxEnergy,
+                        MaxEnergy = maxEnergy,
+                        DodgeRate = Clamp01(baseDodgeRate),
+                        BlockRate = Clamp01(baseBlockRate),
+                        CritRate = Clamp01(baseCritRate + bonuses.CritRateBonus),
+                        CritDamageMultiplier = 1.5f + baseCritDamage + bonuses.CritDamageBonus,
                         IsInCombat = false,
                         LastActionTime = DateTime.Now
                     };
@@ -709,6 +732,39 @@ namespace Horizon.Orleans.Grains
 
             return _combatState.State.CombatParticipants[characterId];
         }
+
+        /// <summary>读取属性表行（加点+基础战斗属性列）。上下文缺失或表未迁移时返回 null。</summary>
+        private async Task<CharacterAttributeEntity?> LoadAttributeRowAsync(ulong characterId)
+        {
+            if (_attributeContext == null)
+                return null;
+
+            try
+            {
+                return await _attributeContext.QueryFirstOrDefaultAsync(a => a.CharacterId == characterId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "加载角色属性表失败，按未分配处理: CharacterId={CharacterId}", characterId);
+                return null;
+            }
+        }
+
+        private static AttributeAllocationData? ToAllocation(CharacterAttributeEntity? row)
+            => row == null ? null : new AttributeAllocationData
+            {
+                Strength = row.Strength,
+                Agility = row.Agility,
+                Health = row.Constitution,
+                Energy = row.InternalForce,
+                Metal = row.MetalPoint,
+                Wood = row.WoodPoint,
+                Water = row.WaterPoint,
+                Fire = row.FirePoint,
+                Earth = row.EarthPoint,
+            };
+
+        private static float Clamp01(float v) => v < 0f ? 0f : (v > 1f ? 1f : v);
 
         /// <summary>
         /// 计算伤害

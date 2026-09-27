@@ -330,7 +330,7 @@ namespace Horizon.Game.Gateway.Tests
                 ChannelType = ChatChannel.World,
                 Count = 50
             };
-            Assert.Equal(MessageType.Chat, req.Type);
+            Assert.Equal(MessageType.ChatHistory, req.Type);
         }
 
         [Fact]

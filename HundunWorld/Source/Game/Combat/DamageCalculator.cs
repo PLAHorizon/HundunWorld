@@ -181,26 +181,26 @@ namespace HundunWorld.Game.Combat
 
             float modifiedDamage = damage;
 
-            // 五行相克：攻击克制的元素增加50%伤害
+            // 五行相克：攻击克制的元素 ×1.25（服务端 CombatCore 权威口径）
             if (_counterRelations.TryGetValue(skill.Element, out var counteredElement) && 
                 defender.Element == counteredElement)
             {
-                modifiedDamage *= 1.5f;
+                modifiedDamage *= 1.25f;
             }
-            // 被克制：减少30%伤害
+            // 被克制：×0.8（服务端 CombatCore 权威口径）
             else if (_counterRelations.TryGetValue(defender.Element, out var counterElement) && 
                      counterElement == skill.Element)
             {
-                modifiedDamage *= 0.7f;
+                modifiedDamage *= 0.8f;
             }
 
-            // 五行相生：如果连续使用相生技能，增加30%伤害
+            // 五行相生：如果连续使用相生技能，×1.15（服务端协同口径）
             if (previousSkill != null && previousSkill.Element != WuxingElement.None)
             {
                 if (_generateRelations.TryGetValue(previousSkill.Element, out var generatedElement) && 
                     generatedElement == skill.Element)
                 {
-                    modifiedDamage *= 1.3f;
+                    modifiedDamage *= 1.15f;
                 }
             }
 

@@ -85,14 +85,90 @@ namespace HundunWorld.Game
         private float _verticalVelocity = 0.0f;
 
         /// <summary>
-        /// 目标位置（用于点击移动）
-        /// </summary>
-        private Vector3 _targetPosition = Vector3.Zero;
-
-        /// <summary>
         /// 是否正在移动到目标位置
         /// </summary>
         private bool _isMovingToTarget = false;
+
+        /// <summary>
+        /// 点击移动的剩余路径点（导航网格路径或单点直线目标）。
+        /// </summary>
+        private readonly Queue<Vector3> _clickToMovePath = new Queue<Vector3>();
+
+        /// <summary>
+        /// 点击移动的看门狗计时（秒）：超时自动停下，避免长路径上因目标点失效而无限推输入。
+        /// </summary>
+        private float _clickToMoveElapsed;
+
+        /// <summary>终点接近过程的最好水平距离（厘米），用于"到不了了"的停滞判定。</summary>
+        private float _clickToMoveBestFinalDistance = float.MaxValue;
+
+        /// <summary>终点前多久没有再靠近（秒）。</summary>
+        private float _clickToMoveFinalStallElapsed;
+
+        /// <summary>
+        /// 自动移动的速度倍率：终点最后一段渐变到 0，避免全速冲进容差圈后过冲折返。
+        /// 手动操作时为 1。
+        /// </summary>
+        private float _clickToMoveSpeedScale = 1f;
+
+        /// <summary>中间路径点的到达容差（厘米，120 = 1.2 米）。要留足转角余量，不然每个拐点多停一下。</summary>
+        private const float ClickToMoveArrivalRadius = 120f;
+
+        /// <summary>
+        /// 终点的到达容差（厘米，30 = 0.3 米）。
+        /// 原先终点与中间点共用 120，角色每次都稳稳地比标记早停 1.2 米，
+        /// 这就是"总还差一段距离就停下"的直接原因：终点只要求站到点上，不需要转角余量。
+        /// </summary>
+        private const float ClickToMoveFinalArrivalRadius = 30f;
+
+        /// <summary>终点前的减速距离（厘米）。全速冲进 30 厘米圈必然过冲再折返，表现为原地抖。</summary>
+        private const float ClickToMoveFinalRampDistance = 200f;
+
+        /// <summary>终点前减速的下限倍率（不为 0，否则最后 1 厘米永远走不完）。</summary>
+        private const float ClickToMoveFinalMinSpeedScale = 0.22f;
+
+        /// <summary>终点前多久没有再靠近就判定"到不了了"（被碰撞体挡住/点在网格外），秒。</summary>
+        private const float ClickToMoveStallSeconds = 1.5f;
+
+        /// <summary>算作"仍在有效靠近"的最小距离改进量（厘米）。</summary>
+        private const float ClickToMoveStallProgress = 10f;
+
+        /// <summary>单次点击移动的最长执行时间（秒）。</summary>
+        private const float ClickToMoveMaxSeconds = 25f;
+
+        /// <summary>
+        /// 跟随路径的等弧长重采样间距（厘米，300 = 3 米）。
+        /// 与地图面包屑取同一量级，保证"地图上看到的拐点密度"与"角色实际转向频率"一致。
+        /// </summary>
+        private const float ClickToMoveWaypointSpacing = 300f;
+
+        /// <summary>
+        /// 点击地面射线的最大距离（厘米）。第三人称相机离地可达数千米，
+        /// 给小了会让射线永远打不到 Terrain，表现为"点了没反应"。
+        /// </summary>
+        private const float ClickToMoveRayDistance = 100000f;
+
+        /// <summary>
+        /// 地面样条相对地面的抬升（厘米）。贴地画会被地形起伏切断，抬一点即可整条可读。
+        /// </summary>
+        private const float ClickToMoveGroundLift = 25f;
+
+        /// <summary>地面样条颜色（鎏金，与水墨 UI 的路径同色系）。</summary>
+        private static readonly Color ClickToMovePathColor = new Color(1f, 0.85f, 0.35f, 0.9f);
+
+        /// <summary>EnableInput 拦截提示只打一次的标记。</summary>
+        private bool _enableInputLogged;
+
+        /// <summary>
+        /// 点击移动期间的"面向行进方向"Yaw（弧度）。
+        /// 正常移动时 LookYaw 取自相机（第三人称轨道视角）；自动寻路时若沿用相机朝向，
+        /// 角色会侧身平移。这里改为指向当前路径点，相机侧由 ThirdPersonCamera.UpdateAutoAlign
+        /// 在角色移动且停止手动转视角后自动跟到角色背后（Yaw = 360 − 角色Yaw），两者不冲突。
+        /// </summary>
+        private float _clickToMoveLookYaw;
+
+        /// <summary>是否已有可用的点击移动朝向。</summary>
+        private bool _hasClickToMoveLookYaw;
 
         /// <summary>
         /// 角色朝向平滑度
@@ -437,8 +513,15 @@ namespace HundunWorld.Game
             // 如果输入被禁用，跳过所有输入处理
             if (!EnableInput)
             {
+                // 一次性提示：点击移动等输入功能"完全无日志"时，用来区分"输入被禁用"与"代码没生效"
+                if (!_enableInputLogged)
+                {
+                    _enableInputLogged = true;
+                    Debug.Log("[PlayerController] OnUpdate 被 EnableInput=false 拦截，输入处理（含点击移动）未执行");
+                }
                 return;
             }
+            _enableInputLogged = true;
 
             // 资源未就绪时限频重试初始化动画参数（P-F5：0.5s 间隔 + 次数上限，
             // 避免每帧空转重试与日志刷屏；模型缺失 AnimationGraph 时重试永不成功）
@@ -476,6 +559,24 @@ namespace HundunWorld.Game
             // 直接修改 Actor.Position 与 Actor.Orientation，与 ECS 双轨脱节。
             SetIsWalking(false);
             _moveDirection = GetInputDirection();
+
+            // 点击移动（Alt+左键）：只合成与 WASD 等价的移动方向，仍走 ECS 输入主链路
+            // （InputSendSystem 会写 InputHistoryBuffer，预测/校正与反作弊加速度检测都不受影响）。
+            // 键盘一旦有移动输入就立刻交还给玩家，寻路自动取消。
+            HandleClickToMove();
+            if (_isMovingToTarget)
+            {
+                if (_moveDirection.LengthSquared <= 0.0001f)
+                    _moveDirection = SteerClickToMove();
+                else
+                    CancelClickToMove();
+
+                // 地面上的导航样条：只在自动移动的这些帧里画，随角色前进逐段缩短。
+                // 地图上的同一条路径由小地图/世界地图各自绘制，这里补的是场景里贴着地面的那份。
+                if (_isMovingToTarget)
+                    DrawClickToMovePath();
+            }
+
             HandleAuxiliaryInputs();
             UpdateGroundedFromEcs();
 
@@ -575,9 +676,9 @@ namespace HundunWorld.Game
                 input.MoveX = _moveDirection.X;
                 input.MoveY = _moveDirection.Z;
 
-                // 获取视角朝向（含 Camera 缺失降级逻辑）
+                // 获取视角朝向（含 Camera 缺失降级逻辑）；点击移动时改为面向行进方向
                 TryGetLookYawPitch(out float lookYaw, out float lookPitch);
-                input.LookYaw = lookYaw;
+                input.LookYaw = ResolveLookYaw(lookYaw);
                 input.LookPitch = lookPitch;
 
                 byte inputBits = _inputManager != null ? _inputManager.GetCurrentInputBits() : (byte)0;
@@ -717,7 +818,7 @@ namespace HundunWorld.Game
             {
                 ClientTick = _clientTick,
                 InputBits = inputBits,
-                LookYaw = lookYaw,
+                LookYaw = ResolveLookYaw(lookYaw),
                 LookPitch = lookPitch,
                 MoveX = moveX,
                 MoveY = moveY,
@@ -913,6 +1014,14 @@ namespace HundunWorld.Game
                 baseSpeed *= AirControl;
             }
 
+            // 自动移动的终点减速只作用在自动移动期间。MaxSpeed 会随输入包一起进
+            // LocalSimulationSystem 与服务端 MovementValidator，两端按同一速度推进，
+            // 不会出现"客户端已减速、服务端仍按全速复算"的校正。
+            if (_isMovingToTarget && _clickToMoveSpeedScale < 1f)
+            {
+                baseSpeed *= _clickToMoveSpeedScale;
+            }
+
             return baseSpeed;
         }
 
@@ -975,14 +1084,229 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
-        /// [重构] 点击移动已禁用。
-        /// 原实现直接修改 Actor.Position/Orientation，与 ECS 单一事实源原则冲突。
-        /// 后续如需启用，应改造为生成虚拟输入方向写入 PlayerInputComponent.MoveX/MoveY，
-        /// 让 ECS LocalSimulationSystem 统一计算移动。本方法保留为空操作以兼容旧调用点。
+        /// 点击移动：Alt + 左键 点击地面 → 设定目标点并规划路径。
+        /// <para>
+        /// 刻意不直接改 Actor 位置/朝向：本地移动的唯一事实源是 ECS（LocalSimulationSystem 步进、
+        /// InputSendSystem 打包发送并登记 InputHistoryBuffer），所以这里只产出"虚拟的 WASD 方向"。
+        /// 旧实现直接写 Actor.Position/Orientation 会与 ECS 双轨脱节，故早先被禁用。
+        /// </para>
         /// </summary>
         private void HandleClickToMove()
         {
-            // 空操作：点击移动功能已禁用，等待后续基于 ECS 输入采集的重新实现
+            if (Actor == null) return;
+            if (!Input.GetMouseButtonDown(MouseButton.Left)) return;
+
+            // 分级日志：三个环节任一失败都能立刻分辨（无日志=OnUpdate 被 EnableInput 挡住或代码未编译进去）
+            bool altDown = Input.GetKey(KeyboardKeys.Alt);
+            Debug.Log($"[ClickToMove] 左键按下 altDown={altDown}");
+            if (!altDown) return;
+
+            // 必须用 Input.MousePosition（游戏窗口坐标）而不是 MouseScreenPosition（桌面屏幕坐标）：
+            // PIE 的 Game 窗口是带偏移的浮动窗口，后者会把整条射线打偏，
+            // 表现为"落点与点击不一致"，且相机越远角误差换算成的世界误差越大 → 干脆打不到地面。
+            // 工程内两个能正常工作的鼠标→世界系统都用的 MousePosition
+            // （AOEIndicatorSystem.cs:116、TargetSelectionSystem.cs:205）。
+            var mousePos = Input.MousePosition;
+            if (!PerformGroundRaycast(mousePos, out var hitPoint))
+            {
+                Debug.LogWarning($"[ClickToMove] 射线未命中地面 mouse={mousePos} " +
+                                 $"mainCamera={(FlaxEngine.Camera.MainCamera == null ? "null" : "存在")}");
+                return;
+            }
+
+            BeginMoveTo(hitPoint);
+        }
+
+        /// <summary>
+        /// 开始走向目标：优先用 NarrativePro 导航层求路径并按等弧长重采样为跟随点列，
+        /// 导航未就绪（工程当前没有烘焙产物）时退化为单点直线。
+        /// <para>
+        /// 同时把目的地登记给 <c>PluginNavigationBridge</c>：NarrativePro 的标记管线会在小地图 /
+        /// 世界地图 / 罗盘上显示同一个点并绘制面包屑，因此"地图上看到的路径"与"角色实际走的路径"
+        /// 出自同一套 <c>NavigatorStatics</c> 查询，不会两套结果打架。
+        /// </para>
+        /// <para>
+        /// 导航查询是同步 API，只在点击时算一次（不按帧轮询）；地图面包屑由组件按 4Hz 自行重算。
+        /// </para>
+        /// </summary>
+        private void BeginMoveTo(Vector3 target)
+        {
+            _clickToMovePath.Clear();
+            _clickToMoveBestFinalDistance = float.MaxValue;
+            _clickToMoveFinalStallElapsed = 0f;
+            _clickToMoveSpeedScale = 1f;
+
+            // 移动侧：与地图同源的导航路径
+            bool useNavMesh = false;
+            if (NarrativePro.Navigation.NavigatorStatics.IsNavigationReady()
+                && NarrativePro.Navigation.NavigatorStatics.TryFindPath(Actor.Position, target, out var corners)
+                && NarrativePro.Navigation.NavigatorStatics.ResamplePath(corners, ClickToMoveWaypointSpacing, out var waypoints)
+                && waypoints.Count > 1)
+            {
+                // waypoints[0] 即当前位置，从第二个点开始跟随
+                for (int i = 1; i < waypoints.Count; i++)
+                    _clickToMovePath.Enqueue(waypoints[i]);
+                useNavMesh = true;
+            }
+
+            if (!useNavMesh)
+                _clickToMovePath.Enqueue(target);
+
+            // 地图标记钉在"角色真的会停到的那一点"上，而不是鼠标点中的那一处地面：
+            // 导航网格会把终点吸附进多边形，点击落在网格外（石头顶部、墙后、网格边缘）时
+            // 两者能差几米——标记留在原地就会出现"走到了标记却没到"的错位。
+            var destination = _clickToMovePath.Peek();
+            foreach (var waypoint in _clickToMovePath)
+                destination = waypoint;
+
+            // 地图侧：目的地标记 + 面包屑（导航组件缺失时只降级显示，不影响行走）
+            HundunWorld.Game.Navigation.PluginNavigationBridge.TrySetMoveDestination(destination);
+
+            _isMovingToTarget = true;
+            _clickToMoveElapsed = 0f;
+            FlaxEngine.Debug.Log($"[ClickToMove] 点击=({target.X:F0},{target.Y:F0},{target.Z:F0}) " +
+                                 $"落点=({destination.X:F0},{destination.Y:F0},{destination.Z:F0}) " +
+                                 $"路径点={_clickToMovePath.Count} 导航网格={(useNavMesh ? "有" : "无（直线）")}");
+        }
+
+        /// <summary>
+        /// 产出这一帧的移动方向：水平指向当前路径点的单位向量（与 GetInputDirection 同量纲、同坐标系）。
+        /// 到达/超时/路径耗尽即结束本次自动移动。
+        /// </summary>
+        private Vector3 SteerClickToMove()
+        {
+            _clickToMoveElapsed += Time.DeltaTime;
+            if (_clickToMoveElapsed >= ClickToMoveMaxSeconds)
+            {
+                CancelClickToMove();
+                return Vector3.Zero;
+            }
+
+            var position = Actor != null ? Actor.Position : Vector3.Zero;
+
+            while (_clickToMovePath.Count > 0)
+            {
+                var waypoint = _clickToMovePath.Peek();
+                // 只取水平分量：垂直由 ECS 的地面采样与重力负责，写进输入会让速度校验看到假位移
+                var delta = waypoint - position;
+                delta.Y = 0f;
+                float distance = delta.Length;
+
+                // 终点用紧容差、中间点用转角容差：两者同用一个 120 会让角色永远早停 1.2 米
+                bool isFinal = _clickToMovePath.Count == 1;
+                float arrival = isFinal ? ClickToMoveFinalArrivalRadius : ClickToMoveArrivalRadius;
+
+                if (distance <= arrival)
+                {
+                    _clickToMovePath.Dequeue();
+                    continue;
+                }
+
+                var heading = delta / distance;
+
+                if (isFinal)
+                {
+                    // 最后一段线性减速：容差只有 30 厘米，全速冲进去必然过冲再折返
+                    _clickToMoveSpeedScale = Mathf.Clamp(distance / ClickToMoveFinalRampDistance,
+                        ClickToMoveFinalMinSpeedScale, 1f);
+
+                    if (StalledBeforeDestination(distance))
+                    {
+                        FlaxEngine.Debug.LogWarning($"[ClickToMove] 终点前 {distance:F0} 厘米处已停止靠近，" +
+                                                    "判定不可达并结束本次移动（终点可能被碰撞体挡住或在导航网格外）");
+                        CancelClickToMove();
+                        return Vector3.Zero;
+                    }
+                }
+                else
+                {
+                    _clickToMoveSpeedScale = 1f;
+                }
+
+                UpdateClickToMoveFacing(heading);
+                return heading;
+            }
+
+            CancelClickToMove();
+            return Vector3.Zero;
+        }
+
+        /// <summary>
+        /// 终点前停滞判定：距离不再明显变小就认为到不了（点在导航网格外、被碰撞体挡住、
+        /// 或贴地容差比角色半径还紧），继续推输入只会原地蹭。
+        /// </summary>
+        private bool StalledBeforeDestination(float distance)
+        {
+            if (distance < _clickToMoveBestFinalDistance - ClickToMoveStallProgress)
+            {
+                _clickToMoveBestFinalDistance = distance;
+                _clickToMoveFinalStallElapsed = 0f;
+                return false;
+            }
+
+            _clickToMoveFinalStallElapsed += Time.DeltaTime;
+            return _clickToMoveFinalStallElapsed >= ClickToMoveStallSeconds;
+        }
+
+        /// <summary>
+        /// 把水平移动方向换算成角色朝向 Yaw（弧度）。
+        /// Flax 中 Euler(0,ψ,0) 作用于 Forward=(0,0,1) 得到前向 (sinψ, 0, cosψ)，
+        /// 故 ψ = atan2(dir.X, dir.Z)，与 ThirdPersonCamera 的推导一致。
+        /// </summary>
+        private void UpdateClickToMoveFacing(Vector3 direction)
+        {
+            _clickToMoveLookYaw = Mathf.Atan2(direction.X, direction.Z);
+            _hasClickToMoveLookYaw = true;
+        }
+
+        /// <summary>
+        /// 在地面上绘制剩余路径：角色当前位置 → 各路径点 → 终点的十字标记。
+        /// <para>
+        /// 用 <c>DebugDraw</c>（工程内已有先例：CameraCollisionDebugger.cs:110）而不是自建贴花/粒子系统：
+        /// 生命周期为 0 表示"只画这一帧"，所以按帧重画即可自动跟随，路径点被吃掉时线也立刻缩短。
+        /// </para>
+        /// </summary>
+        private void DrawClickToMovePath()
+        {
+            if (Actor == null || _clickToMovePath.Count == 0) return;
+
+            var previous = Actor.Position + Vector3.Up * ClickToMoveGroundLift;
+
+            foreach (var waypoint in _clickToMovePath)
+            {
+                var next = waypoint + Vector3.Up * ClickToMoveGroundLift;
+                FlaxEngine.DebugDraw.DrawLine(previous, next, ClickToMovePathColor, 0f, false);
+                previous = next;
+            }
+
+            // 终点十字：与小地图/大地图的目的地圆点同语义，落地处一眼可辨
+            var end = previous;
+            float arm = ClickToMoveArrivalRadius * 0.6f;
+            FlaxEngine.DebugDraw.DrawLine(end - Vector3.Right * arm, end + Vector3.Right * arm,
+                ClickToMovePathColor, 0f, false);
+            FlaxEngine.DebugDraw.DrawLine(end - Vector3.Forward * arm, end + Vector3.Forward * arm,
+                ClickToMovePathColor, 0f, false);
+        }
+
+        /// <summary>点击移动激活时用朝向覆盖相机朝向，否则原样返回。</summary>
+        private float ResolveLookYaw(float cameraLookYaw)
+        {
+            return _hasClickToMoveLookYaw ? _clickToMoveLookYaw : cameraLookYaw;
+        }
+
+        /// <summary>
+        /// 结束自动移动（玩家接管、到达或超时），并收掉地图上的目的地标记与面包屑。
+        /// </summary>
+        private void CancelClickToMove()
+        {
+            _isMovingToTarget = false;
+            _clickToMovePath.Clear();
+            _clickToMoveElapsed = 0f;
+            _clickToMoveSpeedScale = 1f;
+            _clickToMoveBestFinalDistance = float.MaxValue;
+            _clickToMoveFinalStallElapsed = 0f;
+            _hasClickToMoveLookYaw = false;
+            HundunWorld.Game.Navigation.PluginNavigationBridge.ClearMoveDestination();
         }
 
         /// <summary>
@@ -1238,58 +1562,38 @@ namespace HundunWorld.Game
         }
 
         #endregion
-
         /// <summary>
-        /// 处理地面点击
+        /// 执行地面射线检测（点击移动取目标点用）。
+        /// 两个必须注意的点：
+        /// 1) hitTriggers 传 false：POI 的发现球形触发器（半径 700~1200）会以距离 0 退化命中，
+        ///    把落点判在角色脚下（正确写法参照 HundunWorldGame.SampleGroundHeightEcs）。
+        /// 2) 最大距离要按第三人称相机的实际高度给足（Flax 单位是厘米，相机离地可达数千米），
+        ///    沿用 1000/2000 会直接打空。射线打空时退化为"与角色脚底水平面求交"，
+        ///    保证点击永远有可用落点。
         /// </summary>
-        private void HandleGroundClick()
-        {
-            // 浣跨敤杈撳叆绠＄悊鍣ㄥ鐞嗗湴闈㈢偣鍑昏緭鍏?
-            bool groundClickDown = _inputManager != null ? _inputManager.IsActionDown("GroundClick") : Input.GetMouseButtonDown(MouseButton.Left);
-
-            // 澶勭悊鍦伴潰鐐瑰嚮杈撳叆
-            if (groundClickDown)
-            {
-                // 鎵ц灏勭嚎妫€娴嬫潵纭畾鐐瑰嚮浣嶇疆
-                if (PerformGroundRaycast(Input.MouseScreenPosition, out Vector3 hitPoint))
-                {
-                    // 璁剧疆鐩爣浣嶇疆
-                    _targetPosition = hitPoint;
-                    _targetPosition.Y = Actor.Position.Y; // 淇濇寔Y杞翠竴鑷?
-                    _isMovingToTarget = true;
-
-                    // 鏇存柊鐘舵€?
-                    CurrentState = CharacterState.Walking;
-                }
-            }
-        }
-
-        /// <summary>
-        /// 执行地面射线检测
-        /// </summary>
-        /// <param name="screenPosition">屏幕位置</param>
-        /// <param name="hitPoint">命中点</param>
-        /// <returns>是否命中</returns>
         private bool PerformGroundRaycast(Float2 screenPosition, out Vector3 hitPoint)
         {
             hitPoint = Vector3.Zero;
 
-            // 鑾峰彇涓荤浉鏈?
-            Camera mainCamera = Camera?.Actor?.GetScript<Camera>();
+            var mainCamera = FlaxEngine.Camera.MainCamera;
             if (mainCamera == null)
                 return false;
 
-            // 浠庡睆骞曚綅缃垱寤哄皠绾?
             Ray ray = mainCamera.ConvertMouseToRay(screenPosition);
 
-            // 鎵ц灏勭嚎妫€娴嬶紝浣跨敤FlaxEngine鐨勬纭瓵PI
-            if (Physics.RayCast(ray.Position, ray.Direction, out var hitInfo, 1000.0f))
+            if (Physics.RayCast(ray.Position, ray.Direction, out var hitInfo, ClickToMoveRayDistance, LayersMask.Default, false))
             {
                 hitPoint = hitInfo.Point;
                 return true;
             }
 
-            return false;
+            if (Actor == null || Mathf.Abs(ray.Direction.Y) < 0.0001f) return false;
+
+            float t = (Actor.Position.Y - ray.Position.Y) / ray.Direction.Y;
+            if (t <= 0f || t > ClickToMoveRayDistance) return false;
+
+            hitPoint = ray.Position + ray.Direction * t;
+            return true;
         }
 
         #endregion

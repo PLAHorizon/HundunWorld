@@ -106,23 +106,29 @@ public sealed class CombatSystemGrain : Grain, ICombatSystemGrain
             return Task.FromResult(verdict);
         }
 
-        // --- 伤害计算 ---
-        var baseDamage = Math.Max(1, attacker.Attack - target.Defense * DefenseScaleFactor / (target.Defense + DefenseScaleFactor));
+        // --- 伤害计算（与 CombatCore 口径一致：基础=攻击×0.5，防御乘法减免 d/(d+100)，保底 1 点）---
+        var damage = attacker.Attack * 0.5f;
+        if (target.Defense > 0)
+        {
+            damage *= 1f - target.Defense / (target.Defense + (float)DefenseScaleFactor);
+        }
 
         // 暴击判定
         var critRoll = (float)_random.NextDouble();
         var isCritical = critRoll < attacker.CritRate;
         if (isCritical)
         {
-            baseDamage = (int)(baseDamage * CritMultiplier);
+            damage *= CritMultiplier;
         }
 
         // 格挡减伤
         if (target.IsDefending)
         {
-            baseDamage = (int)(baseDamage * 0.5f);
+            damage *= 0.5f;
             target.IsDefending = false;
         }
+
+        var baseDamage = Math.Max(1, (int)MathF.Round(damage));
 
         // 应用伤害
         target.CurrentHp -= baseDamage;
