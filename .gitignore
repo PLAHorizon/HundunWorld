@@ -176,3 +176,10 @@ Saved/
 /Tools/*.glb
 /Tools/*.npz
 
+# 会话临时产物与构建缓存（此前被误入库，现只留本地）
+/.canvas-temp/
+/.trae/
+/_corrupted_assets_backup*/
+**/.hvigor/
+*.log
+
