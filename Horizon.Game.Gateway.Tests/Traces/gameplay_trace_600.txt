@@ -1,6 +1,6 @@
 # GameplayGoldenTrace v1 — 玩法确定性金轨迹（MMORPG 开发计划 M5.1）。
 # 这是移动金轨迹之外的**第二个对拍域**：移动只覆盖 MovementFormula，玩法（刷怪/AI/战斗）此前无对拍资产。
-# AiVersion = 1
+# AiVersion = 10
 # SpawnVersion = 1
 # CombatVersion = 1
 # TicksPerSecond = 60

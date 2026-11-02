@@ -9,6 +9,7 @@ using System;
 using System.Globalization;
 using FlaxEngine;
 using PCG;
+using PCG.Graph;
 
 internal static class Program
 {
@@ -16,9 +17,23 @@ internal static class Program
     private static int _fail;
     private static int _pass;
 
-    private static int Main()
+    private static int Main(string[] args)
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+
+        // 命令行入口：`PCGGoldenRunner <描述文件.pcgspec>` 只把描述编译成图并打印摘要、不跑断言。
+        // 有了它，"描述 → 图"这条链路不必开编辑器就能被验证——仓库里那份示例描述就是拿它核对的。
+        if (args != null && args.Length > 0 && System.IO.File.Exists(args[0]))
+        {
+            var cli = PCGSpecFile.TryLoad(args[0], null);
+
+            Console.WriteLine(cli.Ok
+                ? $"OK {cli.Graph.Name}: {cli.Graph.NodeCount} node(s), {cli.Graph.EdgeCount} edge(s)" +
+                  (cli.Warnings.Count > 0 ? $" | warnings: {string.Join(" / ", cli.Warnings)}" : string.Empty)
+                : $"FAIL {cli.Error}");
+
+            return cli.Ok ? 0 : 1;
+        }
 
         Console.WriteLine("== PCG golden-value probe ==");
         Console.WriteLine();
@@ -111,6 +126,145 @@ internal static class Program
             mean += new PCGDeterministicRng(99, 1, i).NextFloat();
         mean /= Samples;
         Check("RNG mean is near 0.5", Math.Abs((float)mean - 0.5f) < 0.01f, $"mean={mean:F6}");
+
+        Console.WriteLine();
+        Console.WriteLine("-- phase 2 node behaviour --");
+        PCGGoldenRunner.NodeBehaviourTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- graph json codec --");
+        PCGGoldenRunner.GraphJsonTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- sub-graphs and cross-asset cycles --");
+        PCGGoldenRunner.SubgraphTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- partitioned generation --");
+        PCGGoldenRunner.PartitionTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- node timing report --");
+        PCGGoldenRunner.TimingReportTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- mesh surface sampling --");
+        PCGGoldenRunner.MeshSamplingTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- parallel sampling --");
+        PCGGoldenRunner.ParallelTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- partition cell reuse --");
+        PCGGoldenRunner.PartitionCacheTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- self-pruning grid vs brute force --");
+        PCGGoldenRunner.PrunerEquivalenceTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- graph clipboard and batch edit --");
+        PCGGoldenRunner.ClipboardTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- streaming cell selection --");
+        PCGGoldenRunner.StreamingTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- graph effect classification --");
+        PCGGoldenRunner.GraphEffectTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- point ops (difference / intersection) --");
+        PCGGoldenRunner.PointOpsTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- spline data type --");
+        PCGGoldenRunner.SplineTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- texture sampling core --");
+        PCGGoldenRunner.TextureSamplingTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- surface alignment --");
+        PCGGoldenRunner.SurfaceAlignTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- canvas box ids vs saved pin indices --");
+        PCGGoldenRunner.PinSlotTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- split grammar (structured generation) --");
+        PCGGoldenRunner.GrammarTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- symbol grammar (production rewriting) --");
+        PCGGoldenRunner.SymbolGrammarTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- ray cast projection --");
+        PCGGoldenRunner.RayCastProjectTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- scene actors as graph input --");
+        PCGGoldenRunner.ActorSamplerTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- procedural geometry core --");
+        PCGGoldenRunner.GeometryTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- pipeline level (compile / run / file / effects) --");
+        PCGGoldenRunner.PipelineTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- canvas node identities across sessions --");
+        PCGGoldenRunner.NodeIdTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- path planning over terrain --");
+        PCGGoldenRunner.PathPlannerTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- hydrology over terrain --");
+        PCGGoldenRunner.HydrologyTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- biome classification --");
+        PCGGoldenRunner.BiomeTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- cave tunnel networks --");
+        PCGGoldenRunner.CaveTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- world spec (description -> graph) --");
+        // ---- 地形合成纯核 ----
+        PCGGoldenRunner.TerrainTests.Run(Check);
+
+        PCGGoldenRunner.SpecTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- 多边形（Polygon2D）与多边形筛选器 --");
+        PCGGoldenRunner.PolygonTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- 网格平面切割（布尔差的第一块） --");
+        PCGGoldenRunner.MeshCutTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- 洞穴输出的下游消费（几何通道） --");
+        PCGGoldenRunner.CavePipelineTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- 布尔交：裁进一个凸体 --");
+        PCGGoldenRunner.ClipToConvexTests.Run(Check);
+
+        Console.WriteLine();
+        Console.WriteLine("-- literal point source --");
+        PCGGoldenRunner.PointListTests.Run(Check);
 
         Console.WriteLine();
         Console.WriteLine($"== {_pass} passed, {_fail} failed ==");

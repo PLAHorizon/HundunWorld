@@ -43,8 +43,183 @@
 
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="NodeBehaviourTests.cs" />
+    <Compile Include="GraphJsonTests.cs" />
+    <Compile Include="SubgraphTests.cs" />
+    <Compile Include="PartitionTests.cs" />
+    <Compile Include="TimingReportTests.cs" />
+    <Compile Include="MeshSamplingTests.cs" />
+    <Compile Include="ParallelTests.cs" />
+    <Compile Include="PartitionCacheTests.cs" />
+    <Compile Include="PrunerEquivalenceTests.cs" />
+    <Compile Include="ClipboardTests.cs" />
+    <Compile Include="GraphEffectTests.cs" />
+    <Compile Include="PointOpsTests.cs" />
+    <Compile Include="SplineTests.cs" />
+    <Compile Include="StreamingTests.cs" />
+    <Compile Include="TextureSamplingTests.cs" />
+    <Compile Include="SurfaceAlignTests.cs" />
+    <Compile Include="PinSlotTests.cs" />
+    <Compile Include="GrammarTests.cs" />
+    <Compile Include="SymbolGrammarTests.cs" />
+    <Compile Include="RayCastProjectTests.cs" />
+    <Compile Include="ActorSamplerTests.cs" />
+    <Compile Include="GeometryTests.cs" />
+    <Compile Include="PipelineTests.cs" />
+    <Compile Include="NodeIdTests.cs" />
+    <Compile Include="PathPlannerTests.cs" />
+    <Compile Include="HydrologyTests.cs" />
+    <Compile Include="BiomeTests.cs" />
+    <Compile Include="CaveTests.cs" />
+    <Compile Include="SpecTests.cs" />
+    <Compile Include="TerrainTests.cs" />
+    <Compile Include="PointListTests.cs" />
+    <Compile Include="PolygonTests.cs" />
+    <Compile Include="MeshCutTests.cs" />
+    <Compile Include="CavePipelineTests.cs" />
+    <Compile Include="ClipToConvexTests.cs" />
     <Compile Include="$(PluginRoot)\Data\PCGSeededNoise.cs" Link="PCGSeededNoise.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGMeshSurfaceSampling.cs" Link="PCGMeshSurfaceSampling.cs" />
     <Compile Include="$(PluginRoot)\Data\PCGDeterministicRng.cs" Link="PCGDeterministicRng.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGTextureSampling.cs" Link="PCGTextureSampling.cs" />
+
+    <!--
+      Phase 2 node behaviour probes. The units below are pure managed maths over PCGData - no scene, no
+      terrain, no Debug.Log - so they execute here. Anything that touches a live actor (Landscape Sampler,
+      Spawn, Spline Sampler) stays in the editor-side PCGSelfTest.
+    -->
+    <Compile Include="$(PluginRoot)\Data\PCGPoint.cs" Link="PCGPoint.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGData.cs" Link="PCGData.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGGeometry.cs" Link="PCGGeometry.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGAttributeSet.cs" Link="PCGAttributeSet.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGSpline.cs" Link="PCGSpline.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGSplineCurves.cs" Link="PCGSplineCurves.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGSurfaceAlign.cs" Link="PCGSurfaceAlign.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGExecutionContext.cs" Link="PCGExecutionContext.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGParallel.cs" Link="PCGParallel.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGWorldContext.cs" Link="PCGWorldContext.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGNodeRegistry.cs" Link="PCGNodeRegistry.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGNodeParameterInfo.cs" Link="PCGNodeParameterInfo.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGSpawnNaming.cs" Link="PCGSpawnNaming.cs" />
+    <Compile Include="$(PluginRoot)\Runtime\PCGVolume.cs" Link="PCGVolume.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGExecutionPlan.cs" Link="PCGExecutionPlan.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGGraphCompiler.cs" Link="PCGGraphCompiler.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGGraphExecutor.cs" Link="PCGGraphExecutor.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGSubgraphInspector.cs" Link="PCGSubgraphInspector.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGNodeTimingReport.cs" Link="PCGNodeTimingReport.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGPartitionCache.cs" Link="PCGPartitionCache.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGCellStreaming.cs" Link="PCGCellStreaming.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGStreamTrigger.cs" Link="PCGStreamTrigger.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGGraphEffects.cs" Link="PCGGraphEffects.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGTerrainSynthesizer.cs" Link="PCGTerrainSynthesizer.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGPointIndex.cs" Link="PCGPointIndex.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGPointProbe.cs" Link="PCGPointProbe.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGNodeInspection.cs" Link="PCGNodeInspection.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGStreamViewers.cs" Link="PCGStreamViewers.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGStreamChunks.cs" Link="PCGStreamChunks.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGCellSplit.cs" Link="PCGCellSplit.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGActors.cs" Link="PCGActors.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGAssetLoading.cs" Link="PCGAssetLoading.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGMeshBuilder.cs" Link="PCGMeshBuilder.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGPathPlanner.cs" Link="PCGPathPlanner.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGHydrology.cs" Link="PCGHydrology.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGBiomeClassifier.cs" Link="PCGBiomeClassifier.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGCavePlanner.cs" Link="PCGCavePlanner.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGSplineMeshLayout.cs" Link="PCGSplineMeshLayout.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGPartitionPlanner.cs" Link="PCGPartitionPlanner.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGPartitionRunner.cs" Link="PCGPartitionRunner.cs" />
+    <Compile Include="$(PluginRoot)\Execution\PCGPartitionHierarchy.cs" Link="PCGPartitionHierarchy.cs" />
+    <Compile Include="$(PluginRoot)\Graph\PCGGraph.cs" Link="PCGGraph.cs" />
+    <Compile Include="$(PluginRoot)\Graph\PCGGraphJson.cs" Link="PCGGraphJson.cs" />
+    <Compile Include="$(PluginRoot)\Graph\PCGGraphClipboard.cs" Link="PCGGraphClipboard.cs" />
+    <Compile Include="$(PluginRoot)\Graph\PCGPartitionLayer.cs" Link="PCGPartitionLayer.cs" />
+    <Compile Include="$(PluginRoot)\Graph\PCGWorldSpec.cs" Link="PCGWorldSpec.cs" />
+    <Compile Include="$(PluginRoot)\Graph\PCGBuiltinModels.cs" Link="PCGBuiltinModels.cs" />
+    <Compile Include="$(PluginRoot)\Graph\PCGSpecCompiler.cs" Link="PCGSpecCompiler.cs" />
+    <Compile Include="$(PluginRoot)\Graph\PCGSpecFile.cs" Link="PCGSpecFile.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGNodeParameters.cs" Link="PCGNodeParameters.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGPointTransform.cs" Link="PCGPointTransform.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGDensityFilterNode.cs" Link="PCGDensityFilterNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGHeightFilterNode.cs" Link="PCGHeightFilterNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSlopeFilterNode.cs" Link="PCGSlopeFilterNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGTransformPointsNode.cs" Link="PCGTransformPointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGNoiseSamplerNode.cs" Link="PCGNoiseSamplerNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGVolumeSamplerNode.cs" Link="PCGVolumeSamplerNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGDistanceFilterNode.cs" Link="PCGDistanceFilterNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGAreaFilterNode.cs" Link="PCGAreaFilterNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGPolygonFilterNode.cs" Link="PCGPolygonFilterNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSampleGeometryNode.cs" Link="PCGSampleGeometryNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGCutNode.cs" Link="PCGCutNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGClipToConvexNode.cs" Link="PCGClipToConvexNode.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGPolygon.cs" Link="PCGPolygon.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGMeshCut.cs" Link="PCGMeshCut.cs" />
+    <Compile Include="$(PluginRoot)\Data\PCGMeshBoolean.cs" Link="PCGMeshBoolean.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSubgraphNode.cs" Link="PCGSubgraphNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGRandomOffsetNode.cs" Link="PCGRandomOffsetNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGMergePointsNode.cs" Link="PCGMergePointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSelfPruningFilterNode.cs" Link="PCGSelfPruningFilterNode.cs" />
+
+    <!--
+      Parameter-schema probes need the registration table itself, so the node types it lists are linked as
+      well. Their constructors and DescribeParameters() touch no engine state, so they are still headless.
+    -->
+    <Compile Include="$(PluginRoot)\Nodes\PCGLandscapeSamplerNode.cs" Link="PCGLandscapeSamplerNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSplineSamplerNode.cs" Link="PCGSplineSamplerNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSpawnStaticModelNode.cs" Link="PCGSpawnStaticModelNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGMeshSamplerNode.cs" Link="PCGMeshSamplerNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSpawnFoliageNode.cs" Link="PCGSpawnFoliageNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSpawnActorNode.cs" Link="PCGSpawnActorNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSpawnDecalNode.cs" Link="PCGSpawnDecalNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGDifferencePointsNode.cs" Link="PCGDifferencePointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGIntersectionPointsNode.cs" Link="PCGIntersectionPointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGCopyPointsNode.cs" Link="PCGCopyPointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSortPointsNode.cs" Link="PCGSortPointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGBoundsModifierNode.cs" Link="PCGBoundsModifierNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSetAttributeNode.cs" Link="PCGSetAttributeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGRemapAttributeNode.cs" Link="PCGRemapAttributeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSelectPointsNode.cs" Link="PCGSelectPointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGPointNeighborhoodNode.cs" Link="PCGPointNeighborhoodNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGRelaxPointsNode.cs" Link="PCGRelaxPointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGAttributeMathNode.cs" Link="PCGAttributeMathNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGAttributeFilterNode.cs" Link="PCGAttributeFilterNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSmoothAttributeNode.cs" Link="PCGSmoothAttributeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGCreateSplineNode.cs" Link="PCGCreateSplineNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSampleSplineNode.cs" Link="PCGSampleSplineNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGNormalToDensityNode.cs" Link="PCGNormalToDensityNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSpawnSplineMeshNode.cs" Link="PCGSpawnSplineMeshNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGAttributeTransferNode.cs" Link="PCGAttributeTransferNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGDistanceToPointsNode.cs" Link="PCGDistanceToPointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGNoiseToAttributeNode.cs" Link="PCGNoiseToAttributeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGChannelToAttributeNode.cs" Link="PCGChannelToAttributeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGBranchNode.cs" Link="PCGBranchNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGTextureSamplerNode.cs" Link="PCGTextureSamplerNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGProjectPointsNode.cs" Link="PCGProjectPointsNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGScaleByAttributeNode.cs" Link="PCGScaleByAttributeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGOffsetByAttributeNode.cs" Link="PCGOffsetByAttributeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGRotateByAttributeNode.cs" Link="PCGRotateByAttributeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSplitGrammarNode.cs" Link="PCGSplitGrammarNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGGrammarNode.cs" Link="PCGGrammarNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGWorldRayProjectNode.cs" Link="PCGWorldRayProjectNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGActorSamplerNode.cs" Link="PCGActorSamplerNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGGeometryNode.cs" Link="PCGGeometryNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGSpawnGeometryNode.cs" Link="PCGSpawnGeometryNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGPathNode.cs" Link="PCGPathNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGHydrologyNode.cs" Link="PCGHydrologyNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGBiomeNode.cs" Link="PCGBiomeNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGCaveNode.cs" Link="PCGCaveNode.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\PCGPointListNode.cs" Link="PCGPointListNode.cs" />
+    <Compile Include="$(PluginRoot)\Terrain\*.cs" Link="terrain\%(Filename).cs" />
+    <Compile Include="$(PluginRoot)\Runtime\PCGNodeRegistration.cs" Link="PCGNodeRegistration.cs" />
+    <Compile Include="$(PluginRoot)\Runtime\PCGGraphFile.cs" Link="PCGGraphFile.cs" />
+    <Compile Include="$(PluginRoot)\Runtime\PCGTerrainWriter.cs" Link="PCGTerrainWriter.cs" />
+    <!-- The editor's parameter text conversion is pure data, so its round-trips are asserted here. -->
+    <Compile Include="$(PluginRoot)\..\PCGEditor\PCGParameterText.cs" Link="PCGParameterText.cs" />
+    <Compile Include="$(PluginRoot)\..\PCGEditor\PCGParameterLabels.cs" Link="PCGParameterLabels.cs" />
+    <Compile Include="$(PluginRoot)\..\PCGEditor\PCGParameterLayout.cs" Link="PCGParameterLayout.cs" />
+    <!-- Same reason: the box-id / pin-index arithmetic that saves every wire is pure and must not be taken on trust. -->
+    <Compile Include="$(PluginRoot)\..\PCGEditor\PCGNodePinSlots.cs" Link="PCGNodePinSlots.cs" />
+    <!-- The canvas ids a saved payload carries: pure arithmetic, so its properties are asserted here. -->
+    <Compile Include="$(PluginRoot)\..\PCGEditor\PCGNodeStableIds.cs" Link="PCGNodeStableIds.cs" />
   </ItemGroup>
 
 </Project>
