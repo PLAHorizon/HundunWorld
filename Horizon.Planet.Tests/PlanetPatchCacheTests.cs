@@ -19,9 +19,15 @@ internal sealed class TempCacheDir : IDisposable
 
     public void Dispose()
     {
+        // 同 TempDem：最后一片高度文件的句柄关掉之后目录还会被占一会儿，静默吞掉就是攒一堆看不见的残留
+        for (int attempt = 0; attempt < 8; attempt++)
+        {
+            try { Directory.Delete(Root, true); return; }
+            catch (IOException) { Thread.Sleep(50); }
+            catch (UnauthorizedAccessException) { Thread.Sleep(50); }
+        }
         try { Directory.Delete(Root, true); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        catch (Exception e) { Console.Error.WriteLine($"临时缓存目录没清掉：{Root}（{e.GetType().Name}）"); }
     }
 }
 
@@ -464,6 +470,40 @@ public class PlanetPatchCacheTests
     }
 
     [Fact]
+    public void LockedFile_IsNotJudgedCorrupt_AndSurvivesTheFailedRead()
+    {
+        using var dir = new TempCacheDir();
+        var cache = NewCache(dir);
+        var heights = MakeHeights(RegionA, 8, 9);
+        cache.Write(RegionA, 8, 9, heights);
+        string path = cache.PathFor(RegionA, 8, 9);
+        var read = new float[PlanetPatchSampler.HeightmapLength];
+
+        // 独占打开=并发读一定拿共享冲突；这条把"读不动"和"内容坏"的界线钉死：
+        // 前者只能算未命中且不许删文件，否则一次竞态就会销毁好数据（本轮那个偶发红就是这个）
+        using (var hog = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            Assert.False(cache.TryRead(RegionA, 8, 9, read, out var blocked));
+            Assert.Equal(PatchCacheReject.MissingFile, blocked);
+            Assert.Equal(0, cache.CorruptRejects);
+        }
+
+        Assert.True(File.Exists(path), "读不动就把好数据删了");
+        Assert.True(cache.TryRead(RegionA, 8, 9, read, out var after));
+        Assert.Equal(PatchCacheReject.None, after);
+        AssertBitsEqual(heights, read, "占用解除后");
+
+        // 正向对照的另一半：真的坏了才进损坏账，并且文件会被清掉
+        var all = File.ReadAllBytes(path);
+        all[PlanetPatchCache.HeaderSize + 7] ^= 0x01;
+        File.WriteAllBytes(path, all);
+        Assert.False(cache.TryRead(RegionA, 8, 9, read, out var corrupt));
+        Assert.Equal(PatchCacheReject.BadCrc, corrupt);
+        Assert.Equal(1, cache.CorruptRejects);
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
     public void DirectoryRootIsNamedBySeedAndVersion()
     {
         using var dir = new TempCacheDir();
@@ -476,7 +516,7 @@ public class PlanetPatchCacheTests
     }
 
     [Fact]
-    public void ConcurrentWritesAndTrim_KeepTheLedgerExact()
+    public async Task ConcurrentWritesAndTrim_KeepTheLedgerExact()
     {
         using var dir = new TempCacheDir();
         var cache = NewCache(dir);
@@ -484,7 +524,8 @@ public class PlanetPatchCacheTests
         var heights = new float[perThread][];
         for (int i = 0; i < perThread; i++) heights[i] = MakeHeights(RegionA, i, 3);
 
-        var errors = new ConcurrentQueue<string>();
+        var unexpected = new ConcurrentQueue<string>();
+        int writeFailures = 0, tornReads = 0;
         var start = new ManualResetEventSlim(false);
         var workers = new Task[threads];
         for (int t = 0; t < threads; t++)
@@ -492,34 +533,54 @@ public class PlanetPatchCacheTests
             int id = t;
             workers[t] = Task.Run(() =>
             {
-                try
+                start.Wait();
+                for (int i = 0; i < perThread; i++)
                 {
-                    start.Wait();
-                    for (int i = 0; i < perThread; i++)
+                    try
                     {
                         cache.Write(RegionA, i, 3, heights[i]);
-                        cache.TryRead(RegionA, i, 3, new float[PlanetPatchSampler.HeightmapLength], out _);
-                        if (id % 3 == 0) cache.TrimToBudget(2L * PlanetPatchCache.EntryBytes);
                     }
+                    catch (IOException)
+                    {
+                        // "目标正被隔壁读，这次没存上"是允许的降级；但它不能变成别的异常，也不能写坏
+                        Interlocked.Increment(ref writeFailures);
+                    }
+                    catch (Exception e)
+                    {
+                        unexpected.Enqueue("Write 抛了非 IOException：" + e.GetType().Name + " " + e.Message);
+                    }
+
+                    var read = new float[PlanetPatchSampler.HeightmapLength];
+                    if (cache.TryRead(RegionA, i, 3, read, out _))
+                    {
+                        if (!MemoryMarshal.AsBytes(heights[i].AsSpan())
+                                 .SequenceEqual(MemoryMarshal.AsBytes(read.AsSpan())))
+                            Interlocked.Increment(ref tornReads);
+                    }
+                    if (id % 3 == 0) cache.TrimToBudget(2L * PlanetPatchCache.EntryBytes);
                 }
-                catch (Exception e) { errors.Enqueue(e.GetType().Name + ": " + e.Message); }
             });
         }
         start.Set();
-        Task.WaitAll(workers);
+        await Task.WhenAll(workers);
 
-        Assert.True(errors.IsEmpty, "并发下有异常：" + string.Join(" | ", errors));
-        // 账本必须与"逐个写"同一个口径：条目数 = 盘上文件数 = 字节数/单块，且没留半成品
-        Assert.Equal(perThread, Directory.EnumerateFiles(cache.RootDirectory, "*.hgt",
-                                                        SearchOption.AllDirectories).Count());
-        Assert.Equal(cache.EntryCount, Directory.EnumerateFiles(cache.RootDirectory, "*.hgt",
-                                                               SearchOption.AllDirectories).Count());
+        Assert.True(unexpected.IsEmpty, string.Join(" | ", unexpected));
+        Assert.Equal(0, tornReads);                         // 并发下绝不允许读到半成品高度
+        // 账本自己必须严格自洽；盘上文件只可以多（删除失败留孤儿，下次启动再清），不可以少
         Assert.Equal(cache.EntryCount * (long)PlanetPatchCache.EntryBytes, cache.BytesUsed);
+        Assert.True(cache.EntryCount <= Directory.EnumerateFiles(cache.RootDirectory, "*.hgt",
+                      SearchOption.AllDirectories).Count(), "有条目却没文件：落位与记账不在同一原子段");
+        Assert.Equal(0, cache.CorruptRejects);              // 淘汰与读取交错不能被判成"坏文件"
         Assert.Empty(Directory.EnumerateFiles(cache.RootDirectory, "*.tmp", SearchOption.AllDirectories));
+
+        string stats = cache.DescribeStats();
+        Assert.Contains("entries=" + cache.EntryCount, stats);
+        Assert.Contains("bytes=" + cache.BytesUsed, stats);
+        Assert.Contains("reject_badlength=0", stats);
     }
 
     [Fact]
-    public void ConcurrentWritesOfTheSamePatch_DoNotDoubleCount()
+    public async Task ConcurrentWritesOfTheSamePatch_DoNotDoubleCount()
     {
         using var dir = new TempCacheDir();
         var cache = NewCache(dir);
@@ -527,24 +588,30 @@ public class PlanetPatchCacheTests
 
         // 同一个 key 同时被多个来源写：临时名必须各自唯一，而占用只能记一份
         var barrier = new Barrier(4);
-        var errors = new ConcurrentQueue<string>();
+        var unexpected = new ConcurrentQueue<string>();
         var workers = new Task[4];
         for (int t = 0; t < 4; t++)
         {
             workers[t] = Task.Run(() =>
             {
-                try { barrier.SignalAndWait(); cache.Write(RegionA, 4, 4, heights); }
-                catch (Exception e) { errors.Enqueue(e.GetType().Name + ": " + e.Message); }
+                try
+                {
+                    barrier.SignalAndWait();
+                    cache.Write(RegionA, 4, 4, heights);
+                }
+                catch (IOException) { /* 允许"这次没存上" */ }
+                catch (Exception e) { unexpected.Enqueue(e.GetType().Name + ": " + e.Message); }
             });
         }
-        Task.WaitAll(workers);
+        await Task.WhenAll(workers);
 
-        Assert.True(errors.IsEmpty, string.Join(" | ", errors));
+        Assert.True(unexpected.IsEmpty, string.Join(" | ", unexpected));
         Assert.Equal(1, cache.EntryCount);
-        Assert.Equal((long)PlanetPatchCache.EntryBytes, cache.BytesUsed);
-        Assert.Equal(4, cache.Writes);                 // 写了四次是事实，占用只有一份也是事实
-        Assert.True(cache.TryRead(RegionA, 4, 4, new float[PlanetPatchSampler.HeightmapLength], out var reason));
+        Assert.Equal((long)PlanetPatchCache.EntryBytes, cache.BytesUsed);   // 四份写只记一份占用
+        var read = new float[PlanetPatchSampler.HeightmapLength];
+        Assert.True(cache.TryRead(RegionA, 4, 4, read, out var reason), "同键并发写完必须还能读回来");
         Assert.Equal(PatchCacheReject.None, reason);
+        AssertBitsEqual(heights, read, "同键并发写");
         Assert.Empty(Directory.EnumerateFiles(cache.RootDirectory, "*.tmp", SearchOption.AllDirectories));
     }
 }

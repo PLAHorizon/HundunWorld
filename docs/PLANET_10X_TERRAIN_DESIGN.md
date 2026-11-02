@@ -909,7 +909,7 @@ transfer_quat_max=25.4 cm  quat_budget_max=81.4 cm  radius_drift_max=1.060 cm
 | 7 | 128 | **96** | **64** | 拒绝（且 `43200>>7 = 337` 会静默少 64 行） |
 | 8 | 256 | **96** | **192** | 拒绝（`86400>>8 = 337` 同理） |
 
-取证脚本是 [Tools/_probe_pyramid_alignment.py](../Tools/_probe_pyramid_alignment.py)：它用 `Pyramid.__new__` 跳过 `__init__`（`__init__` 会 `"r+b"` 打开各级文件），只调真闸门，**不创建、不截断、不改写任何产物**——跑完 `pyramid/` 仍只有 `level_01..05.bin`（没有 `level_06`），`manifest.json` / `verify_receipt.json` / `level_05.bin` 的 mtime 仍是上一轮构建的 `07:41`/`07:29`，而探针跑在 `21:44`。想复认时直接 `python Tools/_probe_pyramid_alignment.py`。
+取证脚本是本机的一次性验算（`Tools/_*` 按仓库约定不入库；`git ls-files 'Tools/_*'` 为 0）：它用 `Pyramid.__new__` 跳过 `__init__`（`__init__` 会 `"r+b"` 打开各级文件），只调真闸门，**不创建、不截断、不改写任何产物**——跑完 `pyramid/` 仍只有 `level_01..05.bin`（没有 `level_06`），`manifest.json` / `verify_receipt.json` / `level_05.bin` 的 mtime 仍是上一轮构建的 `07:41`/`07:29`，而探针跑在 `21:44`。不在本机的人可以直接验算闸门条件：`21600 % 64 == 32`（非 0 即被拒），`43200 % 128 == 64`、`86400 % 256 == 128`（`level_dims` 用 `>>`，会静默丢行丢列）。
 
 **我当时怎么错的**：只对"像元尺寸"做了换算（15″×2^k ↔ 296/593/1186 km，按 1° = 1111 km），那部分算术现在仍然对；错在**没去查生产端那条象限成对不变量**——它正好是 §12.1 那套配准/对齐假设的边界。"尺寸算得出"和"这套链造得出"是两件事，后者要读实现才能知道。顺带订正两个耗时口径（都是从 `build.log` 读的，不是印象）：完整 0-5 构建 **214 s**，`--verify-only` 复核 **122 s**；也就是说重跑整条链也造不出 6 级以上——闸门是几何性的，与跑多久无关。
 
@@ -963,3 +963,78 @@ A 会引入新产物文件、让 `DemGrid` 认第二种网格、给 manifest 增
 再加上几何视界：10× 半径上，眼睛抬高 1000 m 的几何视界是 **357 km**，5000 m 的高峰可看到 **798 km**（两者相加约 1155 km 内还能看见山尖）——这个范围整段落在 level 6 / level 8 已经达标或靠换级解决的区间里。
 
 **结论**：路线 A 对游戏玩法不需要，任务 11 改为"条件性"——只有当真的要做**整颗星球视角**（入轨、过场、全球地图）时才值得做，而那时正确的原语也更可能是影像金字塔（贴图 + min/max 瓦片），不是给网格再加一种基场。这是先算账再动手省下来的一整个数据格式工程。
+
+### 13.12 后台生成泵：三个竞态与一次计时漂移（同日第七轮）
+
+落在 [Horizon.Planet/PlanetPatchPump.cs](../Horizon.Planet/PlanetPatchPump.cs)：主线程只做 `Request` 投递与 `TryDequeueCompleted` 取件，采样、落盘、缓冲区回收都在线程池上。配 10 条判据（含一次真数据测量模式 `dotnet run --project Tools/DemProbe -- pump Data/GEBCO_2026/derived <lat> <lon>`）。测试 **184/184 绿**。
+
+**并发改出来的四个真问题**（都不是"看着不爽"，是会算错或算账对不上）：
+
+1. **缓存账本会在并发下漂**。`_bytesUsed += /-=` 与 `Dictionary` 都不是原子的；更阴的是 `File.Move` 与 `Track` 之间被隔壁的 `TrimToBudget` 插进来，会出现"账上有条目、盘上没文件"或反之——预算闸门于是数错占用。改法：账本用一把锁，且**落位与记账在同一个锁段里**（1 MB 的写和 fsync 留在锁外，不串行化磁盘）；临时文件名带实例内递增序号，同键并发写不会互相踩。判据 `ConcurrentWritesAndTrim_KeepTheLedgerExact` 只守能守的关系：`BytesUsed == EntryCount × 单块`、盘上文件数 ≥ 条目数（删除失败留孤儿是设计内，下次启动再清）、没有 `.tmp` 残留、且并发中读到的每一块都逐位相同。
+2. **Windows 上"目标正被别人读"时覆盖式 `Move` 会抛拒绝访问**——这不是坏文件，是缓存的正常交错。之前它会作为 `UnauthorizedAccessException` 一路抛穿到调用方。改法：有界重试 3 次（只跨那个短暂的读窗口），最终仍失败就清临时文件并统一包成 `IOException`，`Write` 从此只有一个契约"要么落盘、要么 IOException"，泵按"这次没存上"处理并计数。
+3. **读不动 ≠ 读坏了**。淘汰与读交错时 `ReadAllBytes` 可能拿共享冲突；原来的写法会把它记成 `BadLength` 并**把好好的一片高度删掉**（还顺手把预算出账）。改成：文件不存在 → 未命中并出账；只是被占用 → 未命中、不出账、不删文件。`CorruptRejects` 于是只统计真正的损坏（判据里那条 `reject_badlength=0` 就是这件事的哨兵）。
+4. **嵌套超额订阅**：泵给了一份并发，`FillPatchHeights` 内部又按 `ProcessorCount` 分片一次，两层相乘就是 `workers × 核数` 个线程抢 `核数` 个核。改成 `parallel: _maxWorkers <= 1`：要全速就 1 个 worker 让内部去分片，要限核就多 worker 各自单线程。同一次运行内的对照是 workers=1 wall 13.0 s、workers=2 31.5 s（此时每块只用一个核）——这条只能在同一次运行里比，跨运行的绝对数会漂，见下面那条教训。
+
+**判据自己也是一个捕手**：写 `Dispose` 那条判据时我先断言 `Completed == 0`，红了——因为"完成"和"成品没被取走就被丢"被我算进同一个 `StaleDropped`，等式 `Requested = Completed + Stale + Duplicate` 会把同一件计两次，账面看着平其实错了。于是拆出 `ReadyDiscarded`（`Completed` 的子口径）并把这条等式直接写进判据；`GenerationFailures` 同理标成 `StaleDropped` 的子口径，不参与相加。
+
+**真数据上的量**（这台机器今天很吵，见下）：
+
+```
+lat=30 lon=120 region=Region(f2 L14 3462,2730) patches=25
+主线程同步 25 块：wall=8287 ms 单块最长=949.7 ms
+workers  wall_ms  相对串行  max_inflight  主线程单帧最长ms  中心crc一致  省下的分配MB
+      1    13043      0.64x             1            13.62          OK          3.0
+      2    31456      0.26x             2             0.40          OK          4.0
+      4    21846      0.38x             4             0.37          OK          5.9
+PUMP PASS 后台结果与串行逐位相同
+```
+
+读法只有一条成立的结论：**泵不是速度收益，是"主线程不被占"的收益**——单块同步生成最长 950 ms 压在帧上就是 15 fps 的卡顿，而取件路径是亚毫秒；wall 时间反而更差（0.26–0.64×），因为它不再一次性占满全部核。缓冲区池一个窗口省下 3–6.9 MB 的 1 MB 级分配（LOH 抖动的来源）。三档并发的中心块 crc 与同步路径**完全相同**，这是"换线程不换数"的实机证据（判据里有同一条，夹具侧另有一条逐位比较）。
+
+**计时漂移必须写进规矩**：同一份二进制、同一份数据，"搬 1 MB 做一次校验"在今天早上是 5.4 ms，下午变成 8.8 / 34.2 / 46.9 ms——机器在降频或被人抢核，倍率是 6–9×。所以：任何绝对毫秒阈值（我一度写过"单帧 > 1 ms 就算失败"）都会随机红，探针里那条已经撤成观察值，真正的断言搬进单元测试 `DequeuePath_IsFarCheaperThanCheckingOneMegabyte`，用**同进程内一次 1 MB 校验的耗时当尺子**（取件必须比它的 1/4 还便宜）。PIE 阶段的所有耗时判据都要照这个写法，不能记绝对数。
+
+**四条反证，各红一条、不多不少**：去掉 `_scheduled.TryAdd` 的去重 → 红 `SameKeyWhileInFlight_IsNotGeneratedTwice`；去掉 `Work` 里的代次比较 → 红 `RegionChange_InFlightResultsNeverLandInTheNewRegion`；把 1 MB 校验塞进取件路径 → 红 `DequeuePath_IsFarCheaperThanCheckingOneMegabyte`；把位子在工作开跑之前就 `Release` → 红 `WorkerLimit_IsBothRespectedAndActuallyReached`（`MaxInFlight` 掉到 1，"两头都断言"这里就显出用处了）。
+
+**接线状态**：泵目前只有单元测试与 `DemProbe pump` 两个调用者。PIE 驱动层要用的顺序已经定好：每帧 `streamer.BuildPlan` → 新块 `pump.Request` → `TryDequeueCompleted` 交给引擎 `AddPatch/SetupPatchHeightMap` → `pump.Release` → 换区时 `pump.BeginRegion` + `streamer.AttachRegion`（`Dispose` 只在退出时调，它会等在飞的收尾）。任务 3 还等 `Game.Build.cs`/`HundunWorldGame.cs`/`World.scene` 腾出来。
+
+### 13.12 后台生成泵：一次偶发红追出"把读不动当成读坏了"（同日第七轮）
+
+落在 [Horizon.Planet/PlanetPatchPump.cs](../Horizon.Planet/PlanetPatchPump.cs)：主线程只做 `Request` 投递与 `TryDequeueCompleted` 取件，采样、落盘、缓冲区回收都在线程池上；配套 `dotnet run --project Tools/DemProbe -- pump Data/GEBCO_2026/derived <lat> <lon>` 在真实 DEM 上量同一件事。测试 **185/185 绿**（本轮 +11：泵 10 条、缓存分类 1 条）。
+
+**泵定的五件事**（每件都有判据，不靠"看起来会好吗"）：
+
+1. **换线程不换数**：泵算出来的高度与主线程同步算的**逐位相同**（`PumpResults_MatchTheSynchronousPathBitForBit`；真数据上 workers=1/2/4 的中心块 crc 全等于同步路径的 crc）。多 worker 时每个 worker 用自己的一份 `HeightSampler`——它的 5×5 模板是可变的，共用会互相踩出错值。
+2. **位子就是限流**：先占位再干活，`max_inflight` 两头断言（没超上限，也确实并到过），只断"没超"的话限流形同虚设也照样绿。
+3. **换区不许落地旧结果**：`Work` 完成时比较投递时的代次；旧结果丢进 `StaleDropped` 并把缓冲区回收。排队项在 `BeginRegion` 当场清掉。
+4. **等式必须平**：`Requested = Completed + StaleDropped + DuplicatesRejected`，`GenerationFailures` 与 `ReadyDiscarded` 明确标成子口径不参与相加。写这条判据时我先断言 `Completed == 0` 跑出红——"完成"和"成品未取走就被丢"被我算进同一个桶，等式看着平其实重复计数，于是拆出 `ReadyDiscarded`。**一条从没红过的等式，不能证明它被真的对过账。**
+5. **计数器一律 long**：跑图久了 int 翻负，占用与 LRU 会一次性数错（`Describe()` 把等式两边都念出来）。
+
+**缓存的并发代价是四笔账**（都是并发改出来的，不是重构口味）：
+
+- `_bytesUsed +=/-=` 与 `Dictionary` 不原子；更阴的是 `File.Move` 与 `Track` 之间被 `TrimToBudget` 插进来，会出现"账上有条目、盘上没文件"。改法：账本一把锁，**落位与记账在同一锁段内**（1 MB 的写与 fsync 留在锁外，不串行化磁盘），临时名带实例内递增序号，淘汰"删文件+出账"也在同一原子段里。
+- Windows 上目标正被读时覆盖式 `Move` 抛拒绝访问：这不是坏文件。改成有界重试 3 次（只跨那个短窗口），最终失败清临时文件并统一包成 `IOException`——`Write` 从此只有一个契约"要么落盘、要么 IOException"。
+- **只有读到的内容能证明损坏。**长度不对、header 不符、crc 不符才算坏；`ReadAllBytes` 抛出来的 `IOException`/`UnauthorizedAccessException`（共享冲突、被占用、刚被淘汰）只能算未命中，而且**不许删文件、不许出账**。原来这两类都会掉进 `BadLength` 并 `Discard`，一次竞态就会销毁一片好数据。
+- 嵌套超额订阅：泵给了一层并发，`FillPatchHeights` 内部又按核数分片，变成 `workers × 核数` 个线程抢 `核数` 个核。改成 `parallel: _maxWorkers <= 1`（同一次运行内 workers=1 wall 13.0 s、workers=2 31.5 s；跨运行的绝对数会漂，见下一段）。
+
+**那条偶发红是怎么追的**：整套连跑第 2 轮出现 1 条红（`ConcurrentWritesAndTrim_KeepTheLedgerExact` 的 `CorruptRejects` 期望 0 得 2），随后 3 次全绿——典型的"红了也说不清"。先把假设写死成**可确定性复现**的判据 `LockedFile_IsNotJudgedCorrupt_AndSurvivesTheFailedRead`：用 `FileShare.None` 独占打开自己刚写的文件（等价于任何一次并发读撞上占用，不需要运气），断言"读不动只能算未命中、`CorruptRejects` 仍是 0、文件必须还在"，再用翻一个比特做正向对照（真坏才进损坏账并消失）。这条判据当场把两个分类学问题钉住，之后连跑 12 次 0 红、临时目录 0 残留。
+
+**顺带查出的测试卫生问题**：临时目录里攒了 25 个 `hundun_dem_*`——`TempDem.Dispose` 把删除失败整个咽掉了。真实原因是最后一个 `FileStream` 关掉后 Windows 还会短暂占着目录（进程一退出就能删 ⇒ 时机问题不是永久锁），另外有一条判据里 `new DemGrid(...)` 没 `using`，句柄一直开着。改法：重试窗口拉长到 8×50 ms，仍失败就把路径打到 stderr（静默吞掉才是这批残留的来源），并把那条漏掉的 `using` 补上。清完连跑 12 次残留为 0。
+
+**真数据量到的（这台机器今天很吵）**：
+
+```
+lat=30 lon=120 region=Region(f2 L14 3462,2730) patches=25
+主线程同步 25 块：wall=8287 ms  单块最长=949.7 ms
+workers  wall_ms  相对同步  max_inflight  中心crc一致  一个窗口省下的分配
+      1    13043      0.64x             1        OK          3.0 MB
+      2    31456      0.26x             2        OK          4.0 MB
+      4    21846      0.38x             4        OK          5.9 MB
+```
+
+结论只有一条站得住：**泵不是速度收益，是"主线程不被占"的收益**——同步路径单块最长 950 ms 压在帧上就是几帧的白屏，而取件路径是亚毫秒；wall 反而更差（不再一次性占满全部核）。缓冲区池一个窗口省下 3–6 MB 的 1 MB 级分配（LOH 抖动来源）。
+
+**计时纪律（这条比上面任何数字都重要）**：同一份二进制、同一份数据，"搬 1 MB 做一遍校验"在今天从 5.4 ms 漂到 8.8 / 34.2 / 46.9 ms，倍率 6–9×；我一度写的"单帧超过 1 ms 就算失败"于是变成随机红。现在探针里那项只是观察值，真正的断言在单元测试 `DequeuePath_IsFarCheaperThanCheckingOneMegabyte`：**用同进程内一次 1 MB 校验的耗时当尺子**（取件必须比它的 1/4 还便宜），并且量之前先等 CPU 空下来。PIE 阶段所有耗时判据都要按这个写法——绝对毫秒数只能记账，不能当闸门。
+
+**四条反证，各红一条、不连带**：去掉 `_scheduled.TryAdd` 去重 → 红 `SameKeyWhileInFlight_IsNotGeneratedTwice`；去掉 `Work` 的代次比较 → 红 `RegionChange_InFlightResultsNeverLandInTheNewRegion`；把 1 MB 校验塞进取件路径 → 红 `DequeuePath_...`；位子在工作开跑前就 `Release` → 红 `WorkerLimit_IsBothRespectedAndActuallyReached`（`max_inflight` 掉到 1，"两头断言"在这里显出用处）。
+
+**接线状态**：泵目前只有单元测试与 `DemProbe pump` 两个调用者。PIE 驱动层的调用顺序已经定死：每帧 `streamer.BuildPlan` → 新块 `pump.Request` → `TryDequeueCompleted` 交给引擎 `AddPatch/SetupPatchHeightMap` → `pump.Release`；换区 `pump.BeginRegion` + `streamer.AttachRegion`；`Dispose` 只在退出时调（它会等在飞的收尾）。任务 3 仍等 `Game.Build.cs`/`HundunWorldGame.cs`/`World.scene` 腾出来。

@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Horizon.Planet;
 using Horizon.Planet.Dem;
 
@@ -50,6 +51,7 @@ internal static class Program
             case "patch": return Patch(manifest, args);
             case "stream": return Stream(manifest, args);
             case "mesh": return Mesh(manifest, args);
+            case "pump": return Pump(manifest, args);
             default:
                 Console.Error.WriteLine("未知模式 " + mode);
                 return 2;
@@ -444,6 +446,149 @@ internal static class Program
         Console.WriteLine(failures == 0 ? "MESH PASS 每个层级的 tile 与远景球面拓扑都干净"
                                        : $"MESH FAIL 共 {failures} 处异常");
         return failures == 0 ? 0 : 5;
+    }
+
+    /// <summary>
+    /// 后台生成泵的实机前哨测量：真实 DEM 上跑一个 5×5 窗口，比较串行与 1/2/4 个工作线程的墙钟时间、
+    /// 主线程单帧最长被占用的时间、缓冲区复用省下的分配，并抽样核对后台结果与串行结果逐位相同。
+    /// </summary>
+    private static int Pump(DemManifest manifest, string[] args)
+    {
+        if (args.Length < 4)
+        {
+            Console.Error.WriteLine("pump 需要 <latDeg> <lonDeg> [workers...]");
+            return 2;
+        }
+        double latDeg = double.Parse(args[2], CultureInfo.InvariantCulture);
+        double lonDeg = double.Parse(args[3], CultureInfo.InvariantCulture);
+        var workerCounts = new List<int>();
+        for (int i = 4; i < args.Length; i++) workerCounts.Add(int.Parse(args[i], CultureInfo.InvariantCulture));
+        if (workerCounts.Count == 0) workerCounts.AddRange(new[] { 1, 2, 4 });
+
+        using var grid = new DemGrid(manifest);
+        var profile = new TerrainProfile(PlanetConstants.PlanetRadiusCm, manifest.ArcSecond / 3600.0);
+        var hybrid = new HybridHeightSource(grid, profile, manifest.ContentSeed, manifest.Format);
+        var template = new HeightSampler(grid, hybrid);
+        var terrain = new PlanetTerrain(PlanetConstants.PlanetRadiusCm, hybrid);
+        var frame = RegionFrame.Build(RegionKey.FromDirection(
+            Geodetic.DirectionFromLatLon(latDeg * Math.PI / 180.0, lonDeg * Math.PI / 180.0),
+            PlanetConstants.DefaultRegionLevel));
+
+        var keys = new List<PatchKey>();
+        for (int dz = -2; dz <= 2; dz++)
+            for (int dx = -2; dx <= 2; dx++) keys.Add(new PatchKey(dx, dz));
+
+        // 对照口径：同样 25 块，一次是"全在主线程同步生成"（客户端不接泵会发生什么），一次是接泵。
+        // 两边都走 FillPatchHeights 的同一条路径（含它内部按行分片），否则比值没有意义。
+        var serialAll = new float[PlanetPatchSampler.HeightmapLength];
+        var serialSw = Stopwatch.StartNew();
+        double serialBlocked = 0, serialCrcMs = 0;
+        uint serialCrc = 0;
+        foreach (var key in keys)
+        {
+            var one = Stopwatch.StartNew();
+            PlanetPatchSampler.FillPatchHeights(frame, terrain, key.OriginXCm, key.OriginZCm, serialAll,
+                                                new HeightSampler(grid, hybrid));
+            one.Stop();
+            serialBlocked = Math.Max(serialBlocked, one.Elapsed.TotalMilliseconds);
+            // 逐位对账要拿同一块比：记下中心 patch 那一块的 crc，而不是末块
+            if (key == new PatchKey(0, 0))
+            {
+                var crcSw = Stopwatch.StartNew();
+                serialCrc = Crc32.Compute(MemoryMarshal.AsBytes(serialAll.AsSpan()));
+                crcSw.Stop();
+                serialCrcMs = crcSw.Elapsed.TotalMilliseconds;     // 本机"搬 1 MB 做校验"要多久，下面的闸门按它比例定
+            }
+        }
+        serialSw.Stop();
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+            "lat={0:F3} lon={1:F3} region={2} patches={3} 主线程同步 25 块：wall={4:F0} ms 单块最长={5:F1} ms " +
+            "中心块crc={6:X8}（本机 1 MB 校验 {7:F1} ms）",
+            latDeg, lonDeg, frame.Key, keys.Count, serialSw.Elapsed.TotalMilliseconds, serialBlocked,
+            serialCrc, serialCrcMs));
+        Console.WriteLine("workers  wall_ms  相对串行  max_inflight  主线程单帧最长ms  中心crc一致  rents  pool_hits  省下的分配MB");
+
+        int failures = 0;
+        foreach (int workers in workerCounts)
+        {
+            using var dir = new TempProbeDir();
+            var cache = new PlanetPatchCache(dir.Path, manifest.ContentSeed, hybrid.TerrainVersion);
+            using var pump = new PlanetPatchPump(frame, terrain, cache, template, maxWorkers: workers);
+
+            var sw = Stopwatch.StartNew();
+            double longestFrameMs = 0;
+            long dequeued = 0;
+            uint centreCrc = 0;
+            float[]? held = null;
+            foreach (var key in keys) pump.Request(key);
+            while (true)
+            {
+                var frameWatch = Stopwatch.StartNew();
+                while (pump.TryDequeueCompleted(out var ready))
+                {
+                    dequeued++;
+                    // 中心那一块先扣着不归还：缓冲区一旦回池就可能被下一块复用，crc 就量错对象了。
+                    // 而且 crc 本身要算 1 MB，绝不能算在"主线程单帧"这段时间里。
+                    if (ready.Key == new PatchKey(0, 0) && held is null) held = ready.Heights;
+                    else pump.Release(ready.Heights);
+                }
+                frameWatch.Stop();
+                longestFrameMs = Math.Max(longestFrameMs, frameWatch.Elapsed.TotalMilliseconds);
+                if (dequeued == keys.Count) break;
+                if (sw.ElapsedMilliseconds > 180_000)
+                {
+                    Console.Error.WriteLine("pump 超时没收敛：" + pump.Describe());
+                    failures++;
+                    break;
+                }
+                Thread.Sleep(1);            // 让出核心：主线程自旋会和 worker 抢核，量出来的墙钟就不诚实了
+            }
+            sw.Stop();
+            if (held is not null)
+            {
+                centreCrc = Crc32.Compute(MemoryMarshal.AsBytes(held.AsSpan()));
+                pump.Release(held);
+            }
+
+            bool crcOk = centreCrc == serialCrc;
+            if (!crcOk) failures++;
+            long avoided = Math.Max(0, pump.Rents - pump.PoolHits);
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "{0,7}  {1,7:F0}  {2,9:F2}x  {3,12}  {4,14:F3}  {5,10}  {6,6}  {7,9}  {8,11:F1}",
+                workers, sw.Elapsed.TotalMilliseconds, serialSw.Elapsed.TotalMilliseconds / sw.Elapsed.TotalMilliseconds,
+                pump.MaxInFlight, longestFrameMs, crcOk ? "OK" : "MISMATCH",
+                pump.Rents, pump.PoolHits, avoided * PlanetPatchSampler.HeightmapLength * 4.0 / (1 << 20)));
+            if (workers >= 2 && pump.MaxInFlight == 1)
+            {
+                Console.Error.WriteLine("        给了并发却没并发起来（限流或驱动没接好）");
+                failures++;
+            }
+            // "主线程单帧最长"在这里只是观察值，不当闸门：CPU 被 12 路行分片占满时，
+            // 一次空转的取件也会被调度出去几十毫秒，wall 时间分不清"泵在主线程上干了活"和"被抢了核"。
+            // 取件路径必须便宜这条断言放在单元测试里（那里 CPU 是空的），见 PlanetPatchPumpTests。
+            if (pump.GenerationFailures != 0 || pump.CacheWriteFailures != 0)
+            {
+                Console.Error.WriteLine("        " + pump.Describe());
+                failures++;
+            }
+        }
+
+        Console.WriteLine(failures == 0 ? "PUMP PASS 后台结果与串行逐位相同，主线程没被生成占住"
+                                       : $"PUMP FAIL 共 {failures} 处异常");
+        return failures == 0 ? 0 : 5;
+    }
+
+    /// <summary>探针专用的临时目录：每次一个独立路径，不覆盖任何人的缓存。</summary>
+    private sealed class TempProbeDir : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(), "hundun_pump_probe_" + Guid.NewGuid().ToString("N"));
+        public TempProbeDir() => Directory.CreateDirectory(Path);
+        public void Dispose()
+        {
+            try { Directory.Delete(Path, true); }
+            catch (IOException) { }
+        }
     }
 
     private static int CoarsestLevel(DemManifest manifest)

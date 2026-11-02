@@ -89,7 +89,17 @@ internal sealed class TempDem : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(Root, true); } catch (IOException) { /* 临时目录留给系统回收 */ }
+        // 最后一个 FileStream 关闭后，Windows 还会短暂占着目录：立刻删会失败，静默吞掉的结果
+        // 是攒出一堆看不见的临时目录（这一轮先查出 25 个，改完重试仍每次漏 1 个）。
+        // 进程一退出就能删 ⇒ 是释放时机问题，所以给足重试窗口，而不是把失败咽下去。
+        for (int attempt = 0; attempt < 8; attempt++)
+        {
+            try { Directory.Delete(Root, true); return; }
+            catch (IOException) { System.Threading.Thread.Sleep(50); }
+            catch (UnauthorizedAccessException) { System.Threading.Thread.Sleep(50); }
+        }
+        try { Directory.Delete(Root, true); }
+        catch (Exception e) { Console.Error.WriteLine($"临时夹具目录没清掉：{Root}（{e.GetType().Name}）"); }
     }
 }
 
@@ -281,7 +291,9 @@ public class DemGridTests
         using var dem = TempDem.Create(45.0, (0, g));
         using var grid = new DemGrid(dem.Load()) { NodataFallbackCm = 1234.0 };
         Assert.Equal(1234.0, grid.SampleElevationCmAt(0, 0, 0), 9);
-        Assert.Equal(0.0, new DemGrid(dem.Load()).NodataFallbackCm, 9);
+        // 第二个 grid 也必须用完就关：句柄还开着，TempDem 删临时目录就会失败（本轮那个残留就是这么来的）
+        using var defaulted = new DemGrid(dem.Load());
+        Assert.Equal(0.0, defaulted.NodataFallbackCm, 9);
     }
 
     [Fact]

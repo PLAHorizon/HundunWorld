@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace Horizon.Planet;
 
@@ -77,6 +78,9 @@ public sealed class PlanetPatchCache
 
     /// <summary>默认 2 GB（§7.1）。</summary>
     public const long DefaultBudgetBytes = 2L * 1024 * 1024 * 1024;
+
+    /// <summary>落位重试次数：只用来跨过"目标正在被读"这个短暂窗口，不是拿来等锁盘的。</summary>
+    public const int MaxMoveRetries = 3;
 
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.OrdinalIgnoreCase);
     private readonly Func<long> _clock;
@@ -310,12 +314,43 @@ public sealed class PlanetPatchCache
         }
         // 只在锁内做"落位 + 记账"这两步：1 MB 的写和 fsync 留在锁外，
         // 否则并发写会串行到磁盘上；而 Move 与 Track 之间被别的线程插进来，账本和盘上文件就会不一致
+        MoveIntoPlace(tmp, path);
         lock (_gate)
         {
-            File.Move(tmp, path, true);
             Interlocked.Increment(ref _writes);
             Track(path, file.Length, _clock());
         }
+    }
+
+    /// <summary>
+    /// Windows 上目标正被别的线程读时，带覆盖的 Move 会报拒绝访问/共享冲突——这是缓存的正常现象
+    /// （同一片高度可能同时被主线程查询与后台生成写）。这里做有界重试，最终仍失败就清掉临时文件，
+    /// 并统一包成 <see cref="IOException"/> 抛出让调用方按"这次没存上"处理：值已经在内存里，
+    /// 不该因为缓存没落盘而把异常扔进游戏。
+    /// </summary>
+    private void MoveIntoPlace(string tmp, string path)
+    {
+        Exception? last = null;
+        for (int attempt = 0; attempt < MaxMoveRetries; attempt++)
+        {
+            try
+            {
+                File.Move(tmp, path, true);
+                return;
+            }
+            catch (IOException e) { last = e; }
+            catch (UnauthorizedAccessException e) { last = e; }
+            if (attempt + 1 < MaxMoveRetries) Thread.Sleep(1);
+        }
+        TryDeleteTmp(tmp);
+        throw new IOException($"patch 缓存落盘失败（目标 {path} 被占用，重试 {MaxMoveRetries} 次）", last);
+    }
+
+    private static void TryDeleteTmp(string tmp)
+    {
+        try { if (File.Exists(tmp)) File.Delete(tmp); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     /// <summary>
@@ -343,15 +378,22 @@ public sealed class PlanetPatchCache
         {
             all = File.ReadAllBytes(path);
         }
-        catch (IOException)
+        catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException)
         {
-            reason = PatchCacheReject.BadLength;
+            // 刚存在就被隔壁的淘汰删掉：正常未命中，顺手把账出掉
+            Forget(path);
+            reason = PatchCacheReject.MissingFile;
+            Interlocked.Increment(ref _misses);
             Interlocked.Increment(ref _rejectCounts[(int)reason]);
-            Discard(path);
             return false;
         }
+        // 共享冲突/占用（IOException 与 UnauthorizedAccessException 两种都会）：按未命中处理。
+        // "损坏"只能由读到的字节自己证明（长度不对或 crc 不符）——否则一次并发读就会把好数据判成坏的并删掉。
+        catch (IOException) { return BenignUnreadable(path, out reason); }
+        catch (UnauthorizedAccessException) { return BenignUnreadable(path, out reason); }
 
-        if (all.Length != EntryBytes)
+        const int expectedLength = EntryBytes;
+        if (all.Length != expectedLength)
         {
             reason = PatchCacheReject.BadLength;
             Interlocked.Increment(ref _rejectCounts[(int)reason]);
@@ -390,6 +432,19 @@ public sealed class PlanetPatchCache
 
         Interlocked.Increment(ref _rejectCounts[(int)reason]);
         Discard(path);
+        return false;
+    }
+
+    /// <summary>
+    /// 读不了但没有任何证据说明文件坏了（共享冲突、被占用）：按未命中处理，
+    /// <b>不出账、也不删文件</b>——那是一片好好的高度缓存，因为别人正在读它就把它删掉，
+    /// 只会让下一次多算一次生成成本，并把预算数成偏小。
+    /// </summary>
+    private bool BenignUnreadable(string path, out PatchCacheReject reason)
+    {
+        reason = PatchCacheReject.MissingFile;
+        Interlocked.Increment(ref _misses);
+        Interlocked.Increment(ref _rejectCounts[(int)reason]);
         return false;
     }
 
