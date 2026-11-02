@@ -1,0 +1,611 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Configurations>Editor.Windows.Debug;Editor.Windows.Development;Editor.Windows.Release;Game.Windows.Debug;Game.Windows.Development;Game.Windows.Release</Configurations>
+    <Platforms>x64</Platforms>
+    <Configuration>Editor.Windows.Debug</Configuration>
+    <Platform>x64</Platform>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <RootNamespace>NarrativePro</RootNamespace>
+    <AssemblyName>NarrativePro.CSharp</AssemblyName>
+    <LangVersion>14.0</LangVersion>
+    <FileAlignment>512</FileAlignment>
+    <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory)..\..\..\Cache\Projects\Flax.Build.CSharp.SkipBuild.targets</CustomAfterMicrosoftCommonTargets>
+    <RestorePackages>false</RestorePackages>
+    <DisableFastUpToDateCheck>True</DisableFastUpToDateCheck>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\NarrativeProEditorTarget\Windows\x64\Debug\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Debug\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Debug\CSharp\</IntermediateOutputPath>
+    <DefineConstants>REVERSE_Z;BUILD_DEBUG;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;DOTNET_HOST_CORECLR;USE_NETCORE;NET;NET10_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_13;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER;FLAX_1_11_OR_NEWER;FLAX_1_12_OR_NEWER;FLAX_1_13_OR_NEWER;USE_PROFILER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\NarrativeProEditorTarget\Windows\x64\Debug\NarrativePro.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <FlaxConfiguration>Debug</FlaxConfiguration>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\NarrativeProEditorTarget\Windows\x64\Development\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Development\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Development\CSharp\</IntermediateOutputPath>
+    <DefineConstants>REVERSE_Z;BUILD_DEVELOPMENT;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;DOTNET_HOST_CORECLR;USE_NETCORE;NET;NET10_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_13;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER;FLAX_1_11_OR_NEWER;FLAX_1_12_OR_NEWER;FLAX_1_13_OR_NEWER;USE_PROFILER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\NarrativeProEditorTarget\Windows\x64\Development\NarrativePro.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <FlaxConfiguration>Development</FlaxConfiguration>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Binaries\NarrativeProEditorTarget\Windows\x64\Release\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Release\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Release\CSharp\</IntermediateOutputPath>
+    <DefineConstants>REVERSE_Z;BUILD_RELEASE;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;DOTNET_HOST_CORECLR;USE_NETCORE;NET;NET10_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_13;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER;FLAX_1_11_OR_NEWER;FLAX_1_12_OR_NEWER;FLAX_1_13_OR_NEWER;USE_PROFILER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\NarrativeProEditorTarget\Windows\x64\Release\NarrativePro.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <FlaxConfiguration>Release</FlaxConfiguration>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\NarrativeProTarget\Windows\x64\Debug\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\NarrativeProTarget\Windows\x64\Debug\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\NarrativeProTarget\Windows\x64\Debug\CSharp\</IntermediateOutputPath>
+    <DefineConstants>REVERSE_Z;BUILD_DEBUG;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;DOTNET_HOST_CORECLR;USE_NETCORE;NET;NET10_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_13;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER;FLAX_1_11_OR_NEWER;FLAX_1_12_OR_NEWER;FLAX_1_13_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\NarrativeProTarget\Windows\x64\Debug\NarrativePro.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <FlaxConfiguration>Debug</FlaxConfiguration>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\NarrativeProTarget\Windows\x64\Development\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\NarrativeProTarget\Windows\x64\Development\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\NarrativeProTarget\Windows\x64\Development\CSharp\</IntermediateOutputPath>
+    <DefineConstants>REVERSE_Z;BUILD_DEVELOPMENT;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;DOTNET_HOST_CORECLR;USE_NETCORE;NET;NET10_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_13;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER;FLAX_1_11_OR_NEWER;FLAX_1_12_OR_NEWER;FLAX_1_13_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\NarrativeProTarget\Windows\x64\Development\NarrativePro.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <FlaxConfiguration>Development</FlaxConfiguration>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Binaries\NarrativeProTarget\Windows\x64\Release\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\NarrativeProTarget\Windows\x64\Release\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\NarrativeProTarget\Windows\x64\Release\CSharp\</IntermediateOutputPath>
+    <DefineConstants>REVERSE_Z;BUILD_RELEASE;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;DOTNET_HOST_CORECLR;USE_NETCORE;NET;NET10_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_13;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER;FLAX_1_11_OR_NEWER;FLAX_1_12_OR_NEWER;FLAX_1_13_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\NarrativeProTarget\Windows\x64\Release\NarrativePro.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <FlaxConfiguration>Release</FlaxConfiguration>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="NarrativePro.Gen.cs" />
+    <Compile Include="NarrativePro\AI\Activities\ActivityGroup.cs" />
+    <Compile Include="NarrativePro\AI\Activities\Async\AsyncAction_AddGoalAndWait.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NarrativeActivityBase.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCActivity.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCActivityComponent.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCActivityConfiguration.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCActivityFactory.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCActivitySchedule.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCActivityScheduleRules.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCActivitySelectionRules.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCGoalGenerator.cs" />
+    <Compile Include="NarrativePro\AI\Activities\NPCGoalItem.cs" />
+    <Compile Include="NarrativePro\AI\AITask_LongMove.cs" />
+    <Compile Include="NarrativePro\AI\Cover\CoverGeometryRules.cs" />
+    <Compile Include="NarrativePro\AI\Cover\CoverTypes.cs" />
+    <Compile Include="NarrativePro\AI\Cover\NarrativeTileCoverGenerator.cs" />
+    <Compile Include="NarrativePro\AI\Mass\IncomingCollisionProcessor.cs" />
+    <Compile Include="NarrativePro\AI\Mass\NarrativePedEntityManager.cs" />
+    <Compile Include="NarrativePro\AI\Mass\PedFragments.cs" />
+    <Compile Include="NarrativePro\AI\Mass\Peds\MassPedRepresentationSubsystem.cs" />
+    <Compile Include="NarrativePro\AI\Mass\Peds\MassPedSimulation.cs" />
+    <Compile Include="NarrativePro\AI\Mass\Peds\MassPedSpawnerSubsystem.cs" />
+    <Compile Include="NarrativePro\AI\Mass\Peds\NarrativePedAssetResolver.cs" />
+    <Compile Include="NarrativePro\AI\Mass\Peds\NarrativePedFragments.cs" />
+    <Compile Include="NarrativePro\AI\Mass\Peds\NarrativePedInitializerProcessor.cs" />
+    <Compile Include="NarrativePro\AI\Mass\Peds\NarrativeVisualizationTrait.cs" />
+    <Compile Include="NarrativePro\AI\NarrativeCharacterSubsystem.cs" />
+    <Compile Include="NarrativePro\AI\NarrativeEvent_AddGoalToNPC.cs" />
+    <Compile Include="NarrativePro\AI\NarrativeNPCController.cs" />
+    <Compile Include="NarrativePro\AI\NarrativePathFollowingComp.cs" />
+    <Compile Include="NarrativePro\AI\NarrativeTargetSelectionRules.cs" />
+    <Compile Include="NarrativePro\AI\Navigation\NarrativeNavigationSystem.cs" />
+    <Compile Include="NarrativePro\AI\Navigation\NarrativeRecastNavMesh.cs" />
+    <Compile Include="NarrativePro\AI\NPCDefinition.cs" />
+    <Compile Include="NarrativePro\AI\NPCInteractable.cs" />
+    <Compile Include="NarrativePro\Audio\FoleyAudioBank.cs" />
+    <Compile Include="NarrativePro\Audio\FoleyAudioBankLoader.cs" />
+    <Compile Include="NarrativePro\Audio\NarrativeFoleyPlayback.cs" />
+    <Compile Include="NarrativePro\Audio\NarrativeFoleyTags.cs" />
+    <Compile Include="NarrativePro\Audio\NarrativePhysicalSurface.cs" />
+    <Compile Include="NarrativePro\Camera\NarrativeCameraComponent.cs" />
+    <Compile Include="NarrativePro\Camera\NarrativeCameraMode.cs" />
+    <Compile Include="NarrativePro\Camera\NarrativeCameraShake.cs" />
+    <Compile Include="NarrativePro\Camera\NarrativePlayerCameraManager.cs" />
+    <Compile Include="NarrativePro\Camera\NarrativeSettingsFOV.cs" />
+    <Compile Include="NarrativePro\Character\CharacterAppearance.cs" />
+    <Compile Include="NarrativePro\Character\CharacterDefinition.cs" />
+    <Compile Include="NarrativePro\Character\CharacterMapMarker.cs" />
+    <Compile Include="NarrativePro\Character\ExperienceRules.cs" />
+    <Compile Include="NarrativePro\Character\FallDamageRules.cs" />
+    <Compile Include="NarrativePro\Character\NarrativeCharacter.cs" />
+    <Compile Include="NarrativePro\Character\NarrativeCharacterMovement.cs" />
+    <Compile Include="NarrativePro\Character\NarrativeCharacterVisual.cs" />
+    <Compile Include="NarrativePro\Character\PlayerDefinition.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\CharacterCreatorAttributes.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\CharacterCreatorConfiguration.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\CharacterCreatorFactory.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\CharacterCreatorPlayerController.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\CreatorColorSwatch.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\CreatorOptionWidget.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\Items\CharacterCreatorItem_Groom.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\Items\CharacterCreatorItem_Mesh.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\Items\CharacterCreatorItem.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\NarrativeCreatorPersistence.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\NarrativeSaveWithCreatorData.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\Options\CharacterCreatorOption_Groom.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\Options\CharacterCreatorOption_Mesh.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\Options\CharacterCreatorOption_Scalar.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\Options\CharacterCreatorOption_Vector.cs" />
+    <Compile Include="NarrativePro\CharacterCreator\Options\CharacterCreatorOption.cs" />
+    <Compile Include="NarrativePro\Cinematics\AsyncAction_BlendOutNarrativeSequence.cs" />
+    <Compile Include="NarrativePro\Cinematics\AsyncAction_PlayNarrativeSequence.cs" />
+    <Compile Include="NarrativePro\Cinematics\NarrativeCineDialogueLine.cs" />
+    <Compile Include="NarrativePro\Cinematics\NarrativeCinematicBars.cs" />
+    <Compile Include="NarrativePro\Cinematics\NarrativeDialogueShotRegistry.cs" />
+    <Compile Include="NarrativePro\Cinematics\NarrativeLevelSequenceActor.cs" />
+    <Compile Include="NarrativePro\Cinematics\NarrativeLevelSequencePlayer.cs" />
+    <Compile Include="NarrativePro\Cinematics\PlateCropSettings.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeActivatableWidget.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeActivatableWidgetContainer.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeCommonHUD.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeCommonUI.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeCommonUISubsystem.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeControlExtensions.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeInputRouter.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeRuntimeBootstrap.cs" />
+    <Compile Include="NarrativePro\CommonUI\NarrativeUIDeveloperSettings.cs" />
+    <Compile Include="NarrativePro\CommonUI\Widgets\NarrativeAnalogSlider.cs" />
+    <Compile Include="NarrativePro\CommonUI\Widgets\NarrativeComboBoxString.cs" />
+    <Compile Include="NarrativePro\CommonUI\Widgets\NarrativeCommonButtonBase.cs" />
+    <Compile Include="NarrativePro\CommonUI\Widgets\NarrativeCommonTextBlock.cs" />
+    <Compile Include="NarrativePro\CommonUI\Widgets\NarrativeCommonVideoPlayer.cs" />
+    <Compile Include="NarrativePro\CommonUI\Widgets\NarrativeInputKeySelector.cs" />
+    <Compile Include="NarrativePro\CommonUI\Widgets\NarrativeSpinBox.cs" />
+    <Compile Include="NarrativePro\Core\ArsenalSettings.cs" />
+    <Compile Include="NarrativePro\Core\ArsenalStatics.cs" />
+    <Compile Include="NarrativePro\Core\Enums.cs" />
+    <Compile Include="NarrativePro\Core\NarrativeActorProvider.cs" />
+    <Compile Include="NarrativePro\Core\NarrativeFactionAttitude.cs" />
+    <Compile Include="NarrativePro\Core\NarrativeGameplayTags.cs" />
+    <Compile Include="NarrativePro\Core\NarrativeLog.cs" />
+    <Compile Include="NarrativePro\Core\NarrativeSettings.cs" />
+    <Compile Include="NarrativePro\Core\NarrativeWorldSettings.cs" />
+    <Compile Include="NarrativePro\Data\NarrativeCrowdConfig.cs" />
+    <Compile Include="NarrativePro\Data\NarrativeDataLoader.cs" />
+    <Compile Include="NarrativePro\Data\NarrativeDataPaths.cs" />
+    <Compile Include="NarrativePro\Data\NarrativeItemDatabase.cs" />
+    <Compile Include="NarrativePro\Data\NarrativeNPCDatabase.cs" />
+    <Compile Include="NarrativePro\GAS\AbilityConfiguration.cs" />
+    <Compile Include="NarrativePro\GAS\AbilityTasks\AbilityTask_MoveToLocationAndWait.cs" />
+    <Compile Include="NarrativePro\GAS\AbilityTasks\AbilityTask_RotateActor.cs" />
+    <Compile Include="NarrativePro\GAS\AbilityTasks\AbilityTask_SpawnProjectile.cs" />
+    <Compile Include="NarrativePro\GAS\AbilityTasks\AbilityTask.cs" />
+    <Compile Include="NarrativePro\GAS\AttackComboAnimSet.cs" />
+    <Compile Include="NarrativePro\GAS\AttributeData.cs" />
+    <Compile Include="NarrativePro\GAS\GameplayEffect.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeAbilityInputMapping.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeAbilitySystemComponent.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeASCActor.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeAttackTokenLedger.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeAttributeSetBase.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeCombatAbility.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeCombatAnimSets.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeExecCalc.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeGameplayAbility.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeGASAssetRegistry.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeGASStatics.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeGrantedTagLedger.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeHeavyAttackRules.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeInteractAbility.cs" />
+    <Compile Include="NarrativePro\GAS\NarrativeMeleeCombatAbilities.cs" />
+    <Compile Include="NarrativePro\GAS\TargetingTransformProvider.cs" />
+    <Compile Include="NarrativePro\Interaction\AbilityInteractionSlotBehavior.cs" />
+    <Compile Include="NarrativePro\Interaction\InteractableComponent.cs" />
+    <Compile Include="NarrativePro\Interaction\InteractableItemPickup.cs" />
+    <Compile Include="NarrativePro\Interaction\InteractionComponent.cs" />
+    <Compile Include="NarrativePro\Interaction\InteractionFunctionLibrary.cs" />
+    <Compile Include="NarrativePro\Interaction\InteractionSubsystem.cs" />
+    <Compile Include="NarrativePro\Interaction\NPCInteractionComponent.cs" />
+    <Compile Include="NarrativePro\Interaction\PlayerInteractionComponent.cs" />
+    <Compile Include="NarrativePro\Items\AmmoItem.cs" />
+    <Compile Include="NarrativePro\Items\EquipmentComponent.cs" />
+    <Compile Include="NarrativePro\Items\EquippableItem.cs" />
+    <Compile Include="NarrativePro\Items\Fragments\AmmoFragment.cs" />
+    <Compile Include="NarrativePro\Items\Fragments\PoisonableFragment.cs" />
+    <Compile Include="NarrativePro\Items\GameplayEffectItem.cs" />
+    <Compile Include="NarrativePro\Items\GameplayTag.cs" />
+    <Compile Include="NarrativePro\Items\InventoryComponent.cs" />
+    <Compile Include="NarrativePro\Items\InventoryFunctionLibrary.cs" />
+    <Compile Include="NarrativePro\Items\ItemEnums.cs" />
+    <Compile Include="NarrativePro\Items\ItemFactory.cs" />
+    <Compile Include="NarrativePro\Items\ItemTooltip.cs" />
+    <Compile Include="NarrativePro\Items\LootTable.cs" />
+    <Compile Include="NarrativePro\Items\MagicWeaponItem.cs" />
+    <Compile Include="NarrativePro\Items\MeleeWeaponItem.cs" />
+    <Compile Include="NarrativePro\Items\NarrativeInventorySettings.cs" />
+    <Compile Include="NarrativePro\Items\NarrativeItem.cs" />
+    <Compile Include="NarrativePro\Items\RangedWeaponItem.cs" />
+    <Compile Include="NarrativePro\Items\ThrowableWeaponItem.cs" />
+    <Compile Include="NarrativePro\Items\VendorInventoryComponent.cs" />
+    <Compile Include="NarrativePro\Items\WeaponAttachmentItem.cs" />
+    <Compile Include="NarrativePro\Items\WeaponItem.cs" />
+    <Compile Include="NarrativePro\Music\NarrativeMusicDriver.cs" />
+    <Compile Include="NarrativePro\Music\NarrativeMusicSubsystem.cs" />
+    <Compile Include="NarrativePro\Music\NativeMusicThemeTags.cs" />
+    <Compile Include="NarrativePro\Music\TaggedMusicSet.cs" />
+    <Compile Include="NarrativePro\Music\TaggedMusicSetLoader.cs" />
+    <Compile Include="NarrativePro\NarrativeProPlugin.cs" />
+    <Compile Include="NarrativePro\Navigation\CustomWaypointMarker.cs" />
+    <Compile Include="NarrativePro\Navigation\GameplayTask_MoveToLocationAndRotation.cs" />
+    <Compile Include="NarrativePro\Navigation\GameplayTask_MoveToLocationAndRotationMulti.cs" />
+    <Compile Include="NarrativePro\Navigation\MapMarker.cs" />
+    <Compile Include="NarrativePro\Navigation\MapMarkerQueryFilter.cs" />
+    <Compile Include="NarrativePro\Navigation\MapTile.cs" />
+    <Compile Include="NarrativePro\Navigation\MapTileBounds.cs" />
+    <Compile Include="NarrativePro\Navigation\MapTileRenderingComponent.cs" />
+    <Compile Include="NarrativePro\Navigation\NarrativeNavigationComponent.cs" />
+    <Compile Include="NarrativePro\Navigation\NavArea.cs" />
+    <Compile Include="NarrativePro\Navigation\NavAreaModifier.cs" />
+    <Compile Include="NarrativePro\Navigation\NavAreaSystem.cs" />
+    <Compile Include="NarrativePro\Navigation\NavCostGraph.cs" />
+    <Compile Include="NarrativePro\Navigation\NavigationDeveloperSettings.cs" />
+    <Compile Include="NarrativePro\Navigation\NavigationMarkerComponent.cs" />
+    <Compile Include="NarrativePro\Navigation\NavigationSubsystem.cs" />
+    <Compile Include="NarrativePro\Navigation\NavigatorGameplayTags.cs" />
+    <Compile Include="NarrativePro\Navigation\NavigatorStatics.cs" />
+    <Compile Include="NarrativePro\Navigation\POIActor.cs" />
+    <Compile Include="NarrativePro\Navigation\POIMapMarker.cs" />
+    <Compile Include="NarrativePro\Navigation\POIRenderingComponent.cs" />
+    <Compile Include="NarrativePro\Network\NarrativeMessageHandler.cs" />
+    <Compile Include="NarrativePro\Network\NarrativeSyncManager.cs" />
+    <Compile Include="NarrativePro\Save\ISaveStorageProvider.cs" />
+    <Compile Include="NarrativePro\Save\NarrativeSaveData.cs" />
+    <Compile Include="NarrativePro\Save\NarrativeSaveManager.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeDynamicSpawnSourceResolver.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativePlayerDataRegistry.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSavableActor.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSavableActorResolver.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSavableComponent.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSavableHostActor.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSave.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSaveBootstrap.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSaveComponentKey.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSaveComponentKeys.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSaveKeyPlanner.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSaveStateArchive.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeSaveSystem.cs" />
+    <Compile Include="NarrativePro\SaveSystem\NarrativeStableActor.cs" />
+    <Compile Include="NarrativePro\SaveSystem\SaveSystemDeveloperSettings.cs" />
+    <Compile Include="NarrativePro\SaveSystem\SaveSystemStatics.cs" />
+    <Compile Include="NarrativePro\SaveSystem\StableActor.cs" />
+    <Compile Include="NarrativePro\SaveSystem\StableActorStatics.cs" />
+    <Compile Include="NarrativePro\SaveSystem\Subsystems\NarrativeSaveSubsystem.cs" />
+    <Compile Include="NarrativePro\Settings\NarrativeCombatDeveloperSettings.cs" />
+    <Compile Include="NarrativePro\Settings\NarrativeDeveloperSettings.cs" />
+    <Compile Include="NarrativePro\Settings\NarrativeInputSettings.cs" />
+    <Compile Include="NarrativePro\Settings\NarrativeTimeOfDaySettings.cs" />
+    <Compile Include="NarrativePro\SkillTrees\Perk_AttributeMod.cs" />
+    <Compile Include="NarrativePro\SkillTrees\SkillTreeComponent.cs" />
+    <Compile Include="NarrativePro\SkillTrees\SkillTreeLoader.cs" />
+    <Compile Include="NarrativePro\SkillTrees\SkillTreeRules.cs" />
+    <Compile Include="NarrativePro\SkillTrees\TreePerk.cs" />
+    <Compile Include="NarrativePro\SkillTrees\TreePerkFactory.cs" />
+    <Compile Include="NarrativePro\SkillTrees\TreeSkill.cs" />
+    <Compile Include="NarrativePro\Spawners\ActorSpawnComponent.cs" />
+    <Compile Include="NarrativePro\Spawners\NPCCrowdSpawner.cs" />
+    <Compile Include="NarrativePro\Spawners\NPCSpawnComponent.cs" />
+    <Compile Include="NarrativePro\Spawners\NPCSpawner.cs" />
+    <Compile Include="NarrativePro\Spawners\NPCSpawnVisualizerComponent.cs" />
+    <Compile Include="NarrativePro\Spawners\SpawnComponent.cs" />
+    <Compile Include="NarrativePro\Spawners\SpawnDecisionRules.cs" />
+    <Compile Include="NarrativePro\Spawners\SpawnerBase.cs" />
+    <Compile Include="NarrativePro\Tales\Async\AsyncAction_BeginDialogueAndWait.cs" />
+    <Compile Include="NarrativePro\Tales\Async\AsyncAction_ProvideActor.cs" />
+    <Compile Include="NarrativePro\Tales\Data\DialogueLine.cs" />
+    <Compile Include="NarrativePro\Tales\Data\DialoguePlayParams.cs" />
+    <Compile Include="NarrativePro\Tales\Data\NarrativeDataTask.cs" />
+    <Compile Include="NarrativePro\Tales\Data\NarrativeUpdate.cs" />
+    <Compile Include="NarrativePro\Tales\Data\SpeakerInfo.cs" />
+    <Compile Include="NarrativePro\Tales\Dialogue\Dialogue.cs" />
+    <Compile Include="NarrativePro\Tales\Dialogue\DialogueFactory.cs" />
+    <Compile Include="NarrativePro\Tales\DialogueAsset.cs" />
+    <Compile Include="NarrativePro\Tales\DialogueBlueprintGeneratedClass.cs" />
+    <Compile Include="NarrativePro\Tales\DialogueSM.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\AddCurrencyEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\AddFactionsEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\AddSaveCheckpointEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\BeginDialogueEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\CompleteQuestEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\CheckDistanceCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\DifficultyCheckCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\HasCompletedTaskCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\HasDialogueNodePlayedCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\HasFollowGoalForCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\HasInteractGoalForCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\HasItemCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\HasPerkCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\HasTagCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\HasWeaponOutCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\IsDayTimeCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\IsItemEquippedCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\IsOccupyingInteractableCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\IsQuestFailedCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\IsQuestInProgressCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\IsQuestStartedOrFinishedCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\IsQuestSucceededCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\IsTimeInRangeCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\LevelCheckCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\Conditions\QuestStateCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\ConsumeItemEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\GiveItemEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\GiveXPEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\PlaySoundEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\PrintStringEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\RemoveFactionsEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\RemoveFollowGoalEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\RemoveGameplayTagsEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\RestartQuestEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\SetFactionAttitudeEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\SetTagEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\ShowNotificationEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\StartQuestEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\StartTradingEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\Builtin\TeleportEvent.cs" />
+    <Compile Include="NarrativePro\Tales\Events\NarrativeCondition.cs" />
+    <Compile Include="NarrativePro\Tales\Events\NarrativeEvent.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeConditionEvaluation.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeDefaultCinecam.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeDialogueSelection.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeDialogueSequence.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeDialogueSettings.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeFunctionLibrary.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeLogicFactory.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeNodeSelector.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativePartyComponent.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeQuestSettings.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeTaskManager.cs" />
+    <Compile Include="NarrativePro\Tales\NarrativeTrigger.cs" />
+    <Compile Include="NarrativePro\Tales\Nodes\DialogueNode_NPC.cs" />
+    <Compile Include="NarrativePro\Tales\Nodes\DialogueNode_Player.cs" />
+    <Compile Include="NarrativePro\Tales\Nodes\DialogueNode.cs" />
+    <Compile Include="NarrativePro\Tales\Nodes\NarrativeNodeBase.cs" />
+    <Compile Include="NarrativePro\Tales\Nodes\QuestBranch.cs" />
+    <Compile Include="NarrativePro\Tales\Nodes\QuestNode.cs" />
+    <Compile Include="NarrativePro\Tales\Nodes\QuestState.cs" />
+    <Compile Include="NarrativePro\Tales\Quest\Quest.cs" />
+    <Compile Include="NarrativePro\Tales\Quest\QuestFactory.cs" />
+    <Compile Include="NarrativePro\Tales\Quest\QuestRequirement.cs" />
+    <Compile Include="NarrativePro\Tales\Quest\QuestRequirementFactory.cs" />
+    <Compile Include="NarrativePro\Tales\QuestBlueprintGeneratedClass.cs" />
+    <Compile Include="NarrativePro\Tales\QuestSM.cs" />
+    <Compile Include="NarrativePro\Tales\QuestTask.cs" />
+    <Compile Include="NarrativePro\Tales\Requirements\GetIntoVehicleRequirement.cs" />
+    <Compile Include="NarrativePro\Tales\Requirements\KeepNPCAliveRequirement.cs" />
+    <Compile Include="NarrativePro\Tales\Requirements\StayNearActorRequirement.cs" />
+    <Compile Include="NarrativePro\Tales\Requirements\TickedQuestRequirement.cs" />
+    <Compile Include="NarrativePro\Tales\TaggedDialogueSet.cs" />
+    <Compile Include="NarrativePro\Tales\TalesComponent.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\AddGoalAndWaitTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\BuiltinTaskSupport.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\ClearSpawnTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\CollectItemTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\CompleteDataTaskTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\CompleteQuestTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\EquipItemTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\FindItemTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\FinishDialogueTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\GenericTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\GoToLocationTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\InteractWithObjectTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\KillEnemyTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\MoveTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\PlayCutsceneAndWaitTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\PlayDialogueNodeTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\TakePickupTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\UnequipItemTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\UseItemTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\WaitGameplayEventTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\WaitGameplayTagAddedTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\WaitTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\WaitTimeOfDayTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\BuiltinTasks\WieldWeaponTask.cs" />
+    <Compile Include="NarrativePro\Tales\Tasks\NarrativeTask.cs" />
+    <Compile Include="NarrativePro\Tales\TimeOfDayTrigger.cs" />
+    <Compile Include="NarrativePro\Tales\TriggerSchedule.cs" />
+    <Compile Include="NarrativePro\Tales\TriggerSet.cs" />
+    <Compile Include="NarrativePro\Tales\TriggerSetFactory.cs" />
+    <Compile Include="NarrativePro\Tests\NarrativeProIntegrationTest.cs" />
+    <Compile Include="NarrativePro\TimeOfDay\TimeOfDay.cs" />
+    <Compile Include="NarrativePro\TimeOfDay\TimeOfDayWindowRules.cs" />
+    <Compile Include="NarrativePro\UI\DialoguePanel.cs" />
+    <Compile Include="NarrativePro\UI\NarrativeNotification.cs" />
+    <Compile Include="NarrativePro\UI\NarrativeUIBuilder.cs" />
+    <Compile Include="NarrativePro\UI\QuestLogPanel.cs" />
+    <Compile Include="NarrativePro\UI\QuestTracker.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeAnimInstance.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeAssetManager.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeCharacter.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeCheatManager.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeGameInstance.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeGameMode.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeGameState.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeGameUserSettings.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeNPCCharacter.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativePhysicalMaterial.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativePlayerCharacter.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativePlayerController.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativePlayerState.cs" />
+    <Compile Include="NarrativePro\UnrealFramework\NarrativeTeamAgentInterface.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\AutoDestroyProcessor.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\InitSeedProcessor.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\InitVehicleProcessor.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\MassVehicle.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\MassVehicleSpawner.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\MassVehicleSubsystem.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\QuestRoadControls.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\RoadControlAnnotationsComponent.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\RoadControlsSpawnPointsGenerator.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\TrafficIntersectionAnnotations.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\TrafficLightIntersectionData.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\TrafficLightSettings.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\TrafficLightSubsystem.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\TrafficVehicle.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\TrafficVehicleObstacleTrait.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleFragments.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleMovementProcessor.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleMovementSyncTrait.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleObstacleProcessor.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehiclePIDController.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleRepresentationSubsystem.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleRoadNetwork.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleSpawnerSubsystem.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleTrait.cs" />
+    <Compile Include="NarrativePro\Vehicles\Mass\VehicleVisualizationProcessor.cs" />
+    <Compile Include="NarrativePro\Vehicles\MountComponent.cs" />
+    <Compile Include="NarrativePro\Vehicles\NarrativeImpactInterface.cs" />
+    <Compile Include="NarrativePro\Vehicles\NarrativeVehicleBase.cs" />
+    <Compile Include="NarrativePro\Vehicles\NarrativeWheeledVehicle.cs" />
+    <Compile Include="NarrativePro\Vehicles\TrafficLights\TrafficLight.cs" />
+    <Compile Include="NarrativePro\Vehicles\TrafficSimulationConfig.cs" />
+    <Compile Include="NarrativePro\Vehicles\TrafficVehicleActor.cs" />
+    <Compile Include="NarrativePro\Vehicles\VehicleTrafficSimulation.cs" />
+    <Compile Include="NarrativePro\Weapons\FirearmWeaponVisual.cs" />
+    <Compile Include="NarrativePro\Weapons\NarrativeProjectile.cs" />
+    <Compile Include="NarrativePro\Weapons\NarrativeWeaponFX.cs" />
+    <Compile Include="NarrativePro\Weapons\NarrativeWeaponFXPlayback.cs" />
+    <Compile Include="NarrativePro\Weapons\WeaponAnimPose.cs" />
+    <Compile Include="NarrativePro\Weapons\WeaponVisual.cs" />
+    <Compile Include="NarrativePro\Weapons\WeaponVisualMount.cs" />
+    <Compile Include="NarrativePro\Widgets\CrosshairWidget.cs" />
+    <Compile Include="NarrativePro\Widgets\NarrativeCommonActionWidget.cs" />
+    <Compile Include="NarrativePro\Widgets\NarrativeDefaultCrosshair.cs" />
+    <Compile Include="NarrativePro\Widgets\NarrativeGameplayHUD.cs" />
+    <Compile Include="NarrativePro\Widgets\NarrativeInventoryItemButton.cs" />
+    <Compile Include="NarrativePro\Widgets\NarrativeInventoryWidget.cs" />
+    <Compile Include="NarrativePro\Widgets\NarrativeMenu.cs" />
+    <Compile Include="NarrativePro\Widgets\NarrativePauseMenu.cs" />
+    <Compile Include="NarrativePro\Widgets\NarrativeWidgetHelpers.cs" />
+    <Compile Include="NarrativePro\World\ClimbableActor.cs" />
+    <Compile Include="NarrativePro\World\NarrativeClimbableConfig.cs" />
+    <Compile Include="NarrativePro\World\Triggers\NarrativeTriggerSphere.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' " >
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProEditorTarget\Windows\x64\Debug\NarrativePro\NarrativePro.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProEditorTarget\Windows\x64\Debug\NarrativeProEditor\NarrativeProEditor.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' " >
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProEditorTarget\Windows\x64\Development\NarrativePro\NarrativePro.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProEditorTarget\Windows\x64\Development\NarrativeProEditor\NarrativeProEditor.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' " >
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProEditorTarget\Windows\x64\Release\NarrativePro\NarrativePro.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProEditorTarget\Windows\x64\Release\NarrativeProEditor\NarrativeProEditor.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' " >
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProTarget\Windows\x64\Debug\NarrativePro\NarrativePro.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' " >
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProTarget\Windows\x64\Development\NarrativePro\NarrativePro.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' " >
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache\Intermediate\NarrativeProTarget\Windows\x64\Release\NarrativePro\NarrativePro.Bindings.Gen.cs" />
+  </ItemGroup>
+</Project>

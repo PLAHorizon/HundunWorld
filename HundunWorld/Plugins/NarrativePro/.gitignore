@@ -12,6 +12,10 @@ imgui.ini
 
 # Ignore Visual Studio project files (generated locally)
 *.csproj
+# ...except the two project files under Source/: Horizon.sln and
+# HundunWorld/Source/Game.csproj reference them by path, so a clone without
+# them cannot load the solution or build the client.
+!Source/*.csproj
 *.sln
 launchSettings.json
 
