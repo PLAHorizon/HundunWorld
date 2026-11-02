@@ -470,6 +470,18 @@ namespace Horizon.Game.Message.Network
         /// 属性加点（服务端权威）。随 EnterGameResponse 一并下发，客户端据此重建第三层属性来源，
         /// 无需再发一次查询；未加点时为全零而非 null，避免客户端到处判空。
         /// </summary>
+        /// <summary>
+        /// 数字人外观差量存档（不透明 blob）。为空表示该角色从未自定义过，客户端回落模板默认值。
+        /// </summary>
+        [MemoryPackOrder(23)]
+        [Id(23)]
+        public MetaHumanLookPayload MetaHumanLook { get; set; }
+
+        /// <summary>阵营（0 未入 / 1 正派 / 2 邪派）。PvP 敌对判定的权威输入，来自角色档案。</summary>
+        [MemoryPackOrder(24)]
+        [Id(24)]
+        public int Faction { get; set; }
+
         [MemoryPackOrder(22)]
         [Id(22)]
         public AttributeAllocationData Allocation { get; set; } = new();

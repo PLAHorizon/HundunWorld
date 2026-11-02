@@ -1,0 +1,20 @@
+{
+  "abilityName": "环首刀·轻击",
+  "abilityClass": "NarrativeMeleeSlashAbility",
+  "inputTag": "Narrative.Input.Attack",
+  "isMelee": true,
+  "isHeavyAttack": false,
+  "damageEffectPath": "effect_damage_melee",
+  "defaultAttackDamage": 18,
+  "meleeSweepRadius": 80,
+  "attackNotifyTriggerTime": 0.12,
+  "attackNotifyDuration": 0.35,
+  "attackPlayRate": 1,
+  "botAttackFrequency": 1.2,
+  "botAttackRange": 220,
+  "weaponSpread": 0,
+  "abilityTags": [
+    "Narrative.Ability.Attack",
+    "Narrative.Ability.DamageType.Melee"
+  ]
+}

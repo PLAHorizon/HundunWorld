@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using Horizon.Game.Message.Network;
@@ -66,6 +66,15 @@ namespace HundunWorld.Game.UI.Character
         public void SelectCharacter(CharacterInfo character)
         {
             _selectedCharacter = character;
+
+            // 服务端随角色信息带着外观 blob 下来；先落到本地仓库，MetaHumanCharacter 的读档路径才看得到它。
+            // CharacterId 是非可空的 ulong，不能用 ?.，也不要在 ulong 与 long 之间靠猜转换。
+            if (character != null && character.CharacterId != 0UL
+                && long.TryParse(character.CharacterId.ToString(), out var characterId))
+            {
+                HundunWorld.Game.Services.MetaHumanAppearanceService.Instance.AdoptFromServer(characterId, character);
+            }
+
             OnCharacterSelected?.Invoke(character);
         }
 

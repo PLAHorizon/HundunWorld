@@ -51,6 +51,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
     <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
+    <!-- 任务模板的"库行 ↔ 草稿"映射要用 Sim 里的纯契约类型（QuestDraft/校验器）。
+         Sim 不反向引用本程序集，没有环。 -->
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

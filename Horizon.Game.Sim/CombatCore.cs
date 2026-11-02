@@ -29,6 +29,14 @@ public enum CombatOutcome : byte
 
     /// <summary>请求非法（ID 为 0 / 自伤 / 配置非法）。</summary>
     Invalid = 7,
+
+    /// <summary>
+    /// 目标正在回位，<b>这一类目标根本打不到</b>（AzerothCore 的 <code>SPELL_MISS_EVADE</code> 那一档：
+    /// <code>Creature::IsEvadingAttacks()</code> 挂在受击方那侧，见 <c>Monsters/MonsterAiGate.cs</c>）。
+    /// <para>与 <see cref="Dodged"/> 分开是有必要的：闪避是"这一刀被躲开了"，玩家下一刀还会照打；
+    /// 回位免伤是"这段时间整个攻击都无效"，玩家该停手等它到家。合成一个值就说不清该不该继续。</para>
+    /// </summary>
+    Evading = 8,
 }
 
 /// <summary>参战单位数值（攻击者与目标共用）。</summary>

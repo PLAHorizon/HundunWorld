@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Horizon.Game.Message.Network;
+using UIMouseCapture = HundunWorld.Game.UI.UIMouseCapture;
 
 namespace HundunWorld.Game
 {
@@ -286,8 +287,8 @@ namespace HundunWorld.Game
 
         [Header("角度控制")]
         public float Pitch = 30.0f;
-        public float MinPitch = -80.0f;
-        public float MaxPitch = 80.0f;
+        public float MinPitch = -60.0f;
+        public float MaxPitch = 75.0f;
         public float Yaw = 0.0f;
 
         [Header("初始化设置")]
@@ -338,15 +339,6 @@ namespace HundunWorld.Game
 
         [Tooltip("碰撞平滑过渡速度")]
         public float CollisionSmoothSpeed = 12f;
-
-        [Tooltip("启用智能避障（碰撞时自动调整到最佳视角）")]
-        public bool EnableSmartAvoidance = true;
-
-        [Tooltip("智能避障的目标俯仰角（推荐45°上帝视角）")]
-        public float SmartAvoidancePitch = 45f;
-
-        [Tooltip("智能避障的角度平滑速度")]
-        public float AngleSmoothSpeed = 5f;
 
         [Header("地面穿透防护")]
         [Tooltip("启用地面穿透防护")]
@@ -405,25 +397,6 @@ namespace HundunWorld.Game
         [Tooltip("视角恢复的平滑速度（越大越快）")]
         public float ResetSmoothSpeed = 5f;
         
-        [Header("自动对齐系统")]
-        [Tooltip("启用自动对齐功能（停止手动旋转后自动对齐到角色后方）")]
-        public bool EnableAutoAlign = true;
-        
-        [Tooltip("自动对齐延迟时间（秒，停止手动旋转后等待时间）")]
-        public float AlignDelay = 2.0f;
-        
-        [Tooltip("自动对齐旋转速度（度/秒）")]
-        public float AlignRotationSpeed = 90f;
-        
-        [Tooltip("角度范围阈值（度，在此范围内开始平滑对齐）")]
-        public float AlignSmoothRange = 45f;
-        
-        [Tooltip("角色最小移动速度阈值（米/秒，低于此值不触发对齐）")]
-        public float AlignMinSpeed = 0.1f;
-        
-        [Tooltip("战斗中禁用自动对齐")]
-        public bool DisableAlignInCombat = true;
-        
         [Header("弹性跟随系统")]
         [Tooltip("启用弹性跟随(角色移动时相机有延迟感,模仿剑侠情缘3/魔兽世界效果)")]
         public bool EnableElasticFollow = true;
@@ -437,14 +410,14 @@ namespace HundunWorld.Game
         public float RotationElasticity = 0.9f;
         
         [Tooltip("启用惯性效果(角色突然停止时相机会略微超前)")]
-        public bool EnableInertia = true;
+        public bool EnableInertia = false;
         
         [Tooltip("惯性衰减速度")]
         public float InertiaDamping = 5f;
         
         [Header("FOV动态调整")]
         [Tooltip("启用基于速度的FOV动态调整(增强速度感)")]
-        public bool EnableDynamicFOV = true;
+        public bool EnableDynamicFOV = false;
         
         [Tooltip("基础FOV(静止时)")]
         [Range(30f, 90f)]
@@ -683,9 +656,6 @@ namespace HundunWorld.Game
         [Tooltip("软锁定检测角度范围（度）")]
         public float SoftLockAngle = 45f;
 
-        [Tooltip("软锁定相机偏转强度")]
-        public float SoftLockInfluence = 0.3f;
-
         [Tooltip("Boss检测标签")]
         public string BossTag = "Boss";
 
@@ -891,22 +861,15 @@ namespace HundunWorld.Game
         private bool _hasGroundUnderCharacter;
         private float _groundHeightUnderCharacter;
         
-        // 智能避障相关
-        private bool _smartAvoidanceActive;      // 是否已确认切换到避障俯仰角
-        private float _smartAvoidanceDistance;   // 上次在避障俯仰角下测得的安全距离
-        private float _lastSmartAvoidanceCheckTime; // 上次避障试探时间
-        private Vector3 _lastSmartAvoidanceFocus;   // 上次避障试探的聚焦点
-        private const float SmartAvoidanceCheckInterval = 0.1f;  // 避障试探复用间隔（秒）
-        private const float SmartAvoidanceFocusTolerance = 30f;  // 聚焦点移动超过该距离则强制重测
         // 弹性跟随的速度分档阈值（世界单位/秒；本工程为 cm/s，对应"静止 / 行走 / 跑与冲刺"）
         private const float ElasticityStillSpeed = 50f;
         private const float ElasticitySlowSpeed = 600f;
-        
-        // 自动对齐相关
-        private bool _isAligning = false;        // 是否正在自动对齐
-        private float _alignTimer = 0f;          // 对齐延迟计时器
-        private bool _wasManualRotating = false; // 上一帧是否在手动旋转
-        private float _targetAlignYaw = 0f;      // 目标对齐角度
+
+        // _targetVelocity 的低通时间常数（秒）。Actor.Position 由 LocalPlayerActorSyncSystem
+        // 按 ECS 固频回写，渲染帧率与它不同步时，按帧做的瞬时差分会在"0 / 2×真速"之间交替
+        // （采样别名方波）。这个方波直接灌进速度-FOV 档与弹性分档：静止时 FOV 每帧在
+        // SpeedThreshold 两侧跳，表现就是画面周期性胀缩。低通把它还原成真速的均值。
+        private const float VelocitySmoothingTimeConstant = 0.1f;
         
         // 基准视角相关
         private float _baselineDistance; // 基准距离
@@ -933,7 +896,13 @@ namespace HundunWorld.Game
         private bool _isTransitioning;       // 是否正在状态切换中
         private float _stateTargetDistance;  // 状态目标距离
         private float _stateTargetPitch;     // 状态目标俯仰角
+        private float _stateTargetYaw;
         private float _stateTargetFOV;       // 状态目标FOV
+        private bool _restoreUserYaw;
+        private bool _hasSavedUserOrbit;
+        private float _savedUserDistance;
+        private float _savedUserPitch;
+        private float _savedUserYaw;
         
         // 角色控制器引用（用于状态检测）
         private PlayerController _playerController;
@@ -975,6 +944,12 @@ namespace HundunWorld.Game
                 return;
             }
 
+            // 设置页的灵敏度/视距是持久化的：相机起来时先把值载入，别等玩家打开设置页
+            var config = HundunWorld.Game.Services.GameConfigurationService.Instance;
+            config.EnsureMouseSensitivityLoaded();
+            config.EnsureViewDistanceLoaded();
+            ApplyViewDistance();
+
 
             // 自动计算初始参数（基于场景中相机的当前位置）
             if (AutoCalculateInitialParameters && Target != null)
@@ -988,7 +963,7 @@ namespace HundunWorld.Game
             _wasColliding = false;
             InitializeCollisionRays();
             
-            //Debug.Log($"[ThirdPersonCamera] 碰撞检测初始化 - EnableCameraCollision={EnableCameraCollision}, Quality={CollisionDetectionQuality}, EnableSphereCheck={EnableSphereCollisionCheck}, CollisionLayerMask={CollisionLayerMask}, EnableSmartAvoidance={EnableSmartAvoidance}");
+            //Debug.Log($"[ThirdPersonCamera] 碰撞检测初始化 - EnableCameraCollision={EnableCameraCollision}, Quality={CollisionDetectionQuality}, EnableSphereCheck={EnableSphereCollisionCheck}, CollisionLayerMask={CollisionLayerMask}");
             
             // 初始化抖动系统
             _currentShakeIntensity = 0f;
@@ -1005,14 +980,9 @@ namespace HundunWorld.Game
             _dodgeOffset = Vector3.Zero;
             _hitReactionOffset = Vector3.Zero;
             
-            // 初始化自动对齐
-            _isAligning = false;
             _currentShoulderOffset = 0f;
             _targetShoulderOffset = 0f;
             _isOverShoulderFallback = false;
-            _alignTimer = 0f;
-            _wasManualRotating = false;
-            _targetAlignYaw = Yaw;
             
             // 注：基准视角不需要保存，将在ResetToBaseline时智能计算
             
@@ -1052,9 +1022,45 @@ namespace HundunWorld.Game
             //Debug.Log($"[ThirdPersonCamera] 初始化完成 - Distance: {Distance:F2}, Pitch: {Pitch:F2}, Yaw: {Yaw:F2}, State: {CurrentState}, Environment: {CurrentEnvironment}");
         }
 
+        /// <summary>上一次已下发的视距百分比（-1 = 还没下发过）。</summary>
+        private float _appliedViewDistance = -1f;
+
+        /// <summary>
+        /// 视距（0~100%）→ 相机远裁剪面：100% 150m、0% 20m。
+        /// 引擎没有独立的"视距"字段，远裁剪面是唯一能表达"看得多远"的接口；值没变时不重复写。
+        /// </summary>
+        private void ApplyViewDistance()
+        {
+            if (_camera == null)
+                return;
+
+            float percent = HundunWorld.Game.Services.GameConfigurationService.ViewDistancePercent;
+            if (Mathf.Abs(percent - _appliedViewDistance) < 0.01f)
+                return;
+
+            _appliedViewDistance = percent;
+            try
+            {
+                _camera.FarPlane = HundunWorld.Game.Services.GameConfigurationService.ViewDistanceToFarPlane(percent);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[ThirdPersonCamera] 视距下发失败: {ex.Message}");
+            }
+        }
+
         public override void OnUpdate()
         {
-            if (Target == null || _camera == null) return;
+            if (Target == null || _camera == null)
+            {
+                // 目标/相机缺失时下面的输入处理整段跳过，拖拽中的光标裁剪要在此兜底交还，
+                // 否则角色重生换 Actor 会把光标永久留在隐藏态。
+                EndMouseRotation();
+                return;
+            }
+
+            // 设置页改了视距就落到相机远裁剪面（未变时只做一次浮点比较）
+            ApplyViewDistance();
 
             // 目标首次就绪（或切换）时同步基准位置：Target 是在场景加载后才由生成流程异步赋值的，
             // OnStart 时多为 null，_lastTargetPosition 会留在零向量上，导致首帧算出一个巨大的移动速度、FOV 突跳。
@@ -1110,11 +1116,6 @@ namespace HundunWorld.Game
                 UpdateLockOn();
             }
             
-            if (EnableAutoAlign && !_isResetting)
-            {
-                UpdateAutoAlign();
-            }
-            
             // 4.5 处理基准视角恢复
             if (_isResetting)
             {
@@ -1124,7 +1125,12 @@ namespace HundunWorld.Game
             
             // 2. 计算角色移动速度(无论是否启用弹性跟随都需要,用于FOV调整)
             Vector3 targetPosition = Target.Position;
-            _targetVelocity = (targetPosition - _lastTargetPosition) / Mathf.Max(Time.DeltaTime, 0.001f);
+            Vector3 rawVelocity = (targetPosition - _lastTargetPosition) / Mathf.Max(Time.DeltaTime, 0.001f);
+            _targetVelocity = Vector3.Lerp(
+                _targetVelocity,
+                rawVelocity,
+                Mathf.Clamp(Time.DeltaTime / VelocitySmoothingTimeConstant, 0f, 1f)
+            );
             _lastTargetPosition = targetPosition;
             
             // 3. 计算聚焦点
@@ -1135,8 +1141,8 @@ namespace HundunWorld.Game
                 // ✅ 启用弹性跟随
                 // 聚焦点必须逐帧持久化，绝不能从 Actor.Position 反推：
                 // 实际写入的相机位置在定位后被多处改写（战斗偏移 GetCombatCameraOffset、
-                // 地面/天花板/悬崖高度钳制、智能避障的 effectivePitch≠Pitch、抖动偏移、肩部偏移时序差），
-                // 反推会把这些修正全部错误吸收进聚焦点，而下一帧的钳制/避障又以该聚焦点发射线，
+                // 地面/天花板/悬崖高度钳制、抖动偏移、肩部偏移时序差），
+                // 反推会把这些修正全部错误吸收进聚焦点，而下一帧的钳制又以该聚焦点发射线，
                 // 形成逐帧闭环反馈——表现为遮挡物边缘与坡地附近的持续晃动。
                 Vector3 desiredFocus = targetPosition + GetDynamicFocusOffset();
                 if (!_elasticFocusValid || Vector3.Distance(_elasticFocus, desiredFocus) > ElasticFocusSnapDistance)
@@ -1177,11 +1183,8 @@ namespace HundunWorld.Game
                         currentElasticity = Mathf.Clamp(stateElasticity, 0.1f, 1f);
                     }
 
-                    _elasticFocus = Vector3.Lerp(
-                        _elasticFocus,
-                        desiredFocus,
-                        currentElasticity
-                    );
+                    float followBlend = 1f - Mathf.Pow(1f - currentElasticity, Time.DeltaTime * 60f);
+                    _elasticFocus = Vector3.Lerp(_elasticFocus, desiredFocus, followBlend);
                 }
 
                 focusPoint = _elasticFocus;
@@ -1216,9 +1219,8 @@ namespace HundunWorld.Game
             }
             _currentShoulderOffset = Mathf.Lerp(_currentShoulderOffset, _targetShoulderOffset, Time.DeltaTime * ShoulderSwapSpeed);
 
-            // 4. 执行碰撞检测和智能避障
+            // 4. 执行碰撞检测；普通轨道只压缩距离，不改玩家选择的俯仰角
             float effectiveDistance;
-            float effectivePitch = Pitch; // 默认使用用户输入的俯仰角
             
             if (EnableCameraCollision)
             {
@@ -1257,53 +1259,6 @@ namespace HundunWorld.Game
 
                 // 优先级控制：设置碰撞优先级（已移除优化代码，此处保留空逻辑）
 
-                // 一旦不再受阻，清空避障缓存，下次受阻时立即重新试探
-                if (!hasCollision)
-                {
-                    _smartAvoidanceActive = false;
-                    _smartAvoidanceDistance = 0f;
-                }
-                
-                if (hasCollision)
-                {
-                    //Debug.Log($"[Collision] 检测到碰撞@{Pitch:F1}°, 安全距离:{collisionDistance:F2}cm, 理想距离:{Distance:F2}cm");
-                    
-                    // ✅ 优先策略：调整距离（避免角度闪烁）
-                    // 只有当碰撞距离小于最小距离时，才考虑调整角度
-                    if (collisionDistance <= MinDistance && EnableSmartAvoidance)
-                    {
-                        // 避障试探要再跑一遍完整的多射线检测，按间隔复用结果：
-                        // 目标点移动超过阈值、间隔到期、或上次测得的避障距离本身很小（贴墙）时才重测，
-                        // 最后一种情况保持逐帧重测以保证安全。
-                        bool probeStale = _gameTime - _lastSmartAvoidanceCheckTime >= SmartAvoidanceCheckInterval;
-                        bool focusMoved = Vector3.Distance(focusPoint, _lastSmartAvoidanceFocus) > SmartAvoidanceFocusTolerance;
-                        bool tooCloseToPersist = _smartAvoidanceDistance <= MinDistance * 1.5f;
-
-                        if (probeStale || focusMoved || tooCloseToPersist)
-                        {
-                            _lastSmartAvoidanceCheckTime = _gameTime;
-                            _lastSmartAvoidanceFocus = focusPoint;
-
-                            // 检查智能避障角度是否能提供更大距离
-                            CheckCollision(focusPoint, SmartAvoidancePitch, out float collisionDistanceAtAvoidance, allowCache: false);
-                            _smartAvoidanceDistance = collisionDistanceAtAvoidance;
-                            _smartAvoidanceActive = collisionDistanceAtAvoidance > collisionDistance * 1.2f; // 至少增加20%
-                        }
-
-                        if (_smartAvoidanceActive)
-                        {
-                            effectivePitch = SmartAvoidancePitch;
-                            collisionDistance = Mathf.Max(_smartAvoidanceDistance, collisionDistance);
-                            //Debug.Log($"[SmartAvoidance] ✅ 切换到{SmartAvoidancePitch}°视角, 距离:{collisionDistance:F2}cm");
-                        }
-                    }
-                    else
-                    {
-                        // 距离已足够，无需避障
-                        _smartAvoidanceActive = false;
-                    }
-                }
-                
                 // === 动态距离调整策略：快速缩短、缓慢恢复 ===
                 float smoothSpeed;
                 float effectiveCollisionSmoothSpeed = (CurrentState == CameraState.OverShoulder || CurrentState == CameraState.LockOn || CurrentState == CameraState.BossBattle) ? 15f : CollisionSmoothSpeed;
@@ -1414,10 +1369,8 @@ namespace HundunWorld.Game
                 _currentCollisionDistance = Distance;
             }
 
-            // 6. 计算相机位置(使用有效俯仰角和平滑Yaw角，避免重影)
-            Vector3 cameraPosition = CalculateCameraPosition(focusPoint, effectivePitch, _smoothYaw, effectiveDistance, _currentShoulderOffset);
-            
-            //Debug.Log($"[CameraPosition] Pitch:{Pitch:F1}° -> effectivePitch:{effectivePitch:F1}°, Distance:{Distance:F2} -> effectiveDistance:{effectiveDistance:F2}, Position:{cameraPosition}");
+            // 6. 计算相机位置
+            Vector3 cameraPosition = CalculateCameraPosition(focusPoint, Pitch, _smoothYaw, effectiveDistance, _currentShoulderOffset);
 
             // 6.5. 地面穿透防护检查和调整
             if (EnableGroundPenetrationProtection)
@@ -1643,13 +1596,69 @@ namespace HundunWorld.Game
             return adjustedPosition;
         }
 
+        private bool _leftMouseRotationArmed;
+        private bool _rightMouseRotationArmed;
+        private bool _bLeftMouseRotating;
+        private bool _bRightMouseRotating;
+
+        public bool IsLeftMouseRotating => _bLeftMouseRotating;
+        public bool IsRightMouseSteering => _bRightMouseRotating;
+        public bool IsMouseMoveForwardGesture => _bLeftMouseRotating && _bRightMouseRotating;
+
+        /// <summary>拖拽期间光标是否已被裁进窗口并隐藏。</summary>
+        private bool _bCursorClippedForDrag;
+
+        /// <summary>
+        /// 拖拽转视角期间把光标裁进窗口并隐藏，松手立刻交还。不裁则光标撞到屏幕边缘后
+        /// <see cref="Input.MousePositionDelta"/> 归零、视角转不动。
+        /// 这是本项目唯一保留的光标裁剪场合，取代原先 NarrativePro 常驻的鼠标锁定模式。
+        /// </summary>
+        private void SetCursorClippedDuringDrag(bool clipped)
+        {
+            if (_bCursorClippedForDrag == clipped) return;
+            _bCursorClippedForDrag = clipped;
+
+            var window = Screen.MainWindow;
+            if (window == null) return;
+
+            if (clipped)
+            {
+                window.Cursor = CursorType.Hidden;
+                if (!window.IsMouseTracking)
+                    window.StartTrackingMouse(true);
+            }
+            else
+            {
+                if (window.IsMouseTracking)
+                    window.EndTrackingMouse();
+                // CursorType 没有 Arrow，箭头光标对应 CursorType.Default
+                window.Cursor = CursorType.Default;
+            }
+        }
+
+        /// <summary>结束鼠标手势并交还光标：任何提前 return 与组件停用都要走。</summary>
+        private void EndMouseRotation()
+        {
+            _leftMouseRotationArmed = false;
+            _rightMouseRotationArmed = false;
+            _bLeftMouseRotating = false;
+            _bRightMouseRotating = false;
+            SetCursorClippedDuringDrag(false);
+        }
+
+        public override void OnDisable()
+        {
+            EndMouseRotation();
+        }
+
         /// <summary>
         /// 处理输入
         /// </summary>
         private void HandleInput()
         {
-            if (_isResetting)
+            if (_isResetting || _externalCameraControl)
             {
+                EndMouseRotation();
                 return;
             }
             
@@ -1657,6 +1666,7 @@ namespace HundunWorld.Game
             if (EnableBaselineReset && !_externalCameraControl && Input.GetKeyDown(ResetKey))
             {
                 ResetToBaseline();
+                EndMouseRotation();
                 return;
             }
             
@@ -1690,25 +1700,45 @@ namespace HundunWorld.Game
             
             CameraStateConfig currentConfig = GetCurrentStateConfig();
             
-            // 鼠标右键旋转(检查状态是否允许)
-            if (currentConfig.AllowRotation && Input.GetMouseButton(MouseButton.Right))
+            // 只有世界里按下的那一次手势才能转镜头；从 UI 按住再移入场景不会中途抢占。
+            if (!Input.GetMouseButton(MouseButton.Left))
+                _leftMouseRotationArmed = false;
+            else if (Input.GetMouseButtonDown(MouseButton.Left))
+                _leftMouseRotationArmed = currentConfig.AllowRotation && !UIMouseCapture.Captured;
+
+            if (!Input.GetMouseButton(MouseButton.Right))
+                _rightMouseRotationArmed = false;
+            else if (Input.GetMouseButtonDown(MouseButton.Right))
+                _rightMouseRotationArmed = currentConfig.AllowRotation && !UIMouseCapture.Captured;
+
+            bool wasRotating = _bLeftMouseRotating || _bRightMouseRotating;
+            _bLeftMouseRotating = currentConfig.AllowRotation
+                                  && Input.GetMouseButton(MouseButton.Left)
+                                  && _leftMouseRotationArmed;
+            _bRightMouseRotating = currentConfig.AllowRotation
+                                   && Input.GetMouseButton(MouseButton.Right)
+                                   && _rightMouseRotationArmed;
+            bool bRotating = _bLeftMouseRotating || _bRightMouseRotating;
+            SetCursorClippedDuringDrag(bRotating);
+
+            // 游戏窗口刚取得焦点时，按下前累计的指针位移可能到这一帧才结算，不能当作拖拽。
+            if (bRotating && wasRotating)
             {
                 Vector2 mouseDelta = Input.MousePositionDelta;
-                Yaw += mouseDelta.X * RotationSpeed;
-                Pitch -= mouseDelta.Y * RotationSpeed;
+                // 设置页的鼠标灵敏度（0.1~3，默认 1）真正作用到视角速度上
+                float sensitivity = HundunWorld.Game.Services.GameConfigurationService.MouseSensitivityFactor;
+                Yaw += mouseDelta.X * RotationSpeed * sensitivity;
+                Pitch -= mouseDelta.Y * RotationSpeed * sensitivity;
                 Pitch = Mathf.Clamp(Pitch, MinPitch, MaxPitch);
-
-                // 手动俯仰优先于状态机默认值：否则任何一次状态切换都会把视角拖回
-                // 该状态的 TargetPitch（Normal 30° / Flying 20°…），表现为"自己会动"
                 _stateTargetPitch = Pitch;
+                _restoreUserYaw = false;
 
-                // 规范化Yaw
                 while (Yaw < 0) Yaw += 360;
                 while (Yaw >= 360) Yaw -= 360;
             }
 
-            // 鼠标滚轮缩放(检查状态是否允许)
-            if (currentConfig.AllowZoom)
+            // 鼠标滚轮缩放(检查状态是否允许)：光标在 UI 上时滚轮让给界面（技能栏/列表自己吃滚轮）
+            if (currentConfig.AllowZoom && !UIMouseCapture.Captured)
             {
                 float scrollDelta = Input.MouseScrollDelta;
                 if (Mathf.Abs(scrollDelta) > 0.01f)
@@ -2154,7 +2184,11 @@ namespace HundunWorld.Game
                 float currentSpeed = _targetVelocity.Length;
                 
                 // 根据速度计算目标FOV
-                if (currentSpeed < SpeedThreshold)
+                // 下限取"静止"档而非 SpeedThreshold：SpeedThreshold=10 是 m/s 口径的遗留值，
+                // 在 cm/s 世界里它落在静止噪声带内（本文件对"静止"的定义是 ElasticityStillSpeed=50），
+                // 于是静止时速度抖动也会把 FOV 推到 75°（画面周期性胀缩）。
+                // 取 50 后 ≥50 的取值仍按原曲线饱和到 MaxFOV，行走/跑/冲刺的观感不变。
+                if (currentSpeed < Mathf.Max(SpeedThreshold, ElasticityStillSpeed))
                 {            // 低速或静止，使用基础FOV
                     speedFOVOffset = 0f;
                 }
@@ -2470,7 +2504,7 @@ namespace HundunWorld.Game
             _baselinePitch = 35.0f;
             
             // 2. 角色正后方（相机与地面保持水平，Roll=0）
-            // 与 UpdateAutoAlign 同一套推导：本文件 offset 水平分量 = (h·sinYaw, −h·cosYaw)，
+            // 本文件 offset 水平分量 = (h·sinYaw, −h·cosYaw)，
             // 角色前向 = (sinψ, 0, cosψ)（Flax: Euler(0,ψ,0) 作用于 Forward=(0,0,1)），
             // "相机在角色正后方" ⇔ 偏移 = −(角色前向) ⇒ Yaw = −ψ。
             // 原来的 ψ+180 会把相机放到角色正面（ψ=0 时相机落到 +Z，而角色也朝 +Z）。
@@ -2517,125 +2551,6 @@ namespace HundunWorld.Game
             }
             
             //Debug.Log($"[BaselineReset] 智能基准视角 - 环境:{CurrentEnvironment}, Distance:{_baselineDistance:F1}cm, Pitch:{_baselinePitch:F1}°, Yaw:{_baselineYaw:F1}°");
-        }
-        
-        /// <summary>
-        /// 更新自动对齐
-        /// </summary>
-        private void UpdateAutoAlign()
-        {
-            if (Target == null) return;
-            
-            // 检查是否正在手动旋转
-            bool isManualRotating = Input.GetMouseButton(MouseButton.Right);
-            
-            // Yaw 已被其他系统接管的场合必须退出自动对齐：
-            // UpdateLockOn 先于本方法执行，若不排除，自动对齐会在同一帧把 Yaw 拉向角色背后，
-            // 锁定结果被覆盖（表现为锁定目标"脱靶"）。
-            // 战斗姿态是否排除仍遵循面板开关，锁定状态则一律排除。
-            bool isRotationOwnedByOtherSystem = _isLockOnActive
-                || _isExecutionCamera
-                || CurrentState == CameraState.LockOn
-                || CurrentState == CameraState.BossBattle
-                || CurrentState == CameraState.Cutscene
-                || (DisableAlignInCombat && (CurrentState == CameraState.Combat || CurrentState == CameraState.OverShoulder));
-            
-            // 检查角色移动速度
-            float characterSpeed = _targetVelocity.Length;
-            bool isCharacterMoving = characterSpeed > AlignMinSpeed;
-            
-            // 如果正在手动旋转、Yaw 被其他系统接管或角色静止，重置计时器
-            if (isManualRotating || isRotationOwnedByOtherSystem || !isCharacterMoving)
-            {
-                _alignTimer = 0f;
-                _isAligning = false;
-                _wasManualRotating = isManualRotating;
-                return;
-            }
-            
-            // 如果刚刚停止手动旋转，开始计时
-            if (_wasManualRotating && !isManualRotating)
-            {
-                _alignTimer = 0f;
-                //Debug.Log($"[自动对齐] 开始计时，{AlignDelay:F1}秒后对齐");
-            }
-            
-            _wasManualRotating = isManualRotating;
-            
-            // 累加计时器
-            _alignTimer += Time.DeltaTime;
-            
-            // 如果达到延迟时间，开始对齐
-            if (_alignTimer >= AlignDelay)
-            {
-                if (!_isAligning)
-                {
-                    // 开始对齐，计算目标角度
-                    // "相机在角色正后方" ⇔ 相机相对焦点的水平偏移 = −(角色前向)。
-                    // 由本文件 CalculateCameraOffset：offset 水平分量 = (h·sinYaw, −h·cosYaw)；
-                    // 由 Flax 定义：角色前向 = (sinψ, 0, cosψ)（Euler(0,ψ,0) 作用于 Forward=(0,0,1)）。
-                    // 代入解得 Yaw = −ψ。原先的 ψ+180 会把相机放到角色**正面**
-                    // （ψ=0 时相机落到 +Z，而角色正向也是 +Z），与"正后方"的意图相反。
-                    float characterYaw = Target.Orientation.EulerAngles.Y;
-                    _targetAlignYaw = (360f - characterYaw) % 360f; // 角色正后方
-                    _isAligning = true;
-                    //Debug.Log($"[自动对齐] 开始对齐到角色后方 - 当前:{Yaw:F1}°, 目标:{_targetAlignYaw:F1}°");
-                }
-                
-                // 执行对齐
-                PerformAutoAlign();
-            }
-        }
-        
-        /// <summary>
-        /// 执行自动对齐（平滑旋转到目标角度）
-        /// </summary>
-        private void PerformAutoAlign()
-        {
-            if (Target == null) return;
-            
-            // 计算角度差（选择最短路径）
-            float yawDiff = _targetAlignYaw - Yaw;
-            while (yawDiff > 180f) yawDiff -= 360f;
-            while (yawDiff < -180f) yawDiff += 360f;
-            
-            // 检查是否已经接近目标
-            if (Mathf.Abs(yawDiff) < 0.5f)
-            {
-                // 对齐完成
-                Yaw = _targetAlignYaw;
-                _smoothYaw = _targetAlignYaw;
-                _isAligning = false;
-                //Debug.Log($"[自动对齐] ✅ 对齐完成 - 最终角度:{Yaw:F1}°");
-                return;
-            }
-            
-            // 使用EaseInOut曲线平滑过渡
-            float rotationStep = AlignRotationSpeed * Time.DeltaTime;
-            
-            // 在接近目标时减速（AlignSmoothRange范围内）
-            if (Mathf.Abs(yawDiff) < AlignSmoothRange)
-            {
-                float t = Mathf.Abs(yawDiff) / AlignSmoothRange;
-                // EaseInOut曲线
-                t = t < 0.5f ? 2f * t * t : -1f + (4f - 2f * t) * t;
-                rotationStep *= t;
-            }
-            
-            // 限制每帧旋转角度不超过剩余角度
-            rotationStep = Mathf.Min(rotationStep, Mathf.Abs(yawDiff));
-            
-            // 应用旋转
-            Yaw += Mathf.Sign(yawDiff) * rotationStep;
-            
-            // 规范化Yaw
-            while (Yaw < 0) Yaw += 360;
-            while (Yaw >= 360) Yaw -= 360;
-            
-            // 同步到_smoothYaw
-            _smoothYaw = Yaw;
-            
-            //Debug.Log($"[自动对齐] 旋转中... 当前:{Yaw:F1}°, 目标:{_targetAlignYaw:F1}°, 差值:{yawDiff:F1}°");
         }
         
         /// <summary>
@@ -2735,10 +2650,10 @@ namespace HundunWorld.Game
             _isTransitioning = false;
             
             // 初始化目标值
-            CameraStateConfig initialConfig = GetCurrentStateConfig();
-            _stateTargetDistance = initialConfig.TargetDistance;
-            _stateTargetPitch = initialConfig.TargetPitch;
-            _stateTargetFOV = initialConfig.FOVOverride > 0 ? initialConfig.FOVOverride : BaseFOV;
+            _stateTargetDistance = Distance;
+            _stateTargetPitch = Pitch;
+            _stateTargetYaw = Yaw;
+            _stateTargetFOV = BaseFOV;
             
             //Debug.Log($"[状态机] 初始化完成 - 当前状态: {CurrentState}");
         }
@@ -2830,19 +2745,41 @@ namespace HundunWorld.Game
                 return; // 已经是目标状态
             }
             
+            bool wasExclusive = IsExclusiveCameraState(CurrentState);
+            bool willBeExclusive = IsExclusiveCameraState(newState);
+            if (!wasExclusive && willBeExclusive && !_hasSavedUserOrbit)
+            {
+                _savedUserDistance = Distance;
+                _savedUserPitch = Pitch;
+                _savedUserYaw = Yaw;
+                _hasSavedUserOrbit = true;
+            }
+
             CurrentState = newState;
-            
-            // 获取新状态配置
             CameraStateConfig newConfig = GetCurrentStateConfig();
-            
-            // 设置目标值
-            _stateTargetDistance = newConfig.TargetDistance;
-            _stateTargetPitch = newConfig.TargetPitch;
-            _stateTargetFOV = newConfig.FOVOverride > 0 ? newConfig.FOVOverride : BaseFOV;
-            
-            // 开始过渡
+
+            _stateTargetDistance = willBeExclusive ? newConfig.TargetDistance : Distance;
+            _stateTargetPitch = willBeExclusive ? newConfig.TargetPitch : Pitch;
+            _stateTargetFOV = willBeExclusive && newConfig.FOVOverride > 0 ? newConfig.FOVOverride : BaseFOV;
+            _restoreUserYaw = wasExclusive && !willBeExclusive && _hasSavedUserOrbit;
+            if (_restoreUserYaw)
+            {
+                _stateTargetDistance = _savedUserDistance;
+                _stateTargetPitch = _savedUserPitch;
+                _stateTargetYaw = _savedUserYaw;
+                _hasSavedUserOrbit = false;
+            }
+            else
+            {
+                _stateTargetYaw = Yaw;
+            }
+
             _isTransitioning = true;
-            
+        }
+
+        private static bool IsExclusiveCameraState(CameraState state)
+        {
+            return state == CameraState.LockOn || state == CameraState.BossBattle || state == CameraState.Cutscene;
         }
         
         /// <summary>
@@ -2851,37 +2788,40 @@ namespace HundunWorld.Game
         private void UpdateStateTransition()
         {
             CameraStateConfig currentConfig = GetCurrentStateConfig();
-            float transitionSpeed = Time.DeltaTime * currentConfig.TransitionSpeed;
+            float transitionSpeed = Mathf.Clamp(Time.DeltaTime * currentConfig.TransitionSpeed, 0f, 1f);
             
-            // 平滑过渡距离
             Distance = Mathf.Lerp(Distance, _stateTargetDistance, transitionSpeed);
-            
-            // 平滑过渡俯仰角
             Pitch = Mathf.Lerp(Pitch, _stateTargetPitch, transitionSpeed);
-            
-            // 平滑过渡FOV(如果有覆盖值)
-            if (currentConfig.FOVOverride > 0)
+            if (_restoreUserYaw)
             {
-                _targetFOV = _stateTargetFOV;
-                _currentFOV = Mathf.Lerp(_currentFOV, _targetFOV, transitionSpeed);
-                if (_camera != null)
-                {
-                    _camera.FieldOfView = _currentFOV;
-                }
+                Yaw += Mathf.DeltaAngle(Yaw, _stateTargetYaw) * transitionSpeed;
+                if (Yaw < 0f) Yaw += 360f;
+                else if (Yaw >= 360f) Yaw -= 360f;
+                _smoothYaw = Yaw;
+            }
+
+            _targetFOV = _stateTargetFOV;
+            _currentFOV = Mathf.Lerp(_currentFOV, _targetFOV, transitionSpeed);
+            if (_camera != null)
+            {
+                _camera.FieldOfView = _currentFOV;
             }
             
-            // 检查是否完成过渡
             float distanceDiff = Mathf.Abs(Distance - _stateTargetDistance);
             float pitchDiff = Mathf.Abs(Pitch - _stateTargetPitch);
+            float yawDiff = _restoreUserYaw ? Mathf.Abs(Mathf.DeltaAngle(Yaw, _stateTargetYaw)) : 0f;
             
-            if (distanceDiff < 0.1f && pitchDiff < 0.5f)
+            if (distanceDiff < 0.1f && pitchDiff < 0.5f && yawDiff < 0.5f)
             {
-                // 过渡完成
                 Distance = _stateTargetDistance;
                 Pitch = _stateTargetPitch;
+                if (_restoreUserYaw)
+                {
+                    Yaw = _stateTargetYaw;
+                    _smoothYaw = Yaw;
+                    _restoreUserYaw = false;
+                }
                 _isTransitioning = false;
-                
-                //Debug.Log($"[状态机] ✅ 状态过渡完成: {CurrentState}");
             }
         }
         
@@ -3066,7 +3006,7 @@ namespace HundunWorld.Game
                 _lockOnLostTimer = 0f;
             }
             Vector3 targetDir = _lockOnTarget.Position - Target.Position;
-            float targetYaw = Mathf.Atan2(targetDir.X, targetDir.Z) * Mathf.RadiansToDegrees;
+            float targetYaw = -Mathf.Atan2(targetDir.X, targetDir.Z) * Mathf.RadiansToDegrees;
 
             // 必须走最短路径：Yaw 归一化在 [0,360)，而 Atan2 返回 (-180,180]，
             // 直接 Lerp 会在 0/360 交界处绕远路（最多 360°，镜头会转一大圈）
@@ -3118,17 +3058,6 @@ namespace HundunWorld.Game
                 }
             }
 
-            if (_softLockTarget != null)
-            {
-                Vector3 toSoftTarget = _softLockTarget.Position - Target.Position;
-                float softYaw = Mathf.Atan2(toSoftTarget.X, toSoftTarget.Z) * Mathf.RadiansToDegrees;
-                float yawDiff = Mathf.DeltaAngle(Yaw, softYaw);
-                Yaw += yawDiff * SoftLockInfluence * Time.DeltaTime;
-
-                // 维持 Yaw 在 [0,360) 约定，避免持续单向吸附造成角度漂移出界
-                if (Yaw < 0f) Yaw += 360f;
-                else if (Yaw >= 360f) Yaw -= 360f;
-            }
         }
 
         /// <summary>
@@ -3148,13 +3077,16 @@ namespace HundunWorld.Game
         {
             _externalCameraControl = active;
 
-            if (!active)
+            if (active)
             {
-                // 交还控制权时同步跟随缓存：特写期间角色已移动，
-                // 否则恢复首帧会因位置差过大算出巨量的移动速度，导致 FOV 突变
+                EndMouseRotation();
+            }
+            else
+            {
                 if (Target != null) _lastTargetPosition = Target.Position;
-                _groundProbeValid = false;   // 特写机位的地面探针已作废，交还后重新探测
-                _smoothedFloorValid = false; // 托底高度重新锚定，避免从特写机位长距离回拉
+                _elasticFocusValid = false;
+                _groundProbeValid = false;
+                _smoothedFloorValid = false;
             }
         }
 
@@ -3172,6 +3104,11 @@ namespace HundunWorld.Game
         public bool GetCombatState()
         {
             return _isInCombat;
+        }
+
+        public static float CameraYawToCharacterYawRadians(float cameraYawDegrees)
+        {
+            return -cameraYawDegrees * Mathf.DegreesToRadians;
         }
 
         public Vector3 GetCameraRelativeMoveDirection(Vector2 inputDirection)
@@ -3207,7 +3144,7 @@ namespace HundunWorld.Game
 
         public bool ShouldUseCameraRelativeMovement()
         {
-            return CurrentState == CameraState.LockOn || CurrentState == CameraState.OverShoulder;
+            return CurrentState == CameraState.LockOn;
         }
 
         #endregion

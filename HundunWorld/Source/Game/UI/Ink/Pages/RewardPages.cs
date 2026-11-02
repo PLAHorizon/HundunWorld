@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
@@ -154,6 +154,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             }
 
             // 2. 外壳：全屏拉伸 + 半透明遮罩 + 不裁剪子控件
+            // 本页按设计源是浮层模态（overlay + modal，role=dialog）：遮罩是它自己的背景，保留自绘。
             AnchorPreset = AnchorPresets.StretchAll;
             BackgroundColor = InkWashTheme.Scrim;
             ClipChildren = false;
@@ -632,6 +633,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _screenSize = new Float2(1920f, 1080f);
             }
 
+            // 本页按设计源是浮层模态（overlay + modal，role=dialog）：遮罩是它自己的背景，保留自绘。
             AnchorPreset = AnchorPresets.StretchAll;
             BackgroundColor = InkWashTheme.Scrim;
             ClipChildren = false;
@@ -1062,6 +1064,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _screenSize = new Float2(1920f, 1080f);
             }
 
+            // 本页按设计源是浮层模态（overlay + modal，role=dialog）：遮罩是它自己的背景，保留自绘。
             AnchorPreset = AnchorPresets.StretchAll;
             BackgroundColor = InkWashTheme.Scrim;
             ClipChildren = false;
@@ -1248,7 +1251,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             InkTextBlock label = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = "总价值:",
+                Text = "总价值：",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(80f, 10f),
                 Size = new Float2(60f, 20f),
@@ -1464,6 +1467,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _screenSize = new Float2(1920f, 1080f);
             }
 
+            // 本页按设计源是浮层模态（overlay + modal，role=dialog）：遮罩是它自己的背景，保留自绘。
             AnchorPreset = AnchorPresets.StretchAll;
             BackgroundColor = InkWashTheme.Scrim;
             ClipChildren = false;
@@ -1804,6 +1808,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _screenSize = new Float2(1920f, 1080f);
             }
 
+            // 本页按设计源是浮层模态（overlay + modal，role=dialog）：遮罩是它自己的背景，保留自绘。
             AnchorPreset = AnchorPresets.StretchAll;
             BackgroundColor = InkWashTheme.Scrim;
             ClipChildren = false;

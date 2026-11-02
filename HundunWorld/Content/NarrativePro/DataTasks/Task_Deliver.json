@@ -1,0 +1,7 @@
+{
+  "TaskName": "Deliver",
+  "TaskDescription": "把物品送到指定地点",
+  "ArgumentName": "Location",
+  "TaskCategory": "Quest",
+  "DefaultArgument": "Village.ElderHouse"
+}

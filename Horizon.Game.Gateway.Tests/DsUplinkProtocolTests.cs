@@ -1,5 +1,6 @@
 using System;
 using System.Buffers.Binary;
+using System.Linq;
 using Horizon.Game.Core.Sim.Server;
 using Xunit;
 
@@ -310,5 +311,126 @@ public class DsUplinkProtocolTests
         Assert.True(reader.TryReadFrame(out var payload));
         Assert.Equal(2048, payload.Length);
         Assert.Equal(big, payload.ToArray());
+    }
+
+    // ---------- 玩法事件跨过线上契约：逐槽位往返 ----------
+
+    [Fact]
+    public void GameplayEvent_过线往返_每一格都回到自己那一格()
+    {
+        // 金币接进钱包那一轮的真实教训：内核侧新加了 Money，DTO 与两个转换函数没跟上，
+        // 于是生产链路上每条击杀金币事件跨过这道转换后金额归零，被消费端
+        // 「金额 ≤0 就算处理过」那一档安静吞掉——而直接喂内核事件的单测全绿。
+        // 所以这里从内核事件出发、走真序列化、再回到内核事件，逐格比对：
+        // 每格填互不相同的哨兵值，漏传（变 0）与串位（变成邻格的数）都当场可辨。
+        var core = new DsGameplayEvent
+        {
+            Kind = DsGameplayEventKind.KillMoney,
+            ShardId = 11,
+            ServerTick = 22,
+            ActorCharacterId = 33,
+            MonsterEntityId = 44,
+            MonsterTemplateId = 55,
+            ItemId = 66,
+            ItemCount = 77,
+            QuestId = 88,
+            Money = 99,
+        };
+        var batch = new DsGameplayEventBatch
+        {
+            Events = new[] { DsGameplayEventDto.FromCoreEvent(in core) },
+        };
+
+        var payload = DsUplinkCodec.EncodePayload(DsUplinkMessageKind.GameplayEvent, batch);
+        Assert.True(DsUplinkCodec.TryDecode<DsGameplayEventBatch>(payload, out var kind, out var decoded));
+        Assert.Equal(DsUplinkMessageKind.GameplayEvent, kind);
+        var back = Assert.Single(decoded!.Events).ToCoreEvent();
+
+        Assert.Equal(core.Kind, back.Kind);
+        Assert.Equal(core.ShardId, back.ShardId);
+        Assert.Equal(core.ServerTick, back.ServerTick);
+        Assert.Equal(core.ActorCharacterId, back.ActorCharacterId);
+        Assert.Equal(core.MonsterEntityId, back.MonsterEntityId);
+        Assert.Equal(core.MonsterTemplateId, back.MonsterTemplateId);
+        Assert.Equal(core.ItemId, back.ItemId);
+        Assert.Equal(core.ItemCount, back.ItemCount);
+        Assert.Equal(core.QuestId, back.QuestId);
+        // 单独把这一格打印出来：这条判据哪天红了，要一眼看出是哪一格串了位。
+        Assert.Equal(core.Money, back.Money);
+    }
+
+    [Fact]
+    public void 内核玩法事件新增一格时线上DTO必须一起长()
+    {
+        // 上一条测"已有的格都到了"，这条挡"将来新加的格被忘"：两份清单按名字对照，
+        // 内核加了字段而 DTO 没跟上 ⇒ 当场红，而不是等某个金额在跨过线上时静默归零。
+        var coreFields = typeof(DsGameplayEvent)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Select(f => f.Name)
+            .ToHashSet();
+        var dtoFields = typeof(DsGameplayEventDto)
+            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Select(p => p.Name)
+            .ToHashSet();
+
+        var missing = coreFields.Where(n => !dtoFields.Contains(n)).OrderBy(n => n).ToArray();
+        var extra = dtoFields.Where(n => !coreFields.Contains(n)).OrderBy(n => n).ToArray();
+        Assert.True(missing.Length == 0,
+                    "内核事件里有 " + missing.Length + " 格线上 DTO 没有（跨过这道转换会被静默丢掉）：" +
+                    string.Join(",", missing));
+        Assert.True(extra.Length == 0,
+                    "线上 DTO 里有 " + extra.Length + " 格内核事件没有（多半是改名而不是新增）：" +
+                    string.Join(",", extra));
+    }
+
+    [Fact]
+    public void 尸体拾取三帧的编解码往返且种类号只是尾部追加()
+    {
+        // 种类号是**线上契约**：插入到中间会让新旧两端把请求当回执。所以钉死数值，不钉名字。
+        Assert.Equal(10, (int)Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootRequest);
+        Assert.Equal(11, (int)Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootForward);
+        Assert.Equal(12, (int)Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootResult);
+
+        var request = new Horizon.Game.Core.Sim.Server.DsCorpseLootRequest
+        {
+            SessionId = 2001, CorpseEntityId = 0xDEADBEEFCAFEUL, SlotIndex = 3, DistanceMeters = 4.25f, RequestId = 77,
+        };
+        var reqFrame = Horizon.Game.Core.Sim.Server.DsUplinkCodec.EncodeFrame(
+            Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootRequest, request);
+        var reqPayload = reqFrame.AsSpan(4);
+        Assert.True(Horizon.Game.Core.Sim.Server.DsUplinkCodec.TryDecode<Horizon.Game.Core.Sim.Server.DsCorpseLootRequest>(
+            reqPayload, out var reqKind, out var reqBody));
+        Assert.Equal(Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootRequest, reqKind);
+        Assert.Equal(2001, reqBody!.SessionId);
+        Assert.Equal(0xDEADBEEFCAFEUL, reqBody.CorpseEntityId);
+        Assert.Equal(3, reqBody.SlotIndex);
+        Assert.Equal(4.25f, reqBody.DistanceMeters);
+        Assert.Equal(77, reqBody.RequestId);
+
+        var forward = new Horizon.Game.Core.Sim.Server.DsCorpseLootForward
+        {
+            SessionId = 2002, CorpseEntityId = 42UL, SlotIndex = 0, RequestId = 78, ServerTick = 123456,
+        };
+        var fwdPayload = Horizon.Game.Core.Sim.Server.DsUplinkCodec.EncodePayload(
+            Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootForward, forward);
+        Assert.True(Horizon.Game.Core.Sim.Server.DsUplinkCodec.TryDecode<Horizon.Game.Core.Sim.Server.DsCorpseLootForward>(
+            fwdPayload, out var fwdKind, out var fwdBody));
+        Assert.Equal(Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootForward, fwdKind);
+        Assert.Equal(123456, fwdBody!.ServerTick);
+        Assert.Equal(78, fwdBody.RequestId);
+
+        var result = new Horizon.Game.Core.Sim.Server.DsCorpseLootResult
+        {
+            RequestId = 78, Status = 2, ItemId = 555, Count = 2, ConditionKind = 1, QuestId = 90007, Money = 0,
+        };
+        var resultPayload = Horizon.Game.Core.Sim.Server.DsUplinkCodec.EncodePayload(
+            Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootResult, result);
+        Assert.True(Horizon.Game.Core.Sim.Server.DsUplinkCodec.TryDecode<Horizon.Game.Core.Sim.Server.DsCorpseLootResult>(
+            resultPayload, out var resKind, out var resBody));
+        Assert.Equal(Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.CorpseLootResult, resKind);
+        Assert.Equal(2, resBody!.Status);
+        Assert.Equal(555, resBody.ItemId);
+        Assert.Equal(2, resBody.Count);
+        Assert.Equal(90007, resBody.QuestId);
     }
 }

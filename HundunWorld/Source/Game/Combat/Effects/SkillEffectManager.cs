@@ -489,13 +489,15 @@ namespace Game.Combat.Effects
             {
                 effectActor.Name = $"Effect_{effectData.EffectName}";
                 effectActor.StaticFlags = StaticFlags.None; // 确保是动态对象
+                // SpawnPrefab 默认落 Scenes[0]（RootScene），特效属玩法世界对象，搬入 World 场景随卸载销毁
+                HundunWorld.Game.HundunWorldGame.MoveActorToGameplayScene(effectActor, effectActor.Name);
                 return effectActor;
             }
             
             // 如果预制体加载失败，创建空占位符
             effectActor = new EmptyActor();
             effectActor.Name = $"Effect_{effectData.EffectName}";
-            Level.SpawnActor(effectActor);
+            HundunWorld.Game.HundunWorldGame.SpawnActorToGameplayScene(effectActor, effectActor.Name);
 
             return effectActor;
         }

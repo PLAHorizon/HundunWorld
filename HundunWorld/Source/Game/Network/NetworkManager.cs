@@ -518,8 +518,10 @@ namespace HundunWorld.Game.Network
         {
             if (_client != null && _client.Online)
             {
-                // 诊断：打印调用栈，定位是谁在「登录后 / 发出请求后」主动断开连接。
-                EnhancedLogging.LogInfo($"[DisconnectAsync] 开始断开连接；调用栈:\n{System.Environment.StackTrace}");
+                // 诊断：记录来源调用者（只留方法名）。
+                // 不能把整段引擎调用栈塞进日志：栈里有 <Internal_UnloadAllScenes>g____PInvoke|239_0
+                // 这类带下划线的尖括号标记，调试日志窗口的 HtmlParser 会死循环，PIE 退出时整个编辑器卡死。
+                EnhancedLogging.LogInfo($"[DisconnectAsync] 开始断开连接；来源={new System.Diagnostics.StackTrace(1, false).GetFrame(0)?.GetMethod()?.Name}");
                 await _client.CloseAsync();
                 EnhancedLogging.LogInfo("[DisconnectAsync] 连接已断开");
             }
@@ -540,8 +542,8 @@ namespace HundunWorld.Game.Network
             {
                 try
                 {
-                    // 诊断：Dispose 会触发 Closed 事件，打印调用栈以定位来源。
-                    EnhancedLogging.LogInfo($"[CleanupClient] 释放客户端；调用栈:\n{System.Environment.StackTrace}");
+                    // 诊断：Dispose 会触发 Closed 事件，记录来源调用者（理由同 DisconnectAsync：禁用整段引擎栈）。
+                    EnhancedLogging.LogInfo($"[CleanupClient] 释放客户端；来源={new System.Diagnostics.StackTrace(1, false).GetFrame(0)?.GetMethod()?.Name}");
                     _client.Dispose();
                 }
                 catch (Exception ex)
@@ -654,7 +656,7 @@ namespace HundunWorld.Game.Network
                 EnhancedLogging.LogInfo(
                     $"[OnClientDisconnected] 断开诊断: CloseMessage={e?.Message ?? "null"}, " +
                     $"_isDisposing={_isDisposing}, ctsCancelled={ctsCancelled}, clientOnline={clientOnline}, " +
-                    $"调用栈:\n{System.Environment.StackTrace}");
+                    $"来源={new System.Diagnostics.StackTrace(1, false).GetFrame(0)?.GetMethod()?.Name}");
             }
 
             EnhancedDiagnostics.LogNetworkOperation("断开连接", $"{_currentGateway?.IP}:{_currentGateway?.Port}", true, "连接断开");
@@ -1243,6 +1245,8 @@ namespace HundunWorld.Game.Network
             {
                 EnhancedLogging.LogError($"[SendAsync] 发送消息失败: {ex.Message}");
                 EnhancedDiagnostics.LogException(ex, "发送消息");
+                HundunWorld.Game.Services.MetaHumanAppearanceService.Trace(
+                    "net-send-ex " + typeof(T).Name + " " + ex.GetType().Name + " " + ex.Message);
                 return false;
             }
         }
@@ -1336,6 +1340,14 @@ namespace HundunWorld.Game.Network
                     if (SyncPacketCodec.Decode(syncFrame.Frame) is CombatActionPacket combat)
                     {
                         return combat.AttackerId;
+                    }
+                }
+                else if (kind == (byte)SyncPacketKind.TraversalRequest)
+                {
+                    // v17：翻越请求同样带发起者身份（绕过 GuardSyncSender 时兜底守卫仍能判定归属）。
+                    if (SyncPacketCodec.Decode(syncFrame.Frame) is TraversalRequestPacket traversal)
+                    {
+                        return traversal.CharacterId;
                     }
                 }
             }

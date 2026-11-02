@@ -227,6 +227,19 @@ namespace NarrativePro.Navigation
             NavigationSubsystem.Instance?.SetMapTileBounds(this);
         }
 
+        /// <summary>
+        /// 首帧再登记一次边界：边界可能早于导航子系统启用（那一刻 <c>NavigationSubsystem.Instance</c> 仍为 null，
+        /// 登记被静默丢弃）。导航子系统侧也在自己的 OnEnable 里反查场景边界，
+        /// 两边各补一次，POI 先/边界先两种顺序最终都得到完整注册表。
+        /// </summary>
+        public override void OnStart()
+        {
+            base.OnStart();
+
+            var nav = NavigationSubsystem.Instance;
+            if (nav != null) nav.SetMapTileBounds(this);
+        }
+
         public override void OnDisable()
         {
             if (NavigationSubsystem.Instance?.MapTileBounds == this)

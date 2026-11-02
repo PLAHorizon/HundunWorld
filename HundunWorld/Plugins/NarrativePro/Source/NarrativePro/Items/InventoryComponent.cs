@@ -85,8 +85,29 @@ namespace NarrativePro.Items
             return actor;
         }
 
-        /// <summary>拥有者 Controller。</summary>
-        public virtual object GetOwningController() => null;
+        /// <summary>
+        /// 拥有者 Controller。对应 UE5 <c>GetOwningController</c>（InventoryComponent.cpp:845-872）：
+        /// Owner 是 Pawn 时取其 <c>GetController()</c>，且只接受 APlayerController —— NPC 的控制器不是
+        /// PlayerController，UE5 那里同样返回 null；容器/箱子类背包（Owner 既非 Pawn 也非 PC）也是 null。
+        /// Flax 无 Controller 概念，按 Tales/TalesComponent.cs:875 的口径在场景里找玩家控制器，
+        /// 并要求它当前操控的角色就是本背包所在的 Actor。UE5 在 BeginPlay 缓存（:884），这里同样缓存。
+        /// </summary>
+        public virtual Actor GetOwningController()
+        {
+            if (_ownerController != null) return _ownerController;
+
+            var playerController = Level.FindScript<NarrativePro.UnrealFramework.NarrativePlayerController>();
+            if (playerController == null) return null;
+
+            var owned = playerController.OwnedCharacter;
+            if (owned == null || owned.Actor != Actor) return null;
+
+            _ownerController = playerController.Actor;
+            return _ownerController;
+        }
+
+        [NonSerialized]
+        private Actor _ownerController;
 
         public override void OnEnable()
         {
@@ -100,6 +121,7 @@ namespace NarrativePro.Items
         public override void OnDisable()
         {
             StopLooting();
+            _ownerController = null;
             base.OnDisable();
         }
 
@@ -115,6 +137,60 @@ namespace NarrativePro.Items
                 item.TickItem(dt);
             }
         }
+
+        // ===== 使用物品 =====
+
+        /// <summary>
+        /// 使用背包里的物品：走物品自己的 <see cref="NarrativeItemUseAction"/> 列表
+        /// （对应 UE5 右键菜单点"装备/使用" → <c>FNarrativeItemUseAction::OnUse</c>）。
+        /// 这是 <c>UseAction_Equip::OnUse</c> 在本端口的实际调用入口；没有可用动作时回退 <see cref="NarrativeItem.TryUse"/>。
+        /// </summary>
+        public virtual bool UseItem(NarrativeItem item)
+        {
+            return UseItem(item, null);
+        }
+
+        /// <summary>
+        /// 带第二操作数的使用（对应 UE5 <c>UseItem(Item, OtherItem)</c>，InventoryComponent.cpp:132-190）：
+        /// 毒物/配件安装这类「拖到目标物品上用」的物品靠它拿到目标，
+        /// 库存 UI 的两段式选取（先选来源再选目标）必须走这条口，否则第二操作数永远是 null。
+        /// </summary>
+        public virtual bool UseItem(NarrativeItem item, NarrativeItem otherItem)
+        {
+            if (item == null || !item.CanUse()) return false;
+
+            // UE5 :147-151 先确认背包里真的有这件物品，再允许使用
+            if (FindItemOfClass(item.ItemClassId) == null)
+            {
+                return false;
+            }
+
+            var actions = item.GetItemUseActions();
+            if (actions != null)
+            {
+                foreach (var action in actions)
+                {
+                    if (action == null) continue;
+                    if (action.OnUse(item, otherItem))
+                    {
+                        NotifyItemUsed(item);
+                        return true;
+                    }
+                }
+            }
+
+            return item.TryUse(otherItem);
+        }
+
+        /// <summary>按物品类 ID 使用背包里的第一件该物品（快捷键/脚本入口）。</summary>
+        public virtual bool UseItemOfClass(string itemClassId)
+        {
+            if (string.IsNullOrEmpty(itemClassId)) return false;
+            return UseItem(FindItemOfClass(itemClassId));
+        }
+
+        /// <summary>持握背包里的第一件指定武器（快捷键换武），与 <see cref="UseItemOfClass"/> 同源。</summary>
+        public virtual bool WieldWeaponOfClass(string itemClassId) => UseItemOfClass(itemClassId);
 
         // ===== 添加物品 =====
 
@@ -175,7 +251,9 @@ namespace NarrativePro.Items
             int amountGiven = amountToAdd - remaining;
             foreach (var item in createdStacks)
             {
-                item.AddedToInventory(this, false);
+                // bCheckAutoUse 原本没有落进 AddedToInventory：自动使用的开关在这里接上
+                // （fromLoad = !bCheckAutoUse，与"读档/容器转移不自动使用"一致）
+                item.AddedToInventory(this, !bCheckAutoUse);
             }
 
             ItemAddResult result;
@@ -254,6 +332,8 @@ namespace NarrativePro.Items
             item.RemovedFromInventory(this);
             OnItemRemoved?.Invoke(this, item, 1);
             NotifyInventoryUpdated();
+            // 可拾取容器（对应 UE5 AInteractableItemPickup）取空后销毁自身 Actor
+            if (this is InteractableItemPickup pickup) pickup.CheckEmptyAndDestroy();
             return true;
         }
 
@@ -443,68 +523,218 @@ namespace NarrativePro.Items
 
         // ===== 战利品表 =====
 
-        /// <summary>按战利品表滚动添加物品。</summary>
+        /// <summary>
+        /// 按战利品表滚动添加物品。
+        /// 对应 UE5 <c>TryAddFromLootTable</c>（InventoryComponent.cpp:222-266）：
+        /// 必定授予的物品/集合 → 若可掷则每次 roll 取一行，行按自身 Chance 通过后才授予，
+        /// 行内子表再递归（带递归守卫）。
+        /// </summary>
+        /// <param name="lootTable">要掷的表。</param>
+        /// <param name="outResults">输出：每次授予的结果。</param>
         public virtual void TryAddFromLootTable(LootTableRoll lootTable, List<ItemAddResult> outResults)
         {
-            if (lootTable == null || !lootTable.CanRoll()) return;
+            TryAddFromLootTable(lootTable, outResults, null);
+        }
 
-            var rng = new Random();
+        /// <summary>
+        /// 带递归守卫的战利品掷取。
+        /// <paramref name="rollingTables"/> 记录当前掷取链上已经打开的表，
+        /// 等价 UE5 的 <c>Subtable.TableToRoll != LootTable.TableToRoll</c> 自检，
+        /// 并把守卫扩展到更长的环（A→B→A）与过深嵌套，避免栈溢出。
+        /// </summary>
+        public virtual void TryAddFromLootTable(LootTableRoll lootTable, List<ItemAddResult> outResults, HashSet<LootTableData> rollingTables)
+        {
+            // 掷取决策（RNG 门 + 行选取 + 子表递归守卫）抽到纯静态 RollLootTable，
+            // 授予动作通过 sink 回灌本组件（保持与 UE5 完全相同的调用序与守卫语义）。
+            // 抽出的目的是让核心掷取规则可脱离引擎实例做离线校验（见 Tools/NarrativeProHarness）。
+            RollLootTable(lootTable, GetLootRandom(), rollingTables, new InventoryLootRollSink(this, outResults));
+        }
+
+        /// <summary>战利品授予出口（行/表级"必定授予"与集合授予的落地方式由实现决定）。</summary>
+        public interface ILootRollSink
+        {
+            void GrantAlwaysItems(List<ItemWithQuantity> itemsToGrant);
+            void GrantCollections(List<string> collectionIds);
+        }
+
+        /// <summary>背包实现：把授予落到 outResults（经 TryAddItemFromClass）。</summary>
+        private sealed class InventoryLootRollSink : ILootRollSink
+        {
+            private readonly NarrativeInventoryComponent _inv;
+            private readonly List<ItemAddResult> _out;
+            public InventoryLootRollSink(NarrativeInventoryComponent inv, List<ItemAddResult> outResults)
+            {
+                _inv = inv;
+                _out = outResults;
+            }
+            public void GrantAlwaysItems(List<ItemWithQuantity> itemsToGrant) => _inv.GrantAlwaysItems(itemsToGrant, _out);
+            public void GrantCollections(List<string> collectionIds) => _inv.GrantCollections(collectionIds, _out);
+        }
+
+        /// <summary>
+        /// 纯掷取引擎：对给定 roll 掷一次（授予 + 子表 + 行随机），把授予委派给 <paramref name="sink"/>，
+        /// 随机源与递归守卫链均由参数注入，因而可脱离 Script 实例离线运行。
+        /// <para>语义与逐行照抄原 <c>TryAddFromLootTable</c>（InventoryComponent.cpp:222-266 端口）：
+        /// 必定授予不判 CanRoll；链守卫集合 <paramref name="rollingTables"/> 为 null 时本次 RollSubTables 自建
+        /// 一条新链（顶层行循环的子表各用新链），非 null 时沿子表递归向下传递同一条链。</para>
+        /// </summary>
+        public static void RollLootTable(LootTableRoll lootTable, Random rng, HashSet<LootTableData> rollingTables, ILootRollSink sink)
+        {
+            if (lootTable == null || sink == null) return;
+            rng ??= new Random();
+
+            // 必定授予的物品与集合不参与 CanRoll 判定（UE5 也是先无条件授予再判能否掷行）
+            sink.GrantAlwaysItems(lootTable.ItemsToGrant);
+            sink.GrantCollections(lootTable.ItemCollectionsToGrant);
+
+            if (!lootTable.CanRoll()) return;
+
+            // 子表递归：UE5 在 CanRoll/TableToRoll 之外，无条件遍历 SubTablesToRoll
+            RollSubTablesStatic(lootTable.SubTablesToRoll, rng, rollingTables, sink, lootTable);
+
+            var tableToRoll = lootTable.TableToRoll;
+            if (tableToRoll == null || tableToRoll.RowCount <= 0) return;
+
+            var allRows = tableToRoll.GetRowNames();
+            if (allRows.Count == 0) return;
+
             for (int i = 0; i < lootTable.NumRolls; i++)
             {
-                if (lootTable.Chance < 1f && rng.NextDouble() > lootTable.Chance) continue;
+                // 本次掷骰是否成立
+                if (rng.NextDouble() > lootTable.Chance) continue;
 
-                // 必定授予的物品
-                foreach (var grant in lootTable.ItemsToGrant)
+                // 随机取一行（对应 AllRows[FMath::RandRange(0, Num-1)]）
+                int rowIndex = rng.Next(allRows.Count);
+                string randomRowName = allRows[rowIndex];
+
+                var row = tableToRoll.FindRow(randomRowName);
+                if (row == null) continue;
+
+                // 行自身的命中率
+                if (rng.NextDouble() > row.Chance) continue;
+
+                sink.GrantAlwaysItems(row.ItemsToGrant);
+                sink.GrantCollections(row.ItemCollectionsToGrant);
+
+                // 行内子表：跳过正在掷的同一张表，否则会无限循环
+                RollSubTablesStatic(row.SubTablesToRoll, rng, rollingTables, sink, lootTable);
+            }
+        }
+
+        /// <summary>
+        /// 递归掷子表（纯逻辑版），带守卫：
+        /// 1. 子表指向的正是当前链上已在掷的表 → 跳过（对应 UE5 的直接自环检查）；
+        /// 2. 递归深度超过 <see cref="LootTableRoll.MaxRecursionDepth"/> → 跳过并告警一次。
+        /// </summary>
+        private static void RollSubTablesStatic(List<LootTableRoll> subTables, Random rng, HashSet<LootTableData> rollingTables, ILootRollSink sink, LootTableRoll parentRoll)
+        {
+            if (subTables == null || subTables.Count == 0) return;
+
+            int maxDepth = parentRoll != null && parentRoll.MaxRecursionDepth > 0 ? parentRoll.MaxRecursionDepth : 8;
+            rollingTables ??= new HashSet<LootTableData>(ReferenceComparer<LootTableData>.Instance);
+
+            if (rollingTables.Count >= maxDepth)
+            {
+                NarrativeLog.LogWarning($"[Loot] 子表递归深度达到上限 {maxDepth}，剩余子表不再掷取（可能存在环）");
+                return;
+            }
+
+            var tableToRoll = parentRoll?.TableToRoll;
+
+            foreach (var subTable in subTables)
+            {
+                if (subTable == null) continue;
+
+                // 正在掷的表自己不重复进入，否则无限循环
+                if (tableToRoll != null && ReferenceEquals(subTable.TableToRoll, tableToRoll)) continue;
+                if (subTable.TableToRoll != null && rollingTables.Contains(subTable.TableToRoll)) continue;
+
+                if (subTable.TableToRoll != null)
                 {
-                    outResults.Add(TryAddItemFromClass(grant.ItemClassId, grant.Quantity, false));
+                    rollingTables.Add(subTable.TableToRoll);
                 }
 
-                // 物品集合
-                foreach (var collectionId in lootTable.ItemCollectionsToGrant)
+                try
                 {
-                    var collection = LoadItemCollection(collectionId);
-                    if (collection != null)
-                    {
-                        foreach (var item in collection.Items)
-                        {
-                            outResults.Add(TryAddItemFromClass(item.ItemClassId, item.Quantity, false));
-                        }
-                    }
+                    RollLootTable(subTable, rng, rollingTables, sink);
                 }
-
-                // 子表
-                if (lootTable.SubTablesToRoll != null)
+                finally
                 {
-                    foreach (var sub in lootTable.SubTablesToRoll)
+                    if (subTable.TableToRoll != null)
                     {
-                        TryAddFromLootTable(sub, outResults);
+                        rollingTables.Remove(subTable.TableToRoll);
                     }
                 }
             }
         }
 
-        /// <summary>加载物品集合（可由子类覆盖从资产系统加载）。</summary>
-        protected virtual ItemCollection LoadItemCollection(string collectionId)
+
+        /// <summary>授予一组"必定给予"的物品。</summary>
+        protected virtual void GrantAlwaysItems(List<ItemWithQuantity> itemsToGrant, List<ItemAddResult> outResults)
         {
-            // 默认从 JSON 文件加载
-            try
+            if (itemsToGrant == null) return;
+            foreach (var itemToGive in itemsToGrant)
             {
-                var settings = NarrativeProPlugin.Instance?.NarrativeSettings;
-                string path = System.IO.Path.Combine(
-                    settings?.DefaultDataTaskDirectory ?? "Content/NarrativePro/DataTasks",
-                    "ItemCollections",
-                    collectionId + ".json");
-                if (File.Exists(path))
+                if (itemToGive == null || string.IsNullOrEmpty(itemToGive.ItemClassId)) continue;
+                outResults.Add(TryAddItemFromClass(itemToGive.ItemClassId, itemToGive.Quantity, false));
+            }
+        }
+
+        /// <summary>授予一组物品集合。</summary>
+        protected virtual void GrantCollections(List<string> collectionIds, List<ItemAddResult> outResults)
+        {
+            if (collectionIds == null) return;
+            foreach (var collectionId in collectionIds)
+            {
+                if (string.IsNullOrEmpty(collectionId)) continue;
+                var collection = LoadItemCollection(collectionId);
+                if (collection == null || collection.Items == null) continue;
+                foreach (var item in collection.Items)
                 {
-                    string json = File.ReadAllText(path);
-                    return JsonSerializer.Deserialize<ItemCollection>(json);
+                    if (item == null || string.IsNullOrEmpty(item.ItemClassId) || item.Quantity <= 0) continue;
+                    outResults.Add(TryAddItemFromClass(item.ItemClassId, item.Quantity, false));
                 }
             }
-            catch (Exception ex)
-            {
-                NarrativeLog.LogWarning($"加载物品集合 '{collectionId}' 失败: {ex.Message}");
-            }
-            return null;
+        }
+
+        /// <summary>引用相等比较器（掷表链守卫按对象身份判定）。</summary>
+        private sealed class ReferenceComparer<T> : IEqualityComparer<T> where T : class
+        {
+            public static readonly ReferenceComparer<T> Instance = new ReferenceComparer<T>();
+            public bool Equals(T a, T b) => ReferenceEquals(a, b);
+            public int GetHashCode(T value) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value);
+        }
+
+        /// <summary>
+        /// 战利品掷取用的随机源。进程内共享一个实例：
+        /// 每次掷取都 new Random() 在快循环里会拿到相近序列，UE5 的 FMath::FRand 是全局流，这里对齐。
+        /// </summary>
+        protected virtual Random GetLootRandom()
+        {
+            if (_lootRandom == null) _lootRandom = new Random();
+            return _lootRandom;
+        }
+
+        private Random _lootRandom;
+
+        /// <summary>注入随机源（测试/按角色种子复现用）。</summary>
+        public void SetLootRandom(Random random)
+        {
+            _lootRandom = random;
+        }
+
+
+        /// <summary>
+        /// 加载物品集合。对应 UE5 直接引用 <c>UItemCollection</c> DataAsset。
+        /// 此前这条路径把文件拼在 <c>DefaultDataTaskDirectory/ItemCollections</c> 下
+        /// （既不是集合该有的目录，也没有按工程根归一，PIE/打包后工作目录不同就永远找不到），
+        /// 且用 <c>JsonSerializer</c> 默认的大小写敏感规则反序列化 camelCase JSON，
+        /// 结果是集合能"加载成功"但 <c>Items</c> 为空——发放时静默不给任何东西。
+        /// 现在统一走 <see cref="ItemCollection.LoadById"/>（同一套目录归一 + 大小写不敏感口径）。
+        /// </summary>
+        protected virtual ItemCollection LoadItemCollection(string collectionId)
+        {
+            return ItemCollection.LoadById(collectionId);
         }
 
         // ===== 拾取/存储 =====
@@ -589,12 +819,28 @@ namespace NarrativePro.Items
             return result;
         }
 
+        /// <summary>
+        /// 取本 Actor 上的商人背包（对应 UE5 挂在商人 Actor 上的 UVendorInventoryComponent）。
+        /// 本组件自身即商人时返回自身；否则从同一 Actor 的脚本中查找显式挂载的商人组件。
+        /// </summary>
+        public VendorInventoryComponent AsVendor()
+        {
+            if (this is VendorInventoryComponent selfVendor) return selfVendor;
+            return Actor != null ? Actor.GetScript<VendorInventoryComponent>() : null;
+        }
+
         /// <summary>是否允许 taker 拾取物品。</summary>
         public virtual bool AllowLootItem(NarrativeInventoryComponent taker, string itemClassId, int quantity, out string errorText)
         {
             errorText = "";
             if (bIsVendor)
             {
+                // Actor 上显式挂了商人组件时走其交易校验（含库存/货币校验），对应 UE5 UVendorInventoryComponent
+                var vendor = AsVendor();
+                if (vendor != null && vendor != this)
+                {
+                    return vendor.AllowLootItem(taker, itemClassId, quantity, out errorText);
+                }
                 int price = GetBuyPrice(itemClassId, quantity);
                 if (taker.GetCurrency() < price)
                 {
@@ -613,6 +859,12 @@ namespace NarrativePro.Items
             errorText = "";
             if (bIsVendor)
             {
+                // 同 Actor 上存在显式商人组件时，交由其收购校验（商人货币不足则拒绝）
+                var vendor = AsVendor();
+                if (vendor != null && vendor != this)
+                {
+                    return vendor.AllowStoreItem(storer, itemClassId, quantity, out errorText);
+                }
                 int price = GetSellPrice(itemClassId, quantity);
                 if (GetCurrency() < price)
                 {
@@ -666,7 +918,9 @@ namespace NarrativePro.Items
                     Quantity = item.GetQuantity(),
                     bActive = item.IsActive(),
                     bFavourite = item.bFavourite,
-                    CustomData = SerializeItemCustomData(item)
+                    CustomData = SerializeItemCustomData(item),
+                    // 对应 UE5 UNarrativeItem::SavedFragments（PrepareForSave_Implementation 里抓片段字节流）
+                    Fragments = item.CaptureSavedFragments()
                 });
             }
             return saved;
@@ -693,6 +947,8 @@ namespace NarrativePro.Items
                 if (saved.bActive) item.SetActive(true, true);
                 item.bFavourite = saved.bFavourite;
                 DeserializeItemCustomData(item, saved.CustomData);
+                // 回填片段状态（涂毒等运行时数据随存档往返，对应 UE5 SavedFragments 的 Load 侧）
+                item.ApplySavedFragments(saved.Fragments);
                 AddItemInternal(item);
                 item.AddedToInventory(this, true);
             }

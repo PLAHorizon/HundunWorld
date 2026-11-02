@@ -275,6 +275,8 @@ namespace NarrativePro.Core
         public static GameplayTag Narrative_Input_Crouch;
         public static GameplayTag Narrative_Input_Sprint;
         public static GameplayTag Narrative_Input_Throw;
+        /// <summary>交互输入（按住交互状态机的唯一触发源，对应 UE5 的 IA_Interact）。</summary>
+        public static GameplayTag Narrative_Input_Interact;
 
         /// <summary>初始化所有原生标签。在插件启动时调用一次。</summary>
         public static void InitializeNativeTags()
@@ -546,6 +548,7 @@ namespace NarrativePro.Core
             Narrative_Input_Crouch = RequestTag("Narrative.Input.Crouch");
             Narrative_Input_Sprint = RequestTag("Narrative.Input.Sprint");
             Narrative_Input_Throw = RequestTag("Narrative.Input.Throw");
+            Narrative_Input_Interact = RequestTag("Narrative.Input.Interact");
 
             NarrativeLog.Log("NarrativeGameplayTags 初始化完成");
         }

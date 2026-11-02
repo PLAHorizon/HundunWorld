@@ -17,7 +17,7 @@ namespace NarrativePro.Navigation
     /// 4) <see cref="Load"/> 恢复存档中的航点与地图层级。
     /// </para>
     /// </summary>
-    public class NarrativeNavigationComponent : FlaxEngine.Script
+    public class NarrativeNavigationComponent : FlaxEngine.Script, NarrativePro.SaveSystem.INarrativeSavableComponent
     {
         /// <summary>构建导航的最大重试帧数（等待 MapTileBoundsActor / 子系统就绪）</summary>
         private const int MaxBuildAttempts = 60;

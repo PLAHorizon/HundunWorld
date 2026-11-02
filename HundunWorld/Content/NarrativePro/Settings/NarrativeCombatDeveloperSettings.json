@@ -1,0 +1,21 @@
+{
+  "bEnableDamageNumbers": true,
+  "bEnableDamageNumberOnSelf": false,
+  "availableAttackTokens": {
+    "Easy": 3,
+    "Medium": 3,
+    "Hard": 2,
+    "Insane": 2
+  },
+  "stealTokenProximity": 0.2,
+  "tokenStealableAgeSeconds": 2.0,
+  "npcAttackFrequencies": {
+    "Easy": 0.5,
+    "Medium": 1.0,
+    "Hard": 1.5,
+    "Insane": 2.0
+  },
+  "notifyTeammatesToFightRange": 50.0,
+  "meleeCombatAnimSampleAmount": 10,
+  "bAllowFriendlyFire": false
+}

@@ -1,0 +1,16 @@
+{
+	"Name": "MetaHuman",
+	"Version": "1.0",
+	"Company": "HundunWorld",
+	"Copyright": "",
+	"GameTarget": "MetaHumanTarget",
+	"EditorTarget": "MetaHumanEditorTarget",
+	"References": [
+		{
+			"Name": "$(EnginePath)/Flax.flaxproj"
+		}
+	],
+	"DefaultScene": null,
+	"MinEngineVersion": "0.0.6194",
+	"EngineNickname": null
+}

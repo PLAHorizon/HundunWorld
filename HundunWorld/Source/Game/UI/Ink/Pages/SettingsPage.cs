@@ -3,6 +3,7 @@ using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.Services;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages
@@ -25,7 +26,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
     /// 页面自身不创建返回按钮：外壳 <see cref="InkPageShell"/> 的左上角返回按钮即返回战斗 HUD 的既有出口。
     /// </para>
     /// </summary>
-    public class SettingsPage : ContainerControl, IInkPage
+    public class SettingsPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===================================================================
         // 设计稿常量（对齐 settings.html 的面板尺寸与间距）
@@ -77,7 +78,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private const float GroupGap = 12f;
 
         /// <summary>画面信息面板高度</summary>
-        private const float InfoPanelHeight = 84f;
+        private const float InfoPanelHeight = 108f;   // 三列信息 + 一行"哪些项不生效"的脚注
 
         /// <summary>设置项内左侧内边距</summary>
         private const float RowInnerPadding = 16f;
@@ -111,32 +112,18 @@ namespace HundunWorld.Game.UI.Ink.Pages
         // 设计稿数据（文案与选项逐条对齐 settings.html）
         // =======================================================================
 
-        /// <summary>左侧导航项文案</summary>
-        private static readonly string[] NavItems = { "任务", "抽卡", "通行证", "角色", "博物志", "奇珍阁", "设置" };
-
-        /// <summary>左侧导航项跳转目标（设计链路：任务→抽卡→通行证→角色→博物志→奇珍阁→设置）</summary>
-        private static readonly string[] NavTargets =
-        {
-            InkPageDomIds.NavQuests,
-            InkPageDomIds.NavGacha,
-            InkPageDomIds.NavBattlePass,
-            InkPageDomIds.NavCharacterV2,
-            InkPageDomIds.NavBestiary,
-            InkPageDomIds.NavShopRare,
-            InkPageDomIds.NavSettings,
-        };
-
-        /// <summary>当前页在左侧导航中的索引（设置）</summary>
-        private const int SelfNavIndex = 6;
+        // 左侧页导航不再本页自维护：条目与分组统一由 InkSidebarNav 提供，
+        // 由共用控件 InkSidebarList 渲染（原实现只列 7 项，其余功能页在设置页里没有入口）。
 
         /// <summary>分类标签文案（设计稿 .cat-tab）</summary>
-        private static readonly string[] CategoryNames = { "画面", "音效", "操作", "账号", "其他" };
+        private static readonly string[] CategoryNames = { "画面", "音效", "操作", "账号", "其他", "路牌" };
 
-        /// <summary>分类标签计数（设计稿 .cat-count）</summary>
-        private static readonly int[] CategoryCounts = { 10, 8, 12, 6, 5 };
+        /// <summary>分类标签计数：画面=本页 10 个设置行，音效=音频子页 7 项；操作/账号/其他未接入，不编数字。</summary>
+        private static readonly string[] CategoryCounts = { "10", "7", "—", "—", "—", "7" };
 
         /// <summary>音效分类索引（点击后进入独立音频设置子页 settings-audio）</summary>
         private const int AudioCategoryIndex = 1;
+        private const int RoadSignCategoryIndex = 5;
 
         /// <summary>画面质量选项</summary>
         private static readonly string[] QualityOptions = { "流畅", "标准", "高清", "极致" };
@@ -174,7 +161,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkPanel _leftNav;
         private Label _navLogo;
         private InkDivider _navLogoUnderline;
-        private InkNavRow[] _navRows;
+        private InkSidebarList _sidebarList;
         private InkDivider _navFooterDivider;
         private Label _navVersionLabel;
 
@@ -221,10 +208,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkPanel _infoPanel;
         private Label[] _infoLabels;
         private Label[] _infoValues;
+        private Label _infoFootnote;
 
         /// <summary>底部操作栏</summary>
         private InkPanel _actionBar;
-        private InkChangeDot _changeDot;
         private Label _actionInfoLabel;
         private InkButton _resetButton;
         private InkButton _saveButton;
@@ -288,6 +275,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 BuildSettingsList();
                 BuildActionBar();
 
+                // 打开设置页时把已持久化的画面项真正下发到引擎（VSync/抗锯齿/阴影/特效），
+                // 否则这些值只存在 LiteDB 里，重启后画面仍是引擎默认。
+                GameConfigurationService.Instance.ApplyGraphicsSettings();
+
                 ApplyLayout();
             }
             catch (Exception ex)
@@ -320,19 +311,11 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _navLogoUnderline = new InkDivider { Parent = _leftNav };
 
-            _navRows = new InkNavRow[NavItems.Length];
-            for (int i = 0; i < NavItems.Length; i++)
+            _sidebarList = new InkSidebarList(InkPageDomIds.NavSettings)
             {
-                var row = new InkNavRow(NavItems[i], null, 16f)
-                {
-                    Active = (i == SelfNavIndex),
-                    Parent = _leftNav,
-                };
-
-                int navIndex = i;
-                row.Clicked += () => RequestNavigation(NavTargets[navIndex]);
-                _navRows[i] = row;
-            }
+                Parent = _leftNav,
+            };
+            _sidebarList.NavigationRequested += domId => RequestNavigation(domId);
 
             _navFooterDivider = new InkDivider { Parent = _leftNav };
 
@@ -370,7 +353,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 Parent = _topBar,
             };
             // 返回战斗 HUD（设计稿 .back-hud-btn 出口）
-            _backHudButton.Clicked += () => RequestNavigation(InkPageDomIds.BackHud);
+            _backHudButton.Clicked += () => RequestNavigation(InkPageDomIds.BackOneLevel);
 
             _backHudDivider = new InkDividerVertical { Parent = _topBar };
 
@@ -388,13 +371,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
             _avatarLabel.AnchorPreset = AnchorPresets.StretchAll;
             _avatarLabel.Offsets = Margin.Zero;
 
-            _playerNameLabel = CreateLabel("江湖过客", InkWashTheme.FontRole.Heading, 15f,
+            _playerNameLabel = CreateLabel("—", InkWashTheme.FontRole.Heading, 15f,
                 InkWashTheme.PaperBright, TextAlignment.Near, TextAlignment.Center);
             _playerNameLabel.Parent = _topBar;
 
             _playerLevelTag = new InkItemTag
             {
-                Text = "Lv. 42",
+                Text = "—",
                 Accent = InkWashTheme.GoldPrimary,
                 Parent = _topBar,
             };
@@ -415,7 +398,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 InkWashTheme.TextTertiary, TextAlignment.Far, TextAlignment.Center);
             _coinLabel.Parent = _topBar;
 
-            _coinValueLabel = CreateLabel("12,450", InkWashTheme.FontRole.Number, 13f,
+            // 铜钱只在 ShopClientService 拿到服务端快照后才由 binder 覆盖；初值不能摆设计稿的 12,450
+            _coinValueLabel = CreateLabel("—", InkWashTheme.FontRole.Number, 13f,
                 InkWashTheme.PaperBright, TextAlignment.Far, TextAlignment.Center);
             _coinValueLabel.Parent = _topBar;
 
@@ -425,13 +409,15 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 InkWashTheme.TextBrand, TextAlignment.Far, TextAlignment.Center);
             _ingotLabel.Parent = _topBar;
 
-            _ingotValueLabel = CreateLabel("328", InkWashTheme.FontRole.Number, 13f,
+            // 元宝没有服务端快照（ShopClientService 只给 Gold），不摆设计稿的 328
+            _ingotValueLabel = CreateLabel("—", InkWashTheme.FontRole.Number, 13f,
                 InkWashTheme.GoldBright, TextAlignment.Far, TextAlignment.Center);
             _ingotValueLabel.Parent = _topBar;
 
             _ingotDivider = new InkDividerVertical { Parent = _topBar };
 
-            _gameTimeLabel = CreateLabel("戌时 三刻", InkWashTheme.FontRole.Body, 12f,
+            // 世界时间同步没有接入客户端（同 MenuTimePage），不摆设计稿的时辰
+            _gameTimeLabel = CreateLabel("—", InkWashTheme.FontRole.Body, 12f,
                 InkWashTheme.Info, TextAlignment.Far, TextAlignment.Center);
             _gameTimeLabel.Parent = _topBar;
 
@@ -450,6 +436,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 new TopBarItem(_coinDivider, 1f, 24f, 18f, 10f),
                 new TopBarItem(_bestiaryButton, 104f, 32f, 14f, 0f),
             };
+
+            // 真实玩家信息可用时覆盖设计稿示例值（元宝/时辰暂无数据源）
+            InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelTag, _coinValueLabel);
         }
 
         // ===================================================================
@@ -493,7 +482,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             _categoryRows = new InkNavRow[CategoryNames.Length];
             for (int i = 0; i < CategoryNames.Length; i++)
             {
-                var row = new InkNavRow(CategoryNames[i], CategoryCounts[i].ToString(), 16f)
+                var row = new InkNavRow(CategoryNames[i], CategoryCounts[i], 16f)
                 {
                     Active = (i == 0),
                     Parent = _categoryPanel,
@@ -566,26 +555,27 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 QualityOptions, ReadQualityIndex(), QualityRowHeight, "quality");
             _resolutionRow = CreateDropdownRow("分辨率", "调整画面分辨率，分辨率越高画面越清晰", null, false,
                 ResolutionOptions, ReadResolutionIndex(), RowHeight, "resolution");
-            _frameRateRow = CreateSliderRow("帧率上限", "设置游戏最高帧率，帧率越高画面越流畅",
-                0f, 120f, 60f, "fps", RowHeight, "frameRate");
+            _frameRateRow = CreateSliderRow("帧率上限", "设置游戏最高帧率（引擎暂无帧率上限接口，此项只记录）",
+                0f, 120f, ReadFrameRate(), "fps", RowHeight, "frameRate");
 
             // --- 视觉效果 ---
             _viewDistanceRow = CreateSliderRow("视距", "调整视角远近，视距越大可见范围越广",
-                0f, 100f, 75f, string.Empty, RowHeight, "viewDistance");
+                0f, 100f, ReadViewDistance(), string.Empty, RowHeight, "viewDistance");
             _effectRow = CreateDropdownRow("特效质量", "技能特效和粒子效果质量，影响战斗视觉表现", null, false,
-                EffectOptions, 2, RowHeight, "effect");
+                EffectOptions, ReadEffectQuality(), RowHeight, "effect");
             _shadowRow = CreateDropdownRow("阴影质量", "阴影渲染质量，高质量阴影增强画面立体感", null, false,
-                ShadowOptions, 2, RowHeight, "shadow");
+                ShadowOptions, ReadShadowQuality(), RowHeight, "shadow");
 
             // --- 高级选项 ---
             _antiAliasingRow = CreateToggleRow("抗锯齿", "开启抗锯齿使画面边缘更平滑，减少锯齿感", "推荐", false,
-                true, RowHeight, "antiAliasing");
+                ReadAntiAliasing(), RowHeight, "antiAliasing");
             _vsyncRow = CreateToggleRow("垂直同步", "防止画面撕裂，开启后帧率上限将同步显示器刷新率", null, false,
                 ReadVSync(), RowHeight, "vsync");
             _autoHideUiRow = CreateToggleRow("自动隐藏UI", "战斗中自动隐藏部分UI元素，沉浸式战斗体验", null, false,
-                true, RowHeight, "autoHideUi");
-            _powerSaveRow = CreateToggleRow("画质省电模式", "降低画质以节省电量，适合笔记本及移动设备", "实验", true,
-                false, RowHeight, "powerSave");
+                ReadAutoHideUi(), RowHeight, "autoHideUi");
+            // 省电模式没有任何消费者（引擎没有运行时降档接口），描述不能承诺"降低画质"
+            _powerSaveRow = CreateToggleRow("画质省电模式", "记录偏好：当前引擎无法运行时降档，此项仅保存", "实验", true,
+                ReadPowerSave(), RowHeight, "powerSave");
 
             _rows = new[]
             {
@@ -692,6 +682,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     capturedRow.ValueLabel.Text = FormatSliderValue(capturedRow.Slider.Value, capturedRow.Unit);
                 }
             };
+            // 拖动过程中不写库（每像素一次太贵），松手时落一次
+            row.Slider.SlidingEnd += () => HandleSliderCommitted(capturedRow);
 
             row.ValueLabel = CreateLabel(FormatSliderValue(value, row.Unit), InkWashTheme.FontRole.Number, 13f,
                 InkWashTheme.PaperBright, TextAlignment.Far, TextAlignment.Center);
@@ -765,6 +757,36 @@ namespace HundunWorld.Game.UI.Ink.Pages
         }
 
         /// <summary>
+        /// 显卡型号与显存占用：来自引擎的 <c>GPUDevice.Adapter.Description</c> /
+        /// <c>MemoryUsage</c>（已用）/ <c>TotalGraphicsMemory</c>（总量，字节）。
+        /// 渲染设备尚未就绪时返回「—」。
+        /// </summary>
+        private static (string Name, string Vram) ReadGpuInfo()
+        {
+            try
+            {
+                var device = FlaxEngine.GPUDevice.Instance;
+                if (device == null) return ("—", "—");
+
+                string name = device.Adapter?.Description;
+                if (string.IsNullOrWhiteSpace(name)) name = "—";
+                // 适配器描述可能很长（含厂商前缀），截到 26 字符避免把三列布局顶破
+                if (name.Length > 26) name = name.Substring(0, 26);
+
+                long used = (long)device.MemoryUsage;
+                long total = (long)device.TotalGraphicsMemory;
+                string vram = total > 0
+                    ? $"{used / (1024.0 * 1024.0 * 1024.0):F1} / {total / (1024.0 * 1024.0 * 1024.0):F0} GB"
+                    : "—";
+                return (name, vram);
+            }
+            catch
+            {
+                return ("—", "—");
+            }
+        }
+
+        /// <summary>
         /// 构建画面信息面板（显卡 / 显存占用 / 当前帧率）。
         /// </summary>
         private void BuildInfoPanel()
@@ -777,7 +799,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
 
             string[] labels = { "显卡", "显存占用", "当前帧率" };
-            string[] values = { "NVIDIA RTX 4070", "4.2 GB / 12 GB", "58 fps" };
+            var (gpuName, vramText) = ReadGpuInfo();
+            // 显卡型号/显存占用没有可用的引擎读取接口，显示占位而不是写死「RTX 4070 / 4.2 GB」；
+            // 当前帧率由 Update 每 0.5 秒写入真实值（Engine.FramesPerSecond）。
+            string[] values = { gpuName, vramText, "—" };
             Color[] valueColors = { InkWashTheme.PaperBright, InkWashTheme.GoldBright, InkWashTheme.JadeBright };
 
             _infoLabels = new Label[labels.Length];
@@ -793,6 +818,12 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     valueColors[i], TextAlignment.Near, TextAlignment.Center);
                 _infoValues[i].Parent = _infoPanel;
             }
+
+            // 实测结论：AAQuality / ShadowsQuality / SSRQuality / VolumetricFogQuality 在运行时写入后读回不变，
+            // 省电模式则没有任何消费者——这四项只保存不改变画面，页面必须说清楚，不能让人以为切了立刻生效。
+            _infoFootnote = CreateLabel("※ 分辨率 / 抗锯齿 / 阴影质量 / 特效质量 / 省电模式在当前引擎版本运行时不生效，仅保存设置",
+                InkWashTheme.FontRole.Body, 11f, InkWashTheme.TextDisabled, TextAlignment.Near, TextAlignment.Center);
+            _infoFootnote.Parent = _infoPanel;
         }
 
         // ===================================================================
@@ -800,8 +831,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
         // =======================================================================
 
         /// <summary>
-        /// 构建底部操作栏（设计稿 .action-bar）：
-        /// 修改提示「有 3 项设置已修改，尚未保存」+ 恢复默认 / 保存设置 / 应用并重启。
+        /// 构建底部操作栏（设计稿 .action-bar）。
+        /// 设计稿那句「有 3 项设置已修改，尚未保存」是样张：本页每一项交互都即时落库（见 SetXxx 分支），
+        /// 不存在"待保存"状态，故改成如实描述，也不再画那颗"未保存"红点。
         /// </summary>
         private void BuildActionBar()
         {
@@ -812,9 +844,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 Parent = this,
             };
 
-            _changeDot = new InkChangeDot { Parent = _actionBar };
-
-            _actionInfoLabel = CreateLabel("有 3 项设置已修改，尚未保存", InkWashTheme.FontRole.Body, 13f,
+            _actionInfoLabel = CreateLabel("改动即时生效并已保存", InkWashTheme.FontRole.Body, 13f,
                 InkWashTheme.TextTertiary, TextAlignment.Near, TextAlignment.Center);
             _actionInfoLabel.Parent = _actionBar;
 
@@ -879,6 +909,14 @@ namespace HundunWorld.Game.UI.Ink.Pages
             if (_categoryRows == null || index < 0 || index >= _categoryRows.Length)
                 return;
 
+            // 本页只有「画面」的 10 个设置项；操作/账号/其他尚未接入。
+            // 以前点它们只改高亮、内容仍是画面项，看起来像"切了但没变"。
+            if (index >= 2 && index != RoadSignCategoryIndex)
+            {
+                HundunWorld.Game.UI.UIHelper.ShowToast("该分类的设置项尚未接入", HundunWorld.Game.UI.ToastType.Info);
+                return;
+            }
+
             for (int i = 0; i < _categoryRows.Length; i++)
             {
                 if (_categoryRows[i] != null)
@@ -891,6 +929,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
             if (index == AudioCategoryIndex)
             {
                 RequestNavigation(InkPageDomIds.NavSettingsAudio);
+            }
+            else if (index == RoadSignCategoryIndex)
+            {
+                RequestNavigation(InkPageDomIds.NavSettingsRoadSign);
             }
         }
 
@@ -935,6 +977,12 @@ namespace HundunWorld.Game.UI.Ink.Pages
                         _ = GameConfigurationService.Instance.SetResolutionAsync(
                             ResolutionWidths[row.OptionIndex], ResolutionHeights[row.OptionIndex]);
                         break;
+                    case "effect":
+                        _ = GameConfigurationService.Instance.SetEffectQualityAsync(row.OptionIndex);
+                        break;
+                    case "shadow":
+                        _ = GameConfigurationService.Instance.SetShadowQualityAsync(row.OptionIndex);
+                        break;
                 }
             }
             catch (Exception ex)
@@ -954,9 +1002,20 @@ namespace HundunWorld.Game.UI.Ink.Pages
         {
             try
             {
-                if (row != null && row.Key == "vsync")
+                switch (row?.Key)
                 {
-                    _ = GameConfigurationService.Instance.SetVSyncAsync(value);
+                    case "vsync":
+                        _ = GameConfigurationService.Instance.SetVSyncAsync(value);
+                        break;
+                    case "antiAliasing":
+                        _ = GameConfigurationService.Instance.SetAntiAliasingAsync(value);
+                        break;
+                    case "autoHideUi":
+                        _ = GameConfigurationService.Instance.SetAutoHideUiAsync(value);
+                        break;
+                    case "powerSave":
+                        _ = GameConfigurationService.Instance.SetPowerSaveAsync(value);
+                        break;
                 }
             }
             catch (Exception ex)
@@ -965,6 +1024,35 @@ namespace HundunWorld.Game.UI.Ink.Pages
             }
 
             FlaxEngine.Debug.Log($"[SettingsPage] {row?.Key} = {(value ? "开启" : "关闭")}");
+        }
+
+        /// <summary>
+        /// 滑动条松手后落库：拖动期间只更新数值文字，避免每像素写一次 LiteDB。
+        /// </summary>
+        private void HandleSliderCommitted(SettingRow row)
+        {
+            if (row?.Slider == null)
+                return;
+
+            try
+            {
+                switch (row.Key)
+                {
+                    case "frameRate":
+                        _ = GameConfigurationService.Instance.SetFrameRateAsync(
+                            Mathf.RoundToInt(row.Slider.Value));
+                        break;
+                    case "viewDistance":
+                        _ = GameConfigurationService.Instance.SetViewDistanceAsync(row.Slider.Value);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[SettingsPage] 保存滑动条失败 ({row.Key}): {ex.Message}");
+            }
+
+            FlaxEngine.Debug.Log($"[SettingsPage] {row.Key} = {row.Slider.Value:0.##} (committed)");
         }
 
         /// <summary>
@@ -1015,19 +1103,44 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <summary>
         /// 保存设置：把当前画面质量 / 分辨率 / 垂直同步写回 <see cref="GameConfigurationService"/>。
         /// </summary>
+        /// <summary>
+        /// 保存设置：把当前所有设置项写回 <see cref="GameConfigurationService"/>。
+        /// 逐项交互时已经即时落库，这里再全量刷一遍，保证"保存"确实是全量提交（含恢复默认后的值）。
+        /// </summary>
         private void SaveAllSettings()
         {
             try
             {
-                if (_qualityRow != null)
-                    _ = GameConfigurationService.Instance.SetGraphicsQualityAsync(QualityKeys[_qualityRow.OptionIndex]);
+                if (_rows != null)
+                {
+                    foreach (var row in _rows)
+                    {
+                        if (row == null) continue;
 
-                if (_resolutionRow != null)
-                    _ = GameConfigurationService.Instance.SetResolutionAsync(
-                        ResolutionWidths[_resolutionRow.OptionIndex], ResolutionHeights[_resolutionRow.OptionIndex]);
+                        switch (row.Key)
+                        {
+                            case "quality":
+                            case "resolution":
+                            case "effect":
+                            case "shadow":
+                                HandleOptionChanged(row);
+                                break;
 
-                if (_vsyncRow?.Toggle != null)
-                    _ = GameConfigurationService.Instance.SetVSyncAsync(_vsyncRow.Toggle.Checked);
+                            case "frameRate":
+                            case "viewDistance":
+                                HandleSliderCommitted(row);
+                                break;
+
+                            case "vsync":
+                            case "antiAliasing":
+                            case "autoHideUi":
+                            case "powerSave":
+                                if (row.Toggle != null)
+                                    HandleToggleChanged(row, row.Toggle.Checked);
+                                break;
+                        }
+                    }
+                }
 
                 FlaxEngine.Debug.Log("[SettingsPage] 保存设置");
             }
@@ -1075,6 +1188,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
             row.Slider.Value = value;
             if (row.ValueLabel != null)
                 row.ValueLabel.Text = FormatSliderValue(value, row.Unit);
+
+            // 程序化赋值不会触发 SlidingEnd，恢复默认也要落库
+            HandleSliderCommitted(row);
         }
 
         /// <summary>
@@ -1091,6 +1207,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 row.StatusLabel.Text = value ? "开启" : "关闭";
                 row.StatusLabel.TextColor = value ? InkWashTheme.GoldBright : InkWashTheme.TextTertiary;
             }
+
+            // Checked 的 setter 不触发 CheckedChanged，恢复默认也要落库
+            HandleToggleChanged(row, value);
         }
 
         /// <summary>
@@ -1151,6 +1270,48 @@ namespace HundunWorld.Game.UI.Ink.Pages
             }
         }
 
+        private static int ReadFrameRate()
+        {
+            try { return GameConfigurationService.Instance.GetFrameRate(); }
+            catch (Exception ex) { FlaxEngine.Debug.LogError($"[SettingsPage] 读取帧率上限失败: {ex.Message}"); return 60; }
+        }
+
+        private static float ReadViewDistance()
+        {
+            try { return GameConfigurationService.Instance.GetViewDistance(); }
+            catch (Exception ex) { FlaxEngine.Debug.LogError($"[SettingsPage] 读取视距失败: {ex.Message}"); return 75f; }
+        }
+
+        private static int ReadEffectQuality()
+        {
+            try { return GameConfigurationService.Instance.GetEffectQuality(); }
+            catch (Exception ex) { FlaxEngine.Debug.LogError($"[SettingsPage] 读取特效质量失败: {ex.Message}"); return 2; }
+        }
+
+        private static int ReadShadowQuality()
+        {
+            try { return GameConfigurationService.Instance.GetShadowQuality(); }
+            catch (Exception ex) { FlaxEngine.Debug.LogError($"[SettingsPage] 读取阴影质量失败: {ex.Message}"); return 2; }
+        }
+
+        private static bool ReadAntiAliasing()
+        {
+            try { return GameConfigurationService.Instance.GetAntiAliasing(); }
+            catch (Exception ex) { FlaxEngine.Debug.LogError($"[SettingsPage] 读取抗锯齿失败: {ex.Message}"); return true; }
+        }
+
+        private static bool ReadAutoHideUi()
+        {
+            try { return GameConfigurationService.Instance.GetAutoHideUi(); }
+            catch (Exception ex) { FlaxEngine.Debug.LogError($"[SettingsPage] 读取自动隐藏UI失败: {ex.Message}"); return true; }
+        }
+
+        private static bool ReadPowerSave()
+        {
+            try { return GameConfigurationService.Instance.GetPowerSave(); }
+            catch (Exception ex) { FlaxEngine.Debug.LogError($"[SettingsPage] 读取省电模式失败: {ex.Message}"); return false; }
+        }
+
         /// <summary>
         /// 拼接滑动条数值文本（无单位时仅显示数字）。
         /// </summary>
@@ -1195,15 +1356,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _navLogoUnderline.Size = new Float2(40f, 1f);
             }
 
-            if (_navRows != null)
+            if (_sidebarList != null)
             {
-                for (int i = 0; i < _navRows.Length; i++)
-                {
-                    if (_navRows[i] == null)
-                        continue;
-                    _navRows[i].Location = new Float2(0f, NavRowTop + i * NavRowHeight);
-                    _navRows[i].Size = new Float2(LeftNavWidth, NavRowHeight);
-                }
+                // 底部留给分隔线（h-64）与版本号
+                _sidebarList.Layout(0f, NavRowTop, LeftNavWidth, Mathf.Max(0f, h - NavRowTop - 64f));
             }
 
             if (_navFooterDivider != null)
@@ -1398,12 +1554,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _actionBar.Size = new Float2(rightWidth, ActionBarHeight);
             }
 
-            if (_changeDot != null)
-                _changeDot.Location = new Float2(24f, (ActionBarHeight - 8f) * 0.5f);
-
             if (_actionInfoLabel != null)
             {
-                _actionInfoLabel.Location = new Float2(40f, 0f);
+                _actionInfoLabel.Location = new Float2(24f, 0f);
                 _actionInfoLabel.Size = new Float2(420f, ActionBarHeight);
             }
 
@@ -1448,16 +1601,18 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             string title = row.TitleLabel?.Text ?? string.Empty;
 
+            // 标题按 18px/字估算：15f Heading 的中文实宽约 17~18px，按 15 估算会让标签压到标题上（截图实证）。
+            float titleWidth = Mathf.Max(60f, title.Length * 18f + 8f);
             if (row.TitleLabel != null)
             {
                 row.TitleLabel.Location = new Float2(RowInnerPadding, 7f);
-                row.TitleLabel.Size = new Float2(Mathf.Max(60f, title.Length * 15f + 8f), 22f);
+                row.TitleLabel.Size = new Float2(titleWidth, 22f);
             }
 
             if (row.Tag != null)
             {
                 string tagText = row.Tag.Text ?? string.Empty;
-                row.Tag.Location = new Float2(RowInnerPadding + title.Length * 15f + 12f, 9f);
+                row.Tag.Location = new Float2(RowInnerPadding + titleWidth + 8f, 9f);
                 row.Tag.Size = new Float2(Mathf.Max(34f, tagText.Length * 12f + 12f), 20f);
             }
 
@@ -1546,6 +1701,12 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     _infoValues[i].Location = new Float2(24f + i * columnWidth, 40f);
                     _infoValues[i].Size = new Float2(columnWidth - 24f, 20f);
                 }
+            }
+
+            if (_infoFootnote != null)
+            {
+                _infoFootnote.Location = new Float2(24f, 72f);
+                _infoFootnote.Size = new Float2(Mathf.Max(200f, width - 48f), 18f);
             }
         }
 
@@ -2399,33 +2560,51 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <summary>
         /// 底部操作栏修改提示圆点（设计稿 .change-dot，朱红带辉光）。
         /// </summary>
-        private sealed class InkChangeDot : Control
+        private float _fpsRefreshTimer;
+
+        /// <summary>顶栏是否已经拿到真实玩家信息（进世界瞬间构造的页面会拿不到，需自愈一次）。</summary>
+        private bool _headerBound;
+        private float _headerBindTimer;
+        private int _headerBindAttempts;
+
+        /// <summary>当前帧率每 0.5 秒刷一次；顺带在玩家就绪后补绑一次顶栏身份。</summary>
+        public override void Update(float deltaTime)
         {
-            /// <summary>
-            /// 构造圆点。
-            /// </summary>
-            public InkChangeDot()
+            base.Update(deltaTime);
+
+            if (!_headerBound)
             {
-                BackgroundColor = Color.Transparent;
-                Size = new Float2(8f, 8f);
+                _headerBindTimer += deltaTime;
+                if (_headerBindTimer >= 0.5f && _headerBindAttempts < 20)
+                {
+                    _headerBindTimer = 0f;
+                    _headerBindAttempts++;
+                    InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelTag, _coinValueLabel);
+                    _headerBound = _playerNameLabel != null
+                        && !string.IsNullOrEmpty(_playerNameLabel.Text)
+                        && _playerNameLabel.Text != "—";
+                }
             }
 
-            /// <inheritdoc />
-            public override void Draw()
+            if (!VisibleInHierarchy || _infoValues == null || _infoValues.Length < 3 || _infoValues[2] == null)
+                return;
+
+            _fpsRefreshTimer += deltaTime;
+            if (_fpsRefreshTimer < 0.5f)
+                return;
+            _fpsRefreshTimer = 0f;
+
+            try
             {
-                if (!Visible || Width <= 0f || Height <= 0f)
-                    return;
-
-                var center = new Float2(Width * 0.5f, Height * 0.5f);
-                float radius = Mathf.Min(Width, Height) * 0.5f;
-                var glow = new Color(
-                    InkWashTheme.VermilionPrimary.R,
-                    InkWashTheme.VermilionPrimary.G,
-                    InkWashTheme.VermilionPrimary.B, 0.22f);
-
-                InkRenderHelper.FillCircle(center, radius + 3f, glow);
-                InkRenderHelper.FillCircle(center, radius, InkWashTheme.VermilionPrimary);
+                _infoValues[2].Text = $"{Engine.FramesPerSecond} fps";
+                if (_infoValues[1] != null)
+                    _infoValues[1].Text = ReadGpuInfo().Vram;
+            }
+            catch
+            {
+                _infoValues[2].Text = "—";
             }
         }
+
     }
 }

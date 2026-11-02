@@ -341,7 +341,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.ChapterTransition
 
             _hintIcon = new Label
             {
-                Text = "✦",
+                Text = "◆",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
                 TextColor = InkWashTheme.TextTertiary,
                 Width = 18f,

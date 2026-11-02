@@ -235,6 +235,44 @@ public sealed class SimWorld
     }
 
     /// <summary>
+    /// 尝试为实体开始一次翻越：校验「起点贴合权威位置 + 计划限值 + 冷却 + 不叠加」，
+    /// 通过后由 <see cref="Step"/> 按共享曲线推进权威位置。
+    /// 客户端生成计划时必须用同一份 <see cref="TraversalLimits"/> 预检，否则会出现
+    /// "本地能翻、服务端一律拒"的体感。
+    /// </summary>
+    /// <returns><see cref="TraversalRejectReason.None"/> = 已受理；其余为拒绝原因。</returns>
+    public TraversalRejectReason TryBeginTraversal(ulong entityId, in TraversalPlan plan, long serverTick)
+    {
+        if (!_entities.TryGetValue(entityId, out var e))
+            return TraversalRejectReason.StartTooFar;
+
+        if (e.TraversalActive)
+            return TraversalRejectReason.AlreadyActive;
+
+        var limits = _validator.Settings.Traversal;
+        var cooldownTicks = (long)MathF.Ceiling(MathF.Max(0f, limits.CooldownSeconds) / _stepDt);
+        if (e.LastTraversalEndTick > 0 && serverTick - e.LastTraversalEndTick < cooldownTicks)
+            return TraversalRejectReason.Cooldown;
+
+        var reason = TraversalMath.Validate(plan, e.X, e.Y, e.Z, limits);
+        if (reason != TraversalRejectReason.None)
+            return reason;
+
+        e.TraversalActive = true;
+        e.TraversalElapsed = 0f;
+        e.TraversalPlan = plan;
+        e.TraversalStartYaw = e.Yaw;
+        e.Vz = 0f;
+        e.JumpCount = 0;
+        e.LastSyncTick = serverTick;
+        return TraversalRejectReason.None;
+    }
+
+    /// <summary>实体是否正在翻越（宿主诊断/测试用）。</summary>
+    public bool IsTraversalActive(ulong entityId)
+        => _entities.TryGetValue(entityId, out var e) && e.TraversalActive;
+
+    /// <summary>
     /// 推进一帧（<paramref name="serverTick"/> 为当前服务器 tick）：对每个实体批量回放
     /// 积压输入（含 P-F12 间隙吸附 / P-F13 速度归一），产出权威位置/速度/移动模式与
     /// <see cref="CorrectionPacket"/>（预测漂移 / 超速 / 跳跃超限 / 加速度超限）。
@@ -247,6 +285,81 @@ public sealed class SimWorld
             _stepResults.Add(StepEntity(e, serverTick));
         }
         return _stepResults;
+    }
+
+    /// <summary>
+    /// 翻越帧推进：位置/朝向沿共享曲线走，垂直速度为 0；本 tick 到达计划终点即落点并清状态。
+    /// 期间积压输入照常消费（推进 <see cref="SimWorldEntity.LastProcessedClientTick"/> 以便回 ack），
+    /// 但不参与位置计算，也不做漂移/加速度纠偏——曲线本身就是权威。
+    /// </summary>
+    private StepResult StepTraversal(SimWorldEntity e, long serverTick, WorldPosition startPos, float startYaw)
+    {
+        var plan = e.TraversalPlan;
+        var elapsed = e.TraversalElapsed + _stepDt;
+        var finished = elapsed >= plan.Duration;
+        var (x, y, z) = TraversalMath.Sample(plan, elapsed);
+
+        e.X = x;
+        e.Y = y;
+        e.Z = z;
+        e.Vz = 0f;
+        e.IsGrounded = true;
+        e.JumpCount = 0;
+        e.TraversalElapsed = finished ? plan.Duration : elapsed;
+        e.Yaw = finished
+            ? plan.EndYaw
+            : TraversalMath.SampleYaw(e.TraversalStartYaw, plan, e.TraversalElapsed);
+
+        if (finished)
+        {
+            // 端点显式落位：采样在 t=1 已等于终点，这里再钉一次防浮点边界。
+            e.X = plan.EndX;
+            e.Y = plan.EndY;
+            e.Z = plan.EndZ;
+            e.TraversalActive = false;
+            e.LastTraversalEndTick = serverTick;
+        }
+
+        long lastProcessedClientTick = e.LastProcessedClientTick;
+        var consumed = e.PendingInputs.Count;
+        if (consumed > 0)
+        {
+            lastProcessedClientTick = e.PendingInputs[consumed - 1].ClientTick;
+            e.LastProcessedClientTick = lastProcessedClientTick;
+            e.PendingInputs.Clear();
+        }
+        // 翻越帧不回放输入：计数必须归零，否则宿主会把"没回放"读成"回放了这么多帧"。
+        e.LastStepReplayedInputCount = 0;
+        e.LastSyncTick = serverTick;
+
+        var velX = (e.X - startPos.X) / _stepDt;
+        var velY = (e.Y - startPos.Y) / _stepDt;
+        e.VelocityXZ_X = velX;
+        e.VelocityXZ_Y = velY;
+        var speedSq = velX * velX + velY * velY;
+        e.MovementMode = speedSq > 0.1f ? MovementMode.Run : MovementMode.Walk;
+
+        e.PrevX = e.X;
+        e.PrevY = e.Y;
+        e.PrevZ = e.Z;
+        e.PrevVz = 0f;
+        e.PrevVelocityXZ_X = velX;
+        e.PrevVelocityXZ_Y = velY;
+
+        return new StepResult(
+            e.EntityId,
+            startPos,
+            startYaw,
+            new WorldPosition(e.X, e.Y, e.Z),
+            0f,
+            velX,
+            velY,
+            e.MovementMode,
+            e.Yaw,
+            true,
+            consumed > 0,
+            lastProcessedClientTick,
+            null);
     }
 
     private StepResult StepEntity(SimWorldEntity e, long serverTick)
@@ -264,6 +377,12 @@ public sealed class SimWorld
         float velX = 0f, velY = 0f;
         CorrectionPacket? correction = null;
         long lastProcessedClientTick = e.LastProcessedClientTick;
+
+        // 翻越窗口：位置/朝向由共享曲线决定，忽略一切移动输入（客户端报告终点也不参与校验）。
+        if (e.TraversalActive)
+        {
+            return StepTraversal(e, serverTick, startPos, startYaw);
+        }
 
         if (e.PendingInputs.Count > 0)
         {
@@ -565,6 +684,24 @@ public sealed class SimWorldEntity
 
     /// <summary>估算的客户端→服务端单向延迟（毫秒），EMA 平滑，供动态阈值放宽。</summary>
     public float EstimatedRttMs;
+
+    /// <summary>
+    /// 是否处于翻越脚本位移中。为 true 时 <see cref="SimWorld.Step"/> 忽略移动/跳跃输入，
+    /// 由 <see cref="TraversalMath.Sample"/> 推进位置。
+    /// </summary>
+    public bool TraversalActive;
+
+    /// <summary>当前翻越已用时长（秒）。</summary>
+    public float TraversalElapsed;
+
+    /// <summary>当前翻越计划（<see cref="TraversalActive"/> 时有意义）。</summary>
+    public TraversalPlan TraversalPlan;
+
+    /// <summary>翻越开始时的朝向（弧度），用于按最短弧插值到计划终点朝向。</summary>
+    public float TraversalStartYaw;
+
+    /// <summary>上一次翻越结束的服务器 tick（0 = 从未翻越；冷却判定基准）。</summary>
+    public long LastTraversalEndTick;
 
     /// <summary>当前权威位置（只读视图）。</summary>
     public WorldPosition Position => new(X, Y, Z);

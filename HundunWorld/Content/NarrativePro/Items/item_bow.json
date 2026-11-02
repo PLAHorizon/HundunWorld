@@ -1,0 +1,76 @@
+﻿{
+  "$type": "RangedWeaponItem",
+  "itemClassId": "item_bow",
+  "displayName": "桑木角弓",
+  "description": "桑木为芯、牛角贴面的复合弓。需要箭矢（item_arrow）。",
+  "weight": 1.2,
+  "baseValue": 210,
+  "baseScore": 14,
+  "bStackable": false,
+  "maxStackSize": 1,
+  "attackDamage": 12,
+  "heavyAttackDamageMultiplier": 1.8,
+  "requiredAmmo": "item_arrow",
+  "clipSize": 1,
+  "fireRate": 45,
+  "bAutomatic": false,
+  "bAllowManualReload": true,
+  "bBotsConsumeAmmo": true,
+  "botAttackRange": 1800,
+  "baseSpreadDegrees": 1.5,
+  "maxSpreadDegrees": 8,
+  "spreadDecreaseSpeed": 2,
+  "crouchSpreadMultiplier": 0.8,
+  "aimSpreadMultiplier": 0.5,
+  "aimFOVPct": 1,
+  "weaponVisualPath": "",
+  "crosshairWidgetPath": "",
+  "pickupMeshData": {
+    "pickupMeshPath": "Content/Models/Items/SM_Item_Bow",
+    "pickupMeshMaterialPaths": [
+      "Content/Materials/M_ItemBowString"
+    ],
+    "pickupOffset": {
+      "translation": {
+        "x": 0.0,
+        "y": 45.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      }
+    }
+  },
+  "equippableSlotTagNames": [
+    "Narrative.Equipment.WieldSlot.Mainhand"
+  ],
+  "wieldAttachmentConfigs": {
+    "Narrative.Equipment.WieldSlot.Mainhand": {
+      "socketName": "hand_r"
+    }
+  },
+  "weaponAbilities": [
+    "ability_bow_shot"
+  ],
+  "traceData": {
+    "range": 2400,
+    "radius": 0,
+    "bUseBoxTrace": false,
+    "damageTypeId": "Physical.Pierce"
+  },
+  "stats": [
+    {
+      "statDisplayName": "射击伤害",
+      "stringVariable": "AttackDamage",
+      "statTooltip": "命中躯干 12 点穿透伤害。"
+    }
+  ]
+}

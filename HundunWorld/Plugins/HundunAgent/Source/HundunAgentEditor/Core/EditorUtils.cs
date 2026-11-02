@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using FlaxEngine;
+using FlaxEditor.Content;
 
 namespace HundunAgent.Core
 {
@@ -79,6 +80,24 @@ namespace HundunAgent.Core
             return File.Exists(path) || Directory.Exists(path);
         }
 
+        /// <summary>
+        /// 资产路径统一成工程内绝对路径。相对写法（"Content/…"）会让内容库再登记一份同一个文件，
+        /// 编辑器随后改写该资产的 GUID（#77 的根因，本轮又实测一次：Ada 头从 1262ccb0 变 2cdbe735）。
+        /// Guid 串原样返回。
+        /// </summary>
+        public static string ResolveAssetPath(string path)
+        {
+            if (string.IsNullOrEmpty(path) || Guid.TryParse(path, out _))
+            {
+                return path;
+            }
+            if (Path.IsPathRooted(path))
+            {
+                return Path.GetFullPath(path);
+            }
+            return Path.GetFullPath(Path.Combine(ProjectRoot, path.Replace('/', Path.DirectorySeparatorChar)));
+        }
+
         /// <summary>判断相对路径的首层目录是否为工作区独有（工程目录下不存在同名目录）。</summary>
         private static bool IsWorkspaceOnlyTopLevel(string relativePath)
         {
@@ -103,6 +122,72 @@ namespace HundunAgent.Core
                 return Path.GetRelativePath(workspace, fullPath).Replace('\\', '/');
 
             return fullPath.Replace('\\', '/');
+        }
+
+        /// <summary>
+        /// 按「路径或 Guid」加载资产，**优先用内容数据库里的资产 ID**。
+        /// </summary>
+        /// <remarks>
+        /// 不能直接用 <c>Content.Load(路径)</c> 加载：资产注册表按路径字符串**精确**比对
+        /// （<c>AssetsCache::FindAsset</c> 里是 <c>e.Info.Path == path</c>），而本机
+        /// <c>Globals.ProjectFolder</c> 的分隔符是混用的（<c>C:\Works/...</c>）。
+        /// 只要调用方给的拼写与注册表不同（如过了一遍 <see cref="Path.GetFullPath"/> 的全反斜杠），
+        /// 查找就落空，引擎会打开存储重新登记同一 GUID —— 触发重复 ID 仲裁：改名 → 重打包 →
+        /// 文件被占用（WIN32 0x20）→ 改名没落盘 → 资产 <c>loaded=false</c>，且下次启动再来一遍。
+        /// 走 ID 就完全不碰路径拼写。
+        /// </remarks>
+        public static Asset LoadAsset(string pathOrGuid, double timeoutInMilliseconds = 15000.0)
+        {
+            if (string.IsNullOrEmpty(pathOrGuid))
+                return null;
+            if (Guid.TryParse(pathOrGuid, out var guid))
+                return Content.Load(guid, timeoutInMilliseconds);
+
+            var resolved = ResolveAssetPath(pathOrGuid);
+            var item = FindAssetItem(resolved);
+            if (item != null)
+            {
+                var byId = Content.Load(item.ID, timeoutInMilliseconds);
+                if (byId != null)
+                    return byId;
+            }
+            return Content.Load(resolved, timeoutInMilliseconds);
+        }
+
+        /// <summary>在编辑器内容数据库里按路径找资产条目（分隔符/大小写不敏感）。只读。</summary>
+        public static AssetItem FindAssetItem(string path)
+        {
+            var editor = FlaxEditor.Editor.Instance;
+            if (editor == null || string.IsNullOrEmpty(path))
+                return null;
+            return FindAssetItem(editor.ContentDatabase.Game.Folder, NormalizeForPathCompare(path));
+        }
+
+        private static string NormalizeForPathCompare(string path)
+        {
+            return Path.GetFullPath(path).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+                .TrimEnd(Path.DirectorySeparatorChar);
+        }
+
+        private static AssetItem FindAssetItem(FlaxEditor.Content.ContentFolder folder, string normalizedPath)
+        {
+            if (folder == null)
+                return null;
+            foreach (var child in folder.Children)
+            {
+                if (child is AssetItem item)
+                {
+                    if (string.Equals(NormalizeForPathCompare(item.Path), normalizedPath, StringComparison.OrdinalIgnoreCase))
+                        return item;
+                }
+                else if (child is FlaxEditor.Content.ContentFolder sub)
+                {
+                    var found = FindAssetItem(sub, normalizedPath);
+                    if (found != null)
+                        return found;
+                }
+            }
+            return null;
         }
 
         /// <summary>判断路径是否等于 root 或位于 root 之下（已规范化的两侧）。</summary>
@@ -344,6 +429,26 @@ namespace HundunAgent.Core
                 return new Color32((byte)(c.R * 255), (byte)(c.G * 255), (byte)(c.B * 255), (byte)(c.A * 255));
             }
 
+            // 资产引用也可能声明成 Guid（Flax 的 Id 属性）：路径要先变成资产 ID。
+            if (targetType == typeof(Guid) && value.ValueKind == JsonValueKind.String)
+            {
+                var idText = value.GetString();
+                if (string.IsNullOrEmpty(idText))
+                    return Guid.Empty;
+                if (Guid.TryParse(idText, out var parsedId))
+                    return parsedId;
+
+                AssetInfo info;
+                Content.GetAssetInfo(idText, out info);
+                if (info.ID != Guid.Empty)
+                    return info.ID;
+
+                var loadedById = Content.Load(idText, 10000.0);
+                if (loadedById != null)
+                    return loadedById.ID;
+                throw new ArgumentException("资产加载失败: " + idText);
+            }
+
             // Asset 引用：按路径加载
             if (typeof(Asset).IsAssignableFrom(targetType) && value.ValueKind == JsonValueKind.String)
             {
@@ -351,14 +456,15 @@ namespace HundunAgent.Core
                 if (string.IsNullOrEmpty(path))
                     return null;
                 var asset = Content.Load(path, 10000.0);
-                if (asset == null)
-                    throw new ArgumentException("资产加载失败: " + path);
-                if (!targetType.IsInstanceOfType(asset))
+                // 非泛型 Load 对某些资产类型（实测 SkinnedModel）会返回 null；
+                // 必须先按目标类型再试一次，否则会把"可加载的资产"报成"加载失败"。
+                if (asset == null || !targetType.IsInstanceOfType(asset))
                 {
-                    // 尝试按目标类型重新加载
                     var typed = LoadAssetTyped(targetType, path);
                     if (typed != null)
                         return typed;
+                    if (asset == null)
+                        throw new ArgumentException("资产加载失败: " + path);
                     throw new ArgumentException("资产类型不匹配: " + path + " 实际为 " + asset.GetType().Name + "，需要 " + targetType.Name);
                 }
                 return asset;
@@ -370,12 +476,31 @@ namespace HundunAgent.Core
         /// <summary>按具体 Asset 子类型加载（Content.Load 泛型反射版本）。</summary>
         public static Asset LoadAssetTyped(Type assetType, string path)
         {
+            // 必须钉死第一个参数是 string：Content.Load 还有 (Guid,float) 泛型重载，
+            // 选错就会拿路径字符串去调 Guid 重载，报“String 不能转换为 Guid”。
             var loadMethod = typeof(Content).GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(m => m.Name == "Load" && m.IsGenericMethod && m.GetParameters().Length == 2);
-            if (loadMethod == null)
+                .FirstOrDefault(m => m.Name == "Load" && m.IsGenericMethod && m.GetParameters().Length == 2
+                                     && m.GetParameters()[0].ParameterType == typeof(string));
+            if (loadMethod != null)
+            {
+                var generic = loadMethod.MakeGenericMethod(assetType);
+                Asset byPath = generic.Invoke(null, new object[] { path, 10000.0 }) as Asset;
+                if (byPath != null)
+                    return byPath;
+            }
+
+            // 路径泛型加载在某些上下文（实测 PIE 内）会返回空；用资产库 ID 再试 Guid 重载。
+            AssetInfo info;
+            Content.GetAssetInfo(path, out info);
+            if (info.ID == Guid.Empty)
                 return null;
-            var generic = loadMethod.MakeGenericMethod(assetType);
-            return generic.Invoke(null, new object[] { path, 10000.0 }) as Asset;
+
+            var byId = typeof(Content).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(m => m.Name == "Load" && m.IsGenericMethod && m.GetParameters().Length == 2
+                                     && m.GetParameters()[0].ParameterType == typeof(Guid));
+            if (byId == null)
+                return null;
+            return byId.MakeGenericMethod(assetType).Invoke(null, new object[] { info.ID, 10000.0 }) as Asset;
         }
 
         /// <summary>

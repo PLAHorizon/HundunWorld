@@ -2,7 +2,14 @@ using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Game.Character.Attributes;
+using HundunWorld.Game.Character;
+using HundunWorld.Game.Equipment;
+using HundunWorld.Game.Inventory;
+using HundunWorld.Game.Services;
+using HundunWorld.Game.UI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Appearance
@@ -18,7 +25,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
     /// </list>
     /// <para>所有颜色与字体一律取自 <see cref="InkWashTheme"/> Token，不硬编码色值；不引入外部依赖。</para>
     /// </summary>
-    public class MenuAppearancePage : ContainerControl, IInkPage
+    public class MenuAppearancePage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ==================================================================
         // 设计稿数据（唯一事实来源：hundun-yy-ui/pages/menu-appearance.html）
@@ -216,9 +223,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
 
         private Float2 _screenSize;
 
-        private Panel _backgroundLayer;
-        private Panel _vignette;
-
         private InkPanelSolid _sidebar;
         private Label _sidebarLogo;
         private InkDivider _sidebarLogoDivider;
@@ -239,7 +243,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
 
         private InkPanelSolid _previewPanel;
         private InkVerticalTitle _previewTitle;
-        private AppearancePreviewFigure _previewFigure;
+        private CharacterPreview3D _preview3D;
         private Panel _previewToolbar;
         private InkButton _btnRotateLeft;
         private InkButton _btnRotateRight;
@@ -258,6 +262,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
         private Panel _setGrid;
         private readonly List<SetCard> _setCards = new List<SetCard>();
         private int _selectedSetIndex = DefaultSetIndex;
+
+        /// <summary>每张套装卡对应的外观装备模板 ID；0 = 「默认外观（卸下）」卡。</summary>
+        private readonly List<int> _appearanceCardIds = new List<int>();
+
+        /// <summary>当前筛出的外观装备（按角色性别）。</summary>
+        private readonly List<EquipmentData> _appearanceItems = new List<EquipmentData>();
 
         private InkPanel _dyePanel;
         private Label _dyeTitleLabel;
@@ -315,11 +325,33 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
 
                 ApplyLayout();
                 RefreshAllData();
+
+                // 顶栏身份接真实数据
+                InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelTag);
+                InkPlayerHeaderBinder.BindSect(_playerSectLabel);
+
+                // 外观穿戴以服务端权威背包/装备快照为准：快照一到就重建卡片并标注已穿戴。
+                PlayerInventoryService.Instance.Changed += OnInventoryChanged;
+                PlayerInventoryService.Instance.OperationFinished += OnAppearanceOperationFinished;
+                CharacterEquipmentManager.AppearanceChanged += OnAppearanceChanged;
+                if (!PlayerInventoryService.Instance.HasServerData)
+                    PlayerInventoryService.Instance.RequestFullRefresh();
+
+                BindPreview();
             }
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[MenuAppearancePage] 初始化失败: {ex.Message}");
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            PlayerInventoryService.Instance.Changed -= OnInventoryChanged;
+            PlayerInventoryService.Instance.OperationFinished -= OnAppearanceOperationFinished;
+            CharacterEquipmentManager.AppearanceChanged -= OnAppearanceChanged;
+            base.OnDestroy();
         }
 
         // ==================================================================
@@ -331,19 +363,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
         /// </summary>
         private void BuildBackground()
         {
-            _backgroundLayer = new Panel
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                BackgroundColor = InkWashTheme.BaseDefault,
-                Parent = this
-            };
-
-            _vignette = new Panel
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                BackgroundColor = InkWashTheme.Scrim,
-                Parent = this
-            };
+            // 背景层/暗角由外壳统一提供（本页为沉浸式全屏页），页面不再自绘：
+            // 原实现（不透明底 BaseDefault + 全屏 Scrim）与外壳层叠加会得到双份墨底 + 双层暗角。
         }
 
         // ==================================================================
@@ -510,13 +531,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                // 头像固定 36×36：StretchAll 实测仍是 136×56，字会被裁掉
+                Location = Float2.Zero,
+                Size = new Vector2(36f, 36f),
                 Parent = _playerAvatar
             };
 
             _playerNameLabel = new Label
             {
-                Text = "无名侠",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 16f),
                 TextColor = InkWashTheme.PaperBright,
                 VerticalAlignment = TextAlignment.Center,
@@ -525,14 +548,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
 
             _playerLevelTag = new InkTag
             {
-                Text = "Lv.42",
+                Text = "—",
                 TagVariant = InkTagVariant.Vermilion,
                 Parent = _topHeader
             };
 
             _playerSectLabel = new Label
             {
-                Text = "逍遥派",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.PaperAged,
                 VerticalAlignment = TextAlignment.Center,
@@ -549,7 +572,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
 
             _currencyCoinLabel = new Label
             {
-                Text = "铜钱 12,450",
+                Text = "铜钱 —",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.PaperBright,
                 VerticalAlignment = TextAlignment.Center,
@@ -566,7 +589,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
 
             _currencyIngotLabel = new Label
             {
-                Text = "银两 328",
+                // 银两/元宝没有服务端快照（ShopClientService 只给 Gold），不摆设计稿的 328
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.PaperBright,
                 VerticalAlignment = TextAlignment.Center,
@@ -579,7 +603,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
         /// </summary>
         private void OnBackButtonClicked()
         {
-            OnNavigationItemClicked(InkPageDomIds.BackHud);
+            OnNavigationItemClicked(InkPageDomIds.BackOneLevel);
         }
 
         // ==================================================================
@@ -606,7 +630,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
                 Parent = _previewPanel
             };
 
-            _previewFigure = new AppearancePreviewFigure
+            // 真实 3D 预览：读本地玩家 Actor 当前的 SkinnedModel（外观换的是整套模型，
+            // 所以这里能直接看到外形变化，而不是设计稿里的静态剪影）。
+            _preview3D = new CharacterPreview3D
             {
                 Parent = _previewPanel
             };
@@ -676,31 +702,31 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
         /// <summary>左旋按钮点击处理。</summary>
         private void OnRotateLeftClicked()
         {
-            FlaxEngine.Debug.Log("[MenuAppearancePage] 左旋");
+            _preview3D?.RotateByDegrees(-15f);
         }
 
         /// <summary>右旋按钮点击处理。</summary>
         private void OnRotateRightClicked()
         {
-            FlaxEngine.Debug.Log("[MenuAppearancePage] 右旋");
+            _preview3D?.RotateByDegrees(15f);
         }
 
         /// <summary>放大按钮点击处理。</summary>
         private void OnZoomInClicked()
         {
-            FlaxEngine.Debug.Log("[MenuAppearancePage] 放大");
+            _preview3D?.ZoomBy(0.88f);
         }
 
         /// <summary>缩小按钮点击处理。</summary>
         private void OnZoomOutClicked()
         {
-            FlaxEngine.Debug.Log("[MenuAppearancePage] 缩小");
+            _preview3D?.ZoomBy(1f / 0.88f);
         }
 
         /// <summary>重置视角按钮点击处理。</summary>
         private void OnResetViewClicked()
         {
-            FlaxEngine.Debug.Log("[MenuAppearancePage] 重置视角");
+            _preview3D?.ResetView();
         }
 
         // ==================================================================
@@ -757,6 +783,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
         {
             _activeTabIndex = index;
             RefreshTabStyles();
+            RebuildSetCards();
         }
 
         /// <summary>
@@ -780,7 +807,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
         // ==================================================================
 
         /// <summary>
-        /// 构建 3×2 套装卡片网格（设计稿六张 .set-card，默认选中「朱雀翎衫」）。
+        /// 构建套装卡片网格：数据来自 <see cref="EquipmentDatabase.GetAppearanceEquipments"/>，
+        /// 末尾追加一张「默认外观（卸下）」卡。卡片点击即穿戴/卸下，不再使用设计稿的静态套装名。
         /// </summary>
         private void BuildSetGrid()
         {
@@ -791,45 +819,273 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
                 Parent = _mainArea
             };
 
-            for (int i = 0; i < SetNames.Length; i++)
+            RebuildSetCards();
+        }
+
+        /// <summary>
+        /// 按当前角色性别重建外观卡片，并标注「已穿戴 / 未拥有 / 品质」。
+        /// 服务端快照变化会走这里，因此不缓存任何 item 实例。
+        /// </summary>
+        private void RebuildSetCards()
+        {
+            if (_setGrid == null) return;
+
+            int gender = ResolvePlayerGender();
+            _appearanceItems.Clear();
+            _appearanceItems.AddRange(EquipmentDatabase.GetAppearanceEquipments(gender));
+
+            _setGrid.DisposeChildren();
+            _setCards.Clear();
+            _appearanceCardIds.Clear();
+
+            // 当前只有整套外观资产（头/身/披风一体），因此数据只挂在「服装」页签；
+            // 其余页签给一张提示卡，避免把同一套衣服重复列在头饰/披风/武器/坐骑下。
+            if (_activeTabIndex != DefaultTabIndex)
             {
-                SetCard card = new SetCard(
+                var placeholder = new SetCard(
+                    0,
+                    $"{TabNames[_activeTabIndex]}外观",
+                    "暂未开放",
+                    InkWashTheme.TextTertiary,
+                    InkWashTheme.BaseElevated)
+                {
+                    Parent = _setGrid
+                };
+                _setCards.Add(placeholder);
+                _appearanceCardIds.Add(0);
+                RefreshSetSelection();
+                ApplyLayout();
+                return;
+            }
+
+            int equippedId = GetEquippedAppearanceId();
+
+            for (int i = 0; i < _appearanceItems.Count; i++)
+            {
+                var item = _appearanceItems[i];
+                bool equipped = equippedId == item.Id;
+                bool owned = IsAppearanceOwned(item.Id);
+                string status = equipped ? "已穿戴" : (owned ? QualityName(item.Quality) : "未拥有");
+                Color statusColor = equipped
+                    ? InkWashTheme.GoldBright
+                    : (owned ? QualityColor(item.Quality) : InkWashTheme.TextTertiary);
+
+                var card = new SetCard(
                     i,
-                    SetNames[i],
-                    SetQualities[i],
-                    SetQualityColors[SetQualityColorIndexes[i]],
-                    SetThumbColors[i])
+                    item.Name,
+                    status,
+                    statusColor,
+                    ThumbColorFor(item))
                 {
                     Parent = _setGrid
                 };
                 card.Selected += OnSetCardSelected;
                 _setCards.Add(card);
+                _appearanceCardIds.Add(item.Id);
             }
+
+            // 末位：卸下外观，回到性别默认身体。
+            var unequipCard = new SetCard(
+                _setCards.Count,
+                "默认外观",
+                equippedId == 0 ? "已穿戴" : "卸下",
+                equippedId == 0 ? InkWashTheme.GoldBright : InkWashTheme.QualityCommon,
+                InkWashTheme.BaseElevated)
+            {
+                Parent = _setGrid
+            };
+            unequipCard.Selected += OnSetCardSelected;
+            _setCards.Add(unequipCard);
+            _appearanceCardIds.Add(0);
+
+            RefreshSetSelection();
+            ApplyLayout();
         }
 
         /// <summary>
-        /// 套装卡片选中处理：更新选中态与染色目标名。
+        /// 让 3D 预览读取本地玩家 Actor 当前的整套模型；Actor 未就绪时按性别显示默认身体。
+        /// </summary>
+        private void BindPreview()
+        {
+            if (_preview3D == null) return;
+
+            try
+            {
+                var component = HundunWorldGame.Instance?.LocalPlayerActor?
+                    .GetScript<CharacterAttributesComponent>();
+                if (component != null)
+                    _preview3D.SetCharacter(component);
+                else
+                    _preview3D.SetBodyGender(ResolvePlayerGender());
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[MenuAppearancePage] 绑定 3D 预览失败: {ex.Message}");
+            }
+        }
+
+        private void OnAppearanceChanged()
+        {
+            BindPreview();
+        }
+
+        /// <summary>当前玩家性别：优先看已穿外观的限定性别，其次从身体模型路径推断（Character_2 = 女）。</summary>
+        private static int ResolvePlayerGender()
+        {
+            try
+            {
+                // 外观模型可能是中性的傀儡资产，路径里没有性别信息；已穿外观自己的 RequiredGender
+                // 是最可靠的回退（例如女性穿着「流云霓裳」时再打开外观页）。
+                int equippedId = GetEquippedAppearanceId();
+                if (equippedId > 0)
+                {
+                    var equipped = EquipmentDatabase.GetEquipment(equippedId);
+                    if (equipped != null && equipped.RequiredGender >= 0)
+                        return equipped.RequiredGender;
+                }
+
+                var local = HundunWorldGame.Instance?.LocalPlayerActor;
+                var model = local?.FindActor<AnimatedModel>() ?? local?.GetChild<AnimatedModel>();
+                var path = model?.SkinnedModel?.Path;
+                if (!string.IsNullOrEmpty(path) &&
+                    path.IndexOf("Character_2", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[MenuAppearancePage] 推断角色性别失败，按男性处理: {ex.Message}");
+            }
+            return 0;
+        }
+
+        /// <summary>当前外观槽已穿的模板 ID；未穿返回 0。</summary>
+        private static int GetEquippedAppearanceId()
+        {
+            return PlayerInventoryService.Instance.TryGetEquipped(EquipmentSlot.Appearance, out var entry)
+                ? entry.TemplateId
+                : 0;
+        }
+
+        /// <summary>外观是否在背包里（当前已穿戴的也算拥有，卸下按钮单独处理）。</summary>
+        private static bool IsAppearanceOwned(int templateId)
+        {
+            if (templateId <= 0) return true;
+            if (GetEquippedAppearanceId() == templateId) return true;
+
+            foreach (var item in PlayerInventoryService.Instance.Items)
+            {
+                if (item.TemplateId == templateId && item.Count > 0)
+                    return true;
+            }
+            return false;
+        }
+
+        private static Color ThumbColorFor(EquipmentData item)
+        {
+            if (item == null) return InkWashTheme.BaseElevated;
+            if (item.RequiredGender == 0) return InkWashTheme.ElementWater;
+            if (item.RequiredGender == 1) return InkWashTheme.JadePrimary;
+            return InkWashTheme.GoldDeep;
+        }
+
+        private static string QualityName(int quality) => quality switch
+        {
+            0 => "凡品",
+            1 => "珍品",
+            2 => "仙品",
+            3 => "灵品",
+            4 => "神品",
+            _ => "神品"
+        };
+
+        private static Color QualityColor(int quality) => quality switch
+        {
+            0 => InkWashTheme.PaperDark,
+            1 => InkWashTheme.QualityRare,
+            2 => InkWashTheme.TextBrand,
+            3 => InkWashTheme.JadeBright,
+            _ => InkWashTheme.TextVermilion
+        };
+
+        /// <summary>
+        /// 卡片点击：穿/卸外观。全部走 <see cref="PlayerInventoryService"/> 的服务端权威链路，
+        /// 成功后由 Changed/OperationFinished 事件重建卡片；失败只提示，不改本地状态。
         /// </summary>
         /// <param name="index">卡片索引</param>
         private void OnSetCardSelected(int index)
         {
-            _selectedSetIndex = index;
-            RefreshSetSelection();
+            if (index < 0 || index >= _appearanceCardIds.Count) return;
+
+            int templateId = _appearanceCardIds[index];
+            var service = PlayerInventoryService.Instance;
+            int equippedId = GetEquippedAppearanceId();
+
+            if (templateId <= 0)
+            {
+                if (equippedId == 0)
+                {
+                    UIHelper.ShowToast("当前已是默认外观", ToastType.Info);
+                    return;
+                }
+                _ = service.RequestUnequipAsync(EquipmentSlot.Appearance);
+                return;
+            }
+
+            if (equippedId == templateId)
+            {
+                _ = service.RequestUnequipAsync(EquipmentSlot.Appearance);
+                return;
+            }
+
+            if (!IsAppearanceOwned(templateId))
+            {
+                UIHelper.ShowToast("尚未拥有该外观", ToastType.Warning);
+                return;
+            }
+
+            _ = service.RequestEquipByTemplateAsync(templateId);
+        }
+
+        private void OnInventoryChanged()
+        {
+            BindPreview();   // Actor 晚于页面创建时，第一次快照到达后补绑
+            RebuildSetCards();
+        }
+
+        private void OnAppearanceOperationFinished(ItemOperationResult result)
+        {
+            if (result.Operation != ItemOperationKind.Equip && result.Operation != ItemOperationKind.Unequip)
+                return;
+
+            if (!string.IsNullOrEmpty(result.Message))
+                UIHelper.ShowToast(result.Message, result.Success ? ToastType.Success : ToastType.Warning);
+
+            RebuildSetCards();
         }
 
         /// <summary>
-        /// 刷新套装卡片选中态与染色区目标名称（设计稿染色标题「染色 · 朱雀翎衫」）。
+        /// 刷新套装卡片选中态与染色区目标名称（选中卡 = 当前已穿戴外观）。
         /// </summary>
         private void RefreshSetSelection()
         {
+            int equippedId = GetEquippedAppearanceId();
+            _selectedSetIndex = _appearanceCardIds.IndexOf(equippedId);
+            if (_selectedSetIndex < 0)
+                _selectedSetIndex = _appearanceCardIds.Count - 1;   // 未穿外观 → 末位「默认外观」
+
             for (int i = 0; i < _setCards.Count; i++)
             {
                 _setCards[i].IsSelected = i == _selectedSetIndex;
             }
 
-            if (_dyeTargetLabel != null && _selectedSetIndex >= 0 && _selectedSetIndex < SetNames.Length)
+            if (_dyeTargetLabel != null)
             {
-                _dyeTargetLabel.Text = SetNames[_selectedSetIndex];
+                string name = equippedId > 0
+                    ? EquipmentDatabase.GetEquipment(equippedId)?.Name
+                    : null;
+                _dyeTargetLabel.Text = string.IsNullOrEmpty(name) ? "默认外观" : name;
             }
         }
 
@@ -871,7 +1127,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
 
             _dyeTargetLabel = new Label
             {
-                Text = SetNames[DefaultSetIndex],
+                Text = "默认外观",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.GoldBright,
                 VerticalAlignment = TextAlignment.Center,
@@ -952,7 +1208,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
 
             _btnApplyDye = new InkButton
             {
-                Text = "✓ 应用染色",
+                Text = "√ 应用染色",
                 Variant = InkButtonVariant.Vermilion,
                 ButtonSize = InkButtonSize.Md,
                 Parent = _dyePanel
@@ -1032,18 +1288,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
             if (sw <= 0f || sh <= 0f)
             {
                 return;
-            }
-
-            if (_backgroundLayer != null)
-            {
-                _backgroundLayer.Location = Float2.Zero;
-                _backgroundLayer.Size = _screenSize;
-            }
-
-            if (_vignette != null)
-            {
-                _vignette.Location = Float2.Zero;
-                _vignette.Size = _screenSize;
             }
 
             ApplySidebarLayout(sh);
@@ -1220,12 +1464,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
                 _previewTitle.Size = new Float2(titleWidth, 96f);
             }
 
-            if (_previewFigure != null)
+            if (_preview3D != null)
             {
                 float figureHeight = Mathf.Min(previewHeight * 0.72f, 560f);
                 float figureWidth = figureHeight * 0.5f;
-                _previewFigure.Location = new Float2((previewWidth - figureWidth) * 0.5f, ContentPadding + 16f);
-                _previewFigure.Size = new Float2(figureWidth, figureHeight);
+                _preview3D.Location = new Float2((previewWidth - figureWidth) * 0.5f, ContentPadding + 16f);
+                _preview3D.Size = new Float2(figureWidth, figureHeight);
+                _preview3D.RefreshLayout();
             }
 
             ApplyPreviewToolbarLayout(previewWidth, previewHeight);
@@ -1874,7 +2119,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Appearance
                     TextColor = InkWashTheme.PaperDark,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.StretchAll,
+                    // 缩略图固定 48×48：StretchAll 实测 148×68，字会落到框外
+                    Location = Float2.Zero,
+                    Size = new Vector2(ThumbSize, ThumbSize),
                     Parent = _thumb
                 };
 

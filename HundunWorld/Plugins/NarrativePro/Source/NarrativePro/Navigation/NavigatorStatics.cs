@@ -151,23 +151,93 @@ namespace NarrativePro.Navigation
 
         /// <summary>
         /// 求两点间的导航路径拐点。失败（含导航未就绪）返回 false，<paramref name="path"/> 为空数组。
+        /// 等价于 <see cref="TryFindPath(Vector3, Vector3, NarrativeNavQueryFilter, out Vector3[])"/> 使用默认过滤器。
         /// </summary>
         public static bool TryFindPath(Vector3 start, Vector3 end, out Vector3[] path)
+        {
+            return TryFindPath(start, end, null, out path);
+        }
+
+        /// <summary>
+        /// 带查询过滤器的路径求解。对应 UE5 的 FindPath(NavData, QueryFilter)：
+        /// 引擎几何寻路之后，再按导航区域代价（<see cref="NavArea_Road"/> 等）做一次道路优先的优化。
+        /// <para>
+        /// Flax 的 <c>Navigation.FindPath</c> 没有过滤器入口，因此 <paramref name="filter"/> 的
+        /// <see cref="NarrativeNavQueryFilter.MaxSearchNodes"/> 用作 <see cref="NavAreaSystem"/> A* 的
+        /// 节点预算，<see cref="NarrativeNavQueryFilter.bAllowAreaCostPathfinding"/> 决定是否做代价优化。
+        /// </para>
+        /// </summary>
+        public static bool TryFindPath(Vector3 start, Vector3 end, NarrativeNavQueryFilter filter, out Vector3[] path)
         {
             path = System.Array.Empty<Vector3>();
             try
             {
-                if (FlaxEngine.Navigation.FindPath(start, end, out var corners) && corners != null && corners.Length > 0)
+                if (!FlaxEngine.Navigation.FindPath(start, end, out var corners) || corners == null || corners.Length == 0)
+                {
+                    return false;
+                }
+
+                // 引擎路径的代价（几何长度 × 沿途区域代价），作为是否采用道路路径的比较基准
+                float engineCost = GetPathCost(corners);
+
+                if (filter != null && !filter.bAllowAreaCostPathfinding)
                 {
                     path = corners;
                     return true;
                 }
+                if (filter == null && !NavAreaSystem.bUseCostAwarePathfinding)
+                {
+                    path = corners;
+                    return true;
+                }
+
+                int budget = filter != null ? filter.MaxSearchNodes : NarrativeNavQueryFilter.DefaultMaxSearchNodes;
+
+                if (NavAreaSystem.TryFindCostAwarePath(start, end, budget, out var roadWaypoints, out float roadCost)
+                    && roadCost < engineCost)
+                {
+                    var refined = new List<Vector3>(roadWaypoints.Count + 2) { start };
+                    foreach (var waypoint in roadWaypoints)
+                    {
+                        // 去掉与起点/终点重合的接驳点，保持拐点序列干净
+                        if (Vector3.DistanceSquared(waypoint, start) < 1f) continue;
+                        if (Vector3.DistanceSquared(waypoint, end) < 1f) continue;
+                        if (Vector3.DistanceSquared(waypoint, refined[refined.Count - 1]) < 1f) continue;
+                        refined.Add(waypoint);
+                    }
+                    refined.Add(end);
+
+                    path = refined.ToArray();
+                    return path.Length > 0;
+                }
+
+                path = corners;
+                return true;
             }
             catch
             {
                 // 导航网格缺失/构建中，按失败处理
             }
             return false;
+        }
+
+        /// <summary>
+        /// 一条路径的通行代价：总长度乘以沿途区域代价（道路 0.5 会显著降低代价）。
+        /// 对应 UE5 Recast 的 AreaCost 加权距离。
+        /// 累加规则本体在 <see cref="NavCostGraph.PathCost"/>（纯实现，harness 驱动同一份）。
+        /// </summary>
+        public static float GetPathCost(Vector3[] path)
+        {
+            if (path == null || path.Length == 0) return float.MaxValue;
+            if (path.Length == 1) return 0f;
+
+            var points = new NavCostPoint[path.Length];
+            for (int i = 0; i < path.Length; i++)
+            {
+                points[i] = new NavCostPoint(path[i].X, path[i].Y, path[i].Z);
+            }
+
+            return NavCostGraph.PathCost(points, NavAreaSystem.GetSegmentAverageCost);
         }
 
         /// <summary>把位置投影到导航网格表面。失败返回 false。</summary>

@@ -1,80 +1,16 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.StyleSystem;
+using MetaHuman;
+using MetaHuman.Runtime;
 using System;
 using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 {
-    /// <summary>
-    /// 面容预设表。
-    /// <para>
-    /// 名称沿用旧创建流程 <c>UI/Character/FacePresetCard.cs</c> 的 8 项表，
-    /// 索引即 <c>AppearanceInfo.HairModel / FaceModel</c> 的取值，保持与后端一致。
-    /// 前 4 项归「风雅」、后 4 项归「写实」，对应参考图 图片/2-5.png 的两个分类页签。
-    /// </para>
-    /// </summary>
-    internal static class CcFacePresets
-    {
-        /// <summary>风格分类名（下标即 <see cref="CcSession.StyleCategory"/>）。</summary>
-        public static readonly string[] Categories = { "风雅", "写实" };
-
-        /// <summary>衣装 / 体型预设名，下标写入 <c>AppearanceInfo.Clothing</c>（参考图 图片/5.png 最右一列）。</summary>
-        public static readonly string[] Outfits = { "布衣", "劲装", "道袍", "儒衫", "甲胄", "蓑衣" };
-
-        // 下面三组色板分别对应 AppearanceInfo 的 HairColor / EyeColor / SkinColor（离散下标）。
-        // 旧创建流程这三个字段全传 0，所以这是第一次真正把它们带上值。
-
-        /// <summary>发色。</summary>
-        public static readonly Color[] HairColors =
-        {
-            new Color(0.10f, 0.10f, 0.12f), new Color(0.28f, 0.18f, 0.12f), new Color(0.45f, 0.28f, 0.16f),
-            new Color(0.78f, 0.78f, 0.80f), new Color(0.92f, 0.90f, 0.86f), new Color(0.14f, 0.18f, 0.30f),
-        };
-
-        /// <summary>瞳色。</summary>
-        public static readonly Color[] EyeColors =
-        {
-            new Color(0.32f, 0.20f, 0.12f), new Color(0.12f, 0.12f, 0.14f), new Color(0.62f, 0.42f, 0.16f),
-            new Color(0.24f, 0.48f, 0.44f), new Color(0.32f, 0.40f, 0.54f),
-        };
-
-        /// <summary>肤色。</summary>
-        public static readonly Color[] SkinColors =
-        {
-            new Color(0.93f, 0.85f, 0.76f), new Color(0.86f, 0.72f, 0.58f), new Color(0.78f, 0.62f, 0.46f),
-            new Color(0.97f, 0.91f, 0.84f), new Color(0.48f, 0.34f, 0.26f), new Color(0.90f, 0.86f, 0.82f),
-        };
-
-        private static readonly string[] MaleNames = { "清秀", "儒雅", "俊朗", "阳光", "英气", "刚毅", "豪迈", "冷峻" };
-        private static readonly string[] FemaleNames = { "温婉", "端庄", "清丽", "甜美", "灵动", "妩媚", "冷艳", "温柔" };
-
-        /// <summary>取某性别、某分类下的预设（名 + 全局索引）。</summary>
-        public static List<(string Name, int Index)> GetByCategory(int gender, int category)
-        {
-            string[] table = gender == 1 ? FemaleNames : MaleNames;
-            int baseIndex = category == 1 ? 4 : 0;
-
-            var list = new List<(string, int)>(4);
-            for (int i = baseIndex; i < baseIndex + 4; i++)
-                list.Add((table[i], i));
-            return list;
-        }
-
-        /// <summary>全部 8 项预设（「更多面容」展开时用）。</summary>
-        public static List<(string Name, int Index)> GetAll(int gender)
-        {
-            string[] table = gender == 1 ? FemaleNames : MaleNames;
-
-            var list = new List<(string, int)>(table.Length);
-            for (int i = 0; i < table.Length; i++)
-                list.Add((table[i], i));
-            return list;
-        }
-    }
 
     /// <summary>
-    /// 分类标题（参考图 图片/2.png「写实 ◅」/ 图片/3.png「▸ 风雅」）：
+    /// 分类标题（参考图 图片/2.png「写实 ◅」/ 图片/3.png「◆ 风雅」）：
     /// 一次只显示当前分类，点标题或箭头翻到另一类，标题下方一条细横线。
     /// </summary>
     internal class CcCategoryTitle : ContainerControl
@@ -85,7 +21,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         /// <summary>当前分类名。</summary>
         public string Title = string.Empty;
 
-        /// <summary>箭头在标题右侧（◅）还是左侧（▸）。</summary>
+        /// <summary>箭头在标题右侧（◅）还是左侧（◆）。</summary>
         public bool ArrowOnRight = true;
 
         /// <summary>点击切换分类。</summary>
@@ -123,7 +59,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
                 float titleX = ArrowOnRight ? 0f : 26f;
 
                 CcDraw.Text(Title, new Rectangle(titleX, 0f, titleW + 10f, Height - 8f), InkWashTheme.FontRole.Display, FontSize, CcPalette.InkText);
-                CcDraw.Text(ArrowOnRight ? "◅" : "▸", new Rectangle(ArrowOnRight ? titleX + titleW + 6f : 0f, 0f, 22f, Height - 8f),
+                CcDraw.Text(ArrowOnRight ? "◅" : "◆", new Rectangle(ArrowOnRight ? titleX + titleW + 6f : 0f, 0f, 22f, Height - 8f),
                     InkWashTheme.FontRole.Body, 14f, CcPalette.InkIdle);
 
                 Render2D.DrawLine(new Float2(0f, Height - 6f), new Float2(Width, Height - 6f),
@@ -153,9 +89,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
             {
                 CcSession.Current.Gender = index;
 
-                // 目前 Content/ 下只有一具通用身体模型（skm_uefn_mannequin），
-                // 没有独立的female身体/发型网格，因此切换性别暂不改变预览模型；
-                // 模型资源到位后在此处按性别换 SetCharacter 的目标即可。
+                // 男/女是两具独立身体资产（Character_1 / Character_2），切档就换预览模型；
+                // 后续步骤的页面在构造时也会按当前会话性别重新绑定。
+                ApplyPreviewGender(index);
+
                 FlaxEngine.Debug.Log($"[CcGenderPage] 性别 -> {(index == 1 ? "女" : "男")}");
             };
         }
@@ -208,6 +145,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         protected override float PreviewFramingScale => 0.55f;
         protected override float PreviewFramingHeight => 0.78f;
 
+        /// <summary>看脸的页必须用**脖子以下**的模板身体：按性别的身体自带脑袋，会把脸罩住。</summary>
+        protected override bool PreviewUsesTemplateBody => true;
+
         /// <summary>Q/E 或 Z/C 翻分类，与点标题箭头等效。</summary>
         protected override void HandleShortcuts()
         {
@@ -228,7 +168,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
             int category = CcSession.Current.StyleCategory;
 
             _title.Title = CcFacePresets.Categories[category];
-            // 参考图：选「写实」时箭头在右（◅），选「风雅」时箭头在左（▸）
+            // 参考图：选「写实」时箭头在右（◅），选「风雅」时箭头在左（◆）
             _title.ArrowOnRight = category == 1;
 
             foreach (var card in _cards)
@@ -278,301 +218,440 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
     /// <summary>
     /// 创角第三步：捏脸（参考图 图片/4.png、5.png）。
-    /// 顶部「捏脸 / 智能捏脸」页签（Q/E），二级「风雅 / 写实」页签（Z/C），
-    /// 左侧四张横版预设卡 + 「更多面容」，右侧「万相集 / 分享」与三个圆形功能钮。
+    /// <para>
+    /// 旧版把「万相集 / 分享 / 发型 / 姿势 / 导入」画成圆钮却只记日志，是假入口；
+    /// 现在整块左栏换成自成一体的 <see cref="MetaHumanSculptPanel"/>，真实驱动 MetaHumanCharacter：
+    /// 区域页签、数值滑杆、左右联动、步骤条与撤销/重做、保存/发布、随机/重置/预设。
+    /// </para>
     /// </summary>
     public class CcFaceSculptPage : CcStagePage
     {
-        // 尺寸按参考图实测（图片/4、5.png 左栏四张横卡：单卡高约 152、间距 18、首卡顶 196）
-        private const float CardW = 375f;
-        private const float CardH = 152f;
-        private const float CardGap = 18f;
-        private const float CardsLeft = 94f;
-        private const float CardsTop = 196f;
+        private MetaHumanSculptPanel _sculpt;
 
-        /// <summary>展开「更多面容」放 8 张时的紧凑卡高与间距（保证列表底仍在 876 以内）。</summary>
-        private const float CompactCardH = 74f;
-        private const float CompactCardGap = 10f;
+        /// <summary>本页要驱动的那一具捏脸角色（归 <see cref="CcSession"/>，本页只是取用）。</summary>
+        private MetaHumanCharacter _character;
 
-        private CcTabRow _modeTabs;
-        private CcTabRow _categoryTabs;
-        private readonly List<CcPresetCard> _cards = new List<CcPresetCard>();
-        private CcHint _importHint;
-        private CcIconEntry _galleryEntry;
-        private CcIconEntry _shareEntry;
-        private CcIconEntry _bodyEntry;
-        private CcIconEntry _hairEntry;
-        private CcIconEntry _outfitEntry;
-        private CcHint _moreHint;
-        private CcSwatchRow _hairRow;
-        private CcSwatchRow _eyeRow;
-        private CcSwatchRow _skinRow;
-        private readonly List<CcPresetCard> _outfitThumbs = new List<CcPresetCard>();
-        private bool _showAllPresets;
+        /// <summary>已经交给面板的那一具；与 <see cref="_character"/> 不同才需要重新 Bind。</summary>
+        private MetaHumanCharacter _boundCharacter;
 
         public CcFaceSculptPage()
         {
-            _modeTabs = new CcTabRow
+            _sculpt = new MetaHumanSculptPanel
             {
-                Tabs = new[] { "捏脸", "智能捏脸" },
-                LeftKey = "Q",
-                RightKey = "E",
                 Parent = this,
             };
-            // 智能捏脸需要图像/算法后端，当前仅记录页签态；后续接入时在此分流。
-            _modeTabs.TabClicked += i => FlaxEngine.Debug.Log($"[CcFaceSculptPage] 模式页签 -> {(i == 1 ? "智能捏脸" : "捏脸")}");
 
-            _categoryTabs = new CcTabRow
+            // 会话归 CcSession，页面只负责把"往哪写"指过来。
+            AttachSculpt();
+            // 写之前让面板叫得动我们：预览那颗头会随页面重建变成死目标，而会话是跨页留着的。
+            _sculpt.EnsureWriteTarget = AttachSculpt;
+
+            // 发色：面板只管下标，预览实时换色（与世界侧 MH_Hair 的 HairColor 同一调色板）。
+            _sculpt.HairColorChanged = idx => Preview?.SetHairColorIndex(idx);
+            Preview?.SetHairColorIndex(CcSession.Current.HairColorIndex);
+
+            // 身体页签切到**蒙皮**身体：模板身体是静态网格，对骨骼/形状参数没有任何反应。
+            _sculpt.ShowBodyMode = body =>
             {
-                Tabs = CcFacePresets.Categories,
-                Selected = CcSession.Current.StyleCategory,
-                LeftKey = "Z",
-                RightKey = "C",
-                Parent = this,
+                if (Preview != null)
+                {
+                    // 2026-10-19：模板身体（body.flax）在 12:30 的重导后不可用，替换件也只有两只手；
+                    // 身体页签优先用 MetaHuman 蒙皮身体（Ada_BodyPreview4，躯干齐全、可被身体参数驱动），
+                    // 它没就绪时退回按性别取的完整角色 Character_1/2。头页签只留 Ada 脸（头资产自带肩颈）。
+                    bool useSkinnedBody = body
+                                          && HundunWorld.Game.Equipment.EquipmentDatabase.UseSkinnedBodyForPreview;
+                    // 头页签只留 Ada 脸（按头自己的包围盒取景）；身体页签用蒙皮身体或按性别取的完整角色。
+                    Preview.SetTemplateBodyVisible(false);
+                    Preview.SetSkinnedBodyVisible(useSkinnedBody);
+                    Preview.SetAnimatedBodyVisible(body && !useSkinnedBody);
+                    Preview.SetMetaHumanHeadVisible(!body);
+                    if (body)
+                    {
+                        Preview.FocusOn("whole");
+                    }
+                    else
+                    {
+                        Preview.Reframe();
+                    }
+                }
+
+                // 刚露出来的身体要立刻带上当前解算结果，否则要等玩家再动一次滑杆才看得到。
+                // 目标必须**现收**：页签切换会换可见身体（头 / 蒙皮身体 / 按性别身体），
+                // 拿进入页面时缓存的 _writtenTargets 重指会把新身体排除在外（实测身体滑杆零像素）。
+                if (!ReferenceEquals(_character, null) && _character && Preview != null)
+                {
+                    List<AnimatedModel> models = new List<AnimatedModel>();
+                    Preview.CollectSkinnedModels(models);
+                    if (models.Count > 0)
+                    {
+                        _character.RetargetModels(models.ToArray());
+                        RememberTargets(models);
+                    }
+                }
             };
-            _categoryTabs.TabClicked += i =>
+
+            // 分区按钮 → 镜头平滑过渡（头型/眼睛/脸颊/下巴/脖子、躯干/四肢/三围）。
+            _sculpt.ShowSection = sectionId =>
             {
-                CcSession.Current.StyleCategory = i;
-                RebuildCards();
+                if (Preview != null)
+                {
+                    Preview.FocusOn(sectionId);
+                }
             };
 
-            _importHint = new CcHint
+            // 分区按钮 → 镜头平滑过渡（头型/眼睛/脸颊/下巴/脖子、躯干/四肢/三围）。
+            _sculpt.ShowSection = sectionId =>
             {
-                Key = "V",
-                Text = "导入捏脸",
-                TextColor = CcPalette.InkText,
-                Parent = this,
+                if (Preview != null)
+                {
+                    Preview.FocusOn(sectionId);
+                }
             };
-            _importHint.Activated += ImportFacePreset;
 
-            _moreHint = new CcHint
-            {
-                Text = "更多面容 ▾",
-                TextColor = CcPalette.InkText,
-                Parent = this,
-            };
-            _moreHint.Activated += ToggleShowAll;
+            // 上一步选的面容预设：id/名字由宿主注入（面板不认识 CcFacePresets，它要能被单文件编）。
+            int presetIndex = CcSession.Current.FacePresetIndex;
+            _sculpt.IncomingPresetId = CcFacePresets.PresetIdOf(presetIndex);
+            _sculpt.IncomingPresetName = CcFacePresets.PresetNameOf(presetIndex);
 
-            _galleryEntry = NewEntry("万", "万相集", false);
-            _shareEntry = NewEntry("⇗", "分享", false);
-            _bodyEntry = NewEntry("衣", string.Empty, true);
-            _hairEntry = NewEntry("发", string.Empty, true);
-            _outfitEntry = NewEntry("姿", string.Empty, true);
-
-            // 「衣」圆钮等价于切最右一列衣装（同一个 Clothing 值，真实生效）。
-            _bodyEntry.Activated += CycleOutfit;
-            // 其余入口按参考图保留在版面上，但本项目暂无对应资源/后端：点了只记日志，不做假反应。
-            _galleryEntry.Activated += () => NotImplemented("万相集（面容收藏）");
-            _shareEntry.Activated += () => NotImplemented("分享捏脸");
-            _hairEntry.Activated += () => NotImplemented("发型编辑（无发型网格资源）");
-            _outfitEntry.Activated += () => NotImplemented("姿势编辑（无姿势数据）");
-
-            RebuildCards();
-            RebuildOutfitThumbs();
-
-            _hairRow = NewSwatch("发色", CcFacePresets.HairColors, CcSession.Current.HairColorIndex, v => CcSession.Current.HairColorIndex = v);
-            _eyeRow = NewSwatch("瞳色", CcFacePresets.EyeColors, CcSession.Current.EyeColorIndex, v => CcSession.Current.EyeColorIndex = v);
-            _skinRow = NewSwatch("肤色", CcFacePresets.SkinColors, CcSession.Current.SkinColorIndex, v => CcSession.Current.SkinColorIndex = v);
+            _boundCharacter = _character;
+            _sculpt.Bind(_character);
+            WireServerSeal(_sculpt);
         }
 
-        private CcSwatchRow NewSwatch(string label, Color[] options, int selected, Action<int> onPick)
+        /// <summary>
+        /// 下一步/建号前把当前捏脸快照交给创建流程（不封存）。
+        /// 否则未点「发布」时，捏脸值在建号那一步会被丢弃（2026-10-22 实机复现）。
+        /// </summary>
+        public void CommitPendingLook()
         {
-            var row = new CcSwatchRow
+            _sculpt?.CommitPendingLook();
+        }
+
+        /// <summary>
+        /// 服务端"已发布"事件 ⇒ 通知当前活着的那块捏脸面板。
+        /// <para>
+        /// 只订阅一次、并按静态引用转给当前面板：页面每次导航都会新建，
+        /// 若每个面板都往服务事件上挂一份，旧面板会被事件持有而永不释放，还会各自重复封存日志。
+        /// </para>
+        /// </summary>
+        private static MetaHumanSculptPanel _sealTarget;
+
+        private static bool _sealWired;
+
+        private static void WireServerSeal(MetaHumanSculptPanel panel)
+        {
+            _sealTarget = panel;
+            if (_sealWired)
             {
-                Label = label,
-                Options = options,
-                Selected = selected,
-                Parent = this,
+                return;
+            }
+
+            HundunWorld.Game.Services.MetaHumanAppearanceService.Instance.OnServerSealed += () =>
+            {
+                MetaHumanSculptPanel live = _sealTarget;
+                if (live != null)
+                {
+                    live.OnServerSealedByService();
+                }
             };
-            row.SelectedChanged += onPick;
-            return row;
+            _sealWired = true;
         }
 
         protected override string ConfirmText => "下一步";
-
-        /// <summary>
-        /// 最右一列衣装 / 体型缩略（参考图 图片/5.png 右侧竖排小图）。
-        /// 选中下标写进 <c>AppearanceInfo.Clothing</c>；客户端暂无对应网格可换，
-        /// 但选择会随创建请求真实上报到服务端。
-        /// </summary>
-        private void RebuildOutfitThumbs()
-        {
-            for (int i = 0; i < CcFacePresets.Outfits.Length; i++)
-            {
-                int index = i;
-                var thumb = new CcPresetCard
-                {
-                    PresetIndex = index,
-                    Selected = CcSession.Current.BodyIndex == index,
-                    Parent = this,
-                };
-                thumb.Activated += () => SelectOutfit(index);
-                _outfitThumbs.Add(thumb);
-            }
-        }
-
-        private void SelectOutfit(int index)
-        {
-            CcSession.Current.BodyIndex = index;
-            foreach (var thumb in _outfitThumbs)
-                thumb.Selected = thumb.PresetIndex == index;
-        }
-
-        private void CycleOutfit()
-        {
-            SelectOutfit((CcSession.Current.BodyIndex + 1) % CcFacePresets.Outfits.Length);
-        }
-
-        private static void NotImplemented(string what)
-        {
-            FlaxEngine.Debug.Log($"[CcFaceSculptPage] {what}：暂无对应资源/后端，未接入");
-        }
 
         /// <summary>捏脸同样是头肩特写（参考图 图片/4、5.png）。</summary>
         protected override float PreviewFramingScale => 0.55f;
         protected override float PreviewFramingHeight => 0.78f;
 
-        /// <summary>Q/E 切捏脸模式，Z/C 切风格分类（与页签两侧键帽一致）。</summary>
-        protected override void HandleShortcuts()
-        {
-            if (Input.GetKeyDown(KeyboardKeys.Q))
-                _modeTabs.SelectTab(0);
-            else if (Input.GetKeyDown(KeyboardKeys.E))
-                _modeTabs.SelectTab(1);
-            else if (Input.GetKeyDown(KeyboardKeys.Z))
-                _categoryTabs.SelectTab(0);
-            else if (Input.GetKeyDown(KeyboardKeys.C))
-                _categoryTabs.SelectTab(1);
-            else if (Input.GetKeyDown(KeyboardKeys.V))
-                ImportFacePreset();
-        }
+        /// <summary>
+        /// 捏脸页看的就是 MetaHuman 的脸 ⇒ 不用按性别取的完整角色身体（它自带的头会遮挡）。
+        /// 也不用静态模板身体：模板身体已损坏、替换件只剩手；头资产自带肩颈，足够撑起头肩特写。
+        /// </summary>
+        protected override bool PreviewUsesTemplateBody => false;
 
         /// <summary>
-        /// 导入捏脸（参考图「V 导入捏脸」）。
-        /// 面容数据尚无对外格式（AppearanceInfo 只有几个 int，没有捏脸码/分享码定义），
-        /// 先保留入口并记录，待格式确定后在此接入。
+        /// 取（或建）整段创角共用的那一具 <see cref="MetaHumanCharacter"/>，并把它的写回目标
+        /// 指到**这一页当前真正被渲染的**那颗头（预览控件没公开它的 Actor，按名字在场景里找回来）。
+        /// <para>
+        /// 为什么要拆成"复用对象 + 重指目标"：页面每次导航都会新建，预览的 AnimatedModel 是新一具，
+        /// 而数值会话与可回溯历史必须留着。2026-10-18 实测旧做法（每次在预览的叶子 Actor 上 AddScript）
+        /// 造成两件事：① 面板 #1/#2/#3 各绑一具全新对象 ⇒ 来回导航后"数据无保留"；
+        /// ② 同一页内预览一旦重建 Actor，组件就成了孤儿（Flax 的 <c>Object.==</c> 比原生指针，
+        /// 面板里 <c>_character == null</c> 随即为真）⇒ 拖动改值、写回一次不跑、界面一句不响。
+        /// </para>
+        /// <para>
+        /// 反过来也不能用 <c>Load()</c> 换目标：它会连 <c>Session</c> 一起重建，等于把玩家调好的脸清空。
+        /// </para>
         /// </summary>
-        private void ImportFacePreset()
+        private void AttachSculpt()
         {
-            FlaxEngine.Debug.Log("[CcFaceSculptPage] 导入捏脸：面容数据格式未定义，暂未接入");
-        }
-        private CcIconEntry NewEntry(string glyph, string caption, bool filled)
-        {
-            return new CcIconEntry
+            try
             {
-                Glyph = glyph,
-                Caption = caption,
-                FilledCircle = filled,
-                Parent = this,
-            };
-        }
+                CcSession session = CcSession.Current;
+                AnimatedModel head = FindPreviewModelActor();
 
-        /// <summary>重建左侧预设卡（分类切换或展开「更多面容」）。</summary>
-        private void RebuildCards()
-        {
-            foreach (var card in _cards)
-                card.Dispose();
-            _cards.Clear();
-
-            var presets = _showAllPresets
-                ? CcFacePresets.GetAll(CcSession.Current.Gender)
-                : CcFacePresets.GetByCategory(CcSession.Current.Gender, CcSession.Current.StyleCategory);
-
-            foreach (var preset in presets)
-            {
-                int index = preset.Index;
-                var card = new CcPresetCard
+                // 写回目标由预览组件发布（它自己建的头/身体），不在场景里按名字搜 —— 搜出来的可能已销毁、
+                // 属于别的页面、甚至没有骨架（2026-10-19 实测四具里两具死的、一具骨架对不上）。
+                List<AnimatedModel> models = new List<AnimatedModel>();
+                if (Preview != null)
                 {
-                    Wide = true,
-                    Name = preset.Name,
-                    PresetIndex = preset.Index,
-                    Selected = CcSession.Current.FacePresetIndex == preset.Index,
-                    Size = new Float2(CardW, CardH),
-                    Parent = this,
-                };
-                card.Activated += () => SelectPreset(index);
-                _cards.Add(card);
+                    Preview.CollectSkinnedModels(models);
+
+                    // 进页默认是头页签：只留 Ada 脸（头资产自带肩颈），取景按头自己的包围盒算。
+                    Preview.SetTemplateBodyVisible(false);
+                    Preview.SetSkinnedBodyVisible(false);
+                    Preview.SetAnimatedBodyVisible(false);
+                    Preview.SetMetaHumanHeadVisible(true);
+                    Preview.Reframe();
+                }
+
+                if (models.Count == 0 && head != null)
+                {
+                    models.Add(head); // 兜底：预览还没建好时，至少别让写回目标为空
+                }
+
+                MetaHumanCharacter reuse = session.Sculpt;
+                // 判活要用 Flax 的语义：托管引用还在、原生对象已销毁时按"没有"算（隐式 bool 比原生指针）。
+                bool alive = !ReferenceEquals(reuse, null) && reuse;
+                if (alive)
+                {
+                    if (models.Count > 0 && !SameTargets(models))
+                    {
+                        reuse.RetargetModels(models.ToArray());
+                        RememberTargets(models);
+                    }
+
+                    _character = reuse;
+                    HookHairStyle();
+                    FlaxEngine.Debug.Log("[CcFaceSculptPage] 重绑 alive: targets=" + models.Count
+                        + " head=" + (head != null ? head.Name : "<无>")
+                        + " headModel=" + (head != null && head.SkinnedModel != null ? head.SkinnedModel.Path : "<无>")
+                        + " servable=" + reuse.ServableHeadParameterCount + "/" + reuse.HeadParameterCount);
+                    return;
+                }
+
+                Actor host = session.SculptHost;
+                if (ReferenceEquals(host, null) || !host)
+                {
+                    host = CreateHostActor();
+                    session.SculptHost = host;
+                }
+
+                if (host == null)
+                {
+                    FlaxEngine.Debug.LogWarning("[CcFaceSculptPage] 无可用 Actor 承载 MetaHumanCharacter");
+                    _character = null;
+                    return;
+                }
+
+                MetaHumanCharacter character = host.GetScript<MetaHumanCharacter>();
+                if (character == null)
+                {
+                    character = host.AddScript<MetaHumanCharacter>();
+                }
+
+                if (character == null)
+                {
+                    _character = null;
+                    return;
+                }
+
+                character.TemplateIds = new[] { "metahuman.face_archetype", "metahuman.body_base" };
+                // 身份必须是"编辑/预览"档：LOD 政策里 `AlwaysShapeRoles = {local, editing, preview}`
+                // 才会**无条件保形状**。默认值是 "remote"，而预览那具头挂在舞台上
+                // （世界 y=-100000，离主相机约 1000m），距离分档直接判"超出形状档 ⇒ 整体不写形状"
+                // ⇒ 滑杆就算落地也会被压掉（2026-10-17 与"Adjust 不落地"叠在一起，症状是零反应）。
+                character.CharacterRole = "editing";
+                if (models.Count > 0)
+                {
+                    // 组件在常驻宿主上，所以写回目标必须点名 —— 宿主自己那棵树里没有头也没有身体。
+                    character.TargetModels = models.ToArray();
+                    RememberTargets(models);
+                }
+
+                character.Load();
+
+                session.Sculpt = character;
+                _character = character;
+                HookHairStyle();
+
+                // #57 定罪用：绑到谁身上、写回目标有几具、头里有多少个形状通道。
+                // 只打"成功"没用的——历史上这一路径静默绑到了身体（Character_1），捏脸照样"全绿但无效果"。
+                var asset = head != null ? head.SkinnedModel : null;
+                FlaxEngine.Debug.Log(
+                    "[CcFaceSculptPage] 宿主=" + (host != null ? host.Name : "<null>")
+                    + " | 写回目标数=" + models.Count
+                    + " | 头=" + (head != null ? head.Name : "<无>")
+                    + " | 资产=" + (asset != null ? asset.Path : "<无>")
+                    + " | 形状通道=" + (asset != null && asset.BlendShapes != null ? asset.BlendShapes.Length.ToString() : "0")
+                    + $" | 承载参数 {character.ServableHeadParameterCount}/{character.HeadParameterCount}");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[CcFaceSculptPage] 绑定 MetaHumanCharacter 失败: {ex}");
+                _character = null;
             }
         }
 
-        private void SelectPreset(int index)
+        /// <summary>
+        /// 发型（hair.style）→ 预览换模。角色挂在常驻宿主上、不在预览父级链里，所以这里主动推；
+        /// 订阅 OnApplied 覆盖滑杆/回溯/载入 look 三条来路。
+        /// </summary>
+        private void HookHairStyle()
         {
-            CcSession.Current.FacePresetIndex = index;
-            foreach (var card in _cards)
-                card.Selected = card.PresetIndex == index;
+            if (_character == null)
+            {
+                return;
+            }
+
+            _character.OnApplied -= OnCharacterApplied;
+            _character.OnApplied += OnCharacterApplied;
+            Preview?.SetHairStyle(_character.HairStyle);
         }
 
-        /// <summary>展开 / 收起全部 8 项面容（参考图「更多面容」）。</summary>
-        private void ToggleShowAll()
+        private void OnCharacterApplied(MetaHuman.MetaHumanSolution solution, bool full)
         {
-            _showAllPresets = !_showAllPresets;
-            _moreHint.Text = _showAllPresets ? "收起面容 ▴" : "更多面容 ▾";
-            _moreHint.ApplyWidth();
-            RebuildCards();
+            Preview?.SetHairStyle(_character != null ? _character.HairStyle : 0);
+        }
+
+        /// <summary>在已加载场景里找预览那具 AnimatedModel（父级名含 CharacterPreview3D 者优先）。</summary>
+        private static AnimatedModel FindPreviewModelActor()
+        {
+            AnimatedModel fallback = null;
+            for (int i = 0; i < Level.ScenesCount; i++)
+            {
+                // 必须写全限定名：本文件在 HundunWorld.Game.UI.* 命名空间下，
+                // 简单名 Scene 会先撞上兄弟命名空间 HundunWorld.Game.Scene（CS0118）。
+                FlaxEngine.Scene scene = Level.GetScene(i);
+                if (scene == null || scene.Name == "TransitionScene")
+                    continue;
+
+                // **优先找"预览里的头"**：MetaHumanCharacter 的 morph 只能写在 MetaHuman 头上，
+                // 而身体（Character_1/2）是另一套骨架、写了也看不出变化。
+                // 这具头由 CharacterPreview3D 创建，名字固定含 CharacterPreview3D_Head（见 §170）。
+                AnimatedModel head = FindModelIn(scene, false, "CharacterPreview3D_Head");
+                if (head != null)
+                    return head;
+
+                AnimatedModel preview = FindModelIn(scene, true, null);
+                if (preview != null)
+                    return preview;
+
+                if (fallback == null)
+                    fallback = FindModelIn(scene, false, null);
+            }
+            return fallback;
+        }
+
+
+        /// <summary>上一次点名给组件的那批写回目标（判"要不要重指点"用，按引用比）。</summary>
+        private readonly List<AnimatedModel> _writtenTargets = new List<AnimatedModel>();
+
+        private bool SameTargets(List<AnimatedModel> models)
+        {
+            if (_writtenTargets.Count != models.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < models.Count; i++)
+            {
+                if (!ReferenceEquals(_writtenTargets[i], models[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void RememberTargets(List<AnimatedModel> models)
+        {
+            _writtenTargets.Clear();
+            for (int i = 0; i < models.Count; i++)
+            {
+                _writtenTargets.Add(models[i]);
+            }
+        }
+
+        private static AnimatedModel FindModelIn(Actor root, bool onlyPreview, string nameContains = null)
+        {
+            if (root == null)
+                return null;
+
+            AnimatedModel model = root as AnimatedModel;
+            if (model != null)
+            {
+                bool nameOk = string.IsNullOrEmpty(nameContains)
+                              || (model.Name != null && model.Name.Contains(nameContains));
+                if (nameOk)
+                {
+                    if (!onlyPreview)
+                        return model;
+
+                    Actor parent = model.Parent;
+                    if (parent != null && parent.Name != null && parent.Name.Contains("CharacterPreview3D"))
+                        return model;
+                }
+            }
+
+            Actor[] children = root.Children;
+            if (children != null)
+            {
+                for (int i = 0; i < children.Length; i++)
+                {
+                    AnimatedModel found = FindModelIn(children[i], onlyPreview, nameContains);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            return null;
+        }
+
+        private static Actor CreateHostActor()
+        {
+            FlaxEngine.Scene target = null;
+            for (int i = 0; i < Level.ScenesCount; i++)
+            {
+                FlaxEngine.Scene scene = Level.GetScene(i);
+                if (scene != null && scene.Name != "TransitionScene")
+                {
+                    target = scene;
+                    break;
+                }
+            }
+
+            EmptyActor host = new EmptyActor { Name = "MetaHumanSculptHost" };
+            if (target != null)
+                Level.SpawnActor(host, target);
+            return host;
         }
 
         public override void RefreshLayout()
         {
             base.RefreshLayout();
 
-            if (Width <= 0f)
+            if (Width <= 0f || _sculpt == null)
                 return;
 
-            _modeTabs.Size = new Float2(520f, 44f);
-            _modeTabs.Location = new Float2(75f, 26f);
-
-            _categoryTabs.Size = new Float2(420f, 40f);
-            _categoryTabs.Location = new Float2(CardsLeft, 130f);
-
-            // 展开「更多面容」时切紧凑卡高：8 张全尺寸卡（152+18）会把按钮与色板推到 1080 设计高之外。
-            float cardH = _showAllPresets ? CompactCardH : CardH;
-            float cardGap = _showAllPresets ? CompactCardGap : CardGap;
-            float listBottom = CardsTop;
-
-            for (int i = 0; i < _cards.Count; i++)
+            // 预览那颗头可能是晚一步才随页面建出来的，所以每次布局都再确认一次写回目标；
+            // 只有换成了另一具角色才重绑面板（Bind 会整表重建 120 行，不能每帧做）。
+            AttachSculpt();
+            if (!ReferenceEquals(_character, _boundCharacter))
             {
-                _cards[i].Size = new Float2(CardW, cardH);
-                _cards[i].Location = new Float2(CardsLeft, CardsTop + i * (cardH + cardGap));
-                listBottom = CardsTop + (i + 1) * (cardH + cardGap);
+                _boundCharacter = _character;
+                _sculpt.Bind(_character);
             }
 
-            _moreHint.ApplyWidth();
-            _moreHint.Location = new Float2(CardsLeft + (CardW - _moreHint.Width) * 0.5f, listBottom + 2f);
-            _importHint.Location = new Float2(CardsLeft + 120f, Height - 72f);
-            _importHint.ApplyWidth();
+            // 面板占左侧留白（预览从 PreviewX 起），底部留出确认/返回的高度。
+            float x = RailX;
+            float top = 110f;
+            float w = PreviewX - RailX - 40f;
+            float h = Height - top - 40f;
 
-            // 三组色板横排成一行：竖排三行会顶到右下确认块（实测确认块占 y 979~1035）
-            float swatchY = listBottom + 40f;
-            float sx = CardsLeft;
-            foreach (var row in new[] { _hairRow, _eyeRow, _skinRow })
-            {
-                if (row == null)
-                    continue;
-
-                row.Size = new Float2(row.PreferredWidth, 30f);
-                row.Location = new Float2(sx, swatchY);
-                sx += row.Width + 20f;
-            }
-
-            float railX = Width - 135f;
-            Place(_galleryEntry, railX, 150f);
-            Place(_shareEntry, railX, 245f);
-            Place(_bodyEntry, railX, Height - 300f);
-            Place(_hairEntry, railX, Height - 240f);
-            Place(_outfitEntry, railX, Height - 180f);
-
-            // 最右一列衣装缩略（参考图 图片/5.png 右侧竖排小图）
-            for (int i = 0; i < _outfitThumbs.Count; i++)
-            {
-                _outfitThumbs[i].Size = new Float2(72f, 92f);
-                _outfitThumbs[i].Location = new Float2(Width - 215f, 150f + i * 100f);
-            }
-        }
-
-        private static void Place(CcIconEntry entry, float x, float y)
-        {
-            entry.Size = new Float2(56f, string.IsNullOrEmpty(entry.Caption) ? 36f : 66f);
-            entry.Location = new Float2(x, y);
+            _sculpt.Bounds = new Rectangle(x, top, w, h);
+            _sculpt.RefreshLayout();
         }
     }
 

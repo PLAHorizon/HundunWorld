@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Horizon.NpcCli</RootNamespace>
+    <AssemblyName>Horizon.NpcCli</AssemblyName>
+    <!-- 不要开 InvariantGlobalization：Microsoft.Data.SqlClient 在不变区域模式下直接抛异常。 -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
+    <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+    <!-- 写端与读端共用同一份快照 DTO / 装配器：CLI 的 validate 与 DsHost 的装配必须走同一套判据，
+         否则"编辑器里能存、游戏里装不上"会变成两条互不相认的规则。 -->
+    <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
+    <!-- 连接串解析复用 QuestCli 的 ConnectionConfig（原因同 MonsterCli：不写第二份清单）。 -->
+    <ProjectReference Include="..\Horizon.QuestCli\Horizon.QuestCli.csproj" />
+  </ItemGroup>
+
+</Project>

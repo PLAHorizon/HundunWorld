@@ -189,6 +189,40 @@ namespace Horizon.Model.GameModel
         /// </summary>
         [Column("earth_resistance")]
         public int EarthResistance { get; set; }
+
+        // 五行破防值：与 *_attack / *_resistance 同一套行号约定（1..5 = 金木水火土），
+        // 存于攻方本行、抵免被自己克制的那一行防御（金破木防）。服务端权威结算读取，
+        // 见 Horizon.Game.Core.Combat.ElementalDamageResolver。
+
+        /// <summary>
+        /// 金系破防（抵免木行防御）
+        /// </summary>
+        [Column("metal_penetration")]
+        public int MetalPenetration { get; set; }
+
+        /// <summary>
+        /// 木系破防（抵免土行防御）
+        /// </summary>
+        [Column("wood_penetration")]
+        public int WoodPenetration { get; set; }
+
+        /// <summary>
+        /// 水系破防（抵免火行防御）
+        /// </summary>
+        [Column("water_penetration")]
+        public int WaterPenetration { get; set; }
+
+        /// <summary>
+        /// 火系破防（抵免金行防御）
+        /// </summary>
+        [Column("fire_penetration")]
+        public int FirePenetration { get; set; }
+
+        /// <summary>
+        /// 土系破防（抵免水行防御）
+        /// </summary>
+        [Column("earth_penetration")]
+        public int EarthPenetration { get; set; }
         
         /// <summary>
         /// 金系已分配点数（与 strength/agility/constitution/internal_force 同属"加点"口径，

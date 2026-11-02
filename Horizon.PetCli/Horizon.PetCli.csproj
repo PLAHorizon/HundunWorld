@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Horizon.PetCli</RootNamespace>
+    <AssemblyName>Horizon.PetCli</AssemblyName>
+    <!-- 不要开 InvariantGlobalization：Microsoft.Data.SqlClient 在不变区域模式下直接抛异常。 -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
+    <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
+    <!-- 确定性内核在这里被"真跑"：校验器与所有 preview-* 动词都调 Sim 的 Pet*Core，
+         而不是 CLI 自己再算一遍——否则"编辑器里看到的数字"与"服务端算出的数字"必然分叉。 -->
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+    <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
+    <!-- 连接串与 Redis 候选的解析口径**复用** QuestCli 的 ConnectionConfig，不做第二份副本：
+         两处各写一份找连接串的清单，漏改一处就会让两个编辑器连到不同的库，而两边输出都是 ok=true。 -->
+    <ProjectReference Include="..\Horizon.QuestCli\Horizon.QuestCli.csproj" />
+  </ItemGroup>
+
+</Project>

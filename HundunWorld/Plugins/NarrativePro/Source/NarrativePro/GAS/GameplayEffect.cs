@@ -65,6 +65,21 @@ namespace NarrativePro.GAS
         {
             EffectName = name;
         }
+
+        /// <summary>
+        /// 取本效果每次周期投递的伤害量（用于死亡事件的 EventMagnitude）。
+        /// 未配置 Damage 修饰器时返回 0。
+        /// </summary>
+        public float GetPeriodDamageMagnitude()
+        {
+            if (Modifiers == null) return 0f;
+            float total = 0f;
+            foreach (var mod in Modifiers)
+            {
+                if (mod != null && mod.AttributeName == "Damage") total += mod.Magnitude;
+            }
+            return total;
+        }
     }
 
     /// <summary>
@@ -112,6 +127,13 @@ namespace NarrativePro.GAS
         /// <summary>是否仍有效（未被移除）。</summary>
         public bool bIsActive = true;
 
+        /// <summary>
+        /// 周期回调。由 ASC 在把效果加入 ActiveEffects 时挂上，
+        /// 每到 Period 触发一次以重新应用修饰器（对应 UE5 的 ExecutionData 周期执行）。
+        /// </summary>
+        [NonSerialized]
+        public Action<ActiveGameplayEffect> OnPeriodTriggered;
+
         public ActiveGameplayEffect() { }
 
         public ActiveGameplayEffect(GameplayEffect effect)
@@ -153,7 +175,8 @@ namespace NarrativePro.GAS
             if (Effect.Period > 0f && gameTime >= NextPeriodTime)
             {
                 NextPeriodTime = gameTime + Effect.Period;
-                // TODO [需接入 ASC 周期应用机制]: 周期应用修饰器（由 ASC 处理）
+                // 交回 ASC 重新应用修饰器（Poison/Regen 这类周期效果依赖此回调生效）
+                OnPeriodTriggered?.Invoke(this);
             }
 
             return true;
@@ -206,6 +229,19 @@ namespace NarrativePro.GAS
         /// <summary>动态资产标签（应用到 Spec 上，用于查询）。</summary>
         public GameplayTagContainer DynamicAssetTags = new GameplayTagContainer();
 
+        /// <summary>
+        /// 本次效果的命中上下文。对应 UE5 <c>FGameplayEffectContext::GetHitResult</c>：
+        /// 伤害执行计算用它读取物理材质倍率（NarrativeDamageExecCalc 的 MaterialMultiplier）。
+        /// </summary>
+        [NonSerialized]
+        public CombatHitResult Hit;
+
+        /// <summary>
+        /// SetByCaller 量级表（键为 GameplayTag.TagName）。
+        /// 对应 UE5 FGameplayEffectSpec::SetByCallerMagnitudes。
+        /// </summary>
+        public Dictionary<string, float> SetByCallerMagnitudes = new Dictionary<string, float>();
+
         public GameplayEffectSpec() { }
 
         public GameplayEffectSpec(GameplayEffect effect, NarrativeAbilitySystemComponent source = null, float level = 1f)
@@ -213,6 +249,33 @@ namespace NarrativePro.GAS
             Effect = effect;
             SourceASC = source;
             Level = level;
+
+            // 来源 Actor 一律从来源 ASC 反推：对应 UE5 FGameplayEffectContext 的 EffectCauser/Instigator。
+            // 之前只有近战命中路径手工赋值（NarrativeCombatAbility.HitTarget），
+            // 于是友伤否决、物理材质倍率、受击 foley 与死亡掉落归因在其它伤害路径上全部失效。
+            SourceActor = source != null ? source.Actor : null;
+        }
+
+        /// <summary>设置 SetByCaller 量级。对应 UE5 SetByCallerMagnitude。</summary>
+        public void SetSetByCallerMagnitude(GameplayTag tag, float magnitude)
+        {
+            if (!tag.IsValid()) return;
+            if (SetByCallerMagnitudes == null) SetByCallerMagnitudes = new Dictionary<string, float>();
+            SetByCallerMagnitudes[tag.TagName] = magnitude;
+        }
+
+        /// <summary>读取 SetByCaller 量级。对应 UE5 GetSetByCallerMagnitude（未设置时返回 0）。</summary>
+        public float GetSetByCallerMagnitude(GameplayTag tag)
+        {
+            return TryGetSetByCallerMagnitude(tag, out float value) ? value : 0f;
+        }
+
+        /// <summary>尝试读取 SetByCaller 量级。</summary>
+        public bool TryGetSetByCallerMagnitude(GameplayTag tag, out float value)
+        {
+            value = 0f;
+            if (!tag.IsValid() || SetByCallerMagnitudes == null) return false;
+            return SetByCallerMagnitudes.TryGetValue(tag.TagName, out value);
         }
     }
 

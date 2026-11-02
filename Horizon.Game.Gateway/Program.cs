@@ -76,6 +76,29 @@ namespace Horizon.Game.Gateway
                 _logger = host.Services.GetRequiredService<ILogger<Program>>();
                 _logger.LogInformation("混沌世界游戏网关正在启动...");
 
+                // ---- NPC 内容装配（网关侧）----
+                // 商人货架、服务位图与训练清单都来自已装配的 NPC 内容；网关的 ShopHandler 只读这一份。
+                // 没配路径时不装：商店相关请求会如实回 not_a_vendor，而不是"假装成功给一张空货架"。
+                var npcContentPath = ResolveNpcContentPath(args);
+                if (!string.IsNullOrWhiteSpace(npcContentPath))
+                {
+                    var npcReceipt = Horizon.Game.Core.Sim.Server.NpcContentLoader.LoadFile(npcContentPath, out var npcError);
+                    if (npcReceipt == null)
+                    {
+                        _logger.LogWarning("NPC 内容装配失败（商店将不可用）：{Error}", npcError);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("NPC 内容已装配：{Receipt}", npcReceipt.Describe());
+                        for (var i = 0; i < npcReceipt.Problems.Count; i++)
+                            _logger.LogWarning("NPC 内容问题：{Problem}", npcReceipt.Problems[i]);
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("未配置 NPC 内容（--npc-content 或 NPC_CONTENT_PATH）；商人窗口将返回 not_a_vendor。");
+                }
+
                 // 阶段 5.4.1：接线 HorizonMessageInfo 协议解析日志（替代原 Console.WriteLine 直接打印，
                 // 解析失败按 Error 级进入统一日志管线/文件落盘/告警）。
                 Horizon.Game.Message.Network.HorizonMessageInfo.Log = host.Services
@@ -296,6 +319,31 @@ namespace Horizon.Game.Gateway
         }
 
         /// <summary>
+        /// 解析 NPC 内容快照路径：命令行 <c>--npc-content=&lt;path&gt;</c> 优先，其次环境变量
+        /// <c>NPC_CONTENT_PATH</c>，最后探默认导出文件（<c>HundunWorld/Data/Npcs/db_content.json</c>）。
+        /// <para>与 DsHost 的开关同名，运维只需记一个名字；默认路径由
+        /// <see cref="Horizon.Game.Core.Sim.Server.NpcContentLoader.ResolveDefaultPath()"/> 两处共用。</para>
+        /// </summary>
+        private static string ResolveNpcContentPath(string[] args)
+        {
+            if (args != null)
+            {
+                for (var i = 0; i < args.Length; i++)
+                {
+                    var a = args[i] ?? string.Empty;
+                    const string prefix = "--npc-content=";
+                    if (a.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                        return a.Substring(prefix.Length).Trim();
+                }
+            }
+
+            var fromEnvironment = (Environment.GetEnvironmentVariable("NPC_CONTENT_PATH") ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(fromEnvironment)) return fromEnvironment;
+
+            return Horizon.Game.Core.Sim.Server.NpcContentLoader.ResolveDefaultPath();
+        }
+
+        /// <summary>
         /// 创建主机构建器
         /// </summary>
         /// <param name="args">命令行参数</param>
@@ -356,6 +404,20 @@ namespace Horizon.Game.Gateway
                     services.Configure<OrleansOptions>(context.Configuration.GetSection("Orleans"));
                     services.Configure<OrleansClusteringDbOptions>(context.Configuration.GetSection("ClusteringSiloOptions"));
                     services.Configure<SyncReconciliationOptions>(context.Configuration.GetSection("SyncReconciliation"));
+
+                    // 脚本化世界生成（DS 怪物/NPC/特殊事件）的限额与共享密钥。
+                    // 注册为 POCO 单例：裁决在 Grain、投递在网关、验签在 DS，三处读同一配置节。
+                    // 用工厂而非直接 Bind：本进程只是"自检"方，密钥与开关是否与其它两进程一致
+                    // 决定了后面是"全部被拒"还是"全部 signature-mismatch"，必须在启动时就打出来。
+                    services.AddSingleton(sp =>
+                    {
+                        var scripted = Horizon.Game.Core.Security.ScriptedSpawnConfiguration.Bind(
+                            context.Configuration, out _);
+                        Horizon.Game.Core.Security.ScriptedSpawnDiagnostics.LogStartup(
+                            sp.GetService<ILoggerFactory>()?.CreateLogger("Horizon.ScriptedSpawn"),
+                            "网关(令牌自检)", scripted);
+                        return scripted;
+                    });
                     // [连接精简治理 spec 4.4.4] 注册连接治理配置（非法值由 ConnectionGovernanceOptionsValidator 兜底回退默认）。
                     services.AddOptions<Configuration.ConnectionGovernanceOptions>()
                         .Bind(context.Configuration.GetSection("ConnectionGovernance"));
@@ -495,12 +557,30 @@ namespace Horizon.Game.Gateway
                         var logger = sp.GetRequiredService<ILogger<Horizon.Game.Core.Sim.Server.OrleansGameplayEventSink>>();
                         var inventory = new Horizon.Game.Core.Sim.Server.OrleansInventoryWriter(clusterClient);
                         var quests = new Horizon.Game.Core.Sim.Server.OrleansQuestProgressWriter(clusterClient);
+                        var favorability = new Horizon.Game.Core.Sim.Server.OrleansFavorabilityWriter(clusterClient);
+                        var experience = new Horizon.Game.Core.Sim.Server.OrleansExperienceWriter(clusterClient);
+                        // 条件掉落要判"玩家是否持有该任务"——这个状态只有 Orleans 侧有，
+                        // 所以 DS 只掷、这里判。缺了它，条件掉落一律不给并计入 ConditionalLootSkippedNoReader。
+                        var questStates = new Horizon.Game.Core.Sim.Server.OrleansQuestStateReader(clusterClient);
                         return new Horizon.Game.Core.Sim.Server.OrleansGameplayEventSink(
                             inventory, quests,
-                            message => logger.LogDebug("{Message}", message));
+                            message => logger.LogDebug("{Message}", message),
+                            favorability: favorability,
+                            experience: experience,
+                            questStates: questStates,
+                            // 击杀掉落金币的落点：钱包 grain（与商店/训练师/制作取的是同一个键口径
+                            // (long)characterId）。不接就等于"钱只进 DS 的计票"，所以这里必须显式接上。
+                            currency: new Horizon.Game.Core.Sim.Server.OrleansCurrencyWriter(clusterClient),
+                            // 击杀经验落库后把权威累计值推回 DS（客户端经验条的数据源）。
+                            progress: sp.GetService<Horizon.Game.Core.Sim.Server.IPlayerProgressNotifier>());
                     });
                     services.AddSingleton<Horizon.Game.Core.Sim.Server.IDsGameplayEventSink>(sp =>
                         sp.GetRequiredService<Horizon.Game.Core.Sim.Server.OrleansGameplayEventSink>());
+
+                    // 世界实体身份注册表（DS 上行描述符的落地点）：任务侧"谁能发布/玩家面前有什么"
+                    // 与后续交互事件校验的唯一权威来源。恒注册——DS 通道关闭时它就是空的，
+                    // 读取侧一律"未知即不成立"，不需要额外的开关分支。
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.DsEntityRegistry>();
 
                     services.AddSingleton<Services.DsControlPlane>(sp =>
                     {
@@ -509,13 +589,15 @@ namespace Horizon.Game.Gateway
                         var downlink = sp.GetRequiredService<Horizon.Game.Core.Sim.Server.DsDownlinkIngress>();
                         var logger = sp.GetRequiredService<ILogger<Services.DsControlPlane>>();
                         var gameplaySink = sp.GetRequiredService<Horizon.Game.Core.Sim.Server.IDsGameplayEventSink>();
+                        var entityRegistry = sp.GetRequiredService<Horizon.Game.Core.Sim.Server.DsEntityRegistry>();
                         // 逐调用读取 UseDS：支持不重启网关热切换（与 DsSyncDataPlane 同源语义）。
                         return new Services.DsControlPlane(
                             registry, downlink,
                             isEnabled: () => opts.CurrentValue.UseDS,
                             expectedToken: opts.CurrentValue.DsControlToken,
                             logger: logger,
-                            gameplaySink: gameplaySink);
+                            gameplaySink: gameplaySink,
+                            entityRegistry: entityRegistry);
                     });
 
                     // 阶段 2.5+：DSRegistry 持久化快照存储（Redis 单 blob）。恒注册、惰性初始化——
@@ -557,8 +639,8 @@ namespace Horizon.Game.Gateway
                     services.AddSingleton<IClusterCoordinationService, ClusterCoordinationService>();
                     services.AddSingleton<HorizonMessageAdapter>();
 
-                    // 游戏内聊天出站推送（ChatHandler 依赖）：经连接管理器把聊天通知写到目标角色连接。
-                    services.AddSingleton<Horizon.Game.Core.Handlers.IChatPushService, Horizon.Game.Gateway.Services.ChatPushService>();
+                    // 出站推送（ChatHandler / CharacterHandler 依赖）：经连接管理器把服务器主动发起的消息写到目标角色连接。
+                    services.AddSingleton<Horizon.Game.Core.Handlers.IPlayerPushService, Horizon.Game.Gateway.Services.PlayerPushService>();
 
                     // 注册角色指纹服务（基于 Redis，防止同一角色同时在线）
                     services.AddSingleton<Horizon.Game.Core.Interfaces.ICharacterFingerprintService>(provider =>
@@ -685,10 +767,29 @@ namespace Horizon.Game.Gateway
                     // UseDS=false 或 DsUplinkPort<=0 时 StartAsync 直接返回，不占用端口、零行为变化。
                     // 同时以具体类型注册：既作为 HostedService 启动，又供
                     // IDsSessionNotifier（会话结束通知）复用**同一条** DS 上行连接反向下发。
+                    // 尸体拾取：列表权威在 Orleans Grain（2026-10-28 拍板）；网关只做帧 → 存储 → 回执的映射。
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.ICorpseLootStore, Services.CorpseLootGrainStore>();
+                    // 条件件（needs_quest）判据：取走请求里要带上"这个人进行中的任务"，
+                    // 缺了它权威侧只能按"判不了"处理——东西还在，但持有任务的队友也拿不到。
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.IQuestStateReader>(sp =>
+                        new Horizon.Game.Core.Sim.Server.OrleansQuestStateReader(sp.GetRequiredService<IClusterClient>()));
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.CorpseLootUplinkHandler>();
                     services.AddSingleton<Services.DsUplinkServer>();
                     services.AddHostedService(sp => sp.GetRequiredService<Services.DsUplinkServer>());
                     services.AddSingleton<Horizon.Game.Core.Sim.Server.IDsSessionNotifier>(
                         sp => sp.GetRequiredService<Services.DsUplinkServer>());
+                    // 脚本化世界生成指令（怪物/NPC/特殊事件）复用同一条 DS 上行连接反向下发。
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.IDsScriptDispatcher>(
+                        sp => sp.GetRequiredService<Services.DsUplinkServer>());
+                    // 击杀经验落库后的权威进度回推（等级 + 累计经验）：客户端经验条读的是 DS 快照。
+                    // DsUplinkServer 必须延迟解析：DsUplinkServer → DsControlPlane → IDsGameplayEventSink
+                    // → 本类 构成 DI 环，构造期解析会让宿主启动时在工厂的 StackGuard 上互等死锁。
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.IPlayerProgressNotifier>(sp =>
+                        new Services.DsPlayerProgressNotifier(
+                            sp.GetRequiredService<Horizon.Game.Core.World.IShardRouter>(),
+                            () => sp.GetRequiredService<Services.DsUplinkServer>(),
+                            sp.GetRequiredService<ILogger<Services.DsPlayerProgressNotifier>>(),
+                            sp.GetService<Horizon.Game.Core.Interfaces.IDSyncDataPlane>()));
 
                     // 阶段 6.3 P2：自动回滚门（采样→连续窗口判定→回切 override→自愈恢复；UseDS=false 时空采样零副作用）
                     // 采样器注入跨进程修正计数存储：启用 DsRollback:CorrectionsPerWindowThreshold>0 时修正率

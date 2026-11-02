@@ -533,6 +533,18 @@ namespace Horizon.Game.Message.Enums
         [Description("日志消息")]
         Log = 1108,
 
+        /// <summary>
+        /// 脚本化世界生成指令（客户端 → 服务端）
+        /// </summary>
+        [Description("脚本化世界生成指令")]
+        ScriptCommand = 1109,
+
+        /// <summary>
+        /// 脚本化世界生成结果（服务端 → 客户端）
+        /// </summary>
+        [Description("脚本化世界生成结果")]
+        ScriptResult = 1110,
+
         #endregion
 
         #region 其他消息 (1300+)
@@ -1118,6 +1130,56 @@ namespace Horizon.Game.Message.Enums
         /// </summary>
         [Description("属性加点")]
         AttributeAllocate = 1655,
+
+        /// <summary>
+        /// 技能模板目录下行（服务端技能表 + 该角色已学技能）。客户端只填 CharacterId 请求。
+        /// </summary>
+        [Description("技能目录同步")]
+        SkillCatalogSync = 1656,
+
+        /// <summary>
+        /// 镇岳（§5.3）：指定/取消本角色的护体五行行。客户端只填 CharacterId + Element，
+        /// 服务端回填生效行与冷却剩余（换镇岳是 PVP 的攻防假设切换，10s 一次，判定全在服务端）。
+        /// </summary>
+        [Description("镇岳行设置")]
+        SetGuardElement = 1657,
+
+        /// <summary>
+        /// 与世界对象交互（对话/触发）——请求只带运行时实体 id，身份与邻近由服务端判定。
+        /// </summary>
+        [Description("任务对象交互")]
+        QuestInteractRequest = 1658,
+
+        /// <summary>
+        /// 任务对象交互的服务端裁决回执（成立时带回被推进的任务目标数）。
+        /// </summary>
+        [Description("任务对象交互回执")]
+        QuestInteractResult = 1659,
+
+        /// <summary>
+        /// 提交/更新数字人外观差量存档。外观对服务端是不透明 blob + 自描述版本，
+        /// 服务端只负责存、校验和转发，不参与求解——加参数不需要同步改服务端类型。
+        /// </summary>
+        [Description("数字人外观提交")]
+        UpdateCharacterAppearance = 1660,
+
+        /// <summary>
+        /// 外观提交的服务端裁决回执。拒绝必须带原因，静默吞掉就等于在说「存下了」这句谎话。
+        /// </summary>
+        [Description("数字人外观回执")]
+        UpdateCharacterAppearanceResult = 1661,
+
+        /// <summary>
+        /// 拉取指定角色已落库的外观（远端玩家进场渲染用）。
+        /// </summary>
+        [Description("拉取角色外观")]
+        GetCharacterAppearance = 1662,
+
+        /// <summary>
+        /// 角色外观读取回执。Look 为空表示该角色从未自定义过。
+        /// </summary>
+        [Description("拉取角色外观回执")]
+        GetCharacterAppearanceResult = 1663,
 
         #endregion
     }

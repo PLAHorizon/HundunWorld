@@ -1,0 +1,101 @@
+﻿{
+  "Format": 2,
+  "Name": "kk",
+  "EditorData": "VkcJdVgbAAACAAAAAAAAAAEAAAAJXA9cAgAAAIZQ7zkFAAAAFAAAAACR7OsMW139QZYBApfvdzVLBwAAAAAAAAAABwAAAAAAAIA/AgAAAAABAwAAAADQBwAAAgAAHv///38LAAAAHQ4KYx0OCgksOSwBAAIAAAAAAR7///9/CwAAAB0OCmMdDgoJLDksAAABAAAACwAAAAAAAAAAAAAADAAAALQELkUJmctEAAAAAAcAAAAKAAAAAAAAAAAKAAAAAAAAAAAKAAAAAAAAAAACAAAAAAEDAAAAAAAAAAADAAAAAAAAAAACAAAAAAEBAAAe////fwsAAAAdDgpjHQ4KCSw5LAEAAQAAAAABAAAACwAAAAAAAAAAAAAADAAAAI2qH0Va2MtEAAAAAAEAAAAKAAAAAAAAAAAAAAAMAAAA5\u002BwqRYjhykRnZoY/CQ==",
+  "Nodes": [
+    {
+      "TypeId": "SpawnActor",
+      "X": 2784.294,
+      "Y": 1628.7823,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "0cebec915d5b41fd96010297ef77354b",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "2000",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ActorSampler",
+      "X": 2554.6594,
+      "Y": 1630.761,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "",
+          "Components": null
+        },
+        {
+          "Kind": "String",
+          "Value": "",
+          "Components": null
+        },
+        {
+          "Kind": "String",
+          "Value": "",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        }
+      ]
+    }
+  ],
+  "Edges": [
+    {
+      "FromNode": 1,
+      "FromPin": 0,
+      "ToNode": 0,
+      "ToPin": 0
+    }
+  ],
+  "Exposed": [],
+  "Settings": {
+    "DefaultSeed": 0,
+    "EnableDebugDraw": true,
+    "MaxPointBudget": 2000000,
+    "MaxExpandedNodeCount": 4096,
+    "Terrain": null
+  }
+}

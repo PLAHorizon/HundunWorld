@@ -1,4 +1,4 @@
-using Horizon.Core.Security;
+﻿using Horizon.Core.Security;
 using Horizon.Game.Core.Security;
 using Horizon.Game.Core.Interfaces;
 using Horizon.Game.Message;
@@ -28,6 +28,8 @@ namespace Horizon.Game.Core.Handlers
         private readonly Microsoft.Extensions.Logging.ILoggerFactory _loggerFactory;
         private readonly ICharacterFingerprintService _fingerprintService;
         private readonly UserAuthTokenProvider _authTokenProvider;
+        /// <summary>出站推送：外观落库后把权威副本推给同 Gateway 上的其他在线角色（可空，缺失时只跳过推送）。</summary>
+        private readonly IPlayerPushService _pushService;
         /// <summary>
         /// 构造函数
         /// 初始化角色消息处理器
@@ -38,7 +40,8 @@ namespace Horizon.Game.Core.Handlers
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory = null,
             AuthenticationValidator validator = null,
             ICharacterFingerprintService characterFingerprintService = null,
-            UserAuthTokenProvider authTokenProvider = null) : base(logger, clusterClient, adapter)
+            UserAuthTokenProvider authTokenProvider = null,
+            IPlayerPushService pushService = null) : base(logger, clusterClient, adapter)
         {
             _loggerFactory = loggerFactory;
             _validator = validator ?? new AuthenticationValidator(
@@ -47,6 +50,7 @@ namespace Horizon.Game.Core.Handlers
                new Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthenticationValidator>());
             _fingerprintService = characterFingerprintService;
             _authTokenProvider = authTokenProvider;
+            _pushService = pushService;
         }
 
 
@@ -55,12 +59,23 @@ namespace Horizon.Game.Core.Handlers
         /// 包括角色管理、游戏核心玩法、社交、物品、技能、交互和系统消息等
         /// </summary>
         public override List<MessageType> MessageTypes { get; } = new List<MessageType> {
+            // 任务域消息（接取/完成/更新/门派任务）不在这里认领：本处理器那几支是恒回
+            // Success=true 的空桩，真现在 QuestHandler；两处同时声明会让"完成任务"变成一句谎话，
+            // 而 §14.2 的初级技能书正押在这条发放链上。
+            // 技能域消息（习得/升级/冷却/熟练/连击/防御/内功/轻功）不在这里认领：
+            // 本处理器那几支是恒回 Success=true 的空桩，真实现在 SkillHandler，
+            // 两处同时声明会让"习得成功"变成一句谎话（与 UseItem 当年的重复声明同一个病）。
              MessageType.CharacterList,
             MessageType.CreateCharacter,
             MessageType.SelectCharacter,
             MessageType.CharacterDelete,
             MessageType.CharacterNameCheck,
             MessageType.Appearance,
+            // 数字人外观提交：服务端只存 blob + 三道闸（已发布拒改、模板一致、校验和自算），
+            // 不解释参数含义，所以加滑杆不需要动这里。
+            MessageType.UpdateCharacterAppearance,
+            // 远端玩家外观：进场后按角色 Id 拉一次已落库的 blob（玩家实体 Id 就是角色 Id）。
+            MessageType.GetCharacterAppearance,
 
             MessageType.CreateCharacter,
             MessageType.SelectCharacter,
@@ -71,19 +86,19 @@ namespace Horizon.Game.Core.Handlers
             MessageType.PlayerSpawn,
             MessageType.AttributeUpdate,
             MessageType.AttributeAllocate,
-            MessageType.Attack,
-            MessageType.SkillCast,
-            MessageType.QingGong,
-            MessageType.NeiGong,
-            MessageType.ComboAttack,
-            MessageType.Defense,
+            // 权威战斗画像下行（五行三行 + 通用攻防基值）。MessageType 与消息类早已定义，
+            // 但全仓既没有服务端实现也没有客户端订阅者，本处理器是它的第一个读者，
+            // 因此不存在与其他处理器争抢同一消息类型的问题。
+            MessageType.CharacterAttributeRefresh,
+            // Attack / SkillCast 不在这里：本处理器曾把它们原样回显（客户端报多少伤害就回多少，
+            // 既不改 HP 也不校验），与 SkillHandler 的 CombatGrain 权威路径争抢同一消息类型，
+            // 命中哪个取决于 DI 注册顺序。权威结算唯一出口是 SkillHandler。
             MessageType.Damage,
             MessageType.Death,
             MessageType.Resurrect,
             MessageType.SectInfo,
             MessageType.JoinSect,
             MessageType.SectSkill,
-            MessageType.SectQuest,
             MessageType.Reputation,
             MessageType.ChivalryPoint,
             MessageType.Duel,
@@ -100,17 +115,10 @@ namespace Horizon.Game.Core.Handlers
             MessageType.CraftingResult,
             MessageType.AttributeInheritance,
             MessageType.WuXingCrafting,
-            MessageType.LearnSkill,
-            MessageType.SkillCooldown,
-            MessageType.SkillProficiency,
-            MessageType.UpgradeSkill,
             MessageType.Chat,
             MessageType.Friend,
             MessageType.Team,
             MessageType.Guild,
-            MessageType.QuestUpdate,
-            MessageType.AcceptQuest,
-            MessageType.CompleteQuest,
         };
 
         /// <summary>
@@ -161,10 +169,12 @@ namespace Horizon.Game.Core.Handlers
                     return await HandleMovementAsync(message);
                 case MessageType.AttributeAllocate:
                     return await HandleAttributeAllocateAsync(message);
-                case MessageType.Attack:
-                    return await HandleAttackAsync(message);
-                case MessageType.SkillCast:
-                    return await HandleSkillCastAsync(message);
+                case MessageType.UpdateCharacterAppearance:
+                    return await HandleUpdateAppearanceAsync(message);
+                case MessageType.GetCharacterAppearance:
+                    return await HandleGetAppearanceAsync(message);
+                case MessageType.CharacterAttributeRefresh:
+                    return await HandleCombatProfileRefreshAsync(message);
                 case MessageType.Chat:
                     return await HandleChatAsync(message);
                 case MessageType.UseItem:
@@ -672,6 +682,175 @@ namespace Horizon.Game.Core.Handlers
         }
 
         /// <summary>
+        /// 数字人外观落库。拒绝必须带原因并回给客户端：静默吞掉就等于对玩家说「已保存」这句谎话。
+        /// </summary>
+        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleUpdateAppearanceAsync(HorizonMessagePacket message)
+        {
+            var request = message.Body as UpdateCharacterAppearanceRequest;
+            var response = new UpdateCharacterAppearanceResponse();
+
+            try
+            {
+                if (request is null || request.CharacterId == 0UL || request.Look is null)
+                {
+                    response.Error = "请求参数无效";
+                    return (true, CreateHorizonMessage(response));
+                }
+
+                var grain = _clusterClient.GetGrain<ICharacterGrain>((long)request.CharacterId);
+                var result = await grain.UpdateAppearanceAsync(request.Look);
+                if (result != null && result.Success)
+                {
+                    await PushAppearanceToPeersAsync(grain, request.CharacterId, result.StoredRevision);
+                }
+                return (true, CreateHorizonMessage(result));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "处理数字人外观提交失败。CharacterId={CharacterId}", request?.CharacterId ?? 0);
+                response.Error = "外观保存失败，请稍后重试";
+                return (true, CreateHorizonMessage(response));
+            }
+        }
+
+        /// <summary>
+        /// 外观落库后把权威副本推给同 Gateway 上的其他在线角色：远端玩家不必重新进场就能看到对方的新外观。
+        /// <para>
+        /// 推送内容**回读 grain**，不假设"客户端传的那份就是存下的"；客户端按 Revision 丢弃旧副本。
+        /// 本人不推：他的界面已经是刚提交的这一份，回推只会覆盖会话内未保存的编辑。
+        /// 推送失败只记日志，不能让保存回执变成失败——外观已经落库，下次进场仍能拉到。
+        /// </para>
+        /// </summary>
+        private async Task PushAppearanceToPeersAsync(ICharacterGrain grain, ulong ownerCharacterId, int storedRevision)
+        {
+            if (_pushService == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var online = await _pushService.GetOnlineCharacterIdsAsync();
+                var targets = online.Where(id => id != ownerCharacterId).ToList();
+                if (targets.Count == 0)
+                {
+                    return;
+                }
+
+                var stored = await grain.GetAppearanceAsync();
+                if (stored?.Blob == null || stored.Blob.Length == 0)
+                {
+                    return;
+                }
+
+                int hairColor = 0;
+                try
+                {
+                    var info = await grain.GetCharacterInfoAsync(null);
+                    hairColor = info?.Appearance?.HairColor ?? 0;
+                }
+                catch
+                {
+                    // 发色只是表现附加项：读不到就回落 0，与读取回执同一口径。
+                    hairColor = 0;
+                }
+
+                await _pushService.PushAsync(new GetCharacterAppearanceResponse
+                {
+                    CharacterId = ownerCharacterId,
+                    Success = true,
+                    Look = stored,
+                    HairColor = hairColor,
+                }, targets);
+
+                Logger.LogInformation("[外观推送] 角色 {CharacterId} rev={Revision} 已推给 {Count} 名在线玩家",
+                    ownerCharacterId, storedRevision, targets.Count);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "[外观推送] 角色 {CharacterId} 推送失败", ownerCharacterId);
+            }
+        }
+
+        /// <summary>
+        /// 读取角色外观（远端玩家进场用）。成功但 Look 为空表示该角色从未自定义过，
+        /// 客户端应回默认脸；失败必须带原因，别把「读不到」当成「没有」。
+        /// </summary>
+        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleGetAppearanceAsync(HorizonMessagePacket message)
+        {
+            var request = message.Body as GetCharacterAppearanceRequest;
+            var response = new GetCharacterAppearanceResponse
+            {
+                CharacterId = request?.CharacterId ?? 0UL,
+            };
+
+            try
+            {
+                if (request is null || request.CharacterId == 0UL)
+                {
+                    response.Error = "角色ID无效";
+                    return (true, CreateHorizonMessage(response));
+                }
+
+                var grain = _clusterClient.GetGrain<ICharacterGrain>((long)request.CharacterId);
+                response.Look = await grain.GetAppearanceAsync();
+                try
+                {
+                    var info = await grain.GetCharacterInfoAsync(null);
+                    response.HairColor = info?.Appearance?.HairColor ?? 0;
+                }
+                catch
+                {
+                    // 发色只是表现附加项：读不到就回落 0，不把整次外观读取判失败。
+                    response.HairColor = 0;
+                }
+                response.Success = true;
+                return (true, CreateHorizonMessage(response));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "读取角色外观失败。CharacterId={CharacterId}", request?.CharacterId ?? 0);
+                response.Error = "读取外观失败，请稍后重试";
+                return (true, CreateHorizonMessage(response));
+            }
+        }
+
+        /// <summary>
+        /// 下行权威战斗画像（五行三行 + 通用攻防基值 + 五行属性值）。
+        /// <para>
+        /// 失败必须如实回 <c>Success=false</c>：客户端据此保留本地镜像，
+        /// 而不是把"grain 不可用"当成"服务端确认你五行全 0"，那会让面板瞬间归零。
+        /// </para>
+        /// </summary>
+        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleCombatProfileRefreshAsync(HorizonMessagePacket message)
+        {
+            var request = message.Body as CharacterAttributeRefreshRequest;
+            var response = new CharacterAttributeRefreshResponse
+            {
+                CharacterId = request?.CharacterId ?? 0UL,
+                Message = "",
+            };
+
+            try
+            {
+                if (request is null || request.CharacterId == 0UL)
+                {
+                    response.Message = "角色ID无效";
+                    return (true, CreateHorizonMessage(response));
+                }
+
+                var grain = _clusterClient.GetGrain<ICharacterGrain>((long)request.CharacterId);
+                return (true, CreateHorizonMessage(await grain.GetCombatProfileSnapshotAsync()));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "处理战斗画像同步失败。CharacterId={CharacterId}", request?.CharacterId ?? 0);
+                response.Message = "获取战斗画像失败";
+                return (true, CreateHorizonMessage(response));
+            }
+        }
+
+        /// <summary>
         /// 异步处理移动消息（阶段 3.3 后为拒绝路径）。<br/>
         /// 移动权威已迁移至空间权威（ZoneShardGrain + SimWorld），
         /// 旧 <see cref="MessageType.Movement"/> 写路径（CharacterGrain.MoveAsync）已下线，
@@ -691,60 +870,6 @@ namespace Horizon.Game.Core.Handlers
 
             var tem = CreateHorizonMessage(new MoveResponse { Success = false });
             return Task.FromResult<(bool, HorizonMessagePacket)>((true, tem));
-        }
-
-        /// <summary>
-        /// 异步处理攻击消息
-        /// </summary>
-        /// <param name="message">攻击消息包</param>
-        /// <returns>处理结果和响应消息包</returns>
-        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleAttackAsync(HorizonMessagePacket message)
-        {
-            try
-            {
-                AttackMessage attackMessage = message.Body as AttackMessage;
-                // 处理攻击逻辑
-                var response = new DamageMessage
-                {
-                    VictimId = attackMessage.TargetId,
-                    AttackerId = attackMessage.AttackerId,
-                    Damage = attackMessage.Damage,
-                    IsCritical = attackMessage.IsCritical
-                };
-                var tem = CreateHorizonMessage(response);
-                return (true, tem);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "处理攻击消息失败");
-                return (false, CreateHorizonMessage(new ErrorMessage { ErrorCode = 500, Message = "处理攻击消息失败" }));
-            }
-        }
-
-        /// <summary>
-        /// 异步处理技能施放消息
-        /// </summary>
-        /// <param name="message">技能施放消息包</param>
-        /// <returns>处理结果和响应消息包</returns>
-        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleSkillCastAsync(HorizonMessagePacket message)
-        {
-            try
-            {
-                SkillCastMessage skillCastMessage = message.Body as SkillCastMessage;
-                // 处理技能施放逻辑
-                var response = new AttributeUpdateMessage
-                {
-                    CharacterId = skillCastMessage.CasterId,
-                    UpdateTime = DateTime.UtcNow.Ticks
-                };
-                var tem = CreateHorizonMessage(response);
-                return (true, tem);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "处理技能施放消息失败");
-                return (false, CreateHorizonMessage(new ErrorMessage { ErrorCode = 500, Message = "处理技能施放消息失败" }));
-            }
         }
 
         /// <summary>
@@ -786,12 +911,28 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 UseItemRequest useItemRequest = message.Body as UseItemRequest;
-                // 处理使用物品逻辑
-                var response = new UseItemResponse
+
+                // 这条 UseItem 与 ItemHandler 里的同一条**重复注册**（MessageType.UseItem 被两个 handler 都声明），
+                // 谁生效取决于注册顺序。原来这里是硬编码 Success=true 的空桩，一旦被选中，
+                // 玩家用任何物品（包括秘籍）都会收到"成功"而服务端数量纹丝不动。
+                // 现在两条路径共用 InventoryGrain 这一个咽喉，注册顺序不再影响行为。
+                var response = new UseItemResponse();
+                if (useItemRequest is null || useItemRequest.CharacterId == 0UL || useItemRequest.ItemId <= 0)
                 {
-                    Success = true,
-                    Message = "物品使用成功"
-                };
+                    response.Message = "请求参数无效";
+                    return (true, CreateHorizonMessage(response));
+                }
+
+                var inventory = _clusterClient.GetGrain<IInventoryGrain>(
+                    Horizon.Game.Core.Sim.Server.GrainKeyMapper.ToInventoryKey(useItemRequest.CharacterId));
+                var result = await inventory.UseItemWithResultAsync(
+                    useItemRequest.CharacterId, useItemRequest.ItemId,
+                    useItemRequest.Count > 0 ? useItemRequest.Count : 1);
+
+                response.Success = result.Success;
+                response.Message = result.Message;
+                response.RemainingCount = result.RemainingCount;
+                response.Effects = result.Effects;
                 var tem = CreateHorizonMessage(response);
                 return (true, tem);
             }
@@ -1024,16 +1165,35 @@ namespace Horizon.Game.Core.Handlers
         {
             try
             {
-                ResurrectMessage resurrectMessage = message.Body as ResurrectMessage;
-                // 处理复活逻辑
-                var response = new ResurrectMessage
+                if (!(message.Body is ResurrectMessage resurrectMessage) || resurrectMessage.ResurrectedId == 0)
+                    return (true, CreateHorizonMessage(new ErrorMessage { ErrorCode = 400, Message = "复活请求无效" }));
+
+                // 这一手以前是空桩：把请求体抄成响应直接回"成功"，从不触碰任何 grain。
+                // 客户端因此以为复活完了，服务端的 CurrentHealth 还是 0 —— 之后每次施放都被
+                // SkillGrain 的"施法者已死亡"挡下，玩家看到的是"复活成功后动也动不了"。
+                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>((long)resurrectMessage.ResurrectedId);
+                var result = await characterGrain.ResurrectAsync(new ResurrectMessage
                 {
                     ResurrectedId = resurrectMessage.ResurrectedId,
                     ResurrectPosition = resurrectMessage.ResurrectPosition,
-                    ResurrectType = resurrectMessage.ResurrectType
-                };
-                var tem = CreateHorizonMessage(response);
-                return (true, tem);
+                    ResurrectType = resurrectMessage.ResurrectType,
+                });
+
+                // 复活成功的判据是"真的有了血"，不是 grain 调用没抛异常：
+                // 生命上限为 0（属性未初始化/装备聚合缺失）时按上限比例恢复还是 0，
+                // 那种情况下必须把原因回给客户端，否则 UI 只会显示一个骗人的"已复活"。
+                if (result.MaxHealth <= 0f || result.RemainingHealth <= 0f)
+                {
+                    Logger.LogWarning("复活后血量仍为 0: CharacterId={CharacterId} MaxHealth={MaxHealth} Health={Health}",
+                        resurrectMessage.ResurrectedId, result.MaxHealth, result.RemainingHealth);
+                    return (true, CreateHorizonMessage(new ErrorMessage
+                    {
+                        ErrorCode = 500,
+                        Message = "复活失败：生命上限为 0，请先同步角色属性"
+                    }));
+                }
+
+                return (true, CreateHorizonMessage(result));
             }
             catch (Exception ex)
             {

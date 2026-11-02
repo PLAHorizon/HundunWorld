@@ -24,6 +24,37 @@ namespace NarrativePro.Items
         /// <summary>应创建并附加到武器的网格资源路径（对应 UE5 TObjectPtr&lt;UStaticMesh&gt;）</summary>
         public string AttachmentMeshPath { get; set; } = "";
 
+        /// <summary>
+        /// 配件的静态网格资产（对应 UE5 UStaticMesh* AttachmentMesh）。
+        /// Flax 中静态网格资产是 FlaxEngine.Model；未显式赋值时按 AttachmentMeshPath 惰性加载。
+        /// </summary>
+        public Model AttachmentMesh
+        {
+            get
+            {
+                if (_attachmentMesh == null && !string.IsNullOrEmpty(AttachmentMeshPath))
+                {
+                    try
+                    {
+                        _attachmentMesh = Content.Load<Model>(AttachmentMeshPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        NarrativeLog.LogWarning($"[WeaponAttachmentItem] 加载配件网格失败 {AttachmentMeshPath}: {ex.Message}");
+                        AttachmentMeshPath = "";
+                    }
+                }
+                return _attachmentMesh;
+            }
+            set => _attachmentMesh = value;
+        }
+
+        [NonSerialized]
+        private Model _attachmentMesh;
+
+        /// <summary>配件挂到武器骨骼/socket 上的本地偏移。对应 UE5 FWeaponAttachmentSlotConfig 之外的相对变换。</summary>
+        public Transform AttachmentLocalTransform { get; set; } = Transform.Identity;
+
         /// <summary>配件附加的伤害加成</summary>
         public float DamageBonus { get; set; } = 0f;
 
@@ -98,15 +129,31 @@ namespace NarrativePro.Items
 
         /// <summary>
         /// 当所属武器被持握，或配件被附加到已持握的武器时调用。
-        /// 适合修改配件状态。
+        /// UE5 的 <c>HandleWield_Implementation</c> 原生为空（WeaponAttachmentItem.cpp:196-199），
+        /// 是蓝图配件覆写"应用属性/显示网格"的钩子；Flax 数据驱动端口把等价行为落在基类：
+        /// stat 修饰（<see cref="DamageBonus"/>）由 WeaponItem.GetBaseAttackDamage →
+        /// GetAttachmentDamageBonus 汇入伤害结算链，这里负责配件视觉的即时挂载
+        /// （转发 WeaponVisual.HandleAddAttachment，网格可见性随持握槽位由 OnRep_AttachState 驱动）。
         /// </summary>
-        public virtual void HandleWield() { }
+        public virtual void HandleWield()
+        {
+            var weapon = WeaponOwner;
+            if (weapon == null) return;
+            if (!string.IsNullOrEmpty(AttachmentMeshPath) || _attachmentMesh != null)
+            {
+                weapon.AddAttachmentVisual(this);
+            }
+        }
 
         /// <summary>
         /// 当所属武器被收起，或配件从已持握的武器上卸下时调用。
-        /// 适合重置被修改的状态。
+        /// 与 <see cref="HandleWield"/> 对称：还原本槽位默认网格
+        /// （对应 UE5 配件在 un-wield 时撤掉自己施加的状态；伤害加成随 WeaponAttachments 移除自然失效）。
         /// </summary>
-        public virtual void HandleUnWield() { }
+        public virtual void HandleUnWield()
+        {
+            WeaponOwner?.RemoveAttachmentVisual(this);
+        }
 
         /// <summary>设置此配件的所属武器（由 WeaponItem 内部调用）。</summary>
         public virtual void SetWeaponOwner(WeaponItem weaponOwner)

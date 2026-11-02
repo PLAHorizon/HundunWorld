@@ -31,7 +31,7 @@ namespace Horizon.Game.Gateway.Services;
 /// 避免网络抖动导致路由表频繁抖动（抖动会让玩家在两个权威之间反复横跳）。
 /// </para>
 /// </summary>
-public sealed class DsUplinkServer : IHostedService, Horizon.Game.Core.Sim.Server.IDsSessionNotifier, IAsyncDisposable
+public sealed class DsUplinkServer : IHostedService, Horizon.Game.Core.Sim.Server.IDsSessionNotifier, Horizon.Game.Core.Sim.Server.IDsScriptDispatcher, IAsyncDisposable
 {
     private readonly IOptionsMonitor<Configuration.GatewayOptions> _options;
     private readonly DsControlPlane _controlPlane;
@@ -50,9 +50,11 @@ public sealed class DsUplinkServer : IHostedService, Horizon.Game.Core.Sim.Serve
         IOptionsMonitor<Configuration.GatewayOptions> options,
         DsControlPlane controlPlane,
         DSRegistry registry,
+        CorpseLootUplinkHandler corpseLoot,
         ILogger<DsUplinkServer> logger,
         TouchSocket.Core.ILog touchSocketLogger)
     {
+        _corpseLoot = corpseLoot ?? throw new ArgumentNullException(nameof(corpseLoot));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _controlPlane = controlPlane ?? throw new ArgumentNullException(nameof(controlPlane));
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
@@ -62,6 +64,7 @@ public sealed class DsUplinkServer : IHostedService, Horizon.Game.Core.Sim.Serve
 
     /// <summary>DS 路由表。</summary>
     private readonly DSRegistry _registry;
+    private readonly CorpseLootUplinkHandler _corpseLoot;
 
     /// <summary>
     /// dsId → 该 DS 的上行连接。注册时建立，连接关闭时清理。
@@ -114,6 +117,101 @@ public sealed class DsUplinkServer : IHostedService, Horizon.Game.Core.Sim.Serve
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "DsUplinkServer：下发会话结束通知失败。DsId={DsId}", ep.DsId);
+            return false;
+        }
+    }
+
+    /// <summary>累计下发的脚本生成指令数（诊断）。</summary>
+    public long ScriptDispatchCount { get; private set; }
+
+    /// <summary>
+    /// 下发玩家权威等级/累计经验（击杀经验已落进 CharacterGrain 之后）。
+    /// <para>不接这条：经验真的加进了 Grain，但 DS 的玩家快照里 Exp 恒为 0，
+    /// 客户端经验条永远停在登录值。</para>
+    /// </summary>
+    public bool NotifyPlayerProgress(long shardId, long characterId, int level, long exp)
+    {
+        if (characterId <= 0) return false;
+
+        var opts = _options.CurrentValue;
+        if (!opts.UseDS) return false;
+
+        if (_registry.TryResolve(shardId, opts.Region, opts.StrictEmptyRegionMode, out var ep)
+            != DsResolveStatus.Ok)
+        {
+            return false;
+        }
+
+        if (!_clientsByDsId.TryGetValue(ep.DsId, out var client)) return false;
+
+        try
+        {
+            var frame = Horizon.Game.Core.Sim.Server.DsUplinkCodec.EncodeFrame(
+                Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.PlayerProgress,
+                new Horizon.Game.Core.Sim.Server.DsPlayerProgressNotice
+                {
+                    CharacterId = characterId,
+                    Level = level,
+                    Exp = exp,
+                });
+
+            _ = client.SendAsync(frame).ContinueWith(
+                t => _logger.LogWarning(t.Exception, "DsUplinkServer：下发玩家进度失败。DsId={DsId}", ep.DsId),
+                System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
+
+            PlayerProgressNoticeCount++;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "DsUplinkServer：下发玩家进度失败。DsId={DsId}", ep.DsId);
+            return false;
+        }
+    }
+
+    /// <summary>累计下发的玩家进度通知数。</summary>
+    public long PlayerProgressNoticeCount { get; private set; }
+
+    /// <inheritdoc cref="Horizon.Game.Core.Sim.Server.IDsScriptDispatcher.DispatchAsync"/>
+    public async System.Threading.Tasks.Task<bool> DispatchAsync(
+        long shardId, Horizon.Game.Message.Network.ScriptGrantToken token)
+    {
+        if (token is null) return false;
+
+        var opts = _options.CurrentValue;
+        if (!opts.UseDS) return false;
+
+        if (_registry.TryResolve(shardId, opts.Region, opts.StrictEmptyRegionMode, out var ep)
+            != DsResolveStatus.Ok)
+        {
+            _logger.LogWarning("DsUplinkServer：脚本指令无可用 DS。ShardId={ShardId}", shardId);
+            return false;
+        }
+
+        if (!_clientsByDsId.TryGetValue(ep.DsId, out var client))
+        {
+            _logger.LogWarning("DsUplinkServer：DS 连接未建立，脚本指令无法下发。DsId={DsId}", ep.DsId);
+            return false;
+        }
+
+        try
+        {
+            var frame = Horizon.Game.Core.Sim.Server.DsUplinkCodec.EncodeFrame(
+                Horizon.Game.Core.Sim.Server.DsUplinkMessageKind.ScriptedSpawn,
+                new Horizon.Game.Core.Sim.Server.DsScriptedSpawnEnvelope { Token = token });
+
+            // 这里 await：脚本指令的"已受理"必须建立在真实写入之上（与尽力而为的断线清理不同）。
+            await client.SendAsync(frame);
+
+            ScriptDispatchCount++;
+            _logger.LogInformation(
+                "DsUplinkServer：已下发脚本生成指令。DsId={DsId} Operator={Operator} Kind={Kind} Shard={ShardId}",
+                ep.DsId, token.OperatorCharacterId, token.Kind, shardId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "DsUplinkServer：下发脚本生成指令失败。DsId={DsId}", ep.DsId);
             return false;
         }
     }
@@ -293,6 +391,60 @@ public sealed class DsUplinkServer : IHostedService, Horizon.Game.Core.Sim.Serve
                     return;
                 }
                 _controlPlane.HandleGameplayEventBatch(batch); // 单向，无应答
+                return;
+            }
+
+            case DsUplinkMessageKind.CorpseLootRegister:
+            {
+                if (!DsUplinkCodec.TryDecode<DsCorpseLootRegister>(payload, out _, out var register) || register is null)
+                {
+                    DroppedFrameCount++;
+                    return;
+                }
+                await _corpseLoot.HandleRegisterAsync(register).ConfigureAwait(false);
+                return;
+            }
+
+            case DsUplinkMessageKind.CorpseLootGone:
+            {
+                if (!DsUplinkCodec.TryDecode<DsCorpseLootGone>(payload, out _, out var gone) || gone is null)
+                {
+                    DroppedFrameCount++;
+                    return;
+                }
+                await _corpseLoot.HandleGoneAsync(gone).ConfigureAwait(false);
+                return;
+            }
+
+            case DsUplinkMessageKind.CorpseLootForward:
+            {
+                if (!DsUplinkCodec.TryDecode<DsCorpseLootForward>(payload, out _, out var forward) || forward is null)
+                {
+                    DroppedFrameCount++;
+                    return;
+                }
+                var reply = await _corpseLoot.HandleForwardAsync(forward).ConfigureAwait(false);
+                try
+                {
+                    var frame = DsUplinkCodec.EncodeFrame(DsUplinkMessageKind.CorpseLootResult, reply);
+                    await client.SendAsync(frame).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    // 回执写失败：DS 那边会按超时丢弃这条请求；这里必须留下日志，否则"点了没反应"无从解释。
+                    _logger.LogWarning(ex, "DsUplinkServer：写回尸体拾取回执失败。Id={Id}", client.Id);
+                }
+                return;
+            }
+
+            case DsUplinkMessageKind.EntityDescriptor:
+            {
+                if (!DsUplinkCodec.TryDecode<DsEntityDescriptorBatch>(payload, out _, out var batch))
+                {
+                    DroppedFrameCount++;
+                    return;
+                }
+                _controlPlane.HandleEntityDescriptorBatch(batch); // 单向，无应答
                 return;
             }
 

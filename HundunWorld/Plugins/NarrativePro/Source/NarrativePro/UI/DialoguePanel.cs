@@ -28,25 +28,49 @@ namespace NarrativePro.UI
 
         public override void OnEnable()
         {
-            if (TalesComponentRef != null)
-            {
-                TalesComponentRef.OnNPCDialogueLineStarted += OnNPCDialogueLineStarted;
-                TalesComponentRef.OnNPCDialogueLineFinished += OnNPCDialogueLineFinished;
-                TalesComponentRef.OnDialogueRepliesAvailable += OnDialogueRepliesAvailable;
-                TalesComponentRef.OnDialogueFinished += OnDialogueFinished;
-            }
+            Bind(TalesComponentRef);
         }
 
         public override void OnDisable()
         {
-            if (TalesComponentRef != null)
-            {
-                TalesComponentRef.OnNPCDialogueLineStarted -= OnNPCDialogueLineStarted;
-                TalesComponentRef.OnNPCDialogueLineFinished -= OnNPCDialogueLineFinished;
-                TalesComponentRef.OnDialogueRepliesAvailable -= OnDialogueRepliesAvailable;
-                TalesComponentRef.OnDialogueFinished -= OnDialogueFinished;
-            }
+            Unbind();
         }
+
+        /// <summary>
+        /// 绑定（或切换）要监听的叙事组件。运行期由 <c>NarrativeRuntimeBootstrap</c> 在
+        /// TalesComponent 就绪后调用 —— 面板可以先于叙事组件启用，因此不能只在 OnEnable 里订阅。
+        /// 幂等：重复绑定同一组件不会重复订阅。
+        /// </summary>
+        public void Bind(TalesComponent tales)
+        {
+            if (ReferenceEquals(_boundTales, tales) && tales != null) return;
+
+            Unbind();
+            TalesComponentRef = tales;
+            _boundTales = tales;
+            if (tales == null) return;
+
+            tales.OnNPCDialogueLineStarted += OnNPCDialogueLineStarted;
+            tales.OnNPCDialogueLineFinished += OnNPCDialogueLineFinished;
+            tales.OnDialogueRepliesAvailable += OnDialogueRepliesAvailable;
+            tales.OnDialogueFinished += OnDialogueFinished;
+        }
+
+        /// <summary>解除当前叙事组件订阅。</summary>
+        public void Unbind()
+        {
+            var tales = _boundTales;
+            if (tales != null)
+            {
+                tales.OnNPCDialogueLineStarted -= OnNPCDialogueLineStarted;
+                tales.OnNPCDialogueLineFinished -= OnNPCDialogueLineFinished;
+                tales.OnDialogueRepliesAvailable -= OnDialogueRepliesAvailable;
+                tales.OnDialogueFinished -= OnDialogueFinished;
+            }
+            _boundTales = null;
+        }
+
+        private TalesComponent _boundTales;
 
         public void Show()
         {

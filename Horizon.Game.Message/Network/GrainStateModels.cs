@@ -103,6 +103,67 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(15)]
         [Id(15)]
         public Dictionary<int, DateTime> SkillCooldowns { get; set; } = new();
+
+        // 五行三行（服务端权威聚合结果，见 Horizon.Game.Core.Combat.CombatProfile）：
+        // 攻击力=各来源求和；防御力/破防值=各来源取最高。由 CombatGrain 在激活取数时算好缓存，
+        // 结算热路径不再重复聚合。默认全零 = 该角色没有五行来源，退化为通用攻防单轨结算。
+
+        /// <summary>五行攻击力（金木水火土，各来源求和）。</summary>
+        [MemoryPackOrder(16)]
+        [Id(16)]
+        public Horizon.Game.Message.Combat.ElementStatVector ElementAttack { get; set; }
+
+        /// <summary>五行防御力（金木水火土，各来源取最高）。</summary>
+        [MemoryPackOrder(17)]
+        [Id(17)]
+        public Horizon.Game.Message.Combat.ElementStatVector ElementDefense { get; set; }
+
+        /// <summary>五行破防值（金木水火土，各来源取最高；只抵消防御不额外加伤）。</summary>
+        [MemoryPackOrder(18)]
+        [Id(18)]
+        public Horizon.Game.Message.Combat.ElementStatVector ElementPenetration { get; set; }
+
+        /// <summary>
+        /// 常驻五行来源清单（基础属性 / 加点 / 装备 / 技能）。上面三行是它的聚合结果。
+        /// <para>
+        /// 缓存<b>来源</b>而不是只缓存聚合结果，是因为 Buff 逐击实时生效/过期：结算前把本清单
+        /// 与当前生效的 Buff 来源一起交给 <c>CombatProfile.Aggregate</c> 重算三行。
+        /// 只存结果就得靠失效通知刷新，那条通道一旦漏接，数值会静默停在旧画像上。
+        /// </para>
+        /// </summary>
+        [MemoryPackOrder(19)]
+        [Id(19)]
+        public List<Horizon.Game.Message.Combat.CombatContribution> ElementSources { get; set; } = new();
+
+        /// <summary>
+        /// 画像下次重读的时刻（<c>default</c> = 迁移前写入的旧记录，按"不自动重读"处理）。
+        /// CombatGrain 按受击方寻址，穿戴/加点在角色键的 Grain 上，定向失效通知在这里无从寻址，
+        /// 因此攻方侧用 TTL 收敛陈旧度。
+        /// </summary>
+        [MemoryPackOrder(20)]
+        [Id(20)]
+        public DateTime ProfileExpiresUtc { get; set; }
+
+        /// <summary>
+        /// 内力上次结算回复的时刻。<see cref="Energy"/> 没有 tick 会去加，
+        /// 所以在读取（施法检查消耗）前按 <c>间隔 × AttributeDerivation.EnergyRecoveryPerSecond</c> 惰性补算。
+        /// 默认值（旧状态）视为"刚回复过"，避免重启瞬间把整池按无穷时间刷满。
+        /// </summary>
+        [MemoryPackOrder(21)]
+        [Id(21)]
+        public DateTime LastEnergyRegenUtc { get; set; }
+
+        /// <summary>
+        /// 该参与者的五行属性值（亲和）向量 = 加点×10 + 穿戴装备/宝石亲和。
+        /// <para>
+        /// 它不是一条来源，而是三行的<b>兜底地板</b>输入：每击与 <see cref="ElementSources"/>
+        /// 一起交给 <c>CombatProfile.Aggregate</c>，按每点换算取半额后逐行取较高。
+        /// 缓存它而不是缓存兜底后的三行，是因为 Buff 每击都要重聚合，地板必须一并参与。
+        /// </para>
+        /// </summary>
+        [MemoryPackOrder(22)]
+        [Id(22)]
+        public Horizon.Game.Message.Combat.ElementStatVector ElementAffinity { get; set; }
     }
 
     /// <summary>
@@ -148,6 +209,34 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(8)]
         [Id(8)]
         public EffectType Type { get; set; }
+
+        // 五行三行载荷：Buff/减益要参与权威结算就必须带数，而不是只有一个 Intensity 浮点。
+        // 与 CharacterAttributeEntity 的 *_attack / *_resistance / *_penetration 同一行号约定
+        // （1..5 = 金木水火土）。均为平值，不做百分比——百分比要在聚合层之外另设口径。
+        // 负数表示减益（如"破防削弱"写成负的 AttackBoost 行）。
+
+        /// <summary>该效果提供的五行攻击加成（各来源求和侧）。</summary>
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public Horizon.Game.Message.Combat.ElementStatVector AttackBoost { get; set; }
+
+        /// <summary>该效果提供的五行防御加成（各来源取高侧）。</summary>
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public Horizon.Game.Message.Combat.ElementStatVector DefenseBoost { get; set; }
+
+        /// <summary>该效果提供的五行破防加成（各来源取高侧）。</summary>
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public Horizon.Game.Message.Combat.ElementStatVector PenetrationBoost { get; set; }
+
+        /// <summary>
+        /// 施加时刻（UTC）。<see cref="RemainingDuration"/> 没有任何 tick 会去递减，
+        /// 所以过期一律按"读取时 <c>AppliedAtUtc + Duration</c> 比较"惰性判定，见 CombatGrain。
+        /// </summary>
+        [MemoryPackOrder(12)]
+        [Id(12)]
+        public DateTime AppliedAtUtc { get; set; }
     }
 
     #endregion
@@ -183,6 +272,12 @@ namespace Horizon.Game.Message.Network
         /// 为空表示尚未加载，CharacterGrain 会从 <c>Game_HunduShijie_CharacterAttribute</c> 回填。
         /// </summary>
         [MemoryPackOrder(6)] [Id(6)] public AttributeAllocationData Allocation { get; set; }
+
+        // 数字人外观：整条链路只在玩家「保存/发布」时写一次，不参与每帧同步，
+        // 所以放在 Grain 状态里随 GameStore 持久化，而不是塞进 Redis 位置那套热轨。
+        [MemoryPackOrder(7)] [Id(7)] public MetaHumanLookPayload MetaHumanLook { get; set; }
+        [MemoryPackOrder(8)] [Id(8)] public int MetaHumanLookRevision { get; set; }
+        [MemoryPackOrder(9)] [Id(9)] public DateTime MetaHumanLookSavedUtc { get; set; }
     }
 
     #endregion
@@ -273,6 +368,163 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(4)]
         [Id(4)]
         public Dictionary<int, List<int>> SkillDependencies { get; set; } = new();
+
+        /// <summary>五行循环节数 0..5。顺生加层、满五层周天归零；超时由 LoopExpireAt 判定。</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int LoopStack { get; set; }
+
+        /// <summary>链上上一个有效施放的五行（0=无属性/尚未起链）。</summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int LoopLastElement { get; set; }
+
+        /// <summary>顺生窗口截止时间：过了这个点再打就重新起链，而不是掉层。</summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public DateTime LoopExpireAt { get; set; }
+
+        /// <summary>累计周天圆满次数（道阶/混沌演化的门槛计数）。</summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public int LoopCompletionCount { get; set; }
+
+        /// <summary>
+        /// 镇岳行（§5.3）：玩家主动指定的护体五行，0 = 不指定（退化为防御向量最高行）。
+        /// 它决定"谁克我"，也就决定了对手破势要打在 which 一行上——这是"不断决"的对决轴。
+        /// </summary>
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public int GuardElement { get; set; }
+
+        /// <summary>上次切换镇岳的时刻，用于 10s 冷却（换镇岳不该零成本地跟着对方技能走）。</summary>
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public DateTime GuardChangedAt { get; set; }
+    }
+
+    /// <summary>
+    /// 动态习得条件的判定输入（方案 §14.4）：背包数量、分域好感、基础属性三样事实。
+    /// <para>
+    /// 它们分别在 InventoryGrain / FavorabilityGrain / CharacterGrain 手里，而
+    /// <c>InventoryGrain → SkillGrain</c> 这条边已经存在（秘籍研读咽喉）。若让 SkillGrain 反过来问它们，
+    /// 两边互相 await，非重入 Grain 当场死锁。所以这个类型是"由调用方在服务端装配好再传进来"的载体：
+    /// <b>客户端永远不许填它</b>（材料数、好感度一律以服务端读到的为准），因此它只走 Grain 之间，不进任何请求消息。
+    /// </para>
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class LearnGateContext
+    {
+        /// <summary>按模板物品 id 汇总的持有数量（缺项按 0 计）。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public Dictionary<int, int> ItemCounts { get; set; } = new();
+
+        /// <summary>物品 id → 显示名，只为把缺项说成人话。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Dictionary<int, string> ItemNames { get; set; } = new();
+
+        /// <summary>按五行域（1金 2木 3水 4火 5土）累计的好感度。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public Dictionary<int, int> FavorByDomain { get; set; } = new();
+
+        /// <summary>角色基础属性加点（力量/敏捷/体魄/神识 + 五行亲和）。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public AttributeAllocationData? Allocation { get; set; }
+    }
+
+    /// <summary>
+    /// 分域好感度状态（方案 §14）。按角色的项目录，而不是角色级一个总分。
+    /// <para>
+    /// 项目里原先只有 <c>CharacterEntity.Reputation</c> 这一个全局标量（外加同样是全局的侠义值），
+    /// 撑不起"金域好感 40 才能学金行玄阶"这种条件——所以这里按五行域分桶存。
+    /// <see cref="ByTarget"/> 记具体 NPC/生物的来源，判定只看 <see cref="ByDomain"/> 的累计：
+    /// 内容组加一个新 NPC 不该要求改动技能表。
+    /// </para>
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FavorabilityState
+    {
+        /// <summary>按五行域（1金 2木 3水 4火 5土）累计的好感。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public Dictionary<int, int> ByDomain { get; set; } = new();
+
+        /// <summary>来源明细，key 形如 <c>npc:10086</c> / <c>monster:2001</c>，用于去重与展示"是谁给的心意"。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Dictionary<string, int> ByTarget { get; set; } = new();
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    /// <summary>
+    /// 镇岳切换回执。<see cref="NextChangeInSeconds"/> 让客户端能就地灰掉按钮并倒计时，
+    /// 而不是把"再点一次"变成一次网络往返。
+    /// </summary>
+    /// <summary>
+    /// 加经验的结算结果。等级与经验都回传，调用方（任务发奖、战斗结算）不需要再问一次角色 grain，
+    /// 也就不会拿着自己算出来的等级去显示——升等口径只有一处（服务端 ProgressionCurve）。
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AddExpResult
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>结算后的等级（失败时为原值，调用方据此回滚显示）。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Level { get; set; }
+
+        /// <summary>结算后的当前级经验余量。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long Experience { get; set; }
+
+        /// <summary>本次连升了几级（0 表示只涨经验）。</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int LevelsGained { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class GuardElementResult
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>回执生效后的镇岳行（被拒时就是原值，客户端据此回滚选择）。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int GuardElement { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float NextChangeInSeconds { get; set; }
     }
 
     #endregion

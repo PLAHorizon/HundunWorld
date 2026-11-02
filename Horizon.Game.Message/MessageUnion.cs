@@ -1,4 +1,4 @@
-using Horizon.Game.Message.Enums;
+﻿using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using MemoryPack;
 using Orleans;
@@ -250,6 +250,26 @@ namespace Horizon.Game.Message
     [MemoryPackUnion(234, typeof(Horizon.Game.Message.Network.GemSocketResponse))]
     [MemoryPackUnion(235, typeof(Horizon.Game.Message.Network.AttributeAllocateRequest))]
     [MemoryPackUnion(236, typeof(Horizon.Game.Message.Network.AttributeAllocateResponse))]
+    [MemoryPackUnion(237, typeof(Horizon.Game.Message.Network.SkillCatalogSyncMessage))]
+    [MemoryPackUnion(238, typeof(Horizon.Game.Message.Network.GmScriptCommandMessage))]
+    [MemoryPackUnion(239, typeof(Horizon.Game.Message.Network.GmScriptResultMessage))]
+    [MemoryPackUnion(240, typeof(Horizon.Game.Message.Network.SetGuardElementMessage))]
+    [MemoryPackUnion(241, typeof(Horizon.Game.Message.Network.QuestInteractRequestMessage))]
+    [MemoryPackUnion(242, typeof(Horizon.Game.Message.Network.QuestInteractResultMessage))]
+    [MemoryPackUnion(243, typeof(Horizon.Game.Message.Network.FriendListRequestMessage))]
+    [MemoryPackUnion(244, typeof(Horizon.Game.Message.Network.RemoveFriendRequest))]
+    [MemoryPackUnion(245, typeof(Horizon.Game.Message.Network.FriendOperationResponse))]
+    [MemoryPackUnion(246, typeof(Horizon.Game.Message.Network.UpdateCharacterAppearanceRequest))]
+    [MemoryPackUnion(247, typeof(Horizon.Game.Message.Network.UpdateCharacterAppearanceResponse))]
+    [MemoryPackUnion(248, typeof(Horizon.Game.Message.Network.GetCharacterAppearanceRequest))]
+    [MemoryPackUnion(249, typeof(Horizon.Game.Message.Network.GetCharacterAppearanceResponse))]
+    // ---- 商人（NPC 货架）：开窗 / 买 / 卖 六条 ----
+    [MemoryPackUnion(250, typeof(Horizon.Game.Message.Network.ShopOpenRequestMessage))]
+    [MemoryPackUnion(251, typeof(Horizon.Game.Message.Network.ShopOpenResultMessage))]
+    [MemoryPackUnion(252, typeof(Horizon.Game.Message.Network.ShopBuyRequestMessage))]
+    [MemoryPackUnion(253, typeof(Horizon.Game.Message.Network.ShopBuyResultMessage))]
+    [MemoryPackUnion(254, typeof(Horizon.Game.Message.Network.ShopSellRequestMessage))]
+    [MemoryPackUnion(255, typeof(Horizon.Game.Message.Network.ShopSellResultMessage))]
     // </generated-union-block>
     public abstract partial class MessageUnion : INetworkMessage
     {

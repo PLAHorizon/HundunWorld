@@ -1,6 +1,7 @@
 using FlaxEngine;
 using System;
 using System.Collections.Generic;
+using UIMouseCapture = HundunWorld.Game.UI.UIMouseCapture;
 
 namespace HundunWorld.Game.Combat
 {
@@ -58,6 +59,10 @@ namespace HundunWorld.Game.Combat
         public override void OnUpdate()
         {
             if (!_isShowing || _currentConfig == null)
+                return;
+
+            // 光标在 UI 上时不预览落点：既不让指示器跟着界面元素跑，也不画过期的旧位置。
+            if (UIMouseCapture.Captured)
                 return;
 
             // 更新指示器位置（跟随鼠标）

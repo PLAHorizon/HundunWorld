@@ -152,15 +152,10 @@ public class DsHostRunnerTests
         Assert.Equal(ticks, runner.World.ServerTick);
 
         // 玩家应已沿 +X 前进：取最后一个含世界快照的批次（非快照 tick 的批次可能为空）。
-        SnapshotPacket? snapshot = null;
-        for (var i = sender.Batches.Count - 1; i >= 0 && snapshot is null; i--)
-        {
-            if (sender.Batches[i].Items.Length == 0) continue;
-            snapshot = (SnapshotPacket)SyncPacketCodec.Decode(sender.Batches[i].Items[0].Frame);
-        }
-
-        Assert.NotNull(snapshot);
-        var playerDelta = Assert.Single(snapshot!.Deltas, d => d.EntityId == 2001UL);
+        var snapshots = AllSnapshots(sender);
+        Assert.NotEmpty(snapshots);
+        var snapshot = snapshots[snapshots.Count - 1];
+        var playerDelta = Assert.Single(snapshot.Deltas, d => d.EntityId == 2001UL);
         Assert.True(playerDelta.Transform!.Value.X > 0f,
             $"玩家应已移动。X={playerDelta.Transform!.Value.X} 预测X={predictedX} 批次总数={sender.Batches.Count}");
     }
@@ -310,26 +305,40 @@ public class DsHostRunnerTests
     }
 
 
+    /// <summary>
+    /// 把捕获到的所有批次**逐项**解出世界快照（按发送顺序）。
+    /// <para>为什么不能只看每项的 <c>Items[0]</c>：同一个批次里除了快照还会带事件包
+    /// （施法条起手/伤害/Despawn 全广播），条目顺序随现场变化——硬转第一个会在
+    /// "事件排在快照前面"的现场抛 <c>InvalidCastException</c>。
+    /// 实测：单跑这条永远绿，全量并行跑时偶发红，就是这个坏尺造成的假故障。</para>
+    /// </summary>
+    private static List<SnapshotPacket> AllSnapshots(CapturingSender sender)
+    {
+        var list = new List<SnapshotPacket>();
+        foreach (var batch in sender.Batches)
+        {
+            foreach (var item in batch.Items)
+            {
+                if (SyncPacketCodec.Decode(item.Frame) is SnapshotPacket snapshot) list.Add(snapshot);
+            }
+        }
+        return list;
+    }
+
     /// <summary>取第一个含世界快照的批次（= Spawn 帧）。</summary>
     private static SnapshotPacket DecodeFirstSnapshot(CapturingSender sender)
     {
-        foreach (var batch in sender.Batches)
-        {
-            if (batch.Items.Length == 0) continue;
-            return (SnapshotPacket)SyncPacketCodec.Decode(batch.Items[0].Frame);
-        }
-        throw new InvalidOperationException("未捕获到任何世界快照批次。");
+        var snapshots = AllSnapshots(sender);
+        if (snapshots.Count == 0) throw new InvalidOperationException("未捕获到任何世界快照批次。");
+        return snapshots[0];
     }
 
     /// <summary>取最后一个含世界快照的批次。</summary>
     private static SnapshotPacket DecodeLatestSnapshot(CapturingSender sender)
     {
-        for (var i = sender.Batches.Count - 1; i >= 0; i--)
-        {
-            if (sender.Batches[i].Items.Length == 0) continue;
-            return (SnapshotPacket)SyncPacketCodec.Decode(sender.Batches[i].Items[0].Frame);
-        }
-        throw new InvalidOperationException("未捕获到任何世界快照批次。");
+        var snapshots = AllSnapshots(sender);
+        if (snapshots.Count == 0) throw new InvalidOperationException("未捕获到任何世界快照批次。");
+        return snapshots[snapshots.Count - 1];
     }
 
     private static byte[] EncodeSnapshot(long serverTick)

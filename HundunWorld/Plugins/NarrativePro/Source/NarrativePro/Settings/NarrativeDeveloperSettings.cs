@@ -33,9 +33,13 @@ namespace NarrativePro.Settings
 
         private static NarrativeDeveloperSettings LoadDefault()
         {
-            // TODO [需接入设置加载系统]: 从 Flax 编辑器用户配置或 JSON 文件加载持久化设置。暂时返回默认实例。
+            // Flax-不兼容（已核实，保留构造默认值）：UE5 中此类是 EditorPerProjectUserSettings——
+            // 编辑器本地调试过滤器，两个列表持有的是编辑器内 NPCDefinition/PlayerDefinition 资产对象引用。
+            // 核实过 Flax 脚本层无按用户隔离的设置存储 API；且 System.Text.Json 反序列化只会得到
+            // 脱离资产体系的新实例，Spawner 侧按引用查找名单成员会静默失效，因此不能像
+            // NarrativeCombatDeveloperSettings 那样走 JSON 持久化。运行时调试请直接覆盖 Instance。
             var settings = new NarrativeDeveloperSettings();
-            NarrativeLog.Log("NarrativeDeveloperSettings 已使用默认值初始化。");
+            NarrativeLog.Log("NarrativeDeveloperSettings 已使用默认值初始化（资产引用列表仅可由运行时代码覆盖）。");
             return settings;
         }
     }

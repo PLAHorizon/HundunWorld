@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
+    <!-- MachineIdentifier 已下沉到 Horizon.Share.Client（客户端可见的共享件） -->
+    <ProjectReference Include="..\Horizon.Share.Client\Horizon.Share.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,22 @@
+{
+  "name": "tds_village_smith",
+  "appliesToNpcIds": [ "npc_village_smith" ],
+  "taggedDialogues": [
+    {
+      "tag": "Narrative.TaggedDialogue.Greet",
+      "dialoguePath": "D001_HerbRationsIntro",
+      "cooldown": 60,
+      "maxDistance": 5000,
+      "requiredTags": [],
+      "blockedTags": []
+    },
+    {
+      "tag": "Narrative.TaggedDialogue.Farewell",
+      "dialoguePath": "D001_HerbRationsIntro",
+      "cooldown": 30,
+      "maxDistance": 5000,
+      "requiredTags": [],
+      "blockedTags": []
+    }
+  ]
+}

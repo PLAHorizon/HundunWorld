@@ -128,7 +128,8 @@ namespace HundunWorld.Game.Rendering.Atmospheric
                     }
                     else
                     {
-                        Level.SpawnActor(leafActor);
+                        // 世界粒子：无显式场景时路由到玩法场景，避免滞留 RootScene
+                        HundunWorld.Game.HundunWorldGame.SpawnActorToGameplayScene(leafActor, leafActor.Name);
                     }
 
                     // 设置初始位置

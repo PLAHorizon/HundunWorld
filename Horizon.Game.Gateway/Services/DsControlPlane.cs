@@ -52,6 +52,17 @@ public sealed class DsControlPlane
     private readonly string _expectedToken;
     private readonly IDsGameplayEventSink? _gameplaySink;
 
+    /// <summary>
+    /// 世界实体身份注册表（任务/交互侧的权威身份来源）；null = 未接线，描述符只计数丢弃。
+    /// </summary>
+    private readonly DsEntityRegistry? _entityRegistry;
+
+    /// <summary>累计受理的实体身份描述符条目数。</summary>
+    public long EntityDescriptorCount { get; private set; }
+
+    /// <summary>累计因未接线/无主 shard/通道关闭而丢弃的实体身份条目数。</summary>
+    public long DroppedEntityDescriptorCount { get; private set; }
+
     /// <summary>累计受理的跨层玩法事件数（击杀/掉落/玩家死亡）。</summary>
     public long GameplayEventCount { get; private set; }
 
@@ -83,13 +94,15 @@ public sealed class DsControlPlane
     /// <param name="expectedToken">期望的共享令牌；空串/null = 不校验（仅适用于本机回环部署）。</param>
     /// <param name="logger">日志器。</param>
     /// <param name="gameplaySink">跨层玩法事件接收端（转 Orleans 业务层）；null = 事件被计数丢弃。</param>
+    /// <param name="entityRegistry">世界实体身份注册表；null = 描述符被计数丢弃（未接任务/交互侧时的安全默认）。</param>
     public DsControlPlane(
         DSRegistry registry,
         DsDownlinkIngress downlink,
         Func<bool> isEnabled,
         string? expectedToken = null,
         ILogger<DsControlPlane>? logger = null,
-        IDsGameplayEventSink? gameplaySink = null)
+        IDsGameplayEventSink? gameplaySink = null,
+        DsEntityRegistry? entityRegistry = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _downlink = downlink ?? throw new ArgumentNullException(nameof(downlink));
@@ -97,6 +110,7 @@ public sealed class DsControlPlane
         _expectedToken = expectedToken ?? string.Empty;
         _logger = logger;
         _gameplaySink = gameplaySink;
+        _entityRegistry = entityRegistry;
     }
 
     /// <summary>
@@ -152,6 +166,14 @@ public sealed class DsControlPlane
         }
 
         RegisterCount++;
+
+        // 注册 = 这一片世界身份的"新纪元"：先整片丢弃旧条目，随后由 DS 的全量补发覆盖。
+        // 覆盖两种真实故障：网关重启后注册表为空但世界仍在（补发解决），
+        // 以及 DS 被强杀后带着同一 DsId 重连（不丢弃就会留下上个进程的死实体）。
+        if (_entityRegistry is not null)
+        {
+            for (var i = 0; i < shardIds.Length; i++) _entityRegistry.ClearShard(shardIds[i]);
+        }
         _logger?.LogInformation(
             "DsControlPlane：DS 已注册。DsId={DsId} Shards={Shards} Host={Host}:{Port} Region={Region}",
             request.DsId, string.Join(',', shardIds), request.Host, request.Port,
@@ -234,6 +256,17 @@ public sealed class DsControlPlane
 
         // 摘除**不受灰度开关限制**：即使通道已关闭，也必须允许 DS 把自己从路由表里摘掉，
         // 否则开关关闭瞬间残留在表中的条目会造成路由黑洞（直到 90s 过期）。
+        // 同一纪律适用于实体身份：DS 走了，它名下 shard 的实体就不存在了，必须整片丢弃，
+        // 否则"和一个已经不存在的 NPC 说话"在服务端仍然可解（= 可被利用的假事件口子）。
+        if (_entityRegistry is not null)
+        {
+            foreach (var endpoint in _registry.Snapshot())
+            {
+                if (!string.Equals(endpoint.DsId, request.DsId, StringComparison.Ordinal)) continue;
+                foreach (var shardId in endpoint.ShardIds) _entityRegistry.ClearShard(shardId);
+            }
+        }
+
         _registry.Unregister(request.DsId);
         UnregisterCount++;
         _logger?.LogInformation("DsControlPlane：DS 已摘除。DsId={DsId}", request.DsId);
@@ -310,6 +343,52 @@ public sealed class DsControlPlane
             }
         }
 
+        return new DsControlResult { Ok = true, Reason = string.Empty, ExpectsAck = false };
+    }
+
+    /// <summary>
+    /// 处理 DS 上报的世界实体身份描述符批次（无需应答）——网关侧 <see cref="DsEntityRegistry"/> 的唯一写入点。
+    /// <para>
+    /// 三道闸门，全部有明确理由：
+    /// <list type="number">
+    ///   <item><b>灰度开关</b>：通道关闭时 DS 不应再影响网关状态（与快照/玩法事件同纪律）。</item>
+    ///   <item><b>shard 归属</b>：批次声明的 shard 必须当前有活的 DS 承载。这挡住的是"任意一条已连上的
+    ///         连接冒充别的 shard"——注册令牌只证明它是 DS，不证明它拥有那片世界。</item>
+    ///   <item><b>接收端存在</b>：未接注册表时计数丢弃，绝不抛（任务侧还没上线的部署形态必须能跑）。</item>
+    /// </list>
+    /// </para>
+    /// </summary>
+    public DsControlResult HandleEntityDescriptorBatch(DsEntityDescriptorBatch? batch)
+    {
+        if (!_isEnabled())
+        {
+            DisabledRejectedCount++;
+            return new DsControlResult { Ok = false, Reason = "ds_channel_disabled", ExpectsAck = false };
+        }
+
+        if (batch?.Descriptors is null || batch.Descriptors.Length == 0)
+        {
+            return new DsControlResult { Ok = true, Reason = string.Empty, ExpectsAck = false };
+        }
+
+        if (_entityRegistry is null)
+        {
+            DroppedEntityDescriptorCount += batch.Descriptors.Length;
+            return new DsControlResult { Ok = true, Reason = "no_entity_registry", ExpectsAck = false };
+        }
+
+        if (!_registry.TryResolve(batch.ShardId, out _))
+        {
+            // 无主 shard：这条批次不会被采信。注意**不能**因此断连——DS 侧可能只是刚重连、
+            // 注册尚未落地，丢弃并计数即可，后续 tick 增量会自愈。
+            DroppedEntityDescriptorCount += batch.Descriptors.Length;
+            _logger?.LogWarning("DsControlPlane：实体描述符批次落在无主 shard {ShardId}，已丢弃 {Count} 条。",
+                batch.ShardId, batch.Descriptors.Length);
+            return new DsControlResult { Ok = false, Reason = "unowned_shard", ExpectsAck = false };
+        }
+
+        _entityRegistry.Apply(batch);
+        EntityDescriptorCount += batch.Descriptors.Length;
         return new DsControlResult { Ok = true, Reason = string.Empty, ExpectsAck = false };
     }
 

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MhAppearanceVerify —— 数字人外观服务端通道的真集群对账工装（Exe）。
+
+    存在理由：这条通道此前只有"能编译 + DB 手工回环"两级证据，
+    而 Grain 的门禁（服务端另算校验和、模板一致性、发布后拒改）只能在**真集群宿主**里证。
+    离屏 dotnet 门关不到真 Redis/真 SQL；进程内 new Grain 又会把 testhost 静默打死（已记过的坑），
+    所以这里走 Orleans 客户端连已在跑的 Silo，把三道门逐条真调一遍。
+
+    用法（必须在仓库根跑，global.json 钉了 SDK）：
+      在仓库根执行：dotnet run Tools/MhAppearanceVerify/MhAppearanceVerify.csproj 之后跟 角色Id [redis连接串] [publish]
+
+    publish 开关（第三个位置参数写 "publish"）会把那行真数据置成"已发布"，
+    之后服务端永久拒改（不可逆），默认关；只有明确要在真库里验"发布后不可回溯"时才带。
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>MhAppearanceVerify</AssemblyName>
+    <RootNamespace>MhAppearanceVerify</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Client" />
+    <PackageReference Include="Microsoft.Orleans.Clustering.Redis" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 只编纯数据核：为了用真的 MetaHumanLook v2 blob（含 Revision）过真集群。 -->
+    <Compile Include="..\..\HundunWorld\Plugins\MetaHuman\Source\MetaHuman\Core\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
+    <ProjectReference Include="..\..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,8 +1,0 @@
-﻿
-   Id ProcessName StartTime          MainWindowTitle                                                     
-   -- ----------- ---------          ---------------                                                     
-18896 Flax        2026/9/22 17:54:52 Flax Launcher                                                       
-21336 FlaxEditor  2026/9/22 18:47:48 Flax Editor 1.12 - 'C:\Works\GitHubProjects\HundunWorld\HundunWorld'
-
-
-

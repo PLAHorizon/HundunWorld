@@ -3,6 +3,7 @@ using FlaxEngine.GUI;
 using Game.Character.Attributes;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
+using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Inventory
 {
@@ -12,7 +13,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
     /// + 左栏（品质筛选+装备列表）+ 中栏（预览+属性对比+成功率+执行）+ 右栏（材料/进度/套装/五行）。
     /// 严格遵循水墨主题 Token，禁止硬编码色值。
     /// </summary>
-    public class EquipmentEnhancePage : ContainerControl, IInkPage
+    public class EquipmentEnhancePage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private const float TopBarHeight = 56f;
         private const float TabBarHeight = 44f;
@@ -48,6 +49,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
         private Label _rateLabel;
         private InkButton _enhanceBtn;
 
+        /// <summary>左栏行数据（真实可装备物品 / 样例），中栏标题随选中项取这里</summary>
+        private (string glyph, string name, string sub, string enh, InkWashTheme.InkQuality q, bool selected)[] _equipRows;
+
+        // 中栏名称行的控件引用（随左栏选中项刷新）
+        private Label _centerName;
+        private Label _centerPlus;
+        private TagPill _centerQualityTag;
+        private TagPill _centerTypeTag;
+        private TagPill _centerLevelTag;
+
         // 右栏
         private ContainerControl _rightCol;
 
@@ -62,7 +73,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             {
                 AnchorPreset = AnchorPresets.StretchAll;
                 Offsets = Margin.Zero;
-                BackgroundColor = InkWashTheme.Void;
+                // 全屏铺底由外壳的墨底背景层统一提供（本页为沉浸式全屏页），页面不再自绘。
+                BackgroundColor = Color.Transparent;
                 ClipChildren = false;
                 AutoFocus = false;
 
@@ -71,6 +83,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
                 BuildLeftColumn();
                 BuildCenterColumn();
                 BuildRightColumn();
+
+                // 中栏标题按首行落地（真实数据时就是背包里第一件可强化装备）
+                ShowEquip(0);
             }
             catch (Exception ex)
             {
@@ -117,6 +132,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
 
             _topBar.AddChild(MakeLabel("装备强化", Edge + 36f + 16f, 0f, 140f, TopBarHeight,
                 InkWashTheme.GoldPrimary, 22f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+
+            // 物品清单与强化数值都还是设计样例：顶栏右侧明示
+            _topBar.AddChild(MakeLabel("强化数值与功能尚未接入；物品清单无服务端快照时显示示例", 340f, 0f, 620f, TopBarHeight,
+                InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
             // “锻造工坊”徽章
             var badge = new TagPill("锻造工坊", InkWashTheme.TextTertiary, InkWashTheme.BorderFaint, Color.Transparent)
@@ -234,26 +253,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             });
             cy += 1f + 10f;
 
-            // 装备列表标题 + 计数
+            // 装备列表标题 + 计数（数据源：服务端可装备物品，缺失时退回样例）
+            var equips = LoadEquipRows();
+            _equipRows = equips;
             _leftCol.AddChild(MakeLabel("装备列表", pad, cy, 100f, 18f,
                 InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            _leftCol.AddChild(MakeLabel("8件", LeftWidth - pad - 40f, cy, 40f, 18f,
+            _leftCol.AddChild(MakeLabel($"{equips.Length}件", LeftWidth - pad - 40f, cy, 40f, 18f,
                 InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far));
             cy += 18f + 8f;
 
-            // 装备项（8 个）
-            var equips = new (string glyph, string name, string sub, string enh,
-                              InkWashTheme.InkQuality q, bool selected)[]
-            {
-                ("剑", "玄铁重剑", "双手剑 · 60级", "+12", InkWashTheme.InkQuality.Legendary, true),
-                ("枪", "赤霄枪",   "长枪 · 60级",   "+15", InkWashTheme.InkQuality.Legendary, false),
-                ("冠", "紫金冠",   "头冠 · 55级",   "+10", InkWashTheme.InkQuality.Epic,      false),
-                ("袍", "天罡袍",   "法袍 · 55级",   "+9",  InkWashTheme.InkQuality.Epic,      false),
-                ("杖", "碧玉杖",   "法杖 · 50级",   "+5",  InkWashTheme.InkQuality.Rare,      false),
-                ("盾", "玄武盾",   "盾牌 · 50级",   "+6",  InkWashTheme.InkQuality.Rare,      false),
-                ("刀", "寒月刀",   "单刀 · 45级",   "+2",  InkWashTheme.InkQuality.Uncommon,  false),
-                ("腕", "铁甲护腕", "护腕 · 40级",   "+3",  InkWashTheme.InkQuality.Common,    false),
-            };
             _equipItems = new EquipItem[equips.Length];
             for (int i = 0; i < equips.Length; i++)
             {
@@ -271,6 +279,79 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
                 cy += 52f + 8f;
             }
         }
+
+        /// <summary>
+        /// 左栏行数据：有服务端快照时取背包里可装备的物品（名称/类型/品质来自物品表），
+        /// 没有快照才用设计样例（强化等级一律 +0，等级显示「—」）。
+        /// </summary>
+        private (string glyph, string name, string sub, string enh, InkWashTheme.InkQuality q, bool selected)[] LoadEquipRows()
+        {
+            var inventory = HundunWorld.Game.Services.PlayerInventoryService.Instance;
+            if (inventory != null && inventory.HasServerData)
+            {
+                var rows = new List<(string, string, string, string, InkWashTheme.InkQuality, bool)>();
+                foreach (var item in inventory.Items)
+                {
+                    var def = HundunWorld.Game.Inventory.ItemCatalog.Resolve(item.TemplateId);
+                    if (def == null || def.EquipSlot == null)
+                        continue;
+
+                    var quality = (InkWashTheme.InkQuality)Mathf.Clamp(def.Quality, 0, 4);
+                    rows.Add((def.Glyph, def.Name, def.TypeName + " · —", "+0", quality, rows.Count == 0));
+                }
+
+                if (rows.Count > 0)
+                    return rows.ToArray();
+            }
+
+            return new (string, string, string, string, InkWashTheme.InkQuality, bool)[]
+            {
+                ("剑", "玄铁重剑", "双手剑 · 60级", "+0", InkWashTheme.InkQuality.Legendary, true),
+                ("枪", "赤霄枪",   "长枪 · 60级",   "+0", InkWashTheme.InkQuality.Legendary, false),
+                ("冠", "紫金冠",   "头冠 · 55级",   "+0", InkWashTheme.InkQuality.Epic,      false),
+                ("袍", "天罡袍",   "法袍 · 55级",   "+0", InkWashTheme.InkQuality.Epic,      false),
+                ("杖", "碧玉杖",   "法杖 · 50级",   "+0", InkWashTheme.InkQuality.Rare,      false),
+                ("盾", "玄武盾",   "盾牌 · 50级",   "+0", InkWashTheme.InkQuality.Rare,      false),
+                ("刀", "寒月刀",   "单刀 · 45级",   "+0", InkWashTheme.InkQuality.Uncommon,  false),
+                ("腕", "铁甲护腕", "护腕 · 40级",   "+0", InkWashTheme.InkQuality.Common,    false),
+            };
+        }
+
+        /// <summary>中栏名称行跟随左栏选中项（名称/品质/强化等级/类型/等级）。</summary>
+        private void ShowEquip(int index)
+        {
+            if (_equipRows == null || index < 0 || index >= _equipRows.Length)
+                return;
+
+            var row = _equipRows[index];
+            if (_centerName != null)
+            {
+                _centerName.Text = row.name;
+                _centerName.TextColor = InkWashTheme.QualityColor(row.q);
+            }
+            if (_centerPlus != null)
+                _centerPlus.Text = row.enh;
+            if (_centerQualityTag != null)
+                _centerQualityTag.Text = QualityLabel(row.q);
+
+            var parts = row.sub.Split('·');
+            if (_centerTypeTag != null)
+                _centerTypeTag.Text = parts.Length > 0 ? parts[0].Trim() : "—";
+            if (_centerLevelTag != null)
+                _centerLevelTag.Text = parts.Length > 1 ? parts[1].Trim() : "—";
+        }
+
+        /// <summary>品质 → 中文标签。</summary>
+        private static string QualityLabel(InkWashTheme.InkQuality q) => q switch
+        {
+            InkWashTheme.InkQuality.Mythic => "神话",
+            InkWashTheme.InkQuality.Artifact => "神器",
+            InkWashTheme.InkQuality.Legendary => "传说",
+            InkWashTheme.InkQuality.Epic => "史诗",
+            InkWashTheme.InkQuality.Rare => "精良",
+            InkWashTheme.InkQuality.Uncommon => "优秀",
+            _ => "普通",
+        };
 
         // ===================================================================
         // 中栏：预览 + 名称标签 + 属性对比 + 成功率 + 执行
@@ -303,31 +384,36 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             _centerCol.AddChild(_previewBox);
             cy += 200f + 16f;
 
-            // 名称行：玄铁重剑 + 传说 + +12 + 双手剑 + 60级
-            _centerCol.AddChild(MakeLabel("玄铁重剑", pad, cy, 130f, 26f,
-                InkWashTheme.QualityLegendary, 20f, InkWashTheme.FontRole.Display, TextAlignment.Near));
-            var qTag = new TagPill("传说", InkWashTheme.QualityLegendary, InkWashTheme.QualityLegendary, Color.Transparent)
+            // 名称行：随左栏选中项刷新
+            _centerName = MakeLabel("—", pad, cy, 130f, 26f,
+                InkWashTheme.QualityLegendary, 20f, InkWashTheme.FontRole.Display, TextAlignment.Near);
+            _centerCol.AddChild(_centerName);
+            var qTag = new TagPill("—", InkWashTheme.QualityLegendary, InkWashTheme.QualityLegendary, Color.Transparent)
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(pad + 134f, cy + 2f),
                 Size = new Float2(48f, 22f),
             };
+            _centerQualityTag = qTag;
             _centerCol.AddChild(qTag);
-            _centerCol.AddChild(MakeLabel("+12", pad + 186f, cy, 50f, 26f,
-                InkWashTheme.GoldBright, 16f, InkWashTheme.FontRole.Number, TextAlignment.Near));
-            var tTag = new TagPill("双手剑", InkWashTheme.TextTertiary, InkWashTheme.BorderFaint, Color.Transparent)
+            _centerPlus = MakeLabel("+0", pad + 186f, cy, 50f, 26f,
+                InkWashTheme.GoldBright, 16f, InkWashTheme.FontRole.Number, TextAlignment.Near);
+            _centerCol.AddChild(_centerPlus);
+            var tTag = new TagPill("—", InkWashTheme.TextTertiary, InkWashTheme.BorderFaint, Color.Transparent)
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(pad + 240f, cy + 2f),
                 Size = new Float2(56f, 22f),
             };
+            _centerTypeTag = tTag;
             _centerCol.AddChild(tTag);
-            var lTag = new TagPill("60级", InkWashTheme.TextTertiary, InkWashTheme.BorderFaint, Color.Transparent)
+            var lTag = new TagPill("—", InkWashTheme.TextTertiary, InkWashTheme.BorderFaint, Color.Transparent)
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(pad + 300f, cy + 2f),
                 Size = new Float2(48f, 22f),
             };
+            _centerLevelTag = lTag;
             _centerCol.AddChild(lTag);
             cy += 26f + 14f;
 
@@ -353,7 +439,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             // 成功率
             _centerCol.AddChild(MakeLabel("% 成功率", pad, cy, 80f, 18f,
                 InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            _rateLabel = MakeLabel("78%", 200f, cy - 2f, 80f, 22f,
+            _rateLabel = MakeLabel("—", 200f, cy - 2f, 80f, 22f,
                 InkWashTheme.GoldBright, 16f, InkWashTheme.FontRole.Number, TextAlignment.Far);
             _centerCol.AddChild(_rateLabel);
             cy += 22f + 6f;
@@ -366,7 +452,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
                 BackgroundColor = InkWashTheme.Void,
             };
             _centerCol.AddChild(_rateTrack);
-            _rateTrack.AddChild(new HGradientBar(0.78f,
+            _rateTrack.AddChild(new HGradientBar(0f,
                 InkWashTheme.GoldDeep, InkWashTheme.GoldPrimary, InkWashTheme.GoldBright)
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -375,19 +461,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             });
             cy += 10f + 6f;
 
-            _centerCol.AddChild(MakeLabel("⚠ 失败将降低1级强化等级，建议使用护身符", pad, cy, 320f, 16f,
+            _centerCol.AddChild(MakeLabel("※ 失败将降低1级强化等级，建议使用护身符", pad, cy, 320f, 16f,
                 InkWashTheme.BloodPrimary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Near));
             cy += 16f + 12f;
 
             // 消耗 + 执行强化按钮
             _centerCol.AddChild(MakeLabel("玄铁强化石", pad + 40f, cy, 90f, 16f,
                 InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            _centerCol.AddChild(MakeLabel("x5", pad + 40f, cy + 16f, 40f, 18f,
+            _centerCol.AddChild(MakeLabel("x0", pad + 40f, cy + 16f, 40f, 18f,
                 InkWashTheme.GoldBright, 13f, InkWashTheme.FontRole.Number, TextAlignment.Near));
             _centerCol.AddChild(new MatIcon("石", pad, cy));
             _centerCol.AddChild(MakeLabel("银两", pad + 40f + 110f, cy, 60f, 16f,
                 InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            _centerCol.AddChild(MakeLabel("x50,000", pad + 40f + 110f, cy + 16f, 70f, 18f,
+            _centerCol.AddChild(MakeLabel("x0", pad + 40f + 110f, cy + 16f, 70f, 18f,
                 InkWashTheme.GoldBright, 13f, InkWashTheme.FontRole.Number, TextAlignment.Near));
             _centerCol.AddChild(new MatIcon("银", pad + 110f, cy));
 
@@ -400,7 +486,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
                 Location = new Float2(-140f, cy),
                 Size = new Float2(124f, 36f),
             };
-            _enhanceBtn.ButtonClicked += (b) => EmitGoldAtButton(b);
+            // 强化没有服务端通道：按钮保持可见但不可点，不做"点一下冒金光"的假动作
+            _enhanceBtn.Enabled = false;
             _centerCol.AddChild(_enhanceBtn);
         }
 
@@ -409,11 +496,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
         {
             var rows = new (string name, string cur, string next, string delta, bool changed)[]
             {
-                ("攻击力", "1245",  "1320",  "+75",   true),
-                ("暴击率", "12.5%", "13.8%", "+1.3%", true),
-                ("命中",   "320",   "340",   "+20",   true),
-                ("穿透",   "85",    "92",    "+7",    true),
-                ("会心",   "45",    "45",    "—",     false),
+                // 强化没有服务端数据：当前/强化后/变化一律「—」
+                ("攻击力", "—", "—", "—", false),
+                ("暴击率", "—", "—", "—", false),
+                ("命中",   "—", "—", "—", false),
+                ("穿透",   "—", "—", "—", false),
+                ("会心",   "—", "—", "—", false),
             };
 
             // 表头
@@ -503,7 +591,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
                     InkWashTheme.TextDefault, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
                 row.AddChild(MakeLabel(m.have, 48f, 22f, 160f, 15f,
                     InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Near));
-                row.AddChild(MakeLabel("✓", innerW - 28f, 12f, 20f, 20f,
+                row.AddChild(MakeLabel("√", innerW - 28f, 12f, 20f, 20f,
                     InkWashTheme.JadePrimary, 14f, InkWashTheme.FontRole.Body, TextAlignment.Center));
                 cy += 44f + 8f;
             }
@@ -513,7 +601,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             _rightCol.AddChild(MakeLabel("▲ 强化进度", pad, cy, 120f, 18f,
                 InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
             cy += 18f + 8f;
-            _rightCol.AddChild(MakeLabel("+12", pad, cy, 60f, 28f,
+            _rightCol.AddChild(MakeLabel("+0", pad, cy, 60f, 28f,
                 InkWashTheme.GoldBright, 22f, InkWashTheme.FontRole.Number, TextAlignment.Near));
             _rightCol.AddChild(MakeLabel("→", pad + 70f, cy, 30f, 28f,
                 InkWashTheme.TextTertiary, 16f, InkWashTheme.FontRole.Body, TextAlignment.Center));
@@ -543,7 +631,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             cy += 14f + 12f;
 
             // 套装效果
-            _rightCol.AddChild(MakeLabel("▤ 套装效果", pad, cy, 120f, 18f,
+            _rightCol.AddChild(MakeLabel("◆ 套装效果", pad, cy, 120f, 18f,
                 InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
             cy += 18f + 8f;
             var setBox = new ContainerControl
@@ -562,7 +650,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             setBox.AddChild(new SetBadge("2", true) { Location = new Float2(12f, 34f) });
             setBox.AddChild(MakeLabel("攻击力 +5%", 40f, 34f, 100f, 20f,
                 InkWashTheme.JadeBright, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            setBox.AddChild(MakeLabel("✓", innerW - 30f, 34f, 18f, 20f,
+            setBox.AddChild(MakeLabel("√", innerW - 30f, 34f, 18f, 20f,
                 InkWashTheme.JadePrimary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Center));
             // 4件套（未激活）
             setBox.AddChild(new SetBadge("4", false) { Location = new Float2(12f, 58f) });
@@ -638,21 +726,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
             for (int i = 0; i < _equipItems.Length; i++)
                 _equipItems[i].IsSelected = (i == index);
             _selectedEquip = index;
+            ShowEquip(index);
             if (index >= 0 && index < _equipItems.Length)
                 EmitGoldAtControl(_equipItems[index]);
-        }
-
-        private void EmitGoldAtButton(Button button)
-        {
-            if (ParticleSystem == null || button == null) return;
-            try
-            {
-                var center = new Float2(button.Width * 0.5f, button.Height * 0.5f);
-                var screenPos = button.PointToScreen(center);
-                var localPos = ParticleSystem.PointFromScreen(screenPos);
-                ParticleSystem.EmitGoldBurst(localPos, count: 16, isLarge: true);
-            }
-            catch { }
         }
 
         private void EmitGoldAtControl(Control control)
@@ -962,10 +1038,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
         /// <summary>标签药丸（11px，radius4）。</summary>
         private sealed class TagPill : Control
         {
-            private readonly string _text;
+            private string _text;
             private readonly Color _textColor;
             private readonly Color _border;
             private readonly Color _bg;
+
+            /// <summary>胶囊文案（选中项变化时刷新）。</summary>
+            public string Text
+            {
+                get => _text;
+                set => _text = value;
+            }
 
             public TagPill(string text, Color textColor, Color border, Color bg)
             {

@@ -845,6 +845,22 @@ namespace HundunAgent.Tools
             if (!string.IsNullOrEmpty(text))
                 node["text"] = text.Length > 80 ? text.Substring(0, 80) : text;
 
+            // 捏脸滑杆把参数 Id 放在公有字段 ProbeTag 上（Game 程序集类型，插件侧不引用，只能反射）。
+            // 没这一项时 ui_tree 里 60 根 SculptSlider 长得一模一样，无法按参数名定位。
+            var probeTag = GetFieldString(control, "ProbeTag");
+            if (!string.IsNullOrEmpty(probeTag))
+                node["probeTag"] = probeTag;
+
+            if (control is Slider slider)
+            {
+                node["slider"] = new
+                {
+                    value = slider.Value,
+                    min = slider.Minimum,
+                    max = slider.Maximum
+                };
+            }
+
             var bg = GetPropColor(control, "BackgroundColor");
             if (bg.HasValue)
                 node["backgroundColor"] = ColorToHex(bg.Value);
@@ -852,6 +868,20 @@ namespace HundunAgent.Tools
             var textColor = GetPropColor(control, "TextColor") ?? GetPropColor(control, "Color");
             if (textColor.HasValue)
                 node["textColor"] = ColorToHex(textColor.Value);
+        }
+
+        private static string GetFieldString(object target, string name)
+        {
+            try
+            {
+                var f = target.GetType().GetField(name, BindingFlags.Public | BindingFlags.Instance);
+                if (f != null && f.FieldType == typeof(string))
+                    return (string)f.GetValue(target);
+            }
+            catch
+            {
+            }
+            return null;
         }
 
         private static string GetPropString(object target, string name)

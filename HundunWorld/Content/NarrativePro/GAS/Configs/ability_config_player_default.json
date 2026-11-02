@@ -1,0 +1,7 @@
+{
+  "DefaultAttributesEffectPath": "effect_attributes_player_base",
+  "StartupEffectPaths": [
+    "effect_startup_player"
+  ],
+  "DefaultAbilityPaths": []
+}

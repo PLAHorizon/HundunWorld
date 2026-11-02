@@ -81,7 +81,7 @@ public sealed class DsUplinkClientOptions
 /// 并停止对外提供服务（否则会产生"玩家连着网关、网关没有路由表、玩家卡死"的黑洞）。
 /// </para>
 /// </summary>
-public sealed class DsUplinkClient : IDsDownlinkSender, IDsGameplayEventSender, IAsyncDisposable
+public sealed class DsUplinkClient : IDsDownlinkSender, IDsGameplayEventSender, IDsEntityDescriptorSender, IAsyncDisposable , IDsCorpseLootSender
 {
     private readonly DsUplinkClientOptions _options;
     private readonly Action<string>? _log;
@@ -128,6 +128,9 @@ public sealed class DsUplinkClient : IDsDownlinkSender, IDsGameplayEventSender, 
 
     /// <summary>累计收到的会话结束通知数（网关告知"这些玩家已断线"）。</summary>
     public long SessionEndReceivedCount { get; private set; }
+
+    /// <summary>累计收到的脚本生成指令帧数（诊断）。</summary>
+    public long ScriptedSpawnReceivedCount { get; private set; }
 
     /// <summary>累计因连接不可用而丢弃的快照条目数（监控告警源）。</summary>
     public long DroppedItemCount { get; private set; }
@@ -253,6 +256,100 @@ public sealed class DsUplinkClient : IDsDownlinkSender, IDsGameplayEventSender, 
 
     /// <summary>累计因连接不可用而丢弃的跨层玩法事件数（业务层对账的告警源）。</summary>
     public long DroppedGameplayEventCount { get; private set; }
+
+    /// <summary>
+    /// 发送一批实体身份描述符给网关注册表（无应答，单向）。
+    /// <para>与玩法事件共用同一条连接：两者都是"稀疏、有序、可丢不可重放"的上行事件，
+    /// 分两条连接只会引入乱序（生成先于移除到达就会在注册表里留一个鬼对象）。</para>
+    /// </summary>
+    public Task<bool> SendEntityDescriptorsAsync(DsEntityDescriptorBatch batch, CancellationToken cancellationToken = default)
+    {
+        if (batch?.Descriptors is null || batch.Descriptors.Length == 0) return Task.FromResult(true);
+
+        var payload = DsUplinkCodec.EncodePayload(DsUplinkMessageKind.EntityDescriptor, batch);
+        if (!TrySend(payload))
+        {
+            DroppedDescriptorCount += batch.Descriptors.Length;
+            return Task.FromResult(false);
+        }
+
+        SentDescriptorCount += batch.Descriptors.Length;
+        return Task.FromResult(true);
+    }
+
+    /// <summary>累计成功上送的实体身份条目数。</summary>
+    public long SentDescriptorCount { get; private set; }
+
+    /// <summary>累计因连接不可用而丢弃的实体身份条目数（注册表与世界的偏差告警源）。</summary>
+    public long DroppedDescriptorCount { get; private set; }
+
+    /// <summary>
+    /// 把已过 DS 本地门槛的拾取请求转给网关（由它去问权威侧）。
+    /// <para>无应答：结果会以 <see cref="CorpseLootResultReceived"/> 回来。丢弃要计数——
+    /// 否则玩家点了一下、什么都没发生，而日志里一行都没有。</para>
+    /// </summary>
+    public Task<bool> SendCorpseLootForwardAsync(DsCorpseLootForward forward, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(forward);
+        var payload = DsUplinkCodec.EncodePayload(DsUplinkMessageKind.CorpseLootForward, forward);
+        if (!TrySend(payload))
+        {
+            DroppedCorpseLootForwardCount++;
+            return Task.FromResult(false);
+        }
+        SentCorpseLootForwardCount++;
+        return Task.FromResult(true);
+    }
+
+    /// <summary>上送一帧"登记尸体拾取列表"。</summary>
+    public Task<bool> SendCorpseLootRegisterAsync(DsCorpseLootRegister register, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(register);
+        var payload = DsUplinkCodec.EncodePayload(DsUplinkMessageKind.CorpseLootRegister, register);
+        if (!TrySend(payload)) { DroppedCorpseLootRegisterCount++; return Task.FromResult(false); }
+        SentCorpseLootRegisterCount++;
+        return Task.FromResult(true);
+    }
+
+    /// <summary>上送一帧"作废尸体拾取列表"。</summary>
+    public Task<bool> SendCorpseLootGoneAsync(DsCorpseLootGone gone, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(gone);
+        var payload = DsUplinkCodec.EncodePayload(DsUplinkMessageKind.CorpseLootGone, gone);
+        if (!TrySend(payload)) { DroppedCorpseLootGoneCount++; return Task.FromResult(false); }
+        SentCorpseLootGoneCount++;
+        return Task.FromResult(true);
+    }
+
+    /// <summary>
+    /// 上送一帧"拾取回执"。**两个方向共用这一帧**：网关→DS 是权威裁决，DS→网关是本地当场拒
+    /// （距离/窗口不过时不必绕一圈）。靠 RequestId 配对，方向由谁发的决定。
+    /// </summary>
+    public Task<bool> SendCorpseLootResultAsync(DsCorpseLootResult result, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        var payload = DsUplinkCodec.EncodePayload(DsUplinkMessageKind.CorpseLootResult, result);
+        if (!TrySend(payload)) return Task.FromResult(false);
+        return Task.FromResult(true);
+    }
+
+    /// <summary>累计成功上送的登记帧数。</summary>
+    public long SentCorpseLootRegisterCount { get; private set; }
+
+    /// <summary>累计因连接不可用而丢弃的登记帧数。</summary>
+    public long DroppedCorpseLootRegisterCount { get; private set; }
+
+    /// <summary>累计成功上送的作废帧数。</summary>
+    public long SentCorpseLootGoneCount { get; private set; }
+
+    /// <summary>累计因连接不可用而丢弃的作废帧数。</summary>
+    public long DroppedCorpseLootGoneCount { get; private set; }
+
+    /// <summary>累计成功转发的拾取请求数。</summary>
+    public long SentCorpseLootForwardCount { get; private set; }
+
+    /// <summary>累计因连接不可用而丢弃的拾取请求数。</summary>
+    public long DroppedCorpseLootForwardCount { get; private set; }
 
     /// <summary>发送一批权威下行帧（无应答，单向）。</summary>
     public Task<bool> SendSnapshotBatchAsync(DsSnapshotBatch batch, CancellationToken cancellationToken = default)
@@ -384,6 +481,33 @@ public sealed class DsUplinkClient : IDsDownlinkSender, IDsGameplayEventSender, 
     /// </summary>
     public event Action<long[]>? SessionEndReceived;
 
+    /// <summary>
+    /// 收到「脚本生成指令」（网关 → DS）。**在读循环线程上触发**——
+    /// 订阅方只入队，由 tick 线程调用 <c>DsWorldSession.EnqueueScriptedCommand</c> 消费。
+    /// </summary>
+    public event Action<Horizon.Game.Message.Network.ScriptGrantToken>? ScriptedSpawnReceived;
+
+    /// <summary>
+    /// 网关下发的尸体拾取请求（客户端点了一下尸体上的某个槽）。
+    /// 订阅方只入队，tick 线程消费（与脚本指令同一节奏）。
+    /// </summary>
+    public event Action<DsCorpseLootRequest>? CorpseLootRequestReceived;
+
+    /// <summary>网关下发的权威侧裁决回执（与请求用 RequestId 配对）。</summary>
+    public event Action<DsCorpseLootResult>? CorpseLootResultReceived;
+
+    /// <summary>网关下发的玩家权威等级/累计经验（击杀经验落库后回合）。</summary>
+    public event Action<DsPlayerProgressNotice>? PlayerProgressReceived;
+
+    /// <summary>累计收到的玩家进度通知数。</summary>
+    public long PlayerProgressReceivedCount { get; private set; }
+
+    /// <summary>累计收到的尸体拾取请求数。</summary>
+    public long CorpseLootRequestReceivedCount { get; private set; }
+
+    /// <summary>累计收到的拾取回执数。</summary>
+    public long CorpseLootResultReceivedCount { get; private set; }
+
     private void HandleInbound(ReadOnlySpan<byte> payload)
     {
         if (payload.Length < 1) return;
@@ -399,6 +523,51 @@ public sealed class DsUplinkClient : IDsDownlinkSender, IDsGameplayEventSender, 
                 SessionEndReceivedCount += notice.SessionIds.Length;
                 try { SessionEndReceived?.Invoke(notice.SessionIds); }
                 catch (Exception ex) { _log?.Invoke($"DsUplinkClient：会话结束回调异常：{ex.Message}"); }
+            }
+            return;
+        }
+
+        if (kind == DsUplinkMessageKind.ScriptedSpawn)
+        {
+            if (DsUplinkCodec.TryDecode<DsScriptedSpawnEnvelope>(payload, out _, out var envelope)
+                && envelope?.Token is not null)
+            {
+                ScriptedSpawnReceivedCount++;
+                try { ScriptedSpawnReceived?.Invoke(envelope.Token); }
+                catch (Exception ex) { _log?.Invoke($"DsUplinkClient：脚本指令回调异常：{ex.Message}"); }
+            }
+            return;
+        }
+
+        if (kind == DsUplinkMessageKind.CorpseLootRequest)
+        {
+            if (DsUplinkCodec.TryDecode<DsCorpseLootRequest>(payload, out _, out var request) && request is not null)
+            {
+                CorpseLootRequestReceivedCount++;
+                try { CorpseLootRequestReceived?.Invoke(request); }
+                catch (Exception ex) { _log?.Invoke($"DsUplinkClient：拾取请求回调异常：{ex.Message}"); }
+            }
+            return;
+        }
+
+        if (kind == DsUplinkMessageKind.CorpseLootResult)
+        {
+            if (DsUplinkCodec.TryDecode<DsCorpseLootResult>(payload, out _, out var result) && result is not null)
+            {
+                CorpseLootResultReceivedCount++;
+                try { CorpseLootResultReceived?.Invoke(result); }
+                catch (Exception ex) { _log?.Invoke($"DsUplinkClient：拾取回执回调异常：{ex.Message}"); }
+            }
+            return;
+        }
+
+        if (kind == DsUplinkMessageKind.PlayerProgress)
+        {
+            if (DsUplinkCodec.TryDecode<DsPlayerProgressNotice>(payload, out _, out var progress) && progress is not null)
+            {
+                PlayerProgressReceivedCount++;
+                try { PlayerProgressReceived?.Invoke(progress); }
+                catch (Exception ex) { _log?.Invoke($"DsUplinkClient：玩家进度回调异常：{ex.Message}"); }
             }
             return;
         }

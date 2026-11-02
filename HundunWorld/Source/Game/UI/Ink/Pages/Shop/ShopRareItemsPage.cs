@@ -3,17 +3,26 @@ using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Shop
 {
-    public class ShopRareItemsPage : ContainerControl, IInkPage
+    public class ShopRareItemsPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private Float2 _screenSize;
 
         private InkButton _backButton;
         private InkPanel _leftNav;
         private InkPanel _topBar;
+        private ContainerControl _headerAvatar;
+        private Label _headerCharName;
+        private Label _headerCharLevel;
+        private Label _headerCoinCaption;
+        private Label _headerCoin;
+        private Label _headerIngotCaption;
+        private Label _headerIngot;
+        private Label _headerTime;
         private InkPanel _contentArea;
 
         private InkPanel[] _tabButtons;
@@ -21,8 +30,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
 
         private InkPanel[] _itemCards;
 
+        // 页头/工具条上的散标签：索引式排布会随子控件数量漂移，改为按引用定位
+        private Label _refreshHintLabel;
+        private Label _refreshTimeLabel;
+        private Label _itemCountLabel;
+        private Label _bottomHintLabel;
+
         private InkPanel _modalOverlay;
         private InkPanel _modalPanel;
+        private InkButton _modalCloseButton;
+        private InkPanel _modalIconPanel;
+        private Label _modalIconLabel;
+        private Label _modalTitle;
+        private ContainerControl _modalQualityBadge;
+        private Label _modalQualityLabel;
+        private Label _modalDescText;
+        private Label _modalPriceValue;
+        private InkButton _modalCancelButton;
+        private InkButton _modalBuyButton;
 
         private string[] _itemNames = { "青锋剑·绝世", "紫霞秘籍", "龙纹玉佩", "玄铁重甲", "凌波残卷", "天山雪莲", "金丝软甲", "还魂丹", "百年人参" };
         private string[] _itemDescs = {
@@ -41,7 +66,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
         private string[] _itemQualities = { "legendary", "epic", "epic", "rare", "epic", "rare", "rare", "uncommon", "uncommon" };
         private string[] _itemBadges = { "限时", "热销", "史品", "珍品", "仅剩3件", "珍品", "珍品", "良品", "良品" };
         private string[] _itemIllustChars = { "青", "紫", "龙", "玄", "凌", "莲", "金", "魂", "参" };
-        private string[] _itemCountdowns = { "12:30:45", "", "", "", "", "", "", "", "" };
+        // 限时倒计时没有服务端计时来源：整列留空，避免摆一个永远不动的假时间
+        private string[] _itemCountdowns = { "", "", "", "", "", "", "", "", "" };
 
         private Color[] _qualityColors = {
             InkWashTheme.QualityCommon,
@@ -105,7 +131,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Parent = this
             };
             // 返回战斗 HUD（设计隐藏出口 back-hud）
-            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
         }
 
         private void BuildLeftNav()
@@ -130,7 +156,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Parent = _leftNav
             };
             // 返回战斗 HUD（设计隐藏出口 back-hud）
-            navBack.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            navBack.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
 
             var logoMark = new ContainerControl
             {
@@ -244,7 +270,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Parent = this
             };
 
-            var avatarCircle = new ContainerControl
+            // 顶栏九个控件原先都是局部变量、没有 Location/Size：全部叠在 (0,0) 且尺寸为 0，
+            // 画面上只看得到页面外壳自己的昵称。改成字段，位置在 ApplyLayout 里按顶栏宽度排。
+            _headerAvatar = new ContainerControl
             {
                 Size = new Float2(36f, 36f),
                 BackgroundColor = InkWashTheme.BaseElevated,
@@ -258,65 +286,96 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
-                Parent = avatarCircle
+                // 头像圈固定 36×36：StretchAll 会被撑成 136×56，字被裁
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Vector2(36f, 36f),
+                Parent = _headerAvatar
             };
 
-            var charName = new Label
+            _headerCharName = new Label
             {
-                Text = "江湖过客",
+                // 初值留空位，真实昵称由下方 InkPlayerHeaderBinder 覆盖
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 TextColor = InkWashTheme.PaperBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(120f, 60f),
                 Parent = _topBar
             };
 
-            var charLevel = new Label
+            _headerCharLevel = new Label
             {
-                Text = "Lv. 42",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(80f, 60f),
                 Parent = _topBar
             };
 
-            var currencyCoin = new Label
-            {
-                Text = "12,450",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                TextColor = InkWashTheme.PaperAged,
-                Parent = _topBar
-            };
-
-            var currencyCoinLabel = new Label
+            _headerCoinCaption = new Label
             {
                 Text = "铜钱",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(40f, 60f),
                 Parent = _topBar
             };
 
-            var currencyIngot = new Label
+            _headerCoin = new Label
             {
-                Text = "328",
+                // 铜钱只在 ShopClientService 拿到服务端快照后才显示（binder 判断 Revision）
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                TextColor = InkWashTheme.GoldBright,
+                TextColor = InkWashTheme.PaperAged,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(90f, 60f),
                 Parent = _topBar
             };
 
-            var currencyIngotLabel = new Label
+            _headerIngotCaption = new Label
             {
                 Text = "元宝",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextBrand,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(40f, 60f),
                 Parent = _topBar
             };
 
-            var timeLabel = new Label
+            _headerIngot = new Label
             {
-                Text = "戌时 三刻",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = InkWashTheme.PaperAged,
+                // 元宝没有服务端快照（ShopClientService 只给 Gold）
+                Text = "—",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(70f, 60f),
                 Parent = _topBar
             };
+
+            _headerTime = new Label
+            {
+                // 世界时间同步没有接入客户端（同 MenuTimePage）
+                Text = "—",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.PaperAged,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(80f, 60f),
+                Parent = _topBar
+            };
+
+            // 昵称/等级/铜钱有真实值时才覆盖；元宝与时辰没有数据源，已改为「—」
+            InkPlayerHeaderBinder.Bind(_headerCharName, _headerCharLevel, _headerCoin);
         }
 
         private void BuildContentArea()
@@ -378,12 +437,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                     TextColor = i == 0 ? InkWashTheme.GoldBright : InkWashTheme.TextSecondary,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.StretchAll,
+                    // 页签固定 120×44：StretchAll 会被撑成 220×64，文字偏出去
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = Float2.Zero,
+                    Size = new Vector2(120f, 44f),
                     Parent = _tabButtons[i]
                 };
             }
 
-            var refreshLabel = new Label
+            _refreshHintLabel = new Label
             {
                 Text = "刷新时间",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
@@ -391,9 +453,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Parent = _contentArea
             };
 
-            var refreshTime = new Label
+            _refreshTimeLabel = new Label
             {
-                Text = "02:45:30",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _contentArea
@@ -426,7 +488,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 };
             }
 
-            var itemCountLabel = new Label
+            _itemCountLabel = new Label
             {
                 Text = "共 9 件珍品",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
@@ -441,12 +503,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
 
             for (int i = 0; i < _itemNames.Length; i++)
             {
-                _itemCards[i] = new InkPanel
+                int cardIndex = i;
+                var card = new ClickableCard
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                     BackgroundColor = InkWashTheme.BaseTertiary,
                     Parent = _contentArea
                 };
+                // 点卡片打开详情弹窗（弹窗本体此前从未接线，一直是死 UI）
+                card.Clicked += () => OpenDetail(cardIndex);
+                _itemCards[i] = card;
 
                 var cornerDecoTL = new InkCornerDeco
                 {
@@ -551,9 +617,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
 
         private void BuildBottomHint()
         {
-            var hintLabel = new Label
+            _bottomHintLabel = new Label
             {
-                Text = "限时珍品倒计时结束后将下架，江湖过客请把握时机。购买后商品将送至您的信箱。",
+                Text = "珍品阁的货架与刷新计划尚未接入服务端，当前展示为目录样例。",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextDisabled,
                 Parent = _contentArea
@@ -569,10 +635,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Visible = false,
                 Parent = this
             };
+            // 点遮罩空白处关闭（弹窗本体不冒泡到这里：OnMouseDown 返回 true）
+            var overlayHit = new ModalOverlayHit
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Parent = _modalOverlay
+            };
+            overlayHit.Clicked += CloseDetail;
 
             _modalPanel = new InkPanel
             {
-                AnchorPreset = AnchorPresets.StretchAll,
                 BackgroundColor = InkWashTheme.BaseTertiary,
                 Visible = false,
                 Parent = _modalOverlay
@@ -602,70 +674,68 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Parent = _modalPanel
             };
 
-            var closeButton = new InkButton
+            // 弹窗固定 500×600（见 ApplyLayout），内部子控件按设计稿顺序显式定位。
+            // 原来这一整块 13 个控件都没有 Location：弹窗一旦显示就是一坨叠在左上角。
+            _modalCloseButton = new InkButton
             {
                 Width = 32f,
                 Height = 32f,
                 Text = "×",
                 Variant = InkButtonVariant.Ghost,
+                Location = new Float2(444f, 16f),
                 Parent = _modalPanel
             };
+            _modalCloseButton.Clicked += CloseDetail;
 
-            var modalIconPanel = new InkPanel
+            _modalIconPanel = new InkPanel
             {
                 Size = new Float2(80f, 80f),
+                Location = new Float2(24f, 24f),
                 BackgroundColor = InkWashTheme.GoldPrimary * 0.12f,
                 Parent = _modalPanel
             };
 
-            var modalIconLabel = new Label
+            _modalIconLabel = new Label
             {
-                Text = "青",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 32f),
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.StretchAll,
-                Parent = modalIconPanel
+                Parent = _modalIconPanel
             };
 
-            // 设计稿弹窗倒计时标签「限时剩余」（.modal-countdown-label）
-            var countdownLabel = new Label
+            _modalTitle = new Label
             {
-                Text = "限时剩余",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                TextColor = InkWashTheme.TextVermilion,
-                Location = new Float2(396f, 26f),
-                Size = new Float2(72f, 18f),
-                HorizontalAlignment = TextAlignment.Far,
-                Parent = _modalPanel
-            };
-
-            var modalTitle = new Label
-            {
-                Text = "青锋剑·绝世",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 24f),
+                Text = "—",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
                 TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(120f, 28f),
+                Size = new Float2(300f, 32f),
                 Parent = _modalPanel
             };
 
-            var qualityBadge = new ContainerControl
+            _modalQualityBadge = new ContainerControl
             {
-                Width = 60f,
+                Width = 72f,
                 Height = 22f,
+                Location = new Float2(120f, 64f),
                 BackgroundColor = InkWashTheme.VermilionPrimary * 0.12f,
                 Parent = _modalPanel
             };
 
-            var qualityLabel = new Label
+            _modalQualityLabel = new Label
             {
-                Text = "传世品质",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 TextColor = InkWashTheme.VermilionBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.StretchAll,
-                Parent = qualityBadge
+                Parent = _modalQualityBadge
             };
 
             var descTitle = new Label
@@ -673,38 +743,36 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Text = "物品描述",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 TextColor = InkWashTheme.PaperBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(24f, 124f),
+                Size = new Float2(452f, 20f),
                 Parent = _modalPanel
             };
 
-            var descText = new Label
+            _modalDescText = new Label
             {
-                Text = "上古名剑，锋利无比。剑身通体如墨，挥之有龙吟之声，相传为上古铸剑大师以天外陨铁淬炼七七四十九日而成。",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 TextColor = InkWashTheme.TextSecondary,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Near,
+                Wrapping = TextWrapping.WrapWords,
+                Location = new Float2(24f, 150f),
+                Size = new Float2(452f, 64f),
                 Parent = _modalPanel
             };
 
-            var attrTitle = new Label
+            // 目录里没有属性/特效字段：如实说明，不摆设计稿的假词条
+            var dataNote = new Label
             {
-                Text = "属性详情",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
-                TextColor = InkWashTheme.PaperBright,
-                Parent = _modalPanel
-            };
-
-            var skillTitle = new Label
-            {
-                Text = "特殊效果",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
-                TextColor = InkWashTheme.PaperBright,
-                Parent = _modalPanel
-            };
-
-            var skillText = new Label
-            {
-                Text = "剑气纵横：攻击时有15%概率释放剑气，造成额外200%伤害",
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
-                TextColor = InkWashTheme.GoldBright,
+                Text = "属性与特殊效果数据尚未接入服务端",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextDisabled,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(24f, 232f),
+                Size = new Float2(452f, 18f),
                 Parent = _modalPanel
             };
 
@@ -713,34 +781,133 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 Text = "购买价格",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(24f, 470f),
+                Size = new Float2(120f, 18f),
                 Parent = _modalPanel
             };
 
-            var priceValue = new Label
+            _modalPriceValue = new Label
             {
-                Text = "6480 元宝",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 18f),
                 TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Location = new Float2(24f, 492f),
+                Size = new Float2(220f, 28f),
                 Parent = _modalPanel
             };
 
-            var cancelButton = new InkButton
+            _modalCancelButton = new InkButton
             {
                 Width = 100f,
                 Height = 36f,
                 Text = "取消",
                 Variant = InkButtonVariant.Ghost,
+                Location = new Float2(256f, 540f),
                 Parent = _modalPanel
             };
+            _modalCancelButton.Clicked += CloseDetail;
 
-            var buyButton = new InkButton
+            _modalBuyButton = new InkButton
             {
                 Width = 100f,
                 Height = 36f,
                 Text = "购买",
                 Variant = InkButtonVariant.Primary,
+                Location = new Float2(372f, 540f),
                 Parent = _modalPanel
             };
+            _modalBuyButton.Clicked += OnModalBuyClicked;
+
+            // 这两处的子标签用 StretchAll，但父容器尺寸是构造期给的，标签实测还停在 180×100 / 172×42，
+            // 居中后落到父容器外面被裁掉（与珍品卡片同款陷阱，卡片走的是 LayoutCardChildren 里的 FitOnlyChild）。
+            FitOnlyChild(_modalIconPanel);
+            FitOnlyChild(_modalQualityBadge);
+        }
+
+        /// <summary>弹窗「购买」：珍品阁没有下单/扣款链路，只给明确提示。</summary>
+        private void OnModalBuyClicked()
+        {
+            HundunWorld.Game.UI.UIHelper.ShowToast("珍品阁购买尚未接入服务端", HundunWorld.Game.UI.ToastType.Info);
+        }
+
+        /// <summary>打开某件珍品的详情弹窗：把目录数据填进弹窗，再显示遮罩。</summary>
+        private void OpenDetail(int index)
+        {
+            if (_modalOverlay == null || _modalPanel == null) return;
+            if (index < 0 || index >= _itemNames.Length) return;
+
+            if (_modalIconLabel != null) _modalIconLabel.Text = _itemIllustChars[index];
+            if (_modalTitle != null) _modalTitle.Text = _itemNames[index];
+            if (_modalQualityLabel != null) _modalQualityLabel.Text = QualityNameOf(_itemQualities[index]);
+            if (_modalQualityBadge != null)
+                _modalQualityBadge.BackgroundColor = GetQualityBgColor(_itemQualities[index]) * 0.6f;
+            if (_modalQualityLabel != null) _modalQualityLabel.TextColor = GetQualityTextColor(_itemQualities[index]);
+            if (_modalDescText != null) _modalDescText.Text = _itemDescs[index];
+            if (_modalPriceValue != null)
+                _modalPriceValue.Text = $"{_itemPrices[index]} {_itemCurrencies[index]}";
+
+            _modalOverlay.Visible = true;
+            _modalPanel.Visible = true;
+        }
+
+        private void CloseDetail()
+        {
+            if (_modalPanel != null) _modalPanel.Visible = false;
+            if (_modalOverlay != null) _modalOverlay.Visible = false;
+        }
+
+        private static string QualityNameOf(string quality)
+        {
+            switch (quality)
+            {
+                case "legendary": return "传世";
+                case "epic": return "史诗";
+                case "rare": return "稀有";
+                case "uncommon": return "精良";
+                default: return "普通";
+            }
+        }
+
+        /// <summary>可点击的珍品卡片（InkPanel 本身没有 Clicked 事件）。</summary>
+        private sealed class ClickableCard : InkPanel
+        {
+            public event System.Action Clicked;
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left)
+                {
+                    Clicked?.Invoke();
+                    return true;
+                }
+                return base.OnMouseDown(location, button);
+            }
+        }
+
+        /// <summary>遮罩命中区：点空白关弹窗；弹窗本体盖在它上面并吞掉点击。</summary>
+        private sealed class ModalOverlayHit : Control
+        {
+            public event System.Action Clicked;
+
+            public ModalOverlayHit()
+            {
+                BackgroundColor = Color.Transparent;
+                AutoFocus = false;
+            }
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left)
+                {
+                    Clicked?.Invoke();
+                    return true;
+                }
+                return base.OnMouseDown(location, button);
+            }
         }
 
         // 按设计方案 §4.1 品质色阶：Legendary=鎏金 #C8A858（非朱红）
@@ -786,6 +953,39 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
             {
                 _topBar.Size = new Float2(sw - 240f, 60f);
                 _topBar.Location = new Float2(240f, 0f);
+
+                // 左簇：头像 + 昵称 + 等级；右簇：时辰 / 元宝 / 铜钱，按顶栏实际宽度靠右排
+                float barRight = _topBar.Size.X - 16f;
+                if (_headerAvatar != null) _headerAvatar.Location = new Float2(16f, 12f);
+                if (_headerCharName != null) _headerCharName.Location = new Float2(62f, 0f);
+                if (_headerCharLevel != null) _headerCharLevel.Location = new Float2(186f, 0f);
+
+                if (_headerTime != null)
+                {
+                    _headerTime.Location = new Float2(barRight - _headerTime.Size.X, 0f);
+                    barRight -= _headerTime.Size.X + 10f;
+                }
+                if (_headerIngotCaption != null)
+                {
+                    barRight -= _headerIngotCaption.Size.X;
+                    _headerIngotCaption.Location = new Float2(barRight, 0f);
+                }
+                if (_headerIngot != null)
+                {
+                    barRight -= _headerIngot.Size.X + 4f;
+                    _headerIngot.Location = new Float2(barRight, 0f);
+                }
+                barRight -= 14f;
+                if (_headerCoinCaption != null)
+                {
+                    barRight -= _headerCoinCaption.Size.X;
+                    _headerCoinCaption.Location = new Float2(barRight, 0f);
+                }
+                if (_headerCoin != null)
+                {
+                    barRight -= _headerCoin.Size.X + 4f;
+                    _headerCoin.Location = new Float2(barRight, 0f);
+                }
             }
 
             if (_contentArea != null)
@@ -863,6 +1063,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 {
                     _itemCards[i].Size = new Float2(cardWidth, cardHeight);
                     _itemCards[i].Location = new Float2(cardGridX, cardGridY);
+                    LayoutCardChildren(i, cardWidth, cardHeight);
                 }
 
                 cardGridX += cardWidth + 12f;
@@ -879,6 +1080,32 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
                 children[childIdx - 1].Width = contentWidth - padding * 2f;
             }
 
+            // 工具条/底部提示按引用定位（索引式在子控件增删后会漂到标题上）
+            if (_refreshHintLabel != null)
+            {
+                _refreshHintLabel.Location = new Float2(contentWidth - padding - 210f, 126f);
+                _refreshHintLabel.Size = new Float2(92f, 18f);
+            }
+            if (_refreshTimeLabel != null)
+            {
+                _refreshTimeLabel.Location = new Float2(contentWidth - padding - 112f, 124f);
+                _refreshTimeLabel.Size = new Float2(100f, 20f);
+                _refreshTimeLabel.HorizontalAlignment = TextAlignment.Far;
+            }
+            if (_itemCountLabel != null)
+            {
+                _itemCountLabel.Location = new Float2(contentWidth - padding - 110f, 185f);
+                _itemCountLabel.Size = new Float2(100f, 18f);
+                _itemCountLabel.HorizontalAlignment = TextAlignment.Far;
+            }
+            if (_bottomHintLabel != null)
+            {
+                _bottomHintLabel.Location = new Float2(padding, cardGridY + 20f);
+                _bottomHintLabel.Size = new Float2(contentWidth - padding * 2f, 18f);
+            }
+            for (int i = 0; i < _filterButtons.Length; i++)
+                FitOnlyChild(_filterButtons[i]);
+
             if (_modalOverlay != null)
             {
                 _modalOverlay.Size = new Float2(sw, sh);
@@ -892,6 +1119,81 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
             }
         }
 
+        /// <summary>
+        /// 珍品卡片内部排布：子控件构造时都没有位置，全靠这里按"是否带角标/倒计时"推算下标。
+        /// 顺序：角落装饰 ×2 → [角标] → 图标 → 名称 → 描述 → 价格 → [倒计时] → 底部色条。
+        /// </summary>
+        private void LayoutCardChildren(int index, float width, float height)
+        {
+            var card = _itemCards[index];
+            if (card == null || card.ChildrenCount == 0)
+                return;
+
+            var children = card.Children.ToArray();
+            int i = 0;
+            i += 2; // 两个角落装饰自己按锚点画
+
+            if (!string.IsNullOrEmpty(_itemBadges[index]) && i < children.Length)
+            {
+                children[i].Location = new Float2(Mathf.Max(0f, width - 56f), 10f);
+                children[i].Size = new Float2(48f, 20f);
+                FitOnlyChild(children[i]);
+                i++;
+            }
+
+            if (i < children.Length)
+            {
+                children[i].Location = new Float2(16f, 16f);
+                children[i].Size = new Float2(72f, 72f);
+                FitOnlyChild(children[i]);
+                i++;
+            }
+            if (i < children.Length)
+            {
+                children[i].Location = new Float2(16f, 96f);
+                children[i].Size = new Float2(Mathf.Max(60f, width - 32f), 22f);
+                i++;
+            }
+            if (i < children.Length)
+            {
+                children[i].Location = new Float2(16f, 122f);
+                children[i].Size = new Float2(Mathf.Max(60f, width - 32f), 34f);
+                if (children[i] is Label desc)
+                    desc.Wrapping = TextWrapping.WrapWords;
+                i++;
+            }
+            if (i < children.Length)
+            {
+                children[i].Location = new Float2(16f, 164f);
+                children[i].Size = new Float2(Mathf.Max(80f, width - 130f), 18f);
+                i++;
+            }
+            if (!string.IsNullOrEmpty(_itemCountdowns[index]) && i < children.Length)
+            {
+                children[i].Location = new Float2(Mathf.Max(0f, width - 110f), 165f);
+                children[i].Size = new Float2(100f, 16f);
+                if (children[i] is Label cd)
+                    cd.HorizontalAlignment = TextAlignment.Far;
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// 容器里的唯一子控件按父尺寸铺满：这些子标签用的是 StretchAll 锚点，
+        /// 但父容器尺寸是布局期才改的，光设 Size 不一定触发重排，干脆显式给一次。
+        /// </summary>
+        private static void FitOnlyChild(Control parent)
+        {
+            if (parent is not ContainerControl container || container.ChildrenCount != 1)
+                return;
+
+            var only = container.Children[0];
+            // 先把锚点从 StretchAll 摘下来：留着它会在下一次布局把刚设好的 Size 又撑回"父+100"
+            only.AnchorPreset = AnchorPresets.TopLeft;
+            only.Location = Float2.Zero;
+            only.Size = container.Size;
+        }
+
         public void RefreshLayout()
         {
             _screenSize = new Float2(Width, Height);
@@ -900,6 +1202,37 @@ namespace HundunWorld.Game.UI.Ink.Pages.Shop
 
         public void RefreshAllData()
         {
+        }
+
+        /// <summary>自测标记：环境没有鼠标注入，用标记文件打开详情弹窗并留回执（同 friends-selftest 做法）。</summary>
+        private bool _detailSelftestDone;
+
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+            if (_detailSelftestDone || !VisibleInHierarchy) return;
+
+            try
+            {
+                string marker = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", "rare-detail.on");
+                if (!System.IO.File.Exists(marker)) return;
+
+                _detailSelftestDone = true;
+                OpenDetail(0);
+                System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(
+                        System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                        "HundunWorld", "ui-selftest.out"),
+                    $"rare-detail open=1 overlay={_modalOverlay?.Visible} panel={_modalPanel?.Visible} " +
+                    $"title={_modalTitle?.Text.ToString()} price={_modalPriceValue?.Text.ToString()} desc={_modalDescText?.Text.ToString()}"
+                    + System.Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[ShopRareItemsPage] 详情自测失败: {ex.Message}");
+            }
         }
 
         public void OnPageEnter()

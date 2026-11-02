@@ -1,0 +1,31 @@
+{
+  "Name": "DefaultGameplayCrowd",
+  "bEnabled": true,
+  "bFollowLocalPlayer": true,
+  "SpawnCenter": { "X": 0.0, "Y": 0.0, "Z": 0.0 },
+  "SpawnRadius": 260.0,
+  "Entries": [
+    {
+      "NpcId": "npc_village_smith",
+      "Count": 1,
+      "bIsPed": false,
+      "bUseOffset": true,
+      "Offset": { "X": 140.0, "Y": 0.0, "Z": -80.0 },
+      "SpreadRadius": 0.0
+    },
+    {
+      "NpcId": "npc_bandit_lookout",
+      "Count": 1,
+      "bIsPed": false,
+      "bUseOffset": true,
+      "Offset": { "X": -180.0, "Y": 0.0, "Z": 120.0 },
+      "SpreadRadius": 0.0
+    },
+    {
+      "NpcId": "ped_citizen",
+      "Count": 3,
+      "bIsPed": true,
+      "SpreadRadius": 300.0
+    }
+  ]
+}

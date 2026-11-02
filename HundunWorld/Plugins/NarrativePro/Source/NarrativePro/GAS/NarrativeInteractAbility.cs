@@ -22,6 +22,18 @@ namespace NarrativePro.GAS
     /// <summary>
     /// 交互能力。对应 UE5 UNarrativeInteractAbility。
     /// 处理与场景 Actor 的交互：射线检测、交互范围、交互时序。
+    /// <para>
+    /// 入口定位（消除交互键双触发的裁决）：本能力是<b>槽位行为载荷</b>——由
+    /// <c>InteractionSlotBehavior.InteractAbilityType</c> / <c>InteractAbilityScript</c>
+    /// 配置，经 <c>NarrativeInteractionComponent.RunInteractBehavior</c>
+    /// （Interaction/InteractionComponent.cs:257-266，按句柄 TryActivateAbility）激活，
+    /// 这是它在全仓库的唯一活跃调用方。<b>它从不被配置为玩家输入能力</b>：原始交互键
+    /// （<c>NarrativePlayerController.InteractKey</c>，默认 T）按 UE5 的 IA_Interact 口径
+    /// 直调 <c>PlayerInteractionComponent.BeginInteract/ReleaseInteract</c> 走按住状态机，
+    /// 插件的 ASC 授予配置路径不会把任何能力绑到 Narrative.Input.Interact 输入标签上。
+    /// 即便宿主日后自行授予这种能力，<c>BeginInteract</c> 已按 bInteractHeld 幂等，
+    /// 双入口也只会启动一次按住交互。
+    /// </para>
     /// 简化点：
     /// - 移除 UE5 ETraceTypeQuery/EObjectTypeQuery，用字符串 CollisionProfileName 占位
     /// - 碰撞检测用 Physics.RayCast

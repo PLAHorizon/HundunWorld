@@ -96,7 +96,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData IronOre = new MaterialData
         {
-            MaterialId = 10001,
+            MaterialId = 700001,
             MaterialName = "铁矿石",
             Description = "最基础的金属矿石，蕴含微弱的金属性能量",
             Element = WuxingElement.Metal,
@@ -111,7 +111,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData GreenBamboo = new MaterialData
         {
-            MaterialId = 10002,
+            MaterialId = 700002,
             MaterialName = "青竹",
             Description = "生长在山林间的青竹，蕴含生机",
             Element = WuxingElement.Wood,
@@ -126,7 +126,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData ColdSpringWater = new MaterialData
         {
-            MaterialId = 10003,
+            MaterialId = 700003,
             MaterialName = "寒泉水",
             Description = "从深山寒泉中汲取的泉水，透心清凉",
             Element = WuxingElement.Water,
@@ -141,7 +141,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData FlameGrass = new MaterialData
         {
-            MaterialId = 10004,
+            MaterialId = 700004,
             MaterialName = "赤焰草",
             Description = "生长在火山附近的草药，含有微弱火元素",
             Element = WuxingElement.Fire,
@@ -156,7 +156,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData YellowEarth = new MaterialData
         {
-            MaterialId = 10005,
+            MaterialId = 700005,
             MaterialName = "黄土块",
             Description = "厚重的黄土，蕴含大地之力",
             Element = WuxingElement.Earth,
@@ -171,7 +171,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData RefinedIron = new MaterialData
         {
-            MaterialId = 20001,
+            MaterialId = 700006,
             MaterialName = "精铁",
             Description = "经过提炼的精铁，金属性更加纯粹",
             Element = WuxingElement.Metal,
@@ -186,7 +186,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData PurpleSandalwood = new MaterialData
         {
-            MaterialId = 20002,
+            MaterialId = 700007,
             MaterialName = "紫檀木",
             Description = "珍贵的紫檀木，木质坚硬，蕴含浓郁木属性能量",
             Element = WuxingElement.Wood,
@@ -201,7 +201,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData SpiritDew = new MaterialData
         {
-            MaterialId = 20003,
+            MaterialId = 700008,
             MaterialName = "灵泉露",
             Description = "清晨采集的灵泉水珠，蕴含纯净水属性能量",
             Element = WuxingElement.Water,
@@ -216,7 +216,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData SolarFlameFlower = new MaterialData
         {
-            MaterialId = 20004,
+            MaterialId = 700009,
             MaterialName = "炎阳花",
             Description = "只在正午绽放的奇花，蕴含炽热火属性能量",
             Element = WuxingElement.Fire,
@@ -231,7 +231,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData Obsidian = new MaterialData
         {
-            MaterialId = 20005,
+            MaterialId = 700010,
             MaterialName = "黑曜石",
             Description = "天然形成的黑曜石，质地坚硬，蕴含厚重土属性能量",
             Element = WuxingElement.Earth,
@@ -246,7 +246,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData DarksteelEssence = new MaterialData
         {
-            MaterialId = 30001,
+            MaterialId = 700011,
             MaterialName = "玄铁精",
             Description = "千年玄铁提炼出的精华，锋利无比，蕴含极强金属性能量",
             Element = WuxingElement.Metal,
@@ -261,7 +261,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData MillenniumGinseng = new MaterialData
         {
-            MaterialId = 30002,
+            MaterialId = 700012,
             MaterialName = "万年灵芝",
             Description = "生长千年的灵芝，蕴含强大生命能量",
             Element = WuxingElement.Wood,
@@ -276,7 +276,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData IceCrystalMarrow = new MaterialData
         {
-            MaterialId = 30003,
+            MaterialId = 700013,
             MaterialName = "冰晶髓",
             Description = "万年寒冰核心凝结而成，蕴含极致水属性能量",
             Element = WuxingElement.Water,
@@ -291,7 +291,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData NetherflameCrystal = new MaterialData
         {
-            MaterialId = 30004,
+            MaterialId = 700014,
             MaterialName = "九幽炎晶",
             Description = "来自九幽深处的火焰结晶，蕴含毁灭性的火属性能量",
             Element = WuxingElement.Fire,
@@ -306,7 +306,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData EarthVeinSpiritSoil = new MaterialData
         {
-            MaterialId = 30005,
+            MaterialId = 700015,
             MaterialName = "地脉灵土",
             Description = "汇聚地脉精华的灵土，蕴含厚重的地属性能量",
             Element = WuxingElement.Earth,
@@ -321,7 +321,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData StellarMeteorite = new MaterialData
         {
-            MaterialId = 40001,
+            MaterialId = 700016,
             MaterialName = "星辰陨铁",
             Description = "从天外坠落的星辰陨铁，蕴含宇宙金属性能量",
             Element = WuxingElement.Metal,
@@ -336,7 +336,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData ImmortalWood = new MaterialData
         {
-            MaterialId = 40002,
+            MaterialId = 700017,
             MaterialName = "不死神木",
             Description = "传说中的不死神木，蕴含永恒的生命能量",
             Element = WuxingElement.Wood,
@@ -351,7 +351,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData CelestialDew = new MaterialData
         {
-            MaterialId = 40003,
+            MaterialId = 700018,
             MaterialName = "九天玄露",
             Description = "从九天之上凝聚而下的玄妙露水，蕴含纯净的水属性能量",
             Element = WuxingElement.Water,
@@ -366,7 +366,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData SolarTrueFire = new MaterialData
         {
-            MaterialId = 40004,
+            MaterialId = 700019,
             MaterialName = "太阳真火",
             Description = "来自太阳核心的真火，蕴含极致的火属性能量",
             Element = WuxingElement.Fire,
@@ -381,7 +381,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData ChaosPrimordialSoil = new MaterialData
         {
-            MaterialId = 40005,
+            MaterialId = 700020,
             MaterialName = "混沌元土",
             Description = "开天辟地时形成的混沌之土，蕴含原始的土属性能量",
             Element = WuxingElement.Earth,
@@ -396,7 +396,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData VoidDivineMetal = new MaterialData
         {
-            MaterialId = 50001,
+            MaterialId = 700021,
             MaterialName = "太虚神金",
             Description = "存在于太虚之中的神金，蕴含超越凡俗的金属性能量",
             Element = WuxingElement.Metal,
@@ -411,7 +411,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData CreationDivineWood = new MaterialData
         {
-            MaterialId = 50002,
+            MaterialId = 700022,
             MaterialName = "创世神木",
             Description = "创造世界时诞生的神木，蕴含创世的生命能量",
             Element = WuxingElement.Wood,
@@ -426,7 +426,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData TimeSpring = new MaterialData
         {
-            MaterialId = 50003,
+            MaterialId = 700023,
             MaterialName = "时光之泉",
             Description = "流淌着时光之力的神秘泉水，蕴含时间的水属性能量",
             Element = WuxingElement.Water,
@@ -441,7 +441,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData ChaosSacredFire = new MaterialData
         {
-            MaterialId = 50004,
+            MaterialId = 700024,
             MaterialName = "混沌圣火",
             Description = "燃烧在混沌边缘的圣火，蕴含毁灭与重生的火属性能量",
             Element = WuxingElement.Fire,
@@ -456,7 +456,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData HeavenEarthPrimordialSoil = new MaterialData
         {
-            MaterialId = 50005,
+            MaterialId = 700025,
             MaterialName = "乾坤元土",
             Description = "承载天地乾坤的元始之土，蕴含宇宙的土属性能量",
             Element = WuxingElement.Earth,
@@ -473,7 +473,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData DragonScale = new MaterialData
         {
-            MaterialId = 60001,
+            MaterialId = 700026,
             MaterialName = "龙鳞",
             Description = "传说中神龙脱落的鳞片，蕴含强大的龙族力量",
             Element = WuxingElement.Metal,
@@ -488,7 +488,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData PhoenixFeather = new MaterialData
         {
-            MaterialId = 60002,
+            MaterialId = 700027,
             MaterialName = "凤凰羽",
             Description = "涅槃重生的凤凰之羽，蕴含不死的火焰之力",
             Element = WuxingElement.Fire,
@@ -503,7 +503,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData QilinHorn = new MaterialData
         {
-            MaterialId = 60003,
+            MaterialId = 700028,
             MaterialName = "麒麟角",
             Description = "祥瑞神兽麒麟的角，蕴含祥和的生命之力",
             Element = WuxingElement.Wood,
@@ -518,7 +518,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData NightPearl = new MaterialData
         {
-            MaterialId = 70001,
+            MaterialId = 700029,
             MaterialName = "夜明珠",
             Description = "夜间发光的宝珠，具有装饰价值",
             Element = WuxingElement.Water,
@@ -533,7 +533,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData JadeRoughStone = new MaterialData
         {
-            MaterialId = 70002,
+            MaterialId = 700030,
             MaterialName = "翡翠原石",
             Description = "未经雕琢的翡翠原石，具有收藏价值",
             Element = WuxingElement.Earth,
@@ -552,7 +552,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData EnhancementStone = new MaterialData
         {
-            MaterialId = 80001,
+            MaterialId = 700031,
             MaterialName = "强化石",
             Description = "用于装备强化的基础材料",
             Element = WuxingElement.Earth,
@@ -567,7 +567,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData AdvancedEnhancementStone = new MaterialData
         {
-            MaterialId = 80002,
+            MaterialId = 700032,
             MaterialName = "高级强化石",
             Description = "用于高级装备强化的材料",
             Element = WuxingElement.Earth,
@@ -582,7 +582,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData RubyFragment = new MaterialData
         {
-            MaterialId = 90001,
+            MaterialId = 700033,
             MaterialName = "红宝石碎片",
             Description = "镶嵌在装备上可增加攻击力的宝石碎片",
             Element = WuxingElement.Fire,
@@ -597,7 +597,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData SapphireFragment = new MaterialData
         {
-            MaterialId = 90002,
+            MaterialId = 700034,
             MaterialName = "蓝宝石碎片",
             Description = "镶嵌在装备上可增加防御力的宝石碎片",
             Element = WuxingElement.Water,
@@ -612,7 +612,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData EmeraldFragment = new MaterialData
         {
-            MaterialId = 90003,
+            MaterialId = 700035,
             MaterialName = "绿宝石碎片",
             Description = "镶嵌在装备上可增加生命值的宝石碎片",
             Element = WuxingElement.Wood,
@@ -627,7 +627,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData TopazFragment = new MaterialData
         {
-            MaterialId = 90004,
+            MaterialId = 700036,
             MaterialName = "黄宝石碎片",
             Description = "镶嵌在装备上可增加暴击率的宝石碎片",
             Element = WuxingElement.Earth,
@@ -642,7 +642,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData DiamondFragment = new MaterialData
         {
-            MaterialId = 90005,
+            MaterialId = 700037,
             MaterialName = "白宝石碎片",
             Description = "镶嵌在装备上可增加闪避率的宝石碎片",
             Element = WuxingElement.Metal,
@@ -661,7 +661,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData SpiritGatheringGrass = new MaterialData
         {
-            MaterialId = 100001,
+            MaterialId = 700038,
             MaterialName = "聚灵草",
             Description = "能够聚集灵气的神奇草药，是炼制丹药的重要材料",
             Element = WuxingElement.Wood,
@@ -676,7 +676,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData MindFocusFlower = new MaterialData
         {
-            MaterialId = 100002,
+            MaterialId = 700039,
             MaterialName = "凝神花",
             Description = "能够帮助修炼者凝神静气的花朵，常用于炼制辅助丹药",
             Element = WuxingElement.Water,
@@ -691,7 +691,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData AncientScroll = new MaterialData
         {
-            MaterialId = 110001,
+            MaterialId = 700040,
             MaterialName = "古老卷轴",
             Description = "记载着古代秘密的卷轴，是完成某些任务的关键物品",
             Element = WuxingElement.Earth,
@@ -706,7 +706,7 @@ namespace Game.Equipment.Material
         /// </summary>
         public static MaterialData MysticKey = new MaterialData
         {
-            MaterialId = 110002,
+            MaterialId = 700041,
             MaterialName = "神秘钥匙",
             Description = "散发着神秘气息的钥匙，似乎能打开某些特殊的门锁",
             Element = WuxingElement.Metal,
@@ -723,51 +723,56 @@ namespace Game.Equipment.Material
         /// </summary>
         /// <param name="materialId">材料ID</param>
         /// <returns>材料数据，如果未找到则返回null</returns>
+        // 材料模板 id 段：700000 + 序号（与秘籍 800000+技能id 同一做法——段即语义）。
+        // 原来用的是 10001/20001/… 这套号，和装备表、丹药(50001)、宝石(60001) 以及
+        // 五行入门任务(90001) 全在同一个整数空间里撞号，导致 "item:10001" 读不出唯一答案。
+        // 权威名字与品阶见 scripts/sql/015_seed_material_item_templates.sql（由同一份表生成）。
+
         public static MaterialData GetMaterial(int materialId)
         {
             return materialId switch
             {
-                10001 => IronOre,
-                10002 => GreenBamboo,
-                10003 => ColdSpringWater,
-                10004 => FlameGrass,
-                10005 => YellowEarth,
-                20001 => RefinedIron,
-                20002 => PurpleSandalwood,
-                20003 => SpiritDew,
-                20004 => SolarFlameFlower,
-                20005 => Obsidian,
-                30001 => DarksteelEssence,
-                30002 => MillenniumGinseng,
-                30003 => IceCrystalMarrow,
-                30004 => NetherflameCrystal,
-                30005 => EarthVeinSpiritSoil,
-                40001 => StellarMeteorite,
-                40002 => ImmortalWood,
-                40003 => CelestialDew,
-                40004 => SolarTrueFire,
-                40005 => ChaosPrimordialSoil,
-                50001 => VoidDivineMetal,
-                50002 => CreationDivineWood,
-                50003 => TimeSpring,
-                50004 => ChaosSacredFire,
-                50005 => HeavenEarthPrimordialSoil,
-                60001 => DragonScale,
-                60002 => PhoenixFeather,
-                60003 => QilinHorn,
-                70001 => NightPearl,
-                70002 => JadeRoughStone,
-                80001 => EnhancementStone,
-                80002 => AdvancedEnhancementStone,
-                90001 => RubyFragment,
-                90002 => SapphireFragment,
-                90003 => EmeraldFragment,
-                90004 => TopazFragment,
-                90005 => DiamondFragment,
-                100001 => SpiritGatheringGrass,
-                100002 => MindFocusFlower,
-                110001 => AncientScroll,
-                110002 => MysticKey,
+                700001 => IronOre,
+                700002 => GreenBamboo,
+                700003 => ColdSpringWater,
+                700004 => FlameGrass,
+                700005 => YellowEarth,
+                700006 => RefinedIron,
+                700007 => PurpleSandalwood,
+                700008 => SpiritDew,
+                700009 => SolarFlameFlower,
+                700010 => Obsidian,
+                700011 => DarksteelEssence,
+                700012 => MillenniumGinseng,
+                700013 => IceCrystalMarrow,
+                700014 => NetherflameCrystal,
+                700015 => EarthVeinSpiritSoil,
+                700016 => StellarMeteorite,
+                700017 => ImmortalWood,
+                700018 => CelestialDew,
+                700019 => SolarTrueFire,
+                700020 => ChaosPrimordialSoil,
+                700021 => VoidDivineMetal,
+                700022 => CreationDivineWood,
+                700023 => TimeSpring,
+                700024 => ChaosSacredFire,
+                700025 => HeavenEarthPrimordialSoil,
+                700026 => DragonScale,
+                700027 => PhoenixFeather,
+                700028 => QilinHorn,
+                700029 => NightPearl,
+                700030 => JadeRoughStone,
+                700031 => EnhancementStone,
+                700032 => AdvancedEnhancementStone,
+                700033 => RubyFragment,
+                700034 => SapphireFragment,
+                700035 => EmeraldFragment,
+                700036 => TopazFragment,
+                700037 => DiamondFragment,
+                700038 => SpiritGatheringGrass,
+                700039 => MindFocusFlower,
+                700040 => AncientScroll,
+                700041 => MysticKey,
                 _ => null
             };
         }

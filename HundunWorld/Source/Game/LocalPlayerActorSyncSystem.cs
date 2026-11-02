@@ -50,6 +50,10 @@ namespace HundunWorld.Game
         /// <summary>动画参数是否已初始化（资源未加载时延迟初始化，回退方案用）。</summary>
         private bool _animationParamsInitialized;
 
+        /// <summary>IsWalking 回退参数：只查一次（图里没有时不要每帧查询刷引擎警告）。</summary>
+        private AnimGraphParameter _isWalkingParam;
+        private bool _isWalkingLookupDone;
+
         /// <summary>上一帧的 MovementMode（变化检测，避免每帧设置参数）。</summary>
         private MovementMode _lastMovementMode = MovementMode.Walk;
 
@@ -120,18 +124,20 @@ namespace HundunWorld.Game
                 var targetPos = new Vector3(pred.X, pred.Z, pred.Y);
                 Actor.Position = targetPos;
 
-                // P-F10 回弹诊断：单帧位置跳变 >2m 时告警（限频：前 10 次 + 每 60 次）。
-                // 首帧/场景切换后无参照，跳过；正常移动单帧位移远小于 2m。
+                // P-F10 回弹诊断：单帧位置跳变超过 2m 时告警（限频：前 10 次 + 每 60 次）。
+                // 首帧/场景切换后无参照，跳过。门槛必须按 cm 写：世界单位是 cm（引擎 DefaultGravity=-981，
+                // 角色 MoveSpeed=500cm/s ÷ 60fps ≈ 8cm/帧），写成 2f 会让正常走路每次都刷告警（实测一局 26 次），
+                // 真回弹(>2m)反而被淹在噪声里。
                 if (_hasLastAppliedPos)
                 {
                     var jumpDist = Vector3.Distance(_lastAppliedPos, targetPos);
-                    if (jumpDist > 2f)
+                    if (jumpDist > 200f)
                     {
                         var n = System.Threading.Interlocked.Increment(ref _jumpDiagCount);
                         if (n <= 10 || n % 60 == 1)
                         {
                             Debug.LogWarning(
-                                $"[LocalPlayerActorSync] P-F10 位置跳变#{n}: 单帧 {jumpDist:F2}m，" +
+                                $"[LocalPlayerActorSync] P-F10 位置跳变#{n}: 单帧 {jumpDist:F1}cm，" +
                                 $"({ _lastAppliedPos.X:F2},{_lastAppliedPos.Y:F2},{_lastAppliedPos.Z:F2}) → ({targetPos.X:F2},{targetPos.Y:F2},{targetPos.Z:F2})，" +
                                 $"pred=({pred.X:F2},{pred.Y:F2},{pred.Z:F2}), ClientTick={pred.ClientTick}");
                         }
@@ -232,13 +238,45 @@ namespace HundunWorld.Game
             ref var state = ref _archWorld.Get<EntityStateAuthComponent>(_localPlayerEntity);
             attrs.MaxHealth = state.MaxHealth;
             attrs.CurrentHealth = state.Health;
-            // 服务端基值不含装备生命加成（战斗仍按全局配置结算）。若服务端报告"满血"
-            // （Health>=基值MaxHealth），把当前生命抬到含装备的 MaxHealth，避免穿戴后
-            // 血条凭空缺一截；真正受伤时（Health<基值）仍按服务端权威值显示。
+            // 服务端 MaxHealth 现在已含装备生命（CharacterGrain 重算血池时把装备算进去），
+            // 客户端**不再**在装备桥里重复加生命上限，否则会变成双倍（+5000 变 +10000）。
+            // 当前生命仍以服务端权威值为准；只有"服务端报满血"时才抬到本地上限，避免穿戴后血条缺一截。
             if (state.MaxHealth > 0 && state.Health >= state.MaxHealth)
                 attrs.CurrentHealth = attrs.MaxHealth;
             if (state.Level > 0) attrs.Level = state.Level;
             if (state.Exp > 0) attrs.Exp = state.Exp;
+
+            // 控制状态位也在这里镜像（与属性同一个入口、同一份权威状态）。
+            ApplyAuthoritativeControlStates(state);
+        }
+
+        /// <summary>
+        /// 把服务端权威的**控制状态位**（<see cref="EntityStateAuthComponent.IsStunned"/>/<c>IsRooted</c>）
+        /// 镜像到 <see cref="ControlStateManager"/>——本地角色的移动输入据此被拦（<c>PlayerController</c> 读它），
+        /// 与"服务端把这一帧的输入抹掉"对齐，客户端预测才不会与服务端各算各的。
+        /// <para>为什么是"位在就刷新 TTL、位没了立刻撤"：状态位随快照 1Hz 心跳 + 变化触发下发，
+        /// 本地拿不到"还剩多久"。给一个略长于心跳间隔的 TTL（1.5 秒）能让心跳间隙不闪；
+        /// 位一消失就立刻 Remove——两个写口都只在这一处，别在 HUD/输入里各写一份。</para>
+        /// </summary>
+        private void ApplyAuthoritativeControlStates(in EntityStateAuthComponent state)
+        {
+            if (_archWorld == null || !_archWorld.Has<NetworkIdentityComponent>(_localPlayerEntity)) return;
+            var characterId = _archWorld.Get<NetworkIdentityComponent>(_localPlayerEntity).EntityId;
+            if (characterId == 0UL) return;
+
+            var control = ControlStateManager.Instance;
+            MirrorBit(control, characterId, ControlState.Stunned, state.IsStunned);
+            MirrorBit(control, characterId, ControlState.Rooted, state.IsRooted);
+            MirrorBit(control, characterId, ControlState.Silenced, state.IsSilenced);
+        }
+
+        /// <summary>权威状态位的存活期：比快照心跳（1 秒）略长，够跨过一整个心跳间隔。</summary>
+        private const float AuthoritativeStateTtlSeconds = 1.5f;
+
+        private static void MirrorBit(ControlStateManager control, ulong characterId, ControlState state, bool active)
+        {
+            if (active) control.ApplyControlState(characterId, state, AuthoritativeStateTtlSeconds);
+            else if (control.HasControlState(characterId, state)) control.RemoveControlState(characterId, state);
         }
 
         /// <summary>
@@ -283,15 +321,26 @@ namespace HundunWorld.Game
             }
             else if (_animatedModel != null)
             {
-                // 回退：直接设置 IsWalking 参数
-                bool isWalking = mode == MovementMode.Walk
-                              || mode == MovementMode.Run
-                              || mode == MovementMode.Crouch;
-
-                var isWalkingParam = _animatedModel.GetParameter("IsWalking");
-                if (isWalkingParam != null)
+                // 回退：直接设置 IsWalking 参数。
+                // 当前动画图用 LocomotionSpeed 混合、没有 IsWalking：`GetParameter` 查不到时引擎会**每次调用**打一条
+                // "missing parameter" 警告，而这里原本每帧查一次（实测 13k 行日志刷满、触发日志裁剪）。
+                // 查一次就记住结果，缺参数只提示一次。
+                if (!_isWalkingLookupDone)
                 {
-                    isWalkingParam.Value = isWalking;
+                    _isWalkingLookupDone = true;
+                    _isWalkingParam = _animatedModel.GetParameter("IsWalking");
+                    if (_isWalkingParam == null)
+                    {
+                        Debug.LogWarning("[LocalPlayerActorSync] 当前动画图没有 IsWalking 参数（速度混合由 LocomotionGraphDriver 负责），已停止逐帧查询");
+                    }
+                }
+
+                if (_isWalkingParam != null)
+                {
+                    bool isWalking = mode == MovementMode.Walk
+                                  || mode == MovementMode.Run
+                                  || mode == MovementMode.Crouch;
+                    _isWalkingParam.Value = isWalking;
                 }
             }
         }

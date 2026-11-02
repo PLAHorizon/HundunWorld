@@ -17,7 +17,11 @@ namespace NarrativePro.Items
         {
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
-            AllowTrailingCommas = true
+            AllowTrailingCommas = true,
+            // 物品可配项本身全是属性，但它内嵌的 FPickupMeshData.PickupOffset 是 FlaxEngine.Transform，
+            // 而 Transform 只有公共字段没有可写属性：不开这一项，作者写的 pickupOffset
+            // 会静默变成全零 default（缩放 0 等于把拾取物缩到看不见）。
+            IncludeFields = true
         };
 
         static ItemFactory()
@@ -39,6 +43,10 @@ namespace NarrativePro.Items
             RegisterItemType("WeaponAttachmentItem", typeof(WeaponAttachmentItem));
             RegisterItemType("AmmoItem", typeof(AmmoItem));
             RegisterItemType("GameplayEffectItem", typeof(GameplayEffectItem));
+
+            // 物品片段类型：对应 UE5 在物品定义上挂载的 UAmmoFragment / UPoisonableFragment
+            RegisterFragmentType("AmmoFragment", typeof(AmmoFragment));
+            RegisterFragmentType("PoisonableFragment", typeof(PoisonableFragment));
         }
 
         /// <summary>注册物品类型到工厂。</summary>
@@ -50,6 +58,50 @@ namespace NarrativePro.Items
                 return;
             }
             _typeRegistry[typeId] = type;
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<string, Type> _fragmentRegistry =
+            new System.Collections.Generic.Dictionary<string, Type>();
+
+        /// <summary>注册物品片段类型（对应 UE5 物品上挂载的 Item Fragment 子类）。</summary>
+        public static void RegisterFragmentType(string typeId, Type type)
+        {
+            if (string.IsNullOrEmpty(typeId) || type == null) return;
+            if (!typeof(NarrativeItemFragment).IsAssignableFrom(type))
+            {
+                NarrativeLog.LogError($"无法注册片段类型 '{typeId}': {type.Name} 不是 NarrativeItemFragment 的子类");
+                return;
+            }
+            _fragmentRegistry[typeId] = type;
+        }
+
+        /// <summary>按片段类型 ID 创建片段实例；未注册返回 null。</summary>
+        public static NarrativeItemFragment CreateFragment(string typeId)
+        {
+            if (string.IsNullOrEmpty(typeId)) return null;
+            if (!_fragmentRegistry.TryGetValue(typeId, out var type))
+            {
+                NarrativeLog.LogWarning($"未注册的片段类型 '{typeId}'，已忽略");
+                return null;
+            }
+            try
+            {
+                return (NarrativeItemFragment)Activator.CreateInstance(type);
+            }
+            catch (Exception ex)
+            {
+                NarrativeLog.LogError($"创建片段实例失败 '{typeId}': {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>按片段类型 ID 创建片段并挂到物品上（供物品数据/装备逻辑使用）。</summary>
+        public static NarrativeItemFragment AttachFragment(NarrativeItem item, string fragmentTypeId)
+        {
+            if (item == null) return null;
+            var fragment = CreateFragment(fragmentTypeId);
+            if (fragment != null) item.Fragments.Add(fragment);
+            return fragment;
         }
 
         /// <summary>根据物品类 ID 创建物品实例。</summary>
@@ -112,6 +164,7 @@ namespace NarrativePro.Items
                 if (item == null) return null;
 
                 PopulateItemFromJson(item, json);
+                PopulateFragmentsFromJson(item, root);
                 return item;
             }
             catch (Exception ex)
@@ -136,6 +189,68 @@ namespace NarrativePro.Items
             catch (Exception ex)
             {
                 NarrativeLog.LogWarning($"填充物品数据失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 解析物品 JSON 中的 "Fragments" 数组并把片段挂到物品上。
+        /// 对应 UE5 在 UNarrativeItem 定义上通过 Item Fragment 数组挂载 UAmmoFragment / UPoisonableFragment。
+        /// 支持两种写法：<c>["AmmoFragment"]</c> 与 <c>[{"$fragment":"AmmoFragment","AmmoDamageOverride":25}]</c>。
+        /// </summary>
+        private static void PopulateFragmentsFromJson(NarrativeItem item, JsonElement root)
+        {
+            if (item == null) return;
+            if (!root.TryGetProperty("Fragments", out var frags) || frags.ValueKind != JsonValueKind.Array) return;
+
+            foreach (var el in frags.EnumerateArray())
+            {
+                string typeId = null;
+                if (el.ValueKind == JsonValueKind.String)
+                {
+                    typeId = el.GetString();
+                }
+                else if (el.ValueKind == JsonValueKind.Object)
+                {
+                    if (el.TryGetProperty("$fragment", out var f)) typeId = f.GetString();
+                    else if (el.TryGetProperty("Type", out var t)) typeId = t.GetString();
+                }
+                if (string.IsNullOrEmpty(typeId)) continue;
+
+                var fragment = CreateFragment(typeId);
+                if (fragment == null) continue;
+
+                if (el.ValueKind == JsonValueKind.Object)
+                {
+                    try
+                    {
+                        var loaded = JsonSerializer.Deserialize(el.GetRawText(), fragment.GetType(), _jsonOptions);
+                        if (loaded != null) CopyFragmentProperties(loaded, fragment);
+                    }
+                    catch (Exception ex)
+                    {
+                        NarrativeLog.LogWarning($"片段 '{typeId}' 数据解析失败: {ex.Message}");
+                    }
+                }
+                item.Fragments.Add(fragment);
+            }
+        }
+
+        /// <summary>浅拷贝片段属性（跳过只读/索引属性）。</summary>
+        private static void CopyFragmentProperties(object src, object dst)
+        {
+            var type = dst.GetType();
+            foreach (var prop in type.GetProperties())
+            {
+                if (!prop.CanRead || !prop.CanWrite) continue;
+                if (prop.GetIndexParameters().Length > 0) continue;
+                try
+                {
+                    prop.SetValue(dst, prop.GetValue(src));
+                }
+                catch
+                {
+                    // 类型不兼容的属性忽略
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.Ink.Components;
@@ -22,7 +22,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
     /// 通过 <see cref="NavigationRequested"/> 事件向 <see cref="InkPageRouter"/> 暴露路由跳转。
     /// </para>
     /// </summary>
-    public class AcupointPage : ContainerControl, IInkPage
+    public class AcupointPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===================================================================
         // 布局常量
@@ -873,7 +873,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         {
             try
             {
-                NavigationRequested?.Invoke("back-hud");
+                NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
             }
             catch (Exception ex)
             {

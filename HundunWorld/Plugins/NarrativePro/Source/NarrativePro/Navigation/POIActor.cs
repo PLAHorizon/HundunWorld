@@ -70,6 +70,18 @@ namespace NarrativePro.Navigation
         public override void OnEnable()
         {
             base.OnEnable();
+
+#if FLAX_EDITOR
+            // UE5 在 APOIActor 构造函数里 CreateEditorOnlyDefaultSubobject<UPOIRenderingComponent>
+            //（POIActor.cpp:48，RenderingComponent 字段见 POIActor.h:61）。Flax 侧等价通路：
+            // 仅编辑器目标下挂 POIRenderingComponent（只在 OnDebugDraw 按发现状态画 POI 十字标记，
+            // 不影响运行时行为）。
+            if (Actor != null && Actor.GetScript<POIRenderingComponent>() == null)
+            {
+                Actor.AddScript<POIRenderingComponent>();
+            }
+#endif
+
             // 构建 POI 数据
             POIDataCache = BuildPOIData();
             // 注册到导航子系统
@@ -89,6 +101,22 @@ namespace NarrativePro.Navigation
             {
                 NarrativeLog.LogWarning($"POIActor[{POIDisplayName}]: 未找到发现触发器碰撞体，POI 将无法通过重叠自动发现");
             }
+        }
+
+        /// <summary>
+        /// 首帧补注册：本 POI 早于 <see cref="NavigationSubsystem"/> 启用时，OnEnable 里的自注册会因
+        /// Instance 为空而落空（子系统侧同样有场景枚举兜底，两边各补一次使两种启用顺序都不丢 POI）。
+        /// </summary>
+        public override void OnStart()
+        {
+            base.OnStart();
+
+            if (POIDataCache == null)
+            {
+                POIDataCache = BuildPOIData();
+            }
+
+            NavigationSubsystem.Instance?.RegisterPOI(POIDataCache);
         }
 
         /// <summary>

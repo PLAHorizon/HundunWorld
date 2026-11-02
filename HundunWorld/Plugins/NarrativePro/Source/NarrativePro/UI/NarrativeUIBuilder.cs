@@ -42,12 +42,6 @@ namespace NarrativePro.UI
         private readonly List<Button> _questListButtons = new List<Button>();
         private QuestLogPanel _questLogPanel;
 
-        private Panel _trackerBgPanel;
-        private Label _trackerTitleLabel;
-        private ContainerControl _trackerEntriesContainer;
-        private readonly List<ContainerControl> _trackerEntryControls = new List<ContainerControl>();
-        private QuestTracker _questTracker;
-
         private ContainerControl _notificationContainer;
         private readonly List<Panel> _notificationPanels = new List<Panel>();
         private NarrativeNotification _narrativeNotification;
@@ -61,6 +55,13 @@ namespace NarrativePro.UI
         private bool _isTyping;
         private float _typewriterSpeed = 30f;
         private readonly List<DialogueNode_Player> _availableReplies = new List<DialogueNode_Player>();
+
+        /// <summary>
+        /// 提供当前可选项的对话（缺陷3）：选项文本/提示文本的变量替换需要 dialogue 上下文
+        /// （UE5 <c>GetOptionText(UDialogue*)</c> / <c>GetHintText(UDialogue*)</c>），
+        /// 由 <see cref="OnDialogueRepliesAvailable"/> 事件参数带入，对话结束时清空。
+        /// </summary>
+        private DialogueClass _currentReplyDialogue;
 
         public void BuildDialoguePanelUI(DialoguePanel logicPanel, ContainerControl parent)
         {
@@ -226,51 +227,6 @@ namespace NarrativePro.UI
             }
         }
 
-        public void BuildQuestTrackerUI(QuestTracker logicPanel, ContainerControl parent)
-        {
-            _questTracker = logicPanel;
-            if (_talesComponent == null)
-                _talesComponent = logicPanel.TalesComponentRef;
-
-            _trackerBgPanel = new Panel
-            {
-                AnchorPreset = AnchorPresets.TopRight,
-                Offsets = new Margin(-260, 250, 10, 300),
-                BackgroundColor = BgColor,
-            };
-
-            _trackerTitleLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Offsets = new Margin(10, 230, 5, 25),
-                Text = "当前任务",
-                TextColor = SpeakerNameColor,
-                HorizontalAlignment = TextAlignment.Near,
-            };
-
-            _trackerEntriesContainer = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Offsets = new Margin(5, 240, 35, 260),
-            };
-
-            _trackerBgPanel.AddChild(_trackerTitleLabel);
-            _trackerBgPanel.AddChild(_trackerEntriesContainer);
-            parent.AddChild(_trackerBgPanel);
-
-            _createdControls.Add(_trackerBgPanel);
-
-            if (_talesComponent != null)
-            {
-                _talesComponent.OnQuestTaskProgressChanged += OnTrackerQuestChanged;
-                _talesComponent.OnQuestNewState += OnTrackerQuestChangedWithState;
-                _talesComponent.OnQuestSucceeded += OnTrackerQuestChangedSimple;
-                _talesComponent.OnQuestFailed += OnTrackerQuestChangedSimple;
-            }
-
-            RefreshTrackerUI();
-        }
-
         public void BuildNarrativeNotificationUI(NarrativeNotification logicPanel, ContainerControl parent)
         {
             _narrativeNotification = logicPanel;
@@ -297,10 +253,6 @@ namespace NarrativePro.UI
             if (questLogPanel != null)
                 BuildQuestLogPanelUI(questLogPanel, root);
 
-            var questTracker = FindScript<QuestTracker>();
-            if (questTracker != null)
-                BuildQuestTrackerUI(questTracker, root);
-
             var notification = FindScript<NarrativeNotification>();
             if (notification != null)
                 BuildNarrativeNotificationUI(notification, root);
@@ -319,10 +271,6 @@ namespace NarrativePro.UI
                 _talesComponent.OnQuestFailed -= OnQuestDataChanged;
                 _talesComponent.OnQuestNewState -= OnQuestDataChangedWithState;
                 _talesComponent.OnQuestTaskProgressChanged -= OnQuestTaskProgressChanged;
-                _talesComponent.OnQuestTaskProgressChanged -= OnTrackerQuestChanged;
-                _talesComponent.OnQuestNewState -= OnTrackerQuestChangedWithState;
-                _talesComponent.OnQuestSucceeded -= OnTrackerQuestChangedSimple;
-                _talesComponent.OnQuestFailed -= OnTrackerQuestChangedSimple;
             }
 
             for (int i = _createdControls.Count - 1; i >= 0; i--)
@@ -336,16 +284,13 @@ namespace NarrativePro.UI
 
             _replyButtons.Clear();
             _questListButtons.Clear();
-            _trackerEntryControls.Clear();
             _notificationPanels.Clear();
 
             _dialogueBgPanel = null;
             _questLogBgPanel = null;
-            _trackerBgPanel = null;
             _notificationContainer = null;
             _dialoguePanel = null;
             _questLogPanel = null;
-            _questTracker = null;
             _narrativeNotification = null;
             _talesComponent = null;
         }
@@ -577,63 +522,6 @@ namespace NarrativePro.UI
             }
         }
 
-        private void RefreshTrackerUI()
-        {
-            if (_questTracker == null || _trackerEntriesContainer == null) return;
-
-            foreach (var entryControl in _trackerEntryControls)
-            {
-                _trackerEntriesContainer.RemoveChild(entryControl);
-                entryControl.Dispose();
-            }
-            _trackerEntryControls.Clear();
-
-            var entries = _questTracker.GetTrackerEntries();
-            if (entries == null) return;
-
-            float y = 0;
-            foreach (var entry in entries)
-            {
-                var entryPanel = new ContainerControl
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Offsets = new Margin(0, 230, y, 50),
-                };
-
-                var nameLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Offsets = new Margin(5, 220, 0, 20),
-                    Text = entry.QuestName,
-                    TextColor = entry.IsCompleted ? QuestCompletedColor : QuestActiveColor,
-                    HorizontalAlignment = TextAlignment.Near,
-                };
-                entryPanel.AddChild(nameLabel);
-
-                float taskY = 20;
-                foreach (var taskDesc in entry.TaskDescriptions)
-                {
-                    var taskLabel = new Label
-                    {
-                        AnchorPreset = AnchorPresets.TopLeft,
-                        Offsets = new Margin(15, 210, taskY, 16),
-                        Text = taskDesc,
-                        TextColor = Color.LightGray,
-                        HorizontalAlignment = TextAlignment.Near,
-                    };
-                    entryPanel.AddChild(taskLabel);
-                    taskY += 20;
-                }
-
-                float entryHeight = Math.Max(50, taskY + 5);
-                entryPanel.Offsets = new Margin(0, 230, y, entryHeight);
-
-                _trackerEntriesContainer.AddChild(entryPanel);
-                _trackerEntryControls.Add(entryPanel);
-                y += entryHeight + 5;
-            }
-        }
-
         private void ClearReplyButtons()
         {
             if (_replyButtonsContainer == null) return;
@@ -656,7 +544,24 @@ namespace NarrativePro.UI
             for (int i = 0; i < _availableReplies.Count; i++)
             {
                 var reply = _availableReplies[i];
-                var btn = CreateStyledButton(reply.OptionText, 0, y, 1092, 28);
+                // UE5 按钮文本走 GetOptionText(UDialogue*)（DialogueSM.cpp:443-454）：OptionText 为空回退行文本，
+                // 且两者都要过字符串变量替换；直接读 OptionText 会显示空按钮。
+                // 缺陷3：此前这里不带 dialogue 实参（唯一的活调用点），ReplaceStringVariables 分支永不执行，
+                // 占位符原样显示。dialogue 由 OnDialogueRepliesAvailable 事件带过来并缓存在
+                // _currentReplyDialogue，这里传进去。
+                string optionLabel = reply.GetOptionText(_currentReplyDialogue);
+
+                // 缺陷3：提示文本改走 GetHintText(dialogue)（DialogueSM.cpp:457-486）——
+                // 手动 HintText 优先，否则按事件拼接 auto-hint；旧代码只读裸 HintText 字段，
+                // 事件侧的提示（说服/威吓等）永远显示不出来。
+                string hintText = reply.GetHintText(_currentReplyDialogue);
+                if (!string.IsNullOrEmpty(hintText))
+                {
+                    optionLabel = string.IsNullOrEmpty(optionLabel)
+                        ? hintText
+                        : $"{optionLabel}  <color=#9a9a9a>{hintText}</color>";
+                }
+                var btn = CreateStyledButton(optionLabel, 0, y, 1092, 28);
                 btn.TextColor = DialogueTextColor;
                 btn.HorizontalAlignment = TextAlignment.Near;
 
@@ -677,6 +582,7 @@ namespace NarrativePro.UI
             _typewriterIndex = 0;
             _isTyping = true;
             _availableReplies.Clear();
+            _currentReplyDialogue = dialogue;   // 同一对话内的后续可选项也要能取到替换上下文
 
             if (_dialogueBgPanel != null)
                 _dialogueBgPanel.Visible = true;
@@ -703,6 +609,8 @@ namespace NarrativePro.UI
 
         private void OnDialogueRepliesAvailable(TalesComponent tales, DialogueClass dialogue, List<DialogueNode_Player> replies)
         {
+            // 缺陷3：把事件自带的 dialogue 缓存下来，供 PopulateReplyButtons 做变量替换/事件提示。
+            _currentReplyDialogue = dialogue;
             _availableReplies.Clear();
             if (replies != null)
                 _availableReplies.AddRange(replies);
@@ -716,6 +624,7 @@ namespace NarrativePro.UI
             _displayedText = "";
             _isTyping = false;
             _availableReplies.Clear();
+            _currentReplyDialogue = null;   // 缺陷3：对话结束即丢弃替换上下文，避免残留引用
 
             if (_dialogueBgPanel != null)
                 _dialogueBgPanel.Visible = false;
@@ -778,24 +687,11 @@ namespace NarrativePro.UI
                 RefreshQuestListUI();
         }
 
-        private void OnTrackerQuestChanged(TalesComponent tales, QuestClass quest, NarrativeTask task, QuestBranch branch, int oldProgress, int newProgress)
-        {
-            RefreshTrackerUI();
-        }
-
-        private void OnTrackerQuestChangedWithState(TalesComponent tales, QuestClass quest, QuestState state)
-        {
-            RefreshTrackerUI();
-        }
-
-        private void OnTrackerQuestChangedSimple(TalesComponent tales, QuestClass quest)
-        {
-            RefreshTrackerUI();
-        }
-
         private static T FindScript<T>() where T : Script
         {
-            return null;
+            // 之前是恒 null 的占位实现，导致 BuildAll 找不到任何面板、整套面板视图从未被装配。
+            // Flax 的等价物是 Level.FindScript<T>()（在已加载场景中取第一个该类型脚本）。
+            return Level.FindScript<T>();
         }
 
         private static Button CreateStyledButton(string text, float x, float y, float width, float height)

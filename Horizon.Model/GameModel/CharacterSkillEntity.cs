@@ -140,6 +140,22 @@ namespace Horizon.Model.GameModel
         [Column("is_locked", TypeName = "bit", Order = 18), TableDescription(TypeName = "bit", Name = "is_locked", Order = "18", Description = "是否锁定")]
         [Comment("是否锁定（防止误操作）")]
         public bool IsLocked { get; set; }
+
+        /// <summary>
+        /// 是否已被相生演化封存。演化是"换代"而非"白拿"：母行与子行的天阶式融成道阶式后，
+        /// 源技不可施放、不在技能树与技能栏选择器出现、其栏位由服务端通知清空；
+        /// 等级与熟练度保留，散功可原路解封。
+        /// </summary>
+        [Column("is_retired", TypeName = "bit", Order = 20), TableDescription(TypeName = "bit", Name = "is_retired", Order = "20", Description = "是否已演化封存")]
+        [Comment("已被相生演化封存：不可施放、不显示，散功可解封")]
+        public bool IsRetired { get; set; }
+
+        /// <summary>
+        /// 封存去向：融进了哪一式道阶/混沌技能（供 UI 标注"已融于某式"与散功回退）。
+        /// </summary>
+        [Column("retired_into_skill_id", TypeName = "int", Order = 21), TableDescription(TypeName = "int", Name = "retired_into_skill_id", Order = "21", Description = "封存到的目标技能ID")]
+        [Comment("封存去向技能ID（演化产物）")]
+        public int? RetiredIntoSkillId { get; set; }
         
         /// <summary>
         /// 更新时间

@@ -53,7 +53,19 @@ namespace Horizon.Mapper
                     Clothing = 0 // 默认值
                 }))
                 .ForMember(dest => dest.Profession, opt => opt.MapFrom(src => (Profession)src.Profession))
-                .ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.HasValue ? src.LastLoginTime.Value : DateTime.MinValue));
+                .ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.HasValue ? src.LastLoginTime.Value : DateTime.MinValue))
+                // 库里存的是原始 blob，目标是负载对象：按名自动匹配会因为类型不同而抛 Missing type map，必须显式组装。
+                // 口径与 CharacterGrain.GetAppearanceAsync 的 SQL 补水一致；blob 为空表示从未自定义过，留 null 让客户端回落模板默认脸。
+                .ForMember(dest => dest.MetaHumanLook, opt => opt.MapFrom(src =>
+                    src.MetaHumanLook == null || src.MetaHumanLook.Length == 0
+                        ? null
+                        : new MetaHumanLookPayload
+                        {
+                            TemplateId = src.MetaHumanTemplateId ?? "",
+                            Blob = src.MetaHumanLook,
+                            BlobChecksum = unchecked((uint)(src.MetaHumanChecksum ?? 0)),
+                            Published = src.MetaHumanPublished,
+                        }));
 
             // 服务器相关映射
             CreateMap<ServerEntity, ServerInfo>()

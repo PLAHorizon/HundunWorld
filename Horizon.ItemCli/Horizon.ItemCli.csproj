@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Horizon.ItemCli</RootNamespace>
+    <AssemblyName>Horizon.ItemCli</AssemblyName>
+    <!-- 不要开 InvariantGlobalization：Microsoft.Data.SqlClient 在不变区域模式下直接抛异常。 -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
+    <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
+    <!-- 确定性内核在这里被"真跑"：校验、预算、价格、tooltip、套装/词缀全部调 Sim 的 Items/ItemCore，
+         不在 CLI 里另算一份——否则编辑器里看到的数字与将来运行时算出的必然分叉。 -->
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+    <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
+    <!-- 连接串候选口径复用 QuestCli 的 ConnectionConfig，不做第二份副本。 -->
+    <ProjectReference Include="..\Horizon.QuestCli\Horizon.QuestCli.csproj" />
+  </ItemGroup>
+
+</Project>

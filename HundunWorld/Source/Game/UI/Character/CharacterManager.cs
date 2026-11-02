@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FlaxEngine;
 using Horizon.Game.Message.Network;
-using Game.UI.Controllers;
 using HundunWorld.Game.UI.ErrorHandling;
 using Horizon.Game.Message.Enums;
 using HundunWorld.Game;
@@ -34,6 +33,14 @@ namespace Game.UI.Character
             if (_instance != null)
             {
                 UIEventBus.Instance?.UnsubscribeAll("CharacterManager");
+                // 必须显式摘掉对状态管理器事件的订阅：匿名 lambda 事后无法移除，
+                // 于是每轮 Play 都会多留一个仍在监听同一个 UIStateManager 的旧管理器
+                // （实测一次登录内"收到状态管理器角色列表更新"从 5 条涨到 36 条）。
+                if (_instance._stateManager != null && _instance._stateListHandler != null)
+                {
+                    _instance._stateManager.CharacterListUpdated -= _instance._stateListHandler;
+                    _instance._stateListHandler = null;
+                }
                 _instance.CharacterListUpdated = null;
                 _instance.CharacterSelected = null;
                 _instance.CharacterCreated = null;
@@ -46,7 +53,6 @@ namespace Game.UI.Character
         private HundunWorld.Game.UI.UIStateManager _stateManager;
         private UIEventBus _eventBus;
         private ErrorHandler _errorHandler;
-        private UISwitchController _switchController;
 
         // 角色管理状态
         private bool _isLoadingCharacterList = false;  // 加载角色列表时设置
@@ -75,7 +81,7 @@ namespace Game.UI.Character
             _stateManager = HundunWorld.Game.UI.UIStateManager.Instance;
             _eventBus = UIEventBus.Instance;
             _errorHandler = ErrorHandler.Instance;
-            _switchController = UISwitchController.Instance;
+            // UISwitchController（第三台状态机）不再由本管理器触发：见 CreateCharacterAsync 的收敛说明
 
             // 订阅事件
             _eventBus.Subscribe<UserSessionChangedEvent>(OnUserSessionChanged, subscriberName: "CharacterManager");
@@ -84,16 +90,50 @@ namespace Game.UI.Character
             // 订阅状态管理器的角色列表更新事件，确保数据同步
             if (_stateManager != null)
             {
-                _stateManager.CharacterListUpdated += (list) =>
-                {
-                    _characterList = new List<CharacterInfo>(list);
-                    CharacterListUpdated?.Invoke(_characterList);
-                    _eventBus.Publish(new CharacterListUpdatedEvent(_characterList));
-                    FlaxEngine.Debug.Log($"[CharacterManager] 收到状态管理器角色列表更新: {_characterList.Count} 个角色");
-                };
+                _stateListHandler = OnStateManagerCharacterListUpdated;
+                _stateManager.CharacterListUpdated += _stateListHandler;
+
+                // 角色列表回执可能比本单例的首次访问更早到：这里先采纳一次快照，
+                // 否则镜像永远是空表——选角页渲染成 0 行、点"进入游戏"也选不中（2026-10-29 PIE 实测 mgr=0 state=3）。
+                var existing = _stateManager.CharacterList;
+                if (existing != null && existing.Count > 0)
+                    _characterList = new List<CharacterInfo>(existing);
             }
 
             // 网络管理器会自动注册消息处理器，这里不需要手动处理
+        }
+
+        /// <summary>对 UIStateManager 角色列表事件的处理器引用（保存下来才能在重置时摘掉）。</summary>
+        private Action<List<CharacterInfo>> _stateListHandler;
+        private void OnStateManagerCharacterListUpdated(List<CharacterInfo> list)
+        {
+            _characterList = new List<CharacterInfo>(list);
+            CharacterListUpdated?.Invoke(_characterList);
+            _eventBus.Publish(new CharacterListUpdatedEvent(_characterList));
+            FlaxEngine.Debug.Log($"[CharacterManager] 收到状态管理器角色列表更新: {_characterList.Count} 个角色");
+        }
+
+        /// <summary>
+        /// 自测回执：进世界链每一步都写一行。运行日志在这台机器上不落盘，
+        /// 而"点了进入游戏没反应"只能靠这个定位到具体是哪一步返回 false（仅在 enter-world.on 存在时写）。
+        /// </summary>
+        private static void EnterGameProbe(string step)
+        {
+            try
+            {
+                string dir = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld");
+                if (!System.IO.File.Exists(System.IO.Path.Combine(dir, "enter-world.on")))
+                    return;
+                System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(dir, "ui-selftest.out"),
+                    $"enter-game {step}{System.Environment.NewLine}");
+            }
+            catch
+            {
+                // 回执写不进去不影响功能
+            }
         }
 
 
@@ -128,6 +168,11 @@ namespace Game.UI.Character
             {
                 _stateManager.SetLoadingState(true);
 
+                // 镜像只当占位渲染：真正的列表来自服务端。这个方法原先完全不碰网络，
+                // 而它的调用方（进入选角场景时）注释写的是"确保角色列表是最新的"，
+                // 于是新建/删除过的角色在重新登录后会一直停留在旧镜像上。
+                _ = RequestCharacterListAsync(currentState.UserSession.UserId);
+
                 // 从状态管理器获取角色列表
                 var characters = currentState.Characters;
                 if (characters != null && characters.Count > 0)
@@ -161,6 +206,53 @@ namespace Game.UI.Character
             {
                 _isLoadingCharacterList = false;
                 _stateManager.SetLoadingState(false);
+            }
+        }
+
+        /// <summary>
+        /// 向服务端请求角色列表。响应由 CharacterListHandler 接收，
+        /// 它会整体替换 UIStateManager 的镜像并广播 CharacterListUpdated。
+        /// </summary>
+        private async Task RequestCharacterListAsync(ulong userId)
+        {
+            try
+            {
+                var networkManager = HundunWorldGame.Instance?.NetworkManager;
+                if (networkManager == null || !networkManager.CanSendMessage())
+                {
+                    FlaxEngine.Debug.LogWarning("[CharacterManager] 网络未连接，跳过角色列表刷新");
+                    return;
+                }
+
+                var packet = new HorizonMessagePacket
+                {
+                    Header = new MessageHeader
+                    {
+                        MessageId = Guid.NewGuid().ToString(),
+                        MessageType = MessageType.CharacterList,
+                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        GameId = networkManager?.GameId ?? 1,
+                        ZoneId = networkManager?.ZoneId ?? 1,
+                        ServerId = networkManager?.ServerId ?? 1,
+                        UserId = networkManager?.UserId ?? 0,
+                        AuthToken = networkManager?.AuthToken ?? "",
+                        MachineId = MachineIdentifier.GetMachineGuid()
+                    },
+                    ServiceType = ServiceType.Game,
+                    // UserId 必须写在请求体里：服务端用它定位 UserCharacterManagerGrain 的主键，
+                    // 而 GameId 取的是包头（CharacterHandler.cs:268-269）。
+                    Body = new CharacterListRequest
+                    {
+                        UserId = userId,
+                        ServerId = 1
+                    }
+                };
+
+                await networkManager.SendMessageAsync(packet);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[CharacterManager] 角色列表刷新请求失败: {ex.Message}");
             }
         }
 
@@ -208,11 +300,16 @@ namespace Game.UI.Character
         {
             if (_selectedCharacter == null)
             {
+                EnterGameProbe("no-selection");
                 _errorHandler.HandleValidationError("请先选择一个角色", "character_selection");
                 return false;
             }
 
-            if (_isEnteringGame) return false;
+            if (_isEnteringGame)
+            {
+                EnterGameProbe("already-entering");
+                return false;
+            }
 
             _isEnteringGame = true;
 
@@ -228,6 +325,7 @@ namespace Game.UI.Character
                 var networkManager = HundunWorldGame.Instance.NetworkManager;
                 if (networkManager == null)
                 {
+                    EnterGameProbe("network-null");
                     FlaxEngine.Debug.LogError("[CharacterManager] NetworkManager 为空，无法进入游戏");
                     _errorHandler.HandleError(UIErrorType.Network, "网络模块未初始化，无法进入游戏。", null, "enter_game_network_null");
                     return false;
@@ -244,6 +342,7 @@ namespace Game.UI.Character
                         : await networkManager.ConnectOnDemandAsync();
                     if (coordinator == null && !acquired)
                     {
+                        EnterGameProbe("gateway-offline");
                         FlaxEngine.Debug.LogWarning("[CharacterManager] 网关不可达，停留在角色选择界面");
                         _errorHandler.HandleError(UIErrorType.Network, "服务器当前不在线，无法进入游戏。请稍后重试。", null, "enter_game_gateway_offline");
                         return false;
@@ -303,6 +402,7 @@ namespace Game.UI.Character
                 if (sceneManager != null)
                 {
                     bool transitionStarted = sceneManager.TransitionTo(SceneType.GameWorld);
+                    EnterGameProbe($"transition={transitionStarted}");
                     FlaxEngine.Debug.Log($"[CharacterManager] GameSceneManager.TransitionTo(GameWorld) 结果: {transitionStarted}");
                     
                     if (!transitionStarted)
@@ -327,6 +427,7 @@ namespace Game.UI.Character
             }
             catch (Exception ex)
             {
+                EnterGameProbe($"exception={ex.GetType().Name}:{ex.Message}");
                 _errorHandler.HandleError(UIErrorType.System, $"进入游戏失败: {ex.Message}", ex, "enter_game");
                 return false;
             }
@@ -484,13 +585,11 @@ namespace Game.UI.Character
                     {
                         _characterList.Add(response.Character);
                         
-                        // 更新状态管理器
-                        if (_stateManager != null)
-                        {
-                            var currentState = _stateManager.GetCurrentState();
-                            currentState.Characters = new List<CharacterInfo>(_characterList);
-                            currentState.IncrementVersion();
-                        }
+                        // 把新建的角色写回权威镜像。原先写的是
+                        // _stateManager.GetCurrentState().Characters = ...，而 GetCurrentState() 返回的是
+                        // _characterList 的快照拷贝（UIStateManager.cs:578），改了等于没改：
+                        // 新角色只活在本地列表里，重新登录时读到的镜像没它，于是列表里看不到刚建的角色。
+                        _stateManager?.UpdateCharacterList(new List<CharacterInfo>(_characterList));
 
                         // 发布事件
                         CharacterCreated?.Invoke(response.Character);
@@ -502,17 +601,11 @@ namespace Game.UI.Character
                         // 保存默认外观数据
                         _ = SaveDefaultAppearanceAsync(response.Character.CharacterId);
 
-                        // 自动切换回角色选择界面
-                        if (_switchController != null)
-                        {
-                            _switchController.RequestSceneSwitch(SceneType.CharacterSelection);
-                        }
-                        else
-                        {
-                            FlaxEngine.Debug.LogWarning("[CharacterManager] _switchController为空，无法切换场景");
-                            // 降级方案：直接通过状态管理器切换
-                            _stateManager?.TransitionToScene(SceneType.CharacterSelection, checkConditions: false);
-                        }
+                        // 自动回到角色选择：走唯一权威路径（UIStateManager 逻辑态 + Ink 路由）。
+                        // 原先经 UISwitchController → UnifiedStateManager → SceneController 这条
+                        // "第三台状态机"只构建 legacy 面板、既不加载 Flax 关卡也不发 SceneChanged，
+                        // 与水墨流程并行，是登录→选角状态不一致的来源之一。
+                        _stateManager?.TransitionToScene(SceneType.CharacterSelection, checkConditions: false);
                     }
                 }
                 else
@@ -660,21 +753,16 @@ namespace Game.UI.Character
                         if (_selectedCharacter?.CharacterId == response.CharacterId)
                         {
                             _selectedCharacter = null;
-                            if (_stateManager != null)
-                            {
-                                var state = _stateManager.GetCurrentState();
-                                state.SelectedCharacter = null;
-                                state.IncrementVersion();
-                            }
+                            // 走 SetSelectedCharacter 而不是改 GetCurrentState() 的返回值：
+                            // 后者是快照拷贝，改了等于没改，被删角色会一直赖在选中项里等着被「进入游戏」。
+                            _stateManager?.SetSelectedCharacter(null);
                         }
 
-                        // 更新状态管理器
-                        if (_stateManager != null)
-                        {
-                            var updatedState = _stateManager.GetCurrentState();
-                            updatedState.Characters = new List<CharacterInfo>(_characterList);
-                            updatedState.IncrementVersion();
-                        }
+                        // 把确认后的列表真正发布出去。原先写的是
+                        // _stateManager.GetCurrentState().Characters = ...，而 GetCurrentState() 返回的是
+                        // _characterList 的快照拷贝（UIStateManager.cs:578），那句改的是临时对象，
+                        // 订阅 UIStateManager.CharacterListUpdated 的一方（旧选角面板）因此收不到删除结果。
+                        _stateManager?.UpdateCharacterList(new List<CharacterInfo>(_characterList));
 
                         // 发布事件
                         CharacterDeleted?.Invoke(response.CharacterId);

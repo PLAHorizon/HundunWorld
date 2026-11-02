@@ -90,9 +90,21 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         private DateTime _lastFinalizeLoginUtc = DateTime.MinValue;
         private static readonly TimeSpan FinalizeLoginReentryWindow = TimeSpan.FromSeconds(3);
+
+        /// <summary>
+        /// 「切换到角色选择场景」是否已受理（受理到切换完成之间为 true）。
+        /// 登录收尾会在极短时间内多次触达切换入口，重复受理会堆积完成回调并触发多余的强制复位。
+        /// </summary>
+        private bool _ccTransitionPending = false;
         private string _currentUsername = "";
         private bool _rememberPassword = false;
         private TaskCompletionSource<LoginResponse> _loginTcs;
+
+        /// <summary>
+        /// 启动期登录页预填任务的单飞句柄：<see cref="AuthenticationUI"/> 与 <see cref="AuthenticationController"/>
+        /// 都会在 OnStart 里请求一次，共享同一次数据库读取。
+        /// </summary>
+        private Task<AuthenticationResult> _prepareLoginTask;
 
         // 事件
         public event Action<LoginResponse> LoginResponseReceived;
@@ -185,93 +197,57 @@ namespace HundunWorld.Game.UI.Authentication
             }
         }
 
-        public async Task<AuthenticationResult> LoginWithTokenAsync(string authToken, string passportId, long userId)
+        /// <summary>
+        /// 启动期只做「预填账号」，不再自动提交登录。
+        /// <para>
+        /// 客户端无法校验 ini / 本机存档里的 Token（也没有服务端签发的可校验会话）。以前拿它伪造一次
+        /// "登录成功"会直接跳过登录页，进选角后所有请求才报 1007（2026-10-29 用户报「登录被跳过」）。
+        /// 现在启动一定停在登录页：账号尽量预填，密码由玩家输入后走真实登录，成功才切选角。
+        /// </para>
+        /// </summary>
+        public Task<AuthenticationResult> PrepareLoginPageAsync()
         {
-            if (_isAuthenticating)
-                return new AuthenticationResult { IsSuccess = false, ErrorMessage = "正在进行认证操作" };
-
-            if (string.IsNullOrEmpty(authToken))
-                return new AuthenticationResult { IsSuccess = false, ErrorMessage = "AuthToken不能为空" };
-
-            _isAuthenticating = true;
-            _currentUsername = passportId ?? "";
-
-            try
-            {
-                await SetLoadingStateAsync("正在使用Token登录...");
-
-                var connectionError = await EnsureNetworkConnectionAsync();
-                if (connectionError != null)
-                    return connectionError;
-
-                // 服务端已废弃 TCP TokenLoginRequest，ImAuthToken 直接作为 AuthToken 使用。
-                var loginResponse = new LoginResponse
-                {
-                    IsSuccess = true,
-                    PassportId = passportId ?? string.Empty,
-                    UserId = (ulong)userId,
-                    AuthToken = authToken,
-                    SessionToken = authToken,
-                    Message = "Token 登录成功"
-                };
-
-                Passport = new LiteDataContext.PassportInfo
-                {
-                    PassportId = passportId ?? string.Empty,
-                    UserId = (ulong)userId,
-                    IsCurrentPassport = true,
-                    Token = authToken,
-                    RememberPassword = true
-                };
-
-                await FinalizeLoginAsync(loginResponse);
-
-                return new AuthenticationResult { IsSuccess = true };
-            }
-            catch (Exception ex)
-            {
-                _loginTcs = null;
-                _errorHandler.HandleError(UIErrorType.Network, $"Token登录过程中发生错误: {ex.Message}", ex, "token_login_process");
-                return new AuthenticationResult { IsSuccess = false, ErrorMessage = ex.Message };
-            }
-            finally
-            {
-                _isAuthenticating = false;
-                await ClearLoadingStateAsync();
-            }
+            // 只共享「在飞」的那一次；已完成就不再复用，避免登出后重建登录场景时吃旧结果。
+            if (_prepareLoginTask == null || _prepareLoginTask.IsCompleted)
+                _prepareLoginTask = PrefillLoginAccountAsync();
+            return _prepareLoginTask;
         }
 
-        public async Task<AuthenticationResult> TryAutoLoginAsync()
+        private async Task<AuthenticationResult> PrefillLoginAccountAsync()
         {
             try
             {
                 var iniConfig = HorizonGameIniReader.TryRead();
-                if (iniConfig == null || !iniConfig.IsValid)
+                if (iniConfig != null && iniConfig.IsValid)
                 {
-                    Debug.Log("[AuthenticationManager] HorizonGame.ini 不存在或无效，跳过自动登录");
-                    return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无自动登录信息" };
+                    Passport = new LiteDataContext.PassportInfo
+                    {
+                        PassportId = iniConfig.User.PassportId,
+                        UserId = (ulong)iniConfig.User.UserId,
+                        RememberPassword = false
+                    };
+                    Debug.Log($"[AuthenticationManager] 检测到 HorizonGame.ini，预填账号 {iniConfig.User.PassportId}；需要真实登录");
                 }
-
-                Debug.Log($"[AuthenticationManager] 检测到 HorizonGame.ini，尝试Token自动登录: {iniConfig.User.PassportId}");
-
-                Passport = new LiteDataContext.PassportInfo
+                else
                 {
-                    PassportId = iniConfig.User.PassportId,
-                    UserId = (ulong)iniConfig.User.UserId,
-                    RememberPassword = true
-                };
-
-                return await LoginWithTokenAsync(
-                    iniConfig.Auth.AuthToken,
-                    iniConfig.User.PassportId,
-                    iniConfig.User.UserId
-                );
+                    var saved = await DatabaseManager.GetPassport();
+                    if (saved != null)
+                    {
+                        Passport = saved;
+                        Debug.Log($"[AuthenticationManager] 预填本机账号 {saved.PassportId}；需要真实登录");
+                    }
+                    else
+                    {
+                        Debug.Log("[AuthenticationManager] 没有可预填的账号，等待玩家输入");
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[AuthenticationManager] 自动登录异常: {ex.Message}");
-                return new AuthenticationResult { IsSuccess = false, ErrorMessage = $"自动登录失败: {ex.Message}" };
+                Debug.LogWarning($"[AuthenticationManager] 预填登录账号失败: {ex.Message}");
             }
+
+            return new AuthenticationResult { IsSuccess = false, ErrorMessage = "请登录后选择角色" };
         }
 
         /// <summary>
@@ -426,7 +402,8 @@ namespace HundunWorld.Game.UI.Authentication
             {
                 FlaxEngine.Debug.LogWarning(
                     $"[AuthenticationManager] 登录后续流程在 {FinalizeLoginReentryWindow.TotalSeconds:0} 秒内被重复调用，跳过本次（距上次 {sinceLast.TotalMilliseconds:0}ms）；" +
-                    $"调用来源:\n{System.Environment.StackTrace}");
+                    // 只留单行来源方法名：整段引擎栈会让调试日志窗口的富文本解析死循环（见 NetManager 处注释）。
+                    $"来源={new System.Diagnostics.StackTrace(1, false).GetFrame(0)?.GetMethod()?.Name}");
                 return;
             }
             _lastFinalizeLoginUtc = now;
@@ -602,11 +579,22 @@ namespace HundunWorld.Game.UI.Authentication
                     return;
                 }
 
+                // 登录收尾存在多条并发路径，本方法会在数百毫秒内被调用多次。
+                // 每次都挂一个完成回调会让回调堆积（实测一次登录 6 次"场景切换完成"），
+                // 因此这里做一次性受理：已受理过就直接返回，完成/失败时再解除。
+                if (_ccTransitionPending)
+                {
+                    FlaxEngine.Debug.Log("[AuthenticationManager] 角色选择场景切换已受理，忽略重复请求");
+                    return;
+                }
+                _ccTransitionPending = true;
+
                 FlaxEngine.Debug.Log("[AuthenticationManager] 使用GameSceneManager切换场景");
 
                 void OnTransitionCompleted(SceneType from, SceneType to)
                 {
                     sceneManager.TransitionCompleted -= OnTransitionCompleted;
+                    _ccTransitionPending = false;
                     FlaxEngine.Debug.Log($"[AuthenticationManager] 场景切换完成: {from} -> {to}");
 
                     var sm = UIStateManager.Instance;
@@ -636,11 +624,13 @@ namespace HundunWorld.Game.UI.Authentication
                 }
 
                 sceneManager.TransitionCompleted -= OnTransitionCompleted;
+                _ccTransitionPending = false;
                 FlaxEngine.Debug.LogError("[AuthenticationManager] 场景切换启动失败（复位重试后仍失败）");
                 UIHelper.ShowError("场景切换失败，请重试");
             }
             catch (Exception ex)
             {
+                _ccTransitionPending = false;
                 FlaxEngine.Debug.LogError($"[AuthenticationManager] 切换角色选择场景异常: {ex.Message}");
                 UIHelper.ShowError("场景切换失败，请重试");
             }

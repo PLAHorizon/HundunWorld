@@ -36,6 +36,12 @@ namespace NarrativePro.Tales
         /// <summary>队伍成员对应的 Pawn/Actor 列表（替代 UE5 PartyMemberStates）。</summary>
         public List<Actor> PartyMemberPawns = new List<Actor>();
 
+        /// <summary>
+        /// 当前发言的队员（对应 UE5 <c>PartyCurrentSpeaker</c>）。
+        /// AllPlayers 策略下用于让镜头/语音跟随真正在操作的那名玩家。
+        /// </summary>
+        public TalesComponent PartyCurrentSpeaker { get; private set; }
+
         /// <summary>是否为队伍组件（UE5 中用于区分普通 TalesComponent）。</summary>
         public virtual bool IsPartyComponent()
         {
@@ -95,6 +101,66 @@ namespace NarrativePro.Tales
         }
 
         /// <summary>
+        /// 设置队伍对话的当前发言者。对应 UE5 <c>UNarrativePartyComponent::SetPartyCurrentSpeaker(PlayerState)</c>
+        /// （Dialogue.cpp 在队员选择对话选项时调用，使镜头跟随该队员）。
+        /// Flax 无 APlayerState：参数可为队员的 <see cref="TalesComponent"/>、队员 Pawn，或拥有该 Pawn 的对象。
+        /// </summary>
+        /// <param name="playerState">发言队员标识（组件 / Pawn Actor / 其它可解析为队员的对象）。</param>
+        /// <returns>解析成功并写入返回 true；参数不属于本队伍返回 false 且保持原发言者。</returns>
+        public virtual bool SetPartyCurrentSpeaker(object playerState)
+        {
+            var member = ResolvePartyMember(playerState);
+            if (member == null)
+            {
+                NarrativeLog.LogWarning("SetPartyCurrentSpeaker: 参数无法解析为队伍成员，保持当前发言者");
+                return false;
+            }
+
+            PartyCurrentSpeaker = member;
+            return true;
+        }
+
+        /// <summary>取当前发言队员；未设置时回退到队长（UE5 中队长即默认发言者）。</summary>
+        public TalesComponent GetPartyCurrentSpeaker()
+        {
+            return PartyCurrentSpeaker != null ? PartyCurrentSpeaker : GetPartyLeader();
+        }
+
+        /// <summary>
+        /// 把任意队员引用解析为队伍成员组件：支持 TalesComponent、队员 Pawn，以及 Pawn 上的脚本宿主。
+        /// </summary>
+        public TalesComponent ResolvePartyMember(object playerState)
+        {
+            if (playerState == null) return null;
+
+            if (playerState is TalesComponent component)
+            {
+                return PartyMembers.Contains(component) ? component : null;
+            }
+
+            var pawn = playerState as Actor;
+            if (pawn != null)
+            {
+                int pawnIndex = PartyMemberPawns.IndexOf(pawn);
+                if (pawnIndex >= 0 && pawnIndex < PartyMembers.Count) return PartyMembers[pawnIndex];
+
+                foreach (var member in PartyMembers)
+                {
+                    if (member != null && member.Actor == pawn) return member;
+                }
+                return null;
+            }
+
+            // 其它宿主对象（例如 PlayerState 端口的包装对象）：从其 Actor 反查队员
+            if (playerState is Script script && script.Actor != null)
+            {
+                return ResolvePartyMember(script.Actor);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// 队伍开始对话：所有队伍成员同步开始对话。
         /// </summary>
         public override bool BeginDialogue(string dialogueClassId, DialoguePlayParams playParams = null)
@@ -126,6 +192,13 @@ namespace NarrativePro.Tales
                     return;
                 }
             }
+
+            // UE5 Dialogue.cpp 在选项被选中时把选择者登记为队伍当前发言者（镜头/语音随之切换）
+            if (selector != null)
+            {
+                SetPartyCurrentSpeaker(selector);
+            }
+
             TrySelectDialogueOption(option);
 
             // 同步选项给其他队伍成员
@@ -140,7 +213,7 @@ namespace NarrativePro.Tales
         /// 队伍退出对话：所有成员一起退出。
         /// 先调用 base 退出自身，再同步给其他成员。
         /// </summary>
-        protected override void ExitDialogue(EExitDialogueReason reason)
+        public override void ExitDialogue(EExitDialogueReason reason)
         {
             base.ExitDialogue(reason);
             foreach (var member in PartyMembers)
@@ -153,17 +226,54 @@ namespace NarrativePro.Tales
             }
         }
 
-        /// <summary>队伍组件没有单一拥有者，返回队长对应的 Pawn。</summary>
+        /// <summary>
+        /// 队伍所属 Pawn。对应 UE5 <c>GetOwningPawn</c>（NarrativePartyComponent.cpp:84-91）：
+        /// 先取本地玩家控制器、再取其 Pawn，而不是「队长」。队伍里没有本地玩家时回退队长，
+        /// 等价于 UE5 只有权威端（无本地控制器）时才走的那条队长分支（:100-105）。
+        /// </summary>
         public override Actor GetOwningPawn()
         {
+            var controller = GetOwningController();
+            var pawn = ResolveControllerPawn(controller);
+            if (pawn != null) return pawn;
+
             var leader = GetPartyLeader();
             return leader?.Actor;
         }
 
-        /// <summary>队伍组件没有单一拥有者 Controller，返回 null（Flax 中无 PlayerController 概念）。</summary>
+        /// <summary>
+        /// 队伍所属控制器。对应 UE5 <c>GetOwningController</c>（NarrativePartyComponent.cpp:95-120）：
+        /// 遍历队员，取第一个「本地玩家控制器」；UE5 的 <c>Cast&lt;APlayerController&gt; + IsLocalController()</c>
+        /// 在这里落到角色的 <see cref="NarrativeCharacter.IsLocallyControlled"/>。
+        /// 之前这里恒返回 null，导致队员条件/回复事件（NarrativeCondition.cs:143,157、
+        /// Nodes/DialogueNode.cs:131、Nodes/NarrativeNodeBase.cs:113,125、Dialogue.cs:142）永远拿不到控制器。
+        /// </summary>
         public override Actor GetOwningController()
         {
-            return null;
+            foreach (var member in PartyMembers)
+            {
+                if (member == null) continue;
+
+                var character = member.Actor != null ? member.Actor.GetScript<UnrealFramework.NarrativeCharacter>() : null;
+                if (character != null && !character.IsLocallyControlled()) continue;
+
+                var controller = character != null
+                    ? character.GetOwningController()
+                    : member.GetOwningController();
+                if (controller != null) return controller;
+            }
+
+            // 没有本地队员（纯 AI 队伍）：对齐 UE5 权威端出口，按队长取其控制器
+            var leader = GetPartyLeader();
+            return leader?.GetOwningController();
+        }
+
+        /// <summary>控制器 Actor 上当前的被操控角色（UE5 <c>PC->GetPawn()</c>）。</summary>
+        private static Actor ResolveControllerPawn(Actor controllerActor)
+        {
+            if (controllerActor == null) return null;
+            var pc = controllerActor.GetScript<UnrealFramework.NarrativePlayerController>();
+            return pc?.OwnedCharacter?.Actor;
         }
     }
 }

@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using System;
 using System.Collections.Generic;
 using Horizon.Game.Message.Enums;

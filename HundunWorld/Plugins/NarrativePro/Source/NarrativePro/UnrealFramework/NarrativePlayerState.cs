@@ -57,7 +57,11 @@ namespace NarrativePro.UnrealFramework
             // 查找子组件
             AbilitySystemComponent = Actor.GetScript<NarrativeAbilitySystemComponent>();
             AttributeSetBase = Actor.GetScript<NarrativeAttributeSetBase>();
-            SkillTreeComponent = Actor.GetScript<SkillTreeComponent>();
+            // UE5 在 ANarrativePlayerState 构造期就 CreateDefaultSubobject 出技能树组件
+            // （NarrativePlayerState.cpp:26），所以 HasPerk / GiveSkillPoints / Perk 存档在这条链上是必然可用的。
+            // Flax 没有构造期子对象：按本仓库既有做法 GetScript ?? AddScript 幂等补齐，
+            // 否则整棵技能树在运行时没有宿主（HasPerk 恒假、 cheat GiveSkillPoints 只会告警）。
+            SkillTreeComponent = Actor.GetScript<SkillTreeComponent>() ?? Actor.AddScript<SkillTreeComponent>();
             OwnerCharacter = Actor.GetScript<NarrativePlayerCharacter>();
 
             // 反向注册到角色
@@ -147,7 +151,8 @@ namespace NarrativePro.UnrealFramework
         /// <summary>玩家名改变时的本地处理。对应 UE5 OnRep_PlayerName。</summary>
         protected virtual void OnPlayerNameChanged()
         {
-            // TODO [需接入 UI 系统]: 通知 UI 更新
+            // 端口中 UI 通过订阅 PlayerName 字段/事件自行刷新（已核查 UI/NarrativeUIBuilder.cs 无全局推送注册接口），
+            // 本方法保留为派生类通知扩展点（对应 UE5 BP 覆写位），无独立动作。
         }
 
         // ===== 技能树 =====

@@ -1010,6 +1010,19 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(5)]
         [Id(5)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
+
+        /// <summary>
+        /// 正在交互的 NPC 运行时实体 id；0 = 没有 NPC 语境（旧调用方）。
+        /// <para>服务端据此解析"训练师教不教/设施在不在"并核对邻近；价格与材料一律由服务端裁决。</para>
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ulong EntityId { get; set; }
+
+        /// <summary>动作：0 = 制作，1 = 向训练师学配方。</summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int Action { get; set; }
     }
 
     /// <summary>
@@ -1061,6 +1074,14 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(6)]
         [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
+
+        /// <summary>
+        /// 配方清单（<c>CraftingRequest.Action = 2</c> 时回填）：这位 NPC 教的、或这个设施能做的。
+        /// <para>客户端据此画卡片，<b>不在本地维护一份写死的配方表</b>。</para>
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public List<CraftingRecipe> Recipes { get; set; } = new();
     }
 
     /// <summary>

@@ -1,0 +1,27 @@
+{
+  "name": "ts_smith_night_rest",
+  "appliesToNpcIds": [ "npc_village_smith" ],
+  "triggers": [
+    {
+      "type": "TimeOfDay",
+      "description": "铁匠夜间休息：22:00 挂上睡眠标签，06:00 摘除（跨午夜窗口）",
+      "startTime": 2200,
+      "endTime": 600,
+      "bFireIfAlreadyStarted": true,
+      "triggerEvents": [
+        {
+          "type": "SetTag",
+          "tag": "Narrative.State.NPC.Sleeping",
+          "bAdd": true,
+          "eventRuntime": "Start"
+        },
+        {
+          "type": "SetTag",
+          "tag": "Narrative.State.NPC.Sleeping",
+          "bAdd": false,
+          "eventRuntime": "End"
+        }
+      ]
+    }
+  ]
+}

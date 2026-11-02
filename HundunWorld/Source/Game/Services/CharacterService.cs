@@ -208,7 +208,12 @@ namespace HundunWorld.Game.Services
                     return GetCachedCharacters();
                 }
 
-                var request = new CharacterListRequest();
+                var request = new CharacterListRequest
+                {
+                    // 服务端用请求体里的 UserId 定位 UserCharacterManagerGrain 的主键
+                    // （CharacterHandler.cs:268），留空就是按 key 0 查询，只会拿到空列表。
+                    UserId = UI.UIStateManager.Instance?.GetCurrentState().UserSession.UserId ?? 0
+                };
                 bool sent = await networkManager.SendAsync(request);
                 if (!sent)
                 {
@@ -243,7 +248,10 @@ namespace HundunWorld.Game.Services
 
                 var request = new DeleteCharacterRequest
                 {
-                    CharacterId = characterId
+                    CharacterId = characterId,
+                    // 同上：CharacterHandler.cs:310 用请求体的 UserId 定位 grain，
+                    // 留空会落到 key 0，服务端回「角色不存在或无权删除」，而这里已经把成功告诉了调用方。
+                    UserId = UI.UIStateManager.Instance?.GetCurrentState().UserSession.UserId ?? 0
                 };
 
                 bool sent = await networkManager.SendAsync(request);

@@ -59,6 +59,9 @@ namespace HundunWorld.Game.Core
         public float SFXVolume { get; set; } = 0.8f;
         public float VoiceVolume { get; set; } = 0.9f;
         public float AmbientVolume { get; set; } = 0.6f;
+        public bool UISfxEnabled { get; set; } = true;
+        /// <summary>语音聊天开关。当前客户端没有语音通话接入，只持久化玩家选择。</summary>
+        public bool VoiceChatEnabled { get; set; } = false;
 
         // ===== 操作设置 =====
         public float MouseSensitivity { get; set; } = 1.0f;
@@ -101,7 +104,25 @@ namespace HundunWorld.Game.Core
     public class GameStateManager
     {
         private static GameStateManager _instance;
-        public static GameStateManager Instance => _instance ??= new GameStateManager();
+
+        /// <summary>
+        /// 单例入口。以前 Initialize() 一个调用方都没有，settings.json 从来没被读回来过：
+        /// 设置页显示/下发的一直是 GameSettings 的默认值，改完重启就"忘了"。
+        /// 首次取实例时补一次载入+应用，之后照旧由 UpdateSettings 即时应用。
+        /// </summary>
+        public static GameStateManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new GameStateManager();
+                    try { _instance.Initialize(); }
+                    catch (Exception ex) { Debug.LogWarning($"[GameStateManager] 初始化失败，使用默认设置: {ex.Message}"); }
+                }
+                return _instance;
+            }
+        }
 
         // ===== 状态 =====
         private GameState _currentState = GameState.Boot;
@@ -273,10 +294,20 @@ namespace HundunWorld.Game.Core
         /// <summary>应用设置到引擎</summary>
         public void ApplySettings()
         {
-            // 帧率限制（Flax 通过编辑器 Game Settings 或 Graphics Settings 配置）
-            // 注：运行时帧率由引擎 VSync / MaxFPS 设置控制
-            // 音量（通过GameAudioManager应用）
-            // UI缩放
+            // 音量：设置页改完必须真的作用到音频管理器，否则"调了没反应"。
+            // 音效/技能等走 GameAudioManager；BGM 与环境音由 MusicManager 独立持有，
+            // 主音量对三者都要生效（否则"主音量拉满但音乐不变"也算坏）。
+            var audio = HundunWorld.Game.Audio.GameAudioManager.Instance;
+            audio.MasterVolume = _settings.MasterVolume;
+            audio.SfxVolume = _settings.SFXVolume;
+            audio.SetCategoryVolume(
+                Horizon.Game.Message.Network.GameAudioCategory.UI,
+                _settings.UISfxEnabled ? 1f : 0f);
+
+            var music = HundunWorld.Game.Audio.MusicManager.Instance;
+            music.SetGlobalVolume(_settings.BGMVolume * _settings.MasterVolume);
+            HundunWorld.Game.Audio.AmbientAudioSystem.Instance.SetVolume(
+                _settings.AmbientVolume * _settings.MasterVolume);
         }
 
         /// <summary>保存设置到文件</summary>
@@ -340,6 +371,10 @@ namespace HundunWorld.Game.Core
         public void SetMasterVolume(float vol) => UpdateSettings(s => s.MasterVolume = Mathf.Clamp(vol, 0f, 1f));
         public void SetBGMVolume(float vol) => UpdateSettings(s => s.BGMVolume = Mathf.Clamp(vol, 0f, 1f));
         public void SetSFXVolume(float vol) => UpdateSettings(s => s.SFXVolume = Mathf.Clamp(vol, 0f, 1f));
+        public void SetVoiceVolume(float vol) => UpdateSettings(s => s.VoiceVolume = Mathf.Clamp(vol, 0f, 1f));
+        public void SetAmbientVolume(float vol) => UpdateSettings(s => s.AmbientVolume = Mathf.Clamp(vol, 0f, 1f));
+        public void SetUISfxEnabled(bool on) => UpdateSettings(s => s.UISfxEnabled = on);
+        public void SetVoiceChatEnabled(bool on) => UpdateSettings(s => s.VoiceChatEnabled = on);
         public void SetQualityPreset(int preset) => UpdateSettings(s => s.QualityPreset = Mathf.Clamp(preset, 0, 3));
         public void SetFullscreen(bool fs) => UpdateSettings(s => s.Fullscreen = fs);
         public void SetMouseSensitivity(float sens) => UpdateSettings(s => s.MouseSensitivity = Mathf.Clamp(sens, 0.1f, 3f));

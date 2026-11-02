@@ -17,6 +17,48 @@ namespace HundunWorld
         private const float FallbackDelay = 5.0f;
         private const float MaxWaitTime = 30.0f;
 
+        /// <summary>进入玩法时被临时停用的相机（离开 World 时恢复）。</summary>
+        private static readonly System.Collections.Generic.List<Camera> MutedCameras = new System.Collections.Generic.List<Camera>();
+
+        /// <summary>
+        /// 只让玩法相机参与渲染。Flax 的 <c>Camera.GetMainCamera()</c> 取"第一个注册的 active 相机"，
+        /// 而 Login 场景的相机同样 active ⇒ 渲染走的是登录相机，角色在 3km 外只剩一个点（2026-10-25 实测）。
+        /// </summary>
+        private static void MuteOtherSceneCameras(FlaxEngine.Scene keep)
+        {
+            for (int i = 0; i < Level.ScenesCount; i++)
+            {
+                var sc = Level.GetScene(i);
+                if (sc == null || sc == keep)
+                {
+                    continue;
+                }
+
+                var cam = sc.FindActor<Camera>();
+                if (cam != null && cam.IsActive)
+                {
+                    cam.IsActive = false;
+                    MutedCameras.Add(cam);
+                    Debug.Log($"[WorldSceneInitializer] 停用非玩法相机: scene={sc.Name} camera={cam.Name}");
+                }
+            }
+        }
+
+        /// <summary>离开 World（切回登录/选角）时把停用的相机恢复，否则那边没有相机可用。</summary>
+        public override void OnDestroy()
+        {
+            for (int i = 0; i < MutedCameras.Count; i++)
+            {
+                var cam = MutedCameras[i];
+                if (cam != null && !cam.IsActive)
+                {
+                    cam.IsActive = true;
+                }
+            }
+            MutedCameras.Clear();
+            base.OnDestroy();
+        }
+
         public override void OnStart()
         {
             _elapsedTime = 0;
@@ -151,6 +193,18 @@ namespace HundunWorld
                 camera.Target = playerActor;
                 Debug.Log($"[WorldSceneInitializer] 已设置 ThirdPersonCamera.Target = {playerActor.Name}");
 
+                // Ada 是**厘米**模型（约 180 单位高），而相机默认的 Distance=15 是按米制角色调的，
+                // 直接套上去会把镜头怼进头部（2026-10-25 实测：画面只剩一颗悬浮的头）。
+                // 这里按厘米口径给第三人称机位：聚焦胸口附近、距离 5 米、可拉近到 2 米。
+                camera.FocusOffset = new Vector3(0f, 120f, 0f);
+                camera.CloseRangeFocusHeight = 120f;
+                camera.FarRangeFocusHeight = 120f;
+                camera.Distance = 500f;
+                camera.MinDistance = 200f;
+                camera.MaxDistance = 2000f;
+                camera.CloseRangeDistance = 500f;
+                camera.FarRangeDistance = 1500f;
+
                 // 修复：将相机引用赋值给 PlayerController，避免 TryGetLookYawPitch 走降级路径。
                 // 降级路径用 Actor.Orientation.Yaw 作为 LookYaw 发送服务端，导致 entity.Yaw 不准、
                 // 远程角色朝向异常，并影响 InterpolationSystem 传送混合的 Yaw 起始值（TeleportBlendStartYaw）。
@@ -165,6 +219,9 @@ namespace HundunWorld
                 {
                     Debug.LogWarning($"[WorldSceneInitializer] PlayerActor '{playerActor.Name}' 上未找到 PlayerController 脚本，无法赋值 Camera 引用");
                 }
+
+                // 只保留玩法相机参与渲染（否则 Flax 可能继续用 Login 相机，角色只剩远处一个点）。
+                MuteOtherSceneCameras(camera.Actor?.Scene);
             }
             else
             {

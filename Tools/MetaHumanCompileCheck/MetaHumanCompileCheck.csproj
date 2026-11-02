@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MetaHuman 插件 Flax 侧的离屏编译门。
+
+    只用 dotnet 把 Source/MetaHuman 的 Core + Runtime 对着引擎的 FlaxEngine.CSharp.dll 编一遍，
+    为的是拿到精确的 C# 诊断（Flax.Build 的脚本阶段输出很粗，且本机 Flax.Build 在
+    Profiling.End 上会抛 ArgumentOutOfRangeException）。
+
+    它证明「API 用法正确、代码自洽」，不证明插件被发现、资产被注册、PIE 里真生效；
+    那三件仍需编辑器构建与 PIE 目视。
+
+    用法：在仓库根执行 dotnet build Tools/MetaHumanCompileCheck 后看退出码。
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>MetaHumanCompileCheck</AssemblyName>
+    <RootNamespace>MetaHumanCompileCheck</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <NoWarn>1591</NoWarn>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.13</EngineRoot>
+    <ModuleRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\MetaHuman\Source\MetaHuman</ModuleRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ModuleRoot)\Core\*.cs" />
+    <Compile Include="$(ModuleRoot)\Runtime\*.cs" />
+    <Compile Include="$(ModuleRoot)\Tests\*.cs" />
+  </ItemGroup>
+
+</Project>

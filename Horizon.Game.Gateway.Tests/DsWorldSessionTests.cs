@@ -422,6 +422,29 @@ public class DsWorldSessionTests
     }
 
     [Fact]
+    public void MarkMonsterDead_BroadcastsDespawn_SoClientsDoNotKeepAGhost()
+    {
+        var world = new DsWorldSession(MakeOptions());
+        world.ConfigureSpawnPoints(new[] { MakeSpawnPoint(maxAlive: 1) });
+        Assert.True(world.AddPlayer(1001, 1001, 0f, 0f, 0f, out var r), r);
+        world.Tick();
+
+        var monsterId = SpawnDirectorCore.ComputeEntityId(1, 0);
+        Assert.True(world.MarkMonsterDead(monsterId, world.ServerTick));
+
+        // 死亡必须告知客户端：实体此后不再出现在任何快照里，只"停止更新"等于让客户端留一只
+        // 冻在原地的鬼怪，而且"选中目标只在目标真消失时才丢"这条语义也无从触发。
+        var tick = world.Tick();
+        Assert.NotNull(tick.DespawnBroadcast);
+        Assert.Contains(tick.DespawnBroadcast!.Deltas,
+            d => d.EntityId == monsterId && d.Kind == EntityDeltaKind.Despawn);
+        Assert.Contains(1001L, tick.DespawnBroadcastAudience);
+
+        // 与玩家离线同一条路径：一次性登记，不得每 tick 重发。
+        Assert.Null(world.Tick().DespawnBroadcast);
+    }
+
+    [Fact]
     public void MarkMonsterDead_UnknownEntity_ReturnsFalse()
     {
         var world = new DsWorldSession(MakeOptions());

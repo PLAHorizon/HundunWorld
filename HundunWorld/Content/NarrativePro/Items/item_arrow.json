@@ -1,0 +1,13 @@
+{
+  "$type": "AmmoItem",
+  "itemClassId": "item_arrow",
+  "displayName": "柳木箭（一束）",
+  "description": "柳木做杆、铁簇的猎箭。可被桑木角弓（item_bow）自动取用。",
+  "weight": 0.05,
+  "baseValue": 2,
+  "baseScore": 0,
+  "bStackable": true,
+  "maxStackSize": 64,
+  "thumbnailPath": "",
+  "useSoundPath": ""
+}

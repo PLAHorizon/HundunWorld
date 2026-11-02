@@ -26,24 +26,55 @@ namespace NarrativePro.UI
 
         public override void OnEnable()
         {
-            if (TalesComponentRef != null)
-            {
-                TalesComponentRef.OnQuestTaskProgressChanged += OnQuestTaskProgressChanged;
-                TalesComponentRef.OnQuestNewState += OnQuestNewState;
-                TalesComponentRef.OnQuestSucceeded += OnQuestSucceeded;
-                TalesComponentRef.OnQuestFailed += OnQuestFailed;
-            }
+            Bind(TalesComponentRef);
         }
 
         public override void OnDisable()
         {
-            if (TalesComponentRef != null)
+            Unbind();
+        }
+
+        /// <summary>
+        /// 绑定（或切换）叙事组件；由 <c>NarrativeRuntimeBootstrap</c> 在运行期调用，幂等。
+        /// </summary>
+        public void Bind(TalesComponent tales)
+        {
+            if (ReferenceEquals(_boundTales, tales) && tales != null) return;
+
+            Unbind();
+            TalesComponentRef = tales;
+            _boundTales = tales;
+            if (tales == null) return;
+
+            tales.OnQuestTaskProgressChanged += OnQuestTaskProgressChanged;
+            tales.OnQuestNewState += OnQuestNewState;
+            tales.OnQuestSucceeded += OnQuestSucceeded;
+            tales.OnQuestFailed += OnQuestFailed;
+
+            // 面板可能晚于任务开始才装配：立即取一次现有追踪项
+            RefreshTracker();
+        }
+
+        /// <summary>解除当前叙事组件订阅。</summary>
+        public void Unbind()
+        {
+            var tales = _boundTales;
+            if (tales != null)
             {
-                TalesComponentRef.OnQuestTaskProgressChanged -= OnQuestTaskProgressChanged;
-                TalesComponentRef.OnQuestNewState -= OnQuestNewState;
-                TalesComponentRef.OnQuestSucceeded -= OnQuestSucceeded;
-                TalesComponentRef.OnQuestFailed -= OnQuestFailed;
+                tales.OnQuestTaskProgressChanged -= OnQuestTaskProgressChanged;
+                tales.OnQuestNewState -= OnQuestNewState;
+                tales.OnQuestSucceeded -= OnQuestSucceeded;
+                tales.OnQuestFailed -= OnQuestFailed;
             }
+            _boundTales = null;
+        }
+
+        private TalesComponent _boundTales;
+
+        /// <summary>登记某任务为追踪项（首次追踪时面板立即可见）。</summary>
+        public void TrackQuest(string questName)
+        {
+            SetTracked(questName, true);
         }
 
         public void SetTracked(string questClassId, bool tracked)

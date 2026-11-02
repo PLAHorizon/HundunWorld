@@ -97,11 +97,49 @@ public class InventoryEquipmentTests
 
     [Theory]
     [InlineData(-1)]
-    [InlineData(15)]          // 合法槽位为 0..14（14=客户端 EquipmentSlot.Face）
+    [InlineData(16)]          // 合法槽位为 0..15（15=客户端 EquipmentSlot.Appearance 外观）
     public async Task Equip_InvalidSlot_IsRejected(int slot)
     {
         var grain = CreateGrain(StateWith(Item(1, count: 1)));
         Assert.False(await grain.EquipItemAsync(1, slot));
+    }
+
+    /// <summary>
+    /// 外观槽（15）必须被服务端接受：客户端外观装备走同一条穿戴命令，
+    /// 上界若仍停在 14，外观永远装不上且只留一条"槽位无效"日志。
+    /// </summary>
+    [Fact]
+    public async Task Equip_AppearanceSlot_IsAccepted()
+    {
+        var state = StateWith(Item(1, count: 1, templateId: 91001, name: "玄墨劲装"));
+        var grain = CreateGrain(state);
+
+        Assert.True(await grain.EquipItemAsync(1, 15));
+        Assert.Equal(1, state.EquippedItems[15]);
+        Assert.False(state.Items.ContainsKey(1));
+    }
+
+    /// <summary>
+    /// 外观装备完整往返：按模板穿戴到外观槽 → 权威清单能读回 → 卸下后原物品回背包。
+    /// 这条锁死的是"外观能穿上且重登能读回"的最小闭环。
+    /// </summary>
+    [Fact]
+    public async Task EquipAppearance_ByTemplate_RoundTripsAndUnequips()
+    {
+        var state = StateWith(Item(7001, count: 1, templateId: 91001, name: "玄墨劲装"));
+        var grain = CreateGrain(state);
+
+        Assert.True(await grain.EquipByTemplateAsync(91001, 15));
+
+        var equipped = await grain.GetEquippedSlotsAsync();
+        Assert.True(equipped.TryGetValue(15, out var entry));
+        Assert.Equal(91001, entry!.TemplateId);
+
+        Assert.True(await grain.UnequipItemAsync(15));
+        Assert.True(state.Items.TryGetValue(7001, out var restored));
+        Assert.Equal(91001, restored!.TemplateId);
+        Assert.Equal(1, restored.Count);
+        Assert.False(state.EquippedItems.ContainsKey(15));
     }
 
     [Fact]
@@ -151,12 +189,13 @@ public class InventoryEquipmentTests
     }
 
     /// <summary>
-    /// 面饰在客户端枚举里是 14（<c>EquipmentSlot.Face</c>）。
-    /// 服务端上界曾硬编码 13，导致面饰永远装不上——这里锁死 14 可用、15 仍被拒。
+    /// 面饰在客户端枚举里是 14（<c>EquipmentSlot.Face</c>），外观是 15（<c>EquipmentSlot.Appearance</c>）。
+    /// 服务端上界曾硬编码 13，导致面饰永远装不上——这里锁死 14/15 可用、16 仍被拒。
     /// </summary>
     [Theory]
     [InlineData(14, true)]
-    [InlineData(15, false)]
+    [InlineData(15, true)]
+    [InlineData(16, false)]
     public async Task Equip_SlotUpperBound_MatchesClientEnum(int slot, bool expected)
     {
         var grain = CreateGrain(StateWith(Item(1, count: 1)));

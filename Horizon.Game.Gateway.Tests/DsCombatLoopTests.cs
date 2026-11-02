@@ -68,6 +68,38 @@ public class DsCombatLoopTests
     // ---------- 玩家 → 怪物 ----------
 
     [Fact]
+    public void 击杀经验回推后玩家快照带累计经验()
+    {
+        // 用户报"角色也没获得经验、经验条不动"：客户端经验条读的是 DS 玩家快照里的 Exp，
+        // 而 DS 原来这一格恒为 0（它只发了击杀增量，不知道绝对值）。
+        var world = NewWorld();
+        AddPlayerFacingMonster(world);
+        world.Tick();
+
+        SnapshotPacket NextSnapshot()
+        {
+            for (var i = 0; i < 10; i++)
+            {
+                var r = world.Tick();
+                if (r.WorldSnapshot != null) return r.WorldSnapshot;
+            }
+            throw new InvalidOperationException("10 tick 内没有出快照");
+        }
+
+        // 未收到回推前：0（不下发），不能凭空给一个累计值。
+        var before = NextSnapshot();
+        var beforeDelta = before.Deltas.Single(d => d.EntityId == 2001UL);
+        Assert.Equal(0L, beforeDelta.State!.Value.Exp);
+
+        Assert.True(world.ApplyPlayerProgress(2001, 7, 4321));
+
+        var after = NextSnapshot();
+        var afterDelta = after.Deltas.Single(d => d.EntityId == 2001UL);
+        Assert.Equal(4321L, afterDelta.State!.Value.Exp);
+        Assert.Equal(7, afterDelta.State!.Value.Level);
+    }
+
+    [Fact]
     public void Attack_ReducesMonsterHp()
     {
         var world = NewWorld();
@@ -341,5 +373,112 @@ public class DsCombatLoopTests
         }
 
         Assert.Equal(Run(0), Run(0));
+    }
+
+    // ---------- 数据面的战斗上行（玩家真的打得到住在 DS 世界里的怪） ----------
+
+    private static CombatActionPacket ClientAttack(ulong attackerId, ulong targetId) => new()
+    {
+        AttackerId = attackerId,
+        TargetId = targetId,
+        SkillId = 0,
+        ClientTick = 1,
+        AttackerYaw = 0f,
+        ActionKind = CombatActionKind.NormalAttack,
+    };
+
+    [Fact]
+    public void DataPlane_CombatAction_改的是世界里的怪并给在场的人发伤害包()
+    {
+        // 这条链在本轮之前是**断的**：DsDataPlaneHost 的上行 switch 只认握手/移动/重连恢复，
+        // 客户端的攻击走的是 Orleans 的 CombatGrain（那只认识 CharacterGrain 的玩家）。
+        // 于是有 HP、会索敌、会读条、会掉落的那份怪物状态在实机里挨不到任何一下——
+        // 玩家看不到血条掉，怪不会死，掉落与经验全都不发生。
+        var world = NewWorld();
+        AddPlayerFacingMonster(world);
+        world.Tick();
+
+        var plane = new DsDataPlaneHost(world, listenPort: 0);
+        var monsterId = FirstMonsterId();
+        Assert.True(world.TryGetMonster(monsterId, out var before) && before != null);
+        var hpBefore = before!.Ai.Hp;
+
+        plane.Apply(ClientAttack(2001UL, monsterId));
+
+        Assert.Equal(1, plane.CombatActionCount);
+        Assert.Equal(0, plane.CombatActionRateLimitedCount);
+        Assert.Equal(0, plane.CombatActionRejectedNoSessionCount);
+
+        var tick = world.Tick();
+        Assert.True(world.TryGetMonster(monsterId, out var after) && after != null);
+        Assert.True(after!.Ai.Hp < hpBefore,
+            $"数据面的战斗包没改到世界里的怪：HP {hpBefore} → {after.Ai.Hp}");
+
+        DamagePacket? hitToMonster = null;
+        long[] hitAudience = Array.Empty<long>();
+        foreach (var ev in tick.Events)
+        {
+            if (ev.Packet is not DamagePacket dp) continue;
+            if (dp.TargetId != monsterId) continue;
+            hitToMonster = dp;
+            hitAudience = ev.Audience;
+            break;
+        }
+        Assert.NotNull(hitToMonster);
+        Assert.Contains(2001L, hitAudience);   // 伤害包必须发给在场的那个会话
+    }
+
+    [Fact]
+    public void DataPlane_CombatAction_边界限流且被挡的必须计数()
+    {
+        // 客户端理论上每帧都能发一条攻击：限流放在**不可信输入的边界**（数据面），
+        // 而不是塞进 DsWorldSession——会话内的结算判据不该被一层节拍挡住。
+        // 被挡掉的一定要有计数：没有计数时"我明明在砍却不动"会被读成服务器的错。
+        var world = NewWorld();
+        AddPlayerFacingMonster(world);
+        world.Tick();
+
+        var plane = new DsDataPlaneHost(world, listenPort: 0);
+        var monsterId = FirstMonsterId();
+        Assert.True(world.TryGetMonster(monsterId, out var first) && first != null);
+        var hpBefore = first!.Ai.Hp;
+
+        plane.Apply(ClientAttack(2001UL, monsterId));
+        plane.Apply(ClientAttack(2001UL, monsterId));   // 同一个 tick 内的第二下必须被挡
+        Assert.Equal(1, plane.CombatActionCount);
+        Assert.Equal(1, plane.CombatActionRateLimitedCount);
+
+        world.Tick();
+        Assert.True(world.TryGetMonster(monsterId, out var mid) && mid != null);
+        var hpAfterOne = mid!.Ai.Hp;
+        Assert.True(hpAfterOne < hpBefore, "第一下没打到，后面判不了限流");
+
+        // 隔开节拍之后必须重新受理：否则这条闸门是把战斗永久关掉
+        for (var i = 0; i < DsDataPlaneHost.MinCombatActionIntervalTicks; i++) world.Tick();
+        plane.Apply(ClientAttack(2001UL, monsterId));
+        Assert.Equal(2, plane.CombatActionCount);
+        Assert.Equal(1, plane.CombatActionRateLimitedCount);
+    }
+
+    [Fact]
+    public void DataPlane_CombatAction_没有握手会话时丢弃并计数()
+    {
+        // 与 InputPacket 同等待遇：断线重连竞态不该刷错误日志，但必须有一条能看见的账，
+        // 否则"网关说发了、世界说没见过这个人"两种故障在日志里同形。
+        var world = NewWorld();
+        var plane = new DsDataPlaneHost(world, listenPort: 0);
+        world.Tick();   // 怪照常刷出来：这条要证的是"没握手的动作打不到它"，不是"世界里没有东西可打"
+
+        var monsterId = FirstMonsterId();
+        Assert.True(world.TryGetMonster(monsterId, out var before) && before != null);
+        var hpBefore = before!.Ai.Hp;
+
+        plane.Apply(ClientAttack(9999001UL, monsterId));
+
+        Assert.Equal(1, plane.CombatActionCount);
+        Assert.Equal(1, plane.CombatActionRejectedNoSessionCount);
+        world.Tick();
+        Assert.True(world.TryGetMonster(monsterId, out var after) && after != null);
+        Assert.Equal(hpBefore, after!.Ai.Hp);   // 冒名动作一格血都不该掉
     }
 }

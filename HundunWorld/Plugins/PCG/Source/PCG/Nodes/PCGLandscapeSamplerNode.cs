@@ -33,6 +33,7 @@ namespace PCG.Nodes
 
         // Parameter indices. Order is part of the saved graph format; append only.
         private const int PPointCount = 0;
+        private const int PPointsPerBlock = 9;
         private const int PJitter = 1;
         private const int PHeightOffset = 2;
         private const int PAlignToNormal = 3;
@@ -43,7 +44,7 @@ namespace PCG.Nodes
         private const int PSeedOffset = 8;
 
         /// <summary>Number of parameters this node reads. Used by the editor to size its value array.</summary>
-        public const int ParameterCount = 9;
+        public const int ParameterCount = 10;
 
         private readonly string _typeId;
         private readonly PCGNodeParameters _params;
@@ -75,9 +76,6 @@ namespace PCG.Nodes
         /// <summary>Added to the graph seed so two samplers in one graph do not jitter identically.</summary>
         public int SeedOffset;
 
-        /// <summary>Reported when the sampler could not run, for surfacing in the editor.</summary>
-        public string LastError { get; private set; }
-
         /// <summary>Creates the node from serialized parameters.</summary>
         public PCGLandscapeSamplerNode(PCGNodeRegistry.PCGNodeSerializationData data)
         {
@@ -85,6 +83,7 @@ namespace PCG.Nodes
             _params = new PCGNodeParameters(data.Values, data.TypeId);
 
             PointCount = Mathf.Max(0, _params.Get(PPointCount, 1000));
+            PointsPerBlock = Mathf.Max(0.0f, _params.Get(PPointsPerBlock, 0.0f));
             Jitter = Mathf.Clamp(_params.Get(PJitter, 0.5f), 0.0f, 1.0f);
             HeightOffset = _params.Get(PHeightOffset, 0.0f);
             AlignToNormal = _params.Get(PAlignToNormal, true);
@@ -115,14 +114,40 @@ namespace PCG.Nodes
 
         /// <inheritdoc />
         public override string DescribeParameters() =>
-            $"count={PointCount}, jitter={Jitter:F2}, mode={SampleMode}, align={AlignToNormal}, maxSlope={MaxSlopeDegrees:F1}";
+            $"count={PointCount}, jitter={Jitter:F2}, mode={SampleMode}, align={AlignToNormal}, " +
+            $"maxSlope={MaxSlopeDegrees:F1}, perBlock={PointsPerBlock:F1}";
+
+        /// <summary>
+        /// Points per <see cref="AreaBlockSide"/>² of XZ area, replacing Point Count when positive.
+        /// </summary>
+        /// <remarks>
+        /// The jittered grid already sizes its cell from the run's area over the count, so a fixed count means a
+        /// fixed count *per run* - per cell, once the graph is partitioned. Deriving the count from the area makes
+        /// the grid step depend only on the requested density (step = block side over the square root of the
+        /// per-block count), which is what lets the partition cell size stay a streaming knob. Same contract as
+        /// <see cref="PCGVolumeSamplerNode.PointsPerBlock"/>, including the round-up-to-one-point-per-cell bias.
+        /// </remarks>
+        public float PointsPerBlock;
+
+        /// <summary>The block side used by <see cref="PointsPerBlock"/>, in world units.</summary>
+        public const float AreaBlockSide = 1000.0f;
+
+        private static int PointsForArea(float widthX, float widthZ, float pointsPerBlock)
+        {
+            float area = widthX * widthZ;
+            if (area <= 0.0f)
+                return 0;
+
+            int count = (int)MathF.Ceiling(area / (AreaBlockSide * AreaBlockSide) * pointsPerBlock);
+            return count > 0 ? count : 1;
+        }
 
         /// <inheritdoc />
         public override PCGData OnExecute(PCGExecutionContext context, PCGData[] inputs)
         {
             LastError = null;
 
-            if (PointCount <= 0)
+            if (PointCount <= 0 && PointsPerBlock <= 0.0f)
                 return PCGData.Empty;
 
             if (context.World == null || !context.World.HasTerrain)
@@ -173,7 +198,13 @@ namespace PCG.Nodes
             float widthZ = bounds.Maximum.Z - bounds.Minimum.Z;
             double area = (double)widthX * widthZ;
 
-            float cellSize = Mathf.Sqrt((float)(area / PointCount));
+            // Resolved from the run's area when a per-block density is set, so the grid step depends only on the
+            // density and not on how the region happens to be cut into cells.
+            int count = PointsPerBlock > 0.0f
+                ? PointsForArea(widthX, widthZ, PointsPerBlock)
+                : PointCount;
+
+            float cellSize = Mathf.Sqrt((float)(area / count));
 
             int cellsX = Mathf.Max(1, (int)Mathf.Round(widthX / cellSize));
             int cellsZ = Mathf.Max(1, (int)Mathf.Round(widthZ / cellSize));
@@ -217,15 +248,9 @@ namespace PCG.Nodes
                     var rotation = Quaternion.Identity;
                     if (AlignToNormal)
                     {
-                        // LookRotation orients +Z along the given forward, so build a frame whose up is the
-                        // surface normal and whose forward stays as close to world +Z as possible.
-                        var up = sample.Normal;
-                        var forward = Vector3.Normalize(Vector3.Cross(up, Vector3.Right));
-                        if (forward.LengthSquared < 1e-6f)
-                            forward = Vector3.Normalize(Vector3.Cross(up, Vector3.Forward));
-
-                        rotation = Quaternion.LookRotation(new Float3(forward.X, forward.Y, forward.Z),
-                            new Float3(up.X, up.Y, up.Z));
+                        // Shared with the projection node: one definition of "standing on this surface", so a
+                        // sampled scatter and a projected one cannot disagree about which way is up.
+                        rotation = PCGSurfaceAlign.RotationFromNormal(sample.Normal);
                     }
 
                     var position = new Vector3(x, sample.Height + HeightOffset, z);

@@ -1,0 +1,17 @@
+{
+  "effectName": "Attributes_PlayerBase",
+  "durationType": "Instant",
+  "executeCalcTypeId": "",
+  "stackingType": "None",
+  "maxStacks": 1,
+  "assetTags": [
+    "Narrative.Effect.Attributes"
+  ],
+  "modifiers": [
+    {
+      "attributeName": "AttackDamage",
+      "modifierOp": "Add",
+      "magnitude": 10
+    }
+  ]
+}

@@ -1,13 +1,14 @@
-﻿using FlaxEngine;
+using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Team
 {
-    public class MenuTeamPage : ContainerControl, IInkPage
+    public class MenuTeamPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private Float2 _screenSize;
 
@@ -17,7 +18,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
         private Panel _sidebar;
         private Label _sidebarLogo;
         private Label _sidebarLogoSub;
-        private List<InkButton> _sidebarNavButtons;
+        private InkSidebarList _sidebarList;
 
         private Panel _mainArea;
         private Panel _topHeader;
@@ -39,6 +40,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
         private Panel _memberList;
         private List<Panel> _memberCards;
         private List<InkButton> _emptySlots;
+        private Label _memberEmptyLabel;
 
         private Panel _actionSection;
         private InkPanel _invitePanel;
@@ -47,6 +49,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
         private InkButton _searchButton;
         private Panel _friendList;
         private List<Panel> _friendRows;
+        private Label _inviteEmptyLabel;
 
         private InkPanel _settingsPanel;
         private Label _settingsTitle;
@@ -68,17 +71,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
         public event Action<string> NavigationRequested;
 
-        private string[] _teamMemberNames = { "无名侠", "剑随风", "花满楼" };
-        private string[] _teamMemberAvatars = { "无", "剑", "花" };
-        private string[] _teamMemberLevels = { "Lv.42", "Lv.38", "Lv.35" };
-        private string[] _teamMemberSects = { "逍遥派", "少林寺", "峨眉派" };
-        private bool[] _teamMemberOnline = { true, true, false };
-        private bool[] _teamMemberIsLeader = { true, false, false };
+        // 服务端还没有组队协议、客户端也没有 team handler/service：不再摆假队友与假候选人，
+        // 空数组由 BuildMemberSection / BuildActionSection 渲染成"未组队"空态（与 HUD 队伍面板同一口径）。
+        private string[] _teamMemberNames = System.Array.Empty<string>();
+        private string[] _teamMemberAvatars = System.Array.Empty<string>();
+        private string[] _teamMemberLevels = System.Array.Empty<string>();
+        private string[] _teamMemberSects = System.Array.Empty<string>();
+        private bool[] _teamMemberOnline = System.Array.Empty<bool>();
+        private bool[] _teamMemberIsLeader = System.Array.Empty<bool>();
 
-        private string[] _friendNames = { "叶知秋", "柳如烟", "萧无涯" };
-        private string[] _friendAvatars = { "叶", "柳", "萧" };
-        private string[] _friendLevels = { "Lv.40", "Lv.37", "Lv.36" };
-        private string[] _friendSects = { "丐帮", "唐门", "武当" };
+        private string[] _friendNames = System.Array.Empty<string>();
+        private string[] _friendAvatars = System.Array.Empty<string>();
+        private string[] _friendLevels = System.Array.Empty<string>();
+        private string[] _friendSects = System.Array.Empty<string>();
 
         private bool _autoAcceptEnabled = true;
         private int _minLevelValue = 30;
@@ -110,6 +115,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
                 ApplyLayout();
                 RefreshAllData();
+
+                // 顶栏身份接真实数据
+                InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelLabel, _goldLabel);
+                InkPlayerHeaderBinder.BindSect(_playerSectLabel);
             }
             catch (Exception ex)
             {
@@ -144,7 +153,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _sidebarLogo = new Label
             {
-                Text = "燕云",
+                Text = "混沌世界",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _sidebar
@@ -152,30 +161,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _sidebarLogoSub = new Label
             {
-                Text = "十六声",
+                Text = "江湖公测",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _sidebar
             };
 
-            _sidebarNavButtons = new List<InkButton>();
-            string[] navItems = { "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店", "角色", "装备", "设置" };
-            string[] navPaths = { "menu-quests", "menu-bestiary", "menu-martial-record", "menu-livelihood", "menu-team", "menu-mail", "menu-shop", "menu-personal-info", "menu-equipment", "settings" };
-
-            for (int i = 0; i < navItems.Length; i++)
+            // 侧边栏导航：共用控件渲染 InkSidebarNav 的完整清单（分组 + 超出可滚动）。
+            _sidebarList = new InkSidebarList(InkPageDomIds.NavTeam)
             {
-                bool isActive = navItems[i] == "组队";
-                InkButton btn = new InkButton
-                {
-                    Text = navItems[i],
-                    Height = 36,
-                    BackgroundColor = isActive ? InkWashTheme.GoldPrimary * 0.1f : Color.Transparent,
-                    TextColor = isActive ? InkWashTheme.GoldBright : InkWashTheme.PaperAged,
-                    Parent = _sidebar
-                };
-                btn.Clicked += () => OnNavClicked(navPaths[i]);
-                _sidebarNavButtons.Add(btn);
-            }
+                Parent = _sidebar,
+            };
+            _sidebarList.NavigationRequested += OnNavClicked;
         }
 
         private void BuildMainArea()
@@ -214,7 +211,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _playerNameLabel = new Label
             {
-                Text = "无名侠",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 TextColor = InkWashTheme.TextDefault,
                 Parent = _topHeader
@@ -222,7 +219,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _playerLevelLabel = new Label
             {
-                Text = "Lv.42",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.VermilionPrimary,
                 Parent = _topHeader
@@ -230,7 +227,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _playerSectLabel = new Label
             {
-                Text = "逍遥派",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _topHeader
@@ -238,7 +235,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _goldLabel = new Label
             {
-                Text = "12,450",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.TextDefault,
                 Parent = _topHeader
@@ -246,7 +243,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _jadeLabel = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.TextDefault,
                 Parent = _topHeader
@@ -280,7 +277,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _teamNameLabel = new Label
             {
-                Text = "逍遥小队",
+                Text = "未组队",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 TextColor = InkWashTheme.TextDefault,
                 Parent = _teamHeader
@@ -288,7 +285,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _teamCountLabel = new Label
             {
-                Text = "3/5",
+                Text = "0/5",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _teamHeader
@@ -296,7 +293,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
             _teamIdLabel = new Label
             {
-                Text = "编号 #2048",
+                Text = string.Empty,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 Parent = _teamHeader
@@ -389,18 +386,32 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
             }
 
             _emptySlots = new List<InkButton>();
-            for (int i = 0; i < 2; i++)
+            if (_teamMemberNames.Length > 0)
             {
-                InkButton slot = new InkButton
+                for (int i = 0; i < 2; i++)
                 {
-                    Text = "邀请加入",
-                    Height = 48,
-                    BackgroundColor = Color.Transparent,
+                    InkButton slot = new InkButton
+                    {
+                        Text = "邀请加入",
+                        Height = 48,
+                        BackgroundColor = Color.Transparent,
+                        TextColor = InkWashTheme.TextTertiary,
+                        Parent = _memberList
+                    };
+                    slot.Clicked += () => OnInviteSlotClicked();
+                    _emptySlots.Add(slot);
+                }
+            }
+            else
+            {
+                _memberEmptyLabel = new Label
+                {
+                    // 右侧「队伍设置」里的类型/分配/自动接受/最低等级目前只改高亮与本地字段，不落库也不生效
+                    Text = "暂无队友 · 组队功能与队伍设置均未接入服务端",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                     TextColor = InkWashTheme.TextTertiary,
                     Parent = _memberList
                 };
-                slot.Clicked += () => OnInviteSlotClicked();
-                _emptySlots.Add(slot);
             }
         }
 
@@ -425,10 +436,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
                 Parent = _invitePanel
             };
 
+            // 组队/好友搜索没有服务端通道：输入框只做提示、搜索按钮禁用，
+            // 避免"能打字、能点、什么都没发生"的死交互。
             _searchInput = new TextBox
             {
                 BackgroundColor = InkWashTheme.BaseDefault,
                 TextColor = InkWashTheme.TextDefault,
+                WatermarkText = "组队功能未接入，暂不可搜索",
+                WatermarkTextColor = InkWashTheme.TextTertiary,
                 Height = 36,
                 Parent = _invitePanel
             };
@@ -440,9 +455,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
                 Height = 36,
                 BackgroundColor = InkWashTheme.VermilionPrimary,
                 TextColor = InkWashTheme.PaperBright,
+                Enabled = false,
                 Parent = _invitePanel
             };
-            _searchButton.Clicked += OnSearchClicked;
 
             _friendList = new Panel
             {
@@ -451,6 +466,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
             };
 
             _friendRows = new List<Panel>();
+            if (_friendNames.Length == 0)
+            {
+                _inviteEmptyLabel = new Label
+                {
+                    Text = "暂无可邀请的队友 · 组队功能尚未接入服务端",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    TextColor = InkWashTheme.TextTertiary,
+                    Parent = _friendList
+                };
+            }
             for (int i = 0; i < _friendNames.Length; i++)
             {
                 Panel row = new Panel
@@ -624,19 +649,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
             if (_sidebarLogo != null)
             {
                 _sidebarLogo.Location = new Float2(20f, sidebarLogoY);
+                // 品牌改成「混沌世界」（4 字）后 20px Display 约 96px 宽：宽度与副标起点都要跟着放大，
+                // 否则品牌被裁成两字、副标压在它身上。
+                _sidebarLogo.Size = new Float2(100f, 33f);
             }
             if (_sidebarLogoSub != null)
             {
-                _sidebarLogoSub.Location = new Float2(20f + 22f * 2f + 6f, sidebarLogoY + 11f);
+                _sidebarLogoSub.Location = new Float2(20f + 100f + 8f, sidebarLogoY + 15f);
+                _sidebarLogoSub.Size = new Float2(90f, 16f);
             }
 
-            float navY = TopHeaderHeight + 16f;
-            foreach (var btn in _sidebarNavButtons)
-            {
-                btn.Location = new Float2(12f, navY);
-                btn.Size = new Float2(SidebarWidth - 24f, 36f);
-                navY += 38f;
-            }
+            _sidebarList.Layout(0f, TopHeaderHeight + 16f, SidebarWidth,
+                Mathf.Max(0f, sh - TopHeaderHeight - 16f));
 
             if (_mainArea != null)
             {
@@ -742,6 +766,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
                 slot.Size = new Float2(memberW, 48f);
                 memberCardY += 52f;
             }
+            if (_memberEmptyLabel != null)
+            {
+                _memberEmptyLabel.Location = new Float2(0f, 8f);
+                _memberEmptyLabel.Size = new Float2(memberW, 20f);
+            }
 
             foreach (var card in _memberCards)
             {
@@ -826,6 +855,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
                 row.Size = new Float2(actionW - PanelPadding * 2f, 44f);
                 friendRowY += 48f;
             }
+            if (_inviteEmptyLabel != null)
+            {
+                _inviteEmptyLabel.Location = new Float2(0f, 4f);
+                _inviteEmptyLabel.Size = new Float2(actionW - PanelPadding * 2f, 20f);
+            }
 
             foreach (var row in _friendRows)
             {
@@ -862,7 +896,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
             if (_settingsPanel != null)
             {
                 _settingsPanel.Location = new Float2(0f, 270f);
-                _settingsPanel.Size = new Float2(actionW, 200f);
+                // 面板里四行：队伍类型 / 自动接受 / 最低等级滑条 / 分配方式。
+                // 最后一行从 settingsY=184 起、高 28，底边 212 —— 原来的 200 高会把这一行切掉。
+                _settingsPanel.Size = new Float2(actionW, 232f);
             }
 
             if (_settingsTitle != null)
@@ -899,7 +935,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
             }
             if (_minLevelValueLabel != null)
             {
+                // 宽度必须显式给 50：标签默认 100 宽会伸出面板右边界 30px
                 _minLevelValueLabel.Location = new Float2(actionW - PanelPadding - 50f, settingsY);
+                _minLevelValueLabel.Size = new Float2(50f, 20f);
             }
             settingsY += 44f;
 
@@ -925,17 +963,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Team
 
         private void OnBackToHud()
         {
-            NavigationRequested?.Invoke("combat-hud");
+            NavigationRequested?.Invoke(InkPageDomIds.CombatHud);
         }
 
         private void OnInviteSlotClicked()
         {
             FlaxEngine.Debug.Log("[MenuTeamPage] 邀请入队");
-        }
-
-        private void OnSearchClicked()
-        {
-            FlaxEngine.Debug.Log($"[MenuTeamPage] 搜索: {_searchInput.Text}");
         }
 
         private void OnInviteFriendClicked(string friendName)

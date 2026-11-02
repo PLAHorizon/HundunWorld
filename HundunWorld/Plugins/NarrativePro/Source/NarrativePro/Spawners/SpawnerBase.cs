@@ -67,7 +67,19 @@ namespace NarrativePro.Spawners
             }
         }
 
-        /// <summary>移除所有已生成的 Actor。子类可覆盖以实现具体移除逻辑。</summary>
+        /// <summary>
+        /// 移除所有已生成的 Actor。子类可覆盖以实现具体移除逻辑。
+        /// 对应 UE5 <c>ASpawnerBase::RemoveActors</c>（SpawnerBase.cpp:99-115）：
+        /// 先过 <c>ShouldDespawnActor()</c> 这道门（:108），再调 <c>TryDespawnActor()</c>（:110）。
+        /// <para>
+        /// 修正：此前端口直接调 <c>comp.RemoveActor()</c>，绕开了 TryDespawnActor —— 而「玩家在
+        /// UntetherDistance 内就把 NPC 栓系到本地控制器、不反生成」这条规则（UE5
+        /// NPCSpawnComponent.cpp:159-181）恰好长在 TryDespawnActor 里，绕开它等于整个栓系/找回
+        /// 通路（NPCSpawnComponent.SpawnActor 的 bTetheredToPlayer 分支）永远不会被触发。
+        /// 基类组件的 TryDespawnActor 本身就是 ShouldDespawnActor + RemoveActor
+        /// （SpawnComponent.cpp:33-36），所以对非 NPC 组件行为不变。
+        /// </para>
+        /// </summary>
         public virtual void RemoveActors()
         {
             var spawnComponents = Actor.GetScripts<SpawnComponent>();
@@ -75,9 +87,10 @@ namespace NarrativePro.Spawners
 
             foreach (var comp in spawnComponents)
             {
-                if (comp != null)
+                if (comp == null) continue;
+                if (comp.ShouldDespawnActor())
                 {
-                    comp.RemoveActor();
+                    comp.TryDespawnActor();
                 }
             }
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
@@ -73,6 +73,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             }
 
             AnchorPreset = AnchorPresets.StretchAll;
+            // 本页按设计源是浮层模态：遮罩是它自己的背景，保留自绘。
             BackgroundColor = InkWashTheme.Scrim;
             ClipChildren = false;
             AutoFocus = true;
@@ -203,7 +204,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _scoreValue = new InkTextBlock(InkTextStyle.Number)
             {
-                Text = "8,650",
+                // 得分由 SetScore(...) 写入；没有调用方时不能显示设计稿的 8,650
+                Text = "—",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(TitleX, ScoreValueY),
                 Size = new Float2(TitleWidth, ScoreValueSize),
@@ -320,7 +322,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
         {
             _bestScoreText = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "最高记录: 8,650",
+                // 最高记录同样没有存储来源（本地没有小游戏成绩表），不摆设计稿数值
+                Text = "最高记录：—",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(TitleX, BestScoreY),
                 Size = new Float2(TitleWidth, 20f),
@@ -391,7 +394,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             if (_newRecordTag != null)
                 _newRecordTag.Visible = isNewRecord;
             if (_bestScoreText != null)
-                _bestScoreText.Text = $"最高记录: {score.ToString("N0")}";
+                _bestScoreText.Text = $"最高记录：{score.ToString("N0")}";
         }
 
         public void SetGrade(char grade, int stars)

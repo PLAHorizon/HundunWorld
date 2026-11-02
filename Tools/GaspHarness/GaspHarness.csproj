@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>GaspHarness</AssemblyName>
+    <RootNamespace>GaspHarness</RootNamespace>
+    <RestorePackages>false</RestorePackages>
+    <FlaxRoot Condition="'$(FlaxRoot)' == ''">C:\Program Files (x86)\Flax\Flax_1.13</FlaxRoot>
+    <GameConfig Condition="'$(GameConfig)' == ''">Debug</GameConfig>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(FlaxRoot)\Binaries\Editor\Win64\$(GameConfig)\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Game.CSharp">
+      <HintPath>..\..\HundunWorld\Binaries\GameEditorTarget\Windows\x64\$(GameConfig)\Game.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

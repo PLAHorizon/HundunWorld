@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <!--
+      T8 的行为级回归要连**真在跑的集群**（进程内构造 Grain 会让 vstest 的 testhost 静默秒退，
+      见 docs/QUEST_SYSTEM_DESIGN.md §7.2）。这里只要 Orleans 客户端 + Redis 成员提供方，
+      不引 Gateway/Silo 工程——那三个是常驻进程，它们的 bin 被自己锁住，会把整个测试工程一起拖进
+      "复制失败 → 测不了"（2026-10-06 就是这样被并行会话的在途改动挡住过一次）。
+      所以任务侧的活集群门禁住在本工程，环境门控 HORIZON_ORLEANS_REDIS。
+    -->
+    <PackageReference Include="Microsoft.Orleans.Clustering.Redis" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <!--
+      网关处理链这一层要"假集群 + 真注册表 + 真裁决函数"地跑行为断言（见 QuestHandlerInteractTests），
+      需要 Moq 造 IClusterClient/IQuestGrain 这类**接口**。
+      注意边界：Moq 只许代理接口，绝不用它代理 IPersistentState 去进程内构造 Grain——
+      那条路会让 vstest 的 testhost 静默秒退（docs/QUEST_SYSTEM_DESIGN.md §7.2）。
+    -->
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      只引用任务契约链路上的四个程序集，刻意不带 Gateway/Silo/DsHost：
+      那三个是常驻进程，Silo/Gateway 一起跑时它们的 bin 被自己锁住，
+      连带把测试工程一起拖进"复制失败 → 测不了"的境地（本仓库已踩过）。
+      任务契约测试不需要集群，就该能在集群跑着的时候单独跑。
+    -->
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
+    <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
+    <ProjectReference Include="..\Horizon.Orleans.Grains\Horizon.Orleans.Grains.csproj" />
+    <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
+    <!-- 数据库闭环测试要直接驱动 CLI 用的那一份 QuestStore（同一个实现，不是复刻）。 -->
+    <ProjectReference Include="..\Horizon.QuestCli\Horizon.QuestCli.csproj" />
+  </ItemGroup>
+
+</Project>

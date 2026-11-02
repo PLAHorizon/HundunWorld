@@ -1,0 +1,110 @@
+﻿-- 006_seed_equipment_item_templates.sql
+-- 把客户端 EquipmentDatabase 的装备定义落成服务端物品模板行，让装备的五行三行进入权威结算。
+--
+-- base_attributes 的键名就是 Horizon.Game.Core.Combat.ItemAttributeContract 认的那一套
+-- （AttributeType 成员名 + HP/MP 短名），行号 1..5 = 金木水火土。
+-- 装备五行三行的分配口径（2026-09-29 确认）：武器→五行攻击力、身体护甲→五行防御力、配饰→五行破防值，
+-- 数值沿用该装备原有的五行亲和值；包裹只有亲和，不进战斗三行。
+-- element 列的历史注释是另一套编号（0-金…5-无），与战斗侧不同，因此这里一律写 0 不使用它，
+-- 五行只看 base_attributes 的显式键，避免两套编号互相误读。
+-- 可重复执行：已存在的行只刷新 base_attributes，不覆盖内容组改过的其他列。
+
+SET NOCOUNT ON;
+-- item_id 是 IDENTITY 列：显式写 id 才能与客户端 EquipmentDatabase 的编号一一对上
+SET IDENTITY_INSERT dbo.Game_HunduShijie_ItemTemplate ON;
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10001)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Defense":10.0,"HP":50.0,"EarthDefense":20}', update_time = GETUTCDATE() WHERE item_id = 10001;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10001, N'默认衣服', N'新手初始衣物，提供基础防护。', 0, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Defense":10.0,"HP":50.0,"EarthDefense":20}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultBody.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 20001)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Attack":15.0,"MetalAttack":30}', update_time = GETUTCDATE() WHERE item_id = 20001;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (20001, N'默认长剑', N'新手练习用长剑，锋锐不足但足以防身。', 2, 0, 2, 2, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Attack":15.0,"MetalAttack":30}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultLongsword.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 30001)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"MP":30.0,"Defense":5.0,"WoodPenetration":15}', update_time = GETUTCDATE() WHERE item_id = 30001;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (30001, N'默认头巾', N'朴素头巾，可略微提升内力恢复。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"MP":30.0,"Defense":5.0,"WoodPenetration":15}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultHeadScarf.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10002)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"MP":20.0,"WoodPenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10002;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10002, N'新手项链', N'朴素的木质项链，可略微提升内力恢复。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"MP":20.0,"WoodPenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultNecklace.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10003)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Defense":5.0,"HP":20.0,"EarthPenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10003;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10003, N'新手护肩', N'皮质护肩，能缓冲部分冲击。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Defense":5.0,"HP":20.0,"EarthPenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultShoulderGuard.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10004)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Defense":3.0,"WaterPenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10004;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10004, N'新手披风', N'粗糙的亚麻披风，可遮挡风尘。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Defense":3.0,"WaterPenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultCloak.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10005)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"HP":30.0,"EarthPenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10005;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10005, N'新手腰带', N'结实的布腰带，可悬挂随身物品。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"HP":30.0,"EarthPenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultBelt.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10006)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Defense":6.0,"HP":20.0,"EarthDefense":15}', update_time = GETUTCDATE() WHERE item_id = 10006;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10006, N'新手长裤', N'耐穿的布裤，适合长途跋涉。', 0, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Defense":6.0,"HP":20.0,"EarthDefense":15}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultLeggings.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10007)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Defense":4.0,"WaterDefense":10}', update_time = GETUTCDATE() WHERE item_id = 10007;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10007, N'新手布鞋', N'轻便的布鞋，行走时悄无声息。', 0, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Defense":4.0,"WaterDefense":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultShoes.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10008)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Attack":10.0,"MetalAttack":20}', update_time = GETUTCDATE() WHERE item_id = 10008;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10008, N'新手短剑', N'新手练习用短剑，灵活轻巧。', 2, 0, 2, 2, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Attack":10.0,"MetalAttack":20}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultDagger.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10009)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Attack":3.0,"MetalPenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10009;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10009, N'新手右戒指', N'铁环戒指，微微提升力量。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Attack":3.0,"MetalPenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultRightRing.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10010)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"MP":15.0,"WoodPenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10010;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10010, N'新手左戒指', N'木质戒指，蕴含一丝自然灵气。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"MP":15.0,"WoodPenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultLeftRing.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10011)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Defense":4.0,"EarthPenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10011;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10011, N'新手右手腕', N'皮质护腕，保护右手腕关节。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Defense":4.0,"EarthPenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultRightWrist.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10012)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"MP":10.0,"WaterPenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10012;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10012, N'新手左手腕', N'布质护腕，便于左手灵活施法。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"MP":10.0,"WaterPenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultLeftWrist.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 10013)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"Attack":2.0,"Defense":2.0,"FirePenetration":10}', update_time = GETUTCDATE() WHERE item_id = 10013;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (10013, N'新手面具', N'木制面具，可威慑弱小的野兽。', 1, 0, 1, 1, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"Attack":2.0,"Defense":2.0,"FirePenetration":10}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/DefaultMask.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 2001)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"HP":10.0}', update_time = GETUTCDATE() WHERE item_id = 2001;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (2001, N'粗布小包', N'粗布缝制的小型背包，可扩展 6 个格子。', 3, 0, 0, 0, 0, 0, 1, 0, '', 1, 0, 0, N'', N'{"HP":10.0}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/SmallClothBag.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 2002)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"HP":20.0,"Defense":3.0}', update_time = GETUTCDATE() WHERE item_id = 2002;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (2002, N'皮革中包', N'坚韧皮革缝制的中型背包，可扩展 12 个格子。', 3, 0, 1, 1, 0, 0, 10, 0, '', 1, 0, 0, N'', N'{"HP":20.0,"Defense":3.0}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/MediumLeatherBag.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 2003)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"HP":30.0,"Defense":6.0}', update_time = GETUTCDATE() WHERE item_id = 2003;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (2003, N'丝绸大包', N'丝绸织就的大型背包，轻便而结实，可扩展 18 个格子。', 3, 0, 2, 2, 0, 0, 30, 0, '', 1, 0, 0, N'', N'{"HP":30.0,"Defense":6.0}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/LargeSilkBag.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+IF EXISTS (SELECT 1 FROM Game_HunduShijie_ItemTemplate WHERE item_id = 2004)
+    UPDATE Game_HunduShijie_ItemTemplate SET base_attributes = N'{"HP":50.0,"Defense":10.0}', update_time = GETUTCDATE() WHERE item_id = 2004;
+ELSE
+    INSERT INTO Game_HunduShijie_ItemTemplate (item_id, item_name, description, item_type, sub_type, base_quality, rarity, element, material_grade, level_require, realm_require, profession_limit, max_stack, drop_rate, source_type, source_detail, base_attributes, random_attributes, random_attr_count, gem_slot_rates, synthesis_recipe, inherit_rate, element_bonus, element_penalty, bind_type, sell_price, buy_price, icon_path, model_path, use_effect, can_trade, can_destroy, is_unique, valid_days, create_time, update_time, IsValid, GameId, AreaId, ServerId, GameUserId) VALUES (2004, N'龙皮巨包', N'以龙皮缝制的巨型背包，蕴含龙气，可扩展 20 个格子。', 3, 0, 3, 3, 0, 0, 50, 0, '', 1, 0, 0, N'', N'{"HP":50.0,"Defense":10.0}', N'', '', '', N'', '', 1.00, 1.00, 0, 0, 0, N'Content/Icons/Equipment/HugeDragonBag.flax', '', N'', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE(), 1, 0, 0, 0, '00000000-0000-0000-0000-000000000000');
+
+SET IDENTITY_INSERT dbo.Game_HunduShijie_ItemTemplate OFF;

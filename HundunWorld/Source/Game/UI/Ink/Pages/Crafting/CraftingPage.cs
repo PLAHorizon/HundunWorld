@@ -12,7 +12,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
     /// + 中栏（配方网格+配方详情）+ 右栏（预览+属性+进度+批量+日志）。
     /// 严格遵循水墨主题 Token，禁止硬编码色值。
     /// </summary>
-    public class CraftingPage : ContainerControl, IInkPage
+    public class CraftingPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private static readonly Float2 MainPanelSize = new Float2(1400f, 900f);
         private const float TopBarHeight = 52f;
@@ -41,7 +41,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
         private ContainerControl _midCol;
         private ContainerControl _recipeGrid;
         private RecipeCard[] _recipeCards;
+        private Label _recipeCountLabel;
         private int _selectedRecipe = 0;
+
+        /// <summary>当前绑定的制作 NPC/设施实体 id；0 = 未连接（页面仍是演示数据）。</summary>
+        private ulong _vendorEntityId;
+
+        /// <summary>服务端给的配方清单（空 = 还没拿到）。</summary>
+        private Horizon.Game.Message.Network.CraftingRecipe[] _serverRecipes =
+            System.Array.Empty<Horizon.Game.Message.Network.CraftingRecipe>();
+
+        /// <summary>当前选中配方的 id（服务端按它结算；0 = 没选）。</summary>
+        private int _selectedRecipeId;
+
+        /// <summary>已渲染的商店/制作数据版本（与服务端回执对账）。</summary>
+        private int _lastCraftRevision = -1;
+
+        /// <summary>右侧"制作"按钮与它上面的状态行（原来只是一块装饰文本）。</summary>
+        private Control _craftAction;
+        private Label _craftStatusLabel;
 
         // 右栏
         private ContainerControl _rightCol;
@@ -58,7 +76,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
             {
                 AnchorPreset = AnchorPresets.StretchAll;
                 Offsets = Margin.Zero;
-                BackgroundColor = InkWashTheme.Scrim;
+                // 全屏铺底由外壳的墨底背景层统一提供（本页为沉浸式全屏页），页面不再自绘。
+                BackgroundColor = Color.Transparent;
                 ClipChildren = false;
                 AutoFocus = false;
 
@@ -118,6 +137,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
                 Variant = InkButtonVariant.Secondary,
                 ButtonSize = InkButtonSize.Sm,
                 Text = "搜索配方",
+                Enabled = false, // 配方搜索没有实现，按钮保持可见但不可点，不摆假动作
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(MainPanelSize.X - 24f - 36f - 8f - 100f, (TopBarHeight - 28f) * 0.5f),
                 Size = new Float2(100f, 28f),
@@ -200,11 +220,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
             var skills = new (string elemChar, InkWashTheme.InkElement elem, string name,
                               string sub, int lvl, float prog)[]
             {
-                ("金", InkWashTheme.InkElement.Metal, "锻造", "武器·防具", 40, 0.40f),
-                ("木", InkWashTheme.InkElement.Wood,  "制药", "丹药",       35, 0.35f),
-                ("水", InkWashTheme.InkElement.Water, "织造", "衣袍",       28, 0.28f),
-                ("火", InkWashTheme.InkElement.Fire,  "烹饪", "食物",       42, 0.42f),
-                ("金", InkWashTheme.InkElement.Metal, "机关", "暗器·道具", 20, 0.20f),
+                // 生活技能等级没有服务端数据：全部 0 级、进度 0（2026-10-29）
+                ("金", InkWashTheme.InkElement.Metal, "锻造", "武器·防具", 0, 0f),
+                ("木", InkWashTheme.InkElement.Wood,  "制药", "丹药",       0, 0f),
+                ("水", InkWashTheme.InkElement.Water, "织造", "衣袍",       0, 0f),
+                ("火", InkWashTheme.InkElement.Fire,  "烹饪", "食物",       0, 0f),
+                ("金", InkWashTheme.InkElement.Metal, "机关", "暗器·道具", 0, 0f),
             };
 
             float itemW = LeftWidth - Pad * 2f;
@@ -303,8 +324,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
             // 区头：锻造配方 + 8 个配方 + 全部
             listWrap.AddChild(MakeLabel("锻造配方", 20f, 0f, 160f, SectionHeadHeight,
                 InkWashTheme.GoldPrimary, 16f, InkWashTheme.FontRole.Display, TextAlignment.Near));
-            listWrap.AddChild(MakeLabel("8 个配方", midW - 20f - 150f, 0f, 80f, SectionHeadHeight,
-                InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Far));
+            // 计数标签放在「全部」TagBox（宽 60、右距 20）左侧并留 8px 间隙，避免文字被 TagBox 压住
+            _recipeCountLabel = MakeLabel("示例 · 8 个配方", midW - 20f - 60f - 8f - 170f, 0f, 170f, SectionHeadHeight,
+                InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Far);
+            listWrap.AddChild(_recipeCountLabel);
             var filterBtn = new TagBox("全部", InkWashTheme.TextSecondary, InkWashTheme.BorderFaint, Color.Transparent)
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -326,13 +349,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
             var recipes = new (string glyph, string name, string lvl,
                                InkWashTheme.InkQuality q, bool locked)[]
             {
-                ("剑", "玄铁剑",   "40", InkWashTheme.InkQuality.Legendary, false),
-                ("刀", "寒铁刀",   "35", InkWashTheme.InkQuality.Epic,      false),
-                ("盾", "玄铁盾",   "30", InkWashTheme.InkQuality.Rare,      false),
-                ("腕", "精铁护腕", "25", InkWashTheme.InkQuality.Rare,      false),
-                ("盔", "精钢头盔", "20", InkWashTheme.InkQuality.Uncommon,  false),
-                ("枪", "铁质长枪", "10", InkWashTheme.InkQuality.Common,    false),
-                ("匕", "青铜匕首", "5",  InkWashTheme.InkQuality.Common,    false),
+                ("剑", "玄铁剑",   "40", InkWashTheme.InkQuality.Legendary, true),
+                ("刀", "寒铁刀",   "35", InkWashTheme.InkQuality.Epic,      true),
+                ("盾", "玄铁盾",   "30", InkWashTheme.InkQuality.Rare,      true),
+                ("腕", "精铁护腕", "25", InkWashTheme.InkQuality.Rare,      true),
+                ("盔", "精钢头盔", "20", InkWashTheme.InkQuality.Uncommon,  true),
+                ("枪", "铁质长枪", "10", InkWashTheme.InkQuality.Common,    true),
+                ("匕", "青铜匕首", "5",  InkWashTheme.InkQuality.Common,    true),
                 ("甲", "寒铁战甲", "45", InkWashTheme.InkQuality.Common,    true),
             };
 
@@ -465,10 +488,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
             // 信息网格（2 列 x 2 行）
             var infos = new (string label, string value, bool jade)[]
             {
-                ("制作时间", "30 秒",   false),
-                ("成功率",   "85%",     true),
-                ("银两消耗", "2,000 两", false),
-                ("技艺经验", "+150",    false),
+                // 制作参数没有服务端数据：一律「—」
+                ("制作时间", "—", false),
+                ("成功率",   "—", true),
+                ("银两消耗", "—", false),
+                ("技艺经验", "—", false),
             };
             float infoW = (midW - 40f - 8f) * 0.5f;
             for (int i = 0; i < infos.Length; i++)
@@ -678,7 +702,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
                 bx += 74f + 8f;
             }
 
-            var craftBtn = new ContainerControl
+            var craftBtn = new ClickTarget
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(16f, 52f),
@@ -687,8 +711,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
             };
             actionSection.AddChild(craftBtn);
             craftBtn.AddChild(new CraftBox(InkWashTheme.GoldDeep, Color.Transparent, 6f));
-            craftBtn.AddChild(MakeLabel("材料不足 · 2,000 两", 0f, 0f, innerW, 40f,
-                InkWashTheme.TextTertiary, 14f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+            _craftStatusLabel = MakeLabel("演示数据 · 未连接制作设施", 0f, 0f, innerW, 40f,
+                InkWashTheme.TextTertiary, 14f, InkWashTheme.FontRole.Body, TextAlignment.Center);
+            craftBtn.AddChild(_craftStatusLabel);
+
+            // 真的"制作"按钮：接了设施就发服务端请求；没接时只提示，不假装做成了。
+            _craftAction = craftBtn;
+            craftBtn.Clicked += OnCraftClicked;
             cy += 104f;
 
             // 制作日志
@@ -723,7 +752,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
                 };
                 logSection.AddChild(row);
                 row.AddChild(new CraftBox(InkWashTheme.BaseElevated, Color.Transparent, 4f));
-                row.AddChild(MakeLabel(l.success ? "✓" : "✕", 8f, 0f, 14f, 24f,
+                row.AddChild(MakeLabel(l.success ? "√" : "×", 8f, 0f, 14f, 24f,
                     l.success ? InkWashTheme.JadeBright : InkWashTheme.BloodBright,
                     12f, InkWashTheme.FontRole.Body, TextAlignment.Center));
                 row.AddChild(MakeLabel(l.name, 28f, 0f, innerW - 28f - 48f, 24f,
@@ -744,6 +773,137 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
             for (int i = 0; i < _recipeCards.Length; i++)
                 _recipeCards[i].IsSelected = (i == index);
             _selectedRecipe = index;
+
+            // 服务端模式下把"选中了哪张配方、要多少工费"写出来，玩家才知道点制作会发生什么。
+            if (_vendorEntityId != 0 && index >= 0 && index < _serverRecipes.Length && _craftStatusLabel != null)
+            {
+                var recipe = _serverRecipes[index];
+                _selectedRecipeId = recipe.RecipeId;
+                _craftStatusLabel.Text = recipe.RequiredGold > 0
+                    ? $"{recipe.Name} · 工费 {recipe.RequiredGold}"
+                    : recipe.Name;
+                _craftStatusLabel.TextColor = InkWashTheme.TextSecondary;
+            }
+        }
+
+        /// <summary>由交互入口调用：绑定制作 NPC/设施并拉清单。</summary>
+        public void OpenForVendor(ulong entityId)
+        {
+            _vendorEntityId = entityId;
+            _lastCraftRevision = -1;
+            HundunWorld.Game.Network.CraftClientService.Instance.RequestList(entityId);
+        }
+
+        /// <summary>回包在连接线程写缓存，这里在主线程发现版本变了才重绘。</summary>
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            // 交互入口可能已经把页面打开（路由复用实例），这里取走"这次要绑定哪个 NPC/设施"。
+            var requestedVendor = HundunWorld.Game.Network.CraftClientService.Instance.TakeRequestedVendor();
+            if (requestedVendor != 0) OpenForVendor(requestedVendor);
+
+            if (_vendorEntityId == 0) return;
+
+            var service = HundunWorld.Game.Network.CraftClientService.Instance;
+            if (service.Revision == _lastCraftRevision) return;
+
+            _lastCraftRevision = service.Revision;
+            ApplyServerRecipes(service.Recipes, service.LastNotice);
+        }
+
+        private void OnCraftClicked()
+        {
+            if (_vendorEntityId == 0)
+            {
+                if (_craftStatusLabel != null)
+                {
+                    _craftStatusLabel.Text = "未连接制作设施，只能看演示数据";
+                    _craftStatusLabel.TextColor = InkWashTheme.VermilionPrimary;
+                }
+
+                return;
+            }
+
+            if (_selectedRecipeId <= 0)
+            {
+                if (_craftStatusLabel != null) _craftStatusLabel.Text = "先选一张配方";
+                return;
+            }
+
+            if (HundunWorld.Game.Network.CraftClientService.Instance.Craft(_vendorEntityId, _selectedRecipeId))
+            {
+                if (_craftStatusLabel != null) _craftStatusLabel.Text = "已发送制作请求…";
+            }
+        }
+
+        /// <summary>
+        /// 用服务端清单重建卡片。
+        /// <para><b>必须重建</b>：<see cref="RecipeCard"/> 在构造期就把名字/等级读进子控件，
+        /// 只改数组不会刷新任何字。旧卡先解绑再释放，避免叠在网格里。</para>
+        /// </summary>
+        private void ApplyServerRecipes(Horizon.Game.Message.Network.CraftingRecipe[] recipes, string notice)
+        {
+            _serverRecipes = recipes ?? System.Array.Empty<Horizon.Game.Message.Network.CraftingRecipe>();
+
+            if (_recipeCards != null)
+            {
+                for (int i = 0; i < _recipeCards.Length; i++)
+                {
+                    if (_recipeCards[i] == null) continue;
+                    _recipeCards[i].Parent = null;
+                    _recipeCards[i].Dispose();
+                }
+            }
+
+            int count = _serverRecipes.Length;
+            _recipeCards = new RecipeCard[count];
+
+            const int cols = 4;
+            const float gridPadX = 20f;
+            const float gap = 12f;
+            const float cardH = 100f;
+            float midW = _recipeGrid != null ? _recipeGrid.Size.X : 0f;
+            float cardW = midW > 0f ? (midW - gridPadX * 2f - gap * (cols - 1)) / cols : 160f;
+
+            for (int i = 0; i < count; i++)
+            {
+                var recipe = _serverRecipes[i];
+                int col = i % cols;
+                int row = i / cols;
+
+                var card = new RecipeCard(
+                    string.IsNullOrEmpty(recipe.Name) ? "配" : recipe.Name.Substring(0, 1),
+                    string.IsNullOrEmpty(recipe.Name) ? ("配方 #" + recipe.RecipeId) : recipe.Name,
+                    recipe.RequiredLevel > 0 ? ("Lv." + recipe.RequiredLevel) : "—",
+                    InkWashTheme.InkQuality.Common,
+                    false,
+                    i == 0)
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(gridPadX + col * (cardW + gap), row * (cardH + gap)),
+                    Size = new Float2(cardW, cardH),
+                };
+
+                int captured = i;
+                card.Clicked += () => OnRecipeClicked(captured);
+                _recipeCards[i] = card;
+                if (_recipeGrid != null) _recipeGrid.AddChild(card);
+            }
+
+            _selectedRecipe = count > 0 ? 0 : -1;
+            _selectedRecipeId = count > 0 ? _serverRecipes[0].RecipeId : 0;
+
+            if (_recipeCountLabel != null)
+                _recipeCountLabel.Text = $"{count} 个配方";
+
+            if (_craftStatusLabel != null)
+            {
+                _craftStatusLabel.Text = string.IsNullOrEmpty(notice)
+                    ? $"可用配方 {count} 个"
+                    : notice;
+                _craftStatusLabel.TextColor = InkWashTheme.TextSecondary;
+            }
         }
 
         private void OnBatchClicked(int index)
@@ -909,6 +1069,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Crafting
         }
 
         /// <summary>配方卡片（品质边框 + 图标字 + 名 + 等级，选中金辉/锁定灰）。</summary>
+        /// <summary>
+        /// 可点区域：ContainerControl 本身没有 Clicked 事件，这里按本页既有的
+        /// <c>OnMouseUp</c> + <c>event Action Clicked</c> 惯例补一个最小实现。
+        /// </summary>
+        private sealed class ClickTarget : ContainerControl
+        {
+            public event Action Clicked;
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left) Clicked?.Invoke();
+                return true;
+            }
+        }
+
         private sealed class RecipeCard : Control
         {
             private readonly string _glyph;

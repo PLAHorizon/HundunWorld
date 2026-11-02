@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
@@ -253,7 +253,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Reward
                 new AttributeChange { Name = "内力", OldValue = 2000, NewValue = 2200 },
             };
 
-            // 3. 外壳：全屏拉伸 + 半透明遮罩 + 不裁剪子控件
+            // 3. 外壳：全屏拉伸 + 半透明遮罩 + 不裁剪子控件（本页按设计源是浮层模态，遮罩自绘）
             AnchorPreset = AnchorPresets.StretchAll;
             BackgroundColor = InkWashTheme.Scrim;
             ClipChildren = false;

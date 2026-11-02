@@ -1,3 +1,4 @@
+using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.Navigation;
@@ -135,6 +136,27 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// <summary>小地图显示半径（世界单位）：以玩家为中心，超出该半径的标记不显示。</summary>
         public float NavigationRange { get; set; } = 30000f;
 
+        /// <summary>小地图可视范围的最近/最远边界（世界单位）。</summary>
+        public const float MinNavigationRange = 200f;
+        public const float MaxNavigationRange = 8000f;
+
+        /// <summary>
+        /// 按倍率缩放小地图可视范围，并立即重投影点位。
+        /// <paramref name="factor"/> &lt; 1 = 放大（看得更近），&gt; 1 = 缩小（看得更远）。
+        /// </summary>
+        public void ZoomBy(float factor)
+        {
+            if (factor <= 0f) return;
+
+            float next = Mathf.Clamp(NavigationRange * factor, MinNavigationRange, MaxNavigationRange);
+            if (Mathf.Abs(next - NavigationRange) < 0.01f) return;
+
+            NavigationRange = next;
+
+            // 不等 0.5s 的刷新节流：按钮按下去就该立刻看到远近变化
+            RefreshFromNavigation();
+        }
+
         /// <summary>从 NarrativePro 导航刷新点位的时间间隔（秒）。</summary>
         public float NavigationRefreshInterval { get; set; } = 0.5f;
 
@@ -181,6 +203,29 @@ namespace HundunWorld.Game.UI.Ink.Components
 
             _navPathOrigin = playerPos;
             _hasNavPathOrigin = true;
+        }
+
+        /// <summary>
+        /// 左键点击圆盘内部（不含外圈装饰）时触发。战斗 HUD 用它打开大地图——
+        /// 小地图只显示附近一小圈，玩家点它通常是想看更大的范围。
+        /// </summary>
+        public event Action Clicked;
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left)
+            {
+                var center = new Float2(Width * 0.5f, Height * 0.5f);
+                float radius = Mathf.Min(Width, Height) * 0.5f;
+                if (radius > 0f && Float2.Distance(location, center) <= radius)
+                {
+                    Clicked?.Invoke();
+                    return true;
+                }
+            }
+
+            return base.OnMouseUp(location, button);
         }
 
         /// <summary>
@@ -261,6 +306,11 @@ namespace HundunWorld.Game.UI.Ink.Components
 
             float innerRadius = Mathf.Max(0f, radius - RingThickness);
             float entityRadius = Mathf.Max(0f, radius - RingThickness - EntityPadding);
+
+            // 圆内底色：HUD 叠在 3D 世界上，亮场景（雪地/沙漠）里没有底色时圆盘与方位字几乎看不见。
+            // 半透明墨底（0.5）既压住背景又保留一点透视感，与 HUD 其它浮层口径一致。
+            var discBase = InkWashTheme.BaseDefault;
+            InkRenderHelper.FillCircle(center, radius, new Color(discBase.R, discBase.G, discBase.B, 0.50f));
 
             // 1. 雷达样式专属：四方位点 + 同心圆网格（普通圆形不画，保持圆内干净）
             if (FrameStyle == InkMinimapFrameStyle.Radar)

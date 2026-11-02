@@ -1,0 +1,47 @@
+﻿{
+  "$type": "NarrativeItem",
+  "itemClassId": "item_herb",
+  "displayName": "三七药草",
+  "description": "山道阴坡产的三七，晒干后入药，是冬备方子里的主料。",
+  "weight": 0.2,
+  "baseValue": 15,
+  "baseScore": 0,
+  "bStackable": true,
+  "maxStackSize": 10,
+  "thumbnailPath": "",
+  "useSoundPath": "",
+  "pickupMeshData": {
+    "pickupMeshPath": "Content/Models/Items/SM_Item_Herb",
+    "pickupMeshMaterialPaths": [
+      "Content/Materials/M_ItemHerb"
+    ],
+    "pickupOffset": {
+      "translation": {
+        "x": 0.0,
+        "y": 45.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      }
+    }
+  },
+  "useActionText": "查看",
+  "bCanActivate": false,
+  "bAddDefaultUseOption": false,
+  "stats": [
+    {
+      "statDisplayName": "药效",
+      "stringVariable": "Herb.Potency",
+      "statTooltip": "越接近正午采的，药效越好。"
+    }
+  ]
+}

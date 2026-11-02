@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "技能树内容头：对应 UE5 Content/Pro/Core/Data/SkillTrees/Fortitude（Skill_Fortitude.uasset + Perks/Perk_Juggernaut.uasset + GE_Juggernaut.uasset）。",
+    "attributeName 取自 GE_Juggernaut 资产里可见的 SetByCaller 标签（证据：Fortitude/Perks/Perk_Juggernaut.uasset 串表含 SetByCaller.MaxHealth）。",
+    "倍率与等级数在上游蓝图 CDO 里，离线取不出真值，故沿用 TreePerk/Perk_AttributeMod 的构造默认值。"
+  ],
+  "skills": [
+    {
+      "skillClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Fortitude/Skill_Fortitude",
+      "skillDisplayName": "Fortitude",
+      "skillDescription": "Endurance and survivability tree.",
+      "skillLevel": 1,
+      "perks": [
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Fortitude/Perks/Perk_Juggernaut",
+          "perkCords": { "x": 0, "y": 0 },
+          "linkedTo": []
+        }
+      ]
+    }
+  ],
+  "perks": [
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Fortitude/Perks/Perk_Juggernaut",
+      "perkType": "Perk_AttributeMod",
+      "perkDisplayName": "Juggernaut",
+      "perkDescription": "Maximum health bonus carried by GE_Juggernaut.",
+      "attributeName": "SetByCaller.MaxHealth",
+      "effectName": "/NarrativePro/Pro/Core/Data/SkillTrees/Fortitude/Perks/GE_Juggernaut"
+    }
+  ]
+}

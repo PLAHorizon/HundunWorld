@@ -1,0 +1,15 @@
+﻿{
+  "Format": 2,
+  "Name": "hh123",
+  "EditorData": "VkcJdVgbAAAAAAAAAAAAAAEAAAAKAAAAAAAAAAAAAAAMAAAA1b1PRVfTKEWamRk\u002BCQ==",
+  "Nodes": [],
+  "Edges": [],
+  "Exposed": [],
+  "Settings": {
+    "DefaultSeed": 0,
+    "EnableDebugDraw": true,
+    "MaxPointBudget": 2000000,
+    "MaxExpandedNodeCount": 4096,
+    "Terrain": null
+  }
+}

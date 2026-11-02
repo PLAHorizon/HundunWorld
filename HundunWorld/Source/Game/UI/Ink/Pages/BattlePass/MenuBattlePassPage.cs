@@ -16,7 +16,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
     /// 颜色与字体一律取自 <see cref="InkWashTheme"/> 设计 Token（无硬编码色值），
     /// 导航出口经 <see cref="NavigationRequested"/> 交由 <see cref="InkPageRouter"/> 统一处理。
     /// </summary>
-    public class MenuBattlePassPage : ContainerControl, IInkPage
+    public class MenuBattlePassPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ------------------------------------------------------------------
         // 布局常量（对应设计稿 1920x1080 参考分辨率）
@@ -91,34 +91,35 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
         // ------------------------------------------------------------------
 
         /// <summary>玩家等级（设计稿 Lv. 42）</summary>
-        private int _playerLevel = 42;
+        private int _playerLevel = -1;
 
         /// <summary>铜钱余额（设计稿 12,450）</summary>
-        private int _coin = 12450;
+        private int _coin = -1;
 
         /// <summary>元宝余额（设计稿 328）</summary>
-        private int _ingot = 328;
+        private int _ingot = -1;
 
         /// <summary>赛季剩余时间文案（设计稿 28天 06:30:00）</summary>
-        private string _seasonRemainText = "28天 06:30:00";
+        private string _seasonRemainText = "—";
 
         /// <summary>赛季参与人数（设计稿 1,284,567）</summary>
-        private int _seasonParticipants = 1284567;
+        private int _seasonParticipants = 0;
 
         /// <summary>通行证当前等级（设计稿 Lv. 23）</summary>
-        private int _passLevel = 23;
+        private int _passLevel = 0;
 
         /// <summary>当前等级已获经验（设计稿 1,950）</summary>
-        private int _passExp = 1950;
+        private int _passExp = 0;
 
         /// <summary>当前等级升级所需经验（设计稿 3,000）</summary>
         private int _passExpRequired = 3000;
 
         /// <summary>本段已领取奖励数（设计稿 6）</summary>
-        private int _claimedRewardCount = 6;
+        // 通行证没有服务端数据：已领取/可领取归零（2026-10-29）
+        private int _claimedRewardCount = 0;
 
         /// <summary>本段可领取奖励数（设计稿 1）</summary>
-        private int _claimableRewardCount = 1;
+        private int _claimableRewardCount = 0;
 
         /// <summary>本段未解锁奖励数（设计稿 13）</summary>
         private int _lockedRewardCount = 13;
@@ -234,10 +235,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
         /// <summary>至尊轨道奖励（Lv.20 — Lv.29）。</summary>
         private static readonly RewardSpec[] PaidRewards =
         {
-            new RewardSpec("寒铁剑", "剑", InkWashTheme.InkQuality.Rare, NodeStatus.Claimed),
-            new RewardSpec("名侠碎片×3", "片", InkWashTheme.InkQuality.Epic, NodeStatus.Claimed),
-            new RewardSpec("元宝×200", "宝", InkWashTheme.InkQuality.Epic, NodeStatus.Claimed),
-            new RewardSpec("名侠碎片×5", "片", InkWashTheme.InkQuality.Epic, NodeStatus.Claimable),
+            new RewardSpec("寒铁剑", "剑", InkWashTheme.InkQuality.Rare, NodeStatus.Locked),
+            new RewardSpec("名侠碎片×3", "片", InkWashTheme.InkQuality.Epic, NodeStatus.Locked),
+            new RewardSpec("元宝×200", "宝", InkWashTheme.InkQuality.Epic, NodeStatus.Locked),
+            new RewardSpec("名侠碎片×5", "片", InkWashTheme.InkQuality.Epic, NodeStatus.Locked),
             new RewardSpec("玄铁护腕", "腕", InkWashTheme.InkQuality.Rare, NodeStatus.Locked),
             new RewardSpec("元宝×300", "宝", InkWashTheme.InkQuality.Epic, NodeStatus.Locked),
             new RewardSpec("名侠碎片×5", "片", InkWashTheme.InkQuality.Epic, NodeStatus.Locked),
@@ -249,10 +250,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
         /// <summary>免费轨道奖励（Lv.20 — Lv.29）。</summary>
         private static readonly RewardSpec[] FreeRewards =
         {
-            new RewardSpec("铜钱×500", "钱", InkWashTheme.InkQuality.Common, NodeStatus.Claimed),
-            new RewardSpec("疗伤丹×2", "丹", InkWashTheme.InkQuality.Uncommon, NodeStatus.Claimed),
-            new RewardSpec("元宝×50", "宝", InkWashTheme.InkQuality.Common, NodeStatus.Claimed),
-            new RewardSpec("铜钱×2000", "钱", InkWashTheme.InkQuality.Common, NodeStatus.Claimed),
+            new RewardSpec("铜钱×500", "钱", InkWashTheme.InkQuality.Common, NodeStatus.Locked),
+            new RewardSpec("疗伤丹×2", "丹", InkWashTheme.InkQuality.Uncommon, NodeStatus.Locked),
+            new RewardSpec("元宝×50", "宝", InkWashTheme.InkQuality.Common, NodeStatus.Locked),
+            new RewardSpec("铜钱×2000", "钱", InkWashTheme.InkQuality.Common, NodeStatus.Locked),
             new RewardSpec("疗伤丹×5", "丹", InkWashTheme.InkQuality.Uncommon, NodeStatus.Locked),
             new RewardSpec("元宝×80", "宝", InkWashTheme.InkQuality.Common, NodeStatus.Locked),
             new RewardSpec("精铁盾", "盾", InkWashTheme.InkQuality.Rare, NodeStatus.Locked),
@@ -299,8 +300,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
         private Label _sidebarLogoSub;
         private InkDivider _sidebarDivider;
         private InkDivider _sidebarFooterDivider;
-        private List<InkButton> _sidebarNavButtons;
-        private InkTag _sidebarNavBadge;
+        private InkSidebarList _sidebarList;
         private Label _sidebarSeasonGlyph;
         private Label _sidebarSeasonLabel;
         private Label _sidebarSeasonName;
@@ -336,6 +336,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
         private Label _passTitle;
         private InkTag _passSeasonBadge;
         private Label _passSubtitle;
+        private Label _sampleNote;
         private Label _seasonTimeGlyph;
         private Label _seasonTimeLabel;
         private Label _seasonInfoTime;
@@ -588,54 +589,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
 
             _sidebarDivider = new InkDivider { Parent = _sidebar };
 
-            _sidebarNavButtons = new List<InkButton>();
-            string[] navLabels = { "不肝", "抽卡", "活动", "通行证", "属性", "奇珍阁", "设置" };
-            string[] navTargets =
+            // 侧边栏导航：共用控件渲染 InkSidebarNav 的完整清单（战令项的"热"角标随条目走）。
+            _sidebarList = new InkSidebarList(InkPageDomIds.NavBattlePass)
             {
-                InkPageDomIds.NavCasualMode,
-                InkPageDomIds.NavGacha,
-                InkPageDomIds.NavActivities,
-                InkPageDomIds.NavBattlePass,
-                InkPageDomIds.NavCharacterV2,
-                InkPageDomIds.NavShopRare,
-                InkPageDomIds.NavSettings,
+                Parent = _sidebar,
             };
-
-            for (int i = 0; i < navLabels.Length; i++)
-            {
-                bool isActive = navTargets[i] == InkPageDomIds.NavBattlePass;
-                InkButton navItem = new InkButton
-                {
-                    Text = "◆  " + navLabels[i],
-                    Variant = InkButtonVariant.Ghost,
-                    ButtonSize = InkButtonSize.Md,
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                    Parent = _sidebar,
-                };
-
-                if (isActive)
-                {
-                    navItem.TextColor = InkWashTheme.GoldBright;
-                    navItem.BackgroundColor = Alpha(InkWashTheme.GoldPrimary, 0.10f);
-                }
-                else
-                {
-                    navItem.TextColor = InkWashTheme.PaperAged;
-                }
-
-                int navIndex = i;
-                navItem.Clicked += () => NavigationRequested?.Invoke(navTargets[navIndex]);
-                _sidebarNavButtons.Add(navItem);
-            }
-
-            // 通行证导航项的朱红「热」标签
-            _sidebarNavBadge = new InkTag
-            {
-                Text = "热",
-                TagVariant = InkTagVariant.Vermilion,
-                Parent = _sidebarNavButtons[3],
-            };
+            _sidebarList.NavigationRequested += domId => NavigationRequested?.Invoke(domId);
 
             _sidebarFooterDivider = new InkDivider { Parent = _sidebar };
 
@@ -681,7 +640,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             };
 
             _backButton = NewButton(_topHeader, "← 返回战斗", InkButtonVariant.Ghost, InkButtonSize.Sm);
-            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
 
             _topHeaderDivider = NewVerticalDivider(_topHeader, 0f, 0f, 24f);
 
@@ -703,18 +662,23 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             };
             _avatarLabel = NewLabel(_playerAvatar, "客", InkWashTheme.FontRole.Display, 16f, InkWashTheme.GoldPrimary, TextAlignment.Center);
 
-            _playerNameLabel = NewLabel(_topHeader, "江湖过客", InkWashTheme.FontRole.Heading, 13f, InkWashTheme.PaperBright);
-            _playerLevelLabel = NewLabel(_topHeader, $"▲ Lv. {_playerLevel}", InkWashTheme.FontRole.Number, 11f, InkWashTheme.GoldPrimary);
+            _playerNameLabel = NewLabel(_topHeader, "—", InkWashTheme.FontRole.Heading, 13f, InkWashTheme.PaperBright);
+            _playerLevelLabel = NewLabel(_topHeader, _playerLevel >= 0 ? $"▲ Lv. {_playerLevel}" : "▲ Lv. —", InkWashTheme.FontRole.Number, 11f, InkWashTheme.GoldPrimary);
             _topBarSeasonLabel = NewLabel(_topHeader, SeasonTitleText, InkWashTheme.FontRole.Heading, 13f, InkWashTheme.PaperDark, TextAlignment.Center);
 
             _currencyCoinGlyph = NewLabel(_topHeader, "钱", InkWashTheme.FontRole.Body, 11f, InkWashTheme.GoldPrimary, TextAlignment.Center);
-            _currencyCoinLabel = NewLabel(_topHeader, $"铜钱 {_coin:N0}", InkWashTheme.FontRole.Number, 13f, InkWashTheme.PaperBright);
+            _currencyCoinLabel = NewLabel(_topHeader, _coin >= 0 ? $"铜钱 {_coin:N0}" : "铜钱 —", InkWashTheme.FontRole.Number, 13f, InkWashTheme.PaperBright);
             _currencyDividerA = NewVerticalDivider(_topHeader, 0f, 0f, 20f);
             _currencyIngotGlyph = NewLabel(_topHeader, "宝", InkWashTheme.FontRole.Body, 11f, InkWashTheme.VermilionBright, TextAlignment.Center);
-            _currencyIngotLabel = NewLabel(_topHeader, $"元宝 {_ingot:N0}", InkWashTheme.FontRole.Number, 13f, InkWashTheme.PaperBright);
+            _currencyIngotLabel = NewLabel(_topHeader, _ingot >= 0 ? $"元宝 {_ingot:N0}" : "元宝 —", InkWashTheme.FontRole.Number, 13f, InkWashTheme.PaperBright);
             _currencyDividerB = NewVerticalDivider(_topHeader, 0f, 0f, 20f);
             _timeGlyph = NewLabel(_topHeader, "月", InkWashTheme.FontRole.Body, 11f, InkWashTheme.Info, TextAlignment.Center);
-            _timeLabel = NewLabel(_topHeader, "戌时 三刻", InkWashTheme.FontRole.Heading, 13f, InkWashTheme.Info);
+            // 世界时间同步没有接入客户端（同 MenuTimePage）
+            _timeLabel = NewLabel(_topHeader, "—", InkWashTheme.FontRole.Heading, 13f, InkWashTheme.Info);
+
+            // 真实玩家信息可用时覆盖设计稿示例值（元宝/时辰暂无数据源）
+            InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelLabel, _currencyCoinLabel,
+                levelPrefix: "▲ ", coinPrefix: "铜钱 ");
         }
 
         // ==================================================================
@@ -759,12 +723,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             };
             _passSubtitle = NewLabel(_passHeader, "江湖行 · 纵马天涯，行侠仗义", InkWashTheme.FontRole.Heading, 13f, InkWashTheme.PaperAged);
 
+            // 赛季等级/经验/奖励全部是设计稿示例初值，且没有可覆盖它们的服务端数据源
+            _sampleNote = NewLabel(_passHeader, "赛季数据尚未接入 · 等级 / 经验 / 奖励均为示例",
+                InkWashTheme.FontRole.Body, 11f, InkWashTheme.TextTertiary);
+
             _seasonTimeGlyph = NewLabel(_passHeader, "时", InkWashTheme.FontRole.Body, 11f, InkWashTheme.VermilionBright, TextAlignment.Center);
             _seasonTimeLabel = NewLabel(_passHeader, "剩余时间", InkWashTheme.FontRole.Body, 11f, InkWashTheme.PaperDark);
             _seasonInfoTime = NewLabel(_passHeader, _seasonRemainText, InkWashTheme.FontRole.Number, 12f, InkWashTheme.VermilionBright);
             _seasonPeopleGlyph = NewLabel(_passHeader, "人", InkWashTheme.FontRole.Body, 11f, InkWashTheme.Info, TextAlignment.Center);
             _seasonPeopleLabel = NewLabel(_passHeader, "参与人数", InkWashTheme.FontRole.Body, 11f, InkWashTheme.PaperDark);
-            _seasonInfoPlayers = NewLabel(_passHeader, $"{_seasonParticipants:N0}", InkWashTheme.FontRole.Number, 12f, InkWashTheme.PaperBright);
+            _seasonInfoPlayers = NewLabel(_passHeader, _seasonParticipants > 0 ? $"{_seasonParticipants:N0}" : "—", InkWashTheme.FontRole.Number, 12f, InkWashTheme.PaperBright);
 
             _currentLevelCaption = NewLabel(_passHeader, "当前等级", InkWashTheme.FontRole.Body, 12f, InkWashTheme.PaperDark);
             _currentLevelLabel = NewLabel(_passHeader, $"Lv. {_passLevel}", InkWashTheme.FontRole.Number, 28f, InkWashTheme.GoldBright);
@@ -853,10 +821,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             }
 
             _trackPrevButton = NewButton(_trackSection, "<", InkButtonVariant.Ghost, InkButtonSize.Sm);
-            _trackPrevButton.Clicked += OnTrackPrevClicked;
             _trackRangeLabel = NewLabel(_trackSection, "Lv. 20 — Lv. 29", InkWashTheme.FontRole.Number, 13f, InkWashTheme.PaperBright, TextAlignment.Center);
             _trackNextButton = NewButton(_trackSection, ">", InkButtonVariant.Ghost, InkButtonSize.Sm);
-            _trackNextButton.Clicked += OnTrackNextClicked;
+            // 轨道只有设计稿这 10 个等级节点，没有别的分段可翻：原来两个按钮只是"重新打开本页"，
+            // 点了画面没有任何变化。直接禁用，别做假交互。
+            _trackPrevButton.Enabled = false;
+            _trackNextButton.Enabled = false;
 
             _trackDivider = new InkDivider { Parent = _trackSection };
 
@@ -869,7 +839,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             for (int i = 0; i < PaidRewards.Length; i++)
             {
                 RewardSpec spec = PaidRewards[i];
-                bool current = TrackStartLevel + i == _passLevel && spec.Status == NodeStatus.Claimable;
+                bool current = TrackStartLevel + i == _passLevel && spec.Status == NodeStatus.Locked;
                 _paidNodes.Add(new TrackNode(_trackSection, TrackStartLevel + i, spec, false, current));
             }
 
@@ -891,7 +861,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
 
             _trackFooterDivider = new InkDivider { Parent = _trackSection };
 
-            _trackClaimedGlyph = NewLabel(_trackSection, "✓", InkWashTheme.FontRole.Body, 11f, InkWashTheme.JadePrimary, TextAlignment.Center);
+            _trackClaimedGlyph = NewLabel(_trackSection, "√", InkWashTheme.FontRole.Body, 11f, InkWashTheme.JadePrimary, TextAlignment.Center);
             _trackClaimedText = NewLabel(_trackSection, $"已领取: {_claimedRewardCount} / {TrackLevelCount}", InkWashTheme.FontRole.Body, 13f, InkWashTheme.PaperAged);
             _trackClaimableGlyph = NewLabel(_trackSection, "礼", InkWashTheme.FontRole.Body, 11f, InkWashTheme.GoldPrimary, TextAlignment.Center);
             _trackClaimableText = NewLabel(_trackSection, $"可领取: {_claimableRewardCount}", InkWashTheme.FontRole.Body, 13f, InkWashTheme.PaperAged);
@@ -926,7 +896,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
                 _detailPanel,
                 false,
                 "礼 免费奖励",
-                "已领取",
+                "未解锁",
                 "钱",
                 InkWashTheme.InkQuality.Common,
                 "铜钱 × 2000",
@@ -940,7 +910,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
                 _detailPanel,
                 true,
                 "冠 至尊奖励",
-                "可领取",
+                "未解锁",
                 "片",
                 InkWashTheme.InkQuality.Epic,
                 "名侠碎片 × 5",
@@ -1028,16 +998,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
 
             float navTop = 84f;
             const float navItemHeight = 44f;
-            for (int i = 0; i < _sidebarNavButtons.Count; i++)
-            {
-                InkButton item = _sidebarNavButtons[i];
-                Place(item, 0f, navTop + i * navItemHeight, SidebarWidth, navItemHeight);
-                item.Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f);
-            }
+            _sidebarList.Layout(0f, navTop, SidebarWidth, Mathf.Max(0f, height - navTop - 96f));
 
-            Place(_sidebarNavBadge, SidebarWidth - 48f, navTop + 3f * navItemHeight + 14f, 28f, 16f);
 
-            float footerTop = Mathf.Max(navTop + _sidebarNavButtons.Count * navItemHeight + 16f, height - 96f);
+            float footerTop = height - 96f;
             Place(_sidebarFooterDivider, 16f, footerTop, SidebarWidth - 32f, 1f);
             Place(_sidebarSeasonGlyph, 16f, footerTop + 12f, 20f, 20f);
             Place(_sidebarSeasonLabel, 44f, footerTop + 10f, 160f, 16f);
@@ -1131,6 +1095,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             Place(_passTitle, pad, 22f, 280f, 34f);
             Place(_passSeasonBadge, pad + 288f, 28f, 96f, 24f);
             Place(_passSubtitle, pad, 60f, 420f, 20f);
+            Place(_sampleNote, pad, 146f, 420f, 16f);
             Place(_seasonTimeGlyph, pad, 92f, 14f, 14f);
             Place(_seasonTimeLabel, pad + 18f, 90f, 60f, 18f);
             Place(_seasonInfoTime, pad + 82f, 90f, 140f, 18f);
@@ -1323,9 +1288,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
         private void RefreshAccountData()
         {
             if (_playerLevelLabel != null)
-                _playerLevelLabel.Text = $"▲ Lv. {_playerLevel}";
+            {
+                // 顶栏这一格是「玩家等级」，不是通行证等级（通行证等级在同页 `_passLevel`）。
+                // 先取真实属性；拿不到再退回页面自己收到的账号数据，最后才是占位。
+                InkPlayerHeaderBinder.BindLevel(_playerLevelLabel, "▲ ");
+                if (_playerLevelLabel.Text == "▲ Lv. —" && _playerLevel >= 0)
+                    _playerLevelLabel.Text = $"▲ Lv. {_playerLevel}";
+            }
             if (_currencyCoinLabel != null)
-                _currencyCoinLabel.Text = $"铜钱 {_coin:N0}";
+                _currencyCoinLabel.Text = _coin >= 0 ? $"铜钱 {_coin:N0}" : "铜钱 —";
             if (_currencyIngotLabel != null)
                 _currencyIngotLabel.Text = $"元宝 {_ingot:N0}";
         }
@@ -1336,7 +1307,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             if (_seasonInfoTime != null)
                 _seasonInfoTime.Text = _seasonRemainText;
             if (_seasonInfoPlayers != null)
-                _seasonInfoPlayers.Text = $"{_seasonParticipants:N0}";
+                _seasonInfoPlayers.Text = _seasonParticipants > 0 ? $"{_seasonParticipants:N0}" : "—";
             if (_sidebarSeasonBar != null)
                 _sidebarSeasonBar.Value = PassLevelRatio;
             if (_sidebarSeasonProgress != null)
@@ -1466,29 +1437,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             NavigationRequested?.Invoke(InkPageDomIds.NavShopRare);
         }
 
-        /// <summary>领取当前等级至尊奖励。</summary>
+        /// <summary>领取当前等级至尊奖励：通行证没有服务端领取接口，给明确提示（原来只是重开本页）。</summary>
         private void OnClaimRewardClicked()
         {
-            NavigationRequested?.Invoke(InkPageDomIds.NavBattlePass);
+            HundunWorld.Game.UI.UIHelper.ShowToast("通行证奖励领取尚未接入服务端",
+                HundunWorld.Game.UI.ToastType.Info);
         }
 
-        /// <summary>一键领取全部可领取奖励。</summary>
+        /// <summary>一键领取全部可领取奖励：同上。</summary>
         private void OnClaimAllClicked()
         {
-            NavigationRequested?.Invoke(InkPageDomIds.NavBattlePass);
+            HundunWorld.Game.UI.UIHelper.ShowToast("通行证奖励领取尚未接入服务端",
+                HundunWorld.Game.UI.ToastType.Info);
         }
 
-        /// <summary>轨道上一段（Lv.20 段已是首段，回卷到末段）。</summary>
-        private void OnTrackPrevClicked()
-        {
-            NavigationRequested?.Invoke(InkPageDomIds.NavBattlePass);
-        }
 
-        /// <summary>轨道下一段。</summary>
-        private void OnTrackNextClicked()
-        {
-            NavigationRequested?.Invoke(InkPageDomIds.NavBattlePass);
-        }
 
         /// <summary>按当前控件尺寸重排布局（<see cref="IInkPage"/> 契约）。</summary>
         public void RefreshLayout()
@@ -1594,7 +1557,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
 
                 _glyphLabel = new Label
                 {
-                    Text = "✓",
+                    Text = "√",
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, size * 0.6f),
                     TextColor = InkWashTheme.PaperBright,
                     HorizontalAlignment = TextAlignment.Center,
@@ -1611,12 +1574,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
             {
                 switch (status)
                 {
-                    case NodeStatus.Claimable:
-                        _fillColor = InkWashTheme.GoldPrimary;
-                        _glyphLabel.Text = "礼";
-                        _glyphLabel.TextColor = InkWashTheme.TextOnBrand;
-                        break;
-
                     case NodeStatus.Locked:
                         _fillColor = InkWashTheme.BaseElevated;
                         _glyphLabel.Text = "锁";
@@ -1625,7 +1582,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
 
                     default:
                         _fillColor = InkWashTheme.JadePrimary;
-                        _glyphLabel.Text = "✓";
+                        _glyphLabel.Text = "√";
                         _glyphLabel.TextColor = InkWashTheme.PaperBright;
                         break;
                 }
@@ -1681,7 +1638,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
                     BackgroundColor = InkWashTheme.GoldPrimary,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    Visible = spec.Status == NodeStatus.Claimable,
+                    Visible = spec.Status == NodeStatus.Locked,
                     Parent = this,
                 };
 
@@ -1857,11 +1814,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
                 }
                 else
                 {
-                    _actionButton = NewButton(this, "✓ 已领取", InkButtonVariant.Ghost);
+                    // 免费奖励没有服务端领取记录：按等级锁态显示，不再假装"已领取"
+                    _actionButton = NewButton(this, "未解锁", InkButtonVariant.Ghost);
                     _actionButton.Enabled = false;
-                    // 免费奖励卡已领取，不显示解锁提示
-                    _lockGlyph.Visible = false;
-                    _lockHint.Visible = false;
                 }
 
                 Parent = parent;
@@ -2061,7 +2016,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.BattlePass
 
                     default:
                         statusColor = InkWashTheme.JadePrimary;
-                        statusGlyph = "✓";
+                        statusGlyph = "√";
                         break;
                 }
 

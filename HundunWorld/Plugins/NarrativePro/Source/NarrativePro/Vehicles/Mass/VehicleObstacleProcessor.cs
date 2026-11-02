@@ -1,93 +1,156 @@
 using System;
+using System.Collections.Generic;
 using FlaxEngine;
 using NarrativePro.Core;
+using NarrativePro.UnrealFramework;
 
 namespace NarrativePro.Vehicles.Mass
 {
     /// <summary>
-    /// 载具障碍物处理器。对应 UE5 UVehicleObstacleProcessor（VehicleObstacleProcessor.h）。
-    /// 继承 UMassProcessor。处理载具避让的障碍物哈希网格更新。
-    /// 简化点：
-    /// - Flax 无 Mass Entity System，改为 [Serializable] class 占位（Flax 不兼容）
-    /// - FMassEntityQuery/FMassEntityManager/FMassExecutionContext → object 占位
+    /// 载具障碍物处理器（Flax 侧手写实现）。对应 UE5 UVehicleObstacleProcessor
+    /// + UVehicleObstacleInitializer + UVehicleObstacleDestructor（VehicleObstacleProcessor.h/.cpp:15-101）。
+    /// <para>
+    /// UE5 用三个 Mass 观察者/处理器维护 <c>UMassVehicleSubsystem::VehicleObstacles</c> 哈希网格：
+    /// Add（初始化，cpp:69-83）、Move（每帧，cpp:22-49）、Remove（销毁，cpp:95-101），
+    /// 移动/避让与交通灯的交叉口占用判定都读这张网格。
+    /// Flax 侧同样由它喂网格，并额外把「行人 Actor」登记成外部障碍物
+    /// （UE5 里带 <c>UTrafficVehicleObstacleTrait</c> 的行人实体在 Flax 是 NPC Actor，见下）。
+    /// </para>
     /// </summary>
-    [Serializable]
     public class VehicleObstacleProcessor
     {
-        /// <summary>实体查询。对应 UE5 EntityQuery（FMassEntityQuery）。</summary>
-        [NonSerialized]
-        public object EntityQuery;
+        /// <summary>载具子系统（持有网格）。</summary>
+        public MassVehicleSubsystem VehicleSubsystem;
 
-        /// <summary>配置查询。对应 UE5 ConfigureQueries。</summary>
-        public virtual void ConfigureQueries(object entityManager)
+        /// <summary>障碍特质（半径/搜索参数）。</summary>
+        public TrafficVehicleObstacleTrait ObstacleTrait = new TrafficVehicleObstacleTrait();
+
+        /// <summary>外部（行人）障碍物重扫间隔（秒）。UE5 由实体观察者增量维护，Flax 侧行人是 Actor，需周期扫描。</summary>
+        public float ExternalRefreshInterval = 0.25f;
+
+        private float _refreshTimer;
+        private readonly List<Actor> _presentExternalOwners = new List<Actor>();
+
+        /// <summary>本帧登记的载具障碍物数。</summary>
+        public int VehicleObstacleCount { get; private set; }
+
+        /// <summary>本帧登记的外部（行人）障碍物数。</summary>
+        public int ExternalObstacleCount { get; private set; }
+
+        public VehicleObstacleProcessor(MassVehicleSubsystem vehicleSubsystem)
         {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
+            VehicleSubsystem = vehicleSubsystem;
         }
 
-        /// <summary>执行。对应 UE5 Execute。</summary>
-        public virtual void Execute(object entityManager, object context)
+        /// <summary>
+        /// 每帧同步。对应 UE5 UVehicleObstacleProcessor::Execute（cpp:22-49）：
+        /// 用实体当前位置/半径把记录在网格里 Move，并刷新记录上的车道与速度，供前车/交叉口占用判定读取。
+        /// </summary>
+        public void UpdateTrafficObstacles(IReadOnlyList<TrafficVehicle> vehicles, float deltaTime)
         {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
-        }
-    }
+            if (VehicleSubsystem == null) return;
+            _refreshTimer += deltaTime;
 
-    /// <summary>
-    /// 载具障碍物初始化器。对应 UE5 UVehicleObstacleInitializer（VehicleObstacleProcessor.h）。
-    /// 继承 UMassObserverProcessor。初始化障碍物实体以便在哈希网格中查询和更新其位置。
-    /// 简化点：Flax 无 Mass Entity System，改为 [Serializable] class 占位（Flax 不兼容）。
-    /// </summary>
-    [Serializable]
-    public class VehicleObstacleInitializer
-    {
-        /// <summary>实体查询。对应 UE5 EntityQuery（FMassEntityQuery）。</summary>
-        [NonSerialized]
-        public object EntityQuery;
+            int count = 0;
+            if (vehicles != null)
+            {
+                foreach (var vehicle in vehicles)
+                {
+                    if (vehicle == null) continue;
+                    float radius = Mathf.Max(1f, vehicle.Radius.Radius, ObstacleTrait.ObstacleRadius);
 
-        public VehicleObstacleInitializer()
-        {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
-        }
+                    // 未登记过 → Add（UE5 观察者）；已登记 → Move（UE5 每帧处理器）
+                    if (!VehicleSubsystem.VehicleObstacles.TryGet(vehicle.Handle, out var record))
+                    {
+                        vehicle.Obstacle.CellLocation = InitializeObstacle(vehicle);
+                        VehicleSubsystem.VehicleObstacles.TryGet(vehicle.Handle, out record);
+                    }
+                    else
+                    {
+                        vehicle.Obstacle.CellLocation = VehicleSubsystem.VehicleObstacles.Move(
+                            vehicle.Handle, record.CellLocation, vehicle.Location, radius);
+                    }
 
-        /// <summary>配置查询。对应 UE5 ConfigureQueries。</summary>
-        public virtual void ConfigureQueries(object entityManager)
-        {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
-        }
+                    if (record != null)
+                    {
+                        record.bIsVehicle = true;
+                        record.Lane = vehicle.LaneHandle;
+                        record.DistanceAlongLane = vehicle.DistanceAlongLane;
+                        record.Velocity = vehicle.Velocity;
+                        record.Radius = radius;
+                    }
+                    count++;
+                }
+            }
+            VehicleObstacleCount = count;
 
-        /// <summary>执行。对应 UE5 Execute。</summary>
-        public virtual void Execute(object entityManager, object context)
-        {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
-        }
-    }
-
-    /// <summary>
-    /// 载具障碍物销毁器。对应 UE5 UVehicleObstacleDestructor（VehicleObstacleProcessor.h）。
-    /// 继承 UMassObserverProcessor。清理障碍物实体，使其不再在哈希网格中更新和可用。
-    /// 简化点：Flax 无 Mass Entity System，改为 [Serializable] class 占位（Flax 不兼容）。
-    /// </summary>
-    [Serializable]
-    public class VehicleObstacleDestructor
-    {
-        /// <summary>实体查询。对应 UE5 EntityQuery（FMassEntityQuery）。</summary>
-        [NonSerialized]
-        public object EntityQuery;
-
-        public VehicleObstacleDestructor()
-        {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
+            if (_refreshTimer >= ExternalRefreshInterval)
+            {
+                _refreshTimer = 0f;
+                RefreshExternalObstacles();
+            }
         }
 
-        /// <summary>配置查询。对应 UE5 ConfigureQueries。</summary>
-        public virtual void ConfigureQueries(object entityManager)
+        /// <summary>障碍物首次登记。对应 UE5 UVehicleObstacleInitializer::Execute（cpp:69-83）。</summary>
+        public VehicleObstacleHashGrid.FCellLocation InitializeObstacle(TrafficVehicle vehicle)
         {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
+            if (VehicleSubsystem == null || vehicle == null) return default;
+            float radius = Mathf.Max(1f, vehicle.Radius.Radius, ObstacleTrait.ObstacleRadius);
+            return VehicleSubsystem.VehicleObstacles.Add(vehicle.Handle, vehicle.Location, radius);
         }
 
-        /// <summary>执行。对应 UE5 Execute。</summary>
-        public virtual void Execute(object entityManager, object context)
+        /// <summary>障碍物注销。对应 UE5 UVehicleObstacleDestructor::Execute（cpp:95-101）。</summary>
+        public void DestroyObstacle(TrafficVehicle vehicle)
         {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
+            if (VehicleSubsystem == null || vehicle == null) return;
+            VehicleSubsystem.VehicleObstacles.Remove(vehicle.Handle, vehicle.Obstacle.CellLocation);
+            vehicle.Obstacle.CellLocation = default;
+        }
+
+        /// <summary>
+        /// 扫描场景内活的 NPC/行人 Actor，登记成载具要避让的外部障碍物；顺带清理已销毁的。
+        /// UE5 侧这些是带 UTrafficVehicleObstacleTrait 的 Mass 实体，由三个观察者维护；
+        /// Flax 侧行人由 <c>MassPedSpawnerSubsystem</c> 生成成 Actor，故这里按 Actor 扫描（同
+        /// <c>MassPedSimulation.SyncVehicleObstacles</c> 的做法，反向对称）。
+        /// </summary>
+        public int RefreshExternalObstacles()
+        {
+            var subsystem = VehicleSubsystem;
+            if (subsystem == null) return 0;
+
+            _presentExternalOwners.Clear();
+            int registered = 0;
+            float radius = Mathf.Max(1f, ObstacleTrait.ObstacleRadius);
+            float searchRadius = ObstacleTrait.ExternalSearchRadius;
+
+            try
+            {
+                foreach (var actor in Level.GetActors<Actor>())
+                {
+                    if (actor == null) continue;
+
+                    // 已上车的乘员挂在载具 Actor 下，不再算路面障碍
+                    if (actor.Parent != null) continue;
+
+                    var character = actor.GetScript<NarrativeCharacter>();
+                    if (character == null) continue;
+
+                    Vector3 location = actor.Position;
+                    subsystem.RegisterExternalObstacle(actor, location, radius);
+                    _presentExternalOwners.Add(actor);
+                    registered++;
+                }
+            }
+            catch (Exception ex)
+            {
+                MassVehicleLog.LogWarning($"外部障碍物扫描未完成（场景未就绪？）：{ex.Message}");
+                return registered;
+            }
+
+            // 场景里已消失的行人要退出网格（否则尸体永远挡路）
+            subsystem.PruneExternalObstacles(_presentExternalOwners);
+            ExternalObstacleCount = registered;
+            return registered;
         }
     }
 }

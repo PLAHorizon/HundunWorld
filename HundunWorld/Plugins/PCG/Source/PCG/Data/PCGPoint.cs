@@ -1,5 +1,5 @@
-// PCG Plugin - Point data model
-// Part of the FlaxEngine PCG plugin. See docs/PCG_PLUGIN_DESIGN.md.
+// PCG 插件 —— 点的数据模型
+// 属于 FlaxEngine PCG 插件。见 docs/PCG_PLUGIN_DESIGN.md。
 
 using System;
 using FlaxEngine;
@@ -7,55 +7,55 @@ using FlaxEngine;
 namespace PCG
 {
     /// <summary>
-    /// A single procedural content generation point.
+    /// 一个程序化内容生成的点。
     /// </summary>
     /// <remarks>
-    /// Layout follows docs/PCG_PLUGIN_DESIGN.md §3.1:
+    /// 布局按 docs/PCG_PLUGIN_DESIGN.md §3.1：
     /// <list type="bullet">
-    /// <item><see cref="Position"/> is <see cref="Vector3"/> (float32) because <c>Float3</c> is a
-    /// half-precision type and loses precision badly at world-space coordinates.</item>
-    /// <item><see cref="Scale"/> is <see cref="Float3"/> to match <c>Transform.Scale</c> / <c>Actor.Scale</c>
-    /// exactly, avoiding a conversion per spawned instance.</item>
-    /// <item><see cref="Seed"/> is <see cref="int"/> because Flax's <c>RandomStream</c> only accepts int.</item>
-    /// <item><see cref="Attributes"/> is a reference type shared across points; every write path must go
-    /// through <see cref="PCGAttributeSet.EnsureOwned"/>. See the copy-on-write contract in §3.2.</item>
+    /// <item><see cref="Position"/> 用 <see cref="Vector3"/>（float32），因为 <c>Float3</c> 是半精度类型，
+    /// 在世界坐标上丢精度丢得很厉害。</item>
+    /// <item><see cref="Scale"/> 用 <see cref="Float3"/>，与 <c>Transform.Scale</c> / <c>Actor.Scale</c>
+    /// 完全一致，省掉每个生成实例一次转换。</item>
+    /// <item><see cref="Seed"/> 用 <see cref="int"/>，因为 Flax 的 <c>RandomStream</c> 只收 int。</item>
+    /// <item><see cref="Attributes"/> 是引用类型，在点之间共享；每一条写路径都必须走
+    /// <see cref="PCGAttributeSet.EnsureOwned"/>。见 §3.2 的写时复制契约。</item>
     /// </list>
     /// </remarks>
     [Serializable]
     public struct PCGPoint
     {
-        /// <summary>World-space position.</summary>
+        /// <summary>世界坐标位置。</summary>
         public Vector3 Position;
 
-        /// <summary>Rotation.</summary>
+        /// <summary>旋转。</summary>
         public Quaternion Rotation;
 
-        /// <summary>Scale. Matches the engine's native <c>Float3</c> scale type.</summary>
+        /// <summary>缩放。与引擎原生的 <c>Float3</c> 缩放类型一致。</summary>
         public Float3 Scale;
 
-        /// <summary>Density in [0,1]. Drives filtering and spawn probability.</summary>
+        /// <summary>[0,1] 之间的密度。驱动筛选与生成概率。</summary>
         public float Density;
 
-        /// <summary>Per-point random seed. Required for deterministic incremental re-execution.</summary>
+        /// <summary>逐点的随机种子。增量重跑要确定性就靠它。</summary>
         public int Seed;
 
-        /// <summary>Axis-aligned world-space bounds, used for pruning and overlap tests.</summary>
+        /// <summary>轴对齐的世界包围盒，用于剪枝与重叠测试。</summary>
         /// <remarks>
-        /// Flax's <see cref="BoundingBox"/> is axis-aligned, so pruning cannot account for point rotation.
-        /// Use <c>OrientedBoundingBox</c> if that is ever required; it is intentionally not the default here.
+        /// Flax 的 <see cref="BoundingBox"/> 是轴对齐的，所以剪枝考虑不到点的旋转。
+        /// 真需要时改用 <c>OrientedBoundingBox</c>；这里刻意不拿它当默认。
         /// </remarks>
         public BoundingBox Bounds;
 
-        /// <summary>Shared per-point attribute storage. May be null or shared between points.</summary>
+        /// <summary>共享的逐点属性存储。可能为 null，也可能在点之间共享。</summary>
         public PCGAttributeSet Attributes;
 
-        /// <summary>Gets the transform represented by this point.</summary>
+        /// <summary>取出这个点所表示的变换。</summary>
         public Transform GetTransform()
         {
             return new Transform(Position, Rotation, Scale);
         }
 
-        /// <summary>Creates a point with identity rotation and unit scale.</summary>
+        /// <summary>造一个旋转为单位、缩放为 1 的点。</summary>
         public static PCGPoint Create(Vector3 position, float density = 1.0f, int seed = 0)
         {
             return new PCGPoint
@@ -70,7 +70,7 @@ namespace PCG
             };
         }
 
-        /// <summary>Creates a point with an explicit transform.</summary>
+        /// <summary>造一个带指定变换的点。</summary>
         public static PCGPoint Create(in Transform transform, float density = 1.0f, int seed = 0)
         {
             return new PCGPoint
@@ -86,10 +86,10 @@ namespace PCG
         }
 
         /// <summary>
-        /// Recomputes <see cref="Bounds"/> from a local-space extents box (half-size around the origin).
-        /// Call this after any change to Position/Rotation/Scale, or after a sampler assigns an asset size.
+        /// 按局部空间的尺寸盒（绕原点的半长）重算 <see cref="Bounds"/>。
+        /// 改过 Position/Rotation/Scale 之后，或采样器赋了资产尺寸之后，都要调一次。
         /// </summary>
-        /// <param name="localExtents">Half-size of the point's content in local space. Zero yields a degenerate box.</param>
+        /// <param name="localExtents">这个点内容在局部空间的半长。给 0 就得到一盒退化的包围盒。</param>
         public void UpdateBounds(Vector3 localExtents)
         {
             var local = new BoundingBox(-localExtents, localExtents);

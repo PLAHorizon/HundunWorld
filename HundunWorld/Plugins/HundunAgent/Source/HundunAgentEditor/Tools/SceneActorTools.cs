@@ -106,6 +106,22 @@ namespace HundunAgent.Tools
 
             ToolRegistry.Register(new AgentToolDescriptor
             {
+                Name = "actor_material_param",
+                Description = "读/写 AnimatedModel 运行时材质实例上的参数（value 省略=只读；字符串按贴图资产加载）。用于验证『图里改了参数，画面是否真的跟着变』。",
+                InputSchemaJson = "{\"type\":\"object\",\"properties\":{\"actor\":{\"type\":\"string\"},\"param\":{\"type\":\"string\"},\"value\":{}},\"required\":[\"actor\",\"param\"]}",
+                Execute = ActorMaterialParamAsync
+            });
+
+            ToolRegistry.Register(new AgentToolDescriptor
+            {
+                Name = "content_database_rebuild",
+                Description = "重建编辑器内容数据库（用于工具写出/新拷入但未注册的资产，如 model_inspect 报 loaded:false 的情况）。",
+                InputSchemaJson = "{\"type\":\"object\",\"properties\":{}}",
+                Execute = ContentDatabaseRebuildAsync
+            });
+
+            ToolRegistry.Register(new AgentToolDescriptor
+            {
                 Name = "actor_delete",
                 Description = "删除 Actor（走编辑器删除流程，可撤销）。",
                 InputSchemaJson = "{\"type\":\"object\",\"properties\":{\"actor\":{\"type\":\"string\"}},\"required\":[\"actor\"]}",
@@ -625,7 +641,16 @@ namespace HundunAgent.Tools
 
                 var oldValue = propInfo.GetValue(target);
                 var newValue = EditorUtils.ConvertJsonValue(propInfo.PropertyType, value);
-                propInfo.SetValue(target, newValue);
+                try
+                {
+                    propInfo.SetValue(target, newValue);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("设置 " + propertyName + " 失败（声明类型 "
+                        + propInfo.PropertyType.FullName + "，传入 " + (newValue == null ? "null" : newValue.GetType().FullName)
+                        + "）：" + ex.Message, ex);
+                }
 
                 var capturedTarget = target;
                 var capturedProp = propInfo;
@@ -647,6 +672,125 @@ namespace HundunAgent.Tools
         private static string SafeToString(object value)
         {
             try { return value?.ToString(); } catch { return value?.GetType().Name; }
+        }
+
+        private static Task<object> ContentDatabaseRebuildAsync(JsonElement args)
+        {
+            return MainThread.InvokeAsync<object>(() =>
+            {
+                var db = FlaxEditor.Editor.Instance.ContentDatabase;
+                db.Rebuild(true);
+                return new { status = "rebuilt" };
+            });
+        }
+
+        private static Task<object> ActorMaterialParamAsync(JsonElement args)
+        {
+            string name = EditorUtils.GetString(args, "actor", null);
+            string param = EditorUtils.GetString(args, "param", null);
+            if (string.IsNullOrWhiteSpace(param))
+                throw new ArgumentException("param 不能为空");
+
+            JsonElement ve;
+            bool hasValue = args.TryGetProperty("value", out ve) && ve.ValueKind != JsonValueKind.Undefined;
+
+            return MainThread.InvokeAsync<object>(() =>
+            {
+                var actor = EditorUtils.FindActor(name);
+                if (actor == null)
+                    throw new ArgumentException("Actor 不存在: " + name);
+
+                var anim = actor as AnimatedModel;
+                if (anim == null)
+                    throw new InvalidOperationException("Actor 不是 AnimatedModel: " + actor.GetType().Name);
+
+                object before = null;
+                try { before = anim.GetParameterValue(param); } catch { }
+
+                object after = before;
+                if (hasValue)
+                {
+                    object v;
+                    if (ve.ValueKind == JsonValueKind.String)
+                    {
+                        var path = ve.GetString();
+                        v = EditorUtils.LoadAssetTyped(typeof(Texture), path) ?? (object)path;
+                    }
+                    else
+                    {
+                        v = (float)ve.GetDouble();
+                    }
+
+                    anim.SetParameterValue(param, v);
+                    after = anim.GetParameterValue(param);
+                }
+
+                var mats = new List<string>();
+                var hits = new List<object>();
+                if (anim.Entries != null)
+                {
+                    for (int i = 0; i < anim.Entries.Length; i++)
+                    {
+                        var e = anim.Entries[i];
+                        if (e.Material != null)
+                            mats.Add(string.IsNullOrEmpty(e.Material.Path) ? e.Material.GetType().Name : e.Material.Path);
+
+                        // 模型上的 Get/SetParameterValue 只覆盖"模型参数"；材质参数在材质实例上。
+                        // 这里直接按材质参数表核对，命中才读写，回执给出第几个 Entry。
+                        var mat = e.Material as MaterialBase;
+                        if (mat == null || mat.Parameters == null)
+                            continue;
+                        bool declared = false;
+                        foreach (var mp in mat.Parameters)
+                        {
+                            if (mp != null && mp.Name == param)
+                            {
+                                declared = true;
+                                break;
+                            }
+                        }
+                        if (!declared)
+                            continue;
+
+                        object mBefore = null;
+                        try { mBefore = mat.GetParameterValue(param); } catch { }
+                        object mAfter = mBefore;
+                        if (hasValue)
+                        {
+                            object mv;
+                            if (ve.ValueKind == JsonValueKind.String)
+                            {
+                                var mpath = ve.GetString();
+                                mv = EditorUtils.LoadAssetTyped(typeof(Texture), mpath) ?? (object)mpath;
+                            }
+                            else
+                            {
+                                mv = (float)ve.GetDouble();
+                            }
+                            mat.SetParameterValue(param, mv, false);
+                            mAfter = mat.GetParameterValue(param);
+                        }
+                        hits.Add(new
+                        {
+                            entry = i,
+                            material = mats[mats.Count - 1],
+                            before = SafeToString(mBefore),
+                            after = SafeToString(mAfter)
+                        });
+                    }
+                }
+
+                return new
+                {
+                    actor = actor.Name,
+                    materials = mats,
+                    param,
+                    before = SafeToString(before),
+                    after = SafeToString(after),
+                    applied = hasValue,
+                    materialHits = hits,
+                };
+            });
         }
 
         private static async Task<object> ActorDeleteAsync(JsonElement args)
@@ -878,12 +1022,23 @@ namespace HundunAgent.Tools
 
                 if (actor != null)
                 {
-                    // 依次尝试正斜杠绝对路径与项目相对路径；失败时用文件存在性二次验证
-                    var ok = PrefabManager.CreatePrefab(actor, fullPath.Replace('\\', '/'), true)
-                             || PrefabManager.CreatePrefab(actor, fullPath, true)
-                             || PrefabManager.CreatePrefab(actor, relPath.Replace('\\', '/'), true);
-                    if (!ok && !File.Exists(fullPath))
+                    // **只许调一次** CreatePrefab。以前这里写的是 `A || B || C` 三次尝试
+                    // （正斜杠绝对路径 → 原样绝对路径 → 项目相对路径），而第一次就已经把文件写出来、
+                    // 并把源 Actor 变成"预制体实例"，返回 false 只是那个路径拼写没被认；
+                    // 于是第二/三次是**拿一个已经是实例的 Actor 再做一次预制体**，
+                    // 写出的 JSON 带着 PrefabID/PrefabObjectID 却没有对应对象，
+                    // 装载时报 `Missing object … in prefab` ⇒ `Loading asset … result: InvalidData`，
+                    // 表现是"预制体建出来了、浏览器里看得见、但谁都加载不了"（2026-10-27 实测）。
+                    var created = PrefabManager.CreatePrefab(actor, relPath.Replace('\\', '/'), true);
+                    if (!created && !File.Exists(fullPath))
                         throw new InvalidOperationException("预制体创建失败: " + fullPath);
+
+                    editor.ContentDatabase.Rebuild(true);
+                    // 建完自己加载回来问一句"能用吗"：只回 status=created 会说谎。
+                    var roundTrip = Content.Load<Prefab>(relPath.Replace('\\', '/'));
+                    if (roundTrip == null || !roundTrip.IsLoaded)
+                        throw new InvalidOperationException("预制体写出来了但加载不回来（InvalidData 形状）：" + relPath);
+                    return new { status = "created", path = relPath, loaded = true };
                 }
                 else
                 {

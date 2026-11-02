@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Effects;
@@ -95,7 +95,9 @@ namespace HundunWorld.Game.UI.Components
         /// </summary>
         public event Action<string> OnCharacterIdChanged;
 
-        public string CharacterPrefabPath { get; set; } = "Content/Character/Models/skm_uefn_mannequin.flax";
+        // 身体资产在 2026-09-27（提交 5287c6c）由 skm_uefn_mannequin 换成 Character_1/2；
+        // 路径以 EquipmentDatabase 为单一事实源，避免资产删除后这里静默报 Missing file。
+        public string CharacterPrefabPath { get; set; } = HundunWorld.Game.Equipment.EquipmentDatabase.MaleBodyModelPath;
 
         /// <summary>
         /// 模型缩放因子，传递给相机系统

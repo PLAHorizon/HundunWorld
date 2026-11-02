@@ -8,6 +8,7 @@ using NarrativePro.Core;
 using NarrativePro.GAS;
 using NarrativePro.Interaction;
 using NarrativePro.Items;
+using NarrativePro.Tales;
 
 namespace NarrativePro.UnrealFramework
 {
@@ -173,6 +174,16 @@ namespace NarrativePro.UnrealFramework
         /// <summary>标签对话列表。</summary>
         public List<TaggedDialogue> TaggedDialogues = new List<TaggedDialogue>();
 
+        /// <summary>本 NPC 是否配置了标签对话（供交互入口判定）。</summary>
+        public bool HasTaggedDialogues => TaggedDialogues != null && TaggedDialogues.Count > 0;
+
+        /// <summary>
+        /// 运行时触发器实例。对应 UE5 ANarrativeCharacter.Triggers（NarrativeCharacter.h:686，
+        /// AddTrigger 复制模板后加入）。Flax 端口宿主放在 NPC 侧。
+        /// </summary>
+        [NonSerialized]
+        public List<NarrativeTrigger> Triggers = new List<NarrativeTrigger>();
+
         /// <summary>敌对覆盖列表（无论阵营如何都视为敌对）。</summary>
         [NonSerialized]
         public List<Actor> Hostiles = new List<Actor>();
@@ -199,6 +210,8 @@ namespace NarrativePro.UnrealFramework
 
         public override void OnDisable()
         {
+            // UE5 触发器对象随 Owner 销毁、时辰委托自动失效；Flax 需显式反注册，防悬挂回调。
+            ClearTriggers();
             base.OnDisable();
         }
 
@@ -230,6 +243,14 @@ namespace NarrativePro.UnrealFramework
             {
                 OnDefinitionSet(NPCDefinition);
                 NPCDataReady();
+                // UE5 生成路径：定义就绪即加载 NPCActivityConfiguration 数据资产并 SetActivityConfiguration，
+                // 同时逐条加载调度资产 AddActivitySchedule（NPCActivityComponent.cpp:568-623）。
+                ApplyActivityConfigurationFromDefinition();
+                // UE5 生成路径（NarrativeCharacter.cpp:535-556）：定义数据就绪即加载 TriggerSet 模板，
+                // 经 AddTrigger 复制实例、绑定 OwnerCharacter 并 Initialize（NarrativeCharacter.cpp:1921-1935）。
+                ApplyTriggerSetsFromDefinition();
+                // UE5 NPC.cpp:392-397：TaggedDialogueSet 资产加载后把条目复制进 NPC 的 TaggedDialogues。
+                LoadTaggedDialoguesFromDefinition();
             }
         }
 
@@ -248,15 +269,56 @@ namespace NarrativePro.UnrealFramework
             base.OnDefinitionSet(newDefinition);
         }
 
+        /// <summary>默认物品装载是否已由角色路径应用（防止控制器重复发放）。</summary>
+        public bool bDefaultItemLoadoutApplied;
+
         /// <summary>重写：首次初始化新角色。对应 UE5 InitNewCharacter_Implementation。</summary>
         public override void InitNewCharacter(CharacterDefinition newDefinition)
         {
+            // 基类经 GetDefaultItemLoadout（本类重写）完成 UE5 NarrativeCharacter.cpp:740 的默认装载发放
             base.InitNewCharacter(newDefinition);
+            bDefaultItemLoadoutApplied = true;
             // NPC 特有：随机化等级
             if (newDefinition is NPCDefinition npcDef)
             {
                 NPCLevel = npcDef.GetRandomLevel();
             }
+
+            // UE5 的 NPC 蓝图在 BeginPlay 里会装备自己的武器，武器 HandleWield → GiveWeaponAbilities
+            // 才把战斗能力挂上 ASC。本端口此前没有任何 NPC 装备调用点：ASC 上永远没有
+            // NarrativeCombatAbility，NarrativeNPCController.UpdateCombatAI 的
+            // FindFirstCombatAbilityHandle 恒返回无效句柄并早退，NPC 只会追人不会出手。
+            WieldFirstLoadoutWeapon();
+        }
+
+        /// <summary>
+        /// 持握装载表里的第一件武器（对应 UE5 NPC 蓝图 BeginPlay 的装备步骤）。
+        /// 只走 <c>NarrativeInventoryComponent.UseItemOfClass</c> —— 与玩家快捷换武同一条通路
+        /// （<c>UnrealFramework/NarrativePlayerController.cs</c> ProcessQuickWield），
+        /// 非武器类 ID 不会被误用（不会吃掉补给品）。
+        /// </summary>
+        public virtual bool WieldFirstLoadoutWeapon()
+        {
+            var inventory = GetInventoryComponent();
+            if (inventory == null) return false;
+
+            foreach (var roll in GetDefaultItemLoadout())
+            {
+                if (roll == null || roll.ItemsToGrant == null) continue;
+
+                foreach (var entry in roll.ItemsToGrant)
+                {
+                    if (entry == null || string.IsNullOrEmpty(entry.ItemClassId)) continue;
+
+                    // 只在背包里确实存在且是武器时才持握：UseItemOfClass 会触发物品的 Use()
+                    if (inventory.FindItemOfClass(entry.ItemClassId) is NarrativePro.Items.WeaponItem)
+                    {
+                        return inventory.UseItemOfClass(entry.ItemClassId);
+                    }
+                }
+            }
+
+            return false;
         }
 
         // ===== 名称 =====
@@ -312,7 +374,18 @@ namespace NarrativePro.UnrealFramework
         public virtual NarrativeInventoryComponent GetTradingInventoryComponent() => TradingInventoryComponent;
 
         /// <summary>重写：获取交互组件（NPC 没有 InteractionComponent，返回 null）。</summary>
-        public override NarrativeInteractionComponent GetInteractionComponent() => null;
+        public override NarrativeInteractionComponent GetInteractionComponent()
+        {
+            // 原来恒返回 null：NPC 侧交互/对话入口因此全部空转。
+            // 基类现在会在 OnEnable 构建 NPCInteractionComponent，这里直接复用其解析结果。
+            return base.GetInteractionComponent();
+        }
+
+        /// <summary>NPC 角色使用 <see cref="NPCInteractionComponent"/>（对应 UE5 NPC 侧类默认交互对象）。</summary>
+        protected override NarrativeInteractionComponent CreateInteractionComponent()
+        {
+            return Actor.AddScript<NPCInteractionComponent>();
+        }
 
         /// <summary>重写：获取背包组件（NPC 优先返回主背包）。</summary>
         public override NarrativeInventoryComponent GetInventoryComponent() => InventoryComponent;
@@ -364,63 +437,171 @@ namespace NarrativePro.UnrealFramework
             if (other == null) return 1; // 中立
             if (Hostiles.Contains(other)) return 2; // 敌对
 
-            // TODO [需接入 NarrativeGameState 系统]: 通过 NarrativeGameState 查询阵营态度
-            return 1; // 中立
+            // Flax-已实现: 通过 NarrativeGameState 阵营联盟图查询（对应 UE5 GetWorldState()->GetTeamAttitudeTowards）
+            var gameState = NarrativeGameState.GetCurrent();
+            if (gameState == null) return 1; // 中立
+            // 目标阵营走共用解析器：角色用定义 DefaultFactions，宿主玩家用其 NarrativePlayerState。
+            // 否则宿主玩家（无 NarrativeCharacter 定义）阵营恒空 → 被阵营化 NPC 视为「一方有阵营」的敌对目标。
+            var targetFactions = NarrativePlayerController.ResolveActorFactions(other);
+            var attitude = gameState.GetFactionsAttitudeTowardsFactions(NPCDefinition?.DefaultFactions ?? new GameplayTagContainer(), targetFactions);
+            return (byte)attitude; // ETeamAttitude: Friendly=0/Neutral=1/Hostile=2，与返回值口径一致
         }
 
         // ===== 标签对话 =====
 
-        /// <summary>尝试播放标签对话。对应 UE5 PlayTaggedDialogue。</summary>
+        /// <summary>
+        /// 尝试播放标签对话。对应 UE5 PlayTaggedDialogue（NarrativeNPCCharacter.cpp:536-557）：
+        /// 逐条比较标签，条目冷却（FTaggedDialogue.Cooldown/LastPlayTime，:548）、
+        /// TalesComponent 的按标签冷却表（TaggedDialogueCooldowns/FallbackCooldown，
+        /// TalesComponent.h:276-287，端口 TalesComponent.cs:827-866）、距离与 Required/Blocked 标签
+        /// 全部通过才播出并记录播放时间。返回是否实际播出。</summary>
         /// <param name="tag">对话触发标签（Narrative.TaggedDialogue 分类）。</param>
         /// <param name="dialogueInstigator">对话发起者。</param>
-        public virtual void PlayTaggedDialogue(GameplayTag tag, Actor dialogueInstigator)
+        public virtual bool PlayTaggedDialogue(GameplayTag tag, Actor dialogueInstigator)
         {
-            if (!tag.IsValid()) return;
+            if (!tag.IsValid()) return false;
+
+            var talesComp = Actor != null ? Actor.GetScript<TalesComponent>() : null;
             TaggedDialogue found = null;
             foreach (var td in TaggedDialogues)
             {
                 if (td == null) continue;
                 if (td.Tag == tag)
                 {
-                    // 检查冷却
-                    if (Time.GameTime - td.LastPlayTime < td.Cooldown) return;
+                    // 检查条目冷却（UE5 FTaggedDialogue.Cooldown + LastPlayTime）
+                    if (Time.GameTime - td.LastPlayTime < td.Cooldown) return false;
+                    // 检查组件级冷却表（SetTaggedDialogueCooldown 可按标签覆写，缺省 FallbackCooldown）
+                    if (talesComp != null && !talesComp.CanPlayTaggedDialogue(tag, Time.GameTime)) return false;
                     // 检查距离
                     if (dialogueInstigator != null && Actor != null)
                     {
                         float dist = Vector3.Distance(Actor.Position, dialogueInstigator.Position);
-                        if (dist > td.MaxDistance) return;
+                        if (dist > td.MaxDistance) return false;
                     }
                     // 检查 RequiredTags
-                    if (td.RequiredTags != null && !HasAllMatchingGameplayTags(td.RequiredTags)) return;
+                    if (td.RequiredTags != null && !HasAllMatchingGameplayTags(td.RequiredTags)) return false;
                     // 检查 BlockedTags
-                    if (td.BlockedTags != null && HasAnyMatchingGameplayTags(td.BlockedTags)) return;
+                    if (td.BlockedTags != null && HasAnyMatchingGameplayTags(td.BlockedTags)) return false;
                     found = td;
                     break;
                 }
             }
-            if (found == null) return;
+            if (found == null) return false;
 
             found.LastPlayTime = Time.GameTime;
+            talesComp?.MarkTaggedDialoguePlayed(tag, Time.GameTime);
             ExecutePlayTaggedDialogue(found, dialogueInstigator);
+            return true;
         }
 
         /// <summary>实际执行标签对话播放。对应 UE5 ExecutePlayTaggedDialogue（BlueprintImplementableEvent）。</summary>
         public virtual void ExecutePlayTaggedDialogue(TaggedDialogue dialogue, Actor dialogueInstigator)
         {
-            // TODO [需接入 Tales 对话系统]: 加载并播放对话
-            NarrativeLog.Log($"[NarrativeNPCCharacter] {GetNPCName()} 播放标签对话: {dialogue?.Tag}");
+            // Flax-已实现: 通过交互者（回退 NPC 自身）的 TalesComponent.BeginDialogue 播放（对应 UE5 BP 播放 Dialogue 类）
+            if (dialogue == null || string.IsNullOrEmpty(dialogue.DialoguePath)) return;
+            TalesComponent tales = dialogueInstigator != null ? dialogueInstigator.GetScript<TalesComponent>() : null;
+            tales ??= Actor != null ? Actor.GetScript<TalesComponent>() : null;
+            if (tales != null)
+            {
+                tales.BeginDialogue(dialogue.DialoguePath);
+            }
+            else
+            {
+                NarrativeLog.LogWarning($"[NarrativeNPCCharacter] {GetNPCName()} 播放标签对话失败：未找到 TalesComponent（{dialogue.Tag}）");
+            }
         }
 
         // ===== 死亡处理 =====
 
-        /// <summary>重写：处理死亡。对应 UE5 HandleDeath_Implementation。</summary>
-        protected override void HandleDeath(Actor killedActor, NarrativeAbilitySystemComponent killedActorASC)
+        /// <summary>重写：处理死亡/复活。对应 UE5 <c>HandleDeath_Implementation</c>（NarrativeNPCCharacter.cpp:443-460）。</summary>
+        protected override void HandleDeath(Actor killedActor, NarrativeAbilitySystemComponent killedActorASC, bool bIsDead)
         {
-            base.HandleDeath(killedActor, killedActorASC);
-            CachedController?.HandleDeath(killedActor, killedActorASC);
+            base.HandleDeath(killedActor, killedActorASC, bIsDead);
+
+            // 控制器侧的清理不在这里转发：UE5 由 NarrativeNPCController 自己绑 OnDeathStateChanged
+            // （NarrativeNPCController.cpp:160-166，端口 AI/NarrativeNPCController.cs:128-134 同构），
+            // 再调一次会把 CleanUp 跑两遍。
+
+            // 尸体可搜刮：UE5 的 NPCInteractable 靠存活状态在"对话"与"搜刮"两个分支间切换，
+            // 本端口的 bIsAlive 此前没有任何写入点（NPCInteractable.cs:22 声明后无人赋值），
+            // 打死 NPC 后交互仍走对话分支，搜刮/掉落入口不可达。复活则反向还回。
+            var interactable = NPCInteractableComponent ?? Actor?.GetScript<NPCInteractable>();
+            if (interactable != null)
+            {
+                interactable.bIsAlive = !bIsDead;
+            }
+
+            // 死亡 NPC 不再进存档（UE5 :454-458 RemoveSingleActor）：否则读档会按动态重生把尸体重新生成一遍
+            if (bIsDead && Actor != null)
+            {
+                NarrativePro.SaveSystem.SaveSystemStatics.RemoveSingleActor(Actor);
+            }
         }
 
         // ===== 活动配置 =====
+
+        /// <summary>活动配置是否已加载应用（定义变化只应用一次）。</summary>
+        [NonSerialized]
+        protected bool bActivityConfigurationApplied;
+
+        /// <summary>
+        /// 从生成参数覆盖 / NPC 定义 / 活动组件预置路径解析活动配置路径，加载 JSON 并应用；
+        /// 随后应用定义中的活动调度列表。对应 UE5 生成时加载 NPCActivityConfiguration 数据资产
+        /// 并调用 SetActivityConfiguration（NPCActivityComponent.cpp:601-623）+ 调度派生活动
+        /// （AddActivitySchedule，:568-591）。
+        /// </summary>
+        /// <summary>
+        /// NPC 定义/生成参数都没给活动配置路径时使用的默认配置（Content/NarrativePro/Activities/ 下随插件发布）。
+        /// </summary>
+        public const string DefaultActivityConfigurationPath =
+            "Content/NarrativePro/Activities/DefaultNPCActivityConfiguration.json";
+
+        public virtual void ApplyActivityConfigurationFromDefinition()
+        {
+            if (bActivityConfigurationApplied) return;
+
+            var activityComp = GetActivityComponent();
+            string configPath = null;
+            var spawnParams = SpawnInfo?.SpawnParams;
+
+            // 路径优先级与 UE5 一致：生成参数显式覆盖 > NPC 定义引用 > 组件上预置的路径
+            if (spawnParams != null && spawnParams.bOverride_ActivityConfiguration)
+            {
+                configPath = spawnParams.ActivityConfigurationPath;
+            }
+            else if (NPCDefinition != null && !string.IsNullOrEmpty(NPCDefinition.ActivityConfigurationPath))
+            {
+                configPath = NPCDefinition.ActivityConfigurationPath;
+            }
+            else if (activityComp != null && !string.IsNullOrEmpty(activityComp.ActivityConfigurationPath))
+            {
+                configPath = activityComp.ActivityConfigurationPath;
+            }
+            else
+            {
+                // UE5 的 NPC 定义必然引用一份数据资产；本项目的定义是 JSON 路径字符串，可能留空。
+                // 留空时退回默认配置，否则新 NPC 会带着空活动表跑，整套日程/评分逻辑形同不存在。
+                configPath = DefaultActivityConfigurationPath;
+            }
+
+            if (!string.IsNullOrEmpty(configPath))
+            {
+                var config = NPCActivityConfigurationLoader.Load(configPath);
+                if (config != null)
+                {
+                    ApplyActivityConfig(config);
+                    bActivityConfigurationApplied = true;
+
+                    // 记录生效路径到组件，供存档诊断与后续 RemoveActivitySchedule 对照
+                    if (activityComp != null && string.IsNullOrEmpty(activityComp.ActivityConfigurationPath))
+                    {
+                        activityComp.ActivityConfigurationPath = configPath;
+                    }
+                }
+            }
+
+            ApplyActivitySchedules(NPCDefinition?.ActivitySchedulePaths);
+        }
 
         /// <summary>应用活动配置。对应 UE5 ApplyActivityConfig_Implementation。</summary>
         public virtual void ApplyActivityConfig(NPCActivityConfiguration npcActivityConfig)
@@ -429,18 +610,36 @@ namespace NarrativePro.UnrealFramework
             var activityComp = GetActivityComponent();
             if (activityComp != null)
             {
-                // TODO [需接入 NPCActivityComponent 系统]: 接入 NPCActivityComponent 的配置应用
+                // Flax-已实现: 委托 NPCActivityComponent.SetActivityConfiguration（对应 UE5 ActivityComp->SetActivityConfiguration）
+                activityComp.SetActivityConfiguration(npcActivityConfig);
             }
         }
 
-        /// <summary>应用活动调度。对应 UE5 ApplyActivitySchedules_Implementation。</summary>
+        /// <summary>
+        /// 应用活动调度。对应 UE5 ApplyActivitySchedules_Implementation：
+        /// 逐条加载 UNPCActivitySchedule 资产并 AddActivitySchedule（组件内复制行为实例、
+        /// 绑定昼夜事件，到点自动加/移除调度目标）。Flax 走本插件 JSON 数据约定
+        /// （<see cref="NPCActivityConfigurationLoader.LoadSchedule"/>）。
+        /// </summary>
         /// <param name="activitySchedulePaths">活动调度路径列表。</param>
         public virtual void ApplyActivitySchedules(List<string> activitySchedulePaths)
         {
-            if (activitySchedulePaths == null) return;
+            if (activitySchedulePaths == null || activitySchedulePaths.Count == 0) return;
             var activityComp = GetActivityComponent();
-            if (activityComp == null) return;
-            // TODO [需接入 NPCActivityComponent 系统]: 加载调度并应用到活动组件
+            if (activityComp == null)
+            {
+                NarrativeLog.LogWarning($"[NarrativeNPCCharacter] {GetNPCName()} 无 NPCActivityComponent，{activitySchedulePaths.Count} 个活动调度未应用");
+                return;
+            }
+
+            foreach (var schedulePath in activitySchedulePaths)
+            {
+                if (string.IsNullOrEmpty(schedulePath)) continue;
+                var schedule = NPCActivityConfigurationLoader.LoadSchedule(schedulePath);
+                if (schedule == null) continue;
+                if (string.IsNullOrEmpty(schedule.ScheduleAssetPath)) schedule.ScheduleAssetPath = schedulePath;
+                activityComp.AddActivitySchedule(schedule);
+            }
         }
 
         /// <summary>应用对话。对应 UE5 ApplyDialogue_Implementation。</summary>
@@ -449,14 +648,15 @@ namespace NarrativePro.UnrealFramework
         {
             if (NPCInteractableComponent != null)
             {
-                // TODO [需接入 Tales 对话系统]: 设置 NPC 交互组件的对话路径
+                // Flax-已实现: 写入 NPCInteractable.DialoguePath（对应 UE5 Interactable->DialoguePath）
+                NPCInteractableComponent.DialoguePath = npcDialoguePath ?? "";
             }
         }
 
         // ===== 默认数据获取（供基类 OnDefinitionSet 调用）=====
 
-        /// <summary>获取默认物品装载（重写：NPC 从定义/生成参数获取）。</summary>
-        public virtual List<LootTableRoll> GetDefaultItemLoadout()
+        /// <summary>获取默认物品装载（重写基类虚函数：NPC 从定义/生成参数获取，UE5 GetDefaultItemLoadout BP 虚函数等价）。</summary>
+        public override List<LootTableRoll> GetDefaultItemLoadout()
         {
             if (SpawnInfo?.SpawnParams?.bOverride_DefaultItemLoadout == true)
             {
@@ -486,6 +686,130 @@ namespace NarrativePro.UnrealFramework
             return NPCDefinition?.TriggerSetPaths ?? new List<string>();
         }
 
+        // ===== 触发器注册表（UE5 ANarrativeCharacter 触发器生命周期的 NPC 侧宿主） =====
+
+        /// <summary>
+        /// 应用角色定义/生成参数里的触发器集。对应 UE5 OnCharacterDefinitionDataLoaded 的
+        /// 「2. Apply any trigger sets」+ ApplyTriggerSets_Implementation
+        /// （NarrativeCharacter.cpp:535-556、1877-1891）：逐集逐模板 AddTrigger。
+        /// 定义未显式引用 TriggerSetPaths 时，回退到触发器 JSON 数据侧的 appliesToNpcIds 绑定
+        /// （Flax 无 TSoftObjectPtr 资产引用的等价通路，见 TriggerSet.AppliesToNpcIds 注释）。
+        /// </summary>
+        public virtual void ApplyTriggerSetsFromDefinition()
+        {
+            if (Triggers == null) Triggers = new List<NarrativeTrigger>();
+
+            List<Tales.TriggerSet> sets = null;
+            var paths = GetDefaultTriggerSetPaths();
+            if (paths != null && paths.Count > 0)
+            {
+                sets = new List<Tales.TriggerSet>();
+                foreach (var path in paths)
+                {
+                    var set = NarrativePro.Data.NarrativeDataLoader.LoadTriggerSet(path);
+                    if (set == null)
+                    {
+                        NarrativeLog.LogWarning($"[NarrativeNPCCharacter] {GetNPCName()} 触发器集加载失败: {path}");
+                        continue;
+                    }
+                    sets.Add(set);
+                }
+            }
+            else
+            {
+                sets = NarrativePro.Data.NarrativeDataLoader.GetTriggerSetsForNpc(NPCDefinition?.NPCID);
+            }
+
+            if (sets == null) return;
+            foreach (var set in sets)
+            {
+                if (set?.Triggers == null) continue;
+                foreach (var template in set.Triggers)
+                {
+                    AddTrigger(template);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 复制触发器模板、绑定宿主角色并初始化。对应 UE5 AddTrigger
+        /// （NarrativeCharacter.cpp:1921-1935：DuplicateObject → OwnerCharacter → Initialize → Triggers.Add）。
+        /// </summary>
+        public virtual NarrativeTrigger AddTrigger(NarrativeTrigger template)
+        {
+            if (template == null) return null;
+
+            var newTrigger = template.CopyForOwner(Actor);
+            if (newTrigger == null) return null;
+
+            Triggers.Add(newTrigger);
+            newTrigger.Initialize();
+            return newTrigger;
+        }
+
+        /// <summary>移除触发器并解绑其运行时注册。对应 UE5 RemoveTrigger（NarrativeCharacter.cpp:1938-1946）。</summary>
+        public virtual bool RemoveTrigger(NarrativeTrigger trigger)
+        {
+            if (trigger == null) return false;
+            trigger.Unbind();
+            return Triggers.Remove(trigger);
+        }
+
+        /// <summary>解绑并清空全部触发器（OnDisable 调用；UE5 里由对象销毁自动完成）。</summary>
+        public void ClearTriggers()
+        {
+            if (Triggers == null) return;
+            for (int i = 0; i < Triggers.Count; i++)
+            {
+                Triggers[i]?.Unbind();
+            }
+            Triggers.Clear();
+        }
+
+        /// <summary>
+        /// 从 TaggedDialogueSetPath（或数据侧 appliesToNpcIds 回退绑定）加载标签对话。
+        /// 对应 UE5 NPC.cpp:392-397（NPCDef-&gt;TaggedDialogueSet.LoadSynchronous → TaggedDialogues = DSet-&gt;TaggedDialogues）。
+        /// </summary>
+        public virtual void LoadTaggedDialoguesFromDefinition()
+        {
+            var def = NPCDefinition;
+            if (def == null) return;
+
+            Tales.TaggedDialogueSet assetSet = null;
+            if (!string.IsNullOrEmpty(def.TaggedDialogueSetPath))
+            {
+                assetSet = NarrativePro.Data.NarrativeDataLoader.LoadTaggedDialogueSet(def.TaggedDialogueSetPath);
+            }
+            else
+            {
+                assetSet = NarrativePro.Data.NarrativeDataLoader.GetTaggedDialogueSetForNpc(def.NPCID);
+            }
+            if (assetSet?.TaggedDialogues == null || assetSet.TaggedDialogues.Count == 0) return;
+
+            int added = 0;
+            foreach (var entry in assetSet.TaggedDialogues)
+            {
+                if (entry == null || !entry.Tag.IsValid() || string.IsNullOrEmpty(entry.DialoguePath)) continue;
+
+                TaggedDialogues.Add(new TaggedDialogue
+                {
+                    Tag = entry.Tag,
+                    DialoguePath = entry.DialoguePath,
+                    Cooldown = entry.Cooldown,
+                    MaxDistance = entry.MaxDistance,
+                    RequiredTags = entry.RequiredTags ?? new GameplayTagContainer(),
+                    BlockedTags = entry.BlockedTags ?? new GameplayTagContainer(),
+                    LastPlayTime = -10000f,
+                });
+                added++;
+            }
+
+            if (added > 0)
+            {
+                NarrativeLog.Log($"[NarrativeNPCCharacter] {GetNPCName()} 载入标签对话 {added} 条（TaggedDialogueSet）。");
+            }
+        }
+
         // ===== 掉落世界 =====
 
         /// <summary>重写：掉出世界时调用。对应 UE5 FellOutOfWorld。</summary>
@@ -504,13 +828,15 @@ namespace NarrativePro.UnrealFramework
         /// <summary>准备保存。对应 UE5 PrepareForSave_Implementation。</summary>
         public virtual void PrepareForSave()
         {
-            // TODO [需接入存档系统]: 收集需要保存的状态
+            // 端口中 NPC 的状态收集由 SaveSystem/NarrativeSavableActor 与 NarrativeSaveSubsystem 的统一记录路径完成，
+            // 本方法保留为派生类的额外收集扩展点（对应 UE5 BP 覆写位），无独立状态需要在此收集。
         }
 
         /// <summary>加载存档。对应 UE5 Load_Implementation。</summary>
         public virtual void Load()
         {
-            // TODO [需接入存档系统]: 从存档恢复状态
+            // 端口中 NPC 的存档恢复由 SaveSystem（StableActor GUID → ActorRecords）在生成后回灌，
+            // 本方法保留为派生类的恢复扩展点（对应 UE5 BP 覆写位），无独立状态需要在此恢复。
         }
 
         /// <summary>处理生成参数覆盖加载完成。对应 UE5 HandleSpawnParamOverridesLoaded。</summary>

@@ -1,0 +1,180 @@
+{
+  "//": ["Flax 侧交通配置（对应 UE5 的 ZoneGraph 资产 + 关卡里的 MassVehicleSpawner / QuestRoadControls / ATrafficLight）", "本游戏的玩法场景不实例化任何插件 Actor，因此车流全部由 Content/NarrativePro/Vehicles/*.json 驱动，", "由 VehicleTrafficSimulation（挂在运行期宿主上）构建车道网络、生成器、道路控制器与交通灯。", "坐标单位为 Flax 世界单位（100 = 1m）；bFollowObserver=true 时所有点按「首次构建时本地玩家位置」平移。", "拓扑：两条互相交叉的闭合环线，交汇处是一个四向信号灯路口（int_* 车道带 Intersection 标签、同 zoneIndex=0）。"],
+  "name": "default_traffic",
+  "bEnabled": true,
+  "bFollowObserver": true,
+  "obstacleCellSize": 900.0,
+  "intersectionTagName": "Intersection",
+  "closedTagName": "Closed",
+  "laneCloseAdvanceTime": 3.0,
+  "periodDurationScale": 4.0,
+  "simplePeriodDuration": 10.0,
+  "straightPeriodDuration": 15.0,
+  "allDirectionsPeriodDuration": 10.0,
+
+  "templates": [
+    {
+      "name": "TrafficVehicle",
+      "maxSpeed": 320.0,
+      "radius": 60.0,
+      "seatCount": 2,
+      "minimumDistanceToNext": 220.0,
+      "brakingDistanceFromNext": 600.0,
+      "minimumDistanceToObstacle": 120.0,
+      "brakingDistanceFromObstacle": 450.0,
+      "closedLaneBrakingDistance": 420.0,
+      "obstacleSearchRadius": 900.0,
+      "laneSearchRadius": 700.0,
+      "throttleProportional": 1.2,
+      "throttleIntegral": 0.02,
+      "throttleDerivative": 0.25,
+      "steeringProportional": 4.0,
+      "steeringIntegral": 0.0,
+      "steeringDerivative": 0.5,
+      "lookAheadDistance": 400.0,
+      "passengerDefinitionPaths": ["Content/NarrativePro/NPCs/ped_citizen.json"],
+      "passengerOneWeight": 0.5
+    }
+  ],
+
+  "lanes": [
+    {
+      "name": "app_n",
+      "points": [ { "X": -60.0, "Y": 0.0, "Z": -3000.0 }, { "X": -60.0, "Y": 0.0, "Z": -300.0 } ],
+      "nextLanes": [ "int_n" ]
+    },
+    {
+      "name": "int_n",
+      "zoneIndex": 0,
+      "tags": [ "Intersection" ],
+      "points": [ { "X": -60.0, "Y": 0.0, "Z": -300.0 }, { "X": -60.0, "Y": 0.0, "Z": 300.0 } ],
+      "nextLanes": [ "out_s" ]
+    },
+    {
+      "name": "out_s",
+      "points": [ { "X": -60.0, "Y": 0.0, "Z": 300.0 }, { "X": -60.0, "Y": 0.0, "Z": 3000.0 } ],
+      "nextLanes": [ "loop_a" ]
+    },
+    {
+      "name": "loop_a",
+      "points": [ { "X": -60.0, "Y": 0.0, "Z": 3000.0 }, { "X": 3000.0, "Y": 0.0, "Z": 3000.0 } ],
+      "nextLanes": [ "loop_b" ]
+    },
+    {
+      "name": "loop_b",
+      "points": [ { "X": 3000.0, "Y": 0.0, "Z": 3000.0 }, { "X": 3000.0, "Y": 0.0, "Z": 60.0 } ],
+      "nextLanes": [ "app_e" ]
+    },
+    {
+      "name": "app_e",
+      "points": [ { "X": 3000.0, "Y": 0.0, "Z": 60.0 }, { "X": 300.0, "Y": 0.0, "Z": 60.0 } ],
+      "nextLanes": [ "int_e" ]
+    },
+    {
+      "name": "int_e",
+      "zoneIndex": 0,
+      "tags": [ "Intersection" ],
+      "points": [ { "X": 300.0, "Y": 0.0, "Z": 60.0 }, { "X": -300.0, "Y": 0.0, "Z": 60.0 } ],
+      "nextLanes": [ "out_w" ]
+    },
+    {
+      "name": "out_w",
+      "points": [ { "X": -300.0, "Y": 0.0, "Z": 60.0 }, { "X": -3000.0, "Y": 0.0, "Z": 60.0 } ],
+      "nextLanes": [ "loop_c" ]
+    },
+    {
+      "name": "loop_c",
+      "points": [ { "X": -3000.0, "Y": 0.0, "Z": 60.0 }, { "X": -3000.0, "Y": 0.0, "Z": -3000.0 } ],
+      "nextLanes": [ "loop_d" ]
+    },
+    {
+      "name": "loop_d",
+      "points": [ { "X": -3000.0, "Y": 0.0, "Z": -3000.0 }, { "X": -60.0, "Y": 0.0, "Z": -3000.0 } ],
+      "nextLanes": [ "app_n" ]
+    },
+
+    {
+      "name": "app_s",
+      "points": [ { "X": 60.0, "Y": 0.0, "Z": 3000.0 }, { "X": 60.0, "Y": 0.0, "Z": 300.0 } ],
+      "nextLanes": [ "int_s" ]
+    },
+    {
+      "name": "int_s",
+      "zoneIndex": 0,
+      "tags": [ "Intersection" ],
+      "points": [ { "X": 60.0, "Y": 0.0, "Z": 300.0 }, { "X": 60.0, "Y": 0.0, "Z": -300.0 } ],
+      "nextLanes": [ "out_n" ]
+    },
+    {
+      "name": "out_n",
+      "points": [ { "X": 60.0, "Y": 0.0, "Z": -300.0 }, { "X": 60.0, "Y": 0.0, "Z": -3000.0 } ],
+      "nextLanes": [ "loop_e" ]
+    },
+    {
+      "name": "loop_e",
+      "points": [ { "X": 60.0, "Y": 0.0, "Z": -3000.0 }, { "X": -3000.0, "Y": 0.0, "Z": -3000.0 } ],
+      "nextLanes": [ "loop_f" ]
+    },
+    {
+      "name": "loop_f",
+      "points": [ { "X": -3000.0, "Y": 0.0, "Z": -3000.0 }, { "X": -3000.0, "Y": 0.0, "Z": -60.0 } ],
+      "nextLanes": [ "app_w" ]
+    },
+    {
+      "name": "app_w",
+      "points": [ { "X": -3000.0, "Y": 0.0, "Z": -60.0 }, { "X": -300.0, "Y": 0.0, "Z": -60.0 } ],
+      "nextLanes": [ "int_w" ]
+    },
+    {
+      "name": "int_w",
+      "zoneIndex": 0,
+      "tags": [ "Intersection" ],
+      "points": [ { "X": -300.0, "Y": 0.0, "Z": -60.0 }, { "X": 300.0, "Y": 0.0, "Z": -60.0 } ],
+      "nextLanes": [ "out_e" ]
+    },
+    {
+      "name": "out_e",
+      "points": [ { "X": 300.0, "Y": 0.0, "Z": -60.0 }, { "X": 3000.0, "Y": 0.0, "Z": -60.0 } ],
+      "nextLanes": [ "loop_g" ]
+    },
+    {
+      "name": "loop_g",
+      "points": [ { "X": 3000.0, "Y": 0.0, "Z": -60.0 }, { "X": 3000.0, "Y": 0.0, "Z": 3000.0 } ],
+      "nextLanes": [ "loop_h" ]
+    },
+    {
+      "name": "loop_h",
+      "points": [ { "X": 3000.0, "Y": 0.0, "Z": 3000.0 }, { "X": 60.0, "Y": 0.0, "Z": 3000.0 } ],
+      "nextLanes": [ "app_s" ]
+    }
+  ],
+
+  "spawners": [
+    {
+      "name": "ring",
+      "templateName": "TrafficVehicle",
+      "spawnCount": 2,
+      "refillIntervalSeconds": 3.0,
+      "boxCenter": { "X": 0.0, "Y": 0.0, "Z": 0.0 },
+      "boxExtent": { "X": 3400.0, "Y": 800.0, "Z": 3400.0 },
+      "bAutoActivateRoadControls": true,
+      "tagsToAdd": [],
+      "randomSelectionSeed": 0
+    }
+  ],
+
+  "trafficLights": [
+    {
+      "name": "north",
+      "sideLocation": { "X": -60.0, "Y": 0.0, "Z": -300.0 },
+      "queryExtent": { "X": 1200.0, "Y": 600.0, "Z": 1200.0 },
+      "defaultRule": 4
+    },
+    {
+      "name": "south",
+      "sideLocation": { "X": 60.0, "Y": 0.0, "Z": 300.0 },
+      "queryExtent": { "X": 1200.0, "Y": 600.0, "Z": 1200.0 },
+      "defaultRule": 4
+    }
+  ]
+}

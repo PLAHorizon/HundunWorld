@@ -101,6 +101,7 @@ namespace HundunWorld.Game.Network.MessageHandlers
                 await TryGrantStarterKitAsync(response.CharacterId, response.Items);
                 await TryGrantStarterEquipmentAsync(response.CharacterId);
                 await TryGrantStarterGemsAsync(response.CharacterId);
+                await TryGrantStarterAppearanceAsync(response.CharacterId);
                 return;
             }
 
@@ -112,6 +113,7 @@ namespace HundunWorld.Game.Network.MessageHandlers
             await TryGrantStarterKitAsync(response.CharacterId, response.Items);
             await TryGrantStarterEquipmentAsync(response.CharacterId);
             await TryGrantStarterGemsAsync(response.CharacterId);
+            await TryGrantStarterAppearanceAsync(response.CharacterId);
         }
 
         /// <summary>本次会话是否已做过新手装备补发检查。</summary>
@@ -194,6 +196,48 @@ namespace HundunWorld.Game.Network.MessageHandlers
             _starterGemsCheckedThisSession = true;
             await persistence.MarkStarterGemsGrantedAsync(characterId);
             Debug.Log("[RoleInventorySync] 已补发新手宝石（金锐珠×2、木灵珠×1、水华珠×1）。");
+            await RequestAsync(characterId);
+        }
+
+        /// <summary>本次会话是否已做过新手外观补发检查。</summary>
+        private static bool _starterAppearanceCheckedThisSession;
+
+        /// <summary>
+        /// 新手外观一次性补发：男女各一件，让"外观页穿戴 → 整体外形改变"开箱即可验证。
+        /// 用独立持久标记，老角色（已领过装备/宝石）也能补到外观，不必新建角色。
+        /// </summary>
+        private static async Task TryGrantStarterAppearanceAsync(ulong characterId)
+        {
+            if (_starterAppearanceCheckedThisSession || characterId == 0UL) return;
+
+            var persistence = Services.CharacterPersistenceService.Instance;
+            if (persistence == null) return;
+
+            if (await persistence.IsStarterAppearanceGrantedAsync(characterId))
+            {
+                _starterAppearanceCheckedThisSession = true;
+                return;
+            }
+
+            var networkManager = HundunWorldGame.Instance?.NetworkManager;
+            if (networkManager == null || !networkManager.CanSendMessage()) return;
+
+            var sent = await networkManager.SendAsync(new InventoryGrantMessage
+            {
+                CharacterId = characterId,
+                Entries = new List<InventoryGrantEntry>
+                {
+                    new InventoryGrantEntry { TemplateId = EquipmentDatabase.AppearanceXuanmoId, Count = 1 },
+                    new InventoryGrantEntry { TemplateId = EquipmentDatabase.AppearanceXuantieId, Count = 1 },
+                    new InventoryGrantEntry { TemplateId = EquipmentDatabase.AppearanceLiuyunId, Count = 1 },
+                    new InventoryGrantEntry { TemplateId = EquipmentDatabase.AppearanceSuxueId, Count = 1 },
+                }
+            });
+            if (!sent) return;
+
+            _starterAppearanceCheckedThisSession = true;
+            await persistence.MarkStarterAppearanceGrantedAsync(characterId);
+            Debug.Log("[RoleInventorySync] 已补发新手外观（玄墨劲装/流云霓裳各 1）。");
             await RequestAsync(characterId);
         }
 

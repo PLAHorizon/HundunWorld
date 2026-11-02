@@ -219,13 +219,16 @@ namespace HundunWorld.Game.UI.Authentication
             };
             _rememberLabel = MakeLabel("记住密码", LoginInkTokens.FontBody, LoginInkTokens.Ink600, TextAlignment.Near);
             _rememberLabel.Parent = _card;
+            // 自动登录没有任何实现（PassportInfo 里也没有对应字段）：勾选状态无处可存，
+            // 保持可见但不可点，并在文案里说明未开放，避免让人以为勾了就会自动登录。
             _autoLoginCheckBox = new CheckBox
             {
                 Checked = false,
-                ImageColor = LoginInkTokens.Primary500,
+                Enabled = false,
+                ImageColor = LoginInkTokens.Ink400,
                 Parent = _card
             };
-            _autoLoginLabel = MakeLabel("自动登录", LoginInkTokens.FontBody, LoginInkTokens.Ink600, TextAlignment.Near);
+            _autoLoginLabel = MakeLabel("自动登录·未开放", LoginInkTokens.FontBody, LoginInkTokens.Ink400, TextAlignment.Near);
             _autoLoginLabel.Parent = _card;
 
             // 主 CTA「进 入 江 湖」（悬停微缩放）
@@ -263,6 +266,7 @@ namespace HundunWorld.Game.UI.Authentication
                 Font = UIHelper.SetFont(size: LoginInkTokens.FontBodySm),
                 Parent = _card
             };
+            _forgotButton.ButtonClicked += OnForgotPasswordClicked;
 
             StatusLabel = MakeLabel("请输入账户信息", LoginInkTokens.FontBodySm, LoginInkTokens.Ink500, TextAlignment.Center);
             StatusLabel.Parent = _card;
@@ -271,9 +275,10 @@ namespace HundunWorld.Game.UI.Authentication
             _footer = MakePanel(LoginInkTokens.WithAlpha(LoginInkTokens.Paper, 0.0f));
             _footer.Parent = _content;
             _statusDot = new LoginPulseDot { DotColor = LoginInkTokens.StateSuccess, Parent = _footer };
-            _serverLabel = MakeLabel("服务器：烽火连城 · 流畅", LoginInkTokens.FontBodySm, LoginInkTokens.Ink500, TextAlignment.Near);
+            // 服务器行只反映真实连接状态（旧文案写死"烽火连城 · 流畅"，与实际连接无关）
+            _serverLabel = MakeLabel("服务器：未连接", LoginInkTokens.FontBodySm, LoginInkTokens.Ink500, TextAlignment.Near);
             _serverLabel.Parent = _footer;
-            _versionLabel = MakeLabel("v1.0.0", LoginInkTokens.FontBodySm, LoginInkTokens.Ink400, TextAlignment.Center);
+            _versionLabel = MakeLabel("v1.2.0", LoginInkTokens.FontBodySm, LoginInkTokens.Ink400, TextAlignment.Center);
             _versionLabel.Parent = _footer;
             _copyrightLabel = MakeLabel("© 混沌世界", LoginInkTokens.FontBodySm, LoginInkTokens.Ink400, TextAlignment.Far);
             _copyrightLabel.Parent = _footer;
@@ -425,6 +430,8 @@ namespace HundunWorld.Game.UI.Authentication
 
         private void OnConnectionStatusChanged(ConnectionStatus obj)
         {
+            UpdateServerLine(obj);
+
             // 按钮始终保持可点击，由 AuthenticationManager 内部处理重连；这里只更新状态提示。
             switch (obj)
             {
@@ -456,6 +463,41 @@ namespace HundunWorld.Game.UI.Authentication
             }
         }
 
+        /// <summary>底部「服务器」行与状态圆点跟随真实连接状态。</summary>
+        private void UpdateServerLine(ConnectionStatus status)
+        {
+            if (_serverLabel == null)
+                return;
+
+            string text;
+            Color dot;
+            switch (status)
+            {
+                case ConnectionStatus.Connected:
+                    text = "服务器：已连接";
+                    dot = LoginInkTokens.StateSuccess;
+                    break;
+                case ConnectionStatus.Connecting:
+                case ConnectionStatus.Reconnecting:
+                case ConnectionStatus.GatewaySwitching:
+                    text = "服务器：连接中…";
+                    dot = LoginInkTokens.StateWarning;
+                    break;
+                case ConnectionStatus.Disconnected:
+                    text = "服务器：未连接";
+                    dot = LoginInkTokens.Ink400;
+                    break;
+                default:
+                    text = "服务器：连接异常";
+                    dot = LoginInkTokens.StateError;
+                    break;
+            }
+
+            _serverLabel.Text = text;
+            if (_statusDot != null)
+                _statusDot.DotColor = dot;
+        }
+
         /// <summary>刷新UI（响应尺寸变化）。</summary>
         public void RefreshLayout()
         {
@@ -480,6 +522,12 @@ namespace HundunWorld.Game.UI.Authentication
         private void OnSwitchToRegisterClicked(Button sender)
         {
             SwitchToRegisterClicked?.Invoke(this);
+        }
+
+        /// <summary>找回密码：全仓没有对应的服务端接口，点开后如实提示，不弹假的输入流程。</summary>
+        private void OnForgotPasswordClicked(Button sender)
+        {
+            SetStatus("找回密码尚未接入服务端，请联系客服重置", UIStyleTokens.StatusWarning);
         }
 
         /// <summary>验证输入。</summary>
@@ -562,6 +610,7 @@ namespace HundunWorld.Game.UI.Authentication
             {
                 var status = networkManager.GetConnectionStatus();
                 FlaxEngine.Debug.Log($"[LoginPanel] 检查网络状态: {status}");
+                UpdateServerLine(status);
                 if (status == Horizon.Game.Message.Enums.ConnectionStatus.Connected)
                 {
                     SetStatus("已连接服务器，请输入账户信息", UIStyleTokens.StatusSuccess);
@@ -590,6 +639,8 @@ namespace HundunWorld.Game.UI.Authentication
                 SwitchToRegisterButton.ButtonClicked -= OnSwitchToRegisterClicked;
             if (_eyeButton != null)
                 _eyeButton.ButtonClicked -= OnTogglePasswordClicked;
+            if (_forgotButton != null)
+                _forgotButton.ButtonClicked -= OnForgotPasswordClicked;
 
             LoginButtonClicked = null;
             SwitchToRegisterClicked = null;

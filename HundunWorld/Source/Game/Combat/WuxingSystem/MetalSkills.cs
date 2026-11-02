@@ -3,6 +3,7 @@ using Game.Character.Attributes;
 using Game.Combat.Skills;
 using Game.Combat.Effects;
 using HundunWorld.Game.Combat.Skills;
+using Horizon.Game.Message.Enums;
 
 namespace Game.Combat.WuxingSystem
 {
@@ -20,6 +21,28 @@ namespace Game.Combat.WuxingSystem
         public float ArmorBreakPercent = 15f;
 
         private Actor activeHitEffectActor;
+
+        // 金系此前只有类实现、没有 SkillData，id/五行全靠 SkillDatabase 单方面声明，
+        // 服务端技能模板表里那三行也是从它抄的。这里把运行时补齐，施放上报的 SkillId 才有值可报。
+        public override void OnAwake()
+        {
+            base.OnAwake();
+
+            Data = new SkillData
+            {
+                SkillId = 1001,
+                SkillName = "裂金斩",
+                Description = "以刚猛内力凝于剑锋，劈出金色剑气。",
+                Element = WuxingElement.Metal,
+                Type = SkillType.ActiveAttack,
+                DamageMultiplier = 1.5f,
+                EnergyCost = 30f,
+                Cooldown = 3f,
+                Range = 5f,
+                CastTime = 0.4f,
+                RequiredLevel = 1
+            };
+        }
 
         protected override void ExecuteSkill(Actor target)
         {
@@ -66,6 +89,26 @@ namespace Game.Combat.WuxingSystem
         private int currentComboHit = 0;
         private float comboTimer = 0f;
         private Actor activeComboEffectActor;
+
+        public override void OnAwake()
+        {
+            base.OnAwake();
+
+            Data = new SkillData
+            {
+                SkillId = 1002,
+                SkillName = "断岳击",
+                Description = "裂金斩后续招， upward 挑击将敌人击飞。",
+                Element = WuxingElement.Metal,
+                Type = SkillType.ActiveAttack,
+                DamageMultiplier = 1.8f,
+                EnergyCost = 25f,
+                Cooldown = 0f,
+                Range = 4f,
+                CastTime = 0.3f,
+                RequiredLevel = 1
+            };
+        }
 
         protected override void ExecuteSkill(Actor target)
         {
@@ -130,6 +173,28 @@ namespace Game.Combat.WuxingSystem
         private bool isActive = false;
         private Actor activeShieldEffectActor;
         private SkillEffect activeDefenseBuff;
+
+        // 1003 以前在表里写的是"万剑归宗"（攻击终结技），而运行时这个类是减伤防御技，
+        // 两边对不上。现在 1003 归金钟罩、万剑归宗挪到 1004（服务端 010 脚本同步）。
+        public override void OnAwake()
+        {
+            base.OnAwake();
+
+            Data = new SkillData
+            {
+                SkillId = 1003,
+                SkillName = "金钟罩",
+                Description = "运起金钟罩，5 秒内减少 50% 所受伤害。",
+                Element = WuxingElement.Metal,
+                Type = SkillType.Support,
+                DamageMultiplier = 0f,
+                EnergyCost = 80f,
+                Cooldown = 20f,
+                Range = 0f,
+                CastTime = 0.5f,
+                RequiredLevel = 5
+            };
+        }
 
         protected override void ExecuteSkill(Actor target)
         {

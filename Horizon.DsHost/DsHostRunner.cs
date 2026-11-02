@@ -34,6 +34,11 @@ public sealed class DsHostOptions
     /// <summary>刷怪点配置（空 = 世界内无怪，仅同步玩家）。</summary>
     public System.Collections.Generic.List<Horizon.Game.Sim.SpawnPointConfig> SpawnPoints { get; set; } = new();
 
+    /// <summary>
+    /// 服务端导航网格（怪物寻路用）。默认无效 = 全部走直线，与装入前的行为逐字相同。
+    /// </summary>
+    public Horizon.Game.Sim.Monsters.MonsterNavGrid NavGrid { get; set; }
+
     /// <summary>单 tick 上行处理上限（防止积压洪峰超帧预算）。</summary>
     public int MaxInboundPerTick { get; set; } = 512;
 
@@ -57,6 +62,30 @@ public sealed class DsHostOptions
 
     /// <summary>AOI 视野半径（chunk 数）。默认 28（≈448m），与 Orleans 握手路径一致。</summary>
     public int AoiRadiusChunks { get; set; } = 28;
+
+    /// <summary>
+    /// 是否接受网关下发的脚本生成指令（怪物/NPC/特殊事件）。默认 false = 灰度关闭。
+    /// </summary>
+    public bool EnableScriptedSpawn { get; set; }
+
+    /// <summary>把掉落扣在尸体上、由权威侧裁决拾取（默认关：客户端拾取入口就绪前开它会让掉落拳在没人能取的地方）。</summary>
+    public bool DeferCorpseLootToAuthority { get; set; }
+
+    /// <summary>
+    /// 脚本令牌 HMAC 密钥（Base64，与网关/Grain 共享）。
+    /// <para>为空则 DS 拒绝一切脚本指令——<b>绝不因缺密钥而跳过验签</b>。</para>
+    /// </summary>
+    public string ScriptedSigningKeyBase64 { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 本 shard 同时存活的触发区域硬顶。
+    /// <para>由 <c>Program.cs</c> 从 <c>ScriptedSpawnOptions.MaxTriggerZonesPerShard</c> 注入，
+    /// 使启动自检日志报出的限额就是 DS 真正执行的限额（而非两套默认值各说各话）。</para>
+    /// </summary>
+    public int MaxScriptedTriggerZones { get; set; } = 32;
+
+    /// <summary>触发区域未显式给 TTL 时的强制上限秒数，来源同上（<c>MaxTriggerTtlSeconds</c>）。</summary>
+    public int MaxScriptedTriggerZoneTtlSeconds { get; set; } = 600;
 
     /// <summary>
     /// 单 DS 软容量上限（会话数）。超过时 <see cref="DsWorldSession.AddPlayer"/> 拒绝新玩家，
@@ -139,12 +168,32 @@ public sealed class DsHostRunner : IAsyncDisposable
             AoiChunkSize = _options.AoiChunkSize,
             AoiRadiusChunks = _options.AoiRadiusChunks,
             MaxSessions = _options.MaxSessionsPerDs,
+            EnableScriptedSpawn = _options.EnableScriptedSpawn,
+            DeferCorpseLootToAuthority = _options.DeferCorpseLootToAuthority,
+            ScriptedSigningKey = DecodeScriptedSigningKey(_options.ScriptedSigningKeyBase64, log),
+            MaxScriptedTriggerZones = _options.MaxScriptedTriggerZones,
+            MaxScriptedTriggerZoneTtlSeconds = _options.MaxScriptedTriggerZoneTtlSeconds,
+            // 令牌绑定的是"操作者被路由到的 shard"，而本进程向注册表声明的是整个 ShardIds 集合；
+            // 只把 ShardIds[0] 当边界会让多片 DS 拒掉除首片外的一切指令。
+            HostedShardIds = _options.ShardIds,
         }, _options.LootProvider);
 
         if (_options.SpawnPoints.Count > 0)
         {
             _world.ConfigureSpawnPoints(_options.SpawnPoints);
         }
+
+        // NPC 内容刷点：没装 NPC 内容时是 0/0/0/0 的空操作，行为与之前逐字相同。
+        // 敌对型 NPC 会被如实计数并跳过（属性/掉落/经验三件套还没接，见 DsWorldSession 的注释）。
+        var npcSpawn = _world.ApplyNpcContentSpawns();
+        if (npcSpawn.Spawned + npcSpawn.SkippedHostile + npcSpawn.SkippedShard + npcSpawn.SkippedUnknown > 0)
+        {
+            log?.Invoke($"NPC 刷点：已生成 {npcSpawn.Spawned}"
+                        + $"（其中敌对型 {npcSpawn.SkippedHostile}；分片不符 {npcSpawn.SkippedShard}；模板缺失 {npcSpawn.SkippedUnknown}）");
+        }
+
+        // 导航网格：无效网格也照样调用一次，让"没装图"这件事在会话里是一个明确状态而不是缺省。
+        _world.ConfigureNavigation(_options.NavGrid);
 
         _dataPlane = new DsDataPlaneHost(_world, _options.ListenPort, _options.ListenAddress, log);
     }
@@ -175,6 +224,15 @@ public sealed class DsHostRunner : IAsyncDisposable
 
     /// <summary>累计上送失败（或无发送端）的玩法事件数——业务层对账的告警源。</summary>
     public long GameplayEventsFailed { get; private set; }
+
+    /// <summary>累计产出的实体身份描述符条目数。</summary>
+    public long EntityDescriptorsProduced { get; private set; }
+
+    /// <summary>累计成功上送的实体身份描述符条目数。</summary>
+    public long EntityDescriptorsSent { get; private set; }
+
+    /// <summary>累计上送失败的实体身份描述符条目数（网关会认不出这些实体）。</summary>
+    public long EntityDescriptorsFailed { get; private set; }
 
     /// <summary>上一个快照 tick 的 AOI 分组数（诊断；AOI 关闭或无快照时为 0）。</summary>
     public int LastAoiGroupCount { get; private set; }
@@ -245,6 +303,47 @@ public sealed class DsHostRunner : IAsyncDisposable
     /// </summary>
     private readonly System.Collections.Concurrent.ConcurrentQueue<long> _pendingSessionEnds = new();
 
+    /// <summary>待应用的玩家权威进度（网关下发；读循环线程入队，tick 线程消费）。</summary>
+    private readonly System.Collections.Concurrent.ConcurrentQueue<DsPlayerProgressNotice> _pendingPlayerProgress = new();
+
+    /// <summary>累计应用成功/找不到会话的玩家进度通知数（后者说明网关推早了或会话已回收）。</summary>
+    public long PlayerProgressApplied { get; private set; }
+    public long PlayerProgressMissed { get; private set; }
+
+    /// <summary>
+    /// 网关下发的脚本生成指令（怪物/NPC/特殊事件）。**可能在读循环线程上被投递**，
+    /// 因此只入队，由 tick 线程交给 <c>DsWorldSession.EnqueueScriptedCommand</c> 验签并消费。
+    /// </summary>
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Horizon.Game.Message.Network.ScriptGrantToken> _pendingScriptCommands = new();
+
+    /// <summary>累计消费的脚本指令数（含被 DS 侧验签拒绝的）。</summary>
+    public long ScriptedCommandsDrained { get; private set; }
+
+    /// <summary>脚本指令投递入口（由 <c>DsUplinkClient.ScriptedSpawnReceived</c> 订阅）。</summary>
+    public void NotifyScriptedSpawn(Horizon.Game.Message.Network.ScriptGrantToken token)
+    {
+        if (token is not null) _pendingScriptCommands.Enqueue(token);
+    }
+
+    /// <summary>
+    /// 解析脚本令牌密钥。非法 Base64 只记日志并返回 null（等价于"拒绝一切脚本指令"），
+    /// 不让 DS 因配置笔误起不来。
+    /// </summary>
+    private static byte[]? DecodeScriptedSigningKey(string base64, Action<string>? log)
+    {
+        if (string.IsNullOrWhiteSpace(base64)) return null;
+
+        try
+        {
+            return System.Convert.FromBase64String(base64);
+        }
+        catch (System.FormatException)
+        {
+            log?.Invoke("DsHostRunner：ScriptedSigningKeyBase64 非法 Base64，脚本化生成将被全部拒绝。");
+            return null;
+        }
+    }
+
     /// <summary>会话输入租约：超过该时长未收到任何输入的会话被兜底回收（见 RunSingleTickAsync 扫描）。</summary>
     private static readonly TimeSpan SessionInputLease = TimeSpan.FromSeconds(120);
 
@@ -266,6 +365,12 @@ public sealed class DsHostRunner : IAsyncDisposable
         {
             if (sessionIds[i] != 0) _pendingSessionEnds.Enqueue(sessionIds[i]);
         }
+    }
+
+    /// <summary>玩家权威进度入口（由 <c>DsUplinkClient.PlayerProgressReceived</c> 订阅；只入队）。</summary>
+    public void NotifyPlayerProgress(DsPlayerProgressNotice progress)
+    {
+        if (progress is not null) _pendingPlayerProgress.Enqueue(progress);
     }
 
     /// <summary>
@@ -297,6 +402,26 @@ public sealed class DsHostRunner : IAsyncDisposable
                 SessionsRemoved++;
                 _log?.Invoke($"会话结束：已从世界移除玩家 sessionId={endedSessionId}（剩余 {_world.PlayerCount} 人）。");
             }
+        }
+
+        // 玩家权威进度（击杀经验落库后由网关回合）：tick 线程写入，快照下一拍就带上 Exp。
+        while (_pendingPlayerProgress.TryDequeue(out var progress))
+        {
+            if (progress is null) continue;
+            if (_world.ApplyPlayerProgress(progress.CharacterId, progress.Level, progress.Exp))
+                PlayerProgressApplied++;
+            else
+                PlayerProgressMissed++;
+        }
+
+        // 脚本生成指令：验签/过期/重放/shard 归属都在 tick 线程由 DsWorldSession 自证，
+        // 被拒的指令只计数与记日志——授权结论出自 Grain，DS 不解释、也不放行。
+        while (_pendingScriptCommands.TryDequeue(out var scriptToken))
+        {
+            ScriptedCommandsDrained++;
+            var reject = _world.EnqueueScriptedCommand(scriptToken);
+            if (reject is not null)
+                _log?.Invoke($"DsHostRunner：脚本指令被拒。Reason={reject} Operator={scriptToken?.OperatorCharacterId ?? 0} Kind={scriptToken?.Kind}");
         }
 
         // 输入租约兜底扫描（每秒一次）：网关"会话结束"通知丢失（崩溃窗口之外的罕见路径，
@@ -396,7 +521,113 @@ public sealed class DsHostRunner : IAsyncDisposable
             }
         }
 
+        // 实体身份描述符 → 网关注册表（任务/交互侧判定"玩家面前这个实体是谁"的依据）。
+        // 与玩法事件分开通计：事件丢了是"少发一次奖"，描述符丢了是"网关认不出这个实体"，
+        // 两类故障的排障路径完全不同。
+        if (result.EntityDescriptors.Count > 0)
+        {
+            var descriptorBatch = new DsEntityDescriptorBatch
+            {
+                ShardId = _world.ShardId, // 取世界的 shard，与 tick 内实体/注册口径同源
+                Descriptors = new DsEntityDescriptorDto[result.EntityDescriptors.Count],
+            };
+            for (var i = 0; i < result.EntityDescriptors.Count; i++)
+            {
+                var d = result.EntityDescriptors[i];
+                descriptorBatch.Descriptors[i] = DsEntityDescriptorDto.FromCore(in d);
+            }
+
+            EntityDescriptorsProduced += result.EntityDescriptors.Count;
+
+            if (_sender is IDsEntityDescriptorSender descriptorSender)
+            {
+                var ok = await descriptorSender.SendEntityDescriptorsAsync(descriptorBatch, CancellationToken.None).ConfigureAwait(false);
+                if (ok) EntityDescriptorsSent += descriptorBatch.Descriptors.Length;
+                else EntityDescriptorsFailed += descriptorBatch.Descriptors.Length;
+            }
+            else
+            {
+                EntityDescriptorsFailed += descriptorBatch.Descriptors.Length;
+            }
+        }
+
+        await FlushCorpseLootAsync(result).ConfigureAwait(false);
         return result;
+    }
+
+    private readonly System.Collections.Concurrent.ConcurrentQueue<DsCorpseLootRequest> _pendingCorpseLootRequests = new();
+    private readonly System.Collections.Concurrent.ConcurrentQueue<DsCorpseLootResult> _pendingCorpseLootResults = new();
+
+    /// <summary>拾取请求投递入口（由 <c>DsUplinkClient.CorpseLootRequestReceived</c> 订阅；读循环线程调用，只入队）。</summary>
+    public void NotifyCorpseLootRequest(DsCorpseLootRequest request)
+    {
+        if (request is not null) _pendingCorpseLootRequests.Enqueue(request);
+    }
+
+    /// <summary>权威回执投递入口（同上）。</summary>
+    public void NotifyCorpseLootResult(DsCorpseLootResult result)
+    {
+        if (result is not null) _pendingCorpseLootResults.Enqueue(result);
+    }
+
+    /// <summary>本 tick 上送的登记帧数。</summary>
+    public long CorpseLootRegistrationsSent { get; private set; }
+
+    /// <summary>本 tick 上送的作废帧数。</summary>
+    public long CorpseLootGoneSent { get; private set; }
+
+    /// <summary>转发给权威侧的取走请求数。</summary>
+    public long CorpseLootForwardsSent { get; private set; }
+
+    /// <summary>本地当场拒掉的取走请求数（窗口/距离/会话三项之一不过）。</summary>
+    public long CorpseLootRequestsRejected { get; private set; }
+
+    /// <summary>回执把东西真的发进了包（DS 侧计数）。</summary>
+    public long CorpseLootResultsApplied { get; private set; }
+
+    /// <summary>
+    /// tick 尾部的尸体拾取四段：先消费入站（请求 → 本地门 → 转发或当场拒；回执 → 结账），
+    /// 再上送本 tick 产生的登记/作废帧。顺序有意如此——回执先结账，登记帧在**下一拍**才发出去时也不会漏。
+    /// </summary>
+    private async Task FlushCorpseLootAsync(DsTickResult result)
+    {
+        if (_sender is not IDsCorpseLootSender sender) return;
+
+        while (_pendingCorpseLootRequests.TryDequeue(out var request))
+        {
+            if (_world.HandleCorpseLootRequest(request, out var forward, out var denial))
+            {
+                if (forward is not null && await sender.SendCorpseLootForwardAsync(forward).ConfigureAwait(false))
+                    CorpseLootForwardsSent++;
+            }
+            else
+            {
+                CorpseLootRequestsRejected++;
+                // 当场拒也要回一条同状态的回执：不绕权威侧那一圈，但客户端必须拿到理由。
+                if (denial is not null) await sender.SendCorpseLootResultAsync(denial).ConfigureAwait(false);
+            }
+        }
+
+        while (_pendingCorpseLootResults.TryDequeue(out var reply))
+        {
+            if (_world.HandleCorpseLootResult(reply)) CorpseLootResultsApplied++;
+        }
+
+        // 客户端请求目录下的转发与当场拒（它们由数据面线程排进会话）。
+        var forwards = _world.DrainCorpseLootForwards();
+        for (var i = 0; i < forwards.Count; i++)
+            if (await sender.SendCorpseLootForwardAsync(forwards[i]).ConfigureAwait(false))
+                CorpseLootForwardsSent++;
+
+        var registrations = _world.DrainCorpseLootRegistrations();
+        for (var i = 0; i < registrations.Count; i++)
+            if (await sender.SendCorpseLootRegisterAsync(registrations[i]).ConfigureAwait(false))
+                CorpseLootRegistrationsSent++;
+
+        var gone = _world.DrainCorpseLootGone();
+        for (var i = 0; i < gone.Count; i++)
+            if (await sender.SendCorpseLootGoneAsync(gone[i]).ConfigureAwait(false))
+                CorpseLootGoneSent++;
     }
 
     private async Task TickLoopAsync(CancellationToken ct)
@@ -454,9 +685,24 @@ public sealed class DsHostRunner : IAsyncDisposable
             }
 
             // 周期性状态摘要（每 600 tick ≈ 10s@60Hz）
+            // 为什么要带实体数：刷怪点"配置成功"与"世界里真的站着 N 只怪"是两件事。
+            // 从库里导出内容 → 装配 → 首刷这条链第一次跑通时，日志只有"已配置 6 个刷怪点"，
+            // 没有任何一行能证明怪真的生成了；NPC 那一侧本来就有"已生成 N"的回执，这边补齐。
+            // 计数器 _monstersById 同时含脚本生成的 NPC，所以标签写"在位实体(含NPC)"而不是"怪物数"——
+            // 一个会说谎的标签比没有标签更糟。
+            // 2026-10-27 再补两格：巡逻到点与施法起手。它们回答的是"内容里那两格（巡逻线、技能挂载）
+            // 到底有没有在改变世界"——之前这两格零回执，"库里画了 13 个点"与"装配后没人走那条线"
+            // 在日志里长得一模一样。**读法**：巡逻到点应当随时间往上涨（不需要有人在场景里）；
+            // 施法起手在**没有玩家参战**时恒为 0 是预期而不是故障（施法要先有威胁目标）。
+            // 标签写"含NPC线"：路线解析那条式子本来就先查怪物内容、查不到才退 NPC 内容
+            // （`ResolveRouteObject` 的 NpcContent.Path 那一半，实测生产包 路线=0 时这里仍涨到 5，
+            // 涨的就是 NPC 作息那条线）——一个会说谎的标签比没有标签更糟。
+            // 2026-10-28 再补第三格 `求援叫起`（切片 56 给 5 只普通怪配了求援位 + AC 的 9.144 米半径）：
+            // **读法**它与施法起手同一类——没有玩家进战时恒为 0 是预期，不是故障；
+            // 有人开打之后仍然一路是 0，才说明"库里的求援位"没走到世界（合取里缺哪一格见 audit 那几句）。
             if (TicksExecuted > 0 && TicksExecuted % 600 == 0)
             {
-                _log?.Invoke($"[DsHost] 状态摘要 Ticks={TicksExecuted} 玩家={_world.PlayerCount} 收帧={_dataPlane.ReceivedFrameCount} 丢帧={_dataPlane.DroppedFrameCount} 解码失败={_dataPlane.DecodeFailureCount} 重复输入={_world.DuplicateInputDroppedCount} 批次发送={BatchesSent} 批次失败={BatchesFailed} 事件产出={GameplayEventsProduced} 事件发送={GameplayEventsSent} 会话移除={SessionsRemoved} AoiGroups={LastAoiGroupCount} AvgEntitiesPerGroup={LastAvgEntitiesPerGroup:F1}");
+                _log?.Invoke($"[DsHost] 状态摘要 Ticks={TicksExecuted} 玩家={_world.PlayerCount} 在位实体(含NPC)={_world.MonsterCount} 尸体={_world.MonsterCorpseCount} 巡逻到点(含NPC线)={_world.MonsterPatrolPointsReached} 施法起手={_world.MonsterCastStartEvents} 求援叫起={_world.MonsterAssistSeeds} 并组={_world.MonsterLeashGroupsLinked} 共享刷新={_world.MonsterLeashSharedRefreshes} 宽限刷新={_world.MonsterLeashExtensions} 尸体登记={_world.MonsterCorpseLootRegistered} 尸体取走={_world.MonsterCorpseLootTaken} 尸体登记失败={_world.MonsterCorpseLootRegisterFailures} 尸体上送={CorpseLootRegistrationsSent} 尸体作废={CorpseLootGoneSent} 拾取转发={CorpseLootForwardsSent} 拾取当场拒={CorpseLootRequestsRejected} 拾取入包={CorpseLootResultsApplied} 拾取请求={_dataPlane.CorpseLootRequestsSeen} 拾取数据面拒={_dataPlane.CorpseLootRejected} 拾取结果包={_world.CorpseLootResultPacketsQueued} 拾取越权={_world.CorpseLootRejectedNotYours} 拾取欠任务={_world.CorpseLootRejectedCondition} 拾取权威拒={_world.CorpseLootResultsRejected} 拾取到期提示={_world.CorpseLootExpiredNotices} 导航缺图={_world.MonstersWantingNavWithoutGrid} 受控玩家={_world.PlayerStatusActiveCount} 状态施加={_world.PlayerStatusAppliedCount} 状态到期={_world.PlayerStatusExpiredCount} 状态被拒={_world.PlayerStatusRejectedCount} 输入被控={_world.InputBlockedByStatus} 输入被减速={_world.InputSlowedByStatus} 动作被控拒={_world.CombatActionRejectedByStatus} 怪受控={_world.MonsterStatusAppliedCount} 怪态被拒={_world.MonsterStatusRejectedCount} 怪态无运行态={_world.MonsterStatusUnsupportedCount} 喊话={_world.MonsterSayEvents} 喊话指针落空={_world.MonsterSayPointerMisses} 临终台词={_world.MonsterDeathSayEvents} 应援台词={_world.MonsterAssistSayEvents} 无路脱战={_world.MonsterNoPathEvades} 收帧={_dataPlane.ReceivedFrameCount} 丢帧={_dataPlane.DroppedFrameCount} 战斗动作={_dataPlane.CombatActionCount} 战斗命中={_dataPlane.CombatActionHitCount} 战斗超射程={_dataPlane.CombatActionOutOfRangeCount} 战斗无效={_dataPlane.CombatActionInvalidCount} 战斗回位免伤={_dataPlane.CombatActionEvadingCount} 战斗其它档={_dataPlane.CombatActionOtherOutcomeCount} 战斗限频={_dataPlane.CombatActionRateLimitedCount} 战斗无会话={_dataPlane.CombatActionRejectedNoSessionCount} 战斗几何=({_world.LastCombatAttackerX:F1},{_world.LastCombatAttackerY:F1})->({_world.LastCombatTargetX:F1},{_world.LastCombatTargetY:F1}) 射程={_world.LastCombatRange:F1} 无会话输入={_dataPlane.InputWithoutSessionCount} 解码失败={_dataPlane.DecodeFailureCount} 重复输入={_world.DuplicateInputDroppedCount} 批次发送={BatchesSent} 批次失败={BatchesFailed} 事件产出={GameplayEventsProduced} 事件发送={GameplayEventsSent} 会话移除={SessionsRemoved} AoiGroups={LastAoiGroupCount} AvgEntitiesPerGroup={LastAvgEntitiesPerGroup:F1}");
             }
         }
     }

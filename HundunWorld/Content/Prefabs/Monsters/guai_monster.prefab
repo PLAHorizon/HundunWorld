@@ -1,0 +1,36 @@
+{
+	"ID": "d6d9a41b4e54434d32efce8b8d960847",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 7012,
+	"Data": [
+	{
+		"ID": "3af22b3e42fd29e40476e59aa9352043",
+		"TypeName": "FlaxEngine.AnimatedModel",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "guai_monster",
+		"SkinnedModel": "5ed22d5843e47f2c7aab1888e0556291",
+		"Buffer": {
+			"Entries": [
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				},
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				},
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				}
+			]
+		}
+	}
+]
+}

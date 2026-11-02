@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "技能树内容头：对应 UE5 Content/Pro/Core/Data/SkillTrees/Speech（Skill_Speech.uasset + Perks/*.uasset）。",
+    "Perk_AttunedSpeaker 在上游重写了 GetPerkDescription（资产串表含 GetPerkDescription 函数名），端口以 TreePerk 虚方法承载。"
+  ],
+  "skills": [
+    {
+      "skillClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Speech/Skill_Speech",
+      "skillDisplayName": "Speech",
+      "skillDescription": "Dialogue and persuasion tree.",
+      "skillLevel": 1,
+      "perks": [
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Speech/Perks/Perk_GiftOfTheGab",
+          "perkCords": { "x": 0, "y": 1 },
+          "linkedTo": []
+        },
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Speech/Perks/Perk_AttunedSpeaker",
+          "perkCords": { "x": 0, "y": 0 },
+          "linkedTo": [
+            "/NarrativePro/Pro/Core/Data/SkillTrees/Speech/Perks/Perk_GiftOfTheGab"
+          ]
+        }
+      ]
+    }
+  ],
+  "perks": [
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Speech/Perks/Perk_GiftOfTheGab",
+      "perkType": "TreePerk",
+      "perkDisplayName": "Gift of the Gab",
+      "perkDescription": "Speech unlock (authored as blueprint logic upstream)."
+    },
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Speech/Perks/Perk_AttunedSpeaker",
+      "perkType": "TreePerk",
+      "perkDisplayName": "Attuned Speaker",
+      "perkDescription": "Speech tier node with an upstream dynamic description."
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Linq;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Sect
 {
-    public class MenuSectPage : ContainerControl, IInkPage
+    public class MenuSectPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private Float2 _screenSize;
 
@@ -18,7 +19,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
         private Panel _sidebar;
         private Label _sidebarLogo;
         private Label _sidebarLogoSub;
-        private List<InkButton> _sidebarNavButtons;
+        private InkSidebarList _sidebarList;
 
         private Panel _mainArea;
         private Panel _topHeader;
@@ -59,7 +60,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
         private InkPanel _dailyTasksPanel;
         private Label _dailyTasksTitle;
         private Label _dailyTasksRefreshLabel;
-        private List<Panel> _dailyTaskItems;
+        private List<DailyTaskRefs> _dailyTaskItems;
 
         private InkPaperPanel _historyPanel;
         private Label _historyOriginTitle;
@@ -83,31 +84,45 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
         /// <summary>各门派的加入状态，由 <see cref="InitSectMembership"/> 按角色真实门派生成。</summary>
         private bool[] _sectJoined;
         private string[] _sectRanks = { "内门弟子", "", "", "", "", "", "", "" };
-        private int[] _sectContributions = { 3200, 0, 0, 0, 0, 0, 0, 0 };
+        // 门派贡献没有服务端数据：全部归零（2026-10-29）
+        private int[] _sectContributions = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
         private string[] _skillBranchNames = { "逍遥剑法", "凌波微步", "北冥神功" };
-        private int[] _skillBranchLearned = { 3, 2, 1 };
+        private int[] _skillBranchLearned = { 0, 0, 0 };
         private int[] _skillBranchTotal = { 4, 4, 4 };
         private string[][] _skillNodeNames = {
             new[] { "逍遥剑意", "剑气纵横", "万剑归宗", "天外飞仙" },
             new[] { "步法入门", "踏雪无痕", "飞花逐影", "凌空虚渡" },
             new[] { "吐纳归元", "北冥吸功", "真气化海", "逍遥御风" }
         };
+        // 门派武学没有服务端数据：等级/学习状态全部按"未修习"呈现，节点名保留（2026-10-29）
         private string[][] _skillNodeLevels = {
-            new[] { "Lv.5", "Lv.3", "Lv.2", "可学习" },
-            new[] { "Lv.4", "Lv.3", "可学习", "未解锁" },
-            new[] { "Lv.3", "可学习", "未解锁", "未解锁" }
+            new[] { "未修习", "未修习", "未修习", "未修习" },
+            new[] { "未修习", "未修习", "未修习", "未修习" },
+            new[] { "未修习", "未修习", "未修习", "未修习" }
         };
         private bool[][] _skillNodeLearned = {
-            new[] { true, true, true, false },
-            new[] { true, true, false, false },
-            new[] { true, false, false, false }
+            new[] { false, false, false, false },
+            new[] { false, false, false, false },
+            new[] { false, false, false, false }
         };
+
+        /// <summary>门派日常一行的控件引用：布局只认引用，不再按文案去猜子控件是谁。</summary>
+        private sealed class DailyTaskRefs
+        {
+            public Panel Item;
+            public Panel Icon;
+            public Label Name;
+            public Label Status;
+            public Label Desc;
+            public Label Progress;
+            public Label Reward;
+        }
 
         private string[] _dailyTaskNames = { "门派巡逻", "传功解惑", "门派试炼" };
         private string[] _dailyTaskDescs = { "巡视门派领地，驱逐入侵之敌", "指导门派新弟子修炼基础功法", "通过门派武学考核，证明实力" };
-        private string[] _dailyTaskStatus = { "进行中", "进行中", "未开始" };
-        private string[] _dailyTaskProgress = { "2 / 5", "1 / 3", "0 / 1" };
+        private string[] _dailyTaskStatus = { "未开始", "未开始", "未开始" };
+        private string[] _dailyTaskProgress = { "0 / 5", "0 / 3", "0 / 1" };
         private string[] _dailyTaskRewards = { "贡献 +200", "贡献 +150", "贡献 +500" };
 
         /// <summary>
@@ -160,6 +175,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
                 ApplyLayout();
                 RefreshAllData();
+
+                // 顶栏身份接真实数据
+                InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelLabel);
+                InkPlayerHeaderBinder.BindSect(_playerSectLabel);
             }
             catch (Exception ex)
             {
@@ -194,7 +213,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             _sidebarLogo = new Label
             {
-                Text = "燕云",
+                Text = "混沌世界",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _sidebar
@@ -202,30 +221,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             _sidebarLogoSub = new Label
             {
-                Text = "十六声",
+                Text = "江湖公测",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _sidebar
             };
 
-            _sidebarNavButtons = new List<InkButton>();
-            string[] navItems = { "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店", "门派", "装备", "设置" };
-            string[] navPaths = { "menu-quests", "menu-bestiary", "menu-martial-record", "menu-livelihood", "menu-team", "menu-mail", "menu-shop", "menu-sect", "menu-equipment", "settings" };
-
-            for (int i = 0; i < navItems.Length; i++)
+            // 侧边栏导航：共用控件渲染 InkSidebarNav 的完整清单（分组 + 超出可滚动）。
+            _sidebarList = new InkSidebarList(InkPageDomIds.NavSect)
             {
-                bool isActive = navItems[i] == "门派";
-                InkButton btn = new InkButton
-                {
-                    Text = navItems[i],
-                    Height = 36,
-                    BackgroundColor = isActive ? InkWashTheme.GoldPrimary * 0.1f : Color.Transparent,
-                    TextColor = isActive ? InkWashTheme.GoldBright : InkWashTheme.PaperAged,
-                    Parent = _sidebar
-                };
-                btn.Clicked += () => OnNavClicked(navPaths[i]);
-                _sidebarNavButtons.Add(btn);
-            }
+                Parent = _sidebar,
+            };
+            _sidebarList.NavigationRequested += OnNavClicked;
         }
 
         private void BuildMainArea()
@@ -269,13 +276,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                // 头像圈固定 36×36：StretchAll 不跟父尺寸（实测 136×56），字会被裁
+                Location = Float2.Zero,
+                Size = new Vector2(36f, 36f),
                 Parent = _playerAvatar
             };
 
             _playerNameLabel = new Label
             {
-                Text = "无名侠",
+                // 初值留空位，真实昵称由 InkPlayerHeaderBinder 覆盖
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 TextColor = InkWashTheme.TextDefault,
                 Parent = _topHeader
@@ -283,7 +293,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             _playerLevelLabel = new Label
             {
-                Text = "Lv.42",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _topHeader
@@ -299,7 +309,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             _goldLabel = new Label
             {
-                Text = "12,450",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.TextDefault,
                 Parent = _topHeader
@@ -307,7 +317,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             _jadeLabel = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.TextDefault,
                 Parent = _topHeader
@@ -363,7 +373,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                     TextColor = _sectJoined[i] ? InkWashTheme.GoldBright : InkWashTheme.PaperDark,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.StretchAll,
+                    // 徽章框固定 32×32：StretchAll 在这里不会跟着父尺寸走（实测停默认 180×100），
+                    // 居中后字整个落到框外，画面上就是一个个空白方块。
+                    Location = Float2.Zero,
+                    Size = new Vector2(32f, 32f),
                     Parent = emblemBg
                 };
 
@@ -421,7 +434,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                // 徽章框固定 80×80：StretchAll 实测仍是 180×100，字被裁成半个
+                Location = Float2.Zero,
+                Size = new Vector2(80f, 80f),
                 Parent = _sectEmblem
             };
 
@@ -459,7 +474,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             _contributionLabel = new Label
             {
-                Text = "3,200 / 5,000",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _sectInfoPanel
@@ -467,14 +482,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             _contributionBar = new InkBar
             {
-                Value = 0.64f,
+                Value = 0f,
                 Height = 8f,
                 Parent = _sectInfoPanel
             };
 
             _contributionHintLabel = new Label
             {
-                Text = "距下一职位「核心弟子」还需 1,800 贡献度",
+                Text = "尚未加入门派 · 贡献度暂不可用",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 Parent = _sectInfoPanel
@@ -495,7 +510,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             _skillTreeCountLabel = new Label
             {
-                Text = "已学 6 / 12",
+                Text = "已学 0 / 12",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 Parent = _skillTreePanel
@@ -582,7 +597,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                 Parent = _dailyTasksPanel
             };
 
-            _dailyTaskItems = new List<Panel>();
+            _dailyTaskItems = new List<DailyTaskRefs>();
             for (int i = 0; i < _dailyTaskNames.Length; i++)
             {
                 Panel item = new Panel
@@ -638,7 +653,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
                     Parent = item
                 };
 
-                _dailyTaskItems.Add(item);
+                _dailyTaskItems.Add(new DailyTaskRefs
+                {
+                    Item = item,
+                    Icon = iconWrap,
+                    Name = taskName,
+                    Status = taskStatus,
+                    Desc = taskDesc,
+                    Progress = taskProgress,
+                    Reward = taskReward,
+                });
             }
 
             _historyPanel = new InkPaperPanel
@@ -705,19 +729,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
             if (_sidebarLogo != null)
             {
                 _sidebarLogo.Location = new Float2(20f, sidebarLogoY);
+                // 品牌改成「混沌世界」（4 字）后 20px Display 约 96px 宽：宽度与副标起点都要跟着放大，
+                // 否则品牌被裁成两字、副标压在它身上。
+                _sidebarLogo.Size = new Float2(100f, 33f);
             }
             if (_sidebarLogoSub != null)
             {
-                _sidebarLogoSub.Location = new Float2(20f + 22f * 2f + 6f, sidebarLogoY + 11f);
+                _sidebarLogoSub.Location = new Float2(20f + 100f + 8f, sidebarLogoY + 15f);
+                _sidebarLogoSub.Size = new Float2(90f, 16f);
             }
 
-            float navY = TopHeaderHeight + 16f;
-            foreach (var btn in _sidebarNavButtons)
-            {
-                btn.Location = new Float2(12f, navY);
-                btn.Size = new Float2(SidebarWidth - 24f, 36f);
-                navY += 38f;
-            }
+            _sidebarList.Layout(0f, TopHeaderHeight + 16f, SidebarWidth,
+                Mathf.Max(0f, sh - TopHeaderHeight - 16f));
 
             if (_mainArea != null)
             {
@@ -803,36 +826,27 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
             for (int idx = 0; idx < _sectListItems.Count; idx++)
             {
                 var item = _sectListItems[idx];
-                float itemX = 12f;
-                float itemCenterY = 28f;
 
-                foreach (var child in item.Children)
-                {
-                    if (child is InkAvatar)
-                    {
-                        child.Location = new Float2(itemX, itemCenterY - 16f);
-                        itemX += 40f;
-                    }
-                    else if (child is Label label)
-                    {
-                        if (label.Text == _sectNames[idx])
-                        {
-                            child.Location = new Float2(itemX, itemCenterY - 18f);
-                        }
-                        else if (_sectJoined[idx] && label.Text == $"内门弟子 · 贡献 {_sectContributions[idx]}")
-                        {
-                            child.Location = new Float2(itemX, itemCenterY - 8f);
-                        }
-                        else if (!_sectJoined[idx] && label.Text == _sectDescs[idx])
-                        {
-                            child.Location = new Float2(itemX, itemCenterY - 8f);
-                        }
-                        else if (label.Text == "已加入" || label.Text == "未加入")
-                        {
-                            child.Location = new Float2(listW - 60f, itemCenterY - 8f);
-                        }
-                    }
-                }
+                // 子控件顺序固定：0=徽记底(ContainerControl) 1=门派名 2=描述 3=加入状态。
+                // 旧实现只认 InkAvatar 才给徽记让位，而徽记底是 ContainerControl ⇒ 名字/描述都从 x=12 起、
+                // y 只差 10px，两行文字叠在一起（2026-10-29 截图实测）。
+                var kids = item.Children;
+                const float emblemSize = 32f;
+                const float emblemX = 12f;
+                float textX = emblemX + emblemSize + 12f;
+                float textW = Mathf.Max(40f, listW - textX - 70f);
+
+                if (kids.Count > 0 && kids[0] != null)
+                    kids[0].Bounds = new Rectangle(emblemX, 28f - emblemSize * 0.5f, emblemSize, emblemSize);
+
+                if (kids.Count > 1 && kids[1] is Label nameLabel)
+                    nameLabel.Bounds = new Rectangle(textX, 7f, textW, 20f);
+
+                if (kids.Count > 2 && kids[2] is Label descLabel)
+                    descLabel.Bounds = new Rectangle(textX, 29f, textW, 16f);
+
+                if (kids.Count > 3 && kids[3] is Label statusLabel)
+                    statusLabel.Bounds = new Rectangle(listW - 62f, 20f, 50f, 16f);
             }
 
             if (_sectDetailSection != null)
@@ -897,7 +911,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
             if (_skillTreePanel != null)
             {
                 _skillTreePanel.Location = new Float2(0f, detailY);
-                _skillTreePanel.Size = new Float2(detailW, 360f);
+                _skillTreePanel.Size = new Float2(detailW, 380f);
             }
 
             infoX = PanelPadding;
@@ -913,55 +927,65 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             infoY += 40f;
             float branchY = infoY;
+            float branchW = detailW - PanelPadding * 2f;
             for (int branchIdx = 0; branchIdx < _skillBranches.Count; branchIdx++)
             {
                 var branch = _skillBranches[branchIdx];
                 branch.Location = new Float2(infoX, branchY);
-                branch.Size = new Float2(detailW - PanelPadding * 2f, 100f);
+                branch.Size = new Float2(branchW, 100f);
 
-                float nodeY = 0f;
-                foreach (var child in branch.Children)
+                // 子控件顺序固定：0=分支名，1=已学计数，其后都是节点。按顺序摆，不按文案猜。
+                var children = branch.Children;
+                // 两列节点只占左半边：列宽封顶 340，不让它们被拉成横跨整行的稀疏排布
+                float nodeW = Mathf.Min(340f, (branchW - 8f) * 0.5f);
+                if (children.Count > 0 && children[0] is Label branchTitle)
                 {
-                    if (child is Label label && label.Text == _skillBranchNames[branchIdx])
-                    {
-                        child.Location = new Float2(0f, nodeY);
-                    }
-                    else if (child is Label label2 && label2.TextColor == InkWashTheme.GoldPrimary)
-                    {
-                        child.Location = new Float2(0f, nodeY + 20f);
-                        nodeY += 30f;
-                    }
-                    else if (child is Panel node)
-                    {
-                        node.Location = new Float2(0f, nodeY);
-                        node.Size = new Float2(detailW - PanelPadding * 2f, 32f);
+                    branchTitle.Location = new Float2(0f, 0f);
+                    branchTitle.Size = new Float2(Mathf.Max(80f, branchW - 90f), 22f);
+                    branchTitle.HorizontalAlignment = TextAlignment.Near;
+                }
+                if (children.Count > 1 && children[1] is Label branchCount)
+                {
+                    branchCount.Location = new Float2(nodeW * 2f + 12f, 3f);
+                    branchCount.Size = new Float2(86f, 18f);
+                }
 
-                        float nodeX = 0f;
-                        foreach (var nodeChild in node.Children)
-                        {
-                            if (nodeChild is Panel circle)
-                            {
-                                nodeChild.Location = new Float2(nodeX, 4f);
-                                nodeX += 32f;
-                            }
-                            else if (nodeChild is Label name)
-                            {
-                                nodeChild.Location = new Float2(nodeX, 4f);
-                                nodeX += 100f;
-                            }
-                            else if (nodeChild is Label level)
-                            {
-                                nodeChild.Location = new Float2(nodeX, 6f);
-                            }
-                        }
-                        nodeY += 34f;
+                int nodeIndex = 0;
+                for (int i = 2; i < children.Count; i++)
+                {
+                    if (children[i] is not Panel node)
+                        continue;
+
+                    int col = nodeIndex % 2;
+                    int row = nodeIndex / 2;
+                    node.Location = new Float2(col * (nodeW + 8f), 28f + row * 34f);
+                    node.Size = new Float2(nodeW, 32f);
+                    nodeIndex++;
+
+                    // 节点子控件顺序固定：0=圆形图标，1=节点名，2=修习状态。按序摆，避免两个 Label 都命中同一分支
+                    var nodeChildren = node.Children;
+                    if (nodeChildren.Count > 0)
+                    {
+                        nodeChildren[0].Location = new Float2(0f, 4f);
+                        nodeChildren[0].Size = new Float2(32f, 24f);
+                    }
+                    float nameW = Mathf.Max(60f, nodeW - 32f - 64f);
+                    if (nodeChildren.Count > 1)
+                    {
+                        nodeChildren[1].Location = new Float2(36f, 5f);
+                        nodeChildren[1].Size = new Float2(nameW, 18f);
+                    }
+                    if (nodeChildren.Count > 2)
+                    {
+                        nodeChildren[2].Location = new Float2(36f + nameW, 7f);
+                        nodeChildren[2].Size = new Float2(58f, 16f);
                     }
                 }
 
                 branchY += 110f;
             }
 
-            detailY += 370f;
+            detailY += 390f;
             if (_dailyTasksPanel != null)
             {
                 _dailyTasksPanel.Location = new Float2(0f, detailY);
@@ -981,58 +1005,52 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
             infoY += 40f;
             float taskY = infoY;
+            float rowW = detailW - PanelPadding * 2f;
             foreach (var task in _dailyTaskItems)
             {
-                task.Location = new Float2(infoX, taskY);
-                task.Size = new Float2(detailW - PanelPadding * 2f, 52f);
+                if (task?.Item == null)
+                    continue;
 
-                float taskX = 0f;
-                foreach (var child in task.Children)
+                task.Item.Location = new Float2(infoX, taskY);
+                task.Item.Size = new Float2(rowW, 52f);
+
+                if (task.Icon != null)
+                    task.Icon.Location = new Float2(0f, 10f);
+                if (task.Name != null)
                 {
-                    if (child is Panel icon)
-                    {
-                        child.Location = new Float2(taskX, 10f);
-                        taskX += 40f;
-                    }
-                    else if (child is Label label)
-                    {
-                        if (_dailyTaskNames.Contains(label.Text.ToString()) && label.TextColor == InkWashTheme.PaperBright)
-                        {
-                            child.Location = new Float2(taskX, 8f);
-                            taskX += 100f;
-                        }
-                        else if (_dailyTaskDescs.Contains(label.Text.ToString()))
-                        {
-                            if (taskX < 140f)
-                            {
-                                child.Location = new Float2(taskX, 10f);
-                                taskX += 50f;
-                            }
-                            else if (taskX < 190f)
-                            {
-                                child.Location = new Float2(taskX, 30f);
-                                taskX += 150f;
-                            }
-                            else
-                            {
-                                child.Location = new Float2(detailW - PanelPadding * 2f - 60f, 30f);
-                            }
-                        }
-                        else if (_dailyTaskStatus.Contains(label.Text.ToString()) && label.TextColor == InkWashTheme.GoldBright)
-                        {
-                            child.Location = new Float2(detailW - PanelPadding * 2f - 50f, 8f);
-                        }
-                    }
+                    task.Name.Location = new Float2(40f, 8f);
+                    task.Name.Size = new Float2(96f, 18f);
+                }
+                if (task.Status != null)
+                {
+                    task.Status.Location = new Float2(40f, 28f);
+                    task.Status.Size = new Float2(96f, 14f);
+                }
+                if (task.Desc != null)
+                {
+                    task.Desc.Location = new Float2(144f, 8f);
+                    task.Desc.Size = new Float2(Mathf.Max(120f, rowW - 264f), 16f);
+                }
+                if (task.Progress != null)
+                {
+                    task.Progress.Location = new Float2(rowW - 112f, 8f);
+                    task.Progress.Size = new Float2(60f, 18f);
+                }
+                if (task.Reward != null)
+                {
+                    task.Reward.Location = new Float2(rowW - 112f, 28f);
+                    task.Reward.Size = new Float2(100f, 14f);
                 }
 
                 taskY += 56f;
             }
 
+
             detailY += 210f;
             if (_historyPanel != null)
             {
                 _historyPanel.Location = new Float2(0f, detailY);
-                _historyPanel.Size = new Float2(detailW, 280f);
+                _historyPanel.Size = new Float2(detailW, 340f);
             }
 
             infoX = PanelPadding;
@@ -1045,10 +1063,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
             if (_historyOriginContent != null)
             {
                 _historyOriginContent.Location = new Float2(infoX, infoY);
-                _historyOriginContent.Size = new Float2(detailW - PanelPadding * 2f, 80f);
+                _historyOriginContent.Size = new Float2(detailW - PanelPadding * 2f, 120f);
+                _historyOriginContent.Wrapping = TextWrapping.WrapWords;
             }
 
-            infoY += 100f;
+            infoY += 150f;
             if (_historyRulesTitle != null)
             {
                 _historyRulesTitle.Location = new Float2(infoX, infoY);
@@ -1073,7 +1092,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Sect
 
         private void OnBackToHud()
         {
-            NavigationRequested?.Invoke("combat-hud");
+            NavigationRequested?.Invoke(InkPageDomIds.CombatHud);
         }
 
         public void RefreshLayout()

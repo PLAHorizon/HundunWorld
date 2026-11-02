@@ -47,24 +47,39 @@ namespace NarrativePro.Interaction
             }
         }
 
+        /// <summary>
+        /// 参与查询的可交互组件：优先用本子系统实例缓存的注册表，
+        /// 场景里没有 InteractionSubsystem 宿主时回退到组件级活跃登记表
+        /// （<see cref="NarrativeInteractableComponent.ActiveInteractables"/>），
+        /// 保证代码生成 Actor 的交互查询在任何场景配置下都有结果。
+        /// </summary>
+        private static List<NarrativeInteractableComponent> QueryCandidates(InteractionSubsystem self)
+        {
+            if (self != null)
+            {
+                lock (self._lock)
+                {
+                    if (self._interactableActors.Count > 0) return new List<NarrativeInteractableComponent>(self._interactableActors);
+                }
+            }
+            return new List<NarrativeInteractableComponent>(NarrativeInteractableComponent.ActiveInteractables);
+        }
+
         /// <summary>查找距离指定位置最近的可交互组件。</summary>
         public NarrativeInteractableComponent FindNearestInteractable(Vector3 position, float maxDistance = float.MaxValue)
         {
             NarrativeInteractableComponent best = null;
             float bestDist = maxDistance;
-            lock (_lock)
+            foreach (var interactable in QueryCandidates(this))
             {
-                foreach (var interactable in _interactableActors)
+                if (interactable == null) continue;
+                var actor = interactable.Actor;
+                if (actor == null) continue;
+                float d = Vector3.Distance(position, actor.Position);
+                if (d < bestDist)
                 {
-                    if (interactable == null) continue;
-                    var actor = interactable.Actor;
-                    if (actor == null) continue;
-                    float d = Vector3.Distance(position, actor.Position);
-                    if (d < bestDist)
-                    {
-                        bestDist = d;
-                        best = interactable;
-                    }
+                    bestDist = d;
+                    best = interactable;
                 }
             }
             return best;
@@ -75,17 +90,14 @@ namespace NarrativePro.Interaction
         {
             var result = new List<NarrativeInteractableComponent>();
             float r2 = radius * radius;
-            lock (_lock)
+            foreach (var interactable in QueryCandidates(this))
             {
-                foreach (var interactable in _interactableActors)
+                if (interactable == null) continue;
+                var actor = interactable.Actor;
+                if (actor == null) continue;
+                if (Vector3.DistanceSquared(center, actor.Position) <= r2)
                 {
-                    if (interactable == null) continue;
-                    var actor = interactable.Actor;
-                    if (actor == null) continue;
-                    if (Vector3.DistanceSquared(center, actor.Position) <= r2)
-                    {
-                        result.Add(interactable);
-                    }
+                    result.Add(interactable);
                 }
             }
             return result;

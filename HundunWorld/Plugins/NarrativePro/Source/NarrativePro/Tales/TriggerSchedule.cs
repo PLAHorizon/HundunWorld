@@ -64,21 +64,22 @@ namespace NarrativePro.Tales
 
         /// <summary>
         /// 从指定路径加载 TriggerSet。Flax 中无原生 DataAsset，
-        /// 通过 JSON 反序列化加载（与 QuestFactory/DialogueFactory 一致），子类可重写为其他加载方式。
+        /// 走 <see cref="TriggerSetFactory"/> 的多态 JSON 工厂（"type" 判别字段 + 大小写不敏感绑定，
+        /// 与 QuestFactory/DialogueFactory 一致；直接 Deserialize&lt;TriggerSet&gt; 会因抽象元素 NarrativeTrigger 失败），
+        /// 子类可重写为其他加载方式。
         /// </summary>
         protected virtual TriggerSet LoadTriggerSet(string path)
         {
-            // Flax 中 DataAsset 等价物：使用 JSON 反序列化加载 [Serializable] TriggerSet 实例。
             if (string.IsNullOrEmpty(path)) return null;
             try
             {
-                if (!File.Exists(path))
+                string resolved = NarrativePro.Data.NarrativeDataPaths.ResolveForRead(path, "trigger set");
+                if (string.IsNullOrEmpty(resolved) || !File.Exists(resolved))
                 {
-                    NarrativeLog.LogWarning($"TriggerSchedule.LoadTriggerSet: 文件不存在: {path}");
+                    NarrativeLog.LogWarning($"TriggerSchedule.LoadTriggerSet: 文件不存在: {resolved}");
                     return null;
                 }
-                string json = File.ReadAllText(path);
-                return JsonSerializer.Deserialize<TriggerSet>(json);
+                return TriggerSetFactory.LoadTriggerSetFile(resolved);
             }
             catch (Exception ex)
             {

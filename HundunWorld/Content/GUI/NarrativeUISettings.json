@@ -1,0 +1,10 @@
+{
+	"ID": "a3f8c1d9574b2e0691c4f7da20b58e63",
+	"TypeName": "FlaxEngine.JsonAsset",
+	"EngineBuild": 6222,
+	"Data": {
+	"UIPrimaryColor": [0.000607, 0.672443, 0.168269, 1.0],
+	"UIInvertColor": [0.0, 0.009721, 0.059511, 1.0],
+	"UIInvertAccentColor": [0.0, 0.058326, 0.178533, 1.0]
+}
+}

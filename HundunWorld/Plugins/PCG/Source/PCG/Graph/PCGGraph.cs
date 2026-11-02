@@ -1,72 +1,78 @@
-// PCG Plugin - Graph asset data model
+// PCG 插件 - 图表数据模型
 
 using System;
 using System.Collections.Generic;
 using FlaxEngine;
+using PCG.Execution;
 
 namespace PCG.Graph
 {
-    /// <summary>Kind of a graph-level exposed parameter.</summary>
+    /// <summary>图级暴露参数的种类。</summary>
     public enum PCGParameterType
     {
-        /// <summary>Floating point value.</summary>
+        /// <summary>浮点值。</summary>
         Float = 0,
-        /// <summary>Integer value.</summary>
+        /// <summary>整数值。</summary>
         Int = 1,
-        /// <summary>Boolean value.</summary>
+        /// <summary>布尔值。</summary>
         Bool = 2,
-        /// <summary>Vector value.</summary>
+        /// <summary>向量值。</summary>
         Vector = 3,
-        /// <summary>Colour value.</summary>
+        /// <summary>颜色值。</summary>
         Color = 4,
-        /// <summary>Model asset reference. Stored in <see cref="PCGParameterValue.AssetId"/>.</summary>
+        /// <summary>模型资产引用。存在 <see cref="PCGParameterValue.AssetId"/> 里。</summary>
         Asset = 5,
-        /// <summary>Free-form string.</summary>
+        /// <summary>自由文本。</summary>
         String = 6,
+        /// <summary>
+        /// 在一组固定标签里选一个。存成枚举的整数值放在 <see cref="PCGParameterValue.Number"/> 里，
+        /// 因为这个值结构体没地方再放一个带类型的引用。
+        /// </summary>
+        Enum = 7,
     }
 
-    /// <summary>Serializable parameter value, covering every value type a node may expose.</summary>
+    /// <summary>可序列化的参数值，覆盖节点可能暴露的每一种取值类型。</summary>
     [Serializable]
     public struct PCGParameterValue
     {
-        /// <summary>Numeric payload. Used by Float, Int (round-tripped) and Bool (0 or 1).</summary>
+        /// <summary>数值载荷。Float、Int（原样往返）与 Bool（0 或 1）都用它。</summary>
         public float Number;
 
-        /// <summary>Vector payload.</summary>
+        /// <summary>向量载荷。</summary>
         public Vector3 Vector;
 
-        /// <summary>Colour payload.</summary>
+        /// <summary>颜色载荷。</summary>
         public Color Color;
 
-        /// <summary>Asset payload, as an asset id.</summary>
+        /// <summary>资产载荷，形式是资产 id。</summary>
         public Guid AssetId;
 
-        /// <summary>String payload.</summary>
+        /// <summary>文本载荷。</summary>
         public string Text;
 
-        /// <summary>Creates a float value.</summary>
+        /// <summary>创建一个浮点值。</summary>
         public static PCGParameterValue FromFloat(float v) => new PCGParameterValue { Number = v };
 
-        /// <summary>Creates an int value.</summary>
+        /// <summary>创建一个整数值。</summary>
         public static PCGParameterValue FromInt(int v) => new PCGParameterValue { Number = v };
 
-        /// <summary>Creates a bool value.</summary>
+        /// <summary>创建一个布尔值。</summary>
         public static PCGParameterValue FromBool(bool v) => new PCGParameterValue { Number = v ? 1.0f : 0.0f };
 
-        /// <summary>Creates a Vector3 value.</summary>
+        /// <summary>创建一个 Vector3 值。</summary>
         public static PCGParameterValue FromVector(Vector3 v) => new PCGParameterValue { Vector = v };
 
-        /// <summary>Creates a colour value.</summary>
+        /// <summary>创建一个颜色值。</summary>
         public static PCGParameterValue FromColor(Color v) => new PCGParameterValue { Color = v };
 
-        /// <summary>Creates an asset reference value.</summary>
+        /// <summary>创建一个资产引用值。</summary>
         public static PCGParameterValue FromAsset(Guid id) => new PCGParameterValue { AssetId = id };
 
-        /// <summary>Creates a string value.</summary>
+        /// <summary>创建一个文本值。</summary>
         public static PCGParameterValue FromString(string v) => new PCGParameterValue { Text = v };
 
         /// <summary>
-        /// Reads this value back as the shape <paramref name="type"/> describes.
+        /// 按 <paramref name="type"/> 描述的形状把这个值读出来。
         /// </summary>
         public object ToObject(PCGParameterType type)
         {
@@ -79,12 +85,13 @@ namespace PCG.Graph
             case PCGParameterType.Color: return Color;
             case PCGParameterType.Asset: return AssetId;
             case PCGParameterType.String: return Text;
+            case PCGParameterType.Enum: return (int)Number;
             default: return Number;
             }
         }
 
-        /// <summary>Writes <paramref name="value"/> into this struct according to <paramref name="type"/>.</summary>
-        /// <returns>True when the value was compatible.</returns>
+        /// <summary>按 <paramref name="type"/> 把 <paramref name="value"/> 写进这个结构体。</summary>
+        /// <returns>值兼容时为 true。</returns>
         public bool TrySet(PCGParameterType type, object value)
         {
             if (value == null)
@@ -115,6 +122,10 @@ namespace PCG.Graph
                 case PCGParameterType.String:
                     Text = (string)value;
                     return true;
+                case PCGParameterType.Enum:
+                    // 枚举控件带的是它的整数值；节点在读的时候再换回去。
+                    Number = Convert.ToInt32(value);
+                    return true;
                 default:
                     return false;
                 }
@@ -127,83 +138,79 @@ namespace PCG.Graph
     }
 
     /// <summary>
-    /// Declares a parameter a node exposes to the graph, so a <c>PCGVolume</c> can override it per instance
-    /// without the graph being recompiled.
+    /// 声明节点暴露给图的一个参数，于是每个 <c>PCGVolume</c> 都能按实例覆盖它，而不必重编这张图。
     /// </summary>
     /// <remarks>
-    /// Overrides are deliberately kept out of the structural hash. Otherwise two volumes using the same
-    /// graph with different values would each force a full recompile, and the reuse mechanism would lose
-    /// all of its benefit.
+    /// 覆盖值**有意不进**结构哈希。否则同一张图配不同值的两个体积各自都会触发一次全量重编，复用机制也就白费了。
     /// </remarks>
     [Serializable]
     public sealed class PCGParameterDefinition
     {
-        /// <summary>Stable parameter name, unique within the graph.</summary>
+        /// <summary>稳定的参数名，在同一张图内唯一。</summary>
         public string Name;
 
-        /// <summary>Name shown in the editor.</summary>
+        /// <summary>编辑器里显示的名字。</summary>
         public string DisplayName;
 
-        /// <summary>Value type.</summary>
+        /// <summary>取值类型。</summary>
         public PCGParameterType Type;
 
-        /// <summary>Default value, used when no override is supplied.</summary>
+        /// <summary>默认值，没有覆盖时用它。</summary>
         public PCGParameterValue DefaultValue;
 
-        /// <summary>Index of the node this parameter belongs to.</summary>
+        /// <summary>这个参数属于哪个节点。</summary>
         public int NodeIndex;
 
-        /// <summary>Index into that node's <see cref="PCGNode.Values"/> array.</summary>
+        /// <summary>在该节点 <see cref="PCGNode.Values"/> 数组里的下标。</summary>
         public int ValueIndex;
 
         /// <inheritdoc />
         public override string ToString() => $"{Name} ({Type}) -> node {NodeIndex}[{ValueIndex}]";
     }
 
-    /// <summary>One node in a graph, serialized.</summary>
+    /// <summary>图中的某个节点，序列化形态。</summary>
     [Serializable]
     public sealed class PCGNode
     {
-        /// <summary>Node type identifier, matching a <c>PCGNodeBase.TypeId</c>.</summary>
+        /// <summary>节点类型标识，与某个 <c>PCGNodeBase.TypeId</c> 一致。</summary>
         public string TypeId;
 
-        /// <summary>Position in the graph editor.</summary>
+        /// <summary>在图编辑器里的位置。</summary>
         public Vector2 EditorPosition;
 
         /// <summary>
-        /// Node parameter values, indexed by the node's own parameter order.
+        /// 节点参数值，按该节点自己的参数顺序索引。
         /// </summary>
         /// <remarks>
-        /// Kept as a plain <c>object[]</c> rather than a name-keyed dictionary because the planned graph
-        /// editor is built on <c>VisjectSurface</c>, whose <c>SurfaceNode.Values</c> is a positional array.
-        /// Matching that shape now avoids a data migration when the editor lands.
+        /// 保持朴素 <c>object[]</c> 而不是按名字键控的字典，是因为规划中的图编辑器建在 <c>VisjectSurface</c> 上，
+        /// 而它的 <c>SurfaceNode.Values</c> 就是位置数组。现在就照着那个形状走，编辑器落地时就不必做数据迁移。
         /// </remarks>
         public object[] Values = Array.Empty<object>();
 
-        /// <summary>Optional user comment.</summary>
+        /// <summary>可选的人写注释。</summary>
         public string Comment;
 
-        /// <summary>True when the node is muted and should pass through or produce nothing.</summary>
+        /// <summary>节点被静音、应当透传或不产出任何东西时为 true。</summary>
         public bool Disabled;
 
         /// <inheritdoc />
         public override string ToString() => $"{TypeId} @ {EditorPosition}";
     }
 
-    /// <summary>One edge in a graph: an output pin index on one node feeding an input pin index on another.</summary>
+    /// <summary>图中的一条边：一个节点的输出引脚下标接到另一个节点的输入引脚下标。</summary>
     [Serializable]
     public sealed class PCGEdge
     {
-        /// <summary>Source node index.</summary>
+        /// <summary>上游节点下标。</summary>
         public int OutputNodeIndex;
 
-        /// <summary>Source pin index, indexing <c>PCGNodeBase.OutputPins</c>.</summary>
+        /// <summary>上游引脚下标，索引 <c>PCGNodeBase.OutputPins</c>。</summary>
         public int OutputPinIndex;
 
-        /// <summary>Target node index.</summary>
+        /// <summary>下游节点下标。</summary>
         public int InputNodeIndex;
 
-        /// <summary>Target pin index, indexing <c>PCGNodeBase.InputPins</c>.</summary>
+        /// <summary>下游引脚下标，索引 <c>PCGNodeBase.InputPins</c>。</summary>
         public int InputPinIndex;
 
         /// <inheritdoc />
@@ -211,67 +218,118 @@ namespace PCG.Graph
             $"{OutputNodeIndex}[{OutputPinIndex}] -> {InputNodeIndex}[{InputPinIndex}]";
     }
 
-    /// <summary>Graph-wide settings that affect execution.</summary>
+    /// <summary>
+    /// 一份地形合成配方：把描述里的 `terrain` 指令搬到图上，由体积在**跑图之前**落地。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 为什么放在图的设置里、而不是做成一个节点：节点是**拉取式**执行——接不进任何汇的节点根本不会被求值，
+    /// 而"地形要写在所有采样之前"这一点恰恰不取决于图里的边，取决于是"先造地、再采样"这个顺序。
+    /// 放进设置里，体积在跑图前统一落地，顺序天然正确，也不必为了一个副作用在图里找一条接得上汇的边。
+    /// </para>
+    /// <para>
+    /// 高度用**世界单位**，与 <see cref="PCGTerrainSynthesizer"/> 的口径一致：形状的幅度就是地面抬高/压低多少，
+    /// 噪声幅度同单位。标定（raw 高度场 → 世界 Y）是写入端那一侧的事。
+    /// </para>
+    /// </remarks>
+    [Serializable]
+    public sealed class PCGTerrainRecipe
+    {
+        /// <summary>叠在形状上的噪声幅度（世界单位）；0 表示只要形状。</summary>
+        public float NoiseAmplitude = 25.0f;
+
+        /// <summary>噪声空间尺度（越小越平缓）。</summary>
+        public float NoiseScale = 900.0f;
+
+        /// <summary>要叠加的形状；空数组表示只要噪声（"一片起伏的平原"）。</summary>
+        public PCGTerrainFeature[] Features = Array.Empty<PCGTerrainFeature>();
+
+        /// <summary>
+        /// **挖洞**用的形状：落在这些形状半径内的顶点被标成"没有地面"（洞掩码 0）。
+        /// </summary>
+        /// <remarks>
+        /// 与 <see cref="Features"/> 是**两套**形状：`Features` 改高度，`Holes` 删地面。
+        /// 同一条描述里可以既有"这里堆一座丘"又有"那里开一个洞"。空数组 = 不挖洞（传 null 给
+        /// `SetupPatchHeightMap`，引擎保持它原有的洞不动）。
+        /// </remarks>
+        public PCGTerrainFeature[] Holes = Array.Empty<PCGTerrainFeature>();
+    }
+
+    /// <summary>影响执行的图级设置。</summary>
     [Serializable]
     public sealed class PCGGraphSettings
     {
-        /// <summary>Seed used when a volume does not supply one.</summary>
+        /// <summary>体积没有提供种子时用的种子。</summary>
         public int DefaultSeed;
 
-        /// <summary>Draw debug output while previewing in the editor.</summary>
+        /// <summary>在编辑器里预览时画调试输出。</summary>
         public bool EnableDebugDraw = true;
 
-        /// <summary>Maximum points a single graph run may produce before it aborts.</summary>
+        /// <summary>单次图运行产出多少点之后中止。</summary>
         /// <remarks>
-        /// A runaway graph (for example a sampler misconfigured to a huge count) would otherwise exhaust
-        /// memory before anyone can react. The executor aborts on this budget with a clear message.
+        /// 否则一张跑飞的图（例如采样器被误设成一个巨大的点数）会在任何人反应过来之前把内存吃光。
+        /// 执行器撞到这条预算就带一句明确的话中止。
         /// </remarks>
         public int MaxPointBudget = 2000000;
 
-        /// <summary>Maximum number of nodes allowed in an expanded graph, guarding recursive subgraphs.</summary>
+        /// <summary>展开后的图最多允许多少个节点，用来兜住递归子图。</summary>
         public int MaxExpandedNodeCount = 4096;
+
+        /// <summary>
+        /// 地形合成；null 表示这张图**不造地形**（决定 B：写高度是破坏性的，不做默认行为）。
+        /// </summary>
+        public PCGTerrainRecipe Terrain;
     }
 
     /// <summary>
-    /// A PCG graph: nodes, edges, exposed parameters and settings.
+    /// 一张 PCG 图：节点、连线、暴露参数与设置。
     /// </summary>
     /// <remarks>
-    /// This type is plain serializable state. Persisting it as a Flax asset is a separate concern; see the
-    /// asset integration notes in docs/PCG_PLUGIN_DESIGN.md §3.3 note 4.
+    /// 这个类型就是一份普通的可序列化状态。"把它作为 Flax 资产持久化"是另一件事；见
+    /// docs/PCG_PLUGIN_DESIGN.md §3.3 注 4 里的资产接入说明。
     /// </remarks>
     [Serializable]
     public sealed class PCGGraph
     {
-        /// <summary>Graph name, for logs and generated-object naming.</summary>
+        /// <summary>图名，供日志与生成物件命名使用。</summary>
         public string Name = "PCG Graph";
 
-        /// <summary>Nodes in the graph. Node indices are referenced by edges and parameters.</summary>
+        /// <summary>图里的节点。连线与参数都是按节点下标引用的。</summary>
         public PCGNode[] Nodes = Array.Empty<PCGNode>();
 
-        /// <summary>Edges in the graph.</summary>
+        /// <summary>图里的连线。</summary>
         public PCGEdge[] Edges = Array.Empty<PCGEdge>();
 
-        /// <summary>Parameters exposed to volumes.</summary>
+        /// <summary>暴露给体积的参数。</summary>
         public PCGParameterDefinition[] ExposedParameters = Array.Empty<PCGParameterDefinition>();
 
-        /// <summary>Execution settings.</summary>
+        /// <summary>执行设置。</summary>
         public PCGGraphSettings Settings = new PCGGraphSettings();
 
         /// <summary>
-        /// Opaque payload reserved for the graph editor's surface serialization.
+        /// 留给图编辑器画布序列化的不透明载荷。
         /// </summary>
         /// <remarks>
-        /// Present from the start so the editor can persist its own layout state later without a file
-        /// format change.
+        /// 从一开始就留好，于是编辑器以后要持久化自己的布局状态时不必改文件格式。里面是 Visject 产出的字节的
+        /// base64；见 <c>PCGGraphJson.EncodeEditorData</c>。
         /// </remarks>
         public string EditorData;
 
-        /// <summary>Creates an empty graph.</summary>
+        /// <summary>
+        /// 读取方为了让 <see cref="EditorData"/> 可用而不得不做的事，或 null。
+        /// </summary>
+        /// <remarks>
+        /// **不持久化**——它描述的是"这份实例是怎么读出来的"，而不是"这张图是什么"。它存在的唯一场合是 v1 文件
+        /// 里被旧的 UTF-8 存储毁掉的载荷：画布只能按节点数据重建，而设计师需要被告知发生了什么。
+        /// </remarks>
+        public string EditorDataNote;
+
+        /// <summary>创建一张空图。</summary>
         public PCGGraph()
         {
         }
 
-        /// <summary>Creates a graph over the supplied topology, normalising null collections.</summary>
+        /// <summary>在给定的拓扑上创建一张图，并把 null 集合归一化。</summary>
         public PCGGraph(PCGNode[] nodes, PCGEdge[] edges)
         {
             Nodes = nodes ?? Array.Empty<PCGNode>();
@@ -279,10 +337,10 @@ namespace PCG.Graph
             Settings = new PCGGraphSettings();
         }
 
-        /// <summary>Gets the number of nodes.</summary>
+        /// <summary>取节点个数。</summary>
         public int NodeCount => Nodes?.Length ?? 0;
 
-        /// <summary>Gets the number of edges.</summary>
+        /// <summary>取连线条数。</summary>
         public int EdgeCount => Edges?.Length ?? 0;
     }
 }

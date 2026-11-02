@@ -205,6 +205,12 @@ namespace ManagedHundunWorld.Network.Handlers
 
                 // 在UI上显示死亡提示
                 ShowDeathNotification(damageMessage);
+
+                // HUD 的"目标死亡即清除选中态 + 写击杀日志"订阅的是 CombatSystemManager.EntityDied，
+                // 而这条才是真正在跑的死亡路径。不接过来，那两个订阅永远不会触发。
+                // 去重在 HandleEntityDeath 内部：随后的独立死亡包不会再写一遍日志。
+                HundunWorld.Game.Combat.CombatSystemManager.Instance.HandleEntityDeath(
+                    damageMessage.VictimId, damageMessage.AttackerId);
             }
             catch (Exception ex)
             {
@@ -226,6 +232,10 @@ namespace ManagedHundunWorld.Network.Handlers
 
                 // 播放死亡音效
                 PlayDeathSound();
+
+                // 独立死亡包也要通知战斗侧（去重由 HandleEntityDeath 负责）。
+                HundunWorld.Game.Combat.CombatSystemManager.Instance.HandleEntityDeath(
+                    deathMessage.DeceasedId, deathMessage.KillerId);
 
                 // 在UI上显示死亡提示
                 ShowDeathNotification(deathMessage);

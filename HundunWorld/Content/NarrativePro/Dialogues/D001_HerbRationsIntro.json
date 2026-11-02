@@ -1,0 +1,196 @@
+{
+  "dialogueId": "D001_HerbRationsIntro",
+  "speakers": [
+    {
+      "speakerId": "npc_elder",
+      "displayName": "\u957F\u8005\u00B7\u6C88",
+      "tags": [
+        "Village.Elder"
+      ],
+      "isPlayer": false
+    },
+    {
+      "speakerId": "Player",
+      "displayName": "\u65C5\u4EBA",
+      "tags": [
+        "Player"
+      ],
+      "isPlayer": true
+    }
+  ],
+  "config": {
+    "endDialogueDist": 600,
+    "showCinematicBars": false,
+    "unskippable": true,
+    "freeMovement": true,
+    "canBeExited": true,
+    "priority": 0,
+    "defaultShotName": "Shot_Medium"
+  },
+  "npcReplies": [
+    {
+      "id": "n_greet",
+      "speakerId": "npc_elder",
+      "isRoot": true,
+      "isSkippable": true,
+      "line": {
+        "Text": "\u5C71\u91CC\u4EBA\u4E0D\u591A\u4E86\uFF0C\u53EF\u51AC\u5907\u7684\u836F\u8349\u8FD8\u5F97\u6709\u4EBA\u91C7\u3002",
+        "Duration": 4,
+        "DurationSecondsOverride": 3.6,
+        "SoundPath": "",
+        "BodyAnimationName": "Gesture.Nod",
+        "waitForCutscene": false
+      },
+      "playerReplies": [
+        "p_accept",
+        "p_decline"
+      ],
+      "nodePosX": 0,
+      "nodePosY": 0
+    },
+    {
+      "id": "n_accept",
+      "speakerId": "npc_elder",
+      "isRoot": false,
+      "isSkippable": true,
+      "line": {
+        "Text": "\u597D\u3002\u8FD9\u4E9B\u53E3\u7CAE\u4F60\u5148\u5E26\u4E0A\uFF0C\u4E09\u65E5\u540E\u6765\u4EA4\u5DEE\u3002",
+        "Duration": 4,
+        "DurationSecondsOverride": 4.2,
+        "waitForCutscene": false
+      },
+      "npcReplies": [
+        "n_bless"
+      ],
+      "events": [
+        {
+          "type": "StartQuest",
+          "questClassId": "Q001_HerbRations",
+          "startFromId": ""
+        },
+        {
+          "type": "GiveItem",
+          "itemId": "item_ration",
+          "quantity": 1
+        }
+      ],
+      "nodePosX": 500,
+      "nodePosY": -160
+    },
+    {
+      "id": "n_bless",
+      "speakerId": "npc_elder",
+      "isRoot": false,
+      "isSkippable": true,
+      "line": {
+        "Text": "\u613F\u5C71\u795E\u62A4\u4F60\u6765\u56DE\u3002",
+        "Duration": 0,
+        "DurationSecondsOverride": 0,
+        "waitForCutscene": false
+      },
+      "alternativeLines": [
+        {
+          "Text": "\u8DEF\u4E0A\u522B\u8D70\u5317\u5761\uFF0C\u584C\u65B9\u8FD8\u6CA1\u6E05\u3002",
+          "Duration": 0,
+          "DurationSecondsOverride": 0,
+          "waitForCutscene": false
+        },
+        {
+          "Text": "\u67F4\u5200\u8BB0\u5F97\u522B\u5728\u8170\u540E\u3002",
+          "Duration": 3,
+          "DurationSecondsOverride": 0,
+          "waitForCutscene": false
+        }
+      ],
+      "nodePosX": 900,
+      "nodePosY": -160
+    },
+    {
+      "id": "n_decline",
+      "speakerId": "npc_elder",
+      "isRoot": false,
+      "isSkippable": true,
+      "line": {
+        "Text": "\u4E5F\u7F62\uFF0C\u5F3A\u626D\u7684\u74DC\u4E0D\u751C\u3002",
+        "Duration": 4,
+        "DurationSecondsOverride": 2.4,
+        "waitForCutscene": false
+      },
+      "nodePosX": 500,
+      "nodePosY": 160
+    }
+  ],
+  "playerReplies": [
+    {
+      "id": "p_accept",
+      "optionText": "\u6211\u53BB\u91C7\u836F",
+      "hintText": "\u83B7\u5F97\u4EFB\u52A1\uFF1A\u836F\u8349\u4E0E\u53E3\u7CAE",
+      "autoSelect": false,
+      "autoSelectIfOnlyReply": false,
+      "line": {
+        "Text": "\u8981\u591A\u5C11\uFF1F\u2014\u2014\u7ED9\u6211\u4E09\u65E5\u5DE5\u592B\u3002",
+        "Duration": 0,
+        "DurationSecondsOverride": 0,
+        "waitForCutscene": false,
+        "Conditions": [
+          {
+            "type": "HasTag",
+            "tag": "Quest.HerbRations.Active",
+            "bTagShouldBePresent": false,
+            "bNot": false
+          }
+        ]
+      },
+      "npcReplies": [
+        "n_accept"
+      ],
+      "nodePosX": 250,
+      "nodePosY": -160,
+      "cinematicOption": {
+        "conditions": [
+          {
+            "type": "HasTag",
+            "tag": "Quest.HerbRations.Active",
+            "bTagShouldBePresent": false,
+            "bNot": false
+          }
+        ],
+        "optionText": "\uFF08\u63A5\u8FC7\u80CC\u7BD3\uFF09\u957F\u8005\u9001\u6211\u5230\u6751\u53E3",
+        "hintText": "\u8FC7\u573A\uFF1A\u957F\u8005\u9001\u884C 6.5 \u79D2",
+        "destinationSequencePath": "Content/Cinematics/SQ001_Elder_Departure.flax",
+        "destinationMarker": "SQ001.OnDeparture",
+        "blendAnimsBetweenSequences": false,
+        "keepExistingSequenceSettings": false,
+        "destinationPlaybackSettings": {
+          "walkBindingsToStartTransform": true,
+          "updateControlRotationToPawn": true,
+          "showCinematicBars": true,
+          "canSkip": true,
+          "stopDialogue": false,
+          "hideEvenEssentialHUDElements": false,
+          "autoPlay": true,
+          "durationSeconds": 6.5,
+          "playRate": 1,
+          "blendOutTime": 0.6
+        }
+      }
+    },
+    {
+      "id": "p_decline",
+      "optionText": "\u6055\u96BE\u4ECE\u547D",
+      "autoSelect": false,
+      "autoSelectIfOnlyReply": false,
+      "line": {
+        "Text": "\u5165\u51AC\u524D\u6211\u8FD8\u8981\u8D76\u8DEF\u53E3\uFF0C\u62B1\u6B49\u3002",
+        "Duration": 3,
+        "DurationSecondsOverride": 0,
+        "waitForCutscene": false
+      },
+      "npcReplies": [
+        "n_decline"
+      ],
+      "nodePosX": 250,
+      "nodePosY": 160
+    }
+  ]
+}

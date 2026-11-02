@@ -1,0 +1,18 @@
+{
+  "effectName": "Damage_Melee",
+  "durationType": "Instant",
+  "executeCalcTypeId": "Damage",
+  "stackingType": "None",
+  "maxStacks": 1,
+  "assetTags": [
+    "Narrative.Effect.Damage",
+    "Narrative.Ability.DamageType.Melee"
+  ],
+  "modifiers": [
+    {
+      "attributeName": "Damage",
+      "modifierOp": "Add",
+      "magnitude": 15
+    }
+  ]
+}

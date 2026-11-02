@@ -467,13 +467,13 @@ namespace HundunWorld.Game.UI
 
         private string GetToastPrefix(ToastType type) => type switch
         {
-            ToastType.Success => "✓",
-            ToastType.Warning => "⚠",
-            ToastType.Error => "✕",
+            ToastType.Success => "√",
+            ToastType.Warning => "※",
+            ToastType.Error => "×",
             ToastType.Quest => "◆",
-            ToastType.Loot => "✦",
+            ToastType.Loot => "◆",
             ToastType.Achievement => "🏆",
-            _ => "ℹ",
+            _ => "◆",
         };
 
         /// <summary>获取Toast颜色</summary>

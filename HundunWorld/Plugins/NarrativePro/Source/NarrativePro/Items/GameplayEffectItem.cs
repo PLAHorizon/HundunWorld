@@ -8,7 +8,8 @@ namespace NarrativePro.Items
     /// 应用 GameplayEffect 的物品（药水/食物/绷带等"消耗品"）。
     /// 使用时将所选效果施加到使用者身上。可通过取消 bConsumeOnUse 实现可重复使用的物品。
     /// 适配 UE5 UGameplayEffectItem。
-    /// GAS 相关：效果以字符串 ID 引用，SetByCaller 标签值通过字典传递，待 GAS 阶段填充。
+    /// GAS 相关：效果以字符串 ID 走 <see cref="NarrativePro.GAS.NarrativeGASAssetRegistry"/> 解析，
+    /// SetByCaller 标签值通过 <see cref="SetByCallerValues"/> 传递到 Spec 上。
     /// </summary>
     public class GameplayEffectItem : NarrativeItem
     {
@@ -29,11 +30,66 @@ namespace NarrativePro.Items
 
         public override bool ShouldUseOnAdd() => false;
 
+        /// <summary>
+        /// 使用物品：把效果应用到拥有者 ASC。
+        /// 对应 UE5 <c>UGameplayEffectItem::Use_Implementation</c>。
+        /// 返回 true 表示效果确实被应用（拥有者无 ASC 或效果解析失败则为 false）。
+        /// </summary>
         public override void Use(NarrativeItem otherItem = null)
         {
-            // TODO [需接入 GAS 资产加载机制]: 将 GameplayEffectId 应用到拥有者的能力系统组件
-            // 同时根据 SetByCallerValues 设置 SetByCaller 标签数值
+            if (!ApplyEffectToOwner())
+            {
+                // 应用失败不消耗物品（否则玩家白白损失一瓶药水）
+                NarrativeLog.LogWarning($"[Item] 使用效果物品 '{DisplayName}' 未生效，物品未被消耗");
+                return;
+            }
+
+            base.Use(otherItem);
+        }
+
+        /// <summary>
+        /// 解析并应用效果到拥有者。对应 UE5 MakeEffectSpecHandle + ApplyGameplayEffectSpecToOwnActor。
+        /// </summary>
+        protected virtual bool ApplyEffectToOwner()
+        {
+            if (string.IsNullOrEmpty(GameplayEffectId))
+            {
+                NarrativeLog.LogWarning($"[Item] '{DisplayName}' 未配置 GameplayEffectId");
+                return false;
+            }
+
+            var asc = GetOwningASC();
+            if (asc == null)
+            {
+                NarrativeLog.LogWarning($"[Item] '{DisplayName}' 的拥有者没有能力系统组件，效果无法应用");
+                return false;
+            }
+
+            var effect = NarrativePro.GAS.NarrativeGASAssetRegistry.ResolveEffect(GameplayEffectId);
+            if (effect == null) return false;
+
+            var spec = new NarrativePro.GAS.GameplayEffectSpec(effect, asc, EffectLevel);
+
+            // SetByCaller 值（键为标签名）
+            if (SetByCallerValues != null)
+            {
+                foreach (var kvp in SetByCallerValues)
+                {
+                    if (string.IsNullOrEmpty(kvp.Key)) continue;
+                    spec.SetSetByCallerMagnitude(new GameplayTag(kvp.Key), kvp.Value);
+                }
+            }
+
+            var handle = asc.ApplyGameplayEffectSpecToSelf(new NarrativePro.GAS.GameplayEffectSpecHandle(spec));
             NarrativeLog.Log($"[Item] 使用效果物品 '{DisplayName}'，效果 {GameplayEffectId} 等级 {EffectLevel}");
+            return handle.IsValid || effect.DurationType == NarrativePro.GAS.EGameplayEffectDurationType.Instant;
+        }
+
+        /// <summary>取拥有者的 ASC（通过背包→Pawn）。</summary>
+        protected NarrativePro.GAS.NarrativeAbilitySystemComponent GetOwningASC()
+        {
+            var pawn = GetOwningPawn();
+            return pawn != null ? pawn.GetScript<NarrativePro.GAS.NarrativeAbilitySystemComponent>() : null;
         }
 
         public override string GetStringVariable(string variableName)

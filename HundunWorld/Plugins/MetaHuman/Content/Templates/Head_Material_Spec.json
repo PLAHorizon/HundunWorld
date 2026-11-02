@@ -1,0 +1,178 @@
+{
+ "purpose": "MH_Head 材质手做规格：参数名必须逐字等于这里的 flax_parameter，因为插件的 MaterialTexture 通道按 §67 的 UE 参数名写贴图，名字不一致会静默写空。",
+ "how_to_verify": "做完后跑 material_set_param 撞一个假名，回执里的『可用:』清单必须含下面全部参数名",
+ "counts": {
+  "params": 18,
+  "png_exported": 14,
+  "already_in_flax": 13,
+  "shared_not_exported": 4
+ },
+ "declared_but_unsupported": [
+  "金属度：UE 头部分子没有金属度档，glTF 的 metallicRoughness 打包图我没导（单通道灰度硬塞是错的 packing）",
+  "层间混合（CM1..3 按掩码混进 BaseColor、WM1..3 按权重混进 Normal）——UE 语义在这里，需要混合链不是换贴图"
+ ],
+ "parameters": [
+  {
+   "flax_parameter": "Color_MAIN",
+   "ue_semantics": "BaseColor",
+   "srgb": true,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceColor_MAIN",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceColor_MAIN.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Color_CM3",
+   "ue_semantics": "BaseColor",
+   "srgb": true,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceColor_CM3",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceColor_CM3.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Color_CM2",
+   "ue_semantics": "BaseColor",
+   "srgb": true,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceColor_CM2",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceColor_CM2.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Color_CM1",
+   "ue_semantics": "BaseColor",
+   "srgb": true,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceColor_CM1",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceColor_CM1.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Cavity_MAIN",
+   "ue_semantics": "AO",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceCavity_MAIN",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceCavity_MAIN.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Roughness_MAIN",
+   "ue_semantics": "Roughness",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceRoughness_MAIN",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceRoughness_MAIN.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Normal_MAIN",
+   "ue_semantics": "Normal",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceNormal_MAIN",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceNormal_MAIN.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Normal_WM1",
+   "ue_semantics": "Normal",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceNormal_WM1",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceNormal_WM1.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Normal_WM2",
+   "ue_semantics": "Normal",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceNormal_WM2",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceNormal_WM2.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Normal_WM3",
+   "ue_semantics": "Normal",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceNormal_WM3",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceNormal_WM3.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "Normal_MICRO",
+   "ue_semantics": "Normal",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Common/Materials/Textures/T_SkinMicroNormal",
+   "png_exported": false,
+   "flax_texture": null,
+   "note": "在 Common/ 共享库里，未导出"
+  },
+  {
+   "flax_parameter": "EyeLipstickMask",
+   "ue_semantics": "Mask",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceEyeLipstickMask",
+   "png_exported": true,
+   "flax_texture": null,
+   "note": "PNG 在盘、未导入"
+  },
+  {
+   "flax_parameter": "FoundationBlusherMask",
+   "ue_semantics": "Mask",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceFoundationBlusherMask",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceFoundationBlusherMask.flax",
+   "note": "已导入为 Flax 资产"
+  },
+  {
+   "flax_parameter": "BakedGroomRootTipGradientRegionMasks",
+   "ue_semantics": "Mask",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceBakedGroomRootTipGradientRegionMasks",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceBakedGroomRootTipGradientRegionMasks.flax",
+   "note": "已导入为 Flax 资产（Importer=Texture, Type=GrayScale, sRGB=false；用户 2026-10-15 判定 stubble 先导入这张）"
+  },
+  {
+   "flax_parameter": "BakedGroomAttributeMap",
+   "ue_semantics": "Mask",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Ada/Face/FaceBakedGroomAttributeMap",
+   "png_exported": true,
+   "flax_texture": "Content/Character/Skin/FaceBakedGroomAttributeMap.flax",
+   "note": "已导入为 Flax 资产（同上设置），备用"
+  },
+  {
+   "flax_parameter": "HighlightsMask",
+   "ue_semantics": "Mask",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Common/Materials/HighlightsTextures/HighlightMask_contrasty",
+   "png_exported": false,
+   "flax_texture": null,
+   "note": "在 Common/ 共享库里，未导出"
+  },
+  {
+   "flax_parameter": "SecondaryColorsTexture",
+   "ue_semantics": "Utility",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Common/Face/Textures/Default_SecColors",
+   "png_exported": false,
+   "flax_texture": null,
+   "note": "在 Common/ 共享库里，未导出"
+  },
+  {
+   "flax_parameter": "Normal_BAKED",
+   "ue_semantics": "Normal",
+   "srgb": false,
+   "ue_source_asset": "/Game/MetaHumans/Common/Textures/T_FlatNormal",
+   "png_exported": false,
+   "flax_texture": null,
+   "note": "在 Common/ 共享库里，未导出"
+  }
+ ]
+}

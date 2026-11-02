@@ -1,0 +1,26 @@
+{
+  "abilityName": "乘坐/下车",
+  "abilityClass": "NarrativeInteractAbility",
+  "inputTag": "Narrative.Input.Interact",
+  "isMelee": false,
+  "isHeavyAttack": false,
+  "interactType": 0,
+  "interactionRange": 260,
+  "interactionTime": 0.4,
+  "interactionCooldown": 1.0,
+  "numInteractions": 0,
+  "bInteractWithBlockingActors": true,
+  "traceChannel": "Visibility",
+  "collisionProfileName": "Visibility",
+  "_comment": [
+    "槽位能力（作者通路）：对应 UE5 UInteractionSlotBehavior::SlotInteractBehavior",
+    "（InteractableComponent.h:90-92 的 TSubclassOf<UNarrativeInteractAbility>）。",
+    "内容把某个交互槽位的 slotInteractBehaviorId 指到本文件 id，",
+    "InteractionSlotBehavior.GetInteractAbility() 经 GAS 注册表换取类型，",
+    "由 InteractionComponent 授予并激活；能力结束时槽位自动释放。",
+    "字段严格对齐 NarrativeGASAssetRegistry.AbilityDefinition 的 schema。",
+    "interact* 这一组是「同一实现、不同数据」的交互那一半：UE5 写在每个交互能力的蓝图 CDO 上，",
+    "端口靠这份 DTO 在授予时重放（AbilityDefinition.ApplyTo）。",
+    "上游蓝图值二进制取不出真值，这里给的是保守可用值（近距 260cm、轻按 0.4s、冷却 1s）。"
+  ]
+}

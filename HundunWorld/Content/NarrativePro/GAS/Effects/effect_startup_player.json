@@ -1,0 +1,14 @@
+{
+  "effectName": "Startup_Player",
+  "durationType": "Infinite",
+  "executeCalcTypeId": "",
+  "stackingType": "None",
+  "maxStacks": 1,
+  "assetTags": [
+    "Narrative.Effect.Startup"
+  ],
+  "grantedTags": [
+    "Narrative.Character.Player"
+  ],
+  "modifiers": []
+}

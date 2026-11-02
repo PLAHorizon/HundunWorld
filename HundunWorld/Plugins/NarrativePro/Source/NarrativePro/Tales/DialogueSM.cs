@@ -36,39 +36,22 @@ namespace NarrativePro.Tales
     {
         /// <summary>
         /// 获取第一个满足条件的 NPC 回复。对应 UE5 UDialogueNode::GetFirstValidNPCReply。
-        /// UE5 中会按 NarrativeDialogueSettings.bEnableVerticalWiring 决定按 X 或 Y 排序，
-        /// Flax 中暂不排序，按列表顺序返回第一个满足条件的回复。
+        /// 实现已移到 <see cref="DialogueNode"/> 上（含 UE5 的图位置排序），此处保留静态入口做转发。
         /// </summary>
         public static DialogueNode_NPC GetFirstValidNPCReply(DialogueNode node, object owningController, object owningPawn, object narrativeComponent)
         {
-            if (node == null || node.NPCReplies == null) return null;
-            foreach (var reply in node.NPCReplies)
-            {
-                if (reply != null && reply.AreConditionsMet(owningPawn, owningController, narrativeComponent))
-                {
-                    return reply;
-                }
-            }
-            return null;
+            return node?.GetFirstValidNPCReply(owningController, owningPawn, narrativeComponent as TalesComponent);
         }
 
         /// <summary>
         /// 获取所有满足条件的玩家回复。对应 UE5 UDialogueNode::GetPlayerReplies。
-        /// UE5 中会按 NarrativeDialogueSettings.bEnableVerticalWiring 决定按 X 或 Y 排序，
-        /// Flax 中暂不排序，按列表顺序收集满足条件的回复。
+        /// 实现已移到 <see cref="DialogueNode"/> 上（含 UE5 按 NarrativeDialogueSettings.bEnableVerticalWiring
+        /// 决定 X/Y 的图位置排序），此处保留静态入口做转发。
         /// </summary>
         public static List<DialogueNode_Player> GetPlayerReplies(DialogueNode node, object owningController, object owningPawn, object narrativeComponent)
         {
-            var valid = new List<DialogueNode_Player>();
-            if (node == null || node.PlayerReplies == null) return valid;
-            foreach (var reply in node.PlayerReplies)
-            {
-                if (reply != null && reply.AreConditionsMet(owningPawn, owningController, narrativeComponent))
-                {
-                    valid.Add(reply);
-                }
-            }
-            return valid;
+            if (node == null) return new List<DialogueNode_Player>();
+            return node.GetPlayerReplies(owningController, owningPawn, narrativeComponent as TalesComponent);
         }
 
         /// <summary>

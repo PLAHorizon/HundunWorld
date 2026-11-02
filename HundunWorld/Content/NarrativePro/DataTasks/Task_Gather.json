@@ -1,0 +1,7 @@
+{
+  "TaskName": "Gather",
+  "TaskDescription": "在野外采集指定材料",
+  "ArgumentName": "Material",
+  "TaskCategory": "Quest",
+  "DefaultArgument": "Herb"
+}

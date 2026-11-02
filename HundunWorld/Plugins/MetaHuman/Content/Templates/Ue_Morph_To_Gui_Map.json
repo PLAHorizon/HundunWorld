@@ -1,0 +1,2996 @@
+{
+  "source": "左岸 docs/metahuman/ue_runtime/Ada_Face_authoritative_names.json（引擎 get_all_morph_target_names 实读）；右岸 Gui_To_Raw_Map.json 的权威 gui_controls",
+  "note": "按 UE 构词规则生成。basis=exact 是原名直推即命中；authored 只允许经过 note 里写明的拼写归一（侧标 left/right→L/R、词干 Outer→Out 等），可逐条审；组合 morph 一律 declined；对不上的进 unmapped 不硬凑。",
+  "entryCount": 51,
+  "entries": [
+    {
+      "morph": "head_lod0_mesh__brow_down_L",
+      "morphFamily": "brow_down",
+      "side": "L",
+      "gui": "CTRL_L_brow_down.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__brow_down_R",
+      "morphFamily": "brow_down",
+      "side": "R",
+      "gui": "CTRL_R_brow_down.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__brow_lateral_L",
+      "morphFamily": "brow_lateral",
+      "side": "L",
+      "gui": "CTRL_L_brow_lateral.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__brow_lateral_R",
+      "morphFamily": "brow_lateral",
+      "side": "R",
+      "gui": "CTRL_R_brow_lateral.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__brow_raiseIn_L",
+      "morphFamily": "brow_raiseIn",
+      "side": "L",
+      "gui": "CTRL_L_brow_raiseIn.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__brow_raiseIn_R",
+      "morphFamily": "brow_raiseIn",
+      "side": "R",
+      "gui": "CTRL_R_brow_raiseIn.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__brow_raiseOuter_left",
+      "morphFamily": "brow_raiseOut",
+      "side": "L",
+      "gui": "CTRL_L_brow_raiseOut.ty",
+      "basis": "authored",
+      "note": "词干归一 raiseOuter→raiseOut；侧标归一 left→L"
+    },
+    {
+      "morph": "head_lod0_mesh__brow_raiseOuter_right",
+      "morphFamily": "brow_raiseOut",
+      "side": "R",
+      "gui": "CTRL_R_brow_raiseOut.ty",
+      "basis": "authored",
+      "note": "词干归一 raiseOuter→raiseOut；侧标归一 right→R"
+    },
+    {
+      "morph": "head_lod0_mesh__ear_up_L",
+      "morphFamily": "ear_up",
+      "side": "L",
+      "gui": "CTRL_L_ear_up.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__ear_up_R",
+      "morphFamily": "ear_up",
+      "side": "R",
+      "gui": "CTRL_R_ear_up.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__eye_blink_L",
+      "morphFamily": "eye_blink",
+      "side": "L",
+      "gui": "CTRL_L_eye_blink.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__eye_blink_R",
+      "morphFamily": "eye_blink",
+      "side": "R",
+      "gui": "CTRL_R_eye_blink.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__eye_squintInner_L",
+      "morphFamily": "eye_squintInner",
+      "side": "L",
+      "gui": "CTRL_L_eye_squintInner.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__eye_squintInner_R",
+      "morphFamily": "eye_squintInner",
+      "side": "R",
+      "gui": "CTRL_R_eye_squintInner.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__eye_cheekRaise_L",
+      "morphFamily": "eye_cheekRaise",
+      "side": "L",
+      "gui": "CTRL_L_eye_cheekRaise.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__eye_cheekRaise_R",
+      "morphFamily": "eye_cheekRaise",
+      "side": "R",
+      "gui": "CTRL_R_eye_cheekRaise.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__eye_faceScrunch_L",
+      "morphFamily": "eye_faceScrunch",
+      "side": "L",
+      "gui": "CTRL_L_eye_faceScrunch.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__eye_faceScrunch_R",
+      "morphFamily": "eye_faceScrunch",
+      "side": "R",
+      "gui": "CTRL_R_eye_faceScrunch.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_lipsBlow_L",
+      "morphFamily": "mouth_lipsBlow",
+      "side": "L",
+      "gui": "CTRL_L_mouth_lipsBlow.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_lipsBlow_R",
+      "morphFamily": "mouth_lipsBlow",
+      "side": "R",
+      "gui": "CTRL_R_mouth_lipsBlow.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_upperLipRaise_left",
+      "morphFamily": "mouth_upperLipRaise",
+      "side": "L",
+      "gui": "CTRL_L_mouth_upperLipRaise.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 left→L"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_upperLipRaise_right",
+      "morphFamily": "mouth_upperLipRaise",
+      "side": "R",
+      "gui": "CTRL_R_mouth_upperLipRaise.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 right→R"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_lowerLipDepress_left",
+      "morphFamily": "mouth_lowerLipDepress",
+      "side": "L",
+      "gui": "CTRL_L_mouth_lowerLipDepress.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 left→L"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_lowerLipDepress_right",
+      "morphFamily": "mouth_lowerLipDepress",
+      "side": "R",
+      "gui": "CTRL_R_mouth_lowerLipDepress.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 right→R"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_cornerPull_left",
+      "morphFamily": "mouth_cornerPull",
+      "side": "L",
+      "gui": "CTRL_L_mouth_cornerPull.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 left→L"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_cornerPull_right",
+      "morphFamily": "mouth_cornerPull",
+      "side": "R",
+      "gui": "CTRL_R_mouth_cornerPull.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 right→R"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_stretch_left",
+      "morphFamily": "mouth_stretch",
+      "side": "L",
+      "gui": "CTRL_L_mouth_stretch.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 left→L"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_stretch_right",
+      "morphFamily": "mouth_stretch",
+      "side": "R",
+      "gui": "CTRL_R_mouth_stretch.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 right→R"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_dimple_left",
+      "morphFamily": "mouth_dimple",
+      "side": "L",
+      "gui": "CTRL_L_mouth_dimple.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 left→L"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_dimple_right",
+      "morphFamily": "mouth_dimple",
+      "side": "R",
+      "gui": "CTRL_R_mouth_dimple.ty",
+      "basis": "authored",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出；侧标归一 right→R"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_cornerDepress_L",
+      "morphFamily": "mouth_cornerDepress",
+      "side": "L",
+      "gui": "CTRL_L_mouth_cornerDepress.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_cornerDepress_R",
+      "morphFamily": "mouth_cornerDepress",
+      "side": "R",
+      "gui": "CTRL_R_mouth_cornerDepress.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_sharpCornerPull_L",
+      "morphFamily": "mouth_sharpCornerPull",
+      "side": "L",
+      "gui": "CTRL_L_mouth_sharpCornerPull.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_sharpCornerPull_R",
+      "morphFamily": "mouth_sharpCornerPull",
+      "side": "R",
+      "gui": "CTRL_R_mouth_sharpCornerPull.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__jaw_clench_L",
+      "morphFamily": "jaw_clench",
+      "side": "L",
+      "gui": "CTRL_L_jaw_clench.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__jaw_clench_R",
+      "morphFamily": "jaw_clench",
+      "side": "R",
+      "gui": "CTRL_R_jaw_clench.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__jaw_chinCompress_L",
+      "morphFamily": "jaw_chinCompress",
+      "side": "L",
+      "gui": "CTRL_L_jaw_chinCompress.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__jaw_chinCompress_R",
+      "morphFamily": "jaw_chinCompress",
+      "side": "R",
+      "gui": "CTRL_R_jaw_chinCompress.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__neck_stretch_L",
+      "morphFamily": "neck_stretch",
+      "side": "L",
+      "gui": "CTRL_L_neck_stretch.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__neck_stretch_R",
+      "morphFamily": "neck_stretch",
+      "side": "R",
+      "gui": "CTRL_R_neck_stretch.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__neck_mastoidContract_L",
+      "morphFamily": "neck_mastoidContract",
+      "side": "L",
+      "gui": "CTRL_L_neck_mastoidContract.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__neck_mastoidContract_R",
+      "morphFamily": "neck_mastoidContract",
+      "side": "R",
+      "gui": "CTRL_R_neck_mastoidContract.ty",
+      "basis": "exact",
+      "note": "按 UE 构词规则从权威 GUI 清单机械推出"
+    },
+    {
+      "morph": "head_lod0_mesh__jaw_lowerChinRaise_L",
+      "morphFamily": "chinRaise",
+      "side": "L",
+      "gui": "CTRL_L_jaw_ChinRaiseU.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    },
+    {
+      "morph": "head_lod0_mesh__jaw_lowerChinRaise_R",
+      "morphFamily": "chinRaise",
+      "side": "R",
+      "gui": "CTRL_R_jaw_ChinRaiseU.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    },
+    {
+      "morph": "head_lod0_mesh__jaw_open",
+      "morphFamily": "jawOpen",
+      "side": "C",
+      "gui": "CTRL_C_jaw.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    },
+    {
+      "morph": "head_lod0_mesh__nose_wrinkle_left",
+      "morphFamily": "noseWrinkler",
+      "side": "L",
+      "gui": "CTRL_L_nose_wrinkleUpper.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    },
+    {
+      "morph": "head_lod0_mesh__nose_wrinkle_right",
+      "morphFamily": "noseWrinkler",
+      "side": "R",
+      "gui": "CTRL_R_nose_wrinkleUpper.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_lipsPurse_UL",
+      "morphFamily": "purse",
+      "side": "L",
+      "gui": "CTRL_L_mouth_purseU.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_lipsPurse_UR",
+      "morphFamily": "purse",
+      "side": "R",
+      "gui": "CTRL_R_mouth_purseU.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_lipsPurse_DL",
+      "morphFamily": "purse",
+      "side": "L",
+      "gui": "CTRL_L_mouth_purseD.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    },
+    {
+      "morph": "head_lod0_mesh__mouth_lipsPurse_DR",
+      "morphFamily": "purse",
+      "side": "R",
+      "gui": "CTRL_R_mouth_purseD.ty",
+      "basis": "authored",
+      "note": "补的条目：控制沿用 dna 表同名项，名字取资产名录里的单控制规范形"
+    }
+  ],
+  "declined": [
+    {
+      "morph": "head_lod0_mesh__Bdown_Blateral__browLower_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Bdown_Blateral__browLower_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__BraiseIn_Bdown__browInnerRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__BraiseIn_Bdown__browInnerRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__BraiseIn_Bdown_Blateral_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__BraiseIn_Bdown_Blateral_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_Ewiden_INL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_Ewiden_INR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_Ewiden_OUTL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_Ewiden_OUTR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_Eblink_INL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_Eblink_INR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_Eblink_OUTL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_Eblink_OUTR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_ElookDown_INL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_ElookDown_INR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_ElookDown_OUTL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Braise_ElookDown_OUTR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElidPress_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElidPress_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EcheekRaise_EsquintInner_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EcheekRaise_EsquintInner_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EsquintInner_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EsquintInner_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EcheekRaise_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EcheekRaise_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EcheekRaise_EsquintInner_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EcheekRaise_EsquintInner_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EfaceScrunch_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EfaceScrunch_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_ElookLeft_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_ElookLeft_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_ElookRight_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_ElookRight_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_ElookLeft_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_ElookLeft_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_ElookRight_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_ElookRight_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookLeft_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookLeft_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookRight_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookRight_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_ElookLeft_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_ElookLeft_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_ElookRight_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookUp_ElookRight_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_ElookLeft_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_ElookLeft_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_ElookRight_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_ElookRight_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_Ewiden_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__ElookDown_Ewiden_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EcheekRaise_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__EcheekRaise_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__NSwrinkle_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Cblow_MlipsBlow_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Cblow_MlipsBlow_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MstretchLipsClose_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MstretchLipsClose_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards__pucker_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards__pucker_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards__pucker_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards__pucker_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel__oh_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel__oh_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel__oh_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel__oh_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Jopen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mtowards_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mtowards_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mtowards_Jopen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mtowards_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Jopen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Jopen__puckerJawOpen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Jopen__puckerJawOpen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Jopen__puckerJawOpen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Jopen__puckerJawOpen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_Jopen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_Jopen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel_Jopen__ohJawOpen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel_Jopen__ohJawOpen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel_Jopen__ohJawOpen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel_Jopen__ohJawOpen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MupperLipRaise_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MupperLipRaise_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MupperLipRaise_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MupperLipRaise_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MlowerLipDepress_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MlowerLipDepress_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MlowerLipDepress_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MlowerLipDepress_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MupperLipRaise_MlowerLipDepress__funnelWide_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MupperLipRaise_MlowerLipDepress__funnelWide_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MupperLipRaise_MlowerLipDepress__funnelWide_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_MupperLipRaise_MlowerLipDepress__funnelWide_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpress_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpress_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpress_Jopen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpress_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlipsTogether_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlipsTogether_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlipsTogether_Jopen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlipsTogether_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlipsTogether_Mpress_Jopen__mouthSuck_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlipsTogether_Mpress_Jopen__mouthSuck_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlipsTogether_Mpress_Jopen__mouthSuck_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlipsTogether_Mpress_Jopen__mouthSuck_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_McornerDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_McornerDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerDepress_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_NSwrinkle_McornerDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_NSwrinkle_McornerDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_NSwrinkle_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_McornerDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_McornerDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerDepress_NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_NSwrinkle_McornerDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_NSwrinkle_McornerDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipBite_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipBite_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipBite_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipBite_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipBite_MupperLipBite_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipBite_MupperLipBite_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mtowards_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mtowards_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mtowards_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mtowards_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mfunnel_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mfunnel_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mfunnel_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mfunnel_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mtowards__cornerPullPucker_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mtowards__cornerPullPucker_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mtowards__cornerPullPucker_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mtowards__cornerPullPucker_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mfunnel_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mfunnel_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mfunnel_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mfunnel_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mfunnel_Mtowards_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mfunnel_Mtowards_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mfunnel_Mtowards_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mfunnel_Mtowards_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mtowards_Mfunnel__cornerPullOh_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mtowards_Mfunnel__cornerPullOh_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mtowards_Mfunnel__cornerPullOh_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mpurse_Mtowards_Mfunnel__cornerPullOh_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_Mtighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_Mtighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_Mtighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipDepress_Mtighten_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipDepress_Mtighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_Mtighten_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_Mtighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_Mtighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_Mtighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MsharpCornerPull_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MsharpCornerPull_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_EcheekRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_EcheekRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_JlowerChinRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_JlowerChinRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_MupperLipRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_MupperLipRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_MlowerLipDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_MlowerLipDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_MupperLipRaise_MlowerLipDepress__ee_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_MupperLipRaise_MlowerLipDepress__ee_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MsharpCornerPull_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MsharpCornerPull_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_NSwrinkle_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_NSwrinkle_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_NSdepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_NSdepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtighten_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mtowards_Mtighten_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mtowards_Mtighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mtowards_Mtighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mtowards_Mtighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtighten_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mtighten__puckerTighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mtighten__puckerTighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mtighten__puckerTighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_Mtighten_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_Mtighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_Mtighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mfunnel_Mtighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_Mtighten_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_Mtighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_Mtighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mfunnel_Mtowards_Mtighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel_Mtighten__ohTighten_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel_Mtighten__ohTighten_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mpurse_Mtowards_Mfunnel_Mtighten__ohTighten_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mtowards_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mtowards_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mtowards_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mtowards_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mfunnel_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mfunnel_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mfunnel_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mfunnel_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mtowards__mouthStretchPucker_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mtowards__mouthStretchPucker_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mtowards__mouthStretchPucker_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mtowards__mouthStretchPucker_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mfunnel_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mfunnel_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mfunnel_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mfunnel_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mfunnel_Mtowards_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mfunnel_Mtowards_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mfunnel_Mtowards_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mfunnel_Mtowards_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mtowards_Mfunnel__mouthStretchOh_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mtowards_Mfunnel__mouthStretchOh_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mtowards_Mfunnel__mouthStretchOh_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mpurse_Mtowards_Mfunnel__mouthStretchOh_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mtowards_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mtowards_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mtowards_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mtowards_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mfunnel_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mfunnel_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mfunnel_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mfunnel_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mtowards__dimplePucker_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mtowards__dimplePucker_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mtowards__dimplePucker_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mtowards__dimplePucker_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mfunnel_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mfunnel_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mfunnel_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mfunnel_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mfunnel_Mtowards_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mfunnel_Mtowards_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mfunnel_Mtowards_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mfunnel_Mtowards_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mtowards_Mfunnel__dimpleOh_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mtowards_Mfunnel__dimpleOh_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mtowards_Mfunnel__dimpleOh_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mdimple_Mpurse_Mtowards_Mfunnel__dimpleOh_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MlowerLipDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MlowerLipDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_MupperLipRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_MupperLipRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_MlowerLipDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_MlowerLipDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_MlowerLipDepress_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_MlowerLipDepress_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MlowerLipDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MlowerLipDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_MupperLipRaise_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_MupperLipRaise_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_MupperLipRaise_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_MupperLipRaise_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_MlowerLipDepress_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_MlowerLipDepress_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MlowerLipDepress_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MlowerLipDepress_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_MlowerLipDepress_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_MlowerLipDepress_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_MlowerLipDepress_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_MlowerLipDepress_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_MlowerLipDepress_Mdimple_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_MlowerLipDepress_Mdimple_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mdimple_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mdimple_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mdimple_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_Mdimple_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_Mdimple_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_Mdimple_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_NSwrinkle_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_NSwrinkle_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_NSwrinkle_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_NSwrinkle_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipDepress_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MlowerLipDepress_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MupperLipRaise_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MupperLipRaise_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__MupperLipRaise_MlowerLipDepress_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MlowerLipDepress_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MlowerLipDepress_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_MupperLipRaise_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_MlowerLipDepress_MupperLipRaise_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_MupperLipRaise_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Mstretch_MlowerLipDepress_MupperLipRaise_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_MlowerLipDepress_JopenExtreme_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__McornerPull_Mstretch_MupperLipRaise_MlowerLipDepress_JopenExtreme_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_Jopen_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jright_Jopen_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_MlipsTogether_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_MlipsTogether_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_MlipsTogether_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_MlipsTogether_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jright_MlipsTogether_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jright_MlipsTogether_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jright_MlipsTogether_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jright_MlipsTogether_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_MlipsTogether_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_MlipsTogether_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_MlipsTogether_Jopen_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jleft_MlipsTogether_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jright_MlipsTogether_Jopen_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jright_MlipsTogether_Jopen_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__Jright_MlipsTogether_Jopen_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__JlowerChinRaise_JupperChinRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__JlowerChinRaise_JupperChinRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__JlowerChinRaise_MupperLipRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__JlowerChinRaise_MupperLipRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__JlowerChinRaise_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__JlowerChinRaise_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__NKstretch_Mstretch_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__NKstretch_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__NKstretch_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__NKstretch_Mstretch_Jopen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__NKstretch_Mstretch_Jopen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnUp_NKstretch_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnUp_NKstretch_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnUp_NKstretch_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnDown_NKstretch_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnDown_NKstretch_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnDown_NKstretch_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnLeft_NKstretch_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnLeft_NKstretch_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnLeft_NKstretch_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnRight_NKstretch_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnRight_NKstretch_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnRight_NKstretch_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnRight_NKstretch_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HtiltLeft_NKstretch_UL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HtiltLeft_NKstretch_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HtiltLeft_NKstretch_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HtiltRight_NKstretch_UR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HtiltRight_NKstretch_MR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HtiltRight_NKstretch_DL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HtiltRight_NKstretch_DR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnUp_NKthroatExhale_D",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnUp_NKthroatInhale_D",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnDown_NKthroatExhale_D",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "head_lod0_mesh__HturnDown_NKthroatInhale_D",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_up_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_down_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_left_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_right_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_out_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_in_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_bendUp_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_bendDown_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_twistLeft_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_twistRight_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_tipUp_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_tipDown_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_tipLeft_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_tipRight_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_wide_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_narrow_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_press_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_roll_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_thick_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_thin_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_retraction_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_dartingOut_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_protrusion_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_outLeft_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_outRight_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_narrowLeft_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_narrowRight_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_outBendUp_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_outBendDown_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_outUp_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_upBendUp_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_upBendDown_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_bendUpTwistLeft_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_bendUpTwistRight_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_bendDownTwistLeft_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_bendDownTwistRight_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_outRoll_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_lateralLeft_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_lateralRight_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_elevation_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "teeth_lod0_mesh__tongue_depression_cor",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "eyeLeft_lod0_mesh__eye_pupilWide_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "eyeLeft_lod0_mesh__eye_pupilNarrow_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "eyeRight_lod0_mesh__eye_pupilWide_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "eyeRight_lod0_mesh__eye_pupilNarrow_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_Ewiden_INL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_Ewiden_INR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_Ewiden_OUTL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_Ewiden_OUTR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_Eblink_INL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_Eblink_INR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_Eblink_OUTL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_Eblink_OUTR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_ElookDown_INL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_ElookDown_INR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_ElookDown_OUTL",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__Braise_ElookDown_OUTR",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_blink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_blink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElidPress_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElidPress_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_widen_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_widen_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_squintInner_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_squintInner_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_cheekRaise_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_cheekRaise_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EcheekRaise_EsquintInner_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EcheekRaise_EsquintInner_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EsquintInner_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EsquintInner_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EcheekRaise_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EcheekRaise_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EcheekRaise_EsquintInner_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EcheekRaise_EsquintInner_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EfaceScrunch_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EfaceScrunch_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_upperLidUp_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_upperLidUp_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_relax_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_relax_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lowerLidUp_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lowerLidUp_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lowerLidDown_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lowerLidDown_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lookUp_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lookUp_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lookDown_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lookDown_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lookLeft_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lookLeft_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lookRight_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__eye_lookRight_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_ElookLeft_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_ElookLeft_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_ElookRight_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_ElookRight_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_ElookLeft_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_ElookLeft_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_ElookRight_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_ElookRight_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookLeft_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookLeft_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookRight_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookRight_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_ElookLeft_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_ElookLeft_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_ElookRight_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookUp_ElookRight_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_ElookLeft_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_ElookLeft_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_ElookRight_Eblink_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_ElookRight_Eblink_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_Ewiden_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__ElookDown_Ewiden_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EcheekRaise_NSwrinkle_L",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    },
+    {
+      "morph": "cartilage_lod0_mesh__EcheekRaise_NSwrinkle_R",
+      "reason": "组合形态（UE 由层级派生），按 GUI 驱动会与父形叠加"
+    }
+  ],
+  "unmapped": [
+    "head_lod0_mesh__brow_raise_L",
+    "head_lod0_mesh__brow_raise_R",
+    "head_lod0_mesh__eye_widen_L",
+    "head_lod0_mesh__eye_widen_R",
+    "head_lod0_mesh__eye_upperLidUp_L",
+    "head_lod0_mesh__eye_upperLidUp_R",
+    "head_lod0_mesh__eye_relax_L",
+    "head_lod0_mesh__eye_relax_R",
+    "head_lod0_mesh__eye_lowerLidUp_L",
+    "head_lod0_mesh__eye_lowerLidUp_R",
+    "head_lod0_mesh__eye_lowerLidDown_L",
+    "head_lod0_mesh__eye_lowerLidDown_R",
+    "head_lod0_mesh__eye_lookUp_L",
+    "head_lod0_mesh__eye_lookUp_R",
+    "head_lod0_mesh__eye_lookDown_L",
+    "head_lod0_mesh__eye_lookDown_R",
+    "head_lod0_mesh__eye_lookLeft_L",
+    "head_lod0_mesh__eye_lookLeft_R",
+    "head_lod0_mesh__eye_lookRight_L",
+    "head_lod0_mesh__eye_lookRight_R",
+    "head_lod0_mesh__nose_wrinkle_left",
+    "head_lod0_mesh__nose_wrinkle_right",
+    "head_lod0_mesh__nose_wrinkle_cor",
+    "head_lod0_mesh__nose_wrinkleFull_L",
+    "head_lod0_mesh__nose_wrinkleFull_R",
+    "head_lod0_mesh__nose_nostrilsDepress_L",
+    "head_lod0_mesh__nose_nostrilsDepress_R",
+    "head_lod0_mesh__nose_nostrilsDilate_L",
+    "head_lod0_mesh__nose_nostrilsDilate_R",
+    "head_lod0_mesh__nose_nostrilsCompress_L",
+    "head_lod0_mesh__nose_nostrilsCompress_R",
+    "head_lod0_mesh__nose_nasolabialDeepener_L",
+    "head_lod0_mesh__nose_nasolabialDeepener_R",
+    "head_lod0_mesh__cheek_suck_L",
+    "head_lod0_mesh__cheek_suck_R",
+    "head_lod0_mesh__cheek_blow_left",
+    "head_lod0_mesh__cheek_blow_right",
+    "head_lod0_mesh__cheek_blow_cor",
+    "head_lod0_mesh__mouth_left",
+    "head_lod0_mesh__mouth_right",
+    "head_lod0_mesh__mouth_up",
+    "head_lod0_mesh__mouth_down",
+    "head_lod0_mesh__mouth_upperLipRaise_cor",
+    "head_lod0_mesh__mouth_lowerLipDepress_cor",
+    "head_lod0_mesh__mouth_cornerPull_cor",
+    "head_lod0_mesh__mouth_stretch_cor",
+    "head_lod0_mesh__mouth_dimple_cor",
+    "head_lod0_mesh__mouth_press_UL",
+    "head_lod0_mesh__mouth_press_UR",
+    "head_lod0_mesh__mouth_press_DL",
+    "head_lod0_mesh__mouth_press_DR",
+    "head_lod0_mesh__mouth_lipsPurse_UL",
+    "head_lod0_mesh__mouth_lipsPurse_UR",
+    "head_lod0_mesh__mouth_lipsPurse_DL",
+    "head_lod0_mesh__mouth_lipsPurse_DR",
+    "head_lod0_mesh__mouth_lipsTowards_UL",
+    "head_lod0_mesh__mouth_lipsTowards_UR",
+    "head_lod0_mesh__mouth_lipsTowards_DL",
+    "head_lod0_mesh__mouth_lipsTowards_DR",
+    "head_lod0_mesh__mouth_funnel_UL",
+    "head_lod0_mesh__mouth_funnel_UR",
+    "head_lod0_mesh__mouth_funnel_DL",
+    "head_lod0_mesh__mouth_funnel_DR",
+    "head_lod0_mesh__mouth_upperLipBite_L",
+    "head_lod0_mesh__mouth_upperLipBite_R",
+    "head_lod0_mesh__mouth_lowerLipBite_L",
+    "head_lod0_mesh__mouth_lowerLipBite_R",
+    "head_lod0_mesh__mouth_lipsBite_L",
+    "head_lod0_mesh__mouth_lipsBite_R",
+    "head_lod0_mesh__mouth_lipsTighten_UL",
+    "head_lod0_mesh__mouth_lipsTighten_UR",
+    "head_lod0_mesh__mouth_lipsTighten_DL",
+    "head_lod0_mesh__mouth_lipsTighten_DR",
+    "head_lod0_mesh__mouth_lipsPress_L",
+    "head_lod0_mesh__mouth_lipsPress_R",
+    "head_lod0_mesh__mouth_sticky_UC",
+    "head_lod0_mesh__mouth_sticky_UINL",
+    "head_lod0_mesh__mouth_sticky_UINR",
+    "head_lod0_mesh__mouth_sticky_UOUTL",
+    "head_lod0_mesh__mouth_sticky_UOUTR",
+    "head_lod0_mesh__mouth_sticky_DC",
+    "head_lod0_mesh__mouth_sticky_DOUTL",
+    "head_lod0_mesh__mouth_sticky_DOUTR",
+    "head_lod0_mesh__mouth_lipsSticky_L_ph1",
+    "head_lod0_mesh__mouth_lipsSticky_L_ph2",
+    "head_lod0_mesh__mouth_lipsSticky_L_ph3",
+    "head_lod0_mesh__mouth_lipsSticky_R_ph1",
+    "head_lod0_mesh__mouth_lipsSticky_R_ph2",
+    "head_lod0_mesh__mouth_lipsSticky_R_ph3",
+    "head_lod0_mesh__mouth_lipsPush_UL",
+    "head_lod0_mesh__mouth_lipsPush_UR",
+    "head_lod0_mesh__mouth_lipsPush_DL",
+    "head_lod0_mesh__mouth_lipsPush_DR",
+    "head_lod0_mesh__mouth_lipsPull_UL",
+    "head_lod0_mesh__mouth_lipsPull_UR",
+    "head_lod0_mesh__mouth_lipsPull_DR",
+    "head_lod0_mesh__mouth_lipsThin_UL",
+    "head_lod0_mesh__mouth_lipsThin_UR",
+    "head_lod0_mesh__mouth_lipsThin_DL",
+    "head_lod0_mesh__mouth_lipsThin_DR",
+    "head_lod0_mesh__mouth_lipsThick_UL",
+    "head_lod0_mesh__mouth_lipsThick_UR",
+    "head_lod0_mesh__mouth_lipsThick_DL",
+    "head_lod0_mesh__mouth_lipsThick_DR",
+    "head_lod0_mesh__mouth_lipsThinInward_UL",
+    "head_lod0_mesh__mouth_lipsThinInward_UR",
+    "head_lod0_mesh__mouth_lipsThinInward_DL",
+    "head_lod0_mesh__mouth_lipsThinInward_DR",
+    "head_lod0_mesh__mouth_lipsThickInward_UL",
+    "head_lod0_mesh__mouth_lipsThickInward_UR",
+    "head_lod0_mesh__mouth_lipsThickInward_DL",
+    "head_lod0_mesh__mouth_lipsThickInward_DR",
+    "head_lod0_mesh__mouth_cornerSharpen_UL",
+    "head_lod0_mesh__mouth_cornerSharpen_UR",
+    "head_lod0_mesh__mouth_cornerSharpen_DL",
+    "head_lod0_mesh__mouth_cornerSharpen_DR",
+    "head_lod0_mesh__mouth_cornerRounder_UL",
+    "head_lod0_mesh__mouth_cornerRounder_UR",
+    "head_lod0_mesh__mouth_cornerRounder_DL",
+    "head_lod0_mesh__mouth_cornerRounder_DR",
+    "head_lod0_mesh__mouth_upperLipTowardsTeeth_L",
+    "head_lod0_mesh__mouth_upperLipTowardsTeeth_R",
+    "head_lod0_mesh__mouth_lowerLipTowardsTeeth_L",
+    "head_lod0_mesh__mouth_lowerLipTowardsTeeth_R",
+    "head_lod0_mesh__mouth_upperLipShiftLeft",
+    "head_lod0_mesh__mouth_upperLipShiftRight",
+    "head_lod0_mesh__mouth_lowerLipShiftLeft",
+    "head_lod0_mesh__mouth_lowerLipShiftRight",
+    "head_lod0_mesh__mouth_upperLipRollIn_L",
+    "head_lod0_mesh__mouth_upperLipRollIn_R",
+    "head_lod0_mesh__mouth_upperLipRollOut_L",
+    "head_lod0_mesh__mouth_upperLipRollOut_R",
+    "head_lod0_mesh__mouth_lowerLipRollIn_L",
+    "head_lod0_mesh__mouth_lowerLipRollIn_R",
+    "head_lod0_mesh__mouth_lowerLipRollOut_L",
+    "head_lod0_mesh__mouth_lowerLipRollOut_R",
+    "head_lod0_mesh__mouth_cornersUp_L",
+    "head_lod0_mesh__mouth_cornersUp_R",
+    "head_lod0_mesh__mouth_cornersDown_L",
+    "head_lod0_mesh__mouth_cornersDown_R",
+    "head_lod0_mesh__mouth_cornersWide_L",
+    "head_lod0_mesh__mouth_cornersWide_R",
+    "head_lod0_mesh__mouth_cornersNarrow_L",
+    "head_lod0_mesh__mouth_cornersNarrow_R",
+    "head_lod0_mesh__jaw_open",
+    "head_lod0_mesh__jaw_left",
+    "head_lod0_mesh__jaw_right",
+    "head_lod0_mesh__jaw_fwd",
+    "head_lod0_mesh__jaw_back",
+    "head_lod0_mesh__jaw_lowerChinRaise_L",
+    "head_lod0_mesh__jaw_lowerChinRaise_R",
+    "head_lod0_mesh__jaw_openExtreme_cor",
+    "head_lod0_mesh__neck_swallow_ph1",
+    "head_lod0_mesh__neck_swallow_ph2",
+    "head_lod0_mesh__neck_swallow_ph3",
+    "head_lod0_mesh__neck_swallow_ph4",
+    "head_lod0_mesh__neck_throatDown",
+    "head_lod0_mesh__neck_throatUp",
+    "head_lod0_mesh__neck_digastricDown",
+    "head_lod0_mesh__neck_digastricUp",
+    "head_lod0_mesh__neck_throatExhale",
+    "head_lod0_mesh__neck_throatInhale",
+    "head_lod0_mesh__head_turnUp_U",
+    "head_lod0_mesh__head_turnUp_M",
+    "head_lod0_mesh__head_turnUp_D",
+    "head_lod0_mesh__head_turnDown_U",
+    "head_lod0_mesh__head_turnDown_M",
+    "head_lod0_mesh__head_turnDown_D",
+    "head_lod0_mesh__head_turnLeft_U",
+    "head_lod0_mesh__head_turnLeft_M",
+    "head_lod0_mesh__head_turnLeft_D",
+    "head_lod0_mesh__head_turnRight_U",
+    "head_lod0_mesh__head_turnRight_M",
+    "head_lod0_mesh__head_turnRight_D",
+    "head_lod0_mesh__head_tiltLeft_U",
+    "head_lod0_mesh__head_tiltLeft_M",
+    "head_lod0_mesh__head_tiltLeft_D",
+    "head_lod0_mesh__head_tiltRight_U",
+    "head_lod0_mesh__head_tiltRight_M",
+    "head_lod0_mesh__head_tiltRight_D"
+  ],
+  "unmappedCount": 180
+}

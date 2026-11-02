@@ -1,0 +1,31 @@
+{
+  "ScheduleAssetPath": "Content/NarrativePro/Activities/WorkShiftDaySchedule.json",
+  "Behaviors": [
+    {
+      "BehaviorType": "ScheduledBehavior_AddLocationGoal",
+      "bDisabled": false,
+      "StartTime": 900.0,
+      "EndTime": 1700.0,
+      "ScoreOverride": 2.0,
+      "bReselect": true,
+      "GoalKey": "WorkStation",
+      "GoalDisplayName": "白班工位",
+      "GoalLocation": { "X": 1000.0, "Y": 0.0, "Z": 2000.0 },
+      "GoalDefaultScore": 1.5,
+      "GoalLifetime": -1.0
+    },
+    {
+      "BehaviorType": "ScheduledBehavior_AddLocationGoal",
+      "bDisabled": false,
+      "StartTime": 1800.0,
+      "EndTime": 600.0,
+      "ScoreOverride": 1.2,
+      "bReselect": true,
+      "GoalKey": "Home",
+      "GoalDisplayName": "夜间住所",
+      "GoalLocation": { "X": -800.0, "Y": 0.0, "Z": 1500.0 },
+      "GoalDefaultScore": 1.0,
+      "GoalLifetime": -1.0
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "effectName": "Damage_Fire",
+  "durationType": "Instant",
+  "executeCalcTypeId": "Damage",
+  "stackingType": "None",
+  "maxStacks": 1,
+  "assetTags": [
+    "Narrative.Effect.Damage",
+    "Narrative.Effect.DamageType.Fire"
+  ],
+  "modifiers": [
+    {
+      "attributeName": "Damage",
+      "modifierOp": "Add",
+      "magnitude": 22
+    }
+  ]
+}

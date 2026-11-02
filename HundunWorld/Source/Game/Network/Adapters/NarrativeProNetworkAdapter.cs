@@ -46,10 +46,15 @@ namespace HundunWorld.Game.Network.Adapters
             try
             {
                 var messageType = MapUpdateTypeToUpdateType(updateType);
+                if (messageType == null)
+                {
+                    // 无对应信令的更新（对话类/None）在此丢弃，插件侧仍会在本地完成状态推进。
+                    return false;
+                }
 
                 var horizonMessage = new NarrativeProHorizonMessage(jsonPayload)
                 {
-                    Type = messageType,
+                    Type = messageType.Value,
                     ServiceType = ServiceType.Game
                 };
 
@@ -87,17 +92,21 @@ namespace HundunWorld.Game.Network.Adapters
             }
         }
 
-        private MessageType MapUpdateTypeToUpdateType(int updateType)
+        private MessageType? MapUpdateTypeToUpdateType(int updateType)
         {
+            // 必须按插件侧 EUpdateType 的真实序号映射（Core/Enums.cs:58）：
+            // None=0, CompleteTask=1, BeginQuest=2, ForgetQuest=3, RestartQuest=4,
+            // QuestNewState=5, TaskProgressMade=6, DialogueExit=7, DialogueSkip=8。
+            // 对话类没有对应的任务信令，宁可不上行也不能伪装成任务更新，否则服务端会按任务语义错误结算。
             return updateType switch
             {
-                0 => MessageType.AcceptQuest,
-                1 => MessageType.QuestUpdate,
-                2 => MessageType.QuestUpdate,
-                3 => MessageType.QuestProgressNotify,
-                4 => MessageType.CompleteQuest,
-                5 => MessageType.QuestProgressNotify,
-                _ => MessageType.QuestUpdate
+                1 => MessageType.QuestProgressNotify, // CompleteTask
+                2 => MessageType.AcceptQuest, // BeginQuest
+                3 => MessageType.QuestUpdate, // ForgetQuest
+                4 => MessageType.AcceptQuest, // RestartQuest
+                5 => MessageType.QuestUpdate, // QuestNewState
+                6 => MessageType.QuestProgressNotify, // TaskProgressMade
+                _ => null // None / DialogueExit / DialogueSkip
             };
         }
     }

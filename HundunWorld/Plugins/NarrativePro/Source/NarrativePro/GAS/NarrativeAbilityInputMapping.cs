@@ -29,11 +29,16 @@ namespace NarrativePro.GAS
     /// <summary>
     /// 能力输入映射资产。对应 UE5 UNarrativeAbilityInputMapping。
     /// Narrative 武器通过此资产定义哪些输入动作映射到哪些能力。
-    /// 简化点：UE5 UInputAction 用字符串路径占位。
+    /// UE5 里映射的左键是 UInputAction 资产；Flax 中等价物是输入动作名，
+    /// 由 <c>NarrativeGameplayAbility.InputActionNameForTag</c> 按统一规则生成，因此这里只需维护
+    /// 「输入标签 ↔ 能力」这一张表。
     /// </summary>
     [Serializable]
     public class NarrativeAbilityInputMapping
     {
+        /// <summary>本映射的来源路径/资产 ID（便于调试与由 ASC/武器按路径引用）。</summary>
+        public string MappingPath = "";
+
         /// <summary>输入到能力的映射列表。</summary>
         public List<AbilityInputMappingData> InputAbilities = new List<AbilityInputMappingData>();
 

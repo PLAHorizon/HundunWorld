@@ -3,8 +3,10 @@ using FlaxEngine.GUI;
 using Game.Character.Attributes;
 using Game.Combat.Skills;
 using Horizon.Game.Message.Enums;
+using HundunWorld.Game.Combat.Skills;
 using HundunWorld.Game.UI.Authentication;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.ActionBar;
 using HundunWorld.Game.UI.Ink.Pages;
 using HundunWorld.Game.UI.Ink.Pages.Activities;
 using HundunWorld.Game.UI.Ink.Pages.Appearance;
@@ -21,13 +23,11 @@ using HundunWorld.Game.UI.Ink.Pages.Gacha;
 using HundunWorld.Game.UI.Ink.Pages.InkAnim;
 using HundunWorld.Game.UI.Ink.Pages.Inventory;
 using HundunWorld.Game.UI.Ink.Pages.Livelihood;
-using HundunWorld.Game.UI.Ink.Pages.Mail;
 using HundunWorld.Game.UI.Ink.Pages.Map;
 using HundunWorld.Game.UI.Ink.Pages.MartialRecord;
 using HundunWorld.Game.UI.Ink.Pages.Multiplayer;
 using HundunWorld.Game.UI.Ink.Pages.MountPet;
 using HundunWorld.Game.UI.Ink.Pages.Personal;
-using HundunWorld.Game.UI.Ink.Pages.Quest;
 using HundunWorld.Game.UI.Ink.Pages.PhotoMode;
 using HundunWorld.Game.UI.Ink.Pages.Reward;
 using HundunWorld.Game.UI.Ink.Pages.Sect;
@@ -53,6 +53,16 @@ namespace HundunWorld.Game.UI
         private static MainUIManager _instance;
         public static MainUIManager Instance => _instance;
 
+        /// <summary>
+        /// 从其它系统按 domId 打开一个 Ink 页面（世界交互用，例如点商人开商店）。
+        /// 路由未初始化时返回 false，调用方据此提示"界面未就绪"而不是静默失败。
+        /// </summary>
+        public bool NavigateToInkPage(string domId)
+        {
+            if (_inkPageRouter == null || string.IsNullOrEmpty(domId)) return false;
+            return _inkPageRouter.NavigateTo(domId);
+        }
+
         // UI界面组件
         private AuthenticationUI _authenticationUI;
         
@@ -73,6 +83,37 @@ namespace HundunWorld.Game.UI
         /// <summary>角色头顶名牌宿主容器（血条/名称/等级/称号）：挂在 _inkCanvas.GUI 根下并绘制在最上层。
         /// 各角色 Actor 上的 NameplateUI 组件把自身名牌控件挂到本容器下，由本类按页面统一显隐。</summary>
         private ContainerControl _nameplateHost;
+
+        /// <summary>底部滚轮式技能栏（6 行 × 10 槽）。挂在外壳常驻覆盖层上，跨页面长存，
+        /// 因此打开背包/武学面板时也能把图标拖到栏上。</summary>
+        private InkActionBarControl _inkActionBar;
+        /// <summary>五行循环节指示器（技能栏上方一排相生序节点），与技能栏同生同灭。</summary>
+        private InkWuxingCycleIndicator _inkCycleIndicator;
+        /// <summary>拖拽幽灵层：画布根最上层，仅拖拽期间可见。</summary>
+        private InkDragGhost _inkDragGhost;
+        /// <summary>是否已订阅技能/背包变更事件（避免外壳重建时重复挂接）。</summary>
+        private bool _actionBarDataEventsSubscribed;
+
+        /// <summary>
+        /// 当前是否停留在战斗 HUD 现场页（v1 / 沉浸式 / 传统式三选一）。
+        /// 世界层面的输入（点选场景对象、快捷键开关面板）只在这种"人在世界里"的页面放行，
+        /// 菜单/弹窗页里一律吞掉，避免点菜单误选中菜单背后的怪物。
+        /// </summary>
+        public bool IsOnCombatHudPage =>
+            _inkPageRouter != null
+            && (_inkPageRouter.CurrentPageDomId == InkPageDomIds.CombatHud
+                || _inkPageRouter.CurrentPageDomId == InkPageDomIds.CombatHudV2
+                || _inkPageRouter.CurrentPageDomId == InkPageDomIds.CombatHudTraditional);
+
+        /// <summary>水墨 UI 根控件（名牌宿主与各页面外壳的共同父级）；未进入游戏世界时为 null。</summary>
+        public ContainerControl InkUiRoot => _inkCanvas?.GUI;
+
+        /// <summary>
+        /// 当前是否有模态弹层盖在页面上（物品获得/消息/对话确认等）。
+        /// 弹层打开时世界侧不接鼠标：弹层遮罩是引擎 Panel，不在可交互控件白名单内，
+        /// 不额外拦一层的话点空白会穿透到场景（点选/点击移动）。
+        /// </summary>
+        public bool IsOverlayOpen => _inkPageRouter != null && _inkPageRouter.HasOverlay;
         /// <summary>玩家手动开关：头顶名牌是否显示（快捷键 "-" 切换），默认显示。</summary>
         private bool _nameplateUserVisible = true;
 
@@ -83,21 +124,71 @@ namespace HundunWorld.Game.UI
         private CharacterAttributesComponent _cachedAttributes;
         private SkillBase[] _cachedSkills;
         private bool _localPlayerReady;
+
+        // 「自动隐藏UI」：鼠标与本地角色都静止 N 秒后收起常驻技能栏/气息指示（设置项 AutoHideUI）
+        private const float UiAutoHideSeconds = 8f;
+        private Vector2 _lastUiMousePos;
+        private Vector3 _lastUiPlayerPos;
+        private float _uiIdleSeconds;
+        private bool _selfTestAutoHideRestored;
+
+        /// <summary>拍照模式取景期间隐藏常驻技能栏/气息指示（页面用 OverlayVisibilityRequested 控制）。</summary>
+        private bool _photoOverlayHidden;
         private float _rebindLogThrottle;
+
+        /// <summary>自测：进世界后倒计时到点自动打开拍照页（&lt;=0 表示未启用）。</summary>
+        private float _selfTestPhotoDelay = -1f;
+
+        /// <summary>自测：到点自动导航到的页面 dom-id（来自 open-page.txt，空表示未启用）。</summary>
+        private string _selfTestNavPage;
+        private float _selfTestNavDelay = -1f;
+        private float _selfTestNavWatchTimer = 0.5f;
+        private float _selfTestNavRetryTimer = 3f;
+        private int _selfTestNavAttempts;
+
+        /// <summary>自测：等角色列表就绪后自动进入游戏（enter-world.on），每 0.5 秒重试。</summary>
+        private bool _selfTestEnterWorldPending;
+        private float _selfTestEnterWorldTimer;
+        private float _selfTestEnterWorldDelay = 3f;
+
+        /// <summary>自测：ui-shot.on 存在时，导航落地 1 秒后把整屏（含 GUI）抓成 Screenshots/ui-&lt;domId&gt;.png。</summary>
+        private string _selfTestShotPage;
+        private float _selfTestShotDelay = -1f;
+        private int _selfTestEnterWorldAttempts;
+
+        /// <summary>自测回执：运行日志在这台机器上不落盘，只能写文件取证。</summary>
+        private static void AppendSelfTestReceipt(string line)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", "ui-selftest.out");
+                System.IO.File.AppendAllText(path, line + System.Environment.NewLine);
+            }
+            catch
+            {
+                // 回执写不进去不影响功能
+            }
+        }
 
         /// <summary>最后已知活动页面 dom-id，用于 Canvas 自愈重建后恢复导航状态</summary>
         private string _lastKnownDomId = InkPageDomIds.CombatHudTraditional;
         // 活动页面引用（用于 OnUpdate 动态刷新）
         private CombatHudPage _activeCombatHud;
         private CombatHudV2Page _activeCombatHudV2;
-        private MenuCharAttributesV2Page _activeMenuCharAttributesV2;
         // 新增活动页面引用（game-ui-system 设计方案 19 页面中的核心 3 页）
         private CombatHudTraditionalPage _activeCombatHudTraditional;
         private CharacterPanelPage _activeCharacterPanel;
-        private SkillPanelPage _activeSkillPanel;
+        private SkillTreePage _activeSkillTree;
 
-        /// <summary>页面间待传数据：导航到武学详情弹窗前，由来源页捕获选中武学概要。</summary>
-        private PopupMartialDetail.MartialDetailInfo _pendingMartial;
+        /// <summary>Ink 菜单开合 → NarrativePro 输入栈（世界交互提示据此隐藏）。</summary>
+        private InkWorldInputGate _inkWorldInputGate;
+
+        /// <summary>上一次观测到的本地玩家死亡态（边沿检测，避免每帧重开阵亡界面）。</summary>
+        private bool _localPlayerDead;
+        /// <summary>玩家在阵亡界面点了「返回」自行关掉后，本次死亡不再自动弹回。</summary>
+        private bool _deathScreenDismissed;
 
         // 水墨 UI 收敛自愈节流：初始化持续失败时避免逐帧重建风暴，正常态零开销。
         private const double InkRecoverIntervalSeconds = 0.5;
@@ -133,6 +224,97 @@ namespace HundunWorld.Game.UI
                 //    节流：每 InkRecoverIntervalSeconds 最多尝试一次，避免初始化持续失败时逐帧重建。
                 TryRecoverInkUI();
 
+                // 自动隐藏 UI 的空闲计时（鼠标+角色位移都不动才算空闲）
+                TrackUiIdleActivity(deltaTime);
+
+                // 菜单层盖住世界时，把 CommonUI 输入栈标成 Menu，世界交互提示随之隐藏。
+                SyncWorldInputGate();
+
+                // 本地玩家阵亡 → 自动弹阵亡界面；复活（IsDead 翻回 false）→ 自动收起。
+                WatchLocalPlayerDeath();
+
+                // 自测：进世界后延迟打开拍照页（相机与常驻栏需要几帧才就绪）。
+                if (_selfTestPhotoDelay > 0f)
+                {
+                    _selfTestPhotoDelay -= deltaTime;
+                    if (_selfTestPhotoDelay <= 0f)
+                    {
+                        _selfTestPhotoDelay = -1f;
+                        FlaxEngine.Debug.Log("[SelfTest] open-photo.on 命中，自动打开拍照页");
+                        NavigateToPage(InkPageDomIds.NavPhotoMode);
+                    }
+                }
+
+                // 自测：角色列表可能比选角页晚到，等到了再自动进世界。
+                if (_selfTestEnterWorldPending)
+                {
+                    // 选角页刚建好时 GameSceneManager 往往还在 Login→CharacterSelection 的切换窗口里，
+                    // 这时请求 GameWorld 会被 TransitionTo 直接拒掉：等切换落定再点。
+                    if (_selfTestEnterWorldDelay > 0f)
+                    {
+                        _selfTestEnterWorldDelay -= deltaTime;
+                    }
+                    else
+                    {
+                        _selfTestEnterWorldTimer -= deltaTime;
+                        if (_selfTestEnterWorldTimer <= 0f)
+                        {
+                            _selfTestEnterWorldTimer = 0.5f;
+                            AutoEnterWorldForSelfTest();
+                        }
+                    }
+                }
+
+                // 自测：ui-shot.on 存在时，导航落地 1 秒后把整屏（含 GUI）抓下来做视觉走查。
+                if (_selfTestShotDelay > 0f)
+                {
+                    _selfTestShotDelay -= deltaTime;
+                    if (_selfTestShotDelay <= 0f)
+                    {
+                        _selfTestShotDelay = -1f;
+                        CaptureSelfTestUiShot();
+                    }
+                }
+                // 自测：open-page.txt 变了就导航（走查运行时页面时不必重启 PIE）。
+                _selfTestNavWatchTimer -= deltaTime;
+                if (_selfTestNavWatchTimer <= 0f)
+                {
+                    _selfTestNavWatchTimer = 0.5f;
+                    string domId = ReadSelfTestNavPage();
+                    if (!string.IsNullOrEmpty(domId) && domId != _selfTestNavPage)
+                    {
+                        _selfTestNavPage = domId;
+                        _selfTestNavDelay = 0.5f;
+                        _selfTestNavAttempts = 0;
+                        _selfTestNavRetryTimer = 3f;
+                    }
+                }
+
+                // 导航落空（例如当时还在创角场景）时定期重试，直到真的停在该页。
+                if (!string.IsNullOrEmpty(_selfTestNavPage) && _inkPageRouter != null
+                    && _inkPageRouter.CurrentPageDomId != _selfTestNavPage && _selfTestNavAttempts < 20)
+                {
+                    _selfTestNavRetryTimer -= deltaTime;
+                    if (_selfTestNavRetryTimer <= 0f)
+                    {
+                        _selfTestNavRetryTimer = 3f;
+                        _selfTestNavAttempts++;
+                        bool ok = NavigateToPage(_selfTestNavPage);
+                        AppendSelfTestReceipt($"nav-retry {_selfTestNavPage} ok={ok} cur={_inkPageRouter.CurrentPageDomId}");
+                    }
+                }
+
+                if (_selfTestNavDelay > 0f)
+                {
+                    _selfTestNavDelay -= deltaTime;
+                    if (_selfTestNavDelay <= 0f)
+                    {
+                        _selfTestNavDelay = -1f;
+                        FlaxEngine.Debug.Log($"[SelfTest] open-page 命中，自动导航到 {_selfTestNavPage}");
+                        NavigateToPage(_selfTestNavPage);
+                    }
+                }
+
                 // 1. 检测本地玩家从 null → 非 null 的状态翻转
                 if (!_localPlayerReady)
                 {
@@ -144,24 +326,26 @@ namespace HundunWorld.Game.UI
                             _cachedSkills = skills;
                         FlaxEngine.Debug.Log("[MainUIManager] 本地玩家已就绪，下次导航到 combat-hud/nav-character-v2 时将自动绑定");
 
+                        if (HasSelfTestPhotoEntry())
+                            _selfTestPhotoDelay = 3f;
+
                         // 属性加点：把登录时下发的服务端权威分配灌进刚就绪的组件。
                         Services.AttributeAllocationService.Instance.ApplyToComponent();
 
-                        // 若当前已打开 MenuCharAttributesV2Page 但创建时玩家未就绪（使用 mock 数据），立即重绑真实数据
-                        if (_activeMenuCharAttributesV2 != null)
+                        // 重绑 CombatHud（左上角角色信息），确保进入游戏时实时更新
+                        if (_activeCombatHudV2 != null)
+                        {
+                            try { _activeCombatHudV2.BindCharacter(attr); }
+                            catch (Exception bindEx) { FlaxEngine.Debug.LogError($"[MainUIManager] CombatHudV2 重绑失败: {bindEx.Message}"); }
+                        }
+                        if (_activeCombatHudTraditional != null)
                         {
                             try
                             {
-                                _activeMenuCharAttributesV2.BindCharacter(attr);
-                                FlaxEngine.Debug.Log("[MainUIManager] MenuCharAttributesV2 已重绑本地玩家数据");
+                                _activeCombatHudTraditional.BindCharacter(attr);
                             }
-                            catch (Exception bindEx)
-                            {
-                                FlaxEngine.Debug.LogError($"[MainUIManager] MenuCharAttributesV2 重绑失败: {bindEx.Message}");
-                            }
+                            catch (Exception bindEx) { FlaxEngine.Debug.LogError($"[MainUIManager] CombatHudTraditional 重绑失败: {bindEx.Message}"); }
                         }
-
-                        // 重绑 CombatHud（左上角角色信息），确保进入游戏时实时更新
                         if (_activeCombatHud != null)
                         {
                             try
@@ -176,13 +360,12 @@ namespace HundunWorld.Game.UI
                             }
                         }
 
-                        // 新增页面延迟重绑：CombatHudTraditional / CharacterPanel / SkillPanel
+                        // 新增页面延迟重绑：CombatHudTraditional / CharacterPanel / SkillTree
                         if (_activeCombatHudTraditional != null)
                         {
                             try
                             {
                                 _activeCombatHudTraditional.BindCharacter(attr);
-                                if (_cachedSkills != null) _activeCombatHudTraditional.BindSkills(_cachedSkills);
                                 FlaxEngine.Debug.Log("[MainUIManager] CombatHudTraditional 已重绑本地玩家数据");
                             }
                             catch (Exception bindEx)
@@ -202,21 +385,23 @@ namespace HundunWorld.Game.UI
                                 FlaxEngine.Debug.LogError($"[MainUIManager] CharacterPanel 重绑失败: {bindEx.Message}");
                             }
                         }
-                        if (_activeSkillPanel != null)
+                        if (_activeSkillTree != null)
                         {
                             try
                             {
-                                _activeSkillPanel.BindCharacter(attr);
-                                if (_cachedSkills != null) _activeSkillPanel.BindSkills(_cachedSkills);
-                                FlaxEngine.Debug.Log("[MainUIManager] SkillPanel 已重绑本地玩家数据");
+                                _activeSkillTree.BindCharacter(attr);
+                                FlaxEngine.Debug.Log("[MainUIManager] SkillTree 已重绑本地玩家数据");
                             }
                             catch (Exception bindEx)
                             {
-                                FlaxEngine.Debug.LogError($"[MainUIManager] SkillPanel 重绑失败: {bindEx.Message}");
+                                FlaxEngine.Debug.LogError($"[MainUIManager] SkillTree 重绑失败: {bindEx.Message}");
                             }
                         }
                     }
                 }
+
+                // 1a. 底部技能栏：进世界才显示，并按当前角色载入 60 槽配置
+                UpdateActionBar();
 
                 // 2. 持续刷新 CombatHud 动态数据（仅当当前页面为 combat-hud 且玩家就绪时）
                 if (_localPlayerReady && _inkPageRouter?.CurrentPageDomId == InkPageDomIds.CombatHud && _activeCombatHud != null)
@@ -238,7 +423,7 @@ namespace HundunWorld.Game.UI
 
                 // 2c. 快捷键 C：打开"角色属性"（合并入口 = 角色信息面板，含行囊；与点击头像同一目标；
                 //     仅在战斗 HUD（v1/v2 枢纽）激活时生效，避免与菜单内文本输入冲突）
-                if (_inkPageRouter != null && Input.GetKeyDown(KeyboardKeys.C)
+                if (_inkPageRouter != null && Input.GetKeyDown(KeyboardKeys.C) && !IsOverlayOpen
                     && (_inkPageRouter.CurrentPageDomId == InkPageDomIds.CombatHudV2
                         || _inkPageRouter.CurrentPageDomId == InkPageDomIds.CombatHud
                         || _inkPageRouter.CurrentPageDomId == InkPageDomIds.CombatHudTraditional))
@@ -270,15 +455,48 @@ namespace HundunWorld.Game.UI
                     FlaxEngine.Debug.Log($"[MainUIManager] 头顶名牌显示={_nameplateUserVisible}（快捷键 -）");
                 }
 
+                // 快捷键 Esc：一条优先级链——正在打字先退焦点；有弹层先关弹层；其余非 HUD 页面退一层
+                // （栈空回战斗 HUD）；停在战斗 HUD 上则打开系统菜单（Modal 叠加层，再按一次即关）。
+                // 页面内不再各自处理 Esc；自管返回的页面（创角流/加载/转场）按 OwnBack 标记豁免改派。
+                if (_inkPageRouter != null && Input.GetKeyDown(KeyboardKeys.Escape))
+                {
+                    if (UIMouseCapture.IsTextInputFocused)
+                    {
+                        // 第一层只退焦点：在输入框里按 Esc 不该顺手把整页关掉。
+                        UIMouseCapture.ReleaseTextInputFocus();
+                    }
+                    else if (_inkPageRouter.HasOverlay)
+                    {
+                        _inkPageRouter.CloseOverlay();
+                    }
+                    else if (!IsOnCombatHudPage && !_inkPageRouter.CurrentPageOwnsBackKey)
+                    {
+                        // 走 Back()：有返回栈就回来源页，否则回战斗 HUD。
+                        // 自带返回入口的页面（如创角阶段流）自己处理 Esc，中央不改派。
+                        _inkPageRouter.Back();
+                    }
+                    else if (IsOnCombatHudPage)
+                    {
+                        NavigateToPage(InkPageDomIds.SystemMenu);
+                    }
+                }
+
+                // 暂停态跟着"系统菜单是否盖着"走。每帧对账一次：弹层可能被页面自己的关闭按钮、
+                // 返回栈等任一路径收掉，只在 Esc 分支里同步会漏，留下一个永远解不开的暂停。
+                SyncPauseToSystemMenu();
+
                 // 4. 角色头顶名牌：名牌控件由各角色上的 NameplateUI 组件自行投影定位，
                 //    本处仅统一控制宿主容器显隐——需玩家开关打开、处于战斗 HUD 现场页且水墨 UI 健康。
+                //    弹层（阵亡界面 / 获得物品 / 留言…）不占页面槽位、CurrentPageDomId 仍是 HUD，
+                //    所以这里必须再判一次"没有叠弹层"，否则名牌会浮在弹层之上。
                 if (_nameplateHost != null)
                 {
                     var pageDom = _inkPageRouter?.CurrentPageDomId;
                     bool inField = pageDom == InkPageDomIds.CombatHud
                                    || pageDom == InkPageDomIds.CombatHudV2
                                    || pageDom == InkPageDomIds.CombatHudTraditional;
-                    _nameplateHost.Visible = _nameplateUserVisible && inField && IsInkUIHealthy();
+                    bool overlayOpen = _inkPageRouter?.HasOverlay ?? false;
+                    _nameplateHost.Visible = _nameplateUserVisible && inField && !overlayOpen && IsInkUIHealthy();
                 }
             }
             catch (Exception ex)
@@ -349,6 +567,9 @@ namespace HundunWorld.Game.UI
             var actor = game?.LocalPlayerActor;
             if (actor == null || _activeCombatHudV2 == null)
                 return;
+
+            // 顶部目标框：未选中时整框隐藏，选中时用世界选中服务的数据填
+            _activeCombatHudV2.RefreshTargetInfo();
 
             try
             {
@@ -454,6 +675,28 @@ namespace HundunWorld.Game.UI
                 // 避免 OnStart 执行晚于场景切换事件导致 InitializeInkWashUI 永不调用
                 OnSceneChanged(SceneType.Start, _stateManager.CurrentScene);
             }
+
+            // 关卡真正加载完成这一"事实"也必须驱动 UI 收敛：
+            // 逻辑态可能早已被某条路径置成目标场景，随后的权威完成回调会被
+            // UIStateManager.TransitionToScene 的"已在目标场景"分支跳过、事件永不补发
+            // （UIStateManager.cs:216），于是偶发"登录后整屏没有界面且不自行恢复"。
+            // 订阅 TransitionCompleted 就不依赖逻辑态是否变化。
+            if (GameSceneManager.Instance != null)
+                GameSceneManager.Instance.TransitionCompleted += OnSceneTransitionCompleted;
+        }
+
+        /// <summary>
+        /// 关卡加载完成（权威时刻）：立刻让水墨 UI 收敛到当前场景，并强制重排内容层。
+        /// </summary>
+        private void OnSceneTransitionCompleted(SceneType previousScene, SceneType targetScene)
+        {
+            // 解除自愈节流，本轮收敛不等 0.5 秒
+            _nextInkRecoverAt = -1.0;
+            TryRecoverInkUI();
+
+            // 外壳可能在 Canvas 尺寸就绪之前建好（内容层按 0 尺寸算过缩放且之后尺寸不再变化，
+            // 也就不会再有 OnSizeChanged），这里按当前真实尺寸补一次重排。
+            _inkPageShell?.RefreshContentLayout();
         }
 
         /// <summary>
@@ -501,7 +744,11 @@ namespace HundunWorld.Game.UI
                 {
                     // 选角 / 创角改走水墨页面：建壳并直接以角色选择页为首页。
                     EnsureCcFlowSubscriptions();
-                    InitializeInkWashUI(InkPageDomIds.CcRoleList);
+
+                    // 自测入口（标记文件控制）：创角链要服务端角色，自动化环境里常常没有，
+                    // 存在 %APPDATA%/HundunWorld/open-sculpt.on 时直接落在捏脸页。
+                    // 文件不存在时与原来完全一致，不影响任何业务判定。
+                    InitializeInkWashUI(HasSelfTestSculptEntry() ? InkPageDomIds.CcFaceSculpt : InkPageDomIds.CcRoleList);
                 }
 
                 // 更新当前活动UI
@@ -576,7 +823,10 @@ namespace HundunWorld.Game.UI
             }
             else
             {
-                FlaxEngine.Debug.LogWarning($"未找到场景 {newScene} 对应的UI组件");
+                // 不是故障：_uiComponents 是旧版"每个场景一个 UI 组件"的注册表，
+                // 而 Start / CharacterSelection 等场景的界面现在统一由水墨 Ink 页面路由
+                // （_inkPageRouter）呈现，这里查不到注册项属于常态。
+                FlaxEngine.Debug.Log($"[MainUIManager] 场景 {newScene} 无旧版 UI 注册项，由 Ink 页面路由呈现");
             }
         }
 
@@ -632,6 +882,9 @@ namespace HundunWorld.Game.UI
                     if (!string.IsNullOrEmpty(initialPageDomId))
                         NavigateToPage(initialPageDomId);
 
+                    _inkPageShell.RefreshContentLayout();
+                    EnsureActionBar();
+
                     FlaxEngine.Debug.Log("[MainUIManager] 水墨 UI 已存在，仅恢复可见性");
                     return;
                 }
@@ -675,6 +928,9 @@ namespace HundunWorld.Game.UI
                 // "combat-hud" 请求与所有 back-hud 出口经路由器别名解析到本枢纽。
                 _inkPageRouter.Initialize(_inkPageShell, InkPageDomIds.CombatHudTraditional);
 
+                // 4b. 底部滚轮技能栏 + 拖拽幽灵层（跨页面常驻，菜单页里也能往栏上拖放）
+                EnsureActionBar();
+
                 // 5. 关联粒子动效系统到路由器，订阅 PanelShow 事件自动触发墨韵涟漪。
                 //    粒子层由 InkPageShell 在构造时挂载（z-index 5，介于内容层与返回按钮之间），
                 //    此处仅需建立路由器 → 粒子系统的事件订阅链路。
@@ -704,6 +960,12 @@ namespace HundunWorld.Game.UI
                 }
 
                 FlaxEngine.Debug.Log($"[MainUIManager] 水墨主题 UI 初始化完成，Canvas.ChildrenCount={_inkCanvas.GUI.ChildrenCount}, 导航结果={navSuccess}");
+
+                // 内容层缩放只在尺寸变化事件里重算。若外壳是在 Canvas 尺寸就绪之前建起来的
+                // （InkPageShell.UpdateContentLayout 对 0 尺寸直接 return），而之后尺寸不再"变化"
+                // （画布已经是最终值），就不会再有事件来补算 → 表现是界面缺一块/位置不对。
+                // 建完立刻按当前真实尺寸补一次，幂等且零成本。
+                _inkPageShell?.RefreshContentLayout();
             }
             catch (Exception ex)
             {
@@ -712,8 +974,185 @@ namespace HundunWorld.Game.UI
         }
 
         /// <summary>
-        /// 查找或创建承载水墨 UI 的专用 UICanvas。
-        /// 关键约束：主 UI 必须使用名为 InkWashUICanvas 的独立 Canvas，禁止与其他 UI
+        /// 建好（或复用）底部滚轮技能栏与拖拽幽灵层。
+        /// 技能栏作为外壳的常驻子节点存在（与返回按钮同一手法）：不属于内容层，
+        /// 页面导航不会销毁它，所以打开背包/武学面板时依然能把图标拖到栏上。
+        /// </summary>
+        private void EnsureActionBar()
+        {
+            try
+            {
+                if (_inkCanvas?.GUI == null || _inkPageShell == null) return;
+
+                if (_inkActionBar == null || _inkActionBar.Parent == null)
+                {
+                    _inkActionBar = new InkActionBarControl();
+                    _inkActionBar.AttachTo(_inkPageShell);
+                    _inkActionBar.Visible = false;
+                }
+
+                if (_inkCycleIndicator == null || _inkCycleIndicator.Parent == null)
+                {
+                    _inkCycleIndicator = new InkWuxingCycleIndicator();
+                    _inkCycleIndicator.AttachTo(_inkPageShell);
+                    _inkCycleIndicator.Visible = false;
+                }
+
+                if (_inkDragGhost == null || _inkDragGhost.Parent == null)
+                {
+                    // 最后添加 → 画布最上层，拖拽时幽灵不被任何页面遮挡。
+                    _inkDragGhost = new InkDragGhost { AnchorPreset = AnchorPresets.TopLeft };
+                    _inkCanvas.GUI.AddChild(_inkDragGhost);
+                    ActionBarDrag.AttachGhost(_inkDragGhost);
+                }
+
+                if (!_actionBarDataEventsSubscribed)
+                {
+                    Services.SkillCatalogService.Instance.Changed += OnActionBarSourceDataChanged;
+                    Services.PlayerInventoryService.Instance.Changed += OnActionBarSourceDataChanged;
+                    _actionBarDataEventsSubscribed = true;
+                }
+
+                ActionBarInputGate.UiRoot = _inkCanvas.GUI;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] 技能栏初始化失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>技能目录或背包发生变化：槽位上的名称/数量/可绑定列表要跟着重解析。</summary>
+        private void OnActionBarSourceDataChanged()
+        {
+            ActionBarService.Instance.InvalidateDisplays();
+        }
+
+        /// <summary>
+        /// 技能栏的可见性与布局载入：只在本地玩家就绪（人在世界里）时显示，
+        /// 选角/创角页面不出现；按当前角色 id 载入其专属的 60 槽配置。
+        /// </summary>
+        private void UpdateActionBar()
+        {
+            if (_inkActionBar == null) return;
+
+            // 滚轮技能栏是战斗 HUD 的常驻件：菜单/整页界面会铺满设计空间，栏压在上面会盖住页面底部
+            // （2026-10-29 设置页截图实测）。弹层仍算 HUD 场景——底页还是 HUD 时把栏留着。
+            bool hudContext = IsHudPageDomId(_inkPageRouter?.CurrentPageDomId)
+                || (IsOverlayOpen && IsHudPageDomId(_lastKnownDomId));
+            // 自测触发过一次"恢复"后就不再自动隐藏，便于观察恢复后的稳定态
+            bool autoHideOn = !_selfTestAutoHideRestored
+                && (HasSelfTestMarker("ui-autohide-test.on")
+                    || Services.GameConfigurationService.Instance.GetAutoHideUi());
+            float idleLimit = HasSelfTestMarker("ui-autohide-test.on") ? 2f : UiAutoHideSeconds;
+            bool idleHidden = autoHideOn && _uiIdleSeconds >= idleLimit;
+
+            bool show = _localPlayerReady && !_photoOverlayHidden && hudContext && !idleHidden;
+            if (_inkActionBar.Visible != show)
+                _inkActionBar.Visible = show;
+            if (_inkCycleIndicator != null && _inkCycleIndicator.Visible != show)
+                _inkCycleIndicator.Visible = show;
+
+            if (!show) return;
+
+            ulong characterId = HundunWorldGame.Instance?.PlayerId ?? 0UL;
+            if (characterId != 0UL)
+                ActionBarLayout.Instance.LoadForCharacter(characterId);
+        }
+
+        /// <summary>
+        /// 把 Ink 菜单的开合状态同步给 NarrativePro 的 CommonUI 输入栈。
+        /// 菜单层在时 <c>bGameInputBlocked</c> 为真，世界侧 <c>[T] 上车</c> 一类交互提示
+        /// 与游戏按键随之让位；回到战斗 HUD 且无弹层后恢复。
+        /// </summary>
+        private void SyncWorldInputGate()
+        {
+            _inkWorldInputGate ??= new InkWorldInputGate();
+            _inkWorldInputGate.Sync(_inkPageRouter);
+        }
+
+        /// <summary>
+        /// 本地玩家死亡态边沿 → 阵亡界面。
+        /// <para>
+        /// 死亡是服务端权威状态（同步系统把 <c>CharacterAttributesComponent.IsDead</c> 写进本地玩家），
+        /// 所以这里只做"状态翻转 → 弹/收界面"，不自己判定生死。玩家在阵亡界面点「返回」自行关掉后，
+        /// 本次死亡不再自动弹回，直到复活后再次阵亡。
+        /// </para>
+        /// </summary>
+        private void WatchLocalPlayerDeath()
+        {
+            try
+            {
+                var attrs = HundunWorldGame.Instance?.LocalPlayerActor?
+                    .GetScript<CharacterAttributesComponent>();
+                bool dead = attrs != null && attrs.IsDead;
+                var router = _inkPageRouter;
+                if (router == null)
+                    return;
+
+                if (dead && !_localPlayerDead)
+                {
+                    _localPlayerDead = true;
+                    _deathScreenDismissed = false;
+
+                    // 只在战斗 HUD 上下文弹：选角/创角/其它全屏页上弹阵亡界面只会打断它们。
+                    string current = router.CurrentPageDomId;
+                    bool hudContext = !string.IsNullOrEmpty(current)
+                        && router.GetFrame(current).Kind == InkPageKind.Hud;
+                    if (hudContext && !router.HasOverlay)
+                        NavigateToPage(InkPageDomIds.DeathScreen);
+                }
+                else if (!dead && _localPlayerDead)
+                {
+                    _localPlayerDead = false;
+                    _deathScreenDismissed = false;
+                    if (router.CurrentOverlayDomId == InkPageDomIds.DeathScreen)
+                        router.CloseOverlay();
+                }
+                else if (dead && _localPlayerDead
+                         && !_deathScreenDismissed
+                         && router.CurrentOverlayDomId != InkPageDomIds.DeathScreen)
+                {
+                    // 玩家自己关掉了阵亡界面（返回/破招后仍在死亡态）：本次死亡不再弹回。
+                    _deathScreenDismissed = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[MainUIManager] 死亡态监听失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>空闲判定：鼠标不动 + 本地角色没位移，累加计时；任一动就清零。</summary>
+        private void TrackUiIdleActivity(float deltaTime)
+        {
+            var mouse = FlaxEngine.Input.MousePosition;
+            var local = HundunWorldGame.Instance?.LocalPlayerActor;
+            Vector3 pos = local != null ? local.Position : Vector3.Zero;
+
+            bool moved = (mouse - _lastUiMousePos).LengthSquared > 1f
+                         || (local != null && (pos - _lastUiPlayerPos).LengthSquared > 0.0004f);
+
+            // 自测节拍：2 秒隐藏后，第 4 秒模拟一次"有动作"，验证恢复分支（自动化里动不了游戏鼠标）
+            if (HasSelfTestMarker("ui-autohide-test.on") && !_selfTestAutoHideRestored && _uiIdleSeconds >= 4f)
+            {
+                _selfTestAutoHideRestored = true;
+                moved = true;
+            }
+
+            _lastUiMousePos = mouse;
+            _lastUiPlayerPos = pos;
+            _uiIdleSeconds = moved ? 0f : _uiIdleSeconds + deltaTime;
+        }
+
+        private static bool IsHudPageDomId(string domId)
+        {
+            return domId == InkPageDomIds.CombatHudTraditional
+                || domId == InkPageDomIds.CombatHudV2
+                || domId == InkPageDomIds.CombatHud;
+        }
+
+        /// <summary>
+        /// 查找或创建承载水墨 UI 的专用 UICanvas。        /// 关键约束：主 UI 必须使用名为 InkWashUICanvas 的独立 Canvas，禁止与其他 UI
         /// （AuthenticationUI 的 MainUICanvas / GameMainUI 的 GameMainUICanvas 等）共用。
         /// 所有查找分支均按名称 InkWashUICanvas 精确匹配，禁止通用 GetScript/GetChild 查找。
         /// </summary>
@@ -864,96 +1303,118 @@ namespace HundunWorld.Game.UI
                 return;
             }
 
-            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHud, () => CreateCombatHud());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHudTraditional, () => CreateCombatHudTraditional());
-            _inkPageRouter.RegisterPage(InkPageDomIds.Loading1, () => CreateLoadingPage1());
-            _inkPageRouter.RegisterPage(InkPageDomIds.Loading2, () => CreateLoadingPage2());
-            _inkPageRouter.RegisterPage(InkPageDomIds.ChapterTransition, () => CreateChapterTransition());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavQuests, () => CreateMenuQuests());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavShop, () => CreateMenuShop());
-            _inkPageRouter.RegisterPage(InkPageDomIds.PopupItemAcquired, () => CreatePopupItemAcquired());
-            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMessage, () => CreatePopupMessage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.RewardAchievement, () => CreateRewardAchievement());
-            _inkPageRouter.RegisterPage(InkPageDomIds.RewardQuestComplete, () => CreateRewardQuestComplete());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavSettings, () => CreateSettings());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHudV2, () => CreateCombatHudV2());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavCharacterV2, () => CreateMenuCharAttributesV2());
-            _inkPageRouter.RegisterPage(InkPageDomIds.DeathScreen, () => CreateDeathScreen());
-            _inkPageRouter.RegisterPage(InkPageDomIds.DialogueConfirm, () => CreateDialogueConfirm());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavBattlePrep, () => CreateMenuBattlePrep());
-            _inkPageRouter.RegisterPage(InkPageDomIds.Acupoint, () => CreateAcupoint());
-            _inkPageRouter.RegisterPage(InkPageDomIds.Qte, () => CreateQte());
-            _inkPageRouter.RegisterPage(InkPageDomIds.RewardLevelUp, () => CreateRewardLevelUp());
-            _inkPageRouter.RegisterPage(InkPageDomIds.PopupVerification, () => CreatePopupVerification());
-            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMartialArts, () => CreatePopupMartialArts());
-            _inkPageRouter.RegisterPage(InkPageDomIds.PopupSkillRealization, () => CreatePopupSkillRealization());
-            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMartialDetail, () => CreatePopupMartialDetail());
-            _inkPageRouter.RegisterPage(InkPageDomIds.PopupGuideSide, () => CreatePopupGuideSide());
-            _inkPageRouter.RegisterPage(InkPageDomIds.PopupBestiarySide, () => CreatePopupBestiarySide());
+            // 每个页面在注册处声明自己的框架描述符（InkPageFrame）：Hud=战斗HUD（不铺墨底/暗角、无外壳返回）；
+            // Immersive=沉浸式全屏页（外壳铺墨底+柔暗角+左上角统一返回）；Modal=模态弹层（不铺全屏压淡，由外壳叠加层承载）。
+            // 这是"哪些层给哪些页"的唯一来源，取代了此前按 popup- 前缀猜 + 两张手写白名单的做法。
+            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHud, () => CreateCombatHud(), InkPageFrame.Hud);
+            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHudTraditional, () => CreateCombatHudTraditional(), InkPageFrame.Hud);
+            // 过场页自铺全屏过场图与专属暗角（EdgeOpacity 自定义），只借外壳墨底遮信箱黑边，故按自铺舞台处理。
+            _inkPageRouter.RegisterPage(InkPageDomIds.Loading1, () => CreateLoadingPage1(), InkPageFrame.SelfLitImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.Loading2, () => CreateLoadingPage2(), InkPageFrame.SelfLitImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.ChapterTransition, () => CreateChapterTransition(), InkPageFrame.SelfLitImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavQuests, () => CreateMenuQuests(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavShop, () => CreateMenuShop(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupItemAcquired, () => CreatePopupItemAcquired(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMessage, () => CreatePopupMessage(), InkPageFrame.Modal);
+            // 奖励/成就解锁/升级这一族按设计源是浮层模态（yy-reward-system 的 reward-overlay + *-modal，
+            // role=dialog aria-modal），不是全屏页，故登记为 Modal 走叠加层。
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardAchievement, () => CreateRewardAchievement(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardQuestComplete, () => CreateRewardQuestComplete(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSettings, () => CreateSettings(), InkPageFrame.ImmersiveOwnBack);
+            // Esc 系统菜单：模态叠加层，不进返回栈——再按一次 Esc 就是关掉它。
+            _inkPageRouter.RegisterPage(InkPageDomIds.SystemMenu, () => CreateSystemMenu(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHudV2, () => CreateCombatHudV2(), InkPageFrame.Hud);
+            // 角色页三合一：nav-character-v2 / nav-inventory / nav-character-panel 全部指向 CharacterPanelPage，
+            // 原 MenuCharAttributesV2Page（V2 属性页）与 MenuCharAttributesPage（V1）已随本次合并删除。
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCharacterV2, () => CreateCharacterPanelPage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.DeathScreen, () => CreateDeathScreen(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.DialogueConfirm, () => CreateDialogueConfirm(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavBattlePrep, () => CreateMenuBattlePrep(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.Acupoint, () => CreateAcupoint(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.Qte, () => CreateQte(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardLevelUp, () => CreateRewardLevelUp(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupVerification, () => CreatePopupVerification(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMartialArts, () => CreatePopupMartialArts(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupSkillRealization, () => CreatePopupSkillRealization(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMartialDetail, () => CreatePopupMartialDetail(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupGuideSide, () => CreatePopupGuideSide(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupBestiarySide, () => CreatePopupBestiarySide(), InkPageFrame.Modal);
 
             // 注册新增页面（串联所有 UI）
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavAppearance, () => CreateMenuAppearance());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavActivities, () => CreateMenuActivities());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavMail, () => CreateMenuMail());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavSect, () => CreateMenuSect());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavTeam, () => CreateMenuTeam());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavBestiary, () => CreateMenuBestiary());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavBattlePass, () => CreateMenuBattlePass());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavGacha, () => CreateMenuGacha());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavLivelihood, () => CreateMenuLivelihood());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavPersonalInfo, () => CreateMenuPersonalInfo());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavMartialRecord, () => CreateMenuMartialRecord());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavCasualMode, () => CreateMenuCasualMode());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavTime, () => CreateMenuTime());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavShopRare, () => CreateShopRareItems());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavMultiplayer, () => CreateMultiplayer());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavPhotoMode, () => CreatePhotoMode());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavElementVision, () => CreateElementVision());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CcRoleList, () => CreateCcRoleList());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CcGender, () => CreateCcGender());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CcFacePreset, () => CreateCcFacePreset());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CcFaceSculpt, () => CreateCcFaceSculpt());
-            _inkPageRouter.RegisterPage(InkPageDomIds.CcName, () => CreateCcName());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavSettingsAudio, () => CreateSettingsAudio());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavEquipment, () => CreateMenuEquipment());
-            _inkPageRouter.RegisterPage(InkPageDomIds.UIGallery, () =>CreateUIGallery());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavAppearance, () => CreateMenuAppearance(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavActivities, () => CreateMenuActivities(), InkPageFrame.ImmersiveOwnBack);
+            // 邮件入口合并：nav-mail（商店/任务侧栏）与 nav-social-mail（社交枢纽）统一指向 SocialMailPage，
+            // 原 MenuMailPage 已随本次合并删除。
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMail, () => CreateSocialMailPage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSect, () => CreateMenuSect(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavTeam, () => CreateMenuTeam(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavBestiary, () => CreateMenuBestiary(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavBattlePass, () => CreateMenuBattlePass(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavGacha, () => CreateMenuGacha(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavLivelihood, () => CreateMenuLivelihood(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavPersonalInfo, () => CreateMenuPersonalInfo(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMartialRecord, () => CreateMenuMartialRecord(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCasualMode, () => CreateMenuCasualMode(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavTime, () => CreateMenuTime(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavShopRare, () => CreateShopRareItems(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMultiplayer, () => CreateMultiplayer(), InkPageFrame.Immersive);
+            // 取景器式相机页自带更强的暗角（EdgeOpacity 0.5）与专属晕染，故按自铺舞台处理。
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavPhotoMode, () => CreatePhotoMode(), InkPageFrame.ImmersiveTransparent);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavPhotoAlbum, () => CreatePhotoAlbum(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavElementVision, () => CreateElementVision(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcRoleList, () => CreateCcRoleList(), InkPageFrame.SelfLitImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcGender, () => CreateCcGender(), InkPageFrame.SelfLitImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcFacePreset, () => CreateCcFacePreset(), InkPageFrame.SelfLitImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcFaceSculpt, () => CreateCcFaceSculpt(), InkPageFrame.SelfLitImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcName, () => CreateCcName(), InkPageFrame.SelfLitImmersiveOwnBack);
+            // 音频设置页自带顶栏「返回战斗」入口，声明 OwnBack 以隐藏外壳返回，避免两个返回钮叠在同一角。
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSettingsAudio, () => CreateSettingsAudio(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSettingsRoadSign, () => CreateSettingsRoadSign(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavEquipment, () => CreateMenuEquipment(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.UIGallery, () =>CreateUIGallery(), InkPageFrame.Immersive);
             // 引导模块（三页：引导 HUD / 动作引导 / 武学引导）——此前未注册导致整模块不可达，本次落地。
-            _inkPageRouter.RegisterPage(InkPageDomIds.GuideHud, () => CreateGuideHud());
-            _inkPageRouter.RegisterPage(InkPageDomIds.GuideAction, () => CreateGuideAction());
-            _inkPageRouter.RegisterPage(InkPageDomIds.GuideMartial, () => CreateGuideMartial());
+            _inkPageRouter.RegisterPage(InkPageDomIds.GuideHud, () => CreateGuideHud(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.GuideAction, () => CreateGuideAction(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.GuideMartial, () => CreateGuideMartial(), InkPageFrame.Modal);
             // 统一导航串联：补全未注册页面（奖励全链、小游戏完成、角色属性 V1）。
-            _inkPageRouter.RegisterPage(InkPageDomIds.MenuCharAttributes, () => CreateMenuCharAttributes());
-            _inkPageRouter.RegisterPage(InkPageDomIds.MiniGameComplete, () => CreateMiniGameComplete());
-            _inkPageRouter.RegisterPage(InkPageDomIds.RewardTeleportUnlock, () => CreateRewardTeleportUnlock());
-            _inkPageRouter.RegisterPage(InkPageDomIds.RewardMapUnlock, () => CreateRewardMapUnlock());
-            _inkPageRouter.RegisterPage(InkPageDomIds.RewardCongratulations, () => CreateRewardCongratulations());
+            _inkPageRouter.RegisterPage(InkPageDomIds.MenuCharAttributes, () => CreateCharacterPanelPage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.MiniGameComplete, () => CreateMiniGameComplete(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardTeleportUnlock, () => CreateRewardTeleportUnlock(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardMapUnlock, () => CreateRewardMapUnlock(), InkPageFrame.Modal);
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardCongratulations, () => CreateRewardCongratulations(), InkPageFrame.Modal);
 
             // === 角色与背包子系统（game-ui-system 设计方案要求的 6 个页面） ===
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavCharacterPanel, () => CreateCharacterPanelPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavSkillPanel, () => CreateSkillPanelPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavInventory, () => CreateCharacterPanelPage()); // 背包已合并进角色面板
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavEquipmentEnhance, () => CreateEquipmentEnhancePage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavCrafting, () => CreateCraftingPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavMountPet, () => CreateMountPetPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCharacterPanel, () => CreateCharacterPanelPage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSkillTree, () => CreateSkillTreePage(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavInventory, () => CreateCharacterPanelPage(), InkPageFrame.Immersive); // 背包已合并进角色面板
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavEquipmentEnhance, () => CreateEquipmentEnhancePage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCrafting, () => CreateCraftingPage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMountPet, () => CreateMountPetPage(), InkPageFrame.Immersive);
 
             // === 任务与技能子系统（game-ui-system 设计方案要求的 4 个页面） ===
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavQuestLog, () => CreateQuestLogPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavWorldMap, () => CreateWorldMapPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavCompass, () => CreateCompassPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavDungeonEntry, () => CreateDungeonEntryPage());
+            // 任务入口合并：nav-quest-log 与 nav-quests 同页（以"任务"页 MenuQuestsPage 为基准），
+            // 原 QuestLogPage 已随本次合并删除。
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavQuestLog, () => CreateMenuQuests(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavWorldMap, () => CreateWorldMapPage(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCompass, () => CreateCompassPage(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavDungeonEntry, () => CreateDungeonEntryPage(), InkPageFrame.ImmersiveOwnBack);
 
             // === 社交与商城子系统（game-ui-system 设计方案要求的 7 个页面） ===
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialGuild, () => CreateSocialGuildPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavFriends, () => CreateFriendsPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialMail, () => CreateSocialMailPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavMentor, () => CreateMentorPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavLeaderboard, () => CreateLeaderboardPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavAchievement, () => CreateAchievementPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialShop, () => CreateSocialShopPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialGuild, () => CreateSocialGuildPage(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavFriends, () => CreateFriendsPage(), InkPageFrame.ImmersiveOwnBack);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialMail, () => CreateSocialMailPage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMentor, () => CreateMentorPage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavLeaderboard, () => CreateLeaderboardPage(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavAchievement, () => CreateAchievementPage(), InkPageFrame.Immersive);
+            // 商店入口合并：nav-social-shop（社交枢纽）指向 MenuShopPage，原 SocialShopPage 已随本次合并删除。
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialShop, () => CreateMenuShop(), InkPageFrame.ImmersiveOwnBack);
+
+            // NPC 对话菜单：模态浮层。点 NPC 时由交互层写入"这位能做什么"，这里只负责摆出来。
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavNpcGossip, () => CreateNpcGossip(), InkPageFrame.Modal);
 
             // === 水墨动画分镜参考（hundun-yy-ui 设计稿 ink-anim-ref-1/2.html） ===
-            _inkPageRouter.RegisterPage(InkPageDomIds.InkAnimRefSpread, () => CreateInkAnimRefSpread());
-            _inkPageRouter.RegisterPage(InkPageDomIds.InkAnimRefBrush, () => CreateInkAnimRefBrush());
+            _inkPageRouter.RegisterPage(InkPageDomIds.InkAnimRefSpread, () => CreateInkAnimRefSpread(), InkPageFrame.Immersive);
+            _inkPageRouter.RegisterPage(InkPageDomIds.InkAnimRefBrush, () => CreateInkAnimRefBrush(), InkPageFrame.Immersive);
         }
 
         /// <summary>
@@ -998,6 +1459,45 @@ namespace HundunWorld.Game.UI
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[MainUIManager] TryGetLocalPlayerAttributes 异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 挑一条用于武学详情弹窗的招式：优先已学（按 id 升序取第一条），否则取目录首条。
+        /// </summary>
+        private static bool TryPickMartialForDetail(out SkillConfig cfg, out int learnedLevel)
+        {
+            cfg = null;
+            learnedLevel = 0;
+            try
+            {
+                var catalog = Services.SkillCatalogService.Instance;
+                foreach (var pair in catalog.Learned)
+                {
+                    var candidate = SkillDatabase.GetSkill(pair.Key);
+                    if (candidate == null)
+                        continue;
+                    if (cfg == null || candidate.SkillId < cfg.SkillId)
+                    {
+                        cfg = candidate;
+                        learnedLevel = pair.Value.Level;
+                    }
+                }
+                if (cfg != null)
+                    return true;
+
+                var all = SkillDatabase.GetAllSkills();
+                if (all == null || all.Count == 0)
+                    return false;
+                foreach (var candidate in all)
+                    if (cfg == null || candidate.SkillId < cfg.SkillId)
+                        cfg = candidate;
+                return cfg != null;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] 武学详情取数失败: {ex.Message}");
                 return false;
             }
         }
@@ -1087,10 +1587,22 @@ namespace HundunWorld.Game.UI
         {
             try
             {
-                return _inkCanvas != null
-                    && _inkCanvas.GUI != null
-                    && _inkPageShell != null
-                    && !_inkPageShell.IsDisposing;
+                if (_inkCanvas == null
+                    || _inkCanvas.GUI == null
+                    || _inkPageShell == null
+                    || _inkPageShell.IsDisposing
+                    || _inkPageRouter == null)
+                {
+                    return false;
+                }
+
+                // 只判空不够：首次导航失败时外壳照样建起来了，只是内容层是空的
+                // （InitializeInkWashUI 里那句"仅显示空背景"就是这个形态）。
+                // 这种"看得见壳、没有页面"若算健康，自愈会永远放过它 → 整屏空白不再恢复。
+                if (string.IsNullOrEmpty(_inkPageRouter.CurrentPageDomId))
+                    return false;
+
+                return _inkPageShell.ContentLayer != null && _inkPageShell.ContentLayer.ChildrenCount > 0;
             }
             catch
             {
@@ -1155,13 +1667,31 @@ namespace HundunWorld.Game.UI
                     _nameplateHost = null;
                 }
 
+                // 技能栏随外壳一并销毁；幽灵层挂在画布根上，要单独收。
+                if (_actionBarDataEventsSubscribed)
+                {
+                    Services.SkillCatalogService.Instance.Changed -= OnActionBarSourceDataChanged;
+                    Services.PlayerInventoryService.Instance.Changed -= OnActionBarSourceDataChanged;
+                    _actionBarDataEventsSubscribed = false;
+                }
+                _inkActionBar = null;
+                _inkCycleIndicator = null;
+                if (_inkDragGhost != null)
+                {
+                    _inkDragGhost.Dispose();
+                    _inkDragGhost = null;
+                    ActionBarDrag.AttachGhost(null);
+                }
+                ActionBarInputGate.UiRoot = null;
+                _inkWorldInputGate?.Release();
+                _inkWorldInputGate = null;
+
                 // 清理活动页面引用，避免悬空指针
                 _activeCombatHud = null;
                 _activeCombatHudV2 = null;
-                _activeMenuCharAttributesV2 = null;
                 _activeCombatHudTraditional = null;
                 _activeCharacterPanel = null;
-                _activeSkillPanel = null;
+            _activeSkillTree = null;
 
                 FlaxEngine.Debug.Log("[MainUIManager] 水墨主题 UI 已销毁");
             }
@@ -1173,7 +1703,7 @@ namespace HundunWorld.Game.UI
 
         /// <summary>
         /// 自愈重建后对当前活动页面重新执行数据绑定。
-        /// 根据 _lastKnownDomId 判断页面类型，对 _activeCombatHud/_activeCombatHudV2/_activeMenuCharAttributesV2
+        /// 根据 _lastKnownDomId 判断页面类型，对 _activeCombatHud/_activeCombatHudV2/_activeCharacterPanel
         /// 调用对应的 BindCharacter/BindSkills。null 安全，try/catch 包裹。
         /// </summary>
         private void RebindActivePageData()
@@ -1194,27 +1724,19 @@ namespace HundunWorld.Game.UI
                     _activeCombatHudV2.BindCharacter(_cachedAttributes);
                     FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 CombatHudV2 数据");
                 }
-                else if (_lastKnownDomId == InkPageDomIds.NavCharacterV2 && _activeMenuCharAttributesV2 != null)
-                {
-                    _activeMenuCharAttributesV2.BindCharacter(_cachedAttributes);
-                    FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 MenuCharAttributesV2 数据");
-                }
                 else if (_lastKnownDomId == InkPageDomIds.CombatHudTraditional && _activeCombatHudTraditional != null)
                 {
                     _activeCombatHudTraditional.BindCharacter(_cachedAttributes);
-                    if (_cachedSkills != null) _activeCombatHudTraditional.BindSkills(_cachedSkills);
                     FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 CombatHudTraditional 数据");
                 }
-                else if (_lastKnownDomId == InkPageDomIds.NavCharacterPanel && _activeCharacterPanel != null)
+                else if ((_lastKnownDomId == InkPageDomIds.NavCharacterPanel
+                          || _lastKnownDomId == InkPageDomIds.NavInventory
+                          || _lastKnownDomId == InkPageDomIds.NavCharacterV2
+                          || _lastKnownDomId == InkPageDomIds.MenuCharAttributes)
+                         && _activeCharacterPanel != null)
                 {
                     _activeCharacterPanel.BindCharacter(_cachedAttributes);
                     FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 CharacterPanel 数据");
-                }
-                else if (_lastKnownDomId == InkPageDomIds.NavSkillPanel && _activeSkillPanel != null)
-                {
-                    _activeSkillPanel.BindCharacter(_cachedAttributes);
-                    if (_cachedSkills != null) _activeSkillPanel.BindSkills(_cachedSkills);
-                    FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 SkillPanel 数据");
                 }
             }
             catch (Exception ex)
@@ -1243,6 +1765,17 @@ namespace HundunWorld.Game.UI
                 }
                 // 战斗入场动作（enter-dungeon 进入秘境 / nav-battle-start 出战）：星型拓扑下无独立战斗场景，
                 // 终点恒为枢纽战斗 HUD（战斗现场），与 back-hud 同解。
+                // 返回上一层（页面自带返回按钮 / 弹层关闭统一走这里）：先弹返回栈，栈空才回枢纽。
+                // 与外壳左上返回按钮、Esc 同一实现，避免"自带按钮直跳枢纽、外壳按钮回来源页"两套语义。
+                if (domId == InkPageDomIds.BackOneLevel)
+                {
+                    if (_inkPageRouter != null && _inkPageRouter.Back())
+                    {
+                        _lastKnownDomId = _inkPageRouter.CurrentPageDomId ?? _lastKnownDomId;
+                        return true;
+                    }
+                    return false;
+                }
                 if (domId == InkPageDomIds.BackHud
                     || domId == InkPageDomIds.EnterDungeon
                     || domId == InkPageDomIds.NavBattleStart)
@@ -1291,12 +1824,19 @@ namespace HundunWorld.Game.UI
                 }
                 if (_inkPageRouter != null && _inkPageRouter.NavigateTo(domId))
                 {
-                    _lastKnownDomId = domId;
+                    // 记真实落点而非请求 id：别名（combat-hud）会被解析成当前枢纽 HUD，
+                    // 弹层则不改页面槽位——画布重建后恢复的必须是底页，不能是弹层。
+                    _lastKnownDomId = _inkPageRouter.CurrentPageDomId ?? domId;
+                    // HUD 页可能是"玩家就绪之前"建的：每次落地都按当前数据重绑一次，
+                    // 否则 V2 顶栏会一直停在 `—`（2026-10-29 截图实测）。
+                    RebindActivePageData();
+                    ScheduleSelfTestUiShot(_lastKnownDomId);
                     return true;
                 }
             }
             catch (Exception ex)
             {
+                AppendSelfTestReceipt($"nav {domId} exception {ex.GetType().Name}:{ex.Message}");
                 FlaxEngine.Debug.LogError($"[MainUIManager] NavigateToPage({domId}) 失败: {ex.Message}");
             }
             return false;
@@ -1337,7 +1877,7 @@ namespace HundunWorld.Game.UI
         private HundunWorld.Game.UI.Ink.Pages.Guide.GuideActionPage CreateGuideAction()
         {
             var page = new HundunWorld.Game.UI.Ink.Pages.Guide.GuideActionPage();
-            page.GuideClosed += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.GuideClosed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             page.MartialGuideRequested += () => NavigateToPage(InkPageDomIds.GuideMartial);
             return page;
         }
@@ -1346,18 +1886,10 @@ namespace HundunWorld.Game.UI
         private HundunWorld.Game.UI.Ink.Pages.Guide.GuideMartialPage CreateGuideMartial()
         {
             var page = new HundunWorld.Game.UI.Ink.Pages.Guide.GuideMartialPage();
-            page.GuideClosed += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.GuideClosed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             // 演练入口暂无专用页面，返回战斗 HUD（后续有练武页再接入）。
-            page.PracticeRequested += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.PracticeRequested += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             page.MultiplayerRequested += () => NavigateToPage(InkPageDomIds.NavMultiplayer);
-            return page;
-        }
-
-        /// <summary>创建角色属性菜单 V1（与 V2 并存，经画廊/导航链路可达）。</summary>
-        private MenuCharAttributesPage CreateMenuCharAttributes()
-        {
-            var page = new MenuCharAttributesPage();
-            HookNavigationRequested(page);
             return page;
         }
 
@@ -1365,7 +1897,7 @@ namespace HundunWorld.Game.UI
         private MiniGameCompletePage CreateMiniGameComplete()
         {
             var page = new MiniGameCompletePage();
-            page.Claimed += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.Claimed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             page.Replay += () => NavigateToPage(InkPageDomIds.MiniGameComplete);
             // 设计链路：mini-game-complete → link-guide-action → guide-action
             page.Closed += () => NavigateToPage(InkPageDomIds.GuideAction);
@@ -1388,7 +1920,7 @@ namespace HundunWorld.Game.UI
             var page = new RewardMapUnlockPage();
             // 设计链路：reward-map-unlock → link-reward-level-up → reward-level-up
             page.ViewLevelUp += () => NavigateToPage(InkPageDomIds.RewardLevelUp);
-            page.GoExplore += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.GoExplore += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             return page;
         }
 
@@ -1488,7 +2020,7 @@ namespace HundunWorld.Game.UI
                 _cachedAttributes = attr;
                 if (TryGetLocalPlayerSkills(out var skills))
                 {
-                    page.BindSkills(skills);
+                    // 传统 HUD 没有技能栏（技能条是独立的 InkActionBarControl），技能只做缓存供冷却等使用
                     _cachedSkills = skills;
                 }
                 _localPlayerReady = true;
@@ -1531,49 +2063,11 @@ namespace HundunWorld.Game.UI
         }
 
         /// <summary>
-        /// 创建武学技能面板页面（skill-panel.html）。
+        /// 创建五行技能树页（数据驱动，读服务端技能目录 + skills.json 的阶/境/演化数据）。
         /// </summary>
-        private SkillPanelPage CreateSkillPanelPage()
+        private SkillTreePage CreateSkillTreePage()
         {
-            var page = new SkillPanelPage();
-            if (_inkPageShell?.ParticleSystem != null)
-            {
-                page.ParticleSystem = _inkPageShell.ParticleSystem;
-            }
-            page.NavigationRequested += (domId) =>
-            {
-                try
-                {
-                    // 页面间数据传递：跳转武学详情弹窗前，捕获当前选中武学概要。
-                    if (domId == InkPageDomIds.PopupMartialDetail)
-                        _pendingMartial = page.CurrentSkill;
-                    NavigateToPage(domId);
-                }
-                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SkillPanel 导航失败 ({domId}): {ex.Message}"); }
-            };
-            // 即时绑定：若本地玩家已就绪则直接绑定真实数据
-            if (TryGetLocalPlayerAttributes(out var attr))
-            {
-                page.BindCharacter(attr);
-                _cachedAttributes = attr;
-                if (TryGetLocalPlayerSkills(out var skills))
-                {
-                    page.BindSkills(skills);
-                    _cachedSkills = skills;
-                }
-                _localPlayerReady = true;
-                FlaxEngine.Debug.Log("[MainUIManager] SkillPanel 已即时绑定本地玩家数据");
-            }
-            _activeSkillPanel = page;
-            return page;
-        }
-
-        /// <summary>
-        /// 创建背包行囊页面（inventory.html）。
-        /// </summary>
-        private InventoryPage CreateInventoryPage()
-        {
-            var page = new InventoryPage();
+            var page = new SkillTreePage();
             if (_inkPageShell?.ParticleSystem != null)
             {
                 page.ParticleSystem = _inkPageShell.ParticleSystem;
@@ -1581,15 +2075,15 @@ namespace HundunWorld.Game.UI
             page.NavigationRequested += (domId) =>
             {
                 try { NavigateToPage(domId); }
-                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Inventory 导航失败 ({domId}): {ex.Message}"); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SkillTree 导航失败 ({domId}): {ex.Message}"); }
             };
-            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
             if (TryGetLocalPlayerAttributes(out var attr))
             {
                 page.BindCharacter(attr);
                 _cachedAttributes = attr;
                 _localPlayerReady = true;
             }
+            _activeSkillTree = page;
             return page;
         }
 
@@ -1671,24 +2165,6 @@ namespace HundunWorld.Game.UI
         // ===============================================================
         // 任务与技能子系统：4 个页面工厂（game-ui-system 设计方案）
         // ===============================================================
-
-        /// <summary>
-        /// 创建江湖任务志页面（quest-log.html）。
-        /// </summary>
-        private QuestLogPage CreateQuestLogPage()
-        {
-            var page = new QuestLogPage();
-            if (_inkPageShell?.ParticleSystem != null)
-            {
-                page.ParticleSystem = _inkPageShell.ParticleSystem;
-            }
-            page.NavigationRequested += (domId) =>
-            {
-                try { NavigateToPage(domId); }
-                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] QuestLog 导航失败 ({domId}): {ex.Message}"); }
-            };
-            return page;
-        }
 
         /// <summary>
         /// 创建世界地图页面（world-map.html）。
@@ -1887,31 +2363,6 @@ namespace HundunWorld.Game.UI
             {
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Achievement 导航失败 ({domId}): {ex.Message}"); }
-            };
-            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
-            if (TryGetLocalPlayerAttributes(out var attr))
-            {
-                page.BindCharacter(attr);
-                _cachedAttributes = attr;
-                _localPlayerReady = true;
-            }
-            return page;
-        }
-
-        /// <summary>
-        /// 创建江湖商城页面（shop.html）。
-        /// </summary>
-        private SocialShopPage CreateSocialShopPage()
-        {
-            var page = new SocialShopPage();
-            if (_inkPageShell?.ParticleSystem != null)
-            {
-                page.ParticleSystem = _inkPageShell.ParticleSystem;
-            }
-            page.NavigationRequested += (domId) =>
-            {
-                try { NavigateToPage(domId); }
-                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SocialShop 导航失败 ({domId}): {ex.Message}"); }
             };
             // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
             if (TryGetLocalPlayerAttributes(out var attr))
@@ -2177,6 +2628,73 @@ namespace HundunWorld.Game.UI
         }
 
         /// <summary>
+        /// 创建 Esc 系统菜单。三项都是真行为：继续游戏＝收掉本层（同时解暂停）；
+        /// 设置＝真导航到设置页（导航会顺带关弹层）；退出＝与战斗 HUD「退」钮同一套回选角流程。
+        /// </summary>
+        /// <summary>
+        /// NPC 对话菜单：把"这位能做什么"摆出来，每一项再导航到各自页面（商店/技能/制作/任务）。
+        /// </summary>
+        private NpcGossipPage CreateNpcGossip()
+        {
+            var page = new NpcGossipPage();
+            if (_inkPageShell != null && _inkPageShell.ParticleSystem != null)
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+
+            HookNavigationRequested(page);
+            page.CloseRequested += () => _inkPageRouter?.CloseOverlay();
+            return page;
+        }
+
+        private SystemMenuPage CreateSystemMenu()        {
+            var page = new SystemMenuPage();
+            if (_inkPageShell != null && _inkPageShell.ParticleSystem != null)
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+
+            HookNavigationRequested(page);
+            page.CloseRequested += () => _inkPageRouter?.CloseOverlay();
+            page.ExitRequested += ExitGameToCharacterSelection;
+            return page;
+        }
+
+        /// <summary>
+        /// 退出到角色选择：切场景 + 改全局状态，服务端随后按断线感知完成 Despawn/离线清理。
+        /// </summary>
+        public void ExitGameToCharacterSelection()
+        {
+            var sceneManager = GameSceneManager.Instance;
+            if (sceneManager != null)
+                sceneManager.TransitionTo(Horizon.Game.Message.Enums.SceneType.CharacterSelection);
+
+            var gameState = HundunWorld.Game.Core.GameStateManager.Instance;
+            if (gameState != null)
+                gameState.ChangeState(HundunWorld.Game.Core.GameState.CharacterSelect);
+        }
+
+        /// <summary>
+        /// 暂停态与"系统菜单是否盖着"对账。消费者是 <see cref="UIMouseCapture.KeyboardCaptured"/>
+        /// （操控输入与快捷键归零）——没有消费者的暂停只是换个标题的假动作。
+        /// <para>
+        /// 刻意不冻结时间/世界：服务器权威，本地停摆只会把移动同步与插值弄坏。
+        /// </para>
+        /// </summary>
+        private void SyncPauseToSystemMenu()
+        {
+            var gameState = HundunWorld.Game.Core.GameStateManager.Instance;
+            if (gameState == null) return;
+
+            bool menuOpen = _inkPageRouter != null
+                            && _inkPageRouter.CurrentOverlayDomId == InkPageDomIds.SystemMenu;
+            if (menuOpen)
+            {
+                if (!gameState.IsPaused) gameState.PauseGame();
+            }
+            else if (gameState.IsPaused)
+            {
+                gameState.ResumeGame();
+            }
+        }
+
+        /// <summary>
         /// 创建战斗 HUD v2 页面并订阅导航请求事件。
         /// </summary>
         /// <returns>CombatHudV2Page 实例</returns>
@@ -2211,40 +2729,6 @@ namespace HundunWorld.Game.UI
         }
 
         /// <summary>
-        /// 创建角色属性菜单 v2 页面并订阅导航请求事件。
-        /// </summary>
-        /// <returns>MenuCharAttributesV2Page 实例</returns>
-        private MenuCharAttributesV2Page CreateMenuCharAttributesV2()
-        {
-            var page = new MenuCharAttributesV2Page();
-            page.NavigationRequested += (domId) =>
-            {
-                try
-                {
-                    NavigateToPage(domId);
-                }
-                catch (Exception ex)
-                {
-                    FlaxEngine.Debug.LogError($"[MainUIManager] MenuCharAttributesV2 导航失败 ({domId}): {ex.Message}");
-                }
-            };
-            // 即时绑定：若本地玩家已就绪则直接绑定真实数据
-            if (TryGetLocalPlayerAttributes(out var attr))
-            {
-                page.BindCharacter(attr);
-                _cachedAttributes = attr;
-                _localPlayerReady = true;
-                FlaxEngine.Debug.Log("[MainUIManager] MenuCharAttributesV2 已即时绑定本地玩家数据");
-            }
-            else
-            {
-                FlaxEngine.Debug.Log("[MainUIManager] MenuCharAttributesV2 创建时本地玩家未就绪，等待重绑");
-            }
-            _activeMenuCharAttributesV2 = page;
-            return page;
-        }
-
-        /// <summary>
         /// 创建阵亡界面并订阅破招与返回事件。
         /// 破招或返回后均返回战斗 HUD。
         /// </summary>
@@ -2256,12 +2740,29 @@ namespace HundunWorld.Game.UI
             {
                 try
                 {
-                    // 设计稿 death-screen .link-qte：破招/原地复活 → 触发 QTE 千钧一发。
-                    NavigateToPage(InkPageDomIds.Qte);
+                    // 「原地复活」走服务端权威复活（CharacterGrain.ResurrectAsync），
+                    // 不是客户端改 IsDead 就完事——服务端血量没回，之后每次施法都会被"已死亡"挡下。
+                    var game = HundunWorldGame.Instance;
+                    var nm = game?.NetworkManager;
+                    if (nm == null || game.PlayerId == 0)
+                    {
+                        UIHelper.ShowToast("未连接服务器，无法复活", ToastType.Warning);
+                        return;
+                    }
+
+                    var local = game.LocalPlayerActor;
+                    var pos = local != null ? local.Position : Vector3.Zero;
+                    _ = nm.SendAsync(new Horizon.Game.Message.Network.ResurrectMessage
+                    {
+                        ResurrectedId = game.PlayerId,
+                        ResurrectPosition = new Horizon.Game.Message.Network.Position { X = pos.X, Y = pos.Y, Z = pos.Z },
+                        ResurrectType = 0,
+                    });
+                    UIHelper.ShowToast("已请求复活…", ToastType.Info);
                 }
                 catch (Exception ex)
                 {
-                    FlaxEngine.Debug.LogError($"[MainUIManager] DeathScreen 破招失败: {ex.Message}");
+                    FlaxEngine.Debug.LogError($"[MainUIManager] DeathScreen 复活请求失败: {ex.Message}");
                 }
             };
             page.ReturnRequested += () =>
@@ -2307,6 +2808,24 @@ namespace HundunWorld.Game.UI
         private MenuBattlePrepPage CreateMenuBattlePrep()
         {
             var page = new MenuBattlePrepPage();
+
+            // 属性条接真实角色数值（战力推荐值没有数据源，传 0 让页面显示空）
+            if (TryGetLocalPlayerAttributes(out var prepAttr))
+            {
+                // 战力：与角色面板同一占位口径（攻/防/生命合成）；推荐战力没有数据源，传 0 让页面显示「—」
+                int combatPower = (int)System.Math.Round(
+                    (prepAttr.PhysicalAttack + prepAttr.MagicAttack) * 2f
+                    + (prepAttr.PhysicalDefense + prepAttr.MagicDefense) * 1.5f
+                    + prepAttr.MaxHealth * 0.2f);
+                page.BindCombatPower(combatPower, 0);
+
+                page.BindStatBars(
+                    (int)System.Math.Round(prepAttr.CurrentHealth),
+                    (int)System.Math.Round(prepAttr.MaxHealth),
+                    (int)System.Math.Round(prepAttr.CurrentEnergy),
+                    (int)System.Math.Round(prepAttr.MaxEnergy),
+                    0, 0);
+            }
             page.NavigationRequested += (domId) =>
             {
                 try
@@ -2416,7 +2935,7 @@ namespace HundunWorld.Game.UI
             // 设计链路：popup-verification → shortcut-reward-achievement → reward-achievement
             // 注意：本弹窗仅 Confirmed/ViewAchievement 两个事件，无 Closed。
             page.ViewAchievement += () => NavigateToPage(InkPageDomIds.RewardAchievement);
-            page.Confirmed += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.Confirmed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             return page;
         }
 
@@ -2425,8 +2944,8 @@ namespace HundunWorld.Game.UI
             var page = new PopupMartialArts();
             // 设计链路：popup-martial-arts → link-popup-item-acquired → popup-item-acquired
             page.Upgraded += () => NavigateToPage(InkPageDomIds.PopupItemAcquired);
-            page.Equipped += () => NavigateToPage(InkPageDomIds.BackHud);
-            page.Closed += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.Equipped += () => NavigateToPage(InkPageDomIds.BackOneLevel);
+            page.Closed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             return page;
         }
 
@@ -2436,20 +2955,21 @@ namespace HundunWorld.Game.UI
             // 设计链路：popup-skill-realization → link-popup-verification → popup-verification
             page.Confirmed += () => NavigateToPage(InkPageDomIds.PopupVerification);
             page.Verified += () => NavigateToPage(InkPageDomIds.PopupVerification);
-            page.Closed += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.Closed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             return page;
         }
 
         private PopupMartialDetail CreatePopupMartialDetail()
         {
             var page = new PopupMartialDetail();
-            // 真实数据绑定：注入来源页（武学心法面板）捕获的选中武学概要。
-            page.BindMartial(_pendingMartial);
+            // 真实数据绑定：取技能目录里已学的第一式（无已学时退到目录首条），不再用设计稿样例。
+            if (TryPickMartialForDetail(out var martialCfg, out var martialLevel))
+                page.BindSkill(martialCfg, martialLevel);
             // 设计链路：popup-martial-detail → link-popup-guide-side → popup-guide-side
             page.Practiced += () => NavigateToPage(InkPageDomIds.PopupGuideSide);
             // 设计稿 .guide-link：修炼指引 → link-popup-guide-side
             page.GuideRequested += () => NavigateToPage(InkPageDomIds.PopupGuideSide);
-            page.Closed += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.Closed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             return page;
         }
 
@@ -2460,8 +2980,8 @@ namespace HundunWorld.Game.UI
             page.Started += () => NavigateToPage(InkPageDomIds.PopupMartialArts);
             // 设计稿 .nav-buttons：上一步回到引导 HUD（引导模块的上游页面）
             page.PreviousRequested += () => NavigateToPage(InkPageDomIds.GuideHud);
-            page.Skipped += () => NavigateToPage(InkPageDomIds.BackHud);
-            page.Closed += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.Skipped += () => NavigateToPage(InkPageDomIds.BackOneLevel);
+            page.Closed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             return page;
         }
 
@@ -2469,9 +2989,9 @@ namespace HundunWorld.Game.UI
         {
             var page = new PopupBestiarySide();
             // 统一导航：关闭/捕获/收藏→战斗 HUD；留言→popup-message（设计链路 bestiary→message，按稿补全）。
-            page.Closed += () => NavigateToPage(InkPageDomIds.BackHud);
-            page.Hunt += () => NavigateToPage(InkPageDomIds.BackHud);
-            page.Track += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.Closed += () => NavigateToPage(InkPageDomIds.BackOneLevel);
+            page.Hunt += () => NavigateToPage(InkPageDomIds.BackOneLevel);
+            page.Track += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             page.MessageClicked += () => NavigateToPage(InkPageDomIds.PopupMessage);
             return page;
         }
@@ -2493,19 +3013,11 @@ namespace HundunWorld.Game.UI
         /// <summary>
         /// 创建活动菜单页面。
         /// </summary>
-        private MenuActivitiesPage CreateMenuActivities()
+        private ActivityHubPage CreateMenuActivities()
         {
-            var page = new MenuActivitiesPage();
-            HookNavigationRequested(page);
-            return page;
-        }
-
-        /// <summary>
-        /// 创建邮件菜单页面。
-        /// </summary>
-        private MenuMailPage CreateMenuMail()
-        {
-            var page = new MenuMailPage();
+            // UI 重铸：nav-activities 改为「同游四卡 + 闯荡列表 + 挑战心力」目录页；
+            // 旧 MenuActivitiesPage 保留为设计稿参考，不再由路由创建。
+            var page = new ActivityHubPage();
             HookNavigationRequested(page);
             return page;
         }
@@ -2523,9 +3035,11 @@ namespace HundunWorld.Game.UI
         /// <summary>
         /// 创建组队菜单页面。
         /// </summary>
-        private MenuTeamPage CreateMenuTeam()
+        private TeamRosterPage CreateMenuTeam()
         {
-            var page = new MenuTeamPage();
+            // UI 重铸：nav-team 改为「创建/加入 + 当前队伍」，数据走 TeamClientService；
+            // 旧 MenuTeamPage 保留为设计稿参考，不再由路由创建。
+            var page = new TeamRosterPage();
             HookNavigationRequested(page);
             return page;
         }
@@ -2533,9 +3047,11 @@ namespace HundunWorld.Game.UI
         /// <summary>
         /// 创建博物志菜单页面。
         /// </summary>
-        private MenuBestiaryPage CreateMenuBestiary()
+        private CollectionWorkbenchPage CreateMenuBestiary()
         {
-            var page = new MenuBestiaryPage();
+            // UI 重铸：nav-bestiary 改为「分类筛选 + 列表 + 详情/进度」工作台；
+            // 旧 MenuBestiaryPage 保留为设计稿参考，不再由路由创建。
+            var page = new CollectionWorkbenchPage();
             HookNavigationRequested(page);
             return page;
         }
@@ -2626,10 +3142,9 @@ namespace HundunWorld.Game.UI
         private MultiplayerPage CreateMultiplayer()
         {
             var page = new MultiplayerPage();
-            HookNavigationRequested(page);
             // 设计链路：multiplayer → link-combat-hud-v2 → combat-hud-v2；返回→战斗 HUD。
-            page.StartMatchRequested += () => NavigateToPage(InkPageDomIds.CombatHudTraditional);
-            page.BackRequested += () => NavigateToPage(InkPageDomIds.BackHud);
+            // 「开始匹配」按钮在匹配服务接入前保持禁用，因此不再挂 StartMatchRequested。
+            page.BackRequested += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             return page;
         }
 
@@ -2640,9 +3155,26 @@ namespace HundunWorld.Game.UI
         {
             var page = new PhotoModePage();
             HookNavigationRequested(page);
-            // 统一导航：退出→战斗 HUD；相册暂无独立页面，返回 HUD 兜底（快门/角度为页内表现）。
-            page.ExitRequested += () => NavigateToPage(InkPageDomIds.BackHud);
-            page.AlbumClicked += () => NavigateToPage(InkPageDomIds.BackHud);
+
+            // 取景器期间藏起常驻技能栏/气息指示；退出或页面销毁时恢复。
+            page.OverlayVisibilityRequested += hidden =>
+            {
+                _photoOverlayHidden = hidden;
+                UpdateActionBar();
+            };
+            _photoOverlayHidden = true;
+            UpdateActionBar();
+
+            page.ExitRequested += () => NavigateToPage(InkPageDomIds.BackOneLevel);
+            // 相册是独立页：列出 Screenshots 里的成片，返回时回到取景页。
+            page.AlbumClicked += () => NavigateToPage(InkPageDomIds.NavPhotoAlbum);
+            return page;
+        }
+
+        private PhotoAlbumPage CreatePhotoAlbum()
+        {
+            var page = new PhotoAlbumPage();
+            HookNavigationRequested(page);
             return page;
         }
 
@@ -2652,9 +3184,8 @@ namespace HundunWorld.Game.UI
         private ElementVisionPage CreateElementVision()
         {
             var page = new ElementVisionPage();
-            HookNavigationRequested(page);
             // 统一导航：退出→战斗 HUD；阵亡预览→阵亡界面。
-            page.ExitRequested += () => NavigateToPage(InkPageDomIds.BackHud);
+            page.ExitRequested += () => NavigateToPage(InkPageDomIds.BackOneLevel);
             page.DeathScreenRequested += () => NavigateToPage(InkPageDomIds.DeathScreen);
             return page;
         }
@@ -2679,6 +3210,25 @@ namespace HundunWorld.Game.UI
         /// <summary>
         /// 角色选择页：进入 / 创建 / 删除三种动作在此发起，页面本身不碰网络。
         /// </summary>
+        /// <summary>
+        /// 自测标记：<c>%APPDATA%/HundunWorld/open-sculpt.on</c> 存在 ⇒ 创角壳首页直接落在捏脸页。
+        /// 只服务自动化验证（完整创角链需要服务端角色数据），正常环境不会有这个文件。
+        /// </summary>
+        private static bool HasSelfTestSculptEntry()
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", "open-sculpt.on");
+                return System.IO.File.Exists(path);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private CcRoleListPage CreateCcRoleList()
         {
             var page = new CcRoleListPage();
@@ -2687,7 +3237,135 @@ namespace HundunWorld.Game.UI
             page.DeleteRequested += OnCcDeleteRequested;
             page.LogoutRequested += OnCcLogoutRequested;
             ApplyCcWatermark(page);
+
+            // 自测：运行时页面控件不在场景树里，自动化工具点不到，用标记文件直接走"进入游戏"。
+            if (HasSelfTestEnterWorldEntry())
+            {
+                _selfTestEnterWorldPending = true;
+                _selfTestEnterWorldDelay = 3f;
+                AppendSelfTestReceipt($"enter-world armed instance={GetHashCode():X8}");
+            }
+
             return page;
+        }
+
+        /// <summary>
+        /// 自测标记：<c>%APPDATA%/HundunWorld/enter-world.on</c> 存在 ⇒ 登录后自动用第一个角色进入游戏。
+        /// 只服务自动化验证（进世界后的 HUD / 拍照模式等没法用编辑器工具点进），正常环境不会有这个文件。
+        /// </summary>
+        private static bool HasSelfTestEnterWorldEntry()
+        {
+            return HasSelfTestMarker("enter-world.on");
+        }
+
+        /// <summary>
+        /// 自测标记：<c>%APPDATA%/HundunWorld/open-photo.on</c> 存在 ⇒ 本地玩家就绪后自动打开拍照页。
+        /// </summary>
+        private static bool HasSelfTestPhotoEntry()
+        {
+            return HasSelfTestMarker("open-photo.on");
+        }
+
+        /// <summary>自测：导航落地后安排一次整屏抓图（仅在 ui-shot.on 存在时生效）。</summary>
+        private void ScheduleSelfTestUiShot(string domId)
+        {
+            if (string.IsNullOrEmpty(domId) || !HasSelfTestMarker("ui-shot.on"))
+                return;
+            _selfTestShotPage = domId;
+            _selfTestShotDelay = 1f;
+        }
+
+        private void CaptureSelfTestUiShot()
+        {
+            string page = _selfTestShotPage;
+            _selfTestShotPage = null;
+            if (string.IsNullOrEmpty(page))
+                return;
+
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                foreach (char ch in page)
+                    sb.Append(char.IsLetterOrDigit(ch) || ch == '-' ? ch : '_');
+                string path = System.IO.Path.Combine(
+                    Globals.ProjectFolder, "Screenshots", $"ui-{sb}.png");
+                Screenshot.Capture(path);
+                AppendSelfTestReceipt($"ui-shot {page} -> {path}");
+            }
+            catch (Exception ex)
+            {
+                AppendSelfTestReceipt($"ui-shot {page} failed {ex.GetType().Name}:{ex.Message}");
+            }
+        }
+
+        private static bool HasSelfTestMarker(string fileName)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", fileName);
+                return System.IO.File.Exists(path);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 自测：<c>%APPDATA%/HundunWorld/open-page.txt</c> 第一行是页面 dom-id，
+        /// 进世界 3 秒后自动导航过去（走查运行时页面用，正常环境没有这个文件）。
+        /// </summary>
+        private static string ReadSelfTestNavPage()
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", "open-page.txt");
+                if (!System.IO.File.Exists(path))
+                    return null;
+
+                foreach (string line in System.IO.File.ReadAllLines(path))
+                {
+                    string domId = line.Trim();
+                    if (!string.IsNullOrEmpty(domId) && !domId.StartsWith("#"))
+                        return domId;
+                }
+            }
+            catch
+            {
+                // 读不到就当没启用
+            }
+            return null;
+        }
+
+        private void AutoEnterWorldForSelfTest()
+        {
+            var manager = global::Game.UI.Character.CharacterManager.Instance;
+            var list = manager?.CharacterList;
+            int mgrCount = list == null ? -1 : list.Count;
+
+            // CharacterManager 有时还没收到镜像（它为 0 而页面已经有行），退回状态管理器这份权威列表。
+            if (list == null || list.Count == 0)
+                list = _stateManager?.CharacterList;
+            int stateCount = list == null ? -1 : list.Count;
+
+            _selfTestEnterWorldAttempts++;
+            if (_selfTestEnterWorldAttempts <= 5)
+                AppendSelfTestReceipt($"enter-world attempt#{_selfTestEnterWorldAttempts} mgr={mgrCount} state={stateCount}");
+
+            if (list == null || list.Count == 0)
+                return; // 角色列表还没到，下一轮再试
+
+            if (manager != null && manager.IsProcessing)
+                return; // 还在处理角色请求（例如刚进选角），别把这次吞掉
+
+            _selfTestEnterWorldPending = false;
+            var first = list[0];
+            AppendSelfTestReceipt($"enter-world fire character={first.CharacterId}");
+            OnCcEnterRequested(first);
         }
 
         /// <summary>创角第一步：性别。</summary>
@@ -2715,7 +3393,12 @@ namespace HundunWorld.Game.UI
         {
             var page = new CcFaceSculptPage();
             page.BackRequested += () => NavigateToPage(InkPageDomIds.CcFacePreset);
-            page.ConfirmRequested += () => NavigateToPage(InkPageDomIds.CcName);
+            // 下一步前先把捏脸快照交给创建流程（不封存）；否则未点「发布」的捏脸值会在建号时丢失。
+            page.ConfirmRequested += () =>
+            {
+                page.CommitPendingLook();
+                NavigateToPage(InkPageDomIds.CcName);
+            };
             ApplyCcWatermark(page);
             return page;
         }
@@ -2757,15 +3440,34 @@ namespace HundunWorld.Game.UI
         {
             var manager = global::Game.UI.Character.CharacterManager.Instance;
             if (manager == null || manager.IsProcessing)
+            {
+                // 正在处理别的角色请求：别把这次自测吞掉，等下一轮再试。
+                _selfTestEnterWorldAttempts++;
+                if (_selfTestEnterWorldAttempts <= 8)
+                    AppendSelfTestReceipt($"enter-world busy#{_selfTestEnterWorldAttempts} mgrNull={manager == null}");
                 return;
+            }
+
+            // 服务端随角色列表下发了外观 blob：先落到本地仓库，进世界后 MetaHumanCharacter 的读档路径才看得到。
+            // Ink 流程不走 CharacterStateManager.SelectCharacter，这条采纳必须显式接（否则换设备仍回默认脸）。
+            HundunWorld.Game.Services.MetaHumanAppearanceService.Instance
+                .AdoptFromServer((long)info.CharacterId, info);
 
             if (!manager.SelectCharacter(info))
             {
                 FlaxEngine.Debug.LogWarning("[MainUIManager] 选择角色失败，未发起进入游戏");
+                AppendSelfTestReceipt("enter-world select=failed");
                 return;
             }
 
-            await manager.EnterGameAsync();
+            bool entered = await manager.EnterGameAsync();
+            AppendSelfTestReceipt($"enter-world enterGame={entered}");
+            if (!entered && _selfTestEnterWorldAttempts < 4 && HasSelfTestEnterWorldEntry())
+            {
+                // 切换窗口冲突这类瞬时失败：隔几秒再试一次，别让走查卡死。
+                _selfTestEnterWorldPending = true;
+                _selfTestEnterWorldDelay = 2.5f;
+            }
         }
 
         /// <summary>选角页删除角色。</summary>
@@ -2779,11 +3481,15 @@ namespace HundunWorld.Game.UI
         }
 
         /// <summary>
-        /// 退出登录：切回登录场景。等价于旧选角界面的「返回登录」
+        /// 退出登录：清掉会话与角色列表缓存，再切回登录场景。等价于旧选角界面的「返回登录」
         /// （<c>CharacterSceneController.OnBackBtnClicked</c>），少了它玩家进了选角页就没有回头路。
         /// </summary>
         private void OnCcLogoutRequested()
         {
+            // 只切场景不清缓存时，UIStateManager._characterList 与选中项会跨登录存活
+            // （ClearUserSession 此前全仓零调用方）；下一次重登若没拿到角色列表回执，
+            // 界面就照旧列表渲染，已删除的角色于是「删掉了还在」。
+            _stateManager?.ClearUserSession();
             GameSceneManager.Instance?.TransitionTo(SceneType.Login);
         }
 
@@ -2814,9 +3520,8 @@ namespace HundunWorld.Game.UI
             {
                 HairModel = preset,
                 FaceModel = preset,
-                // HairStyle 不跟面容索引走：那是发型字段，等真有发型数据再填，
-                // 沿用旧流程的 0 比把面容号写进发型更诚实。
-                HairStyle = 0,
+                // 发型：外观副本只留离散下标；真正驱动渲染的是 look 里的 hair.style。
+                HairStyle = CcSession.Current.HairStyleIndex,
                 Clothing = CcSession.Current.BodyIndex,
                 HairColor = CcSession.Current.HairColorIndex,
                 EyeColor = CcSession.Current.EyeColorIndex,
@@ -2855,6 +3560,37 @@ namespace HundunWorld.Game.UI
             if (!UseInkCharacterFlow || info == null)
                 return;
 
+            // 捏脸是在还没有角色 Id 的命名页上发布的，回执里才拿到 Id：
+            // 这里把那份「待认领」快照落到新角色名下，下次进场就能按它恢复外观。
+            // 服务端外观通道（P5 提案）落地前，本地仓库就是唯一的持久化去处。
+            if (MetaHuman.Runtime.MetaHumanLookStore.TryTakePendingLook(out var pendingLook))
+            {
+                string storeError;
+                string savedPath = MetaHuman.Runtime.MetaHumanLookStore.Save(
+                    info.CharacterId.ToString(), pendingLook, out storeError);
+                FlaxEngine.Debug.Log(savedPath != null
+                    ? $"[MetaHuman] 已把发布的外观绑到新角色 {info.CharacterId}：{savedPath}"
+                    : $"[MetaHuman] 外观落盘失败（角色 {info.CharacterId}）：{storeError}");
+
+                // 本地落盘只是第一站：不提交服务端的话，换设备或清了目录就回到默认脸。
+                var lookMeta = MetaHuman.Runtime.MetaHumanLookStore.TakePendingLookMeta();
+                if (savedPath != null && lookMeta != null)
+                {
+                    bool queued = HundunWorld.Game.Services.MetaHumanAppearanceService.Instance
+                        .TrySendLook((long)info.CharacterId, pendingLook, lookMeta.TemplateId, lookMeta.TemplateVersion,
+                                     lookMeta.TemplateParamCount, lookMeta.EntryCount);
+                    if (!queued)
+                    {
+                        FlaxEngine.Debug.LogWarning($"[MetaHuman] 外观未提交服务端（角色 {info.CharacterId}）："
+                            + HundunWorld.Game.Services.MetaHumanAppearanceService.Instance.LastErrorCode);
+                    }
+                }
+                else if (savedPath != null)
+                {
+                    FlaxEngine.Debug.LogWarning("[MetaHuman] 缺少模板元信息，本次外观只留在本地，未提交服务端");
+                }
+            }
+
             global::Game.UI.Character.CharacterManager.Instance?.SelectCharacter(info);
             NavigateToPage(InkPageDomIds.CcRoleList);
         }
@@ -2862,6 +3598,13 @@ namespace HundunWorld.Game.UI
         /// <summary>
         /// 创建音频设置子页面。
         /// </summary>
+        private SettingsRoadSignPage CreateSettingsRoadSign()
+        {
+            var page = new SettingsRoadSignPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
         private SettingsAudioPage CreateSettingsAudio()
         {
             var page = new SettingsAudioPage();
@@ -2904,39 +3647,29 @@ namespace HundunWorld.Game.UI
         /// 通用：为页面的导航请求事件挂钩路由器跳转。
         /// 适用于实现了 <c>NavigationRequested</c> 事件的页面（duck typing）。
         /// </summary>
-        private void HookNavigationRequested(object page)
+        /// <summary>
+        /// 把页面的 <see cref="IInkNavigationSource.NavigationRequested"/> 接到 <see cref="NavigateToPage"/>。
+        /// <para>
+        /// 编译期订阅：页面必须显式实现 <see cref="IInkNavigationSource"/>，事件改名/漏实现会直接编译不过。
+        /// 旧实现用反射按名字找 <c>"NavigationRequested"</c> 事件，找不到就静默返回——页面漏订时按钮点了
+        /// 没反应且日志干净，是"死导航"的一类成因，故改为接口。
+        /// </para>
+        /// </summary>
+        private void HookNavigationRequested(IInkNavigationSource page)
         {
-            try
-            {
-                // 使用反射查找 NavigationRequested 事件
-                var type = page?.GetType();
-                if (type == null) return;
-                var ev = type.GetEvent("NavigationRequested");
-                if (ev == null) return;
+            if (page == null) return;
 
-                // 构造 Action<string> 处理器
-                Action<string> handler = (domId) =>
+            page.NavigationRequested += domId =>
+            {
+                try
                 {
-                    try
-                    {
-                        NavigateToPage(domId);
-                    }
-                    catch (Exception ex)
-                    {
-                        FlaxEngine.Debug.LogError($"[MainUIManager] {type.Name} 导航失败 ({domId}): {ex.Message}");
-                    }
-                };
-
-                // 将 Action<string> 转换为事件类型
-                var delegateType = ev.EventHandlerType;
-                var converter = typeof(Action<string>).GetMethod("Invoke");
-                var typedHandler = System.Delegate.CreateDelegate(delegateType, handler.Target, handler.Method);
-                ev.AddEventHandler(page, typedHandler);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogWarning($"[MainUIManager] HookNavigationRequested 失败: {ex.Message}");
-            }
+                    NavigateToPage(domId);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] {page.GetType().Name} 导航失败 ({domId}): {ex.Message}");
+                }
+            };
         }
 
         /// <summary>
@@ -3104,6 +3837,9 @@ namespace HundunWorld.Game.UI
                 _stateManager.LoadingStateChanged -= OnLoadingStateChanged;
             }
 
+            if (GameSceneManager.Instance != null)
+                GameSceneManager.Instance.TransitionCompleted -= OnSceneTransitionCompleted;
+
             // 清理组件引用
             _uiComponents.Clear();
             _currentActiveUI = null;
@@ -3114,10 +3850,11 @@ namespace HundunWorld.Game.UI
             _localPlayerReady = false;
             _activeCombatHud = null;
             _activeCombatHudV2 = null;
-            _activeMenuCharAttributesV2 = null;
             _activeCombatHudTraditional = null;
             _activeCharacterPanel = null;
-            _activeSkillPanel = null;
+            _activeSkillTree = null;
+            _inkWorldInputGate?.Release();
+            _inkWorldInputGate = null;
 
             // 清空单例引用
             if (_instance == this)

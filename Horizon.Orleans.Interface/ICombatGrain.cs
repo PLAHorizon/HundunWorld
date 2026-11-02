@@ -76,15 +76,9 @@ namespace Horizon.Orleans.Interface
         /// <returns>效果响应</returns>
         Task<EffectMessage> ApplyEffectAsync(EffectMessage request);
 
-        /// <summary>
-        /// 计算五行相克伤害
-        /// </summary>
-        /// <param name="attackerId">攻击者ID</param>
-        /// <param name="defenderId">防御者ID</param>
-        /// <param name="baseDamage">基础伤害</param>
-        /// <param name="elementType">元素类型</param>
-        /// <returns>最终伤害</returns>
-        Task<float> CalculateWuxingDamageAsync(ulong attackerId, ulong defenderId, float baseDamage, int elementType);
+        // 已删除 CalculateWuxingDamageAsync：它在战斗侧就把防御减免算进去了，与
+        // CharacterGrain.RequestElementalHpChangeAsync 的裁决重复（双重减免），且全仓零调用者。
+        // 五行伤害的唯一出口是 ElementalDamageResolver——攻击侧在 CombatGrain，减免侧在 CharacterGrain。
 
         /// <summary>
         /// 获取战斗日志

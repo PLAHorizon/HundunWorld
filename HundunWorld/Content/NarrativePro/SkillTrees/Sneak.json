@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "技能树内容头：对应 UE5 Content/Pro/Core/Data/SkillTrees/Sneak（Skill_Sneak.uasset + Perks/Perk_Sneak_FeatherQuiet.uasset + GE_FeatherQuiet.uasset）。"
+  ],
+  "skills": [
+    {
+      "skillClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Sneak/Skill_Sneak",
+      "skillDisplayName": "Sneak",
+      "skillDescription": "Stealth tree.",
+      "skillLevel": 1,
+      "perks": [
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Sneak/Perks/Perk_Sneak_FeatherQuiet",
+          "perkCords": { "x": 0, "y": 0 },
+          "linkedTo": []
+        }
+      ]
+    }
+  ],
+  "perks": [
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Sneak/Perks/Perk_Sneak_FeatherQuiet",
+      "perkType": "Perk_AttributeMod",
+      "perkDisplayName": "Feather Quiet",
+      "perkDescription": "Noise generated while sneaking (GE_FeatherQuiet).",
+      "attributeName": "SetByCaller.FeatherQuiet",
+      "effectName": "/NarrativePro/Pro/Core/Data/SkillTrees/Sneak/Perks/GE_FeatherQuiet"
+    }
+  ]
+}

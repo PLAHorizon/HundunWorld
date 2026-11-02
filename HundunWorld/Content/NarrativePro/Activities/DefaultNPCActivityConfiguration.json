@@ -1,0 +1,7 @@
+{
+  "RescoreInterval": 1.0,
+  "DefaultActivities": [
+    "Activity_Idle"
+  ],
+  "GoalGenerators": []
+}

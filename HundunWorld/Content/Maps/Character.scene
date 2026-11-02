@@ -1,7 +1,7 @@
 {
 	"ID": "f1a2b3c4d5e6f708192a3b4c5d6e7f80",
 	"TypeName": "FlaxEngine.SceneAsset",
-	"EngineBuild": 6806,
+	"EngineBuild": 6913,
 	"Data": [
 		{
 			"ID": "f1a2b3c4d5e6f708192a3b4c5d6e7f80",
@@ -35,42 +35,32 @@
 					"W": 0.9238795042037964
 				}
 			},
-			"Brightness": 3.5,
 			"Color": {
 				"R": 1.0,
-				"G": 0.96,
-				"B": 0.88,
+				"G": 0.9599999785423279,
+				"B": 0.8799999952316284,
 				"A": 1.0
 			},
-			"CastShadows": true
+			"Brightness": 3.5
 		},
 		{
 			"ID": "b2c3d4e5f607182a3b4c5d6e7f8091a2",
 			"TypeName": "FlaxEngine.Sky",
 			"ParentID": "f1a2b3c4d5e6f708192a3b4c5d6e7f80",
-			"Name": "Sky",
-			"Transform": {
-				"Translation": {
-					"X": 0.0,
-					"Y": 0.0,
-					"Z": 0.0
-				}
-			},
-			"SunLight": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+			"Name": "Sky"
 		},
 		{
 			"ID": "c3d4e5f607182a3b4c5d6e7f8091a2b3",
 			"TypeName": "FlaxEngine.SkyLight",
 			"ParentID": "f1a2b3c4d5e6f708192a3b4c5d6e7f80",
 			"Name": "SkyLight",
-			"Brightness": 1.5,
-			"Mode": 1,
 			"Color": {
-				"R": 0.85,
-				"G": 0.88,
-				"B": 0.95,
+				"R": 0.8500000238418579,
+				"G": 0.8799999952316284,
+				"B": 0.949999988079071,
 				"A": 1.0
-			}
+			},
+			"Brightness": 1.5
 		},
 		{
 			"ID": "d4e5f60718293a4b5c6d7e8f90a1b2c3",
@@ -84,14 +74,14 @@
 					"Z": 180.0
 				}
 			},
-			"Brightness": 1500.0,
-			"Radius": 250.0,
 			"Color": {
 				"R": 1.0,
-				"G": 0.95,
-				"B": 0.85,
+				"G": 0.949999988079071,
+				"B": 0.8500000238418579,
 				"A": 1.0
-			}
+			},
+			"Brightness": 1500.0,
+			"Radius": 250.0
 		},
 		{
 			"ID": "e5f60718293a4b5c6d7d8e9fa0b1c2d3",
@@ -105,15 +95,14 @@
 					"Z": -100.0
 				}
 			},
-			"Brightness": 800.0,
-			"Radius": 200.0,
 			"Color": {
-				"R": 0.7,
-				"G": 0.8,
+				"R": 0.699999988079071,
+				"G": 0.800000011920929,
 				"B": 1.0,
 				"A": 1.0
 			},
-			"CastShadows": false
+			"Brightness": 800.0,
+			"Radius": 200.0
 		},
 		{
 			"ID": "f5e60718293a4b5c6d7d8e9fa0b1c2d4",
@@ -127,15 +116,14 @@
 					"Z": -200.0
 				}
 			},
-			"Brightness": 600.0,
-			"Radius": 180.0,
 			"Color": {
 				"R": 1.0,
-				"G": 0.85,
-				"B": 0.7,
+				"G": 0.8500000238418579,
+				"B": 0.699999988079071,
 				"A": 1.0
 			},
-			"CastShadows": false
+			"Brightness": 600.0,
+			"Radius": 180.0
 		},
 		{
 			"ID": "e5f6071829304a5b6c7d8e9fa0b1c2d3",
@@ -154,8 +142,6 @@
 			"TypeName": "FlaxEngine.UICanvas",
 			"ParentID": "f1a2b3c4d5e6f708192a3b4c5d6e7f80",
 			"Name": "UICanvas",
-			"RenderMode": 0,
-			"Order": 0,
 			"V": {}
 		},
 		{

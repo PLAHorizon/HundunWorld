@@ -1,0 +1,40 @@
+{
+  "setName": "MusicSet_Default",
+  "entries": [
+    {
+      "theme": "Music.Ambient",
+      "tracks": [
+        {
+          "musicPath": "Content/Music/ambient_village_01.wav",
+          "fadeInDuration": 3.0,
+          "fadeOutDuration": 3.0
+        },
+        {
+          "musicPath": "Content/Music/ambient_mountain_01.wav",
+          "fadeInDuration": 4.0,
+          "fadeOutDuration": 2.5
+        }
+      ]
+    },
+    {
+      "theme": "Music.Combat",
+      "tracks": [
+        {
+          "musicPath": "Content/Music/combat_skirmish_01.wav",
+          "fadeInDuration": 1.2,
+          "fadeOutDuration": 2.0
+        }
+      ]
+    },
+    {
+      "theme": "Music.Quest.Success",
+      "tracks": [
+        {
+          "musicPath": "Content/Music/stinger_quest_complete_01.wav",
+          "fadeInDuration": 0.5,
+          "fadeOutDuration": 1.5
+        }
+      ]
+    }
+  ]
+}

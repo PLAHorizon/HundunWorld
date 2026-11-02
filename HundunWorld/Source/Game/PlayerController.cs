@@ -15,6 +15,8 @@ using CharacterState = Horizon.Game.Message.Enums.CharacterState;
 using System.Collections.Generic;
 using System.Linq;
 using Game;
+using HundunWorld.Game.Character;
+using UIMouseCapture = HundunWorld.Game.UI.UIMouseCapture;
 
 namespace HundunWorld.Game
 {
@@ -78,6 +80,20 @@ namespace HundunWorld.Game
         /// 获取角色是否在地面上
         /// </summary>
         public bool IsGrounded => _isGrounded;
+
+        /// <summary>
+        /// 当帧的移动输入方向（世界空间、单位向量；无输入时为零）。供动画系统读取，不影响模拟。
+        /// </summary>
+        public Vector3 MoveDirectionWorld => _moveDirection;
+
+        /// <summary>是否有移动输入。</summary>
+        public bool HasMoveInput => _moveDirection.LengthSquared > 0.0001f;
+
+        /// <summary>当前状态下的目标水平速度（厘米/秒，与 ECS MaxSpeed 同口径）。</summary>
+        public float CurrentTargetSpeed => ComputeCurrentMaxSpeed();
+
+        /// <summary>垂直速度（厘米/秒，向上为正）。</summary>
+        public float VerticalSpeed => _verticalVelocity;
 
         /// <summary>
         /// 垂直速度
@@ -161,9 +177,8 @@ namespace HundunWorld.Game
 
         /// <summary>
         /// 点击移动期间的"面向行进方向"Yaw（弧度）。
-        /// 正常移动时 LookYaw 取自相机（第三人称轨道视角）；自动寻路时若沿用相机朝向，
-        /// 角色会侧身平移。这里改为指向当前路径点，相机侧由 ThirdPersonCamera.UpdateAutoAlign
-        /// 在角色移动且停止手动转视角后自动跟到角色背后（Yaw = 360 − 角色Yaw），两者不冲突。
+        /// 正常移动由角色自身朝向决定行进参考系，右键转向才采用相机朝向；
+        /// 自动寻路始终面向当前路径点，不反写相机轨道角。
         /// </summary>
         private float _clickToMoveLookYaw;
 
@@ -411,6 +426,25 @@ namespace HundunWorld.Game
         /// </summary>
         public ThirdPersonCamera Camera { get; set; }
 
+        /// <summary>
+        /// 调试：非 NaN 时把视角 Yaw（度）替换成该值。用于自动化验证
+        /// 「转视角 → 角色转向 → 原地转向」整条链；NaN = 关闭，生产路径不受影响。
+        /// </summary>
+        public float DebugLookYawDegrees { get; set; } = float.NaN;
+
+        /// <summary>
+        /// 调试：> 0 时把移动输入替换为"向前"（0..1）。用于自动化验证
+        /// 「输入 → 预测位置 → LocomotionGraphDriver → 动画参数」整条真实链；0 = 关闭。
+        /// </summary>
+        public float DebugMoveForward { get; set; } = 0f;
+
+        /// <summary>
+        /// 调试：为 true 时把跳跃按下位当成"已按下"。用于自动化验证
+        /// 「跳跃输入 → 预测垂直位移 → LocomotionGraphDriver 空中层」整条真实链；false = 关闭。
+        /// 持续为 true 也只触发一次（边沿语义由 _prevJumpPressed 保证）。
+        /// </summary>
+        public bool DebugJump { get; set; }
+
         #endregion
 
         #region 生命周期方法
@@ -421,21 +455,28 @@ namespace HundunWorld.Game
             _inputManager = Actor.Parent?.GetScript<InputManager>();
             _qinggongSystem = Actor.Parent?.GetScript<global::Game.Character.Movement.QinggongSystem>();
 
-            // 初始化目标选择系统
-            _targetSelectionSystem = Scene.FindScript<Combat.TargetSelectionSystem>();
-            if (_targetSelectionSystem == null)
+            // 初始化目标选择系统 + 世界对象选中服务。
+            // 两者都挂在玩家 Actor 上：它们用 Actor.Position 做距离判定，
+            // 原先挂在独立 EmptyActor 上时距离是按世界原点算的（MaxSelectDistance 因此形同虚设）。
+            // 必须挡远程实例：远程 Actor 上的 PlayerController 只是被禁用（Enabled=false），
+            // 不判本地就把选中服务挂到每个远程角色上，会出现多个 Instance 抢左键。
+            var selectionHost = Actor.GetScript<RemotePlayerActor>() == null ? Actor : null;
+
+            if (selectionHost != null)
             {
-                // 如果场景中没有，则添加一个
-                var targetSystemActor = Scene.FindActor("TargetSelectionSystem");
-                if (targetSystemActor == null)
+                _targetSelectionSystem = Scene.FindScript<Combat.TargetSelectionSystem>();
+                if (_targetSelectionSystem == null)
                 {
-                    targetSystemActor = new EmptyActor { Name = "TargetSelectionSystem" };
-                    Level.SpawnActor(targetSystemActor);
+                    _targetSelectionSystem = selectionHost.GetScript<Combat.TargetSelectionSystem>();
+                    if (_targetSelectionSystem == null)
+                        _targetSelectionSystem = selectionHost.AddScript<Combat.TargetSelectionSystem>();
                 }
-                _targetSelectionSystem = targetSystemActor.AddScript<Combat.TargetSelectionSystem>();
-                _targetSelectionSystem.MaxSelectDistance = 50f;
-                _targetSelectionSystem.ShowSelectionBox = true;
-                Debug.Log("[玩家控制器] 已创建目标选择系统");
+
+                if (HundunWorld.Game.Selection.WorldSelectionService.Instance == null)
+                {
+                    selectionHost.AddScript<HundunWorld.Game.Selection.WorldSelectionService>();
+                    Debug.Log("[玩家控制器] 已创建世界对象选中服务（左键点选 / Shift+Tab 循环 / 点空地取消）");
+                }
             }
 
             // 初始化角色控制器
@@ -463,7 +504,9 @@ namespace HundunWorld.Game
             var animatedModel = Actor.GetChild<AnimatedModel>();
             if (animatedModel == null)
             {
-                Debug.LogWarning("[PlayerController] 未找到 AnimatedModel 子 Actor，动画参数初始化跳过");
+                // 不是故障：角色 prefab 是占位胶囊，身体模型由 HundunWorldGame.EnsureBodyModel 在
+                // spawn 之后补挂，这里必然先扑一次；Update 里有 0.5s 限频重试会接上。
+                Debug.Log("[PlayerController] AnimatedModel 尚未就绪，动画参数初始化本轮跳过（由限频重试接管）");
                 return false;
             }
 
@@ -673,8 +716,13 @@ namespace HundunWorld.Game
             try
             {
                 ref var input = ref archWorld.Get<PlayerInputComponent>(_localPlayerEntity);
-                input.MoveX = _moveDirection.X;
-                input.MoveY = _moveDirection.Z;
+                // 控制状态（眩晕/定身）：本地就知道"这一帧动不了"，于是**不产生移动输入**。
+                // 服务端本来就会把这些帧抹掉（它会拒/清零），但只靠服务端的话玩家会先看到自己滑出去一段再被拉回——
+                // 客户端预测与权威对齐的唯一办法是这里也认同一位（来源：LocalPlayerActorSyncSystem 从快照位镜像进来）。
+                var movementLocked = LocalPlayerMovementLocked(archWorld);
+                // 调试注入：DebugMoveForward>0 时用"向前"覆盖输入（生产恒为 0）。走真实预测/服务端链路。
+                input.MoveX = movementLocked ? 0f : DebugMoveForward > 0f ? 0f : _moveDirection.X;
+                input.MoveY = movementLocked ? 0f : DebugMoveForward > 0f ? Mathf.Saturate(DebugMoveForward) : _moveDirection.Z;
 
                 // 获取视角朝向（含 Camera 缺失降级逻辑）；点击移动时改为面向行进方向
                 TryGetLookYawPitch(out float lookYaw, out float lookPitch);
@@ -682,6 +730,7 @@ namespace HundunWorld.Game
                 input.LookPitch = lookPitch;
 
                 byte inputBits = _inputManager != null ? _inputManager.GetCurrentInputBits() : (byte)0;
+                if (movementLocked) inputBits = 0;   // 定身/眩晕期间连跳与轻功也不许（与服务端抹掉的那两位一致）
                 if (_qinggongSystem != null)
                 {
                     inputBits |= (byte)_qinggongSystem.GetQinggongInputBits();
@@ -694,7 +743,7 @@ namespace HundunWorld.Game
                 //   保留 bit0=1 并设置 JumpPressedThisFrame=true；下一帧即使持续按住也清除 bit0=0。
                 // LocalSimulationSystem 已改用 input.JumpPressedThisFrame 推断跳跃，
                 // 但 InputBits bit0 仍需保持边沿语义以兼容服务端原逻辑（服务端无需改动）。
-                bool jumpPressedRaw = (inputBits & 0x1) != 0;
+                bool jumpPressedRaw = (inputBits & 0x1) != 0 || DebugJump;
                 bool jumpPressedThisFrame = jumpPressedRaw && !_prevJumpPressed;
                 if (!jumpPressedThisFrame)
                 {
@@ -727,6 +776,22 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
+        /// 本地玩家此刻是否被控制状态封住了腿（眩晕/定身）。
+        /// <para>只问 <see cref="ControlStateManager"/> 这一份（权威位由 <c>LocalPlayerActorSyncSystem</c> 镜像进来）；
+        /// 不在这里直接读 <c>EntityStateAuthComponent</c>——那会变成两个写/读口，心跳之间各自过期的时间点也会不同。</para>
+        /// </summary>
+        private bool LocalPlayerMovementLocked(World world)
+        {
+            if (!_localPlayerEntityFound || world == null || !world.IsAlive(_localPlayerEntity)) return false;
+            if (!world.Has<NetworkIdentityComponent>(_localPlayerEntity)) return false;
+            var characterId = world.Get<NetworkIdentityComponent>(_localPlayerEntity).EntityId;
+            if (characterId == 0UL) return false;
+            var control = ControlStateManager.Instance;
+            return control.HasControlState(characterId, ControlState.Stunned)
+                || control.HasControlState(characterId, ControlState.Rooted);
+        }
+
+        /// <summary>
         /// 尝试获取视角朝向（Yaw/Pitch，弧度）。
         /// 优先使用已配置的 <see cref="Camera"/>；若未配置则尝试自动查找主相机并缓存；
         /// 若仍找不到则降级使用 <see cref="Actor.Orientation"/> 的 Yaw，避免 LookYaw 永远为 0
@@ -736,29 +801,33 @@ namespace HundunWorld.Game
         /// <param name="pitch">输出的俯仰视角（弧度）</param>
         private void TryGetLookYawPitch(out float yaw, out float pitch)
         {
-            if (Camera != null)
+            // 调试钩子：把"视角 Yaw"替换成固定值，用于自动化验证「转视角→角色转向→原地转向」
+            // 整条链（MCP 改 Actor/Camera 变换会被预测/相机控制每帧覆盖，没法从外面注入）。
+            // NaN = 关闭，生产路径不受影响。
+            if (!float.IsNaN(DebugLookYawDegrees) && Mathf.Abs(DebugLookYawDegrees) <= 360f)
             {
-                yaw = Camera.Yaw * Mathf.DegreesToRadians;
-                pitch = Camera.Pitch * Mathf.DegreesToRadians;
+                yaw = DebugLookYawDegrees * Mathf.DegreesToRadians;
+                pitch = 30f * Mathf.DegreesToRadians;
                 return;
             }
 
-            // Camera 未配置，尝试自动查找主相机上的 ThirdPersonCamera
-            var mainCamera = FlaxEngine.Camera.MainCamera?.GetScript<ThirdPersonCamera>();
-            if (mainCamera == null)
+            if (Camera == null)
             {
-                // MainCamera 上无 ThirdPersonCamera，全局查找（场景中可能挂在其他 Actor 上）。
-                // 与 WorldSceneInitializer.SetupCameraTarget 的查找逻辑一致，作为防御性兜底。
-                var allCameras = Level.GetScripts<ThirdPersonCamera>();
-                if (allCameras != null && allCameras.Length > 0)
+                var mainCamera = FlaxEngine.Camera.MainCamera?.GetScript<ThirdPersonCamera>();
+                if (mainCamera == null)
                 {
-                    mainCamera = allCameras[0];
+                    var allCameras = Level.GetScripts<ThirdPersonCamera>();
+                    if (allCameras != null && allCameras.Length > 0)
+                        mainCamera = allCameras[0];
                 }
+                Camera = mainCamera;
             }
-            if (mainCamera != null)
+
+            if (Camera != null)
             {
-                Camera = mainCamera; // 缓存以避免下次再查找
-                yaw = Camera.Yaw * Mathf.DegreesToRadians;
+                yaw = Camera.IsRightMouseSteering
+                    ? ThirdPersonCamera.CameraYawToCharacterYawRadians(Camera.Yaw)
+                    : Actor.Orientation.EulerAngles.Y * Mathf.DegreesToRadians;
                 pitch = Camera.Pitch * Mathf.DegreesToRadians;
                 return;
             }
@@ -788,6 +857,11 @@ namespace HundunWorld.Game
 
             float moveX = _moveDirection.X;
             float moveY = _moveDirection.Z;
+            if (DebugMoveForward > 0f)
+            {
+                moveX = 0f;
+                moveY = Mathf.Saturate(DebugMoveForward);
+            }
 
             // 获取视角朝向（含 Camera 缺失降级逻辑）
             TryGetLookYawPitch(out float lookYaw, out float lookPitch);
@@ -883,6 +957,11 @@ namespace HundunWorld.Game
         /// <returns>输入方向向量</returns>
         private Vector3 GetInputDirection()
         {
+            // 键盘操控归 UI（整屏页/模态弹层/正在打字）时方向输入直接归零：
+            // 站在菜单后面还继续往前走，等于没有暂停。
+            if (UIMouseCapture.KeyboardCaptured)
+                return Vector3.Zero;
+
             Vector3 inputDirection = Vector3.Zero;
 
             // 使用输入管理器处理方向键移动
@@ -910,6 +989,9 @@ namespace HundunWorld.Game
                     inputDirection += Vector3.Right;
             }
 
+            if (Camera != null && Camera.IsMouseMoveForwardGesture && Mathf.Abs(inputDirection.Z) < 0.001f)
+                inputDirection += Vector3.Forward;
+
             // 归一化输入方向
             if (inputDirection.LengthSquared > 0.001f)
             {
@@ -920,16 +1002,16 @@ namespace HundunWorld.Game
                     Vector2 cameraInput = new Vector2(inputDirection.X, inputDirection.Z);
                     inputDirection = Camera.GetCameraRelativeMoveDirection(cameraInput);
                 }
-                else if (Camera != null)
+                else
                 {
-                    Vector3 cameraRight = Camera.Actor.Transform.Right;
-                    Vector3 cameraForward = Camera.Actor.Transform.Forward;
-                    cameraRight.Y = 0;
-                    cameraForward.Y = 0;
-                    cameraRight.Normalize();
-                    cameraForward.Normalize();
+                    Vector3 characterRight = Actor.Transform.Right;
+                    Vector3 characterForward = Actor.Transform.Forward;
+                    characterRight.Y = 0;
+                    characterForward.Y = 0;
+                    characterRight.Normalize();
+                    characterForward.Normalize();
 
-                    inputDirection = inputDirection.X * cameraRight + inputDirection.Z * cameraForward;
+                    inputDirection = inputDirection.X * characterRight + inputDirection.Z * characterForward;
                 }
 
                 _lastInputTime = Time.GameTime;
@@ -1095,6 +1177,9 @@ namespace HundunWorld.Game
         {
             if (Actor == null) return;
             if (!Input.GetMouseButtonDown(MouseButton.Left)) return;
+
+            // 光标落在 UI 上（按钮/输入框/技能格等）时不驱动世界：鼠标事件归界面。
+            if (UIMouseCapture.Captured) return;
 
             // 分级日志：三个环节任一失败都能立刻分辨（无日志=OnUpdate 被 EnableInput 挡住或代码未编译进去）
             bool altDown = Input.GetKey(KeyboardKeys.Alt);
@@ -1581,10 +1666,22 @@ namespace HundunWorld.Game
 
             Ray ray = mainCamera.ConvertMouseToRay(screenPosition);
 
-            if (Physics.RayCast(ray.Position, ray.Direction, out var hitInfo, ClickToMoveRayDistance, LayersMask.Default, false))
+            // 跳过"可选中实体"身上的碰撞体：CharacterRoot 的 BodyCollider 只服务点选，不是地面。
+            // 本工程没有地面碰撞体，加过滤前这里是落到下面的"与角色脚底水平面求交"分支；
+            // 不加过滤就会变成"目的地=怪物体表"，Alt+左键的既有手感会变。
+            if (Physics.RayCastAll(ray.Position, ray.Direction, out var groundHits, ClickToMoveRayDistance, LayersMask.Default, false))
             {
-                hitPoint = hitInfo.Point;
-                return true;
+                System.Array.Sort(groundHits, (a, b) => a.Distance.CompareTo(b.Distance));
+
+                for (var i = 0; i < groundHits.Length; i++)
+                {
+                    var owner = groundHits[i].Collider != null ? groundHits[i].Collider.Parent : null;
+                    if (HundunWorld.Game.Selection.WorldSelectionService.IsPartOfSelectable(owner))
+                        continue;
+
+                    hitPoint = groundHits[i].Point;
+                    return true;
+                }
             }
 
             if (Actor == null || Mathf.Abs(ray.Direction.Y) < 0.0001f) return false;
@@ -1625,6 +1722,31 @@ namespace HundunWorld.Game
         public Vector3 GetPosition()
         {
             return Actor.Position;
+        }
+
+        /// <summary>
+        /// 由 UI（世界地图）发起的点击移动。
+        /// <para>
+        /// 地图只能给出 XZ，所以高度先取玩家当前高度；导航网格可用时吸附到最近的多边形。
+        /// 之后的寻路/跟随与 Alt+左键完全共用 <see cref="BeginMoveTo"/>：
+        /// 目的地标记与面包屑也由它统一登记，地图上看到的路径就是角色会走的路。
+        /// </para>
+        /// </summary>
+        /// <returns>是否已接受（没有角色脚本时返回 false）。</returns>
+        public bool TryStartClickToMove(Vector3 worldTarget)
+        {
+            if (Actor == null) return false;
+
+            worldTarget.Y = Actor.Position.Y;
+
+            if (NarrativePro.Navigation.NavigatorStatics.IsNavigationReady()
+                && NarrativePro.Navigation.NavigatorStatics.TryFindClosestPoint(worldTarget, out var snapped))
+            {
+                worldTarget = snapped;
+            }
+
+            BeginMoveTo(worldTarget);
+            return true;
         }
 
         /// <summary>

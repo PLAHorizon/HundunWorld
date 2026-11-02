@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
@@ -42,7 +42,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private const string ProgressLabelText = "正在踏入江湖";
 
         /// <summary>右下角版本号</summary>
-        private const string VersionLabelText = "VER 1.0.0 · CN";
+        private const string VersionLabelText = "VER 1.2.0 · CN";
 
         /// <summary>江湖提示轮播文案（对应设计稿脚本中的 tips 数组，按进度分段切换）</summary>
         private static readonly string[] LoadingTips =
@@ -355,7 +355,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private const string ProgressLabelText = "正在凝聚内力";
 
         /// <summary>右下角版本号</summary>
-        private const string VersionLabelText = "VER 1.0.0 · CN";
+        private const string VersionLabelText = "VER 1.2.0 · CN";
 
         /// <summary>底部「点击继续」提示文案</summary>
         private const string ContinueHintLabel = "点击继续";

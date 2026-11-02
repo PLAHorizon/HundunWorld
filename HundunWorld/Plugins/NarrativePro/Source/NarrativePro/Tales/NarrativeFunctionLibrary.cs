@@ -51,15 +51,14 @@ namespace NarrativePro.Tales
         }
 
         /// <summary>
-        /// 按名称获取数据任务。Flax 中通过 NarrativeDataLoader 从 JSON 加载 NarrativeDataTask。
+        /// 按名称获取数据任务。对应 UE5 <c>GetTaskByName</c>（NarrativeFunctionLibrary.cpp:84-95）：
+        /// UE5 经 GameInstance 取 <c>UNarrativeTaskManager</c> 子系统再 GetTask；
+        /// Flax 中对应静态注册表 <see cref="NarrativeTaskManager"/>，资产只扫描一次后走缓存，不再逐次读盘。
         /// </summary>
         public static NarrativeDataTask GetTaskByName(object worldContextObject, string eventName)
         {
             if (string.IsNullOrEmpty(eventName)) return null;
-            var settings = NarrativeProPlugin.Instance?.NarrativeSettings;
-            string dir = settings?.DefaultDataTaskDirectory ?? "Content/NarrativePro/DataTasks";
-            string path = System.IO.Path.Combine(dir, eventName + ".json");
-            return NarrativePro.Data.NarrativeDataLoader.LoadDataTask(path);
+            return NarrativeTaskManager.GetTask(eventName);
         }
 
         /// <summary>
@@ -88,6 +87,84 @@ namespace NarrativePro.Tales
                 }
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// 替换输入变量占位。对应 UE5 <c>UArsenalStatics::ReplaceInputVariables</c>（ArsenalStatics.cpp:357-400）：
+        /// <c>{Input.Attack}</c> 这类占位会被替换成按当前输入设备定制的富文本标签
+        /// <c>&lt;img id="Input.Xbox.Attack"/&gt;</c>，其它占位原样保留交给后续变量替换。
+        /// </summary>
+        /// <param name="controller">玩家控制器（NarrativePlayerController 或承载它的 Actor）。</param>
+        /// <param name="textToReplace">待替换文本。</param>
+        public static string ReplaceInputVariables(object controller, string textToReplace)
+        {
+            if (string.IsNullOrEmpty(textToReplace)) return textToReplace;
+
+            string inputDeviceName = GetNarrativeInputDeviceName(controller);
+            if (string.IsNullOrEmpty(inputDeviceName)) return textToReplace;
+
+            string lineString = textToReplace;
+
+            int iterations = 0;
+            while (iterations < 50) // 超过 50 个通配替换多半是数据写错了，做保护
+            {
+                int openBrace = lineString.IndexOf('{');
+                int closeBrace = lineString.IndexOf('}');
+
+                if (openBrace < 0 || closeBrace < 0 || openBrace >= closeBrace) break;
+
+                string variableName = lineString.Substring(openBrace + 1, closeBrace - openBrace - 1);
+
+                int dotIndex = variableName.IndexOf('.');
+                if (dotIndex <= 0)
+                {
+                    // 非 Input.xxx 占位：留给 Dialogue 自己的变量替换处理，避免死循环
+                    break;
+                }
+
+                string left = variableName.Substring(0, dotIndex);
+                string right = variableName.Substring(dotIndex + 1);
+
+                if (!string.Equals(left, "Input", StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                string variableValue = string.Format("<img id=\"Input.{0}.{1}\"/>", inputDeviceName, right);
+
+                lineString = lineString.Remove(openBrace, closeBrace - openBrace + 1);
+                lineString = lineString.Insert(openBrace, variableValue);
+
+                iterations++;
+            }
+
+            return lineString;
+        }
+
+        /// <summary>
+        /// 取当前输入设备名（用于输入图标富文本）。对应 UE5
+        /// <c>ANarrativePlayerController::GetNarrativeInputDeviceName</c>。
+        /// </summary>
+        public static string GetNarrativeInputDeviceName(object controller)
+        {
+            if (controller is UnrealFramework.NarrativePlayerController playerController)
+            {
+                string name = playerController.GetNarrativeInputDeviceName();
+                if (!string.IsNullOrEmpty(name)) return name;
+            }
+
+            if (controller is Actor controllerActor)
+            {
+                var pc = controllerActor.GetScript<UnrealFramework.NarrativePlayerController>();
+                if (pc != null)
+                {
+                    string name = pc.GetNarrativeInputDeviceName();
+                    if (!string.IsNullOrEmpty(name)) return name;
+                }
+            }
+
+            // Flax 没有 EnrichedInput 的设备快照，按是否有手柄在线判断
+            return Input.GamepadsCount > 0 ? "Gamepad" : "Keyboard";
         }
 
         // ===== 对话节点选择器工厂 =====

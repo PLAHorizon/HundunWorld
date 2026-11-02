@@ -82,7 +82,16 @@ namespace HundunAgent.Core
 
             Tools.SceneActorTools.Register();
             Tools.MaterialAssetTools.Register();
+            Tools.MaterialGraphBuildTool.Register();
+            Tools.MaterialGraphDumpTool.Register();
+            Tools.AnimationPlaybackProbe.Register();
+            Tools.ActorBoneProbe.Register();
+            Tools.TextureStatsTool.Register();
+            Tools.BlendShapeProbe.Register();
+            Tools.ModelBoxProbeTool.Register();
             Tools.AssetIntrospectTools.Register();
+            Tools.ModelPreviewTools.Register();
+            Tools.ModelMaterialSlotTools.Register();
             Tools.AssetForensicsTools.Register();
             Tools.ViewportEnvTools.Register();
             Tools.CodeTools.Register();
@@ -91,9 +100,13 @@ namespace HundunAgent.Core
             Tools.UiPrefabTools.Register();
             Tools.UiDesignAuditTools.Register();
             Tools.SimulationTools.Register();
+            Tools.UiInputTools.Register();
             Tools.LogTools.Register();
             Tools.LevelDesignTools.Register();
             Tools.DevWorkflowTools.Register();
+            Tools.PCGTools.Register();
+            Tools.MetaHumanTools.Register();
+            Tools.ModelSkinProbeTool.Register();
 
             IsInitialized = true;
             FlaxEngine.Debug.Log("[HundunAgent] 工具注册完成，共 " + _tools.Count + " 个工具");
@@ -131,12 +144,24 @@ namespace HundunAgent.Core
             catch (Exception ex)
             {
                 var ms = (DateTime.Now - started).TotalMilliseconds;
+                // 只回 ex.Message 时，任何一次工具失败都长得一样（"未将对象引用设置到实例"），
+                // 定位不到是哪一行、哪个字段为空。这里把异常类型、栈前若干行与内层异常一起带出来，
+                // 判定交给调用方——读栈比读一句话可靠得多。
+                string stack = ex.StackTrace ?? string.Empty;
+                if (stack.Length > 1400)
+                    stack = stack.Substring(0, 1400);
+                string inner = ex.InnerException == null
+                    ? null
+                    : ex.InnerException.GetType().Name + ": " + ex.InnerException.Message;
                 AgentAuditLog.Write(toolName, arguments, false, ex.Message, ms);
-                FlaxEngine.Debug.LogError("[HundunAgent] 工具 " + toolName + " 执行失败: " + ex.Message);
+                FlaxEngine.Debug.LogError("[HundunAgent] 工具 " + toolName + " 执行失败: " + ex.Message + "\n" + stack);
                 return new Dictionary<string, object>
                 {
                     { "success", false },
-                    { "error", ex.Message }
+                    { "error", ex.Message },
+                    { "errorType", ex.GetType().Name },
+                    { "errorStack", stack },
+                    { "errorInner", inner }
                 };
             }
         }

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- 客户端可见的共享世界坐标契约：分块换算 + Morton 编码，无 Orleans / 无 AOI 订阅算法 -->
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+
+  <!-- 与 Horizon.Game.World.csproj 同款分发：复制到 Flax 引擎托管工具目录，
+       供 MMORPG 客户端（Game.Build.cs 的 dlls[]）编译期/运行期解析。 -->
+  <PropertyGroup>
+    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.13\Binaries\Tools</FlaxToolsDir>
+    <CopyToFlax Condition="'$(CopyToFlax)' == ''">true</CopyToFlax>
+  </PropertyGroup>
+
+  <Target Name="CopyToFlax" AfterTargets="Build"
+          Condition="'$(CopyToFlax)' == 'true' And Exists('$(FlaxToolsDir)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+          Condition="Exists('$(TargetDir)$(TargetName).pdb')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Message Importance="high" Text="[CopyToFlax] $(TargetFileName) -&gt; $(FlaxToolsDir)" />
+  </Target>
+
+</Project>

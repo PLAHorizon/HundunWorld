@@ -3,11 +3,12 @@ using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Personal
 {
-    public class MenuPersonalInfoPage : ContainerControl, IInkPage
+    public class MenuPersonalInfoPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         /// <summary>
         /// 标准导航事件（对齐 Ink 页面契约，由工厂 HookNavigationRequested 挂钩后经路由器跳转）。
@@ -33,6 +34,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
         private InkVerticalTitle _verticalName;
         private Label[] _infoLabels;
         private InkPanel _titlePanel;
+        private InkPanel[] _statCards;
+        private InkDivider _infoDivider1;
+        private Label _basicTitle;
+        private InkDivider _infoDivider2;
+        private Label _titlesTitle;
         private Label[] _titleLabels;
 
         private InkPanel _rightSection;
@@ -46,12 +52,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
         private InkBar _achievementBar;
 
         private string[] _basicInfoLabels = { "等级", "门派", "性别", "创建日期" };
-        private string[] _basicInfoValues = { "42", "逍遥派", "男", "2025-01-15" };
-        private string[] _titles = { "剑客初成", "逍遥弟子", "江湖新秀" };
+        private string[] _basicInfoValues = { "—", "—", "—", "—" };
+        private string[] _titles = { "暂无称号" };
 
         private string[] _statCategories = { "游戏时长", "击败敌人", "完成任务", "探索区域", "收集物品", "PVP胜场" };
-        private string[] _statValues = { "128", "3,420", "186", "23", "567", "89" };
-        private string[] _statUnits = { "小时", "", "", "/ 50", "", "" };
+        private string[] _statValues = { "—", "—", "—", "—", "—", "—" };
+        private string[] _statUnits = { "", "", "", "", "", "" };
+
+        // 真实身份（构建控件前算好：Build* 直接读数组取文本）
+        private string _realNick = "—";
+        private string _realSect = "—";
 
         public MenuPersonalInfoPage()
         {
@@ -68,6 +78,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
             Location = Float2.Zero;
             Size = _screenSize;
 
+            // 身份/基本信息先按真实数据填好，再建控件（Build* 阶段直接从数组取文本）
+            PrepareRealData();
+
             try
             {
                 BuildLeftNav();
@@ -77,11 +90,37 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
 
                 ApplyLayout();
                 RefreshAllData();
+
+                // 顶栏身份接真实数据
+                InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelLabel);
+                if (_verticalName != null) _verticalName.Text = _realNick;
+                if (_sectLabel != null) _sectLabel.Text = _realSect;
             }
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[MenuPersonalInfoPage] 初始化失败: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 用真实角色数据准备身份与基本信息：等级取属性组件、门派取当前角色职业，
+        /// 性别/创建日期与全部统计没有数据源，统一显示「—」；称号列表改为空态，
+        /// 不再摆设计稿的假称号（2026-10-29）。
+        /// </summary>
+        private void PrepareRealData()
+        {
+            var local = HundunWorldGame.Instance?.LocalPlayerActor;
+            var attrs = local?.GetScript<global::Game.Character.Attributes.CharacterAttributesComponent>();
+
+            _realNick = attrs != null && !string.IsNullOrWhiteSpace(attrs.Nickname) ? attrs.Nickname : "—";
+
+            var role = global::Game.UI.Character.CharacterManager.Instance?.SelectedCharacter;
+            string sect = global::HundunWorld.Game.UI.Ink.Pages.CharacterCreation.CcSectNames.Get(
+                role?.Profession ?? Horizon.Game.Message.Enums.Profession.None);
+            _realSect = string.IsNullOrEmpty(sect) ? "无门派" : sect;
+
+            string levelText = attrs != null && attrs.Level > 0 ? "Lv. " + attrs.Level : "—";
+            _basicInfoValues = new[] { levelText, _realSect, "—", "—" };
         }
 
         private void BuildLeftNav()
@@ -203,7 +242,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                 Parent = _topBar
             };
             // 返回战斗 HUD（设计隐藏出口 back-hud）
-            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
 
             _playerAvatar = new ContainerControl
             {
@@ -224,7 +263,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
 
             _playerNameLabel = new Label
             {
-                Text = "无名侠",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 TextColor = InkWashTheme.PaperBright,
                 Parent = _topBar
@@ -232,7 +271,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
 
             _playerLevelLabel = new Label
             {
-                Text = "Lv.42",
+                // 初值留空位，真实等级由 InkPlayerHeaderBinder 覆盖
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.VermilionBright,
                 Parent = _topBar
@@ -240,7 +280,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
 
             _sectLabel = new Label
             {
-                Text = "逍遥派",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _topBar
@@ -248,7 +288,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
 
             _currencyCoinLabel = new Label
             {
-                Text = "12,450",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _topBar
@@ -256,7 +296,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
 
             _currencyIngotLabel = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.JadeBright,
                 Parent = _topBar
@@ -309,31 +349,38 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                // 头像圈固定 80×80：StretchAll 在这里不会跟着父尺寸走（实测停 180×100），
+                // 居中后字的一半落在圈外，被裁成「= / -」两笔。直接给死尺寸。
+                Location = Float2.Zero,
+                Size = new Float2(80f, 80f),
                 Parent = _characterAvatar
             };
 
             _verticalName = new InkVerticalTitle
             {
-                Text = "无名侠",
+                Text = "—",
                 FontSize = 28f,
                 Width = 30f,
                 Height = 120f,
                 Parent = _leftInfoPanel
             };
 
-            var divider1 = new InkDivider
+            // 下面四件（两条分隔线 + 两个小节标题）原来是局部变量且从未定位，
+            // 全部叠在面板 (0,0)：画面上表现为标题压在卡片上边框、多出两条短线。
+            _infoDivider1 = new InkDivider
             {
-                Width = 200f,
                 Height = 1f,
                 Parent = _leftInfoPanel
             };
 
-            var basicTitle = new Label
+            _basicTitle = new Label
             {
                 Text = "基本信息",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(200f, 20f),
                 Parent = _leftInfoPanel
             };
 
@@ -357,18 +404,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                 };
             }
 
-            var divider2 = new InkDivider
+            _infoDivider2 = new InkDivider
             {
-                Width = 200f,
                 Height = 1f,
                 Parent = _leftInfoPanel
             };
 
-            var titleTitle = new Label
+            _titlesTitle = new Label
             {
                 Text = "已获称号",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Size = new Float2(200f, 20f),
                 Parent = _leftInfoPanel
             };
 
@@ -436,6 +485,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
             };
 
             _statLabels = new Label[_statCategories.Length * 3];
+            _statCards = new InkPanel[_statCategories.Length];
             for (int i = 0; i < _statCategories.Length; i++)
             {
                 var statCard = new InkPanel
@@ -443,6 +493,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                     BackgroundColor = InkWashTheme.BaseTertiary,
                     Parent = _statsGrid
                 };
+                _statCards[i] = statCard;
 
                 var categoryLabel = new Label
                 {
@@ -490,7 +541,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
 
             _achievementValue = new Label
             {
-                Text = "145 / 320",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _achievementPanel
@@ -501,7 +552,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                 Height = 8f,
                 Parent = _achievementPanel
             };
-            _achievementBar.Value = 145f / 320f;
+            // 成就系统没有数据源：不显示假进度（条留空，数字为「—」）
+            _achievementBar.Value = 0f;
         }
 
         private void ApplyLayout()
@@ -551,23 +603,54 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
             if (_verticalName != null)
                 _verticalName.Location = new Float2(130f, 32f);
 
-            float infoY = 180f;
+            // 左卡片：头像/竖排名（32..112）→ 分隔线 → 基本信息 → 四行 → 分隔线 → 已获称号 → 称号格
+            if (_infoDivider1 != null)
+            {
+                _infoDivider1.Location = new Float2(32f, 128f);
+                _infoDivider1.Size = new Float2(leftWidth - padding * 2f, 1f);
+            }
+            if (_basicTitle != null)
+                _basicTitle.Location = new Float2(32f, 138f);
+
+            // 值列右对齐到卡片内边距：原来固定 leftWidth-104 宽 100，会伸出卡片 20px
+            float infoValueX = leftWidth - padding - 100f;
+            float infoY = 168f;
             for (int i = 0; i < _basicInfoLabels.Length; i++)
             {
                 if (_infoLabels[i * 2] != null)
+                {
                     _infoLabels[i * 2].Location = new Float2(32f, infoY);
+                    _infoLabels[i * 2].Size = new Float2(120f, 20f);
+                }
                 if (_infoLabels[i * 2 + 1] != null)
-                    _infoLabels[i * 2 + 1].Location = new Float2(leftWidth - padding - 80f, infoY);
+                {
+                    _infoLabels[i * 2 + 1].Location = new Float2(infoValueX, infoY);
+                    _infoLabels[i * 2 + 1].Size = new Float2(100f, 20f);
+                }
                 infoY += 28f;
             }
 
-            float titleX = 32f;
+            if (_infoDivider2 != null)
+            {
+                _infoDivider2.Location = new Float2(32f, infoY + 8f);
+                _infoDivider2.Size = new Float2(leftWidth - padding * 2f, 1f);
+            }
+            if (_titlesTitle != null)
+                _titlesTitle.Location = new Float2(32f, infoY + 18f);
+
+            if (_titlePanel != null)
+            {
+                _titlePanel.Location = new Float2(32f, infoY + 48f);
+                _titlePanel.Size = new Float2(leftWidth - padding * 2f, 108f);
+            }
+
+            // 称号格的父容器是 _titlePanel，坐标要用面板内相对坐标（原来按左卡片坐标写，会偏出去）
             for (int i = 0; i < _titles.Length; i++)
             {
                 if (_titleLabels[i] != null)
                 {
-                    _titleLabels[i].Location = new Float2(titleX, 340f);
-                    titleX += 90f;
+                    _titleLabels[i].Location = new Float2(i * 90f, 8f);
+                    _titleLabels[i].Size = new Float2(80f, 20f);
                 }
             }
 
@@ -590,17 +673,27 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                 }
             }
 
-            float statGridX = 0f;
-            float statGridY = 80f;
+            // 统计宫格：原来面板 Location 在循环里被反复改（最后停在最后一行的 y），
+            // 且三行标签都没加行偏移，第二行起全叠在第一行上。
+            if (_statsGrid != null)
+            {
+                _statsGrid.Size = new Float2(rightWidth, 260f);
+                _statsGrid.Location = new Float2(0f, 80f);
+            }
+
+            float statCardW = (rightWidth - padding * 2f) / 3f;
+            float statCardH = 100f;
             for (int i = 0; i < _statCategories.Length; i++)
             {
-                float cardWidth = (rightWidth - padding * 3f) / 3f;
-                float cardHeight = 100f;
+                int col = i % 3;
+                int row = i / 3;
 
-                if (_statsGrid != null)
+                // 卡片本身也没定位过（6 张全叠在网格 (0,0) 的 100×30 上）；
+                // 三个标签的父级是卡片，坐标必须用卡片内相对坐标。
+                if (_statCards != null && i < _statCards.Length && _statCards[i] != null)
                 {
-                    _statsGrid.Size = new Float2(rightWidth, 260f);
-                    _statsGrid.Location = new Float2(0f, statGridY);
+                    _statCards[i].Location = new Float2(col * (statCardW + padding * 0.5f), row * (statCardH + 12f));
+                    _statCards[i].Size = new Float2(statCardW, statCardH);
                 }
 
                 var categoryLabel = _statLabels[i * 3];
@@ -608,34 +701,42 @@ namespace HundunWorld.Game.UI.Ink.Pages.Personal
                 var unitLabel = _statLabels[i * 3 + 2];
 
                 if (categoryLabel != null)
-                    categoryLabel.Location = new Float2(statGridX + 16f, 16f);
-                if (valueLabel != null)
-                    valueLabel.Location = new Float2(statGridX + 16f, 40f);
-                if (unitLabel != null)
-                    unitLabel.Location = new Float2(statGridX + 80f, 50f);
-
-                statGridX += cardWidth;
-                if ((i + 1) % 3 == 0)
                 {
-                    statGridX = 0f;
-                    statGridY += cardHeight;
+                    categoryLabel.Location = new Float2(16f, 16f);
+                    categoryLabel.Size = new Float2(statCardW - 32f, 20f);
+                }
+                if (valueLabel != null)
+                {
+                    valueLabel.Location = new Float2(16f, 40f);
+                    valueLabel.Size = new Float2(statCardW - 90f, 32f);
+                }
+                if (unitLabel != null)
+                {
+                    unitLabel.Location = new Float2(statCardW - 64f, 52f);
+                    unitLabel.Size = new Float2(48f, 18f);
                 }
             }
 
             if (_achievementPanel != null)
             {
                 _achievementPanel.Size = new Float2(rightWidth, 60f);
-                _achievementPanel.Location = new Float2(0f, 360f);
+                _achievementPanel.Location = new Float2(0f, 356f);
             }
 
             if (_achievementTitle != null)
-                _achievementTitle.Location = new Float2(0f, 0f);
+            {
+                _achievementTitle.Location = new Float2(16f, 12f);
+                _achievementTitle.Size = new Float2(160f, 20f);
+            }
             if (_achievementValue != null)
-                _achievementValue.Location = new Float2(rightWidth - 80f, 0f);
+            {
+                _achievementValue.Location = new Float2(rightWidth - 96f, 12f);
+                _achievementValue.Size = new Float2(80f, 20f);
+            }
             if (_achievementBar != null)
             {
-                _achievementBar.Size = new Float2(rightWidth, 8f);
-                _achievementBar.Location = new Float2(0f, 24f);
+                _achievementBar.Size = new Float2(rightWidth - 32f, 8f);
+                _achievementBar.Location = new Float2(16f, 38f);
             }
         }
 

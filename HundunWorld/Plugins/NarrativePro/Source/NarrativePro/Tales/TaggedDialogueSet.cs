@@ -68,6 +68,13 @@ namespace NarrativePro.Tales
         /// <summary>NPC 的标签对话列表。</summary>
         public List<TaggedDialogue> TaggedDialogues = new List<TaggedDialogue>();
 
+        /// <summary>
+        /// 数据侧 NPC 绑定表（Flax 扩展，口径同 <see cref="TriggerSet.AppliesToNpcIds"/>）：
+        /// NPC 定义未显式写 TaggedDialogueSetPath 时，按此反向绑定加载（对应 UE5
+        /// NPCDefinition.TaggedDialogueSet 资产引用，NarrativeNPCCharacter.cpp:392-397）。
+        /// </summary>
+        public List<string> AppliesToNpcIds = new List<string>();
+
         /// <summary>根据标签查找标签对话，找不到返回 null。</summary>
         public TaggedDialogue FindByTag(GameplayTag tag)
         {

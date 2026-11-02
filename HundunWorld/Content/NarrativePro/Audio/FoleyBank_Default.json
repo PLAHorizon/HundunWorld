@@ -1,0 +1,74 @@
+{
+  "bankName": "FoleyBank_Default",
+  "bAllowParentTagFallback": true,
+  "entries": [
+    {
+      "foleyTag": "Foley.Event.feet.Walk",
+      "sounds": [
+        {
+          "surface": "Default",
+          "clips": ["Content/Audio/Foley/footstep_default_01.wav"]
+        },
+        {
+          "surface": "Grass",
+          "clips": [
+            "Content/Audio/Foley/footstep_grass_01.wav",
+            "Content/Audio/Foley/footstep_grass_02.wav"
+          ]
+        },
+        {
+          "surface": "Stone",
+          "clips": ["Content/Audio/Foley/footstep_stone_01.wav"]
+        },
+        {
+          "surface": "Wood",
+          "clips": ["Content/Audio/Foley/footstep_wood_01.wav"]
+        }
+      ]
+    },
+    {
+      "foleyTag": "Foley.Event.feet.Run",
+      "sounds": [
+        {
+          "surface": "Default",
+          "clips": ["Content/Audio/Foley/footrun_default_01.wav"]
+        },
+        {
+          "surface": "Grass",
+          "clips": ["Content/Audio/Foley/footrun_grass_01.wav"]
+        },
+        {
+          "surface": "Gravel",
+          "clips": ["Content/Audio/Foley/footrun_gravel_01.wav"]
+        },
+        {
+          "surface": "Snow",
+          "clips": ["Content/Audio/Foley/footrun_snow_01.wav"]
+        }
+      ]
+    },
+    {
+      "foleyTag": "Foley.Event.impact.Weapon",
+      "sounds": [
+        {
+          "surface": "Metal",
+          "clips": ["Content/Audio/Foley/impact_metal_01.wav"]
+        },
+        {
+          "surface": "Stone",
+          "clips": ["Content/Audio/Foley/impact_stone_01.wav"]
+        },
+        {
+          "surface": "Wood",
+          "clips": ["Content/Audio/Foley/impact_wood_01.wav"]
+        }
+      ],
+      "effects": [
+        {
+          "surface": "Default",
+          "clips": ["Content/Particles/Foley/impact_sparks.fx"]
+        }
+      ]
+    }
+  ]
+}

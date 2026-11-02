@@ -55,4 +55,10 @@
     <Folder Include="Common\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 测试要直接断言"敌对 NPC 的名字/等级回退"，那两个解析是内部静态函数。
+         只对测试程序集开放，不扩大公共面。 -->
+    <InternalsVisibleTo Include="Horizon.Game.Gateway.Tests" />
+  </ItemGroup>
+
 </Project>

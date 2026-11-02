@@ -58,6 +58,10 @@ namespace HundunWorld.Game.Services
         public class AppearanceData
         {
             public int BodyEquipmentId { get; set; }
+
+            /// <summary>当前穿戴的外观装备 ID（0 = 未穿外观）；与战斗装备独立。</summary>
+            public int AppearanceEquipmentId { get; set; }
+
             public List<int> AccessoryIds { get; set; } = new List<int>();
             public List<int> WeaponIds { get; set; } = new List<int>();
 
@@ -70,6 +74,7 @@ namespace HundunWorld.Game.Services
             public static AppearanceData GetDefaultAppearance() => new AppearanceData
             {
                 BodyEquipmentId = 10001,
+                AppearanceEquipmentId = 0,
                 AccessoryIds = new List<int> { 30001 },
                 WeaponIds = new List<int> { 20001 },
                 EquippedItems = new Dictionary<EquipmentSlot, int>
@@ -558,6 +563,27 @@ namespace HundunWorld.Game.Services
         /// <summary>置位"新手宝石已补发"标记。</summary>
         public Task<bool> MarkStarterGemsGrantedAsync(ulong characterId)
             => UpdateCharacterAttributeAsync(characterId, StarterGemsGrantedAttributeKey, "1");
+
+        public const string StarterAppearanceGrantedAttributeKey = "StarterAppearanceGranted";
+
+        public async Task<bool> IsStarterAppearanceGrantedAsync(ulong characterId)
+        {
+            try
+            {
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+                if (characterData?.Attributes == null) return false;
+                return characterData.Attributes.TryGetValue(StarterAppearanceGrantedAttributeKey, out var raw)
+                       && raw?.ToString() == "1";
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[CharacterPersistence] 读取外观补发标记失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        public Task<bool> MarkStarterAppearanceGrantedAsync(ulong characterId)
+            => UpdateCharacterAttributeAsync(characterId, StarterAppearanceGrantedAttributeKey, "1");
 
         // 属性加点不在此持久化：已上收为服务端权威（CharacterGrain → Redis + 属性表），
         // 客户端只缓存回执并经 AttributeAllocationService 灌进属性组件。

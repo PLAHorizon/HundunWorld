@@ -1,22 +1,39 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
+using System.Collections.Generic;
+using ChatChannel = Horizon.Game.Message.Network.ChatChannel;
+using ChatClient = HundunWorld.Game.Chat.ChatClient;
+using ChatLine = HundunWorld.Game.Chat.ChatLine;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Social
 {
     /// <summary>
-    /// 江湖社交面板 — 对应设计方案 social-guild.html。
-    /// 全屏布局：顶栏（江湖标题 + 好友/门派/聊天/队伍 Tab + 关闭）/
+    /// 结伴江湖（江湖社交面板）— 对应设计方案 social-guild.html。
+    /// 全屏布局：顶栏（标题 + 好友/门派/聊天/队伍 Tab + 关闭）/
     /// 左 450px（好友列表：在线/离线分组 + 门派&帮会信息卡）/
     /// 右侧（玩家信息卡 + 聊天窗口）。
+    /// 右栏聊天窗口与主界面左下聊天框同源：数据取自 <see cref="ChatClient"/>（按频道过滤，
+    /// 滚轮上滚加载更早历史），输入框为真 TextBox，发送走同一通道，两侧看到同一份消息。
     /// 严格遵循水墨主题 Token，禁止硬编码色值。
     /// </summary>
-    public class SocialGuildPage : ContainerControl, IInkPage
+    public class SocialGuildPage : ContainerControl, IInkPage, IInkNavigationSource
     {
+        /// <summary>成员列表（互斥选中需要整体复位）。</summary>
+        private readonly List<FriendItem> _memberItems = new List<FriendItem>();
+
         private const float HeaderH = 56f;
         private const float LeftW = 450f;
+
+        /// <summary>聊天消息区同步节流间隔（秒），与主界面左下聊天框一致。</summary>
+        private const float ChatSyncInterval = 0.4f;
+
+        /// <summary>聊天窗口内边距与输入行高度（RefreshLayout 显式重排用）。</summary>
+        private const float ChatTabRowH = 48f;
+        private const float ChatInputH = 44f;
 
         public event Action<string> NavigationRequested;
         public InkParticleSystem ParticleSystem { get; set; }
@@ -26,8 +43,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         private ContainerControl _headerBar;
         private ContainerControl _leftPanel;
         private ContainerControl _rightPanel;
-        private ContainerControl _chatMessages;
+        private DBox _chatBox;
+        private ChatArea _chatArea;
+        private ContainerControl _inputBar;
+        private SendBtn _sendBtn;
         private NavTab[] _navTabs;
+
+        // 聊天窗口状态（与主界面左下聊天框同一份 ChatClient 数据）
+        private readonly List<ChannelTab> _channelTabs = new();
+        private TextBox _chatInput;
+        private Control _whisperExitBtn;
+        private ChatChannel? _chatFilter;
+        private ulong _whisperTargetId;
+        private string _whisperTargetName;
+        private float _chatSyncTimer;
+        private float _chatHistoryLoadingAt = -1f;
+        private bool _chatHistoryLoading;
+        private int _lastRowCount = -1;
+        private long _lastRowMessageId = -1;
 
         public void BindCharacter(CharacterAttributesComponent component)
         {
@@ -47,6 +80,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 BuildHeader();
                 BuildLeftPanel();
                 BuildRightPanel();
+
+                ChatClient.Instance.EnsureAttached();
+                SyncChat();
             }
             catch (Exception ex)
             {
@@ -70,14 +106,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             AddChild(_headerBar);
 
             // 标题
-            _headerBar.AddChild(MakeLabel("江湖", 24f, 0f, 90f, HeaderH,
+            _headerBar.AddChild(MakeLabel("结伴江湖", 24f, 0f, 150f, HeaderH,
                 InkWashTheme.GoldPrimary, 24f, InkWashTheme.FontRole.Display, TextAlignment.Near));
 
             // 导航 Tab：好友(active)/门派/聊天/队伍
             string[] tabTexts = { "好友", "门派", "聊天", "队伍" };
-            string[] tabDomIds = { "tab-friends", "tab-sect", "tab-chat", "tab-team" };
             _navTabs = new NavTab[tabTexts.Length];
-            float tx = 140f;
+            float tx = 200f;
             for (int i = 0; i < tabTexts.Length; i++)
             {
                 bool active = i == 0;
@@ -86,7 +121,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     Location = new Float2(tx, 0f),
                     Size = new Float2(64f, HeaderH),
                 };
-                string domId = tabDomIds[i];
                 int idx = i;
                 tab.Clicked += () =>
                 {
@@ -103,11 +137,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.MiddleRight,
                 Offsets = new Margin(0f, 32f, 12f, 32f),
             };
-            closeBtn.ButtonClicked += (b) => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            closeBtn.ButtonClicked += (b) => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
             _headerBar.AddChild(closeBtn);
 
             // 底部金边
@@ -140,7 +174,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             // --- 在线分组 ---
             float y = 56f;
-            var onlineHeader = new GroupHeader("在线", "(5)", InkWashTheme.JadeBright)
+            var onlineHeader = new GroupHeader("在线", "(0)", InkWashTheme.JadeBright)
             {
                 Location = new Float2(12f, y),
                 Size = new Float2(LeftW - 24f, 32f),
@@ -148,52 +182,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _leftPanel.AddChild(onlineHeader);
             y += 36f;
 
-            // 在线好友（5人）
-            AddFriend(_leftPanel, ref y, "张", WithAlpha(InkWashTheme.GoldPrimary, 0.12f), InkWashTheme.GoldPrimary,
-                "剑客张三", InkWashTheme.TextDefault, "Lv.60", WithAlpha(InkWashTheme.GoldPrimary, 0.12f), InkWashTheme.GoldPrimary,
-                "武当派", InkWashTheme.TextSecondary, true, true);
-            AddFriend(_leftPanel, ref y, "李", WithAlpha(InkWashTheme.JadeDeep, 0.15f), InkWashTheme.JadeBright,
-                "飞燕李四", InkWashTheme.TextDefault, "Lv.55", WithAlpha(InkWashTheme.GoldPrimary, 0.08f), InkWashTheme.TextSecondary,
-                "丐帮", InkWashTheme.TextSecondary, true, false);
-            AddFriend(_leftPanel, ref y, "王", WithAlpha(InkWashTheme.QualityRare, 0.15f), InkWashTheme.QualityRare,
-                "青衣王五", InkWashTheme.TextDefault, "Lv.48", WithAlpha(InkWashTheme.GoldPrimary, 0.08f), InkWashTheme.TextSecondary,
-                "峨眉", InkWashTheme.TextSecondary, true, false);
-            AddFriend(_leftPanel, ref y, "赵", WithAlpha(InkWashTheme.BloodPrimary, 0.15f), InkWashTheme.VermilionBright,
-                "孤剑赵九", InkWashTheme.TextDefault, "Lv.52", WithAlpha(InkWashTheme.GoldPrimary, 0.08f), InkWashTheme.TextSecondary,
-                "少林", InkWashTheme.TextSecondary, true, false);
-            AddFriend(_leftPanel, ref y, "钱", WithAlpha(InkWashTheme.QualityEpic, 0.15f), InkWashTheme.QualityEpic,
-                "紫霞钱十", InkWashTheme.TextDefault, "Lv.45", WithAlpha(InkWashTheme.GoldPrimary, 0.08f), InkWashTheme.TextSecondary,
-                "唐门", InkWashTheme.TextSecondary, true, false);
-
-            // --- 离线分组 ---
-            y += 8f;
-            var offlineHeader = new GroupHeader("离线", "(12)", InkWashTheme.TextTertiary)
-            {
-                Location = new Float2(12f, y),
-                Size = new Float2(LeftW - 24f, 32f),
-            };
-            _leftPanel.AddChild(offlineHeader);
-            y += 36f;
-
-            // 离线好友（6人）
-            AddFriend(_leftPanel, ref y, "赵", WithAlpha(InkWashTheme.QualityCommon, 0.10f), InkWashTheme.TextSecondary,
-                "铁掌赵六", InkWashTheme.TextSecondary, "Lv.42", WithAlpha(InkWashTheme.GoldPrimary, 0.04f), InkWashTheme.TextTertiary,
-                "5小时前在线", InkWashTheme.TextTertiary, false, false);
-            AddFriend(_leftPanel, ref y, "孙", WithAlpha(InkWashTheme.QualityCommon, 0.10f), InkWashTheme.TextSecondary,
-                "玉面孙七", InkWashTheme.TextSecondary, "Lv.38", WithAlpha(InkWashTheme.GoldPrimary, 0.04f), InkWashTheme.TextTertiary,
-                "昨天在线", InkWashTheme.TextTertiary, false, false);
-            AddFriend(_leftPanel, ref y, "周", WithAlpha(InkWashTheme.QualityCommon, 0.10f), InkWashTheme.TextSecondary,
-                "狂刀周八", InkWashTheme.TextSecondary, "Lv.35", WithAlpha(InkWashTheme.GoldPrimary, 0.04f), InkWashTheme.TextTertiary,
-                "3天前在线", InkWashTheme.TextTertiary, false, false);
-            AddFriend(_leftPanel, ref y, "吴", WithAlpha(InkWashTheme.QualityCommon, 0.10f), InkWashTheme.TextSecondary,
-                "灵狐吴十", InkWashTheme.TextSecondary, "Lv.40", WithAlpha(InkWashTheme.GoldPrimary, 0.04f), InkWashTheme.TextTertiary,
-                "1周前在线", InkWashTheme.TextTertiary, false, false);
-            AddFriend(_leftPanel, ref y, "郑", WithAlpha(InkWashTheme.QualityCommon, 0.10f), InkWashTheme.TextSecondary,
-                "破军郑二", InkWashTheme.TextSecondary, "Lv.44", WithAlpha(InkWashTheme.GoldPrimary, 0.04f), InkWashTheme.TextTertiary,
-                "2周前在线", InkWashTheme.TextTertiary, false, false);
-            AddFriend(_leftPanel, ref y, "冯", WithAlpha(InkWashTheme.QualityCommon, 0.10f), InkWashTheme.TextSecondary,
-                "飞花冯三", InkWashTheme.TextSecondary, "Lv.37", WithAlpha(InkWashTheme.GoldPrimary, 0.04f), InkWashTheme.TextTertiary,
-                "1月前在线", InkWashTheme.TextTertiary, false, false);
+            // 好友数据没有服务端来源：两组都空，给一条明确空态而不是摆 11 个虚构好友
+            _leftPanel.AddChild(MakeLabel("暂无好友 · 好友功能尚未接入服务端", 24f, y + 6f, LeftW - 48f, 20f,
+                InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            y += 44f;
 
             // --- 分隔线 ---
             y += 8f;
@@ -216,7 +208,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Location = new Float2(12f, y),
                 Size = new Float2(LeftW - 24f, 48f),
             };
-            item.Clicked += () => EmitGoldAtControl(item);
+            // 原来点了只播金色粒子：成员列表看起来可点却没有任何反应。改成互斥选中。
+            item.Clicked += () =>
+            {
+                EmitGoldAtControl(item);
+                foreach (var other in _memberItems) if (other != null) other.Selected = false;
+                item.Selected = true;
+            };
+            _memberItems.Add(item);
             parent.AddChild(item);
             y += 50f;
         }
@@ -230,11 +229,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             _leftPanel.AddChild(card);
 
-            card.AddChild(MakeLabel("⛰ 门派信息", 16f, 12f, 160f, 22f,
+            card.AddChild(MakeLabel("山 门派信息", 16f, 12f, 160f, 22f,
                 InkWashTheme.GoldPrimary, 16f, InkWashTheme.FontRole.Display, TextAlignment.Near));
-            card.AddChild(InfoRow(16f, 42f, "门派", "武当派", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display));
-            card.AddChild(InfoRow(16f, 64f, "职位", "弟子", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body));
-            card.AddChild(InfoRow(16f, 86f, "贡献", "2,500", InkWashTheme.GoldBright, InkWashTheme.FontRole.Number));
+            card.AddChild(InfoRow(16f, 42f, "门派", "未加入", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display));
+            card.AddChild(InfoRow(16f, 64f, "职位", "无", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body));
+            card.AddChild(InfoRow(16f, 86f, "贡献", "—", InkWashTheme.GoldBright, InkWashTheme.FontRole.Number));
         }
 
         private void BuildGuildCard(float y)
@@ -246,7 +245,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             _leftPanel.AddChild(card);
 
-            card.AddChild(MakeLabel("🚩 帮会信息", 16f, 12f, 160f, 22f,
+            card.AddChild(MakeLabel("旗 帮会信息", 16f, 12f, 160f, 22f,
                 InkWashTheme.GoldPrimary, 16f, InkWashTheme.FontRole.Display, TextAlignment.Near));
 
             var manageBtn = new InkButton
@@ -258,12 +257,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Location = new Float2(LeftW - 32f - 16f - 76f, 10f),
                 Size = new Float2(76f, 24f),
             };
-            manageBtn.ButtonClicked += (b) => EmitGoldAtControl(manageBtn);
+            manageBtn.Enabled = false; // 帮会管理没有服务端通道，按钮不做假动作
             card.AddChild(manageBtn);
 
-            card.AddChild(InfoRow(16f, 44f, "帮会", "天下会", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display));
-            card.AddChild(InfoRow(16f, 66f, "等级", "3级 (300/500)", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body));
-            card.AddChild(InfoRow(16f, 88f, "职位", "精英", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body));
+            card.AddChild(InfoRow(16f, 44f, "帮会", "未加入", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display));
+            card.AddChild(InfoRow(16f, 66f, "等级", "无", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body));
+            card.AddChild(InfoRow(16f, 88f, "职位", "无", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body));
         }
 
         private ContainerControl InfoRow(float x, float y, string key, string value, Color valueColor, InkWashTheme.FontRole valueRole)
@@ -308,7 +307,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _rightPanel.AddChild(card);
 
             // 头像 56x56
-            var avatar = new AvatarDisc("张", 56f, WithAlpha(InkWashTheme.GoldPrimary, 0.12f), InkWashTheme.GoldPrimary, true)
+            var avatar = new AvatarDisc("—", 56f, WithAlpha(InkWashTheme.GoldPrimary, 0.12f), InkWashTheme.GoldPrimary, true)
             {
                 Location = new Float2(20f, 20f),
                 Size = new Float2(56f, 56f),
@@ -316,15 +315,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             card.AddChild(avatar);
 
             // 姓名 + 标签
-            card.AddChild(MakeLabel("剑客张三", 92f, 18f, 130f, 26f,
+            // 没有选中任何联系人：这张卡不摆虚构玩家（原来写死「剑客张三 / Lv.60 / 武当派 / 战力 12,345 / 点 武当山」）
+            card.AddChild(MakeLabel("未选择联系人", 92f, 18f, 190f, 26f,
                 InkWashTheme.GoldPrimary, 18f, InkWashTheme.FontRole.Display, TextAlignment.Near));
-            var lvTag = new TagPill("Lv.60", WithAlpha(InkWashTheme.GoldPrimary, 0.15f), InkWashTheme.GoldBright, InkWashTheme.FontRole.Number)
+            var lvTag = new TagPill("—", WithAlpha(InkWashTheme.GoldPrimary, 0.15f), InkWashTheme.GoldBright, InkWashTheme.FontRole.Number)
             {
                 Location = new Float2(228f, 22f),
                 Size = new Float2(48f, 18f),
             };
             card.AddChild(lvTag);
-            var sectTag = new TagPill("武当派", WithAlpha(InkWashTheme.JadePrimary, 0.12f), InkWashTheme.JadeBright, InkWashTheme.FontRole.Display)
+            var sectTag = new TagPill("—", WithAlpha(InkWashTheme.JadePrimary, 0.12f), InkWashTheme.JadeBright, InkWashTheme.FontRole.Display)
             {
                 Location = new Float2(284f, 22f),
                 Size = new Float2(52f, 18f),
@@ -333,117 +333,253 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             // 战力 + 在线 + 位置
             card.AddChild(MakeLabel("战力", 92f, 52f, 34f, 18f, InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            card.AddChild(MakeLabel("12,345", 128f, 50f, 80f, 22f, InkWashTheme.GoldBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
-            card.AddChild(MakeLabel("●", 216f, 52f, 14f, 18f, InkWashTheme.JadePrimary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Center));
-            card.AddChild(MakeLabel("在线", 232f, 52f, 40f, 18f, InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            card.AddChild(MakeLabel("📍 武当山", 288f, 52f, 100f, 18f, InkWashTheme.TextDefault, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            card.AddChild(MakeLabel("—", 128f, 50f, 80f, 22f, InkWashTheme.GoldBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+            card.AddChild(MakeLabel("●", 216f, 52f, 14f, 18f, InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+            card.AddChild(MakeLabel("—", 232f, 52f, 40f, 18f, InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            card.AddChild(MakeLabel("—", 288f, 52f, 100f, 18f, InkWashTheme.TextDefault, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
             // 操作按钮
             var btnWhisper = new InkButton { Variant = InkButtonVariant.Brand, ButtonSize = InkButtonSize.Sm, Text = "私聊",
                 AnchorPreset = AnchorPresets.TopLeft, Location = new Float2(92f, 82f), Size = new Float2(60f, 24f) };
-            btnWhisper.ButtonClicked += (b) => EmitGoldAtControl(btnWhisper);
+            btnWhisper.Enabled = false; // 私聊通道未接入，按钮不做假动作
             card.AddChild(btnWhisper);
             var btnTeam = new InkButton { Variant = InkButtonVariant.Secondary, ButtonSize = InkButtonSize.Sm, Text = "组队",
                 AnchorPreset = AnchorPresets.TopLeft, Location = new Float2(160f, 82f), Size = new Float2(60f, 24f) };
-            btnTeam.ButtonClicked += (b) => EmitGoldAtControl(btnTeam);
+            btnTeam.Enabled = false;
             card.AddChild(btnTeam);
             var btnTrade = new InkButton { Variant = InkButtonVariant.Secondary, ButtonSize = InkButtonSize.Sm, Text = "交易",
                 AnchorPreset = AnchorPresets.TopLeft, Location = new Float2(228f, 82f), Size = new Float2(60f, 24f) };
-            btnTrade.ButtonClicked += (b) => EmitGoldAtControl(btnTrade);
+            btnTrade.Enabled = false;
             card.AddChild(btnTrade);
             var btnDelete = new InkButton { Variant = InkButtonVariant.Danger, ButtonSize = InkButtonSize.Sm, Text = "删除",
                 AnchorPreset = AnchorPresets.TopLeft, Location = new Float2(296f, 82f), Size = new Float2(60f, 24f) };
-            btnDelete.ButtonClicked += (b) => EmitGoldAtControl(btnDelete);
+            btnDelete.Enabled = false;
             card.AddChild(btnDelete);
         }
 
+        /// <summary>
+        /// 聊天窗口：频道 Tab（与主界面左下聊天框同一组频道与过滤语义）+ 真实消息区 + 真输入框。
+        /// 几何不用锚点（构造期父尺寸未定会导致错位），统一在 <see cref="RefreshLayout"/> 显式重排。
+        /// </summary>
         private void BuildChatWindow()
         {
-            var chat = new DBox(InkWashTheme.BaseTertiary, InkWashTheme.BorderGoldSubtle, 8f)
+            _chatBox = new DBox(InkWashTheme.BaseTertiary, InkWashTheme.BorderGoldSubtle, 8f)
             {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(16f, 16f, 152f, 16f),
+                AnchorPreset = AnchorPresets.TopLeft,
             };
-            _rightPanel.AddChild(chat);
+            // 挂到页面根而不是 _rightPanel：几何按设计空间绝对坐标算，不受右栏锚点偏移的影响
+            AddChild(_chatBox);
 
             // 频道 Tab
-            string[] channels = { "世界", "队伍", "门派", "私聊", "区域" };
-            float cx = 16f;
-            for (int i = 0; i < channels.Length; i++)
+            foreach (var channel in InkChatChannelView.TabChannels)
             {
-                var ct = new ChannelTab(channels[i], i == 0)
-                {
-                    Location = new Float2(cx, 8f),
-                    Size = new Float2(48f, 32f),
-                };
-                chat.AddChild(ct);
-                cx += 56f;
+                ChatChannel ch = channel;
+                var ct = new ChannelTab(InkChatChannelView.Label(ch), false);
+                ct.Clicked += () => ToggleChatFilter(ch);
+                _channelTabs.Add(ct);
+                _chatBox.AddChild(ct);
             }
 
             // 消息区
-            _chatMessages = new ContainerControl
+            _chatArea = new ChatArea
             {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0f, 0f, 44f, 52f),
+                AnchorPreset = AnchorPresets.TopLeft,
                 BackgroundColor = WithAlpha(InkWashTheme.Void, 0.50f),
-                AutoFocus = false,
             };
-            chat.AddChild(_chatMessages);
+            _chatArea.ReachedTop += OnChatReachedTop;
+            _chatBox.AddChild(_chatArea);
 
-            float my = 8f;
-            AddChatMsg(ref my, "世界", InkWashTheme.GoldPrimary, "剑客张三", InkWashTheme.GoldBright, "有人组队刷试炼塔吗？");
-            AddChatMsg(ref my, "门派", InkWashTheme.JadeBright, "师兄", InkWashTheme.TextDefault, "门派任务刷新了，记得去做");
-            AddSysMsg(ref my, "———  恭贺 剑客张三 升级至 Lv.60！  ———");
-            AddChatMsg(ref my, "世界", InkWashTheme.GoldPrimary, "飞燕李四", InkWashTheme.JadeBright, "丐帮招人，有意加入！");
-            AddChatMsg(ref my, "区域", InkWashTheme.TextSecondary, "紫霞钱十", InkWashTheme.QualityEpic, "新装备打造中，还差两个材料");
-            AddChatMsg(ref my, "门派", InkWashTheme.JadeBright, "掌门", InkWashTheme.GoldPrimary, "今晚亥时门派聚会，诸位准时参加");
-            AddChatMsg(ref my, "世界", InkWashTheme.GoldPrimary, "铁掌赵六", InkWashTheme.TextSecondary, "收购铁掌秘籍，价格面议");
-            AddChatMsg(ref my, "区域", InkWashTheme.TextSecondary, "青衣王五", InkWashTheme.QualityRare, "峨眉山下风景独好");
-            AddChatMsg(ref my, "世界", InkWashTheme.GoldPrimary, "孤剑赵九", InkWashTheme.VermilionBright, "切磋一场，谁来应战？");
-
-            // 输入区
-            var inputBar = new ContainerControl
+            // 输入行
+            _inputBar = new ContainerControl
             {
-                AnchorPreset = AnchorPresets.HorizontalStretchBottom,
-                Offsets = new Margin(0f, 0f, 0f, 44f),
+                AnchorPreset = AnchorPresets.TopLeft,
                 BackgroundColor = WithAlpha(InkWashTheme.BaseSecondary, 0.90f),
                 AutoFocus = false,
             };
-            chat.AddChild(inputBar);
-            inputBar.AddChild(new HRule { Location = new Float2(0f, 0f), Size = new Float2(4000f, 1f), LineColor = InkWashTheme.BorderFaint });
+            _inputBar.AddChild(new HRule { Location = new Float2(0f, 0f), Size = new Float2(4000f, 1f), LineColor = InkWashTheme.BorderFaint });
+            _chatBox.AddChild(_inputBar);
 
-            var inputField = new SearchBox { Location = new Float2(12f, 8f), Size = new Float2(0f, 28f), Placeholder = "输入消息，Enter发送..." };
-            inputField.AnchorPreset = AnchorPresets.HorizontalStretchTop;
-            inputField.Offsets = new Margin(12f, 96f, 8f, 28f);
-            inputBar.AddChild(inputField);
+            _chatInput = new TextBox
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                WatermarkText = "输入消息，Enter 发送...",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.TextDefault,
+                BackgroundColor = InkWashTheme.Abyss,
+            };
+            _inputBar.AddChild(_chatInput);
 
-            var sendBtn = new SendBtn { Location = new Float2(0f, 8f), Size = new Float2(76f, 28f) };
-            sendBtn.AnchorPreset = AnchorPresets.TopRight;
-            sendBtn.Offsets = new Margin(0f, 76f, 8f, 28f);
-            sendBtn.Clicked += () => EmitGoldAtControl(sendBtn);
-            inputBar.AddChild(sendBtn);
+            // 退出密聊钮（仅在选中密聊对象时显示）
+            var whisperExit = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "×",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Visible = false,
+            };
+            whisperExit.ButtonClicked += (b) => ExitWhisper();
+            _whisperExitBtn = whisperExit;
+            _inputBar.AddChild(whisperExit);
+
+            var sendBtn = new SendBtn();
+            sendBtn.Clicked += SendChatInput;
+            _sendBtn = sendBtn;
+            _inputBar.AddChild(sendBtn);
         }
 
-        private void AddChatMsg(ref float y, string channel, Color chColor, string speaker, Color spkColor, string text)
+        private void ToggleChatFilter(ChatChannel channel)
         {
-            var msg = new ChatMsg(channel, chColor, speaker, spkColor, text)
-            {
-                Location = new Float2(8f, y),
-                Size = new Float2(2000f, 24f),
-            };
-            _chatMessages.AddChild(msg);
-            y += 26f;
+            _whisperTargetId = 0;
+            _whisperTargetName = null;
+            if (_whisperExitBtn != null) _whisperExitBtn.Visible = false;
+
+            _chatFilter = _chatFilter == channel ? (ChatChannel?)null : channel;
+            UpdateTabVisuals();
+            UpdateChatInputHint();
+            ForceSyncChat();
         }
 
-        private void AddSysMsg(ref float y, string text)
+        private void UpdateTabVisuals()
         {
-            var msg = new SysMsg(text)
+            for (int i = 0; i < _channelTabs.Count; i++)
+                _channelTabs[i].SetActive(_chatFilter != null && InkChatChannelView.TabChannels[i] == _chatFilter.Value);
+        }
+
+        private void StartWhisper(ulong characterId, string name)
+        {
+            _whisperTargetId = characterId;
+            _whisperTargetName = string.IsNullOrEmpty(name) ? characterId.ToString() : name;
+            _chatFilter = ChatChannel.Private;
+            if (_whisperExitBtn != null) _whisperExitBtn.Visible = true;
+            UpdateTabVisuals();
+            UpdateChatInputHint();
+            ForceSyncChat();
+        }
+
+        private void ExitWhisper()
+        {
+            _whisperTargetId = 0;
+            _whisperTargetName = null;
+            if (_whisperExitBtn != null) _whisperExitBtn.Visible = false;
+            UpdateChatInputHint();
+            ForceSyncChat();
+        }
+
+        private void UpdateChatInputHint()
+        {
+            if (_chatInput == null) return;
+            _chatInput.WatermarkText = _whisperTargetId != 0
+                ? $"密聊 {_whisperTargetName}，Enter 发送..."
+                : "输入消息，Enter 发送...";
+        }
+
+        /// <summary>发送当前输入：密聊视图发给该玩家，否则发给所选频道（未选频道时发到世界）。</summary>
+        private void SendChatInput()
+        {
+            if (_chatInput == null) return;
+            var text = _chatInput.Text;
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            bool sent = _whisperTargetId != 0
+                ? ChatClient.Instance.Send(ChatChannel.Private, text, _whisperTargetId)
+                : ChatClient.Instance.Send(_chatFilter ?? ChatChannel.World, text);
+            if (!sent) return;
+
+            _chatInput.Text = string.Empty;
+            ForceSyncChat();
+        }
+
+        /// <summary>强制重建消息区（过滤/密聊变化后、发送后）。</summary>
+        private void ForceSyncChat()
+        {
+            _lastRowCount = -1;
+            SyncChat();
+        }
+
+        /// <summary>把 ChatClient 的真实消息按当前过滤重建到消息区；内容未变则不动（保住滚动位置与悬停态）。</summary>
+        private void SyncChat()
+        {
+            if (_chatArea == null) return;
+            ChatClient.Instance.EnsureAttached();
+
+            var lines = new List<ChatLine>();
+            if (_whisperTargetId != 0)
+                lines.AddRange(ChatClient.Instance.GetWhisper(_whisperTargetId));
+            else if (_chatFilter != null)
+                lines.AddRange(ChatClient.Instance.GetMessages(_chatFilter.Value));
+            else
+                foreach (var ch in InkChatChannelView.TabChannels)
+                    lines.AddRange(ChatClient.Instance.GetMessages(ch));
+
+            const int maxRows = 60;
+            if (lines.Count > maxRows)
+                lines.RemoveRange(0, lines.Count - maxRows);
+
+            long lastId = lines.Count > 0 ? lines[lines.Count - 1].MessageId : 0;
+            if (lines.Count == _lastRowCount && lastId == _lastRowMessageId) return;
+            _lastRowCount = lines.Count;
+            _lastRowMessageId = lastId;
+
+            var me = HundunWorldGame.Instance?.PlayerId ?? 0;
+            _chatArea.ClearRows();
+            foreach (var line in lines)
             {
-                Location = new Float2(8f, y),
-                Size = new Float2(2000f, 24f),
-            };
-            _chatMessages.AddChild(msg);
-            y += 26f;
+                Control row;
+                if (line.IsSystem || line.Channel == ChatChannel.System)
+                {
+                    row = new SysMsg(line.Content);
+                }
+                else
+                {
+                    ChatLine captured = line;
+                    var msg = new ChatMsg(InkChatChannelView.Label(line.Channel),
+                        InkChatChannelView.Style(line.Channel).Color, line.SenderName,
+                        line.SenderId == me ? InkWashTheme.GoldBright : InkWashTheme.TextDefault, line.Content);
+                    msg.Clicked += () =>
+                    {
+                        if (captured.SenderId == 0 || captured.SenderId == me) return;
+                        StartWhisper(captured.SenderId, captured.SenderName);
+                    };
+                    row = msg;
+                }
+                _chatArea.AddRow(row);
+            }
+            _chatArea.ScrollToBottom();
+
+            // 正在看的频道计入已读，避免回到主界面后红点仍亮着
+            if (_chatFilter != null) ChatClient.Instance.MarkRead(_chatFilter.Value);
+        }
+
+        /// <summary>滚到顶：加载更早历史（需在具体频道或密聊视图；3 秒节流）。</summary>
+        private void OnChatReachedTop()
+        {
+            if (_chatHistoryLoading && Time.TimeSinceStartup - _chatHistoryLoadingAt < 3f) return;
+
+            long oldest;
+            bool sent;
+            if (_whisperTargetId != 0)
+            {
+                oldest = ChatClient.Instance.GetOldestWhisperId(_whisperTargetId);
+                if (oldest <= 0) return;
+                sent = ChatClient.Instance.RequestHistory(ChatChannel.Private, _whisperTargetId, oldest, 30);
+            }
+            else if (_chatFilter != null)
+            {
+                oldest = ChatClient.Instance.GetOldestMessageId(_chatFilter.Value);
+                if (oldest <= 0) return;
+                sent = ChatClient.Instance.RequestHistory(_chatFilter.Value, 0, oldest, 30);
+            }
+            else
+            {
+                return;   // 全部频道视图不做分页（游标语义不明确）
+            }
+
+            if (sent)
+            {
+                _chatHistoryLoading = true;
+                _chatHistoryLoadingAt = Time.TimeSinceStartup;
+            }
         }
 
         // ===================================================================
@@ -452,7 +588,80 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
         public void RefreshLayout()
         {
-            // 全屏 StretchAll，子控件通过 Anchor 自适应，无需手动重算。
+            LayoutChatWindow();
+        }
+
+        /// <inheritdoc />
+        public override void OnParentResized()
+        {
+            base.OnParentResized();
+            LayoutChatWindow();
+        }
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            // 网络线程只写缓存，这里在主线程按节流读取并重画（与主界面聊天框同一节奏）。
+            _chatSyncTimer += deltaTime;
+            if (_chatSyncTimer < ChatSyncInterval) return;
+            _chatSyncTimer = 0f;
+
+            if (_chatInput != null && _chatInput.IsFocused && FlaxEngine.Input.GetKeyDown(KeyboardKeys.Return))
+                SendChatInput();
+
+            if (_chatHistoryLoading && Time.TimeSinceStartup - _chatHistoryLoadingAt >= 3f)
+                _chatHistoryLoading = false;
+
+            SyncChat();
+        }
+
+        /// <summary>
+        /// 聊天窗口几何：右栏玩家卡下方占满剩余空间，内部依次为频道 Tab 行 / 消息区 / 输入行。
+        /// </summary>
+        private void LayoutChatWindow()
+        {
+            if (_chatBox == null) return;
+
+            float w = Mathf.Max(0f, Width - LeftW - 32f);
+            float top = HeaderH + 136f;
+            float h = Mathf.Max(0f, Height - top - 16f);
+            _chatBox.Location = new Float2(LeftW + 16f, top);
+            _chatBox.Size = new Float2(w, h);
+
+            float tx = 16f;
+            foreach (var tab in _channelTabs)
+            {
+                tab.Location = new Float2(tx, 8f);
+                tab.Size = new Float2(48f, ChatTabRowH - 16f);
+                tx += 56f;
+            }
+
+            _chatArea.Location = new Float2(8f, ChatTabRowH);
+            _chatArea.Size = new Float2(Mathf.Max(0f, w - 16f), Mathf.Max(0f, h - ChatTabRowH - ChatInputH));
+
+            _inputBar.Location = new Float2(0f, Mathf.Max(0f, h - ChatInputH));
+            _inputBar.Size = new Float2(w, ChatInputH);
+
+            float sendX = Mathf.Max(0f, w - 12f - 76f);
+            _sendBtn.Location = new Float2(sendX, 8f);
+            _sendBtn.Size = new Float2(76f, 28f);
+
+            float exitX = Mathf.Max(0f, sendX - 8f - 32f);
+            if (_whisperExitBtn != null)
+            {
+                _whisperExitBtn.Location = new Float2(exitX, 8f);
+                _whisperExitBtn.Size = new Float2(32f, 28f);
+            }
+
+            if (_chatInput != null)
+            {
+                _chatInput.Location = new Float2(12f, 8f);
+                _chatInput.Size = new Float2(Mathf.Max(0f, exitX - 24f), 28f);
+            }
+
+            _chatArea.Relayout();
         }
 
         // ===================================================================
@@ -500,14 +709,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             {
                 _bg = bg; _border = border; _radius = radius;
                 AutoFocus = false;
+                // 底色由 Draw 自绘（在子控件之前），引擎默认底色会盖住自绘层
+                BackgroundColor = Color.Transparent;
             }
             public void SetBorder(Color c) { _border = c; }
             public override void Draw()
             {
                 if (!Visible) return;
-                base.Draw();
                 var r = new Rectangle(Float2.Zero, Size);
+                // 先铺底，再由基类画子控件，最后压边框——顺序反了子内容会被底色盖掉
                 InkRenderHelper.FillRoundedRectangle(r, _radius, _bg);
+                base.Draw();
                 InkRenderHelper.DrawRoundedRectangle(r, _radius, _border, 1f);
             }
         }
@@ -578,7 +790,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         {
             private readonly string _glyph, _name, _level, _sub;
             private readonly Color _avatarBg, _avatarFg, _nameColor, _lvBg, _lvFg, _subColor;
-            private readonly bool _online, _selected;
+            private readonly bool _online;
+            private bool _selected;
+
+            /// <summary>选中态（点成员时互斥切换）。</summary>
+            public bool Selected { get => _selected; set => _selected = value; }
             private bool _hover;
             public event Action Clicked;
             public FriendItem(string glyph, Color avatarBg, Color avatarFg, string name, Color nameColor,
@@ -692,7 +908,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 InkRenderHelper.DrawRoundedRectangle(r, 4f, InkWashTheme.BorderNeutralL2, 1f);
                 var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f).GetFont();
                 if (font == null) return;
-                Render2D.DrawText(font, "🔍 " + Placeholder, new Rectangle(8f, 0f, Width - 16f, Height), InkWashTheme.TextTertiary, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
+                Render2D.DrawText(font, "寻 " + Placeholder, new Rectangle(8f, 0f, Width - 16f, Height), InkWashTheme.TextTertiary, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
             }
         }
 
@@ -724,19 +940,97 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         // 嵌套控件 — B
         // ===================================================================
 
-        /// <summary>聊天频道 Tab（激活=金色+下划线）。</summary>
+        /// <summary>
+        /// 聊天消息区：裁剪 + 滚轮上下滚动 + 到顶回调；行由页面按 <see cref="ChatClient"/> 的真实消息重建。
+        /// </summary>
+        private sealed class ChatArea : ContainerControl
+        {
+            private const float RowH = 24f;
+            private const float RowPitch = 26f;
+            private const float PadX = 8f;
+
+            private readonly List<Control> _rows = new();
+            private float _scroll;
+
+            /// <summary>已在顶部继续上滚（页面据此加载更早历史）。</summary>
+            public event Action ReachedTop;
+
+            public ChatArea()
+            {
+                ClipChildren = true;
+                AutoFocus = false;
+            }
+
+            public void ClearRows()
+            {
+                foreach (var row in _rows) row.Dispose();
+                _rows.Clear();
+            }
+
+            public void AddRow(Control row)
+            {
+                AddChild(row);
+                _rows.Add(row);
+            }
+
+            public void ScrollToBottom()
+            {
+                _scroll = MaxScroll;
+                Relayout();
+            }
+
+            /// <summary>按当前宽度与滚动位置重排所有行。</summary>
+            public void Relayout()
+            {
+                _scroll = Mathf.Clamp(_scroll, 0f, MaxScroll);
+                float rowW = Mathf.Max(0f, Width - PadX * 2f);
+                float y = -_scroll;
+                foreach (var row in _rows)
+                {
+                    row.Size = new Float2(rowW, RowH);
+                    row.Location = new Float2(PadX, y);
+                    y += RowPitch;
+                }
+            }
+
+            private float MaxScroll => Mathf.Max(0f, _rows.Count * RowPitch - Height);
+
+            /// <inheritdoc />
+            public override bool OnMouseWheel(Float2 location, float delta)
+            {
+                _scroll -= delta * RowPitch;
+                _scroll = Mathf.Clamp(_scroll, 0f, MaxScroll);
+                Relayout();
+
+                if (_scroll <= 0.5f) ReachedTop?.Invoke();
+                return true;
+            }
+        }
+
+        /// <summary>聊天频道 Tab（激活=金色+下划线；点击切换该频道过滤）。</summary>
         private sealed class ChannelTab : ContainerControl
         {
             private readonly string _text;
-            private readonly bool _active;
+            private bool _active;
             private bool _hover;
+
+            public event Action Clicked;
+
             public ChannelTab(string text, bool active)
             {
                 _text = text; _active = active;
                 AutoFocus = false;
             }
+
+            public void SetActive(bool value) { _active = value; }
+
             public override void OnMouseEnter(Float2 location) { _hover = true; base.OnMouseEnter(location); }
             public override void OnMouseLeave() { _hover = false; base.OnMouseLeave(); }
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && ContainsPoint(ref location)) { Clicked?.Invoke(); return true; }
+                return base.OnMouseUp(location, button);
+            }
             public override void Draw()
             {
                 if (!Visible) return;
@@ -759,6 +1053,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             private readonly string _channel, _speaker, _text;
             private readonly Color _chColor, _spkColor;
             private bool _hover;
+
+            /// <summary>点击整行（页面据此发起与该发言人的密聊）。</summary>
+            public event Action Clicked;
+
             public ChatMsg(string channel, Color chColor, string speaker, Color spkColor, string text)
             {
                 _channel = channel; _chColor = chColor; _speaker = speaker; _spkColor = spkColor; _text = text;
@@ -766,6 +1064,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
             public override void OnMouseEnter(Float2 location) { _hover = true; base.OnMouseEnter(location); }
             public override void OnMouseLeave() { _hover = false; base.OnMouseLeave(); }
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && ContainsPoint(ref location)) { Clicked?.Invoke(); return true; }
+                return base.OnMouseUp(location, button);
+            }
             public override void Draw()
             {
                 if (!Visible) return;

@@ -1,12 +1,15 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
+using HundunWorld.Game.Network;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
+using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Social
 {
-    public class FriendsPage : ContainerControl, IInkPage
+    public class FriendsPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         public event Action<string> NavigationRequested;
 
@@ -37,28 +40,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
         private struct Entry
         {
+            /// <summary>服务端好友角色 id；0 = 设计稿示例条目（不可删）。</summary>
+            public ulong Id;
             public string Name, Char, Lv, Sect, Loc, Title, Stars;
             public bool Online;
+            /// <summary>亲密度；负数 = 服务端未下发（详情栏不要编数字）。</summary>
             public int Intim;
             public int Grade;
         }
 
-        private static readonly Entry[] Friends =
-        {
-            new Entry{Name="剑客张三", Char="张", Lv="60", Sect="武当派", Loc="武当山 · 紫霄宫", Title="武林豪侠", Stars="★★★★★", Online=true,  Intim=8520, Grade=0},
-            new Entry{Name="飞燕李四", Char="李", Lv="55", Sect="丐帮",   Loc="丐帮总舵",        Title="江湖游侠", Stars="★★★★☆", Online=true,  Intim=7200, Grade=1},
-            new Entry{Name="狂刀赵六", Char="赵", Lv="52", Sect="明教",   Loc="光明顶",          Title="烈火使者", Stars="★★★★☆", Online=true,  Intim=6800, Grade=2},
-            new Entry{Name="青衣王五", Char="王", Lv="48", Sect="峨眉",   Loc="金顶",            Title="青衣剑客", Stars="★★★☆☆", Online=true,  Intim=5500, Grade=3},
-            new Entry{Name="幻影孙七", Char="孙", Lv="45", Sect="唐门",   Loc="暗器阁",          Title="暗影行者", Stars="★★☆☆☆", Online=true,  Intim=4200, Grade=4},
-            new Entry{Name="药师周八", Char="周", Lv="40", Sect="少林",   Loc="藏经阁",          Title="药王谷传人", Stars="★★★☆☆", Online=false, Intim=3800, Grade=0},
-            new Entry{Name="铁掌郑十", Char="郑", Lv="42", Sect="昆仑",   Loc="玉虚峰",          Title="铁掌无敌", Stars="★★★☆☆", Online=false, Intim=3500, Grade=0},
-            new Entry{Name="琴音吴九", Char="吴", Lv="38", Sect="嵩山",   Loc="峻极峰",          Title="琴魔",    Stars="★★☆☆☆", Online=false, Intim=2800, Grade=0},
-            new Entry{Name="冰心钱十一", Char="钱", Lv="36", Sect="天山",   Loc="天山 · 冰湖",      Title="冰魄仙子", Stars="★☆☆☆☆", Online=false, Intim=2200, Grade=0},
-        };
 
         private int _sel;
         private int _tab;
         private readonly string[] _tabLbls = { "好友", "仇人", "黑名单" };
+
+        // 当前显示的名单：初始为设计稿示例，服务端回包后整体替换（含空名单）
+        private readonly List<Entry> _friends = new List<Entry>();
+        private int _friendRevision = -1;
+        private float _friendRequestTimer;
 
         // top bar
         private Panel _bar;
@@ -82,6 +81,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         private Label[] _rowStars;
         private Label _onlineHdr;
         private Label _offlineHdr;
+        /// <summary>名单超出一屏时提示剩余人数（滚动尚未接入）。</summary>
+        private Label _moreHint;
+
+        /// <summary>左栏一屏能放下的最大行数；超出部分不建控件，避免行溢出面板。</summary>
+        private const int MaxVisibleRows = 12;
 
         // center column
         private Panel _ctr;
@@ -113,7 +117,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             Offsets = Margin.Zero;
             ClipChildren = false;
             AutoFocus = false;
+
+            // 不再预置演示好友：没有服务端名单时就是空列表（页面自带「暂无好友」空态）。
+            // 原来这里 AddRange(DemoFriends) 会让没加过好友的玩家看到 9 个假好友（2026-10-29）。
             Build();
+            // 已在缓存里的服务端名单立刻覆盖示例；没有就在构造函数里发一次请求
+            RefreshFromServer(forceRequest: true);
         }
 
         private Panel NewP(Color bg, ContainerControl p)
@@ -155,20 +164,28 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             BuildLeft();
             BuildCenter();
             BuildRight();
+
+            // BuildLeft 里第一次建行时详情栏还没创建（UpdateDetail 会跳过），
+            // 全页构建完再真正填一次详情。
+            if (_friends.Count > 0)
+                SelectFriend(Mathf.Clamp(_sel, 0, Mathf.Min(_friends.Count, MaxVisibleRows) - 1));
+            else
+                ShowEmptyDetail();
         }
 
         private void BuildTopBar()
         {
             _bar = NewP(new Color(InkWashTheme.BaseSecondary.R, InkWashTheme.BaseSecondary.G, InkWashTheme.BaseSecondary.B, 0.9f), this);
-            _back = NewBtn("\u2190", InkButtonVariant.Ghost, InkButtonSize.Sm, InkWashTheme.GoldPrimary, InkWashTheme.BorderGold, Color.Transparent, () => NavigationRequested?.Invoke("back-hud"), _bar);
+            _back = NewBtn("\u2190", InkButtonVariant.Ghost, InkButtonSize.Sm, InkWashTheme.GoldPrimary, InkWashTheme.BorderGold, Color.Transparent, () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel), _bar);
             _titleLbl = NewL("江湖交游", InkWashTheme.GoldPrimary, InkWashTheme.FontRole.Display, 20f, TextAlignment.Near, _bar);
             _countLbl = NewL("好友 12 / 50", InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _bar);
-            _addBtn = NewBtn("添加好友", InkButtonVariant.Ghost, InkButtonSize.Sm, InkWashTheme.GoldPrimary, InkWashTheme.BorderGold, Gold(0.12f), () => { }, _bar);
+            _addBtn = NewBtn("添加好友", InkButtonVariant.Ghost, InkButtonSize.Sm, InkWashTheme.GoldPrimary, InkWashTheme.BorderGold, Gold(0.12f), OnAddFriendClicked, _bar);
         }
 
         private void BuildLeft()
         {
             _left = NewP(InkWashTheme.Panel, this);
+            _left.ClipChildren = true;
 
             _search = NewP(InkWashTheme.PanelSolid, _left);
             NewL("搜索好友名号", InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _search);
@@ -181,25 +198,88 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
             SelectTabStyle(0);
 
-            int on = 0; foreach (var f in Friends) if (f.Online) on++;
-            int off = Friends.Length - on;
+            int on = 0; foreach (var f in _friends) if (f.Online) on++;
+            int off = _friends.Count - on;
 
             _onlineHdr = NewL("在线 " + on, InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, _left);
             _offlineHdr = NewL("离线 " + off, InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, _left);
+            _moreHint = NewL("", InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 10f, TextAlignment.Near, _left);
+            _moreHint.Visible = false;
 
-            _rows = new ClickPanel[Friends.Length];
-            _rowBorders = new Panel[Friends.Length];
-            _rowDots = new Panel[Friends.Length];
-            _rowAvts = new Panel[Friends.Length];
-            _rowChars = new Label[Friends.Length];
-            _rowNames = new Label[Friends.Length];
-            _rowLvs = new Label[Friends.Length];
-            _rowSects = new Label[Friends.Length];
-            _rowStars = new Label[Friends.Length];
+            RebuildRows();
+        }
 
-            for (int i = 0; i < Friends.Length; i++)
+        /// <summary>
+        /// 按当前名单重画左侧行（服务端回包/删除后调用）。
+        /// 行数可变，所以数组与控件都要重建；旧行直接 Dispose，避免叠在同一个位置上。
+        /// </summary>
+        private void RebuildRows()
+        {
+            if (_rows != null)
             {
-                var f = Friends[i];
+                for (int i = 0; i < _rows.Length; i++)
+                {
+                    var old = _rows[i];
+                    if (old == null) continue;
+                    old.Parent = null;
+                    old.Dispose();
+                }
+            }
+
+            bool friendsTab = _tab == 0;
+            int total = _friends.Count;
+            // 仇人/黑名单没有服务端数据：不拿好友名单冒充，直接空列表
+            int count = friendsTab ? total : 0;
+            int visible = Mathf.Min(count, MaxVisibleRows);
+            int online = 0;
+            if (friendsTab)
+            {
+                foreach (var f in _friends) if (f.Online) online++;
+            }
+
+            if (_onlineHdr != null)
+            {
+                _onlineHdr.Visible = friendsTab;
+                _onlineHdr.Text = friendsTab ? "在线 " + online : "";
+            }
+            if (_offlineHdr != null)
+            {
+                _offlineHdr.Visible = friendsTab;
+                _offlineHdr.Text = friendsTab ? "离线 " + (total - online) : "";
+            }
+            if (_countLbl != null)
+            {
+                _countLbl.Text = friendsTab
+                    ? $"好友 {total} / 50"
+                    : (_tab == 1 ? "仇人 0 / 50" : "黑名单 0 / 50");
+            }
+            if (_moreHint != null)
+            {
+                if (!friendsTab)
+                {
+                    _moreHint.Visible = true;
+                    _moreHint.Text = _tab == 1 ? "仇人分类暂未接入服务端" : "黑名单暂未接入服务端";
+                }
+                else
+                {
+                    _moreHint.Visible = total > visible;
+                    _moreHint.Text = total > visible ? $"还有 {total - visible} 位未显示（滚动待接入）" : "";
+                }
+            }
+
+            _rows = new ClickPanel[visible];
+            _rowBorders = new Panel[visible];
+            _rowDots = new Panel[visible];
+            _rowAvts = new Panel[visible];
+            _rowChars = new Label[visible];
+            _rowNames = new Label[visible];
+            _rowLvs = new Label[visible];
+            _rowSects = new Label[visible];
+            _rowStars = new Label[visible];
+
+            for (int i = 0; i < visible; i++)
+            {
+                var f = _friends[i];
                 int ci = i;
                 var row = new ClickPanel { Parent = _left };
                 row.Clicked += () => SelectFriend(ci);
@@ -219,7 +299,54 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 _rowSects[i] = NewL(f.Sect, InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, row);
                 _rowStars[i] = NewL(f.Stars, InkWashTheme.GoldPrimary, InkWashTheme.FontRole.Body, 10f, TextAlignment.Far, row);
             }
-            SelectFriend(0);
+
+            if (count == 0)
+            {
+                _sel = -1;
+                ShowEmptyDetail();
+            }
+            else
+            {
+                SelectFriend(Mathf.Clamp(_sel, 0, visible - 1));
+            }
+
+            // BuildLeft 阶段详情栏尚不存在，等整页构建完再由 Build()/刷新路径排布
+            if (_ctr != null)
+                RefreshLayout();
+        }
+
+        /// <summary>名单为空时的详情栏：不保留上一个人的数据。</summary>
+        private void ShowEmptyDetail()
+        {
+            if (_idName == null) return;
+
+            _idAvtChar.Text = "—";
+            _idAvt.BackgroundColor = Color.Transparent;
+            _idAvtChar.TextColor = InkWashTheme.TextTertiary;
+            _idDot.BackgroundColor = InkWashTheme.TextTertiary;
+            _idName.Text = _tab == 0 ? "暂无好友" : (_tab == 1 ? "暂无仇人" : "黑名单为空");
+            _idTitle.Text = "";
+            _idLoc.Text = "";
+            _idSta.Text = "";
+            _idSta.TextColor = InkWashTheme.TextTertiary;
+
+            if (_infoVals != null)
+            {
+                // 四格全清：只清前两格会把「渡劫期 / 正道」这类示例值留在空态里
+                for (int i = 0; i < _infoVals.Length; i++)
+                    _infoVals[i].Text = "—";
+            }
+
+            if (_acts != null)
+            {
+                // 没有选中好友时六个互动按钮没有对象，禁用以免误点
+                for (int i = 0; i < _acts.Length; i++)
+                    if (_acts[i] != null) _acts[i].Enabled = false;
+            }
+
+            _intiLbl.Text = "亲密度  —";
+            _intiSub.Text = "";
+            _intiFill.Size = new Float2(0f, 6f);
         }
 
         private void BuildCenter()
@@ -233,14 +360,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _idAvtChar.AnchorPreset = AnchorPresets.StretchAll;
 
             _idDot = NewP(InkWashTheme.JadePrimary, _idBox);
-            _idName = NewL("剑客张三", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 22f, TextAlignment.Near, _idBox);
-            _idTitle = NewL("武林豪侠", InkWashTheme.GoldBright, InkWashTheme.FontRole.Display, 11f, TextAlignment.Near, _idBox);
-            _idLoc = NewL("武当山 · 紫霄宫", InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _idBox);
-            _idSta = NewL("在线", InkWashTheme.JadeBright, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _idBox);
+            _idName = NewL("—", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 22f, TextAlignment.Near, _idBox);
+            _idTitle = NewL("", InkWashTheme.GoldBright, InkWashTheme.FontRole.Display, 11f, TextAlignment.Near, _idBox);
+            _idLoc = NewL("", InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _idBox);
+            _idSta = NewL("", InkWashTheme.JadeBright, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _idBox);
 
             _infoGrid = NewP(Color.Transparent, _ctr);
             string[] inames = { "等级", "门派", "修为", "阵营" };
-            string[] ivals = { "60", "武当派", "渡劫期", "正道" };
+            // 初值留空：真实值由选中好友的绑定写入，空态由 ShowEmptyDetail 统一清成「—」
+            string[] ivals = { "—", "—", "—", "—" };
             Color[] icols = { InkWashTheme.GoldPrimary, InkWashTheme.TextDefault, InkWashTheme.TextDefault, InkWashTheme.JadeBright };
             _infoVals = new Label[4];
             for (int i = 0; i < 4; i++)
@@ -254,7 +382,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
 
             _intiBox = NewP(Color.Transparent, _ctr);
-            _intiLbl = NewL("亲密度  ★★★★★", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _intiBox);
+            _intiLbl = NewL("亲密度  ◆◆◆◆◆", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _intiBox);
             _intiSub = NewL("8520 / 10000  ·  距下一阶段还需 1480 点", InkWashTheme.TextTertiary, InkWashTheme.FontRole.Number, 11f, TextAlignment.Near, _intiBox);
             _intiTrack = NewP(Gold(0.08f), _intiBox);
             _intiFill = NewP(InkWashTheme.GoldPrimary, _intiTrack);
@@ -273,11 +401,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             for (int i = 0; i < 6; i++)
             {
                 bool del = i == 5;
-                // 飞鸽（index 4）→ 跨页直达飞鸽传书（game-ui-system §1.2 action-friends-to-mail）；
-                // 其余动作暂为页内占位（无独立目标页）。
-                Action cb = i == 4
-                    ? () => NavigationRequested?.Invoke(InkPageDomIds.ActionFriendsToMail)
-                    : () => { };
+                int actIndex = i;   // for 循环变量会被闭包共享，必须按次捕获
+                // 私聊（0）→ 跨页密聊交接；飞鸽（4）→ 飞鸽传书；删除（5）→ 服务端 RemoveFriend；
+                // 其余动作没有实现，给出明确提示而不是静默无反应。
+                Action cb;
+                if (i == 0) cb = OnWhisperSelected;
+                else if (i == 4) cb = () => NavigationRequested?.Invoke(InkPageDomIds.ActionFriendsToMail);
+                else if (del) cb = OnDeleteSelected;
+                else cb = () => HundunWorld.Game.UI.UIHelper.ShowToast(
+                    actN[actIndex] + "功能尚未接入", HundunWorld.Game.UI.ToastType.Info);
                 _acts[i] = NewBtn(actN[i], InkButtonVariant.Ghost, InkButtonSize.Sm,
                     del ? InkWashTheme.TextBlood : InkWashTheme.TextDefault,
                     del ? InkWashTheme.BorderVermilion : InkWashTheme.BorderGold,
@@ -285,16 +417,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
 
             _equipBox = NewP(Color.Transparent, _ctr);
-            NewL("装备简览", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _equipBox);
-            string[] eqN = { "真武剑", "紫霄袍", "凌云冠", "青玉佩" };
-            Color[] eqC = { InkWashTheme.QualityLegendary, InkWashTheme.QualityEpic, InkWashTheme.QualityRare, InkWashTheme.QualityUncommon };
-            string[] eqQ = { "传说", "史诗", "稀有", "精良" };
-            for (int i = 0; i < 4; i++)
-            {
-                var slot = NewP(new Color(eqC[i].R, eqC[i].G, eqC[i].B, 0.06f), _equipBox);
-                NewL(eqN[i], eqC[i], InkWashTheme.FontRole.Display, 11f, TextAlignment.Center, slot);
-                NewL(eqQ[i], InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 10f, TextAlignment.Center, slot);
-            }
+            var equipTitle = NewL("装备简览", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _equipBox);
+            equipTitle.Location = new Float2(12f, 0f);
+            equipTitle.Size = new Float2(120f, 22f);
+            // 好友装备简览没有服务端字段：一条占位，不摆四件虚构装备
+            var equipEmpty = NewL("装备未公开", InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, _equipBox);
+            // 两行都在 (0,0) 会叠成一坨（截图里「装备简览」被另一行的字盖住）
+            equipEmpty.Location = new Float2(12f, 30f);
+            equipEmpty.Size = new Float2(200f, 18f);
         }
 
         private void BuildRight()
@@ -302,12 +432,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _right = NewP(InkWashTheme.Panel, this);
 
             NewL("近期互动", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _right);
+            // 互动记录没有服务端来源：只给一条空态，不摆虚构的五条互动
             string[][] ints = {
-                new[] { "组队通关副本", "2时前", "幽冥幻境 · 深渊难度" },
-                new[] { "赠送礼物", "昨天", "天山雪莲 ×1" },
-                new[] { "私聊消息", "3天前", "\"下次副本叫上我\"" },
-                new[] { "击杀世界BOSS", "1周前", "赤焰麒麟 · 组队讨伐" },
-                new[] { "结义", "2周前", "桃园结义 · 义结金兰" },
+                new[] { "暂无互动记录", "", "" },
             };
             for (int i = 0; i < ints.Length; i++)
             {
@@ -318,10 +445,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
 
             NewL("共同好友", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _right);
-            string[] cfs = { "李", "王", "赵", "孙" };
-            string[] cfn = { "飞燕李四", "青衣王五", "狂刀赵六", "幻影孙七" };
-            Color[] cfc = { InkWashTheme.JadePrimary, InkWashTheme.QualityRare, InkWashTheme.BloodPrimary, InkWashTheme.QualityEpic };
-            for (int i = 0; i < 4; i++)
+            // 共同好友同理：无好友时也没有共同好友
+            string[] cfs = System.Array.Empty<string>();
+            string[] cfn = System.Array.Empty<string>();
+            Color[] cfc = System.Array.Empty<Color>();
+            for (int i = 0; i < cfs.Length; i++)
             {
                 var av = NewP(new Color(cfc[i].R, cfc[i].G, cfc[i].B, 0.15f), _right);
                 var ch = NewL(cfs[i], cfc[i], InkWashTheme.FontRole.Display, 14f, TextAlignment.Center, av);
@@ -332,10 +460,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             NewL("交游里程碑", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _right);
             string[][] mils = {
-                new[] { "相识百日", "已相识 128 天" },
-                new[] { "并肩作战", "共同通关 23 次副本" },
-                new[] { "礼尚往来", "互赠礼物 56 件" },
-                new[] { "义结金兰", "结义 14 天" },
+                new[] { "暂无里程碑", "" },
             };
             for (int i = 0; i < mils.Length; i++)
             {
@@ -453,6 +578,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 fy += rowH + rowGap;
             }
 
+            if (_moreHint != null && _moreHint.Visible)
+            {
+                _moreHint.Location = new Float2(lp, fy);
+                _moreHint.Size = new Float2(SideW - lp * 2f, 18f);
+            }
+
             // center column
             float cw = w - SideW * 2f;
             _ctr.Location = new Float2(SideW, ct);
@@ -520,7 +651,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _intiTrack.Location = new Float2(cp, 24f);
             _intiTrack.Size = new Float2(cw - cp * 2f, 6f);
 
-            float pct = Mathf.Clamp(Friends[_sel].Intim / 10000f, 0, 1);
+            float pct = 0f;
+            if (_sel >= 0 && _sel < _friends.Count && _friends[_sel].Intim > 0)
+                pct = Mathf.Clamp(_friends[_sel].Intim / 10000f, 0f, 1f);
+
             _intiFill.Location = Float2.Zero;
             _intiFill.Size = new Float2(_intiTrack.Width * pct, 6f);
 
@@ -659,6 +793,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         {
             _tab = i;
             SelectTabStyle(i);
+            RebuildRows();
         }
 
         private void SelectTabStyle(int active)
@@ -690,7 +825,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
         private void UpdateDetail()
         {
-            var f = Friends[_sel];
+            if (_sel < 0 || _sel >= _friends.Count) return;
+            // BuildLeft 第一次建行时详情栏还没创建
+            if (_ctr == null) return;
+
+            var f = _friends[_sel];
             _idAvtChar.Text = f.Char;
             _idAvt.BackgroundColor = GradeAvtBg(f.Grade);
             _idAvtChar.TextColor = GradeBorder(f.Grade);
@@ -701,16 +840,226 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _idSta.Text = f.Online ? "在线" : "离线";
             _idSta.TextColor = f.Online ? InkWashTheme.JadeBright : InkWashTheme.TextTertiary;
 
+            // 有选中对象时恢复互动按钮：空态那轮把它们全禁用了，这里不恢复就会永久点不动。
+            // 私聊/飞鸽/删除是真接线；组队/传送/赠礼点了会明确提示"尚未接入"，不是假动作。
+            if (_acts != null)
+            {
+                for (int i = 0; i < _acts.Length; i++)
+                    if (_acts[i] != null) _acts[i].Enabled = true;
+            }
+
             if (_infoVals.Length >= 4)
             {
                 _infoVals[0].Text = f.Lv;
                 _infoVals[1].Text = f.Sect;
             }
 
+            if (f.Intim < 0)
+            {
+                // 服务端名单没有亲密度字段：显示"—"，不编数字、不画进度
+                _intiLbl.Text = "亲密度  —";
+                _intiSub.Text = "";
+                _intiFill.Size = new Float2(0f, 6f);
+                return;
+            }
+
             _intiLbl.Text = "亲密度  " + f.Stars;
             _intiSub.Text = f.Intim + " / 10000  ·  距下一阶段还需 " + (10000 - f.Intim) + " 点";
             float pct = Mathf.Clamp(f.Intim / 10000f, 0f, 1f);
             _intiFill.Size = new Float2(_intiTrack.Width * pct, 6f);
+        }
+
+        // ═══════════════ SERVER DATA ═══════════════
+
+        /// <summary>自测标记 <c>friends-selftest.on</c> 是否已跑过（只跑一次）。</summary>
+        private bool _selfTestDone;
+
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+            if (!VisibleInHierarchy) return;
+
+            if (!_selfTestDone && HasSelfTestMarker("friends-selftest.on"))
+            {
+                _selfTestDone = true;
+                RunSelfTestEnablePath();
+            }
+
+            _friendRequestTimer += deltaTime;
+            if (_friendRequestTimer >= 8f)
+            {
+                _friendRequestTimer = 0f;
+                FriendClientService.Instance.RequestList();
+            }
+
+            RefreshFromServer();
+        }
+
+        /// <summary>
+        /// 自测：本机好友名单为空时，"选中好友 → 互动按钮恢复"这条路径永远走不到。
+        /// 这里注入一条 Id=0 的示例条目（与代码里既有的"示例好友"同一语义，真实动作仍会拒绝），
+        /// 走一遍 重建行 → 选中 → UpdateDetail，并把按钮启用数写回执。
+        /// </summary>
+        private void RunSelfTestEnablePath()
+        {
+            try
+            {
+                if (_friends.Count == 0)
+                {
+                    _friends.Add(new Entry
+                    {
+                        Id = 0UL, Name = "自测好友", Char = "测", Lv = "—", Sect = "—",
+                        Loc = "—", Title = "", Stars = "", Online = true, Intim = -1,
+                    });
+                }
+                RebuildRows();
+                SelectFriend(0);
+
+                int enabled = 0;
+                if (_acts != null)
+                    for (int i = 0; i < _acts.Length; i++)
+                        if (_acts[i] != null && _acts[i].Enabled) enabled++;
+
+                AppendSelfTestReceipt($"friends-selftest enabled={enabled} of={_acts?.Length ?? 0} sel={_sel}");
+            }
+            catch (Exception ex)
+            {
+                AppendSelfTestReceipt($"friends-selftest failed {ex.GetType().Name}");
+            }
+        }
+
+        private static void AppendSelfTestReceipt(string line)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", "ui-selftest.out");
+                System.IO.File.AppendAllText(path, line + System.Environment.NewLine);
+            }
+            catch
+            {
+                // 回执写不进去不影响功能
+            }
+        }
+
+        private static bool HasSelfTestMarker(string fileName)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", fileName);
+                return System.IO.File.Exists(path);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 服务端好友名单 → 页面条目。未收到过回包时保留设计稿示例；
+        /// 收到回包（哪怕空名单）后整份替换，避免"示例好友"和真实好友混在一起。
+        /// </summary>
+        private void RefreshFromServer(bool forceRequest = false)
+        {
+            try
+            {
+                var service = FriendClientService.Instance;
+                service.EnsureAttached();
+                if (forceRequest)
+                    service.RequestList(true);
+
+                if (!service.HasServerData)
+                    return;
+                if (service.Revision == _friendRevision)
+                    return;
+
+                _friendRevision = service.Revision;
+
+                var list = service.GetFriends();
+                _friends.Clear();
+                foreach (var f in list)
+                {
+                    if (f == null) continue;
+
+                    string name = string.IsNullOrWhiteSpace(f.FriendName) ? ("角色" + f.FriendId) : f.FriendName;
+                    _friends.Add(new Entry
+                    {
+                        Id = f.FriendId,
+                        Name = name,
+                        Char = name.Substring(0, 1),
+                        Lv = f.Level > 0 ? f.Level.ToString() : "—",
+                        Sect = string.IsNullOrWhiteSpace(f.Profession) ? "—" : f.Profession,
+                        // 服务端名单只带 id/名字/等级/职业/在线位：其余字段显示"—"，客户端不编
+                        Loc = "—",
+                        Title = "好友",
+                        Stars = "",
+                        Online = f.IsOnline,
+                        Intim = -1,
+                        Grade = 0,
+                    });
+                }
+
+                // 在线优先，让左侧「在线/离线」两个分组标题与行顺序一致
+                _friends.Sort((a, b) => b.Online.CompareTo(a.Online));
+                RebuildRows();
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[FriendsPage] 好友名单刷新失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>「私聊」：把对象写进一次性请求并回战斗 HUD，由 HUD 进入密聊会话。</summary>
+        private void OnWhisperSelected()
+        {
+            if (_sel < 0 || _sel >= _friends.Count)
+                return;
+
+            var f = _friends[_sel];
+            if (f.Id == 0UL)
+            {
+                HundunWorld.Game.UI.UIHelper.ShowToast("示例好友不可私聊", HundunWorld.Game.UI.ToastType.Warning);
+                return;
+            }
+
+            WhisperRequest.Set(f.Id, f.Name);
+            NavigationRequested?.Invoke(InkPageDomIds.CombatHud);
+        }
+
+        private void OnAddFriendClicked()
+        {
+            HundunWorld.Game.UI.UIHelper.ShowToast("添加好友需要先选择目标玩家，入口待接入", HundunWorld.Game.UI.ToastType.Info);
+        }
+
+        private void OnDeleteSelected()
+        {
+            if (_sel < 0 || _sel >= _friends.Count)
+                return;
+
+            var f = _friends[_sel];
+            if (f.Id == 0UL)
+            {
+                HundunWorld.Game.UI.UIHelper.ShowToast("示例好友不可删除", HundunWorld.Game.UI.ToastType.Warning);
+                return;
+            }
+
+            var service = FriendClientService.Instance;
+            service.EnsureAttached();
+
+            if (service.RemoveFriend(f.Id))
+            {
+                HundunWorld.Game.UI.UIHelper.ShowToast("已发送删除请求", HundunWorld.Game.UI.ToastType.Info);
+                service.RequestList(true);
+            }
+            else
+            {
+                HundunWorld.Game.UI.UIHelper.ShowToast(
+                    string.IsNullOrEmpty(service.LastNotice) ? "删除失败" : service.LastNotice,
+                    HundunWorld.Game.UI.ToastType.Warning);
+            }
         }
 
         // ═══════════════ IInkPage ═══════════════

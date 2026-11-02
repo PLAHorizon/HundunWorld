@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
@@ -16,7 +17,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
     /// 颜色/字体一律取自 <see cref="InkWashTheme"/> Token，不硬编码色值。
     /// 导航通过 <see cref="NavigationRequested"/> 交由路由器处理。
     /// </summary>
-    public class MenuBestiaryPage : ContainerControl, IInkPage
+    public class MenuBestiaryPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         #region 设计稿文案常量
 
@@ -69,22 +70,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
 
         #region 数据常量与数据表
 
-        /// <summary>已收录数量（设计稿 56/120；接入真实数据源后由 <see cref="BindCollectionProgress"/> 覆盖）</summary>
-        private int _collectedCount = 56;
+        /// <summary>
+        /// 已收录数量：<b>没有数据源就保持"未知"</b>。图鉴收集状态要等服务端下发，
+        /// 以前按设计稿写死 56/120，等于替玩家编了一段收集进度（2026-10-29 改）。
+        /// </summary>
+        private int _collectedCount = -1;
 
-        /// <summary>收录总量（设计稿 56/120；接入真实数据源后由 <see cref="BindCollectionProgress"/> 覆盖）</summary>
-        private int _collectionTotal = 120;
+        /// <summary>收录总量：同上，&lt;=0 表示未知（显示「—」）。</summary>
+        private int _collectionTotal = -1;
 
-        // 顶栏货币余额（设计稿示例数据：宝玉 12,580 / 铜钱 8,320 / 战功 3,450）
+        // 顶栏货币余额：-1 表示没有数据源（显示「—」），接入后由 BindCurrency 覆盖
 
-        /// <summary>宝玉余额（设计稿 12,580）</summary>
-        private int _gem = 12580;
+        /// <summary>宝玉余额（-1 = 未知）</summary>
+        private int _gem = -1;
 
-        /// <summary>铜钱余额（设计稿 8,320）</summary>
-        private int _coin = 8320;
+        /// <summary>铜钱余额（-1 = 未知）</summary>
+        private int _coin = -1;
 
-        /// <summary>战功余额（设计稿 3,450）</summary>
-        private int _trophy = 3450;
+        /// <summary>战功余额（-1 = 未知）</summary>
+        private int _trophy = -1;
 
         private const float SidebarWidth = 240f;
         private const float TopHeaderHeight = 60f;
@@ -94,30 +98,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
         private const float MaxCardWidth = 200f;
         private const float TabWidth = 88f;
         private const float NavItemHeight = 40f;
-
-        /// <summary>左侧导航 — 角色养成组（设计稿中为禁用态）</summary>
-        private static readonly string[] NavDisabledBefore = { "角色", "装备", "外观", "备战", "门派", "个人信息", "时间" };
-
-        /// <summary>左侧导航 — 功能入口组（当前页为"博物志"）</summary>
-        private static readonly string[] NavEnabled = { "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店" };
-
-        /// <summary>功能入口组跳转目标（与设计稿 data-dom-id / 路由表一致）</summary>
-        private static readonly string[] NavEnabledTargets =
-        {
-            InkPageDomIds.NavQuests,
-            InkPageDomIds.NavBestiary,
-            InkPageDomIds.NavMartialRecord,
-            InkPageDomIds.NavLivelihood,
-            InkPageDomIds.NavTeam,
-            InkPageDomIds.NavMail,
-            InkPageDomIds.NavShop,
-        };
-
-        /// <summary>当前所在导航项下标（博物志）</summary>
-        private const int NavActiveIndex = 1;
-
-        /// <summary>左侧导航 — 设置（设计稿中为禁用态）</summary>
-        private const string NavDisabledAfter = "设置";
 
         /// <summary>分类标签（设计稿 6 个 cat-tab）</summary>
         private static readonly string[] CategoryNames = { "花草", "禽鸟", "走兽", "鱼虫", "矿石", "器物" };
@@ -177,9 +157,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
         private Panel _sidebar;
         private InkVerticalTitle _sidebarTitle;
         private InkDivider _sidebarTitleDivider;
-        private InkDivider _sidebarNavDividerTop;
-        private InkDivider _sidebarNavDividerBottom;
-        private List<InkButton> _sidebarNavItems;
+        private InkSidebarList _sidebarList;
 
         // 返回按钮（设计稿 ink-back-btn，隐藏出口 → combat-hud）
         private InkBackButton _backButton;
@@ -291,6 +269,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
 
                 RefreshAllData();
                 ApplyLayout();
+
+                // 顶栏身份接真实数据（货币余额另有 BindCurrency，暂不覆盖）
+                InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelTag);
+                InkPlayerHeaderBinder.BindSect(_playerSectLabel);
             }
             catch (Exception ex)
             {
@@ -334,74 +316,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
 
             _sidebarTitleDivider = new InkDivider { Parent = _sidebar };
 
-            _sidebarNavItems = new List<InkButton>();
-            for (int i = 0; i < NavDisabledBefore.Length; i++)
+            // 侧边栏导航：共用控件渲染 InkSidebarNav 的完整清单
+            // （原实现把 7 项标成禁用灰条、只有 7 项可点，现在全部可达且分组滚动）。
+            _sidebarList = new InkSidebarList(InkPageDomIds.NavBestiary)
             {
-                _sidebarNavItems.Add(CreateNavItem(NavDisabledBefore[i], true, null));
-            }
-
-            _sidebarNavDividerTop = new InkDivider { Parent = _sidebar };
-
-            for (int i = 0; i < NavEnabled.Length; i++)
-            {
-                _sidebarNavItems.Add(CreateNavItem(NavEnabled[i], false, NavEnabledTargets[i]));
-            }
-
-            _sidebarNavDividerBottom = new InkDivider { Parent = _sidebar };
-
-            _sidebarNavItems.Add(CreateNavItem(NavDisabledAfter, true, null));
-        }
-
-        /// <summary>
-        /// 创建单个导航项。禁用项不绑定点击（设计稿 nav-item-disabled），
-        /// 当前页（博物志）使用 nav-item-active 的金色高亮 + 左侧金线。
-        /// </summary>
-        private InkButton CreateNavItem(string text, bool disabled, string targetDomId)
-        {
-            bool isActive = !disabled && text == NavEnabled[NavActiveIndex];
-
-            InkButton item = new InkButton
-            {
-                Text = text,
-                Variant = InkButtonVariant.Ghost,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                TextColor = disabled
-                    ? InkWashTheme.TextDisabled
-                    : (isActive ? InkWashTheme.GoldBright : InkWashTheme.PaperBright),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
-                Parent = _sidebar
+                Parent = _sidebar,
             };
-
-            if (isActive)
-            {
-                item.BackgroundColor = WithAlpha(InkWashTheme.GoldPrimary, 0.1f);
-
-                // nav-item-active 左侧 2px 金线
-                var activeBar = new Panel
-                {
-                    Location = new Float2(0f, 4f),
-                    Size = new Float2(2f, NavItemHeight - 8f),
-                    BackgroundColor = InkWashTheme.GoldPrimary,
-                    Parent = item
-                };
-                activeBar.Enabled = false;
-            }
-
-            if (!disabled && !string.IsNullOrEmpty(targetDomId))
-            {
-                string target = targetDomId;
-                item.Clicked += () => NavigationRequested?.Invoke(target);
-            }
-
-            return item;
+            _sidebarList.NavigationRequested += domId => NavigationRequested?.Invoke(domId);
         }
-
         /// <summary>返回按钮（设计稿隐藏出口 back-hud → 战斗 HUD）。</summary>
         private void BuildBackButton()
         {
             _backButton = new InkBackButton { Parent = this };
-            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
         }
 
         private void BuildMainArea()
@@ -450,7 +377,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
 
             _playerNameLabel = new Label
             {
-                Text = "无名侠",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
                 TextColor = InkWashTheme.PaperBright,
                 VerticalAlignment = TextAlignment.Center,
@@ -460,7 +387,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
 
             _playerLevelTag = new InkTag
             {
-                Text = "Lv.42",
+                Text = "—",
                 TagVariant = InkTagVariant.Vermilion,
                 Size = new Float2(56f, 22f),
                 Parent = _topHeader
@@ -468,7 +395,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
 
             _playerSectLabel = new Label
             {
-                Text = "逍遥派",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.GoldPrimary,
                 VerticalAlignment = TextAlignment.Center,
@@ -476,9 +403,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
                 Parent = _topHeader
             };
 
-            _currencyGemLabel = CreateCurrencyLabel(_gem.ToString("N0"), InkWashTheme.GoldBright);
-            _currencyCoinLabel = CreateCurrencyLabel(_coin.ToString("N0"), InkWashTheme.PaperAged);
-            _currencyTrophyLabel = CreateCurrencyLabel(_trophy.ToString("N0"), InkWashTheme.JadeBright);
+            _currencyGemLabel = CreateCurrencyLabel("—", InkWashTheme.GoldBright);
+            _currencyCoinLabel = CreateCurrencyLabel("—", InkWashTheme.PaperAged);
+            _currencyTrophyLabel = CreateCurrencyLabel("—", InkWashTheme.JadeBright);
         }
 
         /// <summary>货币数值标签（设计稿：宝玉/铜钱/战功三项，数字字体 + 右对齐数值）。</summary>
@@ -544,7 +471,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
 
             _totalProgressValueLabel = new Label
             {
-                Text = _collectedCount + "/" + _collectionTotal,
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.GoldPrimary,
                 VerticalAlignment = TextAlignment.Center,
@@ -789,7 +716,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
             _detailProgressKeyLabel = CreateDetailKeyLabel(DetailProgressKeyText);
             _detailProgressValueLabel = new Label
             {
-                Text = _collectedCount + "/" + _collectionTotal,
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Far,
@@ -870,15 +797,22 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
             if (_totalProgressBar != null) _totalProgressBar.Value = ratio;
             if (_detailProgressBar != null) _detailProgressBar.Value = ratio;
 
-            string progressText = _collectedCount + "/" + _collectionTotal;
+            bool hasProgress = _collectionTotal > 0 && _collectedCount >= 0;
+            if (_pageSubtitleLabel != null)
+                _pageSubtitleLabel.Text = hasProgress
+                    ? PageSubtitleText
+                    : "图鉴数据尚未接入服务端，收录状态暂不可用";
+            string progressText = hasProgress ? $"{_collectedCount}/{_collectionTotal}" : "—";
             if (_totalProgressValueLabel != null) _totalProgressValueLabel.Text = progressText;
             if (_detailProgressValueLabel != null) _detailProgressValueLabel.Text = progressText;
             if (_detailProgressCaptionLabel != null)
-                _detailProgressCaptionLabel.Text = $"已收录 {_collectedCount} 株，继续探索可解锁更多记录";
+                _detailProgressCaptionLabel.Text = hasProgress
+                    ? $"已收录 {_collectedCount} 株，继续探索可解锁更多记录"
+                    : "收录进度尚未接入服务端";
 
-            if (_currencyGemLabel != null) _currencyGemLabel.Text = _gem.ToString("N0");
-            if (_currencyCoinLabel != null) _currencyCoinLabel.Text = _coin.ToString("N0");
-            if (_currencyTrophyLabel != null) _currencyTrophyLabel.Text = _trophy.ToString("N0");
+            if (_currencyGemLabel != null) _currencyGemLabel.Text = _gem >= 0 ? _gem.ToString("N0") : "—";
+            if (_currencyCoinLabel != null) _currencyCoinLabel.Text = _coin >= 0 ? _coin.ToString("N0") : "—";
+            if (_currencyTrophyLabel != null) _currencyTrophyLabel.Text = _trophy >= 0 ? _trophy.ToString("N0") : "—";
 
             RefreshTabVisuals();
             RefreshCardData();
@@ -936,11 +870,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
         private void RefreshCardData()
         {
             bool isFlowerCategory = _activeCategoryIndex == 0;
-            _selectedCardIndex = isFlowerCategory ? 0 : -1;
+            // 没有收集进度数据时不能摆出"已收录"的卡片：那样与「收录进度尚未接入」自相矛盾。
+            bool hasCollectionData = _collectionTotal > 0 && _collectedCount >= 0;
+            _selectedCardIndex = isFlowerCategory && hasCollectionData ? 0 : -1;
 
             for (int i = 0; i < _cards.Count; i++)
             {
-                bool discovered = isFlowerCategory && i < FlowerNames.Length;
+                bool discovered = hasCollectionData && isFlowerCategory && i < FlowerNames.Length;
                 string name = discovered ? FlowerNames[i] : UncollectedNameText;
                 string quality = discovered ? FlowerQualities[i] : UncollectedQualityText;
 
@@ -1116,37 +1052,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Bestiary
                 _sidebarTitleDivider.Width = SidebarWidth - 32f;
             }
 
-            float navY = 172f;
-            int disabledBeforeCount = NavDisabledBefore.Length;
-            for (int i = 0; i < _sidebarNavItems.Count; i++)
-            {
-                if (_sidebarNavItems[i] != null)
-                {
-                    _sidebarNavItems[i].Location = new Float2(0f, navY);
-                    _sidebarNavItems[i].Size = new Float2(SidebarWidth, NavItemHeight);
-                }
-
-                navY += NavItemHeight;
-
-                if (i == disabledBeforeCount - 1)
-                {
-                    if (_sidebarNavDividerTop != null)
-                    {
-                        _sidebarNavDividerTop.Location = new Float2(16f, navY + 12f);
-                        _sidebarNavDividerTop.Width = SidebarWidth - 32f;
-                    }
-                    navY += 28f;
-                }
-                else if (i == disabledBeforeCount + NavEnabled.Length - 1)
-                {
-                    if (_sidebarNavDividerBottom != null)
-                    {
-                        _sidebarNavDividerBottom.Location = new Float2(16f, navY + 12f);
-                        _sidebarNavDividerBottom.Width = SidebarWidth - 32f;
-                    }
-                    navY += 28f;
-                }
-            }
+            _sidebarList.Layout(0f, 172f, SidebarWidth, Mathf.Max(0f, sh - 172f));
 
             // ---- 主区域 ----
             float mainW = sw - SidebarWidth;

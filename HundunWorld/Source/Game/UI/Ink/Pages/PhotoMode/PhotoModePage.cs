@@ -16,7 +16,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
     /// 底部控制栏（角度 / 快门 + 空格键提示 / 相册）与快门闪光层。
     /// 颜色与字体统一取自 <see cref="InkWashTheme"/> Token 与 Ink 组件库，不引入外部依赖。
     /// </summary>
-    public class PhotoModePage : Panel, IInkPage
+    public class PhotoModePage : Panel, IInkPage, IInkNavigationSource
     {
         #region 设计稿常量
 
@@ -201,6 +201,41 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
         private Panel _flashLayer;
         private float _flashTimer;
 
+        // 快门截图：先隐藏全部取景 UI，等两帧再抓屏，再多等一帧恢复（避免把 UI 拍进去）
+        private int _capturePhase;
+        private int _captureWaitFrames;
+        private string _capturePath;
+        private bool[] _captureChildVisibility;
+
+        // 取景期间接管主相机 FOV：临时停掉会每帧写 FOV 的相机脚本，退出时原样恢复
+        private FlaxEngine.Camera _photoCamera;
+        private ThirdPersonCamera _thirdPersonCamera;
+        private DynamicCameraAdjuster _cameraAdjuster;
+        private bool _thirdPersonWasEnabled;
+        private bool _adjusterWasEnabled;
+        private float _savedFov;
+        private bool _cameraAcquired;
+        private float _cameraRetryTimer;
+
+        // 角度预设：在进入时的相机朝向基础上加俯仰角（0° / 俯 12° / 仰 12°），退出时还原
+        private Vector3 _savedEuler;
+        private int _anglePreset;
+
+        // 曝光/滤镜走 PostFxVolume：进拍照且需要时创建，退出销毁（只在拍照期间影响画面）
+        private PostFxVolume _photoVolume;
+        private Actor _photoVolumeActor;
+
+        // 自测（标记文件 photo-selftest.on）：运行时页面控件不在场景树里，编辑器工具点不到滑块和快门
+        private float _selfTestElapsed;
+        private bool _selfTestFovApplied;
+        private bool _selfTestShutterFired;
+        private bool _selfTestFov2Applied;
+        private bool _selfTestSecondShot;
+        private bool _selfTestExited;
+        private bool _selfTestAngleApplied;
+        private bool _selfTestFxApplied;
+        private bool _selfTestThirdShot;
+
         #endregion
 
         #region 事件
@@ -216,6 +251,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
 
         /// <summary>相册入口</summary>
         public event Action AlbumClicked;
+
+        /// <summary>
+        /// 请求隐藏/恢复常驻 UI（true=进入取景器，隐藏滚轮技能栏与五行气息指示）。
+        /// 由 MainUIManager 订阅后统一控制，页面不直接持有外壳控件。
+        /// </summary>
+        public event Action<bool> OverlayVisibilityRequested;
 
         /// <summary>
         /// 统一导航请求（设计稿 link-settings-audio 等出口）。
@@ -237,14 +278,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
             }
 
             AnchorPreset = AnchorPresets.StretchAll;
-            BackgroundColor = InkWashTheme.BaseDefault;
+            // 拍照模式是取景器：页面不铺不透明底，直接透出 3D 场景（外壳也用 ImmersiveTransparent 不铺墨底）。
+            BackgroundColor = Color.Transparent;
             ClipChildren = false;
             Location = Float2.Zero;
             Size = _screenSize;
 
             try
             {
-                BuildBackground();
+                // 设计稿的墨晕背景是为"静态舞台"准备的；接真实场景后不再画，避免糊在画面上。
                 BuildTopBar();
                 BuildViewfinder();
                 BuildFilterPanel();
@@ -254,6 +296,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
                 ApplyLayout();
                 SelectFilter(0);
                 RefreshAllParamValues();
+                AcquireCameraControl();
             }
             catch (Exception ex)
             {
@@ -337,7 +380,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
                 Parent = _topBar
             };
             // 设计稿 back-hud 出口
-            _exitButton.Clicked += () => ExitRequested?.Invoke();
+            _exitButton.Clicked += () =>
+            {
+                // 退出前先恢复常驻 UI 与相机 FOV/脚本，否则它们会一直停在取景状态
+                OverlayVisibilityRequested?.Invoke(false);
+                ReleaseCameraControl();
+                ExitRequested?.Invoke();
+            };
 
             _exitIcon = new PhotoIcon(PhotoIconKind.ArrowLeft, 12f)
             {
@@ -624,6 +673,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
                     _filterItems[i].Active = i == wrapped;
                 }
             }
+
+            ApplyFilter();
         }
 
         #endregion
@@ -677,13 +728,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
             float y = PanelPadding + PanelHeaderHeight + 16f;
 
             _fovValue = BuildParamItem(ref y, contentWidth, "FOV", out _fovSlider, "20°", "90°", FovInitial, FovMin, FovMax);
-            _fovSlider.Dragged += _ => RefreshFovLabel();
+            _fovSlider.Dragged += _ => { RefreshFovLabel(); ApplyFovFromSlider(); };
 
             _exposureValue = BuildParamItem(ref y, contentWidth, "曝光", out _exposureSlider, "-2.0", "+2.0", ExposureInitial, ExposureMin, ExposureMax);
-            _exposureSlider.Dragged += _ => RefreshExposureLabel();
+            _exposureSlider.Dragged += _ => { RefreshExposureLabel(); ApplyExposure(); };
 
             _focalValue = BuildParamItem(ref y, contentWidth, "焦距", out _focalSlider, "14mm", "200mm", FocalInitial, FocalMin, FocalMax);
-            _focalSlider.Dragged += _ => RefreshFocalLabel();
+            _focalSlider.Dragged += _ => { RefreshFocalLabel(); ApplyFovFromFocal(); };
 
             var divider = new InkDivider
             {
@@ -695,9 +746,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
 
             y += 16f + 1f + 8f;
 
-            BuildStaticRow(ref y, "时间", "戌时", PhotoIconKind.Clock);
-            BuildStaticRow(ref y, "天候", "薄暮", PhotoIconKind.Sun);
-            BuildStaticRow(ref y, "风向", "东南微风", PhotoIconKind.Wind);
+            // 世界时间 / 天候 / 风向都没有数据源（时辰同步未接入，天候风向无服务端字段），不摆样张文案
+            BuildStaticRow(ref y, "时间", "—", PhotoIconKind.Clock);
+            BuildStaticRow(ref y, "天候", "—", PhotoIconKind.Sun);
+            BuildStaticRow(ref y, "风向", "—", PhotoIconKind.Wind);
 
             _cameraPanel.Height = y + PanelPadding;
         }
@@ -862,6 +914,261 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
             _focalValue.Text = focal + "mm";
         }
 
+        /// <summary>
+        /// 接管主相机 FOV：停掉会每帧写 FOV 的相机脚本（第三人称相机 / 动态 FOV），
+        /// 记下原 FOV，退出或页面销毁时原样恢复。
+        /// </summary>
+        private void AcquireCameraControl()
+        {
+            var cam = FlaxEngine.Camera.MainCamera;
+            string via = "MainCamera";
+
+            if (cam == null)
+            {
+                // PIE 里主视口相机不一定注册成 MainCamera。本项目相机与 ThirdPersonCamera /
+                // DynamicCameraAdjuster 挂在同一个 Actor 上（见 DynamicCameraAdjuster.OnStart 的 Actor.As<Camera>()），
+                // 所以退到这两处按 Actor 取相机；都拿不到就由 Update 定时重试。
+                var tpc = FlaxEngine.Level.FindScript<ThirdPersonCamera>();
+                if (tpc != null)
+                {
+                    cam = tpc.Actor.As<FlaxEngine.Camera>() ?? tpc.Actor.GetChild<FlaxEngine.Camera>();
+                    via = "ThirdPersonCamera.Actor";
+                }
+            }
+
+            if (cam == null)
+            {
+                var adjuster = FlaxEngine.Level.FindScript<DynamicCameraAdjuster>();
+                if (adjuster != null)
+                {
+                    cam = adjuster.Actor.As<FlaxEngine.Camera>() ?? adjuster.Actor.GetChild<FlaxEngine.Camera>();
+                    via = "DynamicCameraAdjuster.Actor";
+                }
+            }
+
+            if (cam == null) return;
+
+            _photoCamera = cam;
+            _savedFov = cam.FieldOfView;
+            _savedEuler = cam.EulerAngles;
+            _anglePreset = 0;
+
+            _thirdPersonCamera = cam.GetScript<ThirdPersonCamera>()
+                ?? FlaxEngine.Level.FindScript<ThirdPersonCamera>();
+            if (_thirdPersonCamera != null)
+            {
+                _thirdPersonWasEnabled = _thirdPersonCamera.Enabled;
+                _thirdPersonCamera.Enabled = false;
+            }
+
+            _cameraAdjuster = cam.GetScript<DynamicCameraAdjuster>()
+                ?? FlaxEngine.Level.FindScript<DynamicCameraAdjuster>();
+            if (_cameraAdjuster != null)
+            {
+                _adjusterWasEnabled = _cameraAdjuster.Enabled;
+                _cameraAdjuster.Enabled = false;
+            }
+
+            _cameraAcquired = true;
+            if (HasSelfTestMarker("photo-selftest.on"))
+                AppendSelfTestReceipt($"camera via={via} savedFov={_savedFov:F1} instance={GetHashCode():X8} tpc={(_thirdPersonCamera == null ? "null" : "off")} adjuster={(_cameraAdjuster == null ? "null" : "off")}");
+            ApplyFovFromSlider();
+            // 曝光滑块初值 0.5 ⇒ 0 EV（中性），进页面就对齐，避免"标签有值画面没变"
+            ApplyExposure();
+        }
+
+        private void ReleaseCameraControl()
+        {
+            if (!_cameraAcquired) return;
+
+            float restored = _photoCamera != null ? _savedFov : -1f;
+            if (_photoCamera != null)
+            {
+                _photoCamera.FieldOfView = _savedFov;
+                if (_anglePreset != 0)
+                    _photoCamera.EulerAngles = _savedEuler;
+            }
+            if (_thirdPersonCamera != null)
+                _thirdPersonCamera.Enabled = _thirdPersonWasEnabled;
+            if (_cameraAdjuster != null)
+                _cameraAdjuster.Enabled = _adjusterWasEnabled;
+
+            if (HasSelfTestMarker("photo-selftest.on"))
+                AppendSelfTestReceipt($"release instance={GetHashCode():X8} restoredFov={restored:F1} adjuster={(_cameraAdjuster == null ? "null" : _adjusterWasEnabled.ToString())}");
+
+            if (_photoCamera != null)
+                _photoCamera.FieldOfView = _savedFov;
+            if (_thirdPersonCamera != null)
+                _thirdPersonCamera.Enabled = _thirdPersonWasEnabled;
+            if (_cameraAdjuster != null)
+                _cameraAdjuster.Enabled = _adjusterWasEnabled;
+
+            _photoCamera = null;
+            _thirdPersonCamera = null;
+            _cameraAdjuster = null;
+            _cameraAcquired = false;
+            DestroyPhotoVolume();
+        }
+
+        /// <summary>角度按钮：在进入时朝向的基础上循环 平视 → 俯视 12° → 仰视 12°。</summary>
+        private void OnAngleClicked()
+        {
+            if (!_cameraAcquired || _photoCamera == null)
+                return;
+
+            _anglePreset = (_anglePreset + 1) % 3;
+            ApplyAnglePreset();
+            AngleClicked?.Invoke();
+        }
+
+        private void ApplyAnglePreset()
+        {
+            if (!_cameraAcquired || _photoCamera == null)
+                return;
+
+            float pitch = _anglePreset switch
+            {
+                1 => 12f,
+                2 => -12f,
+                _ => 0f
+            };
+            _photoCamera.EulerAngles = _savedEuler + new Vector3(pitch, 0f, 0f);
+            if (HasSelfTestMarker("photo-selftest.on"))
+                AppendSelfTestReceipt($"angle preset={_anglePreset} pitch={pitch:F1} euler={_photoCamera.EulerAngles}");
+        }
+
+        /// <summary>
+        /// 拍照期间的曝光/调色载体。没有现成体积就临时建一个，退出时销毁——
+        /// 只在取景与拍照时影响画面，不污染正常游戏渲染。
+        /// </summary>
+        private PostFxVolume EnsurePhotoVolume()
+        {
+            if (_photoVolume != null)
+                return _photoVolume;
+
+            try
+            {
+                // PostFxVolume 本身就是 Actor（和 Camera 一样），直接 new + Spawn
+                _photoVolume = new PostFxVolume { Name = "PhotoModePostFx" };
+                Level.SpawnActor(_photoVolume);
+                _photoVolume.BlendWeight = 1f;
+                _photoVolume.BlendRadius = 0f;
+                _photoVolumeActor = _photoVolume;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[PhotoModePage] 创建曝光/调色体积失败: {ex.Message}");
+                _photoVolume = null;
+            }
+
+            return _photoVolume;
+        }
+
+        /// <summary>曝光滑块 → 相机后处理曝光补偿（-2 ~ +2 EV）。</summary>
+        private void ApplyExposure()
+        {
+            if (_exposureSlider == null)
+                return;
+
+            var vol = EnsurePhotoVolume();
+            if (vol == null)
+                return;
+
+            float ev = ExposureMin + _exposureSlider.Value * (ExposureMax - ExposureMin);
+            var eye = vol.EyeAdaptation;
+            eye.PostExposure = ev;
+            eye.OverrideFlags = EyeAdaptationSettingsOverride.All;
+            vol.EyeAdaptation = eye;
+
+            if (HasSelfTestMarker("photo-selftest.on"))
+                AppendSelfTestReceipt($"exposure ev={ev:F1}");
+        }
+
+        /// <summary>滤镜 → 调色（饱和度 + 色偏），选「原图」时恢复中性。</summary>
+        private void ApplyFilter()
+        {
+            var vol = EnsurePhotoVolume();
+            if (vol == null)
+                return;
+
+            var cg = vol.ColorGrading;
+            cg.OverrideFlags = ColorGradingSettingsOverride.All;
+            switch (_selectedFilter)
+            {
+                case 1: // 水墨
+                    cg.ColorSaturation = new Float4(0.25f);
+                    cg.ColorGain = new Float4(1.02f, 1.0f, 0.96f, 1f);
+                    break;
+                case 2: // 复古
+                    cg.ColorSaturation = new Float4(0.7f);
+                    cg.ColorGain = new Float4(1.08f, 1.0f, 0.88f, 1f);
+                    break;
+                case 3: // 明快
+                    cg.ColorSaturation = new Float4(1.18f);
+                    cg.ColorGain = new Float4(1.02f, 1.02f, 1.02f, 1f);
+                    break;
+                case 4: // 暗调
+                    cg.ColorSaturation = new Float4(0.85f);
+                    cg.ColorGain = new Float4(0.92f, 0.92f, 0.96f, 1f);
+                    break;
+                default: // 原图
+                    cg.ColorSaturation = new Float4(1f);
+                    cg.ColorGain = new Float4(1f);
+                    break;
+            }
+            vol.ColorGrading = cg;
+
+            if (HasSelfTestMarker("photo-selftest.on"))
+                AppendSelfTestReceipt($"filter index={_selectedFilter}");
+        }
+
+        private void DestroyPhotoVolume()
+        {
+            if (_photoVolumeActor == null)
+                return;
+
+            try
+            {
+                FlaxEngine.Object.Destroy(_photoVolumeActor);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[PhotoModePage] 销毁曝光/调色体积失败: {ex.Message}");
+            }
+
+            _photoVolumeActor = null;
+            _photoVolume = null;
+        }
+
+        private void ApplyFovFromSlider()
+        {
+            if (!_cameraAcquired || _photoCamera == null || _fovSlider == null) return;
+
+            float fov = FovMin + _fovSlider.Value * (FovMax - FovMin);
+            _photoCamera.FieldOfView = Mathf.Clamp(fov, 10f, 120f);
+        }
+
+        /// <summary>
+        /// 焦距 → FOV：设计稿范围 14~200mm 对应视野 90°~20°。
+        /// 工程里没有机身光学参数可查，这里按设计稿区间做线性映射，不假装物理换算。
+        /// </summary>
+        private void ApplyFovFromFocal()
+        {
+            if (_focalSlider == null) return;
+
+            float fov = FovMax - _focalSlider.Value * (FovMax - FovMin);
+
+            if (_fovSlider != null)
+            {
+                float range = FovMax - FovMin;
+                _fovSlider.Value = range <= 0f ? 0f : Mathf.Clamp((fov - FovMin) / range, 0f, 1f);
+            }
+            RefreshFovLabel();
+
+            if (_cameraAcquired && _photoCamera != null)
+                _photoCamera.FieldOfView = Mathf.Clamp(fov, 10f, 120f);
+        }
+
         #endregion
 
         #region 底部控制栏
@@ -890,7 +1197,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
                 Location = new Float2(TopBarPadding, sideButtonY),
                 Parent = _bottomBar
             };
-            _angleButton.Clicked += () => AngleClicked?.Invoke();
+            _angleButton.Clicked += OnAngleClicked;
 
             _albumButton = new PhotoSideButton(PhotoIconKind.Images, "相册")
             {
@@ -956,6 +1263,51 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
         {
             ShutterClicked?.Invoke();
             TriggerFlash();
+            BeginCapture();
+        }
+
+        /// <summary>开始一次截图：隐藏取景 UI（含闪光层），由 <see cref="Update"/> 分帧完成抓屏与恢复。</summary>
+        private void BeginCapture()
+        {
+            if (_capturePhase != 0) return;
+
+            _capturePath = BuildCapturePath();
+            if (HasSelfTestMarker("photo-selftest.on"))
+                AppendSelfTestReceipt($"capture path={_capturePath}");
+
+            int count = Children.Count;
+            _captureChildVisibility = new bool[count];
+            for (int i = 0; i < count; i++)
+            {
+                var child = Children[i];
+                _captureChildVisibility[i] = child != null && child.Visible;
+                if (child != null) child.Visible = false;
+            }
+
+            _capturePhase = 1;
+            _captureWaitFrames = 2;
+        }
+
+        private static string BuildCapturePath()
+        {
+            string dir = System.IO.Path.Combine(Globals.ProjectFolder, "Screenshots");
+            if (!System.IO.Directory.Exists(dir))
+                System.IO.Directory.CreateDirectory(dir);
+            return System.IO.Path.Combine(dir, $"Photo_{System.DateTime.Now:yyyyMMdd_HHmmss}.png");
+        }
+
+        private void RestoreCaptureUi()
+        {
+            if (_captureChildVisibility != null)
+            {
+                int count = Math.Min(Children.Count, _captureChildVisibility.Length);
+                for (int i = 0; i < count; i++)
+                {
+                    var child = Children[i];
+                    if (child != null) child.Visible = _captureChildVisibility[i];
+                }
+                _captureChildVisibility = null;
+            }
         }
 
         /// <summary>
@@ -975,16 +1327,182 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
                 1f);
         }
 
+        /// <summary>
+        /// 自测：<c>%APPDATA%/HundunWorld/photo-selftest.on</c> 存在时，进页面依次
+        /// ① 1.5s 把 FOV 滑块拨到中间 → 3s 拍照；② 5s 拨到最小 → 6.5s 再拍一张。
+        /// 两张同机位不同 FOV 的成片可直接比对，证明滑块真的写到了相机上（运行时控件点不到）。
+        /// </summary>
+        private void RunSelfTest(float deltaTime)
+        {
+            if (_selfTestExited || !HasSelfTestMarker("photo-selftest.on"))
+                return;
+
+            _selfTestElapsed += deltaTime;
+
+            if (!_selfTestFovApplied && _selfTestElapsed >= 1.5f && _cameraAcquired && _photoCamera != null)
+            {
+                _selfTestFovApplied = true;
+                SetSelfTestFov(0.5f, "0.5");
+            }
+
+            if (!_selfTestShutterFired && _selfTestElapsed >= 3f)
+            {
+                _selfTestShutterFired = true;
+                FlaxEngine.Debug.Log("[SelfTest] photo 触发快门 #1");
+                OnShutterClicked();
+            }
+
+            if (_selfTestFovApplied && !_selfTestFov2Applied && _selfTestElapsed >= 5f && _cameraAcquired && _photoCamera != null)
+            {
+                _selfTestFov2Applied = true;
+                SetSelfTestFov(0f, "0");
+            }
+
+            if (_selfTestShutterFired && !_selfTestAngleApplied && _selfTestElapsed >= 4.2f && _cameraAcquired && _photoCamera != null)
+            {
+                _selfTestAngleApplied = true;
+                OnAngleClicked();
+            }
+
+            if (_selfTestShutterFired && !_selfTestSecondShot && _selfTestElapsed >= 6.5f)
+            {
+                _selfTestSecondShot = true;
+                FlaxEngine.Debug.Log("[SelfTest] photo 触发快门 #2");
+                OnShutterClicked();
+            }
+
+            if (_selfTestSecondShot && !_selfTestFxApplied && _selfTestElapsed >= 8f && _cameraAcquired && _photoCamera != null)
+            {
+                _selfTestFxApplied = true;
+                // 曝光拉满 + 水墨滤镜，用来验证 PostFx 真的进了渲染（不是只改标签）
+                if (_exposureSlider != null) _exposureSlider.Value = 1f;
+                RefreshExposureLabel();
+                ApplyExposure();
+                SelectFilter(1);
+            }
+
+            if (_selfTestFxApplied && !_selfTestThirdShot && _selfTestElapsed >= 9.5f)
+            {
+                _selfTestThirdShot = true;
+                FlaxEngine.Debug.Log("[SelfTest] photo 触发快门 #3（曝光/滤镜）");
+                OnShutterClicked();
+            }
+
+            if (_selfTestThirdShot && !_selfTestExited && _selfTestElapsed >= 11.5f)
+            {
+                _selfTestExited = true;
+                FlaxEngine.Debug.Log("[SelfTest] photo 走退出路径");
+                // 与顶部返回钮同一套收尾（常驻 UI + 相机 + 页面导航）
+                OverlayVisibilityRequested?.Invoke(false);
+                ReleaseCameraControl();
+                ExitRequested?.Invoke();
+            }
+        }
+
+        private void SetSelfTestFov(float sliderValue, string label)
+        {
+            if (_fovSlider == null)
+                return;
+
+            float before = _photoCamera != null ? _photoCamera.FieldOfView : 0f;
+            _fovSlider.Value = sliderValue;
+            RefreshFovLabel();
+            ApplyFovFromSlider();
+            float after = _photoCamera != null ? _photoCamera.FieldOfView : 0f;
+            FlaxEngine.Debug.Log($"[SelfTest] photo FOV {before:F1} -> {after:F1}（滑块 {label}）");
+            AppendSelfTestReceipt($"fov slider={label} before={before:F1} after={after:F1} acquired={_cameraAcquired} cam={(_photoCamera == null ? "null" : "ok")} instance={GetHashCode():X8}");
+        }
+
+        /// <summary>自测用的落盘回执（运行日志在这台机器上不落盘，只能用文件取证）。</summary>
+        private static void AppendSelfTestReceipt(string line)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", "photo-selftest.out");
+                System.IO.File.AppendAllText(path, line + System.Environment.NewLine);
+            }
+            catch
+            {
+                // 自测回执写不进去不影响功能
+            }
+        }
+
+        private static bool HasSelfTestMarker(string fileName)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", fileName);
+                return System.IO.File.Exists(path);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
+
+            // 相机还没拿到（页面创建时主视口相机可能尚未就绪）：每 0.5 秒重试，拿到就接管 FOV。
+            // 另外，切场景/重生会把相机 Actor 重建掉，旧引用会变成 null 而 _cameraAcquired 仍是 true——
+            // 这时要作废重拿，否则 FOV 滑块静默无效（2026-10-29 自测回执：acquired=True cam=null）。
+            if (_cameraAcquired && _photoCamera == null)
+            {
+                _cameraAcquired = false;
+                _thirdPersonCamera = null;
+                _cameraAdjuster = null;
+            }
+
+            if (!_cameraAcquired)
+            {
+                _cameraRetryTimer -= deltaTime;
+                if (_cameraRetryTimer <= 0f)
+                {
+                    _cameraRetryTimer = 0.5f;
+                    AcquireCameraControl();
+                }
+            }
+
+            // 截图分帧：隐藏 UI 两帧后抓屏，再多等一帧恢复，避免截图里带上取景界面
+            if (_capturePhase != 0)
+            {
+                _captureWaitFrames--;
+                if (_capturePhase == 1 && _captureWaitFrames <= 0)
+                {
+                    try
+                    {
+                        Screenshot.Capture(_capturePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        FlaxEngine.Debug.LogError($"[PhotoModePage] 截图失败: {ex.Message}");
+                    }
+
+                    _capturePhase = 2;
+                    _captureWaitFrames = 1;
+                }
+                else if (_capturePhase == 2 && _captureWaitFrames <= 0)
+                {
+                    RestoreCaptureUi();
+                    _capturePhase = 0;
+                    HundunWorld.Game.UI.UIHelper.ShowToast(
+                        "照片已保存到 Screenshots 文件夹", HundunWorld.Game.UI.ToastType.Success);
+                }
+            }
 
             // 设计稿：空格键拍照（document keydown Space）
             if (FlaxEngine.Input.GetKeyDown(KeyboardKeys.Spacebar))
             {
                 OnShutterClicked();
             }
+
+            RunSelfTest(deltaTime);
 
             // 闪光衰减（120ms）
             if (_flashLayer != null && _flashLayer.Visible)
@@ -1144,6 +1662,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.PhotoMode
         /// <summary>
         /// 基于当前控件实际尺寸刷新布局（IInkPage 契约）。
         /// </summary>
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            // 页面被路由销毁（不只点退出）时也要恢复常驻 UI 与相机
+            OverlayVisibilityRequested?.Invoke(false);
+            ReleaseCameraControl();
+            base.OnDestroy();
+        }
+
         public void RefreshLayout()
         {
             if (Width > 0f && Height > 0f)

@@ -284,7 +284,7 @@ namespace HundunWorld.Game.UI.Components
 
         private void OnConfirmClicked(Button sender)
         {
-            FlaxEngine.Debug.Log("✓ 确认按钮被点击");
+            FlaxEngine.Debug.Log("√ 确认按钮被点击");
             
             // 根据UI音效集成规范，播放音效
             try

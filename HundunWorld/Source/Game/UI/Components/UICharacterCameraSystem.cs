@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using FlaxEngine;
 
@@ -230,7 +230,8 @@ namespace HundunWorld.Game.UI.Components
             if (targetScene != null)
                 Level.SpawnActor(_cameraPivot, targetScene);
             else
-                Level.SpawnActor(_cameraPivot);
+                // 预览 rig 有意常驻 RootScene（0 号场景）：与水墨 Canvas 同源同寿命（见 CharacterPreview3D）
+                Level.SpawnActor(_cameraPivot, Level.GetScene(0));
 
             _camera = _cameraPivot.AddChild<Camera>();
             _camera.Name = "UICharacterCamera";
@@ -314,7 +315,7 @@ namespace HundunWorld.Game.UI.Components
                     $"[UICharacterCameraSystem] **角色模型尺寸异常，已就地归一化**：包围盒最大边={maxDim:F3} 单位" +
                     $"，期望 {MinSaneCharacterSize}~{MaxSaneCharacterSize}（相机距离约 250、注视高度 90）。" +
                     $"已把模型缩放改为 {corrected:G6}（目标身高 {TargetCharacterHeight} 单位）以正常取景。" +
-                    $"根因通常是资产导入缩放被写坏（Flax 会自动修复，见 AutoSkinnedModelImportPlugin）；" +
+                    $"根因通常是资产导入缩放被写坏；" +
                     $"彻底修复：在 Flax Editor 中对「{assetPath}」重新导入，Type=SkinnedModel、Scale=1.0、Rotation=Identity。");
             }
             else
@@ -398,7 +399,8 @@ namespace HundunWorld.Game.UI.Components
                         if (targetScene != null)
                             Level.SpawnActor(animatedModel, targetScene);
                         else
-                            Level.SpawnActor(animatedModel);
+                            // 预览 rig 有意常驻 RootScene（0 号场景）
+                            Level.SpawnActor(animatedModel, Level.GetScene(0));
                         _characterActor = animatedModel;
                         UpdateCameraPosition();
                         VerifyCharacterScale(skinnedModel, _characterActor, assetPath);
@@ -420,7 +422,8 @@ namespace HundunWorld.Game.UI.Components
                         if (targetScene != null)
                             Level.SpawnActor(staticModelActor, targetScene);
                         else
-                            Level.SpawnActor(staticModelActor);
+                            // 预览 rig 有意常驻 RootScene（0 号场景）
+                            Level.SpawnActor(staticModelActor, Level.GetScene(0));
                         _characterActor = staticModelActor;
                         UpdateCameraPosition();
                         VerifyCharacterScale(staticModelAsset, _characterActor, assetPath);

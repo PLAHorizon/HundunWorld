@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using FlaxEngine;
 using NarrativePro.Core;
+using NarrativePro.GAS;
 using NarrativePro.Items;
+using NarrativePro.SkillTrees;
 
 namespace NarrativePro.UnrealFramework
 {
@@ -24,6 +27,14 @@ namespace NarrativePro.UnrealFramework
         [NonSerialized]
         public NarrativePlayerCharacter TargetCharacter;
 
+        /// <summary>无敌作弊的动态标签效果句柄。对应 UE5 的 GodMode GameplayEffect。</summary>
+        [NonSerialized]
+        private ActiveGameplayEffectHandle _invulnerableHandle = ActiveGameplayEffectHandle.Invalid;
+
+        /// <summary>作弊添加的松散标签 → 动态标签效果句柄。对应 UE5 AddLooseGameplayTag。</summary>
+        [NonSerialized]
+        private readonly Dictionary<string, ActiveGameplayEffectHandle> _cheatTagEffects = new Dictionary<string, ActiveGameplayEffectHandle>(StringComparer.Ordinal);
+
         /// <summary>初始化作弊管理器。对应 UE5 InitCheats。</summary>
         public virtual void InitCheats(NarrativePlayerController inController)
         {
@@ -42,8 +53,16 @@ namespace NarrativePro.UnrealFramework
                 NarrativeLog.LogWarning("[NarrativeCheatManager] GiveSkillPoints: 无目标角色");
                 return;
             }
-            // TODO [需接入 SkillTreeComponent 系统]: 通过 SkillTreeComponent 增加技能点
-            NarrativeLog.Log($"[NarrativeCheatManager] GiveSkillPoints: +{points}（目标: {TargetCharacter.Actor?.Name ?? "Unknown"}）");
+            // Flax-已实现: 委托给 PlayerState 上的 SkillTreeComponent（对应 UE5 GetPlayerState()->SkillTreeComponent->GiveSkillPoints）
+            var skillTree = TargetCharacter.GetNarrativePlayerState()?.GetSkillTreeComponent();
+            if (skillTree != null)
+            {
+                skillTree.GiveSkillPoints(points);
+            }
+            else
+            {
+                NarrativeLog.LogWarning("[NarrativeCheatManager] GiveSkillPoints: 目标角色无 PlayerState/SkillTreeComponent");
+            }
         }
 
         /// <summary>给予玩家指定数量的货币。对应 UE5 GiveCurrency(Currency=1)。</summary>
@@ -55,8 +74,16 @@ namespace NarrativePro.UnrealFramework
                 NarrativeLog.LogWarning("[NarrativeCheatManager] GiveCurrency: 无目标角色");
                 return;
             }
-            // TODO [需接入 InventoryComponent 系统]: 通过 InventoryComponent 增加货币
-            NarrativeLog.Log($"[NarrativeCheatManager] GiveCurrency: +{currency}（目标: {TargetCharacter.Actor?.Name ?? "Unknown"}）");
+            // Flax-已实现: 通过 InventoryComponent.AddCurrency 增加货币（对应 UE5 Inventory->AddCurrency）
+            var inventory = TargetCharacter.GetInventoryComponent();
+            if (inventory != null)
+            {
+                inventory.AddCurrency(currency);
+            }
+            else
+            {
+                NarrativeLog.LogWarning("[NarrativeCheatManager] GiveCurrency: 目标角色无 InventoryComponent");
+            }
         }
 
         // ===== 无敌 =====
@@ -69,7 +96,28 @@ namespace NarrativePro.UnrealFramework
                 NarrativeLog.LogWarning("[NarrativeCheatManager] SetInvulnerable: 无目标角色");
                 return;
             }
-            // TODO [需接入 ASC 系统]: 通过 ASC 应用/移除无敌 GameplayEffect
+            // Flax-已实现: 通过 ASC 动态标签效果应用/移除无敌（对应 UE5 GodMode GE 的 GrantedTags 路径）
+            var asc = TargetCharacter.GetAbilitySystemComponent();
+            if (asc == null)
+            {
+                NarrativeLog.LogWarning("[NarrativeCheatManager] SetInvulnerable: 目标角色无 ASC");
+                return;
+            }
+            if (bIsInvulnerable)
+            {
+                if (_invulnerableHandle.IsValid) return;
+                var tags = new GameplayTagContainer();
+                tags.AddTag(new GameplayTag("Status.Invulnerable"));
+                _invulnerableHandle = asc.AddDynamicTagsGameplayEffect(tags);
+            }
+            else
+            {
+                if (_invulnerableHandle.IsValid)
+                {
+                    asc.RemoveActiveEffect(_invulnerableHandle);
+                    _invulnerableHandle = ActiveGameplayEffectHandle.Invalid;
+                }
+            }
             NarrativeLog.Log($"[NarrativeCheatManager] SetInvulnerable = {bIsInvulnerable}（目标: {TargetCharacter.Actor?.Name ?? "Unknown"}）");
         }
 
@@ -79,7 +127,16 @@ namespace NarrativePro.UnrealFramework
         /// <param name="amount">推进的时间量（100 = 1 小时）。</param>
         public virtual void AdvanceTime(float amount)
         {
-            // TODO [需接入 TimeOfDay 系统]: 通过 TimeOfDay 子系统推进时间
+            // Flax-已实现: 委托 NarrativeGameState.AdvanceTimeOfDay（对应 UE5 GetWorldState()->AdvanceTimeOfDay）
+            var gameState = NarrativeGameState.GetCurrent();
+            if (gameState != null)
+            {
+                gameState.AdvanceTimeOfDay(amount);
+            }
+            else
+            {
+                NarrativeLog.LogWarning("[NarrativeCheatManager] AdvanceTime: 场景中无 NarrativeGameState");
+            }
             NarrativeLog.Log($"[NarrativeCheatManager] AdvanceTime: +{amount}");
         }
 
@@ -87,7 +144,16 @@ namespace NarrativePro.UnrealFramework
         /// <param name="time">目标时间（小时）。</param>
         public virtual void AdvanceToTime(float time)
         {
-            // TODO [需接入 TimeOfDay 系统]: 通过 TimeOfDay 子系统推进到目标时间
+            // Flax-已实现: 委托 NarrativeGameState.AdvanceToTimeOfDay（对应 UE5 GetWorldState()->AdvanceToTimeOfDay）
+            var gameState = NarrativeGameState.GetCurrent();
+            if (gameState != null)
+            {
+                gameState.AdvanceToTimeOfDay(time);
+            }
+            else
+            {
+                NarrativeLog.LogWarning("[NarrativeCheatManager] AdvanceToTime: 场景中无 NarrativeGameState");
+            }
             NarrativeLog.Log($"[NarrativeCheatManager] AdvanceToTime: {time}");
         }
 
@@ -104,7 +170,15 @@ namespace NarrativePro.UnrealFramework
             }
             var tag = new GameplayTag(tagName);
             var asc = TargetCharacter.GetAbilitySystemComponent();
-            // TODO [需接入 ASC 系统]: 通过 ASC 添加标签
+            // Flax-已实现: 通过动态标签 GameplayEffect 添加松散标签（对应 UE5 AddLooseGameplayTag）
+            if (asc == null || string.IsNullOrEmpty(tagName) || _cheatTagEffects.ContainsKey(tagName))
+            {
+                if (asc == null) NarrativeLog.LogWarning("[NarrativeCheatManager] AddGameplayTag: 目标角色无 ASC");
+                return;
+            }
+            var tags = new GameplayTagContainer();
+            tags.AddTag(tag);
+            _cheatTagEffects[tagName] = asc.AddDynamicTagsGameplayEffect(tags);
             NarrativeLog.Log($"[NarrativeCheatManager] AddGameplayTag: {tagName}（目标: {TargetCharacter.Actor?.Name ?? "Unknown"}）");
         }
 
@@ -119,7 +193,16 @@ namespace NarrativePro.UnrealFramework
             }
             var tag = new GameplayTag(tagName);
             var asc = TargetCharacter.GetAbilitySystemComponent();
-            // TODO [需接入 ASC 系统]: 通过 ASC 移除标签
+            // Flax-已实现: 移除对应的动态标签效果（对应 UE5 RemoveLooseGameplayTag）
+            if (asc == null)
+            {
+                NarrativeLog.LogWarning("[NarrativeCheatManager] RemoveGameplayTag: 目标角色无 ASC");
+                return;
+            }
+            if (!string.IsNullOrEmpty(tagName) && _cheatTagEffects.Remove(tagName, out var handle))
+            {
+                asc.RemoveActiveEffect(handle);
+            }
             NarrativeLog.Log($"[NarrativeCheatManager] RemoveGameplayTag: {tagName}（目标: {TargetCharacter.Actor?.Name ?? "Unknown"}）");
         }
     }

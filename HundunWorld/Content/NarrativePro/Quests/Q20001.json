@@ -1,0 +1,41 @@
+{
+  "questId": "Q20001",
+  "questName": "Q20001",
+  "questRequirements": [],
+  "states": [
+    {
+      "id": "start",
+      "description": "\u5F00\u59CB",
+      "stateType": 0,
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "done",
+      "description": "\u5B8C\u6210",
+      "stateType": 1,
+      "position": {
+        "x": 320,
+        "y": 0
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "b_main",
+      "description": "",
+      "fromStateId": "start",
+      "toStateId": "done",
+      "tasks": [],
+      "hidden": false,
+      "position": {
+        "x": 160,
+        "y": 96
+      }
+    }
+  ],
+  "startStateId": "start",
+  "questTemplateId": 20001
+}

@@ -186,6 +186,29 @@ namespace Horizon.Game.Message.Network
         [Id(12)]
         public ulong TargetEntityId { get; set; }
 
+        /// <summary>
+        /// 五行循环节数（服务端权威，0..5）。由 SkillGrain 判定顺生后写下，
+        /// 随同一条施放回执带到 CombatGrain 参与乘算，也回给客户端指示器。
+        /// </summary>
+        [MemoryPackOrder(15)]
+        [Id(15)]
+        public int LoopStack { get; set; }
+
+        /// <summary>本次施放的循环节增伤系数（1 + 3% × 层数；周天圆满那一击再 ×1.25）。</summary>
+        [MemoryPackOrder(16)]
+        [Id(16)]
+        public float LoopMultiplier { get; set; } = 1f;
+
+        /// <summary>本次施放是否刚好凑满一次周天（节数归零并计数 +1）。</summary>
+        [MemoryPackOrder(17)]
+        [Id(17)]
+        public bool CycleCompleted { get; set; }
+
+        /// <summary>该角色累计周天圆满次数（演化门槛的计数来源）。</summary>
+        [MemoryPackOrder(18)]
+        [Id(18)]
+        public int LoopCompletionCount { get; set; }
+
         [MemoryPackOrder(13)]
         [Id(13)]
         public MessageType Type { get; set; } = MessageType.SkillCast;

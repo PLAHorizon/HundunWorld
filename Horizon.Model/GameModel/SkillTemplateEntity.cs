@@ -239,5 +239,61 @@ namespace Horizon.Model.GameModel
         [Column("update_time", TypeName = "datetime", Order = 32), TableDescription(TypeName = "datetime", Name = "update_time", Order = "32", Description = "更新时间")]
         [Comment("更新时间")]
         public DateTime UpdateTime { get; set; }
+
+        // 五行结算三列（2026-09-29 加）。此前技能在权威结算里没有身份：
+        // CombatGrain 只会退回"用施法者自己的命行"，技能表里也没有任何伤害字段。
+        // 行号约定 = 战斗侧统一口径（0=无属性，1..5 = 金木水火土），
+        // 与 ItemTemplateEntity.element 注释里的"0-金1-木2-水3-火4-土5-无"不是同一套，别混用。
+
+        /// <summary>
+        /// 技能五行（0=无属性，1=金 2=木 3=水 4=火 5=土）
+        /// </summary>
+        [Column("wuxing_element", TypeName = "int", Order = 33), TableDescription(TypeName = "int", Name = "wuxing_element", Order = "33", Description = "技能五行（0无，1金2木3水4火5土）")]
+        [Comment("技能五行（0=无属性，1金2木3水4火5土）")]
+        public int WuxingElement { get; set; }
+
+        /// <summary>
+        /// 技能附加的该行五行攻击力（求和侧；0 表示只用施法者自己的五行攻击）
+        /// </summary>
+        [Column("skill_attack", TypeName = "int", Order = 34), TableDescription(TypeName = "int", Name = "skill_attack", Order = "34", Description = "技能附加五行攻击力")]
+        [Comment("技能附加的该行五行攻击力（求和侧）")]
+        public int SkillAttack { get; set; }
+
+        /// <summary>
+        /// 技能附加的该行五行破防（取高侧；只抵消防御不额外加伤）
+        /// </summary>
+        [Column("skill_penetration", TypeName = "int", Order = 35), TableDescription(TypeName = "int", Name = "skill_penetration", Order = "35", Description = "技能附加五行破防")]
+        [Comment("技能附加的该行五行破防（取高侧）")]
+        public int SkillPenetration { get; set; }
+
+        /// <summary>
+        /// 技能阶位：1白 2黄 3玄 4地 5天 6道（相生演化，超越天阶）7混沌。
+        /// 与 learn_realm_require 同值冗余存储，只为直接按阶查询而不必再折算境界门槛。
+        /// </summary>
+        [Column("skill_grade", TypeName = "int", Order = 36), TableDescription(TypeName = "int", Name = "skill_grade", Order = "36", Description = "技能阶位（1白2黄3玄4地5天6道7混沌）")]
+        [Comment("技能阶位 1白 2黄 3玄 4地 5天 6道 7混沌")]
+        public int SkillGrade { get; set; }
+
+        /// <summary>
+        /// 阶内境界序号：1初 2中 3极。三境各是一式独立技能（不是同一技的等级）。
+        /// </summary>
+        [Column("grade_stage", TypeName = "int", Order = 37), TableDescription(TypeName = "int", Name = "grade_stage", Order = "37", Description = "阶内境界（1初2中3极）")]
+        [Comment("阶内境界序号 1初 2中 3极")]
+        public int GradeStage { get; set; }
+
+        /// <summary>
+        /// 技系标识（如 Metal_4 = 金·庚金绝脉），供技能树 UI 把同阶三式归成一组。
+        /// </summary>
+        [Column("series_id", TypeName = "nvarchar(50)", Order = 38), TableDescription(TypeName = "nvarchar(50)", Name = "series_id", Order = "38", Description = "技系标识")]
+        [Comment("技系标识：五行_阶，同阶三式同属一个技系")]
+        public string SeriesId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 技能伤害倍率（相对施法者攻击力）。CombatGrain 结算必须乘这一项，
+        /// 否则整条五行阶梯（1.10 … 5.19）在权威侧等于不存在。
+        /// </summary>
+        [Column("damage_multiplier", TypeName = "float", Order = 39), TableDescription(TypeName = "float", Name = "damage_multiplier", Order = "39", Description = "技能伤害倍率")]
+        [Comment("技能伤害倍率（权威结算乘算项）")]
+        public double DamageMultiplier { get; set; } = 1.0;
     }
 }

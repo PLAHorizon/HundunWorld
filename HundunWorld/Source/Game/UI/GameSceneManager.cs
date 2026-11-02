@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FlaxEngine;
@@ -63,7 +63,9 @@ namespace HundunWorld.Game.UI
             Debug.Log("[GameSceneManager] 未找到现有实例，创建新实例...");
             var actor = new EmptyActor { Name = "GameSceneManager" };
             actor.SetStaticFlag(StaticFlags.FullyStatic, true);
-            Level.SpawnActor(actor);
+            // 有意常驻 RootScene（0 号场景）：GameSceneManager 是全局共享宿主脚本。
+            // 显式传场景，不依赖"无父级 SpawnActor 默认落 Scenes[0]"的隐式行为。
+            Level.SpawnActor(actor, Level.GetScene(0));
             _instance = actor.AddScript<GameSceneManager>();
             return _instance;
         }
@@ -103,6 +105,9 @@ namespace HundunWorld.Game.UI
         private SceneType? _pendingSceneType;
         private SceneType _previousSceneType = SceneType.Start;
         private FlaxEngine.Scene _rootScene;
+
+        /// <summary>RootScene 补载请求是否已在主线程队列里（幂等守卫，见 OnSceneUnloaded）</summary>
+        private bool _rootSceneReloadQueued;
         private FlaxEngine.Scene _currentSubScene;
         private FlaxEngine.Scene _transitionScene;
         private Guid _transitionSceneId = Guid.Empty;
@@ -152,6 +157,17 @@ namespace HundunWorld.Game.UI
 
         public SceneType CurrentSceneType => _currentSceneType;
         public bool IsTransitioning => _isTransitioning;
+
+        /// <summary>
+        /// 当前是否处于 GameWorld。
+        /// <para>
+        /// 登录 / 选角 / 创角场景里既没有本地玩家也不该有远程角色，
+        /// 同步链路那些"没数据就是坏了"式的告警（输入包被丢弃、远程 Actor 数为 0）
+        /// 在这些场景里纯属噪音，还会把真正的同步故障淹掉。
+        /// </para>
+        /// </summary>
+        public static bool IsInGameWorld =>
+            Instance != null && Instance.CurrentSceneType == SceneType.GameWorld;
 
         #endregion
 
@@ -626,6 +642,16 @@ namespace HundunWorld.Game.UI
 
             if (_isTransitioning)
             {
+                // 同一目标的重复请求视为"已受理"：登录链路存在多条并发收尾路径（WebApi 与 TCP），
+                // 它们会在几百毫秒内各自发起一次切换。此前一律返回 false，调用方据此判定
+                // "启动失败"并强制复位状态机，于是把刚刚加载好的场景又卸载重载（实测一次登录
+                // 反复加载/卸载 Character 场景 5 次、Ink UI 初始化 5 次）。
+                if (_pendingSceneType == targetScene)
+                {
+                    Debug.Log($"[GameSceneManager] 到 {targetScene} 的切换已在进行中，复用当前切换");
+                    return true;
+                }
+
                 // 卡死看门狗：超时则强制复位状态机并让本次请求继续，而不是直接拒绝请求。
                 float stuckSeconds = _transitionStartTime > 0f ? (float)(Time.GameTime - _transitionStartTime) : -1f;
                 if (stuckSeconds >= TransitionStuckTimeout)
@@ -635,7 +661,7 @@ namespace HundunWorld.Game.UI
                 }
                 else
                 {
-                    Debug.LogWarning($"[GameSceneManager] 场景正在切换中，忽略请求: {targetScene}");
+                    Debug.LogWarning($"[GameSceneManager] 场景正在切换中（目标 {_pendingSceneType}），忽略请求: {targetScene}");
                     return false;
                 }
             }
@@ -1013,6 +1039,16 @@ namespace HundunWorld.Game.UI
         /// </summary>
         private void CompleteTransition()
         {
+            // 重入守卫：完成时刻有多个来源（OnSceneLoaded 的 InvokeOnUpdate、3 秒超时兜底、
+            // 直接加载路径），而本方法第一件事就是把 _pendingSceneType 清空、把状态机复位。
+            // 于是"第二次到达的完成回调"已经没有目标场景可解析，却会把整段完成流程再跑一遍——
+            // 包括把 UIStateManager 的当前场景改写成兜底值，表现就是登录后界面刚建好又被隐藏（空屏）。
+            if (!_isTransitioning && _pendingSceneType == null)
+            {
+                Debug.LogWarning("[GameSceneManager] 忽略重复/迟到的场景切换完成回调（当前没有进行中的切换）");
+                return;
+            }
+
             _transitionState = TransitionState.Completing;
             Debug.Log("[GameSceneManager] === 场景切换完成 ===");
 
@@ -1030,7 +1066,9 @@ namespace HundunWorld.Game.UI
             _waitTimerAfterLoaded = 0f;
 
             var previousScene = _previousSceneType;
-            var targetScene = _pendingSceneType ?? SceneType.Start;
+            // 没有挂起目标时保持当前场景，绝不兜底成 Start：
+            // 兜底成 Start 会把已经到位的逻辑态倒退，进而隐藏刚建好的水墨 UI（空屏）。
+            var targetScene = _pendingSceneType ?? _currentSceneType;
 
             _currentSceneType = targetScene;
             _isTransitioning = false;
@@ -1042,6 +1080,13 @@ namespace HundunWorld.Game.UI
             _transitionState = TransitionState.Idle;
             _waitingForTransitionUnload = false;
             _unloadTimeoutTimer = 0f;
+
+            // 兜底：Character 场景资产里没有任何相机 Actor，ScreenSpace 的 UICanvas 没有相机
+            // 就无处渲染（整屏空白，但水墨 UI 其实已经建好）。正常路径在 OnSceneLoaded 里补，
+            // 可 3 秒超时强制完成时那次回调可能还没发生 —— 所以"完成"这个时刻自己再过一遍。
+            // InitializeCharacterSceneIfNeeded 内部按 Actor 名幂等 Ensure，重复调用无副作用。
+            for (int i = 0; i < Level.ScenesCount; i++)
+                InitializeCharacterSceneIfNeeded(Level.GetScene(i));
 
             // 同步 UIStateManager 状态，确保 UIStateManager 的 CurrentScene 与 GameSceneManager 一致
             var stateManager = UIStateManager.Instance;
@@ -1243,7 +1288,7 @@ namespace HundunWorld.Game.UI
             // 保护 1：RootScene 绝不卸载
             if (scene == _rootScene)
             {
-                Debug.LogError($"[GameSceneManager] SafeUnloadScene: 拒绝卸载 RootScene！scene.Name={scene.Name}, 调用栈:\n{System.Environment.StackTrace}");
+                Debug.LogError($"[GameSceneManager] SafeUnloadScene: 拒绝卸载 RootScene！scene.Name={scene.Name}");
                 return;
             }
 
@@ -1418,8 +1463,10 @@ namespace HundunWorld.Game.UI
         {
             if (scene == _rootScene)
             {
-                // 修复：记录调用栈，帮助定位谁触发了 RootScene 卸载
-                Debug.LogError($"[GameSceneManager] 严重错误：尝试卸载 RootScene！RootScene 在整个游戏生命周期中绝不能被卸载。调用栈:\n{System.Environment.StackTrace}");
+                // 这里曾经把整段引擎调用栈拼进日志消息：调试日志窗口把整条消息当富文本解析，
+                // 多行调用栈会让它卡在 HtmlParser 里死循环（实测 PIE 退出时主线程 100% 占用、编辑器不再响应）。
+                // PIE 退出本来就会卸载全部场景，这条本身也不该阻断任何流程，只留一行短日志。
+                Debug.LogError("[GameSceneManager] 严重错误：尝试卸载 RootScene！RootScene 在整个游戏生命周期中绝不能被卸载。");
             }
         }
 
@@ -1434,7 +1481,27 @@ namespace HundunWorld.Game.UI
                 if (rootSceneAsset != null)
                 {
                     Debug.Log($"[GameSceneManager] 重新加载 RootScene, ID: {rootSceneAsset.ID}");
-                    Task.Factory.StartNew(async()=> Level.LoadSceneAsync(rootSceneAsset.ID));
+
+                    // 两处修正：
+                    // 1) Level.LoadSceneAsync 是引擎 API，必须主线程调用。原实现丢进线程池，
+                    //    属跨线程改场景层级（实测报 "Editing scene hierarchy is only allowed on a
+                    //    main thread"），并且会与正在后台上传的模型资源交错 —— 表现就是 UI 里
+                    //    角色糊面、叠出虚影。
+                    // 2) 幂等：RootScene 被连续报告卸载时只补载一次，避免排进多个加载请求互相打架。
+                    if (!_rootSceneReloadQueued)
+                    {
+                        _rootSceneReloadQueued = true;
+                        var reloadId = rootSceneAsset.ID;
+                        Scripting.InvokeOnUpdate(() =>
+                        {
+                            _rootSceneReloadQueued = false;
+                            Level.LoadSceneAsync(reloadId);
+                        });
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[GameSceneManager] RootScene 补载已在队列中，忽略重复请求");
+                    }
                 }
                 else
                 {

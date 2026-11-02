@@ -1,0 +1,313 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Editor.Debug" />
+    <BuildType Name="Editor.Development" />
+    <BuildType Name="Editor.Release" />
+    <BuildType Name="Game.Debug" />
+    <BuildType Name="Game.Development" />
+    <BuildType Name="Game.Release" />
+    <Platform Name="ARM64" />
+    <Platform Name="Win64" />
+  </Configurations>
+  <Folder Name="/Flax/">
+    <Project Path="Cache/Projects/Flax.vcxproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+      <Platform Project="x64" />
+      <Build Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/" />
+  <Folder Name="/Plugins/HundunAgent/">
+    <Project Path="Plugins/HundunAgent/Source/HundunAgent.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+    <Project Path="Plugins/HundunAgent/Source/HundunAgentEditor.csproj">
+      <BuildDependency Project="Plugins/HundunAgent/Source/HundunAgent.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/ItemEditor/">
+    <Project Path="Plugins/ItemEditor/Source/ItemEditor.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+    <Project Path="Plugins/ItemEditor/Source/ItemEditorEditor.csproj">
+      <BuildDependency Project="Plugins/ItemEditor/Source/ItemEditor.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/MetaHuman/">
+    <Project Path="Plugins/MetaHuman/Source/MetaHuman.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+      <Platform Project="x64" />
+      <Build Solution="Editor.Debug|ARM64" Project="false" />
+      <Build Solution="Editor.Development|ARM64" Project="false" />
+      <Build Solution="Editor.Release|ARM64" Project="false" />
+      <Build Solution="Game.Debug|ARM64" Project="false" />
+      <Build Solution="Game.Development|ARM64" Project="false" />
+      <Build Solution="Game.Release|ARM64" Project="false" />
+    </Project>
+    <Project Path="Plugins/MetaHuman/Source/MetaHumanEditor.csproj">
+      <BuildDependency Project="Plugins/MetaHuman/Source/MetaHuman.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+      <Platform Project="x64" />
+      <Build Solution="Editor.Debug|ARM64" Project="false" />
+      <Build Solution="Editor.Development|ARM64" Project="false" />
+      <Build Solution="Editor.Release|ARM64" Project="false" />
+      <Build Solution="Game.Debug|ARM64" Project="false" />
+      <Build Solution="Game.Development|ARM64" Project="false" />
+      <Build Solution="Game.Release|ARM64" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/MonsterEditor/">
+    <Project Path="Plugins/MonsterEditor/Source/MonsterEditor.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+    <Project Path="Plugins/MonsterEditor/Source/MonsterEditorEditor.csproj">
+      <BuildDependency Project="Plugins/MonsterEditor/Source/MonsterEditor.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/NarrativePro/">
+    <Project Path="Plugins/NarrativePro/Source/NarrativePro.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+      <Platform Project="x64" />
+      <Build Solution="Editor.Debug|ARM64" Project="false" />
+      <Build Solution="Editor.Development|ARM64" Project="false" />
+      <Build Solution="Editor.Release|ARM64" Project="false" />
+      <Build Solution="Game.Debug|ARM64" Project="false" />
+      <Build Solution="Game.Development|ARM64" Project="false" />
+      <Build Solution="Game.Release|ARM64" Project="false" />
+    </Project>
+    <Project Path="Plugins/NarrativePro/Source/NarrativeProEditor.csproj">
+      <BuildDependency Project="Plugins/NarrativePro/Source/NarrativePro.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+      <Platform Project="x64" />
+      <Build Solution="Editor.Debug|ARM64" Project="false" />
+      <Build Solution="Editor.Development|ARM64" Project="false" />
+      <Build Solution="Editor.Release|ARM64" Project="false" />
+      <Build Solution="Game.Debug|ARM64" Project="false" />
+      <Build Solution="Game.Development|ARM64" Project="false" />
+      <Build Solution="Game.Release|ARM64" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/NpcEditor/">
+    <Project Path="Plugins/NpcEditor/Source/NpcEditor.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+    <Project Path="Plugins/NpcEditor/Source/NpcEditorEditor.csproj">
+      <BuildDependency Project="Plugins/NpcEditor/Source/NpcEditor.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/PCG/">
+    <Project Path="Plugins/PCG/Source/PCG.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+      <Platform Project="x64" />
+      <Build Solution="Editor.Debug|ARM64" Project="false" />
+      <Build Solution="Editor.Development|ARM64" Project="false" />
+      <Build Solution="Editor.Release|ARM64" Project="false" />
+      <Build Solution="Game.Debug|ARM64" Project="false" />
+      <Build Solution="Game.Development|ARM64" Project="false" />
+      <Build Solution="Game.Release|ARM64" Project="false" />
+    </Project>
+    <Project Path="Plugins/PCG/Source/PCGEditor.csproj">
+      <BuildDependency Project="Plugins/PCG/Source/PCG.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+      <Platform Project="x64" />
+      <Build Solution="Editor.Debug|ARM64" Project="false" />
+      <Build Solution="Editor.Development|ARM64" Project="false" />
+      <Build Solution="Editor.Release|ARM64" Project="false" />
+      <Build Solution="Game.Debug|ARM64" Project="false" />
+      <Build Solution="Game.Development|ARM64" Project="false" />
+      <Build Solution="Game.Release|ARM64" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/PetEditor/">
+    <Project Path="Plugins/PetEditor/Source/PetEditor.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+    <Project Path="Plugins/PetEditor/Source/PetEditorEditor.csproj">
+      <BuildDependency Project="Plugins/PetEditor/Source/PetEditor.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Plugins/QuestEditor/">
+    <Project Path="Plugins/QuestEditor/Source/QuestEditor.csproj">
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+    <Project Path="Plugins/QuestEditor/Source/QuestEditorEditor.csproj">
+      <BuildDependency Project="Plugins/QuestEditor/Source/QuestEditor.csproj" />
+      <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+      <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+      <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+      <BuildType Solution="Game.Debug|*" Project="Game.Windows.Debug" />
+      <BuildType Solution="Game.Development|*" Project="Game.Windows.Development" />
+      <BuildType Solution="Game.Release|*" Project="Game.Windows.Release" />
+      <Platform Solution="*|Win64" Project="x64" />
+    </Project>
+  </Folder>
+  <Project Path="Source/Game.csproj">
+    <BuildDependency Project="Plugins/NarrativePro/Source/NarrativePro.csproj" />
+    <BuildDependency Project="Plugins/MetaHuman/Source/MetaHuman.csproj" />
+    <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+    <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+    <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+    <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+    <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+    <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+    <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+    <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+    <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+    <Platform Project="x64" />
+    <Build Solution="Editor.Debug|ARM64" Project="false" />
+    <Build Solution="Editor.Development|ARM64" Project="false" />
+    <Build Solution="Editor.Release|ARM64" Project="false" />
+    <Build Solution="Game.Debug|ARM64" Project="false" />
+    <Build Solution="Game.Development|ARM64" Project="false" />
+    <Build Solution="Game.Release|ARM64" Project="false" />
+  </Project>
+  <Project Path="Source/ServerGame.csproj">
+    <BuildType Solution="Editor.Debug|*" Project="Editor.Windows.Debug" />
+    <BuildType Solution="Editor.Development|*" Project="Editor.Windows.Development" />
+    <BuildType Solution="Editor.Release|*" Project="Editor.Windows.Release" />
+    <BuildType Solution="Game.Debug|ARM64" Project="Editor.Windows.Debug" />
+    <BuildType Solution="Game.Debug|Win64" Project="Game.Windows.Debug" />
+    <BuildType Solution="Game.Development|ARM64" Project="Editor.Windows.Debug" />
+    <BuildType Solution="Game.Development|Win64" Project="Game.Windows.Development" />
+    <BuildType Solution="Game.Release|ARM64" Project="Editor.Windows.Debug" />
+    <BuildType Solution="Game.Release|Win64" Project="Game.Windows.Release" />
+    <Platform Project="x64" />
+    <Build Solution="Editor.Debug|ARM64" Project="false" />
+    <Build Solution="Editor.Development|ARM64" Project="false" />
+    <Build Solution="Editor.Release|ARM64" Project="false" />
+    <Build Solution="Game.Debug|ARM64" Project="false" />
+    <Build Solution="Game.Development|ARM64" Project="false" />
+    <Build Solution="Game.Release|ARM64" Project="false" />
+  </Project>
+  <Project Path="Cache/Projects/BuildScripts.csproj">
+    <BuildType Project="Debug" />
+    <Build Project="false" />
+  </Project>
+</Solution>

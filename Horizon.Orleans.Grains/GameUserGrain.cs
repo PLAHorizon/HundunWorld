@@ -305,8 +305,9 @@ namespace Horizon.Orleans.Grains
                     Faction = 0,
                     RealmLevel = 0,
                     CombatPower = 0,
-                    Health = 100f,
-                    MaxHealth = 100f,
+                    // 建号默认跟着基值走：写 100 会让服务端与客户端（1000 起算）从第一秒就不是同一个血池
+                    Health = Horizon.Game.Core.Combat.AttributeDerivation.HealthBaseValue,
+                    MaxHealth = Horizon.Game.Core.Combat.AttributeDerivation.HealthBaseValue,
                     AttackPower = 10f,
                     Defense = 5f,
                     WuxingElement = 0,

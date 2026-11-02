@@ -4,7 +4,12 @@ using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
+using HundunWorld.Game.Character;
+using HundunWorld.Game.Combat.Skills;
 using HundunWorld.Game.Equipment;
+using HundunWorld.Game.Inventory;
+using HundunWorld.Game.Services;
+using ClientSlot = HundunWorld.Game.Equipment.EquipmentSlot;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Combat
 {
@@ -22,7 +27,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
     /// 事件向 <see cref="InkPageRouter"/> 暴露导航请求。全部数据为 mock，通过
     /// <see cref="RefreshLayout"/> 支持屏幕尺寸变化。
     /// </summary>
-    public class MenuBattlePrepPage : ContainerControl, IInkPage
+    public class MenuBattlePrepPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===================================================================
         // 布局常量
@@ -276,9 +281,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// <summary>药品效果 Label 高度</summary>
         private const float MedicineEffectLabelHeight = 16f;
 
-        /// <summary>"快速补给"后每种药品补满的数量</summary>
-        private const int MedicineFullQuantity = 20;
-
         /// <summary>补给汇总条高度</summary>
         private const float SupplySummaryHeight = 36f;
 
@@ -366,6 +368,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// <summary>装备属性加成数值 Label 列表（6 项，与 <c>_mockEquipStats</c> 同序，供数据绑定刷新）</summary>
         private readonly List<Label> _equipStatValueLabels = new List<Label>();
 
+        /// <summary>8 个装备格引用（品质变化时刷新边框色）</summary>
+        private readonly List<InkCell> _equipCells = new List<InkCell>();
+
+        /// <summary>8 个装备槽位图标字 Label（品质变化时刷新颜色）</summary>
+        private readonly List<Label> _equipGlyphLabels = new List<Label>();
+
+        /// <summary>8 个装备槽位名称 Label（穿戴快照变化时刷新名称与颜色）</summary>
+        private readonly List<Label> _equipNameLabels = new List<Label>();
+
         /// <summary>中栏武学卡行引用列表（宽度变化时重排）</summary>
         private readonly List<SkillRowRefs> _skillRows = new List<SkillRowRefs>();
 
@@ -389,52 +400,49 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         // mock 数据字段
         // =======================================================================
 
-        /// <summary>8 个装备槽 mock 数据：itemId 大于 0 时从 <see cref="EquipmentDatabase.GetEquipment"/> 读取品质</summary>
-        private (int itemId, string name, string glyph, InkWashTheme.InkQuality quality)[] _mockEquipments = new[]
+        /// <summary>8 个槽位的展示定义（真实装备槽 / 图标字），名称与品质由服务端权威穿戴快照填充。</summary>
+        private static readonly (ClientSlot slot, string glyph)[] EquipSlotLayout =
         {
-            (20001, "玄铁重剑", "剑", InkWashTheme.InkQuality.Legendary),
-            (0, "精钢短匕", "匕", InkWashTheme.InkQuality.Rare),
-            (30001, "乌金兜鍪", "盔", InkWashTheme.InkQuality.Uncommon),
-            (10001, "蟒纹战袍", "袍", InkWashTheme.InkQuality.Epic),
-            (0, "玉扣束带", "带", InkWashTheme.InkQuality.Rare),
-            (0, "踏云履", "履", InkWashTheme.InkQuality.Uncommon),
-            (0, "寒铁护腕", "护", InkWashTheme.InkQuality.Rare),
-            (0, "血玉璎珞", "玉", InkWashTheme.InkQuality.Legendary),
+            (ClientSlot.RightHand, "剑"),
+            (ClientSlot.LeftHand, "匕"),
+            (ClientSlot.Head, "盔"),
+            (ClientSlot.Body, "袍"),
+            (ClientSlot.Waist, "带"),
+            (ClientSlot.Feet, "履"),
+            (ClientSlot.RightWrist, "护"),
+            (ClientSlot.Neck, "玉"),
         };
 
-        /// <summary>装备属性加成 mock 数据（攻/防/血/内/暴/身 6 项，2 列 3 行）</summary>
+        /// <summary>8 个装备槽显示数据：itemId 大于 0 时从 <see cref="EquipmentDatabase.GetEquipment"/> 读取品质。</summary>
+        private (int itemId, string name, string glyph, InkWashTheme.InkQuality quality)[] _mockEquipments =
+            new (int, string, string, InkWashTheme.InkQuality)[8];
+
+        /// <summary>装备属性加成数据（攻/防/血/内/暴/身 6 项，2 列 3 行）</summary>
         private (string label, string value)[] _mockEquipStats = new[]
         {
-            ("攻击", "+1,240"),
-            ("防御", "+860"),
-            ("气血", "+2,400"),
-            ("内力", "+600"),
-            ("暴击", "+12%"),
-            ("身法", "+8%"),
+            ("攻击", "—"),
+            ("防御", "—"),
+            ("气血", "—"),
+            ("内力", "—"),
+            ("暴击", "—"),
+            ("身法", "—"),
         };
 
-        /// <summary>主动武学 mock 数据（名称 / 说明 / 等级 / 图标字）</summary>
-        private (string name, string desc, string level, string glyph)[] _mockActiveSkills = new[]
-        {
-            ("狂风快剑", "剑法 · 单体 · 连击三式", "Lv.7", "剑"),
-            ("降龙掌", "掌法 · 范围 · 击退", "Lv.6", "掌"),
-            ("凌波微步", "身法 · 闪避 · 加速", "Lv.5", "步"),
-        };
+        /// <summary>已学武学（名称 / 说明 / 等级 / 图标字）；构造期从技能目录取，没有目录时只留占位行。</summary>
+        private (string name, string desc, string level, string glyph)[] _activeSkills =
+            { ("暂无已习得武学", "在技能树研读秘籍后显示在这里", "—", "—") };
 
-        /// <summary>被动武学 mock 数据（名称 / 说明 / 等级 / 图标字）</summary>
-        private (string name, string desc, string level, string glyph)[] _mockPassiveSkills = new[]
-        {
-            ("金刚护体", "防御 · 减伤 15%", "Lv.4", "盾"),
-            ("吐纳法", "内功 · 回气 +20%", "Lv.6", "息"),
-        };
+        /// <summary>已学被动/辅助武学；没有时同样只留占位行。</summary>
+        private (string name, string desc, string level, string glyph)[] _passiveSkills =
+            { ("暂无已习得被动", "在技能树研读秘籍后显示在这里", "—", "—") };
 
-        /// <summary>药品 mock 数据（名称 / 效果 / 图标字 / 数量）</summary>
-        private (string name, string effect, string glyph, int quantity)[] _mockMedicines = new[]
+        /// <summary>
+        /// 补给药品（名称 / 效果 / 图标字 / 数量）。构造期从背包快照取可用消耗品；
+        /// 没有快照或背包里没有药品时只留占位行，不摆设计稿的四种药名。
+        /// </summary>
+        private (string name, string effect, string glyph, int quantity)[] _medicines =
         {
-            ("回气丹", "恢复内力 300 点", "丹", 12),
-            ("金创药", "恢复气血 500 点", "药", 8),
-            ("解毒散", "解除中毒状态", "散", 5),
-            ("聚神散", "恢复神识 100 点", "神", 3),
+            ("暂无可用药品", "与药师交易或拾取后显示", "—", 0),
         };
 
         /// <summary>属性条 mock 数据（名称 / 数值 / 比例 / 填充变体）</summary>
@@ -446,10 +454,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         };
 
         /// <summary>当前战力 mock 值</summary>
-        private float _mockPowerCurrent = 12450f;
+        private float _mockPowerCurrent = 0f;
 
         /// <summary>推荐战力 mock 值</summary>
-        private float _mockPowerRecommend = 15000f;
+        private float _mockPowerRecommend = 0f;
 
         // ===================================================================
         // 数据绑定 API（接入真实数据源时覆盖设计稿示例初值）
@@ -515,8 +523,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         }
 
         /// <summary>
-        /// 绑定药品数量（与设计稿同序：回气丹 / 金创药 / 解毒散 / 聚神散），并刷新每行数量角标。
-        /// 不调用时保持设计稿初值 12 / 8 / 5 / 3。
+        /// 绑定药品数量（与当前药品行同序），并刷新每行数量角标与充足度汇总。
+        /// 只由有真实来源的调用方使用；没有来源时页面保持背包快照里的数量。
         /// </summary>
         /// <param name="quantities">各药品数量，未传入的项保留原值</param>
         public void BindSupplies(int[] quantities)
@@ -524,10 +532,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             if (quantities == null)
                 return;
 
-            for (int i = 0; i < _mockMedicines.Length && i < quantities.Length; i++)
+            for (int i = 0; i < _medicines.Length && i < quantities.Length; i++)
             {
-                var med = _mockMedicines[i];
-                _mockMedicines[i] = (med.name, med.effect, med.glyph, quantities[i]);
+                var med = _medicines[i];
+                _medicines[i] = (med.name, med.effect, med.glyph, quantities[i]);
 
                 if (i < _medicineRows.Count && _medicineRows[i].QtyLabel != null)
                     _medicineRows[i].QtyLabel.Text = $"×{quantities[i]}";
@@ -549,12 +557,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
             if (_powerCurrentLabel != null)
                 _powerCurrentLabel.Text = ((int)_mockPowerCurrent).ToString("N0");
+            // 推荐战力没有数据源：不要显示 0 / 0%，给「—」和一句说明
+            bool hasRecommend = _mockPowerRecommend > 0f;
             if (_powerRecommendLabel != null)
-                _powerRecommendLabel.Text = ((int)_mockPowerRecommend).ToString("N0");
+                _powerRecommendLabel.Text = hasRecommend
+                    ? ((int)_mockPowerRecommend).ToString("N0")
+                    : "—";
             if (_powerBar != null)
                 _powerBar.Value = ratio;
             if (_powerPercentLabel != null)
-                _powerPercentLabel.Text = $"达成率 {Mathf.RoundToInt(ratio * 100f)}% · 建议提升装备品阶";
+                _powerPercentLabel.Text = hasRecommend
+                    ? $"达成率 {Mathf.RoundToInt(ratio * 100f)}% · 建议提升装备品阶"
+                    : "推荐战力尚未接入服务端";
         }
 
         /// <summary>把属性细条数据写入数值 Label 与进度条。</summary>
@@ -610,6 +624,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
             try
             {
+                // 装备/加成先按服务端权威穿戴快照准备好，再交给 Build 直接落地
+                RefreshEquipmentFromInventory();
+                // 武学卡同理：先取已学技能，再建卡（没有目录时保留占位行）
+                LoadSkillsFromCatalog();
+                // 补给药品同理：取背包可用消耗品（没有快照时保留占位行）
+                LoadMedicinesFromInventory();
+
                 BuildHeader();
                 BuildEquipmentPanel();
                 BuildMartialArtsPanel();
@@ -618,10 +639,228 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
                 // 应用初始布局（基于屏幕尺寸计算所有子控件位置）
                 ApplyLayout();
+
+                // 页面可能在登录前就构造好（那时还没有穿戴快照），快照到达后要原地刷新
+                PlayerInventoryService.Instance.Changed += OnInventoryChanged;
+                if (!PlayerInventoryService.Instance.HasServerData)
+                    PlayerInventoryService.Instance.RequestFullRefresh();
             }
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[MenuBattlePrepPage] 初始化失败: {ex.Message}");
+            }
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            PlayerInventoryService.Instance.Changed -= OnInventoryChanged;
+            base.OnDestroy();
+        }
+
+        /// <summary>穿戴快照变化：重算 8 槽与加成摘要并原地刷新控件。</summary>
+        private void OnInventoryChanged()
+        {
+            RefreshEquipmentFromInventory();
+            ApplyEquipmentToUi();
+        }
+
+        /// <summary>
+        /// 从服务端技能目录取"已学武学"填进 3+2 张卡：主动=攻击/控制/身法/绝学，被动=辅助。
+        /// 目录还没到时保留占位行（不显示设计稿里的招式名——那些不是玩家已学的东西）。
+        /// </summary>
+        private void LoadSkillsFromCatalog()
+        {
+            try
+            {
+                var catalog = SkillCatalogService.Instance;
+                if (catalog.Learned.Count == 0)
+                    return;
+
+                var actives = new List<(int id, string name, string desc, string level, string glyph)>();
+                var passives = new List<(int id, string name, string desc, string level, string glyph)>();
+
+                foreach (var pair in catalog.Learned)
+                {
+                    var cfg = SkillDatabase.GetSkill(pair.Key);
+                    if (cfg == null || string.IsNullOrEmpty(cfg.SkillName))
+                        continue;
+
+                    string desc = $"{ElementName(cfg.Element)} · {TypeName(cfg.Type)} · 倍率 ×{cfg.DamageMultiplier:0.##}";
+                    var row = (cfg.SkillId, cfg.SkillName, desc, "Lv." + pair.Value.Level, ElementGlyph(cfg.Element));
+
+                    if (cfg.Type == "Support")
+                        passives.Add(row);
+                    else
+                        actives.Add(row);
+                }
+
+                actives.Sort((a, b) => a.id.CompareTo(b.id));
+                passives.Sort((a, b) => a.id.CompareTo(b.id));
+
+                _activeSkills = actives.Count > 0 ? ToCards(actives, 3) : _activeSkills;
+                _passiveSkills = passives.Count > 0 ? ToCards(passives, 2) : _passiveSkills;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[MenuBattlePrep] 武学目录读取失败: {ex.Message}");
+            }
+        }
+
+        private static (string name, string desc, string level, string glyph)[] ToCards(
+            List<(int id, string name, string desc, string level, string glyph)> rows, int max)
+        {
+            int count = Mathf.Min(max, rows.Count);
+            var cards = new (string name, string desc, string level, string glyph)[count];
+            for (int i = 0; i < count; i++)
+                cards[i] = (rows[i].name, rows[i].desc, rows[i].level, rows[i].glyph);
+            return cards;
+        }
+
+        /// <summary>
+        /// 从背包快照取可用消耗品填「药品补给」（最多 4 行，按数量降序）。
+        /// 没有快照、或背包里没有消耗品时保留占位行，不摆设计稿的四种药名。
+        /// </summary>
+        private void LoadMedicinesFromInventory()
+        {
+            try
+            {
+                var inventory = PlayerInventoryService.Instance;
+                if (inventory == null || !inventory.HasServerData)
+                    return;
+
+                var rows = new List<(string name, string effect, string glyph, int quantity)>();
+                foreach (var item in inventory.Items)
+                {
+                    var def = ItemCatalog.Resolve(item.TemplateId);
+                    if (def == null || def.Kind != ItemKind.Consumable || item.Count <= 0)
+                        continue;
+
+                    string effect = string.IsNullOrWhiteSpace(def.Description) ? def.TypeName : def.Description;
+                    if (effect.Length > 14)
+                        effect = effect.Substring(0, 14) + "…";
+
+                    rows.Add((def.Name, effect, def.Glyph, item.Count));
+                }
+
+                if (rows.Count == 0)
+                    return;
+
+                rows.Sort((a, b) => b.quantity.CompareTo(a.quantity));
+                int count = Mathf.Min(4, rows.Count);
+                var medicines = new (string name, string effect, string glyph, int quantity)[count];
+                for (int i = 0; i < count; i++)
+                    medicines[i] = rows[i];
+                _medicines = medicines;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[MenuBattlePrep] 药品快照读取失败: {ex.Message}");
+            }
+        }
+
+        private static string ElementGlyph(string element) => element switch
+        {
+            "Metal" => "金",
+            "Wood" => "木",
+            "Water" => "水",
+            "Fire" => "火",
+            "Earth" => "土",
+            _ => "武",
+        };
+
+        private static string ElementName(string element) => element switch
+        {
+            "Metal" => "金",
+            "Wood" => "木",
+            "Water" => "水",
+            "Fire" => "火",
+            "Earth" => "土",
+            _ => "无属",
+        };
+
+        private static string TypeName(string type) => type switch
+        {
+            "Control" => "控制",
+            "Dash" => "身法",
+            "Support" => "辅助",
+            "Ultimate" => "绝学",
+            _ => "主动攻击",
+        };
+
+        /// <summary>
+        /// 按服务端权威穿戴快照填充 8 槽显示数据与装备加成摘要。
+        /// 快照缺项时保持"未装备 / —"，不编造物品。
+        /// </summary>
+        private void RefreshEquipmentFromInventory()        {
+            var inventory = PlayerInventoryService.Instance;
+
+            for (int i = 0; i < _mockEquipments.Length; i++)
+            {
+                var slot = EquipSlotLayout[i];
+                string name = "未装备";
+                int itemId = 0;
+                var quality = InkWashTheme.InkQuality.Common;
+
+                if (inventory.TryGetEquipped(slot.slot, out var entry) && entry != null && entry.TemplateId > 0)
+                {
+                    var data = EquipmentDatabase.GetEquipment(entry.TemplateId);
+                    if (data != null)
+                    {
+                        itemId = entry.TemplateId;
+                        name = data.Name;
+                        quality = MapEquipmentQuality(data.Quality);
+                    }
+                }
+
+                _mockEquipments[i] = (itemId, name, slot.glyph, quality);
+            }
+
+            // 加成取装备桥的权威聚合：气血/内力增量由服务端并入上限，客户端这里不另算；
+            // 暴击/身法尚无装备属性字段，保持不可用。
+            var bonus = EquipmentAttributeBridge.Summarize(inventory);
+            int attack = Mathf.RoundToInt(bonus.PhysicalAttack + bonus.MagicAttack);
+            int defense = Mathf.RoundToInt(bonus.PhysicalDefense + bonus.MagicDefense);
+
+            _mockEquipStats[0] = ("攻击", attack > 0 ? $"+{attack:N0}" : "—");
+            _mockEquipStats[1] = ("防御", defense > 0 ? $"+{defense:N0}" : "—");
+            _mockEquipStats[2] = ("气血", "—");
+            _mockEquipStats[3] = ("内力", "—");
+            _mockEquipStats[4] = ("暴击", "—");
+            _mockEquipStats[5] = ("身法", "—");
+        }
+
+        /// <summary>把 <see cref="_mockEquipments"/><see cref="_mockEquipStats"/> 写进已构建的控件。</summary>
+        private void ApplyEquipmentToUi()
+        {
+            for (int i = 0; i < _mockEquipments.Length; i++)
+            {
+                var eq = _mockEquipments[i];
+                bool legendary = eq.quality == InkWashTheme.InkQuality.Legendary;
+
+                if (i < _equipCells.Count && _equipCells[i] != null)
+                    _equipCells[i].Quality = eq.quality;
+
+                if (i < _equipGlyphLabels.Count && _equipGlyphLabels[i] != null)
+                {
+                    _equipGlyphLabels[i].TextColor = legendary
+                        ? InkWashTheme.VermilionBright
+                        : InkWashTheme.QualityColor(eq.quality);
+                }
+
+                if (i < _equipNameLabels.Count && _equipNameLabels[i] != null)
+                {
+                    _equipNameLabels[i].Text = eq.name;
+                    _equipNameLabels[i].TextColor = legendary
+                        ? InkWashTheme.TextVermilion
+                        : InkWashTheme.TextTertiary;
+                }
+            }
+
+            for (int i = 0; i < _mockEquipStats.Length && i < _equipStatValueLabels.Count; i++)
+            {
+                if (_equipStatValueLabels[i] != null)
+                    _equipStatValueLabels[i].Text = _mockEquipStats[i].value;
             }
         }
 
@@ -768,6 +1007,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                     Quality = quality,
                 };
                 _equipmentPanel.AddChild(cell);
+                _equipCells.Add(cell);
 
                 // 槽位图标字（设计 .slot-icon，传世用朱红亮色、其余用品质色）
                 bool legendary = quality == InkWashTheme.InkQuality.Legendary;
@@ -785,6 +1025,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                     Size = new Float2(cellSize, EquipmentGlyphHeight),
                 };
                 _equipmentPanel.AddChild(glyphLabel);
+                _equipGlyphLabels.Add(glyphLabel);
 
                 // 槽位名称（设计 .slot-name，传世用朱红文字、其余三级文字色）
                 var nameLabel = new Label
@@ -799,6 +1040,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                     Size = new Float2(cellSize, EquipmentNameHeight),
                 };
                 _equipmentPanel.AddChild(nameLabel);
+                _equipNameLabels.Add(nameLabel);
             }
 
             // "装备属性加成" 小节标题
@@ -902,11 +1144,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
             // 主动武学区
             float cursorY = PanelTitleHeight + PanelInnerTopPadding;
-            cursorY = BuildSkillGroup("主动武学", "主动", _mockActiveSkills, true, cursorY);
+            cursorY = BuildSkillGroup("主动武学", "主动", _activeSkills, true, cursorY);
 
             // 被动武学区
             cursorY += SkillGroupGap;
-            cursorY = BuildSkillGroup("被动武学", "被动", _mockPassiveSkills, false, cursorY);
+            cursorY = BuildSkillGroup("被动武学", "被动", _passiveSkills, false, cursorY);
 
             // 战力评估区
             BuildPowerAssessment(cursorY + PowerSectionGap);
@@ -1270,9 +1512,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             // 4 条药品行
             float contentWidth = RightColumnWidth - 2f * PanelPadding;
             float rowY = PanelTitleHeight + PanelInnerTopPadding;
-            for (int i = 0; i < _mockMedicines.Length; i++)
+            for (int i = 0; i < _medicines.Length; i++)
             {
-                BuildMedicineRow(_mockMedicines[i], rowY, contentWidth);
+                BuildMedicineRow(_medicines[i], rowY, contentWidth);
                 rowY += MedicineRowHeight + MedicineRowGap;
             }
             rowY -= MedicineRowGap;
@@ -1313,7 +1555,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
             _supplyValueLabel = new Label
             {
-                Text = "良好",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
                 TextColor = InkWashTheme.VermilionPrimary,
                 HorizontalAlignment = TextAlignment.Far,
@@ -1323,6 +1565,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 Size = new Float2(100f, SupplySummaryHeight),
             };
             summaryBox.AddChild(_supplyValueLabel);
+
+            // 补给充足度按真实药品数量算：没有可用药品就明说"无补给"，不再默认"良好"。
+            int totalSupply = 0;
+            for (int i = 0; i < _medicines.Length; i++)
+                totalSupply += _medicines[i].quantity;
+            _supplyValueLabel.Text = totalSupply <= 0 ? "无补给" : (totalSupply >= 5 ? "充足" : "偏少");
+            _supplyValueLabel.TextColor = totalSupply <= 0
+                ? InkWashTheme.VermilionPrimary
+                : (totalSupply >= 5 ? InkWashTheme.JadeDeep : InkWashTheme.GoldDeep);
         }
 
         /// <summary>
@@ -1725,7 +1976,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// </summary>
         private void OnBackButtonClicked()
         {
-            RequestNavigation(InkPageDomIds.BackHud);
+            RequestNavigation(InkPageDomIds.BackOneLevel);
         }
 
         /// <summary>
@@ -1747,32 +1998,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         }
 
         /// <summary>
-        /// "快速补给"按钮点击处理：把各药品补至满额并刷新数量与充足度汇总。
+        /// "快速补给"按钮：补给要走药师/商店交易，客户端没有这条链路，
+        /// 因此只提示、不在本地把数量"补满"（那等于凭空造出药品）。
         /// </summary>
         /// <param name="button">触发事件的按钮（未使用）</param>
         private void OnQuickSupplyClicked(Button button)
         {
             try
             {
-                for (int i = 0; i < _mockMedicines.Length; i++)
-                {
-                    var med = _mockMedicines[i];
-                    _mockMedicines[i] = (med.name, med.effect, med.glyph, MedicineFullQuantity);
-
-                    if (i < _medicineRows.Count && _medicineRows[i].QtyLabel != null)
-                    {
-                        _medicineRows[i].QtyLabel.Text = $"×{MedicineFullQuantity}";
-                    }
-                }
-
-                if (_supplyValueLabel != null)
-                {
-                    _supplyValueLabel.Text = "充足";
-                }
+                UIHelper.ShowToast("快速补给尚未接入：请与药师交易补给", ToastType.Info);
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogError($"[MenuBattlePrepPage] 快速补给失败: {ex.Message}");
+                FlaxEngine.Debug.LogError($"[MenuBattlePrepPage] 快速补给提示失败: {ex.Message}");
             }
         }
 

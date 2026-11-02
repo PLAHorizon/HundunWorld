@@ -82,6 +82,32 @@ public enum DsGameplayEventKind : byte
 
     /// <summary>玩家死亡（用于死亡惩罚 / 统计）。</summary>
     PlayerDeath = 3,
+
+    /// <summary>
+    /// 击杀经验发放（<c>ItemCount</c> 复用为经验值；<c>ActorCharacterId</c> = 参与者）。
+    /// <para>与 <see cref="Kill"/> 分开是**必须的**：Kill 驱动任务进度与分域好感，
+    /// 若把"每个摸过怪的人都算击杀"塞进同一种事件，任务会在围观时被重复推进。
+    /// 经验按 WoW 的让分曲线由 <c>MonsterXpCore</c> 算好，业务层只负责加给对应角色。</para>
+    /// </summary>
+    KillXp = 4,
+
+    /// <summary>
+    /// 条件掉落（"要持有某任务才给"）：<c>ItemId/ItemCount</c> 是 DS 掷出来的结果，
+    /// <c>QuestId</c> 是要判的条件。
+    /// <para>为什么判在业务层：DS 手里没有玩家的任务状态，而"DS 去猜一个条件"的后果是
+    /// 条件掉落变成人人有份——那比不给更糟。掷归模拟层（要确定性），判归业务层（要有状态）。</para>
+    /// </summary>
+    LootConditional = 5,
+
+    /// <summary>
+    /// 击杀金币入账（<c>Money</c> 是 DS 掷出来的金额，<c>ActorCharacterId</c> = 拿钱的人）。
+    /// <para>为什么要单独一种事件而不是挂在 <see cref="Loot"/> 上：<c>Loot</c> 的消费端第一句就是
+    /// <c>if (ItemId &gt; 0 &amp;&amp; ItemCount &gt; 0)</c>，金币事件的 ItemId 天然是 0 ——
+    /// 挂上去会被那条判据安静吞掉（"掉金币从没到账"最好的伪装形态）。</para>
+    /// <para>金额归模拟层掷（要确定性、要与掉落表同一套盐值与顺序），到账归业务层（要有钱包）；
+    /// 与 <see cref="KillXp"/>、<see cref="LootConditional"/> 是同一条分工原则。</para>
+    /// </summary>
+    KillMoney = 6,
 }
 
 /// <summary>
@@ -134,6 +160,15 @@ public interface IDsGameplayEventSink
 /// 也让测试可以独立注入与断言，不会因为共用接口而被迫实现无关方法。
 /// </para>
 /// </summary>
+/// <summary>尸体拾取四帧的上送口（与 <see cref="IDsGameplayEventSender"/> 分开：这些是**请求/应答**，不是事件）。</summary>
+public interface IDsCorpseLootSender
+{
+    Task<bool> SendCorpseLootRegisterAsync(DsCorpseLootRegister register, CancellationToken cancellationToken = default);
+    Task<bool> SendCorpseLootGoneAsync(DsCorpseLootGone gone, CancellationToken cancellationToken = default);
+    Task<bool> SendCorpseLootResultAsync(DsCorpseLootResult result, CancellationToken cancellationToken = default);
+    Task<bool> SendCorpseLootForwardAsync(DsCorpseLootForward forward, CancellationToken cancellationToken = default);
+}
+
 public interface IDsGameplayEventSender
 {
     /// <summary>上送一批玩法事件。返回 false 表示发送失败（调用方计数，不抛）。</summary>
@@ -177,6 +212,16 @@ public struct DsGameplayEvent
     /// <summary>物品数量（掉落事件）。</summary>
     public int ItemCount;
 
+    /// <summary>条件掉落要判的任务 id（<see cref="DsGameplayEventKind.LootConditional"/>；其余事件为 0）。</summary>
+    public int QuestId;
+
+    /// <summary>
+    /// 金币金额（仅 <see cref="DsGameplayEventKind.KillMoney"/> 用；其余事件为 0）。
+    /// <para>它**必须进幂等键**（见 <see cref="BuildIdempotencyKey"/>）：漏了就"同一 tick 同一个人
+    /// 杀两只怪掉不同金额"会被去重吞掉一次——而这两笔在玩家那边是两个真实到账的铜板。</para>
+    /// </summary>
+    public long Money;
+
     /// <summary>
     /// 计算幂等键。
     /// </summary>
@@ -184,7 +229,15 @@ public struct DsGameplayEvent
     {
         // 用 stackalloc 手工拼接，避免 string.Format / 插值的堆分配——
         // 本方法在每次击杀与每件掉落上调用，属于热路径。
-        Span<char> buf = stackalloc char[80];
+        //
+        // 每一项都要进键，且**不能重复凑数**：以前这里把 ServerTick 拼了两遍而没有 ItemCount，
+        // 于是"同一次击杀里两件同物品同数量"的掉落（两张表各掉一件、或一件掉两份）键相同，
+        // 去重会安静地吞掉第二件——玩家看到的是"配了 2 件只进 1 件"，日志里没有任何异常。
+        // 缓冲区按"最坏情况"给：8 个字段 × 每个最长 20 位 + 7 个分隔符 = 167，取 192。
+        // 为什么不用 96：以前所有字段都是 int/短 long，加进 Money（long，且是玩家可见的钱）之后
+        // 最坏情况会溢出 stackalloc 的切片——TryFormat 溢出时返回 false 并写 0 个字符，
+        // 于是**键会静默变短**、两次不同的入账可能凑出同一个键（比报错更糟：它表现成"钱没到账"）。
+        Span<char> buf = stackalloc char[192];
         var pos = 0;
 
         ShardId.TryFormat(buf.Slice(pos), out var written); pos += written;
@@ -197,8 +250,69 @@ public struct DsGameplayEvent
         buf[pos++] = ':';
         ItemId.TryFormat(buf.Slice(pos), out written); pos += written;
         buf[pos++] = ':';
-        ServerTick.TryFormat(buf.Slice(pos), out written); pos += written;
+        ItemCount.TryFormat(buf.Slice(pos), out written); pos += written;
+        buf[pos++] = ':';
+        QuestId.TryFormat(buf.Slice(pos), out written); pos += written;
+        buf[pos++] = ':';
+        // 金币也必须进键（注释见字段声明）：两笔金额不同的入账如果被去重吞掉一笔，
+        // 玩家看到的是"掉了一地钱而口袋里少一截"，日志里没有任何异常。
+        Money.TryFormat(buf.Slice(pos), out written); pos += written;
 
         return new string(buf.Slice(0, pos));
     }
+}
+
+/// <summary>
+/// 世界实体身份描述符（DS 内核结构，配套线上契约见 <see cref="DsEntityDescriptorDto"/>）。
+/// <para>
+/// DS 里"哪个实体是什么"只有 <c>DsWorldSession._monstersById</c> 知道，而下行同步包不带模板 id。
+/// 本结构把这份身份搬出 DS：生成时一条、离开世界时一条（<see cref="Removed"/>=true）。
+/// 坐标为**下行协议同一空间（Flax Y-up）**，DS 不做换轴解释。
+/// </para>
+/// </summary>
+public struct DsEntityDescriptor
+{
+    /// <summary>运行时实体 ID。</summary>
+    public ulong EntityId;
+
+    /// <summary>生成类别原值（<c>ScriptedKind</c>；0 = 静态刷怪点怪物）。</summary>
+    public byte ScriptedKind;
+
+    /// <summary>模板 ID（按 <see cref="ScriptedKind"/> 决定语义）。</summary>
+    public int TemplateId;
+
+    /// <summary>所属刷怪点 ID（脚本生成点在负数域）。</summary>
+    public int SpawnPointId;
+
+    /// <summary>X（Flax 左右）。</summary>
+    public float X;
+
+    /// <summary>Y（Flax 上下）。</summary>
+    public float Y;
+
+    /// <summary>Z（Flax 前后）。</summary>
+    public float Z;
+
+    /// <summary>true = 实体已离开世界，接收方应删除该条目。</summary>
+    public bool Removed;
+
+    /// <summary>
+    /// 这具尸体仍可被拾取（2026-10-29：尸体拾取需要一个"可交互但已死"的形态）。
+    /// <para>只有开了 <c>CorpseLoot__Enabled</c> 的 DS 才会把它置真；旧网关/旧客户端忽略该尾部成员。</para>
+    /// </summary>
+    public bool CorpseInteractable;
+}
+
+/// <summary>
+/// 实体身份描述符发送端（DS 侧）。
+/// <para>
+/// 与 <see cref="IDsGameplayEventSender"/> 分开的理由相同：那条是"发生了什么"（击杀/掉落），
+/// 这条是"世界里有什么"。分开后测试可独立注入，宿主也可只接其一。
+/// </para>
+/// </summary>
+public interface IDsEntityDescriptorSender
+{
+    /// <summary>上送一批实体身份变更。返回 false 表示发送失败（调用方计数，不抛）。</summary>
+    System.Threading.Tasks.Task<bool> SendEntityDescriptorsAsync(
+        DsEntityDescriptorBatch batch, System.Threading.CancellationToken cancellationToken = default);
 }

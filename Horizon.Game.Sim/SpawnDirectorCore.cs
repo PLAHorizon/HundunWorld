@@ -64,6 +64,9 @@ public struct SpawnPointConfig
     /// <summary>移动速度（米/秒）。</summary>
     public float MoveSpeed;
 
+    /// <summary>追击/回位速度（米/秒）；0 = 没配，退回 <see cref="MoveSpeed"/>。</summary>
+    public float RunSpeed;
+
     /// <summary>
     /// 生产可用的默认配置：3 只怪、8 米间距、15 秒重生、10 米仇恨。
     /// </summary>
@@ -92,6 +95,7 @@ public struct SpawnPointConfig
     {
         var baseCfg = MonsterAiConfig.Default;
         baseCfg.MoveSpeed = MoveSpeed;
+        baseCfg.RunSpeed = RunSpeed;
         baseCfg.WanderRadius = WanderRadius;
         baseCfg.AggroRadius = AggroRadius;
         baseCfg.LeashRadius = LeashRadius;

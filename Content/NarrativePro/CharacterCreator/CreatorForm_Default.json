@@ -1,0 +1,61 @@
+{
+  "characterCreatorForms": [
+    {
+      "formDisplayName": "男性",
+      "formTag": { "tagName": "Narrative.CharacterCreator.Form.Male" },
+      "characterVisualClassPath": "",
+      "baseMeshPath": "",
+      "bHideBaseMesh": true,
+      "defaultCharacterUnarmedAnimPath": "",
+      "characterCreatorPages": [
+        {
+          "pageID": { "tagName": "Narrative.CharacterCreator.Page.Body" },
+          "pageTitleText": "体型",
+          "pageSections": [
+            {
+              "sectionID": { "tagName": "Narrative.CharacterCreator.Section.Body" },
+              "sectionDisplayName": "身体",
+              "options": []
+            }
+          ]
+        },
+        {
+          "pageID": { "tagName": "Narrative.CharacterCreator.Page.Face" },
+          "pageTitleText": "面部",
+          "pageSections": [
+            {
+              "sectionID": { "tagName": "Narrative.CharacterCreator.Section.Face" },
+              "sectionDisplayName": "面部",
+              "options": []
+            }
+          ]
+        }
+      ],
+      "defaultCharacterCreatorMeshes": [],
+      "defaultCharacterCreatorGrooms": []
+    },
+    {
+      "formDisplayName": "女性",
+      "formTag": { "tagName": "Narrative.CharacterCreator.Form.Female" },
+      "characterVisualClassPath": "",
+      "baseMeshPath": "",
+      "bHideBaseMesh": true,
+      "defaultCharacterUnarmedAnimPath": "",
+      "characterCreatorPages": [
+        {
+          "pageID": { "tagName": "Narrative.CharacterCreator.Page.Body" },
+          "pageTitleText": "体型",
+          "pageSections": [
+            {
+              "sectionID": { "tagName": "Narrative.CharacterCreator.Section.Body" },
+              "sectionDisplayName": "身体",
+              "options": []
+            }
+          ]
+        }
+      ],
+      "defaultCharacterCreatorMeshes": [],
+      "defaultCharacterCreatorGrooms": []
+    }
+  ]
+}

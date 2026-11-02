@@ -167,10 +167,17 @@ namespace Game.Combat.Effects
         /// </summary>
         private void AttachToScene(Actor particleActor)
         {
-            // 将粒子系统附加到场景根节点或特效管理器节点
-            if (Level.Scenes.Length > 0)
+            // 五行粒子是玩法世界对象：优先挂进玩法场景（随切场景自然销毁），
+            // RootScene 只允许全局共享宿主，不再作为默认落点。
+            var scene = HundunWorld.Game.HundunWorldGame.FindGameWorldScene();
+            if (scene == null && Level.Scenes.Length > 0)
             {
-                particleActor.SetParent(Level.Scenes[0], false);
+                Debug.LogWarning("[WuxingParticleEffects] 未找到玩法场景，粒子池暂挂 RootScene（预热期正常，进世界后新建池应命中玩法场景）");
+                scene = Level.Scenes[0];
+            }
+            if (scene != null)
+            {
+                particleActor.SetParent(scene, false);
             }
         }
 

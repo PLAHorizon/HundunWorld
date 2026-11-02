@@ -145,6 +145,8 @@
     <PackageVersion Include="NAudio" Version="2.3.0" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <!-- DPAPI 包装（CredentialProtector 存凭据）：原先由 Orleans 依赖边传递带入，客户端与 Orleans 解耦后显式声明 -->
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.2" />
     <PackageVersion Include="System.Drawing.Common" Version="10.0.0-rc.2.25502.107" />
     <PackageVersion Include="System.Management" Version="10.0.2" />
     <PackageVersion Include="System.Text.Json" Version="10.0.2" />

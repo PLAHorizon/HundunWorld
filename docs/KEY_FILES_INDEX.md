@@ -1,6 +1,6 @@
 # 关键文件索引 · KEY_FILES_INDEX
 
-> **最后更新**：2026-06-15 · 按 `file:line` 格式组织的开发快速查找表
+> **最后更新**：2026-10-05（新增 §10 任务系统落点）· 按 `file:line` 格式组织的开发快速查找表
 >
 > 所有路径相对仓库根 `C:\Works\GitHubProjects\HundunWorld\`
 
@@ -258,6 +258,52 @@
 | Windows GUID | `HundunWorld/Source/Game/Network/Adapters/HorizonMessageAdapter.cs` | 336 | 注册表读取 |
 | Linux machine-id | `HundunWorld/Source/Game/Network/Adapters/HorizonMessageAdapter.cs` | — | `/etc/machine-id` |
 | macOS UUID | `HundunWorld/Source/Game/Network/Adapters/HorizonMessageAdapter.cs` | — | `sysctl IOPlatformUUID` |
+
+---
+
+## 10. 任务系统（Quest · 2026-10-05，2026-10-06 同步）
+
+> 设计、决策与部署顺序全部在 [QUEST_SYSTEM_DESIGN.md](./QUEST_SYSTEM_DESIGN.md)；这里只做落点索引。
+> **单一真相纪律**：目标语法只有一份编解码、校验只有一份、库行↔草稿映射只有一份、编辑器写库只有 CLI 一条路。
+
+| 层 | 文件 | 行 | 说明 |
+|------|------|----|------|
+| 实体引用与类别 | `Horizon.Game.Sim/Quests/QuestEntityRef.cs` | 4 | `QuestEntityKind`（npc/monster/item/prop/zone）——发布者可以是人也可以是物件 |
+| 完成条件语法 | `Horizon.Game.Sim/Quests/QuestObjectiveCodec.cs` | 7 | `kill_monster:`/`kill_domain:`/`talk_npc:`/`collect_item:`/`use_item:`/`reach_zone:`/`interact_prop:`；`HasProducer` 是"有没有事件源"的唯一口径 |
+| 奖励编解码 | `Horizon.Game.Sim/Quests/QuestRewardSpec.cs` | 9 | 键 `item:`/`favor:`/`exp`/`gold`，**只认数字值** |
+| 草稿模型 | `Horizon.Game.Sim/Quests/QuestDraft.cs` | 11 | 编辑器 ↔ CLI 的唯一交换 JSON |
+| 唯一校验器 | `Horizon.Game.Sim/Quests/QuestTemplateValidator.cs` | 6 | Q000–Q050；发布按"发布之后"的样子校验 |
+| 发布者名字 | `Horizon.Game.Sim/Quests/QuestGiverNaming.cs` | 14 | 服务端解析，客户端不自报 |
+| 库行↔草稿 | `Horizon.Entities/QuestTemplateMapper.cs` | 16 | 列宽截断在这里，不在 UI |
+| 模板实体 | `Horizon.Model/GameModel/QuestTemplateEntity.cs` | 20 | 迁移 013 加的 9 列 |
+| 目录/发布 Grain | `Horizon.Orleans.Grains/World/QuestManagerGrain.cs` | 27 | 10s TTL 目录缓存 + 上下线 + 撤销队列（**不做 Grain 互 call**） |
+| 契约 | `Horizon.Orleans.Interface/World/IQuestManagerGrain.cs` | 20 | 实时发布/关闭/取消三入口都在这 |
+| 玩家任务 Grain | `Horizon.Orleans.Grains/QuestGrain.cs` | 21 | 接取门：发布态 + 前置 + 周期 |
+| 网关处理 | `Horizon.Game.Core/Handlers/QuestHandler.cs` | 16 | 清单/可接/接取/提交/交互裁决；撤销队列在这里落地 |
+| 线上↔模板映射 | `Horizon.Game.Core/Handlers/QuestWireMapper.cs` | 16 | 唯一一份目标/奖励解码 |
+| 实体身份注册表 | `Horizon.Game.Core/Sim/Server/DsEntityRegistry.cs` | 28 | DS 上行 `EntityDescriptor=9` 的落点，按 shard 分片 |
+| 交互裁决（纯函数） | `Horizon.Game.Core/Sim/Server/QuestInteractionAuthority.cs` | 14 | 存在 + 可交互类别 + 邻近；换轴口径在这里 |
+| 写库 CLI | `Horizon.QuestCli/Program.cs` | 23 | `catalog/list/get/validate/draft/publish/online/unpublish/retire/delete`，编辑器的唯一写库通道；**`publish` = 草稿落库并发布**，`online` = 把库里已有的下线行放上线，`delete` = 只删已作废的（已接玩家不受影响，依据在 `QuestDeletionSafetyTests`） |
+| 草稿层（Redis） | `Horizon.QuestCli/QuestDraftStore.cs` | — | 草稿只住 Redis：`quest:draft:{id}` 正文 + `quest:drafts` ZSET 索引，72 小时、每次保存续期；索引项惰性剔除；发布成功后删草稿（内容权威权交给 SQL） |
+| CLI 编码核验（只读） | `scripts/verify-quest-cli-encoding.py` | — | 不带 stdin 的动词 / 带 BOM 草稿 / 无 BOM 草稿；把解码器改成 936 做过变异验证（会判红） |
+| CLI 草稿核验（只读） | `scripts/verify-quest-draft-redis.py` | — | Redis 往返中文按字段值比对、TTL≈72h、删除即失效、**无草稿时发布被拒且 SQL 侧查无此行** |
+| 编辑器窗口 | `HundunWorld/Plugins/QuestEditor/Source/QuestEditorEditor/QuestEditorWindow.cs` | 19 | Flax 编辑器 Tools → 任务编辑器 |
+| 客户端服务 | `HundunWorld/Source/Game/Network/QuestClientService.cs` | 21 | 回包在连接线程 → UI 靠 `Revision` 脏标记主线程重绘 |
+| 客户端接收 | `HundunWorld/Source/Game/Network/MessageHandlers/QuestMessageHandler.cs` | 15 | 含接取/提交/交互三类回执 |
+| 任务日志页 | `HundunWorld/Source/Game/UI/Ink/Pages/Quest/QuestLogPage.cs` | 15 | 数据驱动（含"可接任务"组） |
+| 菜单卷宗页 | `HundunWorld/Source/Game/UI/Ink/Pages/MenuQuestsPage.cs` | 24 | 数据驱动；协议没有的字段显示占位不编造 |
+| 世界内触发点 | `HundunWorld/Source/Game/Selection/WorldSelectionService.cs` | — | 选中 Npc/物品/采集点后按 **G** → `ReportInteract(entityId)` |
+| 迁移与种子 | `scripts/sql/013_quest_editor_columns.sql` / `014_seed_quest_editor.sql` / `015_seed_material_item_templates.sql` | — | **三条都已在 dev 库执行**（015 是材料 `700001..700041`，回退见方案 §12.1） |
+| 种子入库前核验（只读） | `scripts/verify-quest-material-seed.py` | — | 对账 SQL 双分支列覆盖、与客户端 `MaterialData` 的 id/名称一致、与库里现有 item_id 零重叠；`--offline` 跳过连库项 |
+| 特殊物品种子（**待批准**） | `scripts/sql/016_seed_special_item_templates.sql` | — | 任务物品 5 / 配方 2 / 宝箱 2，号段 750001·760001·770001（全部 <800000，避开秘籍启发式）；5 道入库后自检不满足即整批回滚；**只生成未执行** |
+| 物品种子通用核验（只读） | `scripts/verify-item-template-seed.py` | — | INSERT/UPDATE 双分支列覆盖、同列重复赋值（Msg 264）、号段与档位自洽、重名；`--live` 再对一次真库。015/016 都跑通（反向对照会判红） |
+| 奖励显示覆盖面普查（只读） | `scripts/verify-quest-reward-display-coverage.py` | — | 按 `ItemCatalog.Build` 真实解析路径逐条数 171 件：156 叫得出 / 15 叫不出（正是 T9 那批），"多一件就 FAIL"；明细落 `docs/quest_reward_display_coverage.json` |
+| 作者链路实况核验（只读） | `scripts/verify-quest-authoring-cli.py` | — | 真的调用 CLI `validate` 跑四案例：`talk_npc` 可入库(带 Q039)、未登记 NPC 被 Q027 拒、材料未入库被 Q034 拒（`QUEST_MATERIALS_IN_DB=1` 后翻成"必须通过"）、**管道中文长度探针**盯 stdin 编码 |
+| 名称→模板 id 解析 | `Horizon.Game.Sim/Quests/QuestCatalogLookup.cs` | 60 | 数字优先 → 整名相等 → 唯一子串；歧义不猜。插件里那份 `QuestEditorWindow.ResolveTemplateId` 是刻意复制（不引服务端程序集），三步顺序由源码闸门钉住 |
+| 实时发布/关闭（运行态证明） | `Horizon.QuestContractTests/QuestLivePublishTests.cs` | 44 | 2 条：只改库不碰 Grain 写接口 → 可接列表出现→消失→出现 + 版本号跟随；走 Grain 的热更/发布/关闭 + 服务端等级门槛。双重门控 `HORIZON_QUEST_DB` + `HORIZON_ORLEANS_REDIS`，探针行自建自清 |
+| 契约测试 | `Horizon.QuestContractTests/` | — | 130 条，能在 Silo/Gateway/DsHost 跑着时单独执行；`QuestEditorContractTests`（编辑器/契约口径）、`QuestCatalogLookupTests`（名称解析 + 两边顺序不得漂移）、`QuestRewardRoutingTests`（奖励物品的使用分档：号段只是必要条件，T9①）、`QuestHandlerInteractTests`（网关交互胶水：目标下标、四条拒绝码、只推自己那类）、`QuestHandlerOfferListTests`（网关可接收窄胶水：**发布者认不出/超距时一次都不请求可接表**，防"用不存在的对象换整个目录"）、`QuestManagerRevocationLiveTests`（真集群，`HORIZON_ORLEANS_REDIS` 门控）、`DsEntityIdentityTests`（身份与裁决）、`DsEntityDescriptorProductionTests`（真开一个 `DsWorldSession` 看 DS 到底有没有把身份带出来）、`QuestGrainLockDisciplineTests`（源码级锁纪律，突变验证过）、`QuestCatalogFingerprintTests`（目录版本号=内容指纹，T10，突变验证过）、`FlaxToolsRefreshListTests`（Tools 刷新清单漂移闸门，T13）、`QuestAuthoringDbTests`（连真库那几条，`HORIZON_QUEST_DB=1` 门控；含"秘籍号段里不得混入非秘籍物品"这条奖励域现状闸门，T9） |
+| 目录版本号（纯函数） | `Horizon.Orleans.Interface/World/QuestCatalogFingerprint.cs` | 26 | 玩家可见字段的有序 FNV-1a；空目录固定值；唯一调用点 `QuestManagerGrain.cs:416` |
+| 行为级集群回归 | `Horizon.QuestContractTests/QuestManagerRevocationLiveTests.cs` | 41 | T8：`unpublish(force)` 在 5 秒死时限内返回 + 撤销队列正是那个持有者 + 后续调用仍能应答；`HORIZON_ORLEANS_REDIS` 门控，探针任务 20001（对库净零）。**2026-10-06 真集群首跑 2/2 通过**。（原放 `Gateway.Tests`，被并行会话在途改动挡住编译后搬到本工程——这里不引 Gateway/Silo 工程，不会被进程锁住） |
 
 ---
 

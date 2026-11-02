@@ -16,7 +16,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
     /// 颜色与字体一律取自 <see cref="InkWashTheme"/> 设计 Token（无硬编码色值），
     /// 导航出口经 <see cref="NavigationRequested"/> 交由 <see cref="InkPageRouter"/> 统一处理。
     /// </summary>
-    public class MenuActivitiesPage : ContainerControl, IInkPage
+    public class MenuActivitiesPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ==================================================================
         // 布局常量（对应设计稿参考分辨率）
@@ -53,7 +53,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
         private const float ListColumnRatio = 0.60f;
 
         /// <summary>左侧导航项高度（设计 padding 16px 32px + 20px 图标）</summary>
-        private const float NavRowHeight = 52f;
 
         /// <summary>导航项左侧激活竖线宽度（设计 border-left: 3px）</summary>
         private const float NavActiveBarWidth = 3f;
@@ -76,22 +75,23 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
 
         private const string BrandTitleText = "混沌世界";
         private const string BrandSubText = "HUNDUN WORLD";
-        private const string SidebarFooterText = "v2.0.1 · 江湖公测";
+        private const string SidebarFooterText = "v1.2.0 · 江湖公测";
         private const string BannerLabelText = "精选活动 · FEATURED";
         private const string BannerTitleText = "江湖盛会";
-        private const string BannerSubtitleText = "限时活动 · 武林大会";
+        private const string BannerSubtitleText = "限时活动 · 武林大会（活动系统未接入，以下为目录样例）";
         private const string BannerCountdownLabelText = "剩余";
-        private const string BannerCountdownDaysText = "3天";
-        private const string BannerCountdownTimerText = "14:23:08";
+        private const string BannerCountdownDaysText = "—";
+        private const string BannerCountdownTimerText = "—";
         private const string BannerDecorationText = "武";
         private const string BannerActionText = "立即参与";
-        private const string PlayerNameText = "江湖过客";
-        private const string PlayerLevelText = "Lv. 42";
+        private const string PlayerNameText = "—";
+        private const string PlayerLevelText = "—";
         private const string CurrencyCoinText = "铜钱";
-        private const string CurrencyCoinValueText = "12,450";
+        private const string CurrencyCoinValueText = "—";
         private const string CurrencyIngotText = "元宝";
-        private const string CurrencyIngotValueText = "328";
-        private const string TimeText = "戌时 三刻";
+        private const string CurrencyIngotValueText = "—";
+        // 世界时间同步没有接入客户端（同 MenuTimePage），顶栏不摆设计稿的时辰
+        private const string TimeText = "—";
         private const string SectionTimeText = "活动时间";
         private const string SectionDescText = "活动简介";
         private const string SectionRequirementText = "参与条件";
@@ -104,25 +104,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
 
         /// <summary>标签栏文案（对应 tab-bar 四项）。</summary>
         private static readonly string[] TabNames = { "全部", "进行中", "即将开始", "已结束" };
-
-        /// <summary>左侧导航文案（对应 .nav-item 七项）。</summary>
-        private static readonly string[] NavLabels = { "不肝", "抽卡", "活动", "战令", "属性", "奇珍阁", "设置" };
-
-        /// <summary>左侧导航图标字形（替代设计稿 lucide 图标）。</summary>
-        private static readonly string[] NavGlyphs = { "逸", "签", "斗", "令", "属", "珍", "设" };
-
-        /// <summary>左侧导航跳转目标（“活动”指向本页，无跳转）。</summary>
-        private static readonly string[] NavTargets =
-        {
-            InkPageDomIds.NavCasualMode,
-            InkPageDomIds.NavGacha,
-            InkPageDomIds.NavActivities,
-            InkPageDomIds.NavBattlePass,
-            InkPageDomIds.NavCharacterV2,
-            InkPageDomIds.NavShopRare,
-            InkPageDomIds.NavSettings,
-        };
-
         // ==================================================================
         // 活动数据规格（设计稿静态数据）
         // ==================================================================
@@ -184,13 +165,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             new ActivitySpec
             {
                 Name = "武林大会",
-                StatusText = "进行中",
+                StatusText = "未开始",
                 TimeGlyph = "时",
-                TimeText = "3天剩余",
-                Progress = 0.60f,
+                TimeText = "—",
+                Progress = 0f,
                 BarVariant = InkBarFillVariant.Gold,
                 ProgressCaption = "参与进度",
-                ProgressValueText = "60%",
+                ProgressValueText = "0%",
                 IconGlyph = "剑",
                 IconAccent = InkWashTheme.VermilionBright,
                 Preview = new[]
@@ -201,7 +182,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
                 },
                 MoreText = "+2",
                 Badges = new[] { "限时", "PVP" },
-                DetailTime = "2026.07.08 — 2026.07.15",
+                DetailTime = "—",
                 Description = "江湖各路豪杰齐聚一堂，比武论剑，争夺武林盟主之位。每日参与可获得丰厚奖励，排名前列者更可得绝世武学秘籍与稀有装备。此乃江湖一年一度之盛事，切莫错过。",
                 Requirements = new[] { "等级 ≥ 30", "战力 ≥ 15000" },
                 Rewards = new[]
@@ -216,13 +197,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             new ActivitySpec
             {
                 Name = "灯会寻宝",
-                StatusText = "进行中",
+                StatusText = "未开始",
                 TimeGlyph = "时",
-                TimeText = "5天剩余",
-                Progress = 0.35f,
+                TimeText = "—",
+                Progress = 0f,
                 BarVariant = InkBarFillVariant.Jade,
                 ProgressCaption = "参与进度",
-                ProgressValueText = "35%",
+                ProgressValueText = "0%",
                 IconGlyph = "灯",
                 IconAccent = InkWashTheme.GoldBright,
                 Preview = new[]
@@ -232,7 +213,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
                 },
                 MoreText = "+1",
                 Badges = new[] { "限时", "寻宝" },
-                DetailTime = "2026.07.06 — 2026.07.11",
+                DetailTime = "—",
                 Description = "元宵灯会，灯火辉煌，藏有无数奇珍异宝。收集灯谜碎片，兑换珍稀奖励。",
                 Requirements = new[] { "等级 ≥ 20", "战力 ≥ 8000" },
                 Rewards = new[]
@@ -247,12 +228,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             new ActivitySpec
             {
                 Name = "诗词大会",
-                StatusText = "即将开始",
+                StatusText = "未开始",
                 TimeGlyph = "漏",
-                TimeText = "1天后开始",
+                TimeText = "—",
                 Progress = 0f,
                 BarVariant = InkBarFillVariant.Gold,
-                ProgressCaption = "未开始",
+                ProgressCaption = "参与进度",
                 ProgressValueText = "—",
                 IconGlyph = "书",
                 IconAccent = InkWashTheme.Info,
@@ -263,7 +244,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
                 },
                 MoreText = string.Empty,
                 Badges = new[] { "限时", "文会" },
-                DetailTime = "2026.07.09 — 2026.07.13",
+                DetailTime = "—",
                 Description = "文人墨客齐聚，以诗会友。答对诗词题目，获得文采值与丰厚奖励。",
                 Requirements = new[] { "等级 ≥ 25", "文采 ≥ 500" },
                 Rewards = new[]
@@ -278,14 +259,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             new ActivitySpec
             {
                 Name = "帮派攻防",
-                StatusText = "进行中",
+                StatusText = "未开始",
                 TimeGlyph = "刻",
-                TimeText = "12小时剩余",
+                TimeText = "—",
                 Urgent = true,
-                Progress = 0.80f,
+                Progress = 0f,
                 BarVariant = InkBarFillVariant.Vermilion,
                 ProgressCaption = "参与进度",
-                ProgressValueText = "80%",
+                ProgressValueText = "0%",
                 IconGlyph = "盾",
                 IconAccent = InkWashTheme.JadeBright,
                 Preview = new[]
@@ -295,7 +276,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
                 },
                 MoreText = "+3",
                 Badges = new[] { "帮派", "PVP" },
-                DetailTime = "2026.07.08 — 2026.07.08",
+                DetailTime = "—",
                 Description = "帮派之间的攻防战，守护帮派荣耀，夺取敌方资源。",
                 Requirements = new[] { "等级 ≥ 30", "已加入帮派" },
                 Rewards = new[]
@@ -310,13 +291,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             new ActivitySpec
             {
                 Name = "寻宝奇缘",
-                StatusText = "进行中",
+                StatusText = "未开始",
                 TimeGlyph = "时",
-                TimeText = "6天剩余",
-                Progress = 0.15f,
+                TimeText = "—",
+                Progress = 0f,
                 BarVariant = InkBarFillVariant.Jade,
                 ProgressCaption = "参与进度",
-                ProgressValueText = "15%",
+                ProgressValueText = "0%",
                 IconGlyph = "匣",
                 IconAccent = InkWashTheme.GoldPrimary,
                 Preview = new[]
@@ -326,7 +307,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
                 },
                 MoreText = "+2",
                 Badges = new[] { "限时", "寻宝" },
-                DetailTime = "2026.07.05 — 2026.07.11",
+                DetailTime = "—",
                 Description = "探索神秘藏宝图，寻找失落的宝藏，获得珍稀物品。",
                 Requirements = new[] { "等级 ≥ 20", "战力 ≥ 6000" },
                 Rewards = new[]
@@ -341,13 +322,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             new ActivitySpec
             {
                 Name = "江湖悬赏",
-                StatusText = "已结束",
+                StatusText = "未开始",
                 TimeGlyph = "成",
-                TimeText = "已结束",
+                TimeText = "—",
                 Progress = 1f,
                 BarVariant = InkBarFillVariant.Gold,
-                ProgressCaption = "已完成",
-                ProgressValueText = "100%",
+                ProgressCaption = "参与进度",
+                ProgressValueText = "0%",
                 IconGlyph = "勋",
                 IconAccent = InkWashTheme.PaperDark,
                 Preview = new[]
@@ -358,7 +339,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
                 MoreText = string.Empty,
                 Ended = true,
                 Badges = new[] { "已结束", "悬赏" },
-                DetailTime = "2026.06.20 — 2026.07.01",
+                DetailTime = "—",
                 Description = "江湖悬赏已结束，感谢各位侠士的参与。",
                 Requirements = new[] { "等级 ≥ 15", "战力 ≥ 3000" },
                 Rewards = new[]
@@ -378,15 +359,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
 
         private Float2 _screenSize;
 
-        private InkBackgroundLayer _backgroundLayer;
-        private InkVignette _vignette;
-
         // 左侧导航
         private InkPanel _leftNav;
         private Label _logoText;
         private Label _logoSub;
         private InkDivider _logoDivider;
-        private List<NavRow> _navRows;
+        private InkSidebarList _sidebarList;
         private InkDivider _navFooterDivider;
         private Label _navFooterText;
 
@@ -495,7 +473,31 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             }
             catch (Exception ex)
             {
+                ProbeBuildFailure($"ctor {ex.GetType().Name}: {ex.Message}");
                 FlaxEngine.Debug.LogError($"[MenuActivitiesPage] 初始化失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 临时探针：页面初始化中途抛异常时把类型与消息写到 %APPDATA%/HundunWorld/ui-probe.out，
+        /// 这台机器的编辑器日志不落盘，只能这样定位"列表只建出一条、详情面板缺失"。
+        /// </summary>
+        private static void ProbeBuildFailure(string detail)
+        {
+            try
+            {
+                string dir = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld");
+                if (!System.IO.File.Exists(System.IO.Path.Combine(dir, "ui-probe.on")))
+                    return;
+                System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(dir, "ui-probe.out"),
+                    detail + System.Environment.NewLine);
+            }
+            catch
+            {
+                // 探针失败不影响页面
             }
         }
 
@@ -545,18 +547,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
         /// <summary>构建全局水墨背景层与暗角晕影（对应 .ink-bg-layer / .ink-vignette）。</summary>
         private void BuildBackground()
         {
-            _backgroundLayer = new InkBackgroundLayer
-            {
-                DrawBaseFill = true,
-                AnchorPreset = AnchorPresets.StretchAll,
-                Parent = this,
-            };
-
-            _vignette = new InkVignette
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Parent = this,
-            };
+            // 背景层/暗角由外壳统一提供（本页为沉浸式全屏页），页面不再自绘：
+            // 原实现（含 DrawBaseFill=true 的不透明底）与外壳层叠加会得到双份墨底 + 双层暗角。
         }
 
         // ==================================================================
@@ -576,14 +568,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             _logoSub = NewLabel(_leftNav, BrandSubText, InkWashTheme.FontRole.Body, 11f, InkWashTheme.PaperDark, TextAlignment.Center);
             _logoDivider = new InkDivider { Parent = _leftNav };
 
-            _navRows = new List<NavRow>();
-            for (int i = 0; i < NavLabels.Length; i++)
+            // 侧边栏导航：共用控件渲染 InkSidebarNav 的完整清单（分组 + 超出可滚动）
+            _sidebarList = new InkSidebarList(InkPageDomIds.NavActivities)
             {
-                bool active = NavTargets[i] == InkPageDomIds.NavActivities;
-                NavRow row = new NavRow(_leftNav, NavGlyphs[i], NavLabels[i], active);
-                row.Activated += OnNavRowActivated;
-                _navRows.Add(row);
-            }
+                Parent = _leftNav,
+            };
+            _sidebarList.NavigationRequested += target => NavigationRequested?.Invoke(target);
 
             _navFooterDivider = new InkDivider { Parent = _leftNav };
             _navFooterText = NewLabel(_leftNav, SidebarFooterText, InkWashTheme.FontRole.Body, 11f, InkWashTheme.TextTertiary, TextAlignment.Center);
@@ -643,6 +633,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             _currencyDivider = new InkDividerVertical { Parent = _topBar };
             _timeGlyph = NewLabel(_topBar, "时", InkWashTheme.FontRole.Body, 12f, InkWashTheme.Info, TextAlignment.Center);
             _timeLabel = NewLabel(_topBar, TimeText, InkWashTheme.FontRole.Heading, 13f, InkWashTheme.Info);
+
+            // 真实玩家信息可用时覆盖设计稿示例值（元宝/时辰暂无数据源）
+            InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelLabel, _currencyCoinValue);
         }
 
         // ==================================================================
@@ -723,9 +716,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             _entries = new List<ActivityEntry>();
             for (int i = 0; i < Activities.Length; i++)
             {
-                ActivityEntry entry = new ActivityEntry(_activityListPanel, i, Activities[i], i == 0);
-                entry.Clicked += OnEntryClicked;
-                _entries.Add(entry);
+                try
+                {
+                    ActivityEntry entry = new ActivityEntry(_activityListPanel, i, Activities[i], i == 0);
+                    entry.Clicked += OnEntryClicked;
+                    _entries.Add(entry);
+                }
+                catch (Exception ex)
+                {
+                    ProbeBuildFailure($"entry[{i}] {Activities[i].Name} {ex.GetType().Name}: {ex.Message}");
+                    break;
+                }
             }
         }
 
@@ -849,9 +850,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             if (h <= 0f)
                 h = UILayout.RefHeight;
 
-            Place(_backgroundLayer, 0f, 0f, w, h);
-            Place(_vignette, 0f, 0f, w, h);
-
             LayoutSidebar(h);
 
             float mainW = Mathf.Max(360f, w - SidebarWidth);
@@ -876,12 +874,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             Place(_logoDivider, 16f, 92f, SidebarWidth - 32f, 1f);
 
             float navTop = 104f;
-            for (int i = 0; i < _navRows.Count; i++)
-            {
-                Place(_navRows[i], 0f, navTop + i * NavRowHeight, SidebarWidth, NavRowHeight);
-            }
+            _sidebarList.Layout(0f, navTop, SidebarWidth, Mathf.Max(0f, height - navTop - 76f));
 
-            float footerTop = Mathf.Max(navTop + _navRows.Count * NavRowHeight + 16f, height - 64f);
+            float footerTop = height - 64f;
             Place(_navFooterDivider, 16f, footerTop, SidebarWidth - 32f, 1f);
             Place(_navFooterText, 0f, footerTop + 12f, SidebarWidth, 18f);
         }
@@ -1157,17 +1152,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
         // ==================================================================
 
         /// <summary>左侧导航项点击 → 标准导航请求。</summary>
-        private void OnNavRowActivated(string target)
-        {
-            if (string.IsNullOrEmpty(target) || target == InkPageDomIds.NavActivities)
-                return;
-            NavigationRequested?.Invoke(target);
-        }
-
         /// <summary>返回战斗 HUD（设计隐藏出口 back-hud）。</summary>
         private void OnBackClicked()
         {
-            NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
         }
 
         /// <summary>横幅“立即参与”→ 打开精选活动（首条）详情。</summary>
@@ -1202,25 +1190,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             _detailRulesText.Visible = !_detailRulesText.Visible;
         }
 
-        /// <summary>“参与活动”：可参与活动进入备战，否则给出状态提示。</summary>
+        /// <summary>
+        /// “参与活动”：活动系统尚未接入服务端，没有报名/进度/结算通路，
+        /// 所以只说明边界，不把人送进备战页假装已报名。
+        /// </summary>
         private void OnParticipateClicked()
         {
-            ActivitySpec spec = Activities[_selectedIndex];
-            if (spec.Ended)
+            if (_detailHint != null)
             {
-                if (_detailHint != null)
-                    _detailHint.Text = "活动已结束，奖励已通过邮件补发";
-                return;
+                _detailHint.Text = "活动系统尚未接入服务端，暂不可参与";
+                _detailHint.TextColor = InkWashTheme.VermilionPrimary;
             }
-
-            if (spec.StatusText == "即将开始")
-            {
-                if (_detailHint != null)
-                    _detailHint.Text = $"活动尚未开始（{spec.TimeText}），敬请期待";
-                return;
-            }
-
-            NavigationRequested?.Invoke(InkPageDomIds.NavBattlePrep);
         }
 
         /// <summary>按当前控件尺寸刷新布局（IInkPage 契约）。</summary>
@@ -1238,97 +1218,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
         /// 左侧导航项（对应 .nav-item）：
         /// 图标 + 文案，active 态绘制左侧 3px 鎏金竖线与微金底，hover 态提亮。
         /// </summary>
-        private sealed class NavRow : ContainerControl
-        {
-            private readonly Label _icon;
-            private readonly Label _text;
-            private readonly string _target;
-            private bool _hovered;
-
-            /// <summary>导航目标（dom-id）。</summary>
-            public event Action<string> Activated;
-
-            /// <summary>是否处于激活态。</summary>
-            public bool Active { get; private set; }
-
-            /// <summary>构造一个导航项。</summary>
-            public NavRow(ContainerControl parent, string glyph, string label, bool active)
-            {
-                Parent = parent;
-                BackgroundColor = Color.Transparent;
-                ClipChildren = false;
-                _target = label;
-                Active = active;
-
-                _icon = NewLabel(this, glyph, InkWashTheme.FontRole.Heading, 15f, active ? InkWashTheme.GoldBright : InkWashTheme.PaperAged, TextAlignment.Center);
-                _text = NewLabel(this, label, InkWashTheme.FontRole.Heading, 15f, active ? InkWashTheme.GoldBright : InkWashTheme.PaperAged);
-            }
-
-            /// <summary>设置导航目标 dom-id。</summary>
-            public void SetTarget(string target)
-            {
-                _targetValue = target;
-            }
-
-            private string _targetValue;
-
-            /// <inheritdoc />
-            protected override void OnSizeChanged()
-            {
-                base.OnSizeChanged();
-                Place(_icon, 32f, (Height - 20f) * 0.5f, 20f, 20f);
-                Place(_text, 68f, 0f, Mathf.Max(0f, Width - 80f), Height);
-            }
-
-            /// <inheritdoc />
-            public override void OnMouseEnter(Float2 location)
-            {
-                base.OnMouseEnter(location);
-                _hovered = true;
-            }
-
-            /// <inheritdoc />
-            public override void OnMouseLeave()
-            {
-                base.OnMouseLeave();
-                _hovered = false;
-            }
-
-            /// <inheritdoc />
-            public override bool OnMouseDown(Float2 location, MouseButton button)
-            {
-                base.OnMouseDown(location, button);
-                if (button != MouseButton.Left)
-                    return false;
-
-                Activated?.Invoke(!string.IsNullOrEmpty(_targetValue) ? _targetValue : _target);
-                return true;
-            }
-
-            /// <inheritdoc />
-            public override void Draw()
-            {
-                if (!Visible || Width <= 0f || Height <= 0f)
-                    return;
-
-                if (Active)
-                {
-                    Render2D.FillRectangle(new Rectangle(0f, 0f, Width, Height), Alpha(InkWashTheme.GoldPrimary, 0.08f));
-                }
-                else if (_hovered)
-                {
-                    Render2D.FillRectangle(new Rectangle(0f, 0f, Width, Height), Alpha(InkWashTheme.GoldPrimary, 0.05f));
-                }
-
-                base.Draw();
-
-                if (Active)
-                {
-                    Render2D.FillRectangle(new Rectangle(0f, 0f, NavActiveBarWidth, Height), InkWashTheme.GoldPrimary);
-                }
-            }
-        }
-
         /// <summary>
         /// 标签栏单项（对应 .tab-item）：文案 + 计数徽章，激活态绘制底部 2px 鎏金下划线。
         /// </summary>
@@ -1483,7 +1372,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
                 Parent = parent;
                 BackgroundColor = Color.Transparent;
                 ClipChildren = false;
-                Height = EntryHeight;
 
                 _index = index;
                 _spec = spec;
@@ -1545,6 +1433,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
 
                 _moreLabel = NewLabel(this, spec.MoreText, InkWashTheme.FontRole.Body, 10f, InkWashTheme.TextTertiary);
                 _arrow = NewLabel(this, "›", InkWashTheme.FontRole.Body, 16f, _selected ? InkWashTheme.GoldPrimary : InkWashTheme.TextTertiary, TextAlignment.Center);
+
+                // 子控件都建好之后再定高：构造函数里提前赋值会立刻触发 OnSizeChanged（见其空值守卫）。
+                Height = EntryHeight;
             }
 
             /// <summary>是否匹配给定标签筛选（0 = 全部）。</summary>
@@ -1569,6 +1460,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             protected override void OnSizeChanged()
             {
                 base.OnSizeChanged();
+
+                // 构造期设 Height 会先触发一次，此时子控件还没建（_rewardIcons 为 null 会 NRE）：
+                // 早退，真正布局由构造末尾的 Height 赋值/父容器排版触发。
+                if (_iconBox == null || _rewardIcons == null)
+                    return;
 
                 float w = Width;
                 float h = Height;
@@ -1686,7 +1582,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
             }
         }
 
-        /// <summary>参与条件标签（对应 .requirement-tag.met：春青描边 + ✓ 前缀）。</summary>
+        /// <summary>参与条件标签（对应 .requirement-tag.met：春青描边 + √ 前缀）。</summary>
         private sealed class RequirementTag : ContainerControl
         {
             private readonly Label _label;
@@ -1711,7 +1607,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Activities
                 if (_label == null)
                     return;
 
-                string line = string.IsNullOrEmpty(text) ? string.Empty : "✓ " + text;
+                string line = string.IsNullOrEmpty(text) ? string.Empty : "√ " + text;
                 _label.Text = line;
                 PreferredWidth = _label.Text.ToString().Length * 12f + 20f;
             }

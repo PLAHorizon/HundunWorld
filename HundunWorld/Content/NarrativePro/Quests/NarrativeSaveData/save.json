@@ -1,0 +1,11 @@
+{
+  "SavedQuests": [],
+  "MasterTaskList": {
+    "playdialoguenode_n_greet": 2,
+    "playdialoguenode_p_accept": 2,
+    "playdialoguenode_n_accept": 2,
+    "playdialoguenode_n_bless": 2
+  },
+  "CurrentDialogueId": "",
+  "CurrentDialogueNodeId": ""
+}

@@ -2,6 +2,7 @@ using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
@@ -78,21 +79,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
         private InkButton _loadMoreButton;
 
         public event Action BackRequested;
-        public event Action StartMatchRequested;
-
-        /// <summary>“加载更多”按钮点击事件（设计稿 #btn-load-more，当前 mock 数据已全部加载）。</summary>
-        public event Action LoadMoreRequested;
-
-        /// <summary>筛选栏刷新按钮点击事件（设计稿 #btn-refresh）。</summary>
-        public event Action RefreshRequested;
 
         private readonly string[] _modeNames = { "快速匹配", "创建房间", "加入房间", "好友列表", "帮派" };
-        private readonly string[] _roomNames = { "华山论剑", "帮派对战", "自由切磋", "夺宝奇兵", "江湖擂台", "阵营对抗" };
-        private readonly string[] _roomHosts = { "独孤求败", "丐帮帮主", "风清扬", "摸金校尉", "东方不败", "明教教主" };
-        private readonly string[] _roomModes = { "3v3", "5v5", "1v1", "4人", "1v1", "10v10" };
-        private readonly int[] _roomCurrent = { 5, 8, 1, 3, 2, 12 };
-        private readonly int[] _roomMax = { 6, 10, 2, 4, 2, 20 };
-        private readonly bool[] _roomPlaying = { true, false, false, false, true, false };
+        private readonly string[] _roomNames = Array.Empty<string>();
+        private readonly string[] _roomHosts = Array.Empty<string>();
+        private readonly string[] _roomModes = Array.Empty<string>();
+        private readonly int[] _roomCurrent = Array.Empty<int>();
+        private readonly int[] _roomMax = Array.Empty<int>();
+        private readonly bool[] _roomPlaying = Array.Empty<bool>();
 
         public MultiplayerPage()
         {
@@ -188,7 +182,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 TextColor = InkWashTheme.VermilionPrimary,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                // 印章 32×20：StretchAll 会被撑成 132×40，字被裁
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Vector2(32f, 20f),
                 Parent = _topSeal
             };
 
@@ -212,7 +209,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             _netLabel = new Label
             {
-                Text = "网络延迟:",
+                Text = "网络延迟：",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.PaperFaded,
                 Width = 80f,
@@ -225,7 +222,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             _netValue = new Label
             {
-                Text = "45ms",
+                Text = "--",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.JadeBright,
                 Width = 40f,
@@ -238,7 +235,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             _netServer = new Label
             {
-                Text = "服务器: 华东一区",
+                Text = "服务器：未连接",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 TextColor = InkWashTheme.PaperAged,
                 Width = 120f,
@@ -272,7 +269,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             _copperValue = new Label
             {
-                Text = "12,830",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.PaperBright,
                 Width = 60f,
@@ -298,7 +295,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             _goldValue = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.PaperBright,
                 Width = 40f,
@@ -333,13 +330,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                // 头像框 36×36：同上，StretchAll 实测 136×56
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Vector2(36f, 36f),
                 Parent = _playerAvatar
             };
 
             _playerName = new Label
             {
-                Text = "江湖过客",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 TextColor = InkWashTheme.PaperBright,
                 Width = 90f,
@@ -352,7 +352,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             _playerLevel = new Label
             {
-                Text = "★ Lv. 42",
+                Text = "◆ Lv.—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.GoldBright,
                 Width = 60f,
@@ -362,6 +362,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 Location = new Float2(44f, 22f),
                 Parent = _playerInfo
             };
+
+            // 真实玩家信息可用时覆盖设计稿示例值（元宝/网络状态等仍为示例）
+            InkPlayerHeaderBinder.Bind(_playerName, _playerLevel, _copperValue, levelPrefix: "◆ ");
 
             float panelWidth = Math.Min(_screenSize.X - 64f, 1400f);
             float modePanelWidth = 200f;
@@ -406,8 +409,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                     Text = _modeNames[i],
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
                     Location = new Float2(16f, 56f + i * 48f),
-                    BackgroundColor = i == 0 ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.1f) : Color.Transparent,
-                    TextColor = i == 0 ? InkWashTheme.GoldBright : InkWashTheme.PaperAged,
+                    BackgroundColor = Color.Transparent,
+                    TextColor = InkWashTheme.PaperAged,
+                    Enabled = false, // 匹配/大厅服务未接入，模式按钮不做假切换
                     Parent = _modePanel
                 };
             }
@@ -427,7 +431,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             Label onlineCount = new Label
             {
-                Text = "1,247",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                 TextColor = InkWashTheme.JadeBright,
                 Width = 60f,
@@ -441,7 +445,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
             // 模式面板页脚提示：图标 + “选择模式进入对应大厅”（设计稿 .mode-panel-footer）
             _modeFooterHintIcon = new Label
             {
-                Text = "✦",
+                Text = "◆",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.GoldPrimary,
                 Width = 14f,
@@ -454,7 +458,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             _modeFooterHint = new Label
             {
-                Text = "选择模式进入对应大厅",
+                Text = "大厅服务尚未开放",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperDark,
                 Width = modePanelWidth - 48f,
@@ -510,7 +514,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Vector2(48f, 20f),
                 Parent = matchTag
             };
 
@@ -531,19 +537,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
             {
                 Width = 140f,
                 Height = 40f,
-                Text = "开始匹配",
+                Text = "匹配系统尚未开放",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 Location = new Float2(contentWidth - 164f, 40f),
                 BackgroundColor = InkWashTheme.VermilionPrimary,
                 TextColor = InkWashTheme.PaperBright,
+                Enabled = false, // 没有匹配队列可进，按钮不做"跳回战斗 HUD"的假动作
                 Parent = _matchBanner
             };
-            _matchButton.Clicked += () => StartMatchRequested?.Invoke();
 
             // 匹配横幅下方提示（设计稿 .match-btn-hint，与按钮同宽居中）
             _matchBtnHint = new Label
             {
-                Text = "点击进入匹配队列",
+                Text = "匹配队列尚未接入",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 Width = 140f,
@@ -564,11 +570,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 Parent = _matchBanner
             };
 
-            CreateMatchMetaItem(_matchMeta, 0f, "✦", "预计等待", "15秒");
+            CreateMatchMetaItem(_matchMeta, 0f, "◆", "预计等待", "—");
             CreateMatchMetaDivider(_matchMeta, 150f);
-            CreateMatchMetaItem(_matchMeta, 166f, "✦", "匹配范围", "Lv. 38-46");
+            CreateMatchMetaItem(_matchMeta, 166f, "◆", "匹配范围", "—");
             CreateMatchMetaDivider(_matchMeta, 316f);
-            CreateMatchMetaItem(_matchMeta, 332f, "✦", "当前匹配", "326人");
+            CreateMatchMetaItem(_matchMeta, 332f, "◆", "当前匹配", "—");
 
             _filterBar = new InkPanel
             {
@@ -684,7 +690,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 TextColor = InkWashTheme.PaperFaded,
                 Parent = _filterBar
             };
-            _refreshButton.Clicked += () => RefreshRequested?.Invoke();
+            _refreshButton.Clicked += ApplyNetworkStatus;
 
             LayoutFilterBarRight(contentWidth);
 
@@ -761,8 +767,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 Parent = _roomList
             };
 
-            _roomRows = new InkPanel[6];
-            for (int i = 0; i < 6; i++)
+            _roomRows = new InkPanel[_roomNames.Length];
+            for (int i = 0; i < _roomNames.Length; i++)
             {
                 _roomRows[i] = new InkPanel
                 {
@@ -815,7 +821,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                     TextColor = InkWashTheme.GoldBright,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.StretchAll,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = Float2.Zero,
+                    Size = new Vector2(50f, 22f),
                     Parent = roomModeTag
                 };
 
@@ -876,6 +884,23 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 };
             }
 
+            // 房间列表没有服务端来源：空列表时给一条明确空态，不留一块空白让人以为是没加载出来
+            if (_roomNames.Length == 0)
+            {
+                _ = new Label
+                {
+                    Text = "暂无房间 · 大厅服务尚未开放",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
+                    TextColor = InkWashTheme.PaperAged,
+                    Width = 360f,
+                    Height = 40f,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                    Location = new Float2(24f, 208f),
+                    Parent = _contentArea
+                };
+            }
+
             // 房间列表页脚（设计稿 .room-list-footer）：左侧统计信息 + 右侧“加载更多”按钮
             _roomListFooter = new Panel
             {
@@ -888,7 +913,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
 
             Label footerIcon = new Label
             {
-                Text = "✦",
+                Text = "◆",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.GoldPrimary,
                 Width = 14f,
@@ -947,9 +972,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
                 Location = new Float2(contentWidth - 116f, 2f),
                 BackgroundColor = Color.Transparent,
                 TextColor = InkWashTheme.PaperFaded,
+                Enabled = false, // 没有房间数据源，分页按钮不做假加载
                 Parent = _roomListFooter
             };
-            _loadMoreButton.Clicked += () => LoadMoreRequested?.Invoke();
         }
 
         /// <summary>
@@ -1057,8 +1082,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
             }
             Size = _screenSize;
 
+            ApplyNetworkStatus();
+
             _bgLayer.Size = _screenSize;
             _topBar.Size = new Float2(_screenSize.X, 60f);
+
+            // 网络状态条原来只在构造期按当时的窗口宽度定位：页面尺寸变化（Ink 内容层 = 1920×1080）
+            // 后它不会重排，会压到左上角的标题上。这里按真实页面宽度重新居中。
+            if (_netStatus != null)
+                _netStatus.Location = new Float2((_screenSize.X - _netStatus.Width) * 0.5f, 16f);
 
             float panelWidth = Math.Min(_screenSize.X - 64f, 1400f);
             float modePanelWidth = 200f;
@@ -1135,5 +1167,47 @@ namespace HundunWorld.Game.UI.Ink.Pages.Multiplayer
         public void BuildUI() { }
 
         public void RefreshBoundData() { }
+
+        private float _netRefreshTimer;
+
+        /// <summary>顶栏时延每秒刷新一次（实时 RTT 由同步链路逐包更新，不刷就停在进页那一刻）。</summary>
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+            if (!VisibleInHierarchy) return;
+            _netRefreshTimer += deltaTime;
+            if (_netRefreshTimer < 1f) return;
+            _netRefreshTimer = 0f;
+            ApplyNetworkStatus();
+        }
+
+        /// <summary>
+        /// 顶栏网络状态取当前网关的真实信息（区域名 + 选路时测得的时延）。
+        /// 没有网关或时延未测得时保持「—」，不摆设计稿的「华东一区 / 45ms」。
+        /// </summary>
+        private void ApplyNetworkStatus()
+        {
+            try
+            {
+                InkPlayerHeaderBinder.GetGatewayText(out string region, out string latency);
+
+                if (_netServer != null)
+                    _netServer.Text = "服务器：" + region;
+
+                // 有实时 RTT 就用实时的（同步链路每包都会更新）；没有才回落到选路时测得的静态值
+                float rtt = HundunWorld.Game.Network.ClientSyncMetrics.EstimatedRttMs;
+                if (_netValue != null)
+                {
+                    // 单位列用 ASCII「--」占位：11–13f 下「—」没有字形，会显示成空
+                    _netValue.Text = rtt > 0f
+                        ? $"{Mathf.RoundToInt(rtt)} ms"
+                        : (latency == "未测得" ? "--" : latency);
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[MultiplayerPage] 网络状态读取失败: {ex.Message}");
+            }
+        }
     }
 }

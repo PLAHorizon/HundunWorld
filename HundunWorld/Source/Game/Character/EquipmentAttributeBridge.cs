@@ -15,8 +15,11 @@ namespace HundunWorld.Game.Character
     /// 组件按"基值+加成"合成分层，不会被每帧服务端基值同步冲掉。
     /// </para>
     /// <para>
-    /// 已知边界：服务端战斗（DS）仍按全局配置结算伤害，装备加成当前只影响客户端属性展示；
-    /// 权威化需要服务端聚合后经 `CharacterAttributeRefresh` 通道下发。
+    /// 三行的合并口径与服务端一致：攻击求和、防御/破防"已高者计"（见 <c>CombatProfile.Aggregate</c>）。
+    /// 服务端另有一份独立聚合（<c>CombatEquipmentSource</c> 读物品模板的 base_attributes），
+    /// 两端靠同一套词表（MetalAttack / EarthDefense / WoodPenetration…）对齐；
+    /// 权威数值回传客户端仍缺 <c>CharacterAttributeRefresh</c> 通道。
+    /// </para>
     /// </summary>
     public static class EquipmentAttributeBridge
     {
@@ -29,10 +32,32 @@ namespace HundunWorld.Game.Character
             var game = HundunWorldGame.Instance;
             var actor = game?.LocalPlayerActor;
             var component = actor != null ? actor.GetScript<CharacterAttributesComponent>() : null;
-            if (component == null) return;
+            if (component == null)
+            {
+                // 快照比 Actor 早到（进场景瞬间）时就是这条路：不写日志的话整条链路一步都不留痕。
+                FlaxEngine.Debug.Log("[EquipmentBridge] 本地玩家属性组件未就绪，本次装备加成留待下次快照重算。");
+                return;
+            }
 
-            component.SetEquipmentBonus(Summarize(PlayerInventoryService.Instance));
+            var bonus = Summarize(PlayerInventoryService.Instance);
+            component.SetEquipmentBonus(bonus);
+
+            // 逐项计数而不是只写"成功"：三行全 0 时能一眼看出断点在"快照没内容"还是"装备表没这行"。
+            FlaxEngine.Debug.Log(
+                $"[EquipmentBridge] 槽位={CountEquipped(PlayerInventoryService.Instance)} " +
+                $"攻={Rows(bonus.ElementAttack)} 防={Rows(bonus.ElementDefense)} 破防={Rows(bonus.ElementPenetration)}");
         }
+
+        private static int CountEquipped(PlayerInventoryService inventory)
+        {
+            int n = 0;
+            foreach (var slot in AllSlots)
+                if (inventory != null && inventory.TryGetEquipped(slot, out var entry) && entry.TemplateId > 0) n++;
+            return n;
+        }
+
+        private static string Rows(in CharacterAttributesComponent.WuxingRows rows)
+            => $"{rows.Metal}/{rows.Wood}/{rows.Water}/{rows.Fire}/{rows.Earth}";
 
         /// <summary>把权威穿戴快照求和为属性加成（纯函数，便于单测/复用）。</summary>
         public static CharacterAttributesComponent.EquipmentStatBonus Summarize(PlayerInventoryService inventory)
@@ -50,9 +75,26 @@ namespace HundunWorld.Game.Character
 
                 AccumulateBaseStats(ref bonus, equipment);
                 AccumulateWuxing(ref bonus, equipment);
+                AccumulateWuxingRows(ref bonus.ElementAttack, equipment.WuxingAttack);
+                AccumulateWuxingRows(ref bonus.ElementDefense, equipment.WuxingDefense);
+                AccumulateWuxingRows(ref bonus.ElementPenetration, equipment.WuxingPenetration);
                 AccumulateSocketedGems(ref bonus, entry.Gems);
             }
             return bonus;
+        }
+
+        /// <summary>
+        /// 累加装备的某一行五行战斗属性（攻/防/破防共用一条路径，避免三份近似代码各自漂移）。
+        /// </summary>
+        private static void AccumulateWuxingRows(
+            ref CharacterAttributesComponent.WuxingRows rows,
+            System.Collections.Generic.Dictionary<WuxingElement, int> bonus)
+        {
+            if (bonus == null) return;
+            foreach (var kv in bonus)
+            {
+                if (kv.Value != 0) rows.Add(kv.Key, kv.Value);
+            }
         }
 
         /// <summary>已镶宝石的五行加成计入角色五行（宝石属性与五行属性关联的主通道）。</summary>
@@ -85,8 +127,8 @@ namespace HundunWorld.Game.Character
                 {
                     case "Attack": bonus.PhysicalAttack += kv.Value; break;
                     case "Defense": bonus.PhysicalDefense += kv.Value; break;
-                    case "HP": bonus.MaxHealth += kv.Value; break;
-                    case "MP": bonus.MaxEnergy += kv.Value; break;
+                    // 生命/内力上限**不在这里加**：服务端血池（CharacterInfo.MaxHealth）现在已把
+                    // 装备生命算进去并下行，客户端再加一次就是双倍（"+5000 变 +10000"）。
                     // CritRate 等键暂无对应角色属性字段，跳过而不是错误摊进攻防。
                 }
             }

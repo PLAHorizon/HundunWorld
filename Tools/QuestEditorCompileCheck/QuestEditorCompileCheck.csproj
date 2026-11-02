@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    QuestEditor 编辑器模块的离屏编译门：把插件源目录对着 FlaxEngine.CSharp.dll 编一遍。
+    只证明 API 用法与语法正确；插件能否被编辑器加载、CLI 能否跑并不由它证明。
+
+    用法：在仓库根执行 dotnet build Tools/QuestEditorCompileCheck/QuestEditorCompileCheck.csproj -c Release
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>QuestEditorCompileCheck</AssemblyName>
+    <RootNamespace>QuestEditorCompileCheck</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <DefineConstants>FLAX_EDITOR;FLAX;NET;NET10_0</DefineConstants>
+    <NoWarn>1591;0169;0414;0649;0618;0067</NoWarn>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.13</EngineRoot>
+    <SourceRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\QuestEditor\Source</SourceRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SourceRoot)\QuestEditor\**\*.cs" Exclude="$(SourceRoot)\QuestEditor\**\*.Build.cs;$(SourceRoot)\QuestEditor\QuestEditor.Gen.cs" />
+    <Compile Include="$(SourceRoot)\QuestEditorEditor\**\*.cs" Exclude="$(SourceRoot)\QuestEditorEditor\**\*.Build.cs;$(SourceRoot)\QuestEditorEditor\QuestEditorEditor.Gen.cs" />
+  </ItemGroup>
+
+</Project>

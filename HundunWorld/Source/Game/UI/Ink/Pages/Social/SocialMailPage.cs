@@ -27,7 +27,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
     /// 通过刷新方法替换邮件列表与附件内容即可。
     /// </para>
     /// </summary>
-    public class SocialMailPage : ContainerControl, IInkPage
+    public class SocialMailPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===================================================================
         // 布局常量
@@ -149,6 +149,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
         /// <summary>中栏邮件详情面板</summary>
         private InkPanel _detailPanel;
+        private Label _mailEmptyHint;
 
         /// <summary>详情发件人头像首字（大）</summary>
         private Label _detailAvatarLabel;
@@ -341,7 +342,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(200f, 0f),
                 Size = new Float2(240f, HeaderHeight),
-                Text = "未读  3 封",
+                Text = "未读  0 封",
                 TextColor = InkWashTheme.TextJade,
                 Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 14f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -358,14 +359,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopRight,
                 Size = new Float2(96f, 32f),
             };
-            _composeButton.ButtonClicked += (b) => EmitGoldAtButton(b);
+            _composeButton.Enabled = false; // 邮件服务未接入，写信按钮不可点
             _headerPanel.AddChild(_composeButton);
 
             _closeButton = new InkButton
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopRight,
                 Size = new Float2(32f, 32f),
             };
@@ -437,7 +438,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             // 3 个分组标题（系统 / 帮派 / 玩家）— 位于各分组首封邮件之前
             _groupLabels = new Label[3];
-            string[] groupNames = { "◆ 系统  3", "◆ 帮派  2", "◆ 玩家  3" };
+            // 邮件未接入：分组计数跟着 0，别显示设计稿的 3/2/3
+            string[] groupNames = { "◆ 系统  0", "◆ 帮派  0", "◆ 玩家  0" };
             Color[] groupColors =
             {
                 InkWashTheme.TextGold,
@@ -462,17 +464,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             // 8 封 mock 邮件数据
             // 字段顺序：发件人首字 / 发件人姓名 / 主题 / 时间 / 分组索引 / 是否未读 / 是否有附件
-            string[][] mails =
-            {
-                new[] { "系", "系统官府", "周末庆典 · 论剑豪礼", "今日 辰时", "0", "1", "1" },
-                new[] { "系", "系统官府", "服务器维护公告",     "今日 卯时", "0", "0", "0" },
-                new[] { "系", "系统官府", "充值灵石到账通知",   "三日前",     "0", "0", "0" },
-                new[] { "帮", "玄武堂",   "帮派战结算奖励",     "昨日",       "1", "1", "1" },
-                new[] { "帮", "朱雀堂",   "每周贡献奖励",       "七月十二",   "1", "0", "1" },
-                new[] { "张", "剑客张三", "切磋之约 · 紫霄宫",  "昨日",       "2", "0", "1" },
-                new[] { "李", "飞燕李四", "西域奇遇相告",       "三日前",     "2", "1", "0" },
-                new[] { "王", "玄武王五", "商队护送谢礼",       "七月十一",   "2", "0", "0" },
-            };
+            // 邮件协议未接入（服务端没有 MailList 处理）：不再摆 8 封假邮件（2026-10-29）
+            string[][] mails = System.Array.Empty<string[]>();
 
             _mailItems = new InkListItem[mails.Length];
             _mailDots = new InkDot[mails.Length];
@@ -829,6 +822,37 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
 
             AddChild(_detailPanel);
+
+            if (_mailItems == null || _mailItems.Length == 0)
+            {
+                // 没有邮件数据：列表给空态提示，右侧详情整块收起（原来会显示设计稿的"论剑豪礼"正文）
+                _detailPanel.Visible = false;
+
+                // 详情整块收起后右半边全是空白：给一个居中的空态，别让页面看起来"坏了一半"
+                _mailEmptyHint = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "收件箱为空 · 邮件服务尚未接入服务端",
+                    TextColor = InkWashTheme.TextTertiary,
+                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 13f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                AddChild(_mailEmptyHint);
+
+                var emptyHint = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 150f),
+                    Size = new Float2(360f, 24f),
+                    Text = "暂无邮件 · 接入邮件服务后显示",
+                    TextColor = InkWashTheme.TextTertiary,
+                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                _mailListPanel.AddChild(emptyHint);
+            }
         }
 
         /// <summary>
@@ -970,7 +994,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                         AnchorPreset = AnchorPresets.TopLeft,
                         Location = new Float2(56f + 160f + 4f, 28f),
                         Size = new Float2(16f, 18f),
-                        Text = "✓",
+                        Text = "√",
                         TextColor = InkWashTheme.TextJade,
                         Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
                         HorizontalAlignment = TextAlignment.Center,
@@ -1006,7 +1030,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Location = new Float2(12f, claimBtnY),
                 Size = new Float2(280f, 36f),
             };
-            _claimAllButton.ButtonClicked += (b) => EmitGoldAtButton(b);
+            _claimAllButton.Enabled = false; // 无邮件可领，一键领取不可点
             _attachmentPanel.AddChild(_claimAllButton);
 
             _claimHintLabel = new Label
@@ -1062,6 +1086,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _attachmentPanel.AddChild(_deleteButton);
 
             AddChild(_attachmentPanel);
+            if (_mailItems == null || _mailItems.Length == 0)
+                _attachmentPanel.Visible = false;
         }
 
         /// <summary>
@@ -1287,6 +1313,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                                 _mailSubjectLabels[i].Size = new Float2(Mathf.Max(80f, itemW - 124f), 18f);
                         }
                     }
+                }
+
+                if (_mailEmptyHint != null)
+                {
+                    float hintX = panelX + leftW + RegionGap;
+                    _mailEmptyHint.Location = new Float2(hintX, contentTop + contentH * 0.45f);
+                    _mailEmptyHint.Size = new Float2(Mathf.Max(200f, Width - hintX - panelX), 28f);
                 }
 
                 // 5. 中栏邮件详情

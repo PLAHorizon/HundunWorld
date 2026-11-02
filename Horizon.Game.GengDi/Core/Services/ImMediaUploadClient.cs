@@ -4,10 +4,21 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Horizon.Share.VMs;
 
 namespace Horizon.Game.GengDi.Core.Services
 {
+    /// <summary>
+    /// WebApi 统一返回信封的客户端侧模型（字段与 <c>Horizon.WebApi</c> 下发的 JSON 对齐）。<br>
+    /// 刻意在客户端自行声明：只为一个 JSON 外壳去引用服务端共享契约程序集，
+    /// 会把它的 Orleans 依赖闭包一起带进客户端包体。
+    /// </summary>
+    internal sealed class ApiResult<T>
+    {
+        public int Code { get; set; } = 200;
+        public string ErrorMessage { get; set; }
+        public bool IsSuccess { get; set; }
+        public T Data { get; set; }
+    }
     /// <summary>
     /// IM 聊天媒体上传客户端：将本地文件/图片/语音上传到 WebApi ImMedia 服务，
     /// 返回可直接访问的完整 URL（baseUrl + 相对路径），作为消息 mediaUrl 下发，
@@ -75,7 +86,7 @@ namespace Horizon.Game.GengDi.Core.Services
                 }
 
                 var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var vm = JsonSerializer.Deserialize<ResultVM<string>>(json, JsonOptions);
+                var vm = JsonSerializer.Deserialize<ApiResult<string>>(json, JsonOptions);
                 if (vm == null || !vm.IsSuccess || string.IsNullOrWhiteSpace(vm.Data))
                 {
                     System.Diagnostics.Debug.WriteLine($"[ImMediaUpload] 服务端拒绝：{vm?.ErrorMessage}");

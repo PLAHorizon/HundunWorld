@@ -1,5 +1,7 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using HundunWorld.Game.Character;
+using HundunWorld.Game.Navigation;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
@@ -25,7 +27,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
     /// 交互出口：隐藏退出按钮（设计稿 <c>data-dom-id="back-hud"</c>，不可见，仅作为链路终点）。
     /// 通过 <see cref="NavigationRequested"/> 事件向 <see cref="InkPageRouter"/> 暴露导航请求。
     /// </summary>
-    public class CombatHudV2Page : ContainerControl, IInkPage
+    public class CombatHudV2Page : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===================================================================
         // 布局常量（1920x1080 参考分辨率，px 值对齐 combat-hud-v2.html）
@@ -39,8 +41,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         private const float MountainNearHeight = 220f;
         private const float MountainFarHeight = 180f;
         private const float MountainFadeSteps = 18;
-        private const float ScenePlaceholderWidth = 420f;
-        private const float ScenePlaceholderHeight = 96f;
 
         // --- 左上：小地图 ---
         private const float MinimapDiscSize = 120f;
@@ -62,15 +62,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         // --- 右上：队伍状态 ---
         private const float PartyWidth = 220f;
         private const float PartyHeaderHeight = 20f;
-        private const float PartyRowHeight = 46f;
         private const float PartyRowGap = 4f;
-        private const float PartyAvatarSize = 32f;
-        private const float PartyHpBarWidth = 120f;
-        private const float PartyHpBarHeight = 6f;
-        private const float PartyMpBarHeight = 3f;
-        private const int PartyMemberCount = 3;
-        private const float PartyHeight = PartyHeaderHeight + PartyRowGap
-            + PartyMemberCount * PartyRowHeight + (PartyMemberCount - 1) * PartyRowGap;
+        // 没有队伍名册服务：面板只保留头部 + 一行"未组队"，不再为 3 名示例队友留空白高度
+        private const float PartyHeight = PartyHeaderHeight + PartyRowGap + 24f;
 
         // --- 右上（队伍下方）：状态效果 ---
         private const float BuffPanelTop = 256f;
@@ -137,10 +131,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         // =======================================================================
 
         // 背景层 .scene-placeholder
-        private const string SceneLabelText = "游戏场景 · 墨麒麟巢穴";
 
         // 小地图坐标 .minimap-coord
-        private const string MinimapCoordText = "昆仑墟 · 深渊";
+        /// <summary>小地图下方坐标占位：没有位姿时显示「—」，由 Update 用真实坐标覆盖。</summary>
+        private const string MinimapCoordText = "—";
 
         // 目标信息 .hud-target
         private const string TargetAvatarGlyph = "麟";
@@ -155,16 +149,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         private const string TargetMetaTimerText = "剩余 03:42";
 
         // 队伍状态 .hud-party
-        private const string PartyTitleText = "队伍 (4/4)";
+        private const string PartyTitleText = "队伍 (0/4)";
         private const string PartySyncText = "同步";
-        private const string PartyMpLabelText = "内力";
-        private const string PartyMember1Name = "青云剑客";
-        private const string PartyMember1Level = "Lv.40";
-        private const string PartyMember2Name = "紫霞仙子";
-        private const string PartyMember2Level = "Lv.38";
-        private const string PartyMember3Name = "铁拳和尚";
-        private const string PartyMember3Level = "Lv.41";
-
         // 状态效果 .hud-buffs
         private const string BuffTitleText = "状态效果";
         private const string BuffAttackText = "攻击力 +10%";
@@ -183,10 +169,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
         // 玩家状态 .hud-player
         private const string PlayerAvatarGlyph = "客";
-        private const string PlayerNameText = "江湖过客";
-        private const string PlayerLevelText = "Lv.42";
+        private const string PlayerNameText = "—";
+        private const string PlayerLevelText = "Lv.—";
         private const string PlayerClassText = "剑客";
-        private const string PlayerHpText = "12,450 / 12,450";
+        private const string PlayerHpText = "— / —";
         private const string PlayerMpText = "1,850 / 2,000";
         private const string PlayerXpLabelText = "经验";
         private const float PlayerHpRatio = 1f;
@@ -226,11 +212,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         // =======================================================================
 
         // 背景层
-        private HudBackdrop _backdrop;
-        private ContainerControl _scenePlaceholder;
-        private Label _sceneLabel;
 
         // 左上：小地图
+        private InkHudLayerHost _hudLayers;
+
         private ContainerControl _minimapRoot;
         private InkMinimap _minimap;
         private HudVisionCone _visionCone;
@@ -240,12 +225,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         private HudFrame _targetPanel;
         private InkBar _targetHpBar;
         private Label _targetHpValueLabel;
+        private Label _targetAvatarLabel;
+        private Label _targetNameLabel;
+        private InkTag _targetQualityTag;
+        private Label _targetLevelLabel;
+        private Label _targetDistanceLabel;
+        private readonly System.Collections.Generic.List<HudRoundCell> _targetMetaChips = new System.Collections.Generic.List<HudRoundCell>();
 
         // 右上：队伍状态
         private ContainerControl _partyPanel;
-        private HudPartyRow[] _partyRows;
-        private InkBar[] _partyHpBars;
-        private InkBar[] _partyMpBars;
 
         // 右上：状态效果
         private ContainerControl _buffPanel;
@@ -266,6 +254,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         private InkBar _mpBar;
         private Label _mpValueLabel;
         private InkBar _xpBar;
+
+        // 玩家状态行：真实控制状态（眩晕/沉默/定身…），替代原 3 个假 Buff 图标
+        private ControlStateChipView[] _controlChips;
+        private float _controlChipRefreshTimer;
+        private const int ControlChipSlots = 6;
 
         // 底部中央：技能栏
         private HudFrame _skillBarRow;
@@ -321,7 +314,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
             try
             {
-                BuildBackdrop();
+                _hudLayers = new InkHudLayerHost();
+                AddChild(_hudLayers);
+
                 BuildMinimap();
                 BuildTargetPanel();
                 BuildPartyPanel();
@@ -338,6 +333,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[CombatHudV2Page] 初始化失败: {ex.Message}\n{ex.StackTrace}");
+                // 编辑器磁盘日志有滞后，构造失败时另留一份文件证据，否则只能看到整页空壳
+                try
+                {
+                    var probe = System.IO.Path.Combine(
+                        System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                        "HundunWorld", "hud-ctor-probe.out");
+                    System.IO.File.AppendAllText(probe, "[CombatHudV2Page] " + ex + "\n");
+                }
+                catch { }
             }
         }
 
@@ -426,40 +430,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// 背景层：深墨渐变 + 4 处水墨晕染 + 远景墨山剪影 + 场景占位文字。
         /// 对齐设计 .hud-background / .ink-splash / .ink-mountain / .scene-placeholder。
         /// </summary>
-        private void BuildBackdrop()
-        {
-            _backdrop = new HudBackdrop
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = Float2.Zero,
-                Size = _screenSize,
-                BackgroundColor = Color.Transparent,
-                ClipChildren = false,
-            };
-
-            // 场景占位（居中：山形图标 + 游戏场景 · 墨麒麟巢穴）
-            _scenePlaceholder = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(ScenePlaceholderWidth, ScenePlaceholderHeight),
-                BackgroundColor = Color.Transparent,
-                ClipChildren = false,
-            };
-
-            var sceneIcon = MakeLabel("山", 0f, 0f, ScenePlaceholderWidth, 56f,
-                InkFill(InkWashTheme.TextTertiary, 0.4f), 40f, InkWashTheme.FontRole.Display,
-                TextAlignment.Center);
-            _scenePlaceholder.AddChild(sceneIcon);
-
-            _sceneLabel = MakeLabel(SceneLabelText, 0f, 60f, ScenePlaceholderWidth, 28f,
-                InkFill(InkWashTheme.TextTertiary, 0.4f), 18f, InkWashTheme.FontRole.Display,
-                TextAlignment.Center);
-            _scenePlaceholder.AddChild(_sceneLabel);
-
-            _backdrop.AddChild(_scenePlaceholder);
-            AddChild(_backdrop);
-        }
-
         // ===================================================================
         // 区域构造：左上小地图
         // =======================================================================
@@ -497,6 +467,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 // 默认 30000 过大，会让 POI 全部挤在圆心附近而不可见。
                 NavigationRange = 1200f,
             };
+            // 与「图」入口同一出口：小地图只看附近一圈，点它就是要看大地图
+            _minimap.Clicked += () => RequestNavigation(InkPageDomIds.NavWorldMap);
 
             // 地形快照（墨色山水意象）
             _minimap.AddLandmark(0.10f, 0.25f, 0.32f, InkFill(InkWashTheme.JadeFaint, 0.35f));
@@ -505,12 +477,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             _minimap.AddLandmark(-0.44f, 0.44f, 0.20f, InkFill(InkWashTheme.BaseElevated, 0.90f));
 
             // 点位：自己（居中）+ 2 敌人 + 3 队友（对齐设计 map-dot 布局）
+            // 小地图上的敌人/队友点必须来自真实同步或导航 POI：
+            // 原来这几个是写死的「2 敌人 + 3 队友」样例点，导航不可用时会一直挂在地图上骗人。
+            // 只保留"自己"这一个真实点，其余由 InkMinimap 每 0.5s 从导航刷新写入。
             _minimap.AddEntity(InkMinimapEntityType.Player, 0f, 0f);
-            _minimap.AddEntity(InkMinimapEntityType.Enemy, 0.16f, -0.36f);
-            _minimap.AddEntity(InkMinimapEntityType.Enemy, 0.28f, -0.08f);
-            _minimap.AddEntity(InkMinimapEntityType.Friendly, -0.16f, 0.24f);
-            _minimap.AddEntity(InkMinimapEntityType.Friendly, 0f, 0.40f);
-            _minimap.AddEntity(InkMinimapEntityType.Friendly, -0.24f, 0.16f);
             disc.AddChild(_minimap);
 
             // 视线扇形（设计 .minimap-vision：从圆心向上张开 60deg）
@@ -528,13 +498,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
             // 坐标行（图标 + 昆仑墟 · 深渊）
             float coordY = MinimapDiscSize + MinimapCoordGap;
-            _minimapRoot.AddChild(MakeLabel("向", 26f, coordY + 1f, 14f, MinimapCoordHeight - 2f,
+            // 原来这个小字是"向"（配合地名"向昆仑墟·深渊"）；坐标化之后"向 X:414 Z:353"读不通，换成"坐标"
+            _minimapRoot.AddChild(MakeLabel("坐标", 18f, coordY + 1f, 22f, MinimapCoordHeight - 2f,
                 InkWashTheme.GoldPrimary, 11f, InkWashTheme.FontRole.Display, TextAlignment.Center));
             _minimapCoordLabel = MakeLabel(MinimapCoordText, 42f, coordY, 84f, MinimapCoordHeight,
                 InkWashTheme.PaperAged, 11f, InkWashTheme.FontRole.Display);
             _minimapRoot.AddChild(_minimapCoordLabel);
 
-            AddChild(_minimapRoot);
+            _hudLayers.AddToLayer(_minimapRoot, InkHudLayer.Persistent);
         }
 
         // ===================================================================
@@ -570,16 +541,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 BorderColor = InkWashTheme.VermilionBright,
                 BorderThickness = 1f,
             };
-            avatar.AddChild(MakeLabel(TargetAvatarGlyph, 0f, 0f, TargetAvatarSize, TargetAvatarSize,
-                InkWashTheme.PaperBright, 18f, InkWashTheme.FontRole.Display, TextAlignment.Center));
+            _targetAvatarLabel = MakeLabel(TargetAvatarGlyph, 0f, 0f, TargetAvatarSize, TargetAvatarSize,
+                InkWashTheme.PaperBright, 18f, InkWashTheme.FontRole.Display, TextAlignment.Center);
+            avatar.AddChild(_targetAvatarLabel);
             _targetPanel.AddChild(avatar);
 
             // 名称 + 品质徽章 + 等级行
             float colX = TargetPadX + TargetAvatarSize + 8f;
-            _targetPanel.AddChild(MakeLabel(TargetNameText, colX, TargetPadY, 118f, 18f,
-                InkWashTheme.VermilionBright, 16f, InkWashTheme.FontRole.Display));
+            _targetNameLabel = MakeLabel(TargetNameText, colX, TargetPadY, 118f, 18f,
+                InkWashTheme.VermilionBright, 16f, InkWashTheme.FontRole.Display);
+            _targetPanel.AddChild(_targetNameLabel);
 
-            var qualityTag = new InkTag
+            _targetQualityTag = new InkTag
             {
                 Text = TargetQualityText,
                 TagVariant = InkTagVariant.Vermilion,
@@ -588,16 +561,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 Size = new Float2(48f, 16f),
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
             };
-            _targetPanel.AddChild(qualityTag);
+            _targetPanel.AddChild(_targetQualityTag);
 
-            _targetPanel.AddChild(MakeLabel(TargetLevelText, colX, TargetPadY + 19f, 160f, 14f,
-                InkWashTheme.PaperFaded, 12f, InkWashTheme.FontRole.Body));
+            _targetLevelLabel = MakeLabel(TargetLevelText, colX, TargetPadY + 19f, 160f, 14f,
+                InkWashTheme.PaperFaded, 12f, InkWashTheme.FontRole.Body);
+            _targetPanel.AddChild(_targetLevelLabel);
 
             // 距离（图标 + 18m）
             _targetPanel.AddChild(MakeLabel("距", TargetWidth - TargetPadX - 54f, TargetPadY + 2f, 14f, 14f,
                 InkWashTheme.VermilionBright, 11f, InkWashTheme.FontRole.Display, TextAlignment.Center));
-            _targetPanel.AddChild(MakeLabel(TargetDistanceText, TargetWidth - TargetPadX - 38f, TargetPadY, 38f, 16f,
-                InkWashTheme.PaperAged, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far));
+            _targetDistanceLabel = MakeLabel(TargetDistanceText, TargetWidth - TargetPadX - 38f, TargetPadY, 38f, 16f,
+                InkWashTheme.PaperAged, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far);
+            _targetPanel.AddChild(_targetDistanceLabel);
 
             // 血条（10px 朱红）+ 数值
             float hpY = TargetPadY + TargetHeaderHeight + 8f;
@@ -620,7 +595,71 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             AddTargetMetaTag(metaX, metaY, 82f, "时", TargetMetaTimerText,
                 InkWashTheme.PaperAged, InkFill(InkWashTheme.GoldPrimary, 0.04f), InkWashTheme.BorderNeutralL1);
 
-            AddChild(_targetPanel);
+            _hudLayers.AddToLayer(_targetPanel, InkHudLayer.Context);
+
+            // weakness/enrage/timer 三条 meta 没有数据源，先藏起来；目标本体由 RefreshTargetInfo 驱动显隐
+            foreach (var chip in _targetMetaChips)
+            {
+                if (chip != null) chip.Visible = false;
+            }
+
+            _targetPanel.Visible = false;
+        }
+
+        /// <summary>
+        /// 按世界选中服务刷新顶部目标框；没有选中/目标已失效时整框隐藏。
+        /// 字段口径与传统 HUD 的 <c>RefreshTargetInfo</c> 保持一致（同一份 <c>WorldSelectionService</c>）。
+        /// </summary>
+        public void RefreshTargetInfo()
+        {
+            if (_targetPanel == null)
+                return;
+
+            var selected = HundunWorld.Game.Selection.WorldSelectionService.Instance?.Selected;
+            if (selected == null || selected.Actor == null || !selected.Actor.IsActive)
+            {
+                _targetPanel.Visible = false;
+                return;
+            }
+
+            _targetPanel.Visible = true;
+
+            var attrs = selected.Actor.GetScript<CharacterAttributesComponent>();
+            string name = !string.IsNullOrEmpty(attrs?.Nickname) ? attrs.Nickname
+                          : (!string.IsNullOrEmpty(selected.DisplayName) ? selected.DisplayName : selected.Actor.Name);
+
+            if (_targetNameLabel != null)
+                _targetNameLabel.Text = name;
+            if (_targetAvatarLabel != null && !string.IsNullOrEmpty(name))
+                _targetAvatarLabel.Text = name.Substring(0, 1);
+            if (_targetLevelLabel != null)
+                _targetLevelLabel.Text = selected.Level > 0 ? $"Lv. {selected.Level}" : string.Empty;
+
+            if (_targetQualityTag != null)
+            {
+                string kind = selected.Kind switch
+                {
+                    HundunWorld.Game.Selection.SelectableKind.Monster => "怪物",
+                    HundunWorld.Game.Selection.SelectableKind.Player => "玩家",
+                    _ => "NPC"
+                };
+                _targetQualityTag.Text = kind;
+            }
+
+            if (_targetDistanceLabel != null)
+            {
+                var local = HundunWorldGame.Instance?.LocalPlayerActor;
+                _targetDistanceLabel.Text = local != null
+                    ? $"{Mathf.RoundToInt(Vector3.Distance(local.Position, selected.Actor.Position))}m"
+                    : string.Empty;
+            }
+
+            float maxHp = attrs != null && attrs.MaxHealth > 0f ? attrs.MaxHealth : 0f;
+            float curHp = attrs != null ? attrs.CurrentHealth : 0f;
+            if (_targetHpBar != null)
+                _targetHpBar.Value = maxHp > 0f ? Mathf.Clamp(curHp / maxHp, 0f, 1f) : 0f;
+            if (_targetHpValueLabel != null)
+                _targetHpValueLabel.Text = maxHp > 0f ? $"{(int)curHp}/{(int)maxHp}" : string.Empty;
         }
 
         /// <summary>添加一条目标 meta 标签（图标 + 文案），返回下一个标签的 X 坐标。</summary>
@@ -642,6 +681,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             chip.AddChild(MakeLabel(text, 18f, 0f, width - 22f, TargetMetaHeight,
                 textColor, 10f, InkWashTheme.FontRole.Body));
             _targetPanel.AddChild(chip);
+            _targetMetaChips.Add(chip);
             return x + width + 8f;
         }
 
@@ -681,66 +721,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             };
             _partyPanel.AddChild(syncTag);
 
-            _partyRows = new HudPartyRow[PartyMemberCount];
-            _partyHpBars = new InkBar[PartyMemberCount];
-            _partyMpBars = new InkBar[PartyMemberCount];
+            // 客户端没有队伍名册服务（服务端仅部分 CreateTeam），成员是设计稿 mock；
+            // 显示假队友会让人以为已经组队，这里改为诚实的空态。
+            var empty = MakeLabel("未组队", 0f, PartyHeaderHeight + PartyRowGap, PartyWidth, 24f,
+                InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Center);
+            empty.VerticalAlignment = TextAlignment.Center;
+            _partyPanel.AddChild(empty);
 
-            BuildPartyMember(0, "青", PartyMember1Name, PartyMember1Level, 0.80f, 0.92f, false);
-            BuildPartyMember(1, "紫", PartyMember2Name, PartyMember2Level, 0.65f, 0.70f, false);
-            BuildPartyMember(2, "铁", PartyMember3Name, PartyMember3Level, 0.25f, 0.48f, true);
-
-            AddChild(_partyPanel);
-        }
-
-        /// <summary>构建单个队伍成员卡（低血成员使用朱红强调色并呼吸脉冲）。</summary>
-        private void BuildPartyMember(int index, string glyph, string name, string level,
-            float hpRatio, float mpRatio, bool low)
-        {
-            float y = PartyHeaderHeight + PartyRowGap + index * (PartyRowHeight + PartyRowGap);
-            Color accent = low ? InkWashTheme.VermilionPrimary : InkWashTheme.JadePrimary;
-
-            var row = new HudPartyRow
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, y),
-                Size = new Float2(PartyWidth, PartyRowHeight),
-                Radius = InkWashTheme.RadiusMd,
-                FillColor = InkFill(InkWashTheme.BaseSecondary, 0.85f),
-                BorderColor = InkWashTheme.BorderNeutralL1,
-                BorderThickness = 1f,
-                AccentColor = accent,
-                LowHp = low,
-            };
-
-            // 圆形头像（低血成员朱红底）
-            Color avatarFill = low ? InkWashTheme.VermilionDeep : InkWashTheme.JadeDeep;
-            Color avatarBorder = low ? InkWashTheme.VermilionBright : InkWashTheme.JadeBright;
-            var avatar = MakeCircle(8f, 7f, PartyAvatarSize, avatarFill, avatarBorder, 1f,
-                glyph, InkWashTheme.PaperBright, 13f, InkWashTheme.FontRole.Display);
-            row.AddChild(avatar);
-
-            // 名称 + 等级
-            row.AddChild(MakeLabel(name, 48f, 5f, 100f, 14f,
-                InkWashTheme.PaperBright, 12f, InkWashTheme.FontRole.Display));
-            row.AddChild(MakeLabel(level, 148f, 5f, 64f, 14f,
-                InkWashTheme.PaperFaded, 10f, InkWashTheme.FontRole.Number, TextAlignment.Far));
-
-            // 血条 6px（低血朱红 / 常规青）
-            _partyHpBars[index] = MakeBar(48f, 21f, PartyHpBarWidth, PartyHpBarHeight, hpRatio,
-                low ? InkBarFillVariant.Vermilion : InkBarFillVariant.Jade,
-                InkFill(InkWashTheme.Abyss, 0.85f),
-                low ? InkWashTheme.BorderVermilion : InkWashTheme.BorderJade);
-            row.AddChild(_partyHpBars[index]);
-
-            // 内力标签 + 3px 气条
-            row.AddChild(MakeLabel(PartyMpLabelText, 48f, 30f, 20f, 12f,
-                InkWashTheme.PaperDark, 9f, InkWashTheme.FontRole.Body));
-            _partyMpBars[index] = MakeBar(72f, 34f, PartyWidth - 72f - 8f, PartyMpBarHeight, mpRatio,
-                InkBarFillVariant.Gold, InkFill(InkWashTheme.Abyss, 0.85f), InkWashTheme.BorderNeutralL1);
-            row.AddChild(_partyMpBars[index]);
-
-            _partyRows[index] = row;
-            _partyPanel.AddChild(row);
+            _hudLayers.AddToLayer(_partyPanel, InkHudLayer.Persistent);
         }
 
         // ===================================================================
@@ -777,7 +765,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 InkWashTheme.VermilionBright, InkWashTheme.VermilionDeep,
                 InkWashTheme.VermilionBright, InkWashTheme.VermilionBright);
 
-            AddChild(_buffPanel);
+            _hudLayers.AddToLayer(_buffPanel, InkHudLayer.Persistent);
+
+            // 没有 Buff 数据源（服务端只下发控制状态位），这 3 条"攻击力+10%/防御力+15%/中毒"
+            // 是设计稿 mock；真实控制状态已在左下玩家面板显示。隐藏以免把假增益当成真。
+            _buffPanel.Visible = false;
         }
 
         /// <summary>构建单条状态效果（24 字形块 + 名称 + 倒计时）。</summary>
@@ -857,7 +849,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             _comboPanel.AddChild(MakeLabel(ComboMultiplierText, 0f, 102f, ComboWidth, 14f,
                 InkWashTheme.VermilionBright, 10f, InkWashTheme.FontRole.Display, TextAlignment.Center));
 
-            AddChild(_comboPanel);
+            _hudLayers.AddToLayer(_comboPanel, InkHudLayer.Transient);
+            // 没有连击数据源：先隐藏，别让设计稿的「23 连击」常驻（2026-10-29）
+            _comboPanel.Visible = false;
         }
 
         // ===================================================================
@@ -875,7 +869,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(PlayerPanelWidth, PlayerPanelHeight),
-                BackgroundColor = Color.Transparent,
+                // HUD 直接叠在 3D 世界上：雪地/沙漠这类亮场景里纯透明会让名称与血条糊成一片，
+                // 给一层淡墨底（0.45，比菜单面板淡，避免挡住场景）。
+                BackgroundColor = InkFill(InkWashTheme.BaseDefault, 0.45f),
                 ClipChildren = false,
             };
 
@@ -941,15 +937,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 InkBarFillVariant.Jade, InkFill(InkWashTheme.Abyss, 0.85f), Color.Transparent);
             _playerPanel.AddChild(_xpBar);
 
-            // buff 小图标行（攻 5:30 / 防 8:45 / 轻 0:18）
+            // 控制状态行：眩晕/沉默/定身…由 ControlStateManager 实时驱动；无状态时留空。
+            // （原 3 个"攻/防/轻"图标是设计稿 mock，没有数据源。）
             float buffY = PlayerPanelHeight - PlayerBuffChipSize - PlayerBuffTimeHeight;
-            AddPlayerBuffChip(bodyX, buffY, "攻", BuffAttackTime, "攻击力 +10% 剩余 5:30");
-            AddPlayerBuffChip(bodyX + PlayerBuffChipSize + PlayerBuffChipGap, buffY, "防", BuffDefenseTime,
-                "防御力 +15% 剩余 8:45");
-            AddPlayerBuffChip(bodyX + (PlayerBuffChipSize + PlayerBuffChipGap) * 2f, buffY, "轻", "0:18",
-                "轻功加速 剩余 0:18");
+            _controlChips = new ControlStateChipView[ControlChipSlots];
+            for (int i = 0; i < _controlChips.Length; i++)
+            {
+                var chip = new ControlStateChipView
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(bodyX + i * (PlayerBuffChipSize + PlayerBuffChipGap), buffY),
+                    Size = new Float2(PlayerBuffChipSize, PlayerBuffChipSize + PlayerBuffTimeHeight),
+                    Visible = false,
+                };
+                _playerPanel.AddChild(chip);
+                _controlChips[i] = chip;
+            }
 
-            AddChild(_playerPanel);
+            _hudLayers.AddToLayer(_playerPanel, InkHudLayer.Persistent);
         }
 
         /// <summary>构建玩家状态栏下方的 buff 小图标（24 方块 + 下方倒计时）。</summary>
@@ -1020,7 +1025,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             }
 
             // 将技能行挂到页面（此前遗漏导致技能栏不渲染）。
-            AddChild(_skillBarRow);
+            _hudLayers.AddToLayer(_skillBarRow, InkHudLayer.Persistent);
 
             // 键位提示行（设计 .skillbar-hint）。
             _skillHintRow = new ContainerControl
@@ -1031,7 +1036,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             };
             _skillHintRow.AddChild(MakeLabel(SkillHintText, 0f, 0f, SkillRowWidth, SkillHintHeight,
                 InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Center));
-            AddChild(_skillHintRow);
+            _hudLayers.AddToLayer(_skillHintRow, InkHudLayer.Persistent);
+
+            // 真实技能栏（MainUIManager 的 10×6 滚轮技能栏）常驻挂在 shell 上，正好覆盖这一区域：
+            // 这一排 8 格是设计稿 mock，保留可见会从真实技能栏上方露出约 22px 的假槽位与假键位提示。
+            // 只隐藏、不删除布局，避免底部系统导航条的位置跟着跳动。
+            _skillBarRow.Visible = false;
+            _skillHintRow.Visible = false;
         }
 
         // ===================================================================
@@ -1056,7 +1067,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             };
             _itemTitleRow.AddChild(MakeLabel(ItemTitleText, 0f, 0f, ItemColumnWidth, ItemHeaderHeight,
                 InkWashTheme.GoldBright, 12f, InkWashTheme.FontRole.Heading, TextAlignment.Center));
-            AddChild(_itemTitleRow);
+            _hudLayers.AddToLayer(_itemTitleRow, InkHudLayer.Persistent);
 
             // 道具竖列容器（半透墨底 + 金线描边，与技能栏一致）。此前 _itemColumn 未初始化导致 NPE。
             _itemColumn = new HudFrame
@@ -1069,7 +1080,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 BorderThickness = 1f,
                 GlowColor = InkWashTheme.ShadowSoft,
             };
-            AddChild(_itemColumn);
+            _hudLayers.AddToLayer(_itemColumn, InkHudLayer.Persistent);
 
             for (int i = 0; i < ItemSlotCount; i++)
             {
@@ -1119,6 +1130,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
                 _itemColumn.AddChild(slot);
             }
+
+            // 这一列是可点击的"假消耗品"（点击会把 mock 数量减一），而真实消耗品在
+            // MainUIManager 的滚轮技能栏/背包里；留着会让玩家以为点了真道具。隐藏而不是删除布局。
+            _itemTitleRow.Visible = false;
+            _itemColumn.Visible = false;
         }
 
         // ===================================================================
@@ -1136,7 +1152,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             {
                 ("角色", InkPageDomIds.NavCharacterV2),
                 ("背包", InkPageDomIds.NavInventory),
-                ("武学", InkPageDomIds.NavSkillPanel),
+                ("武学", InkPageDomIds.NavSkillTree),
                 ("任务", InkPageDomIds.NavQuests),
                 ("商店", InkPageDomIds.NavShop),
                 ("邮件", InkPageDomIds.NavMail),
@@ -1174,7 +1190,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 _sysNav.AddChild(btn);
             }
 
-            AddChild(_sysNav);
+            _hudLayers.AddToLayer(_sysNav, InkHudLayer.Persistent);
         }
 
         // ===================================================================
@@ -1196,7 +1212,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 TooltipText = "退出战斗界面",
             };
             _exitHotspot.Clicked += () => RequestNavigation(InkPageDomIds.BackHud);
-            AddChild(_exitHotspot);
+            _hudLayers.AddToLayer(_exitHotspot, InkHudLayer.Context);
         }
 
         // ===================================================================
@@ -1209,13 +1225,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             float sw = _screenSize.X;
             float sh = _screenSize.Y;
 
-            if (_backdrop != null)
-                _backdrop.Size = _screenSize;
 
-            if (_scenePlaceholder != null)
-                _scenePlaceholder.Location = new Float2(
-                    (sw - ScenePlaceholderWidth) * 0.5f,
-                    (sh - ScenePlaceholderHeight) * 0.5f);
 
             // 左上：小地图
             if (_minimapRoot != null)
@@ -1337,6 +1347,62 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         {
             base.Update(deltaTime);
             RefreshBoundData();
+
+            _controlChipRefreshTimer += deltaTime;
+            if (_controlChipRefreshTimer >= 0.15f)
+            {
+                _controlChipRefreshTimer = 0f;
+                RefreshControlChips();
+            }
+
+            _minimapCoordTimer += deltaTime;
+            if (_minimapCoordTimer >= 0.5f)
+            {
+                _minimapCoordTimer = 0f;
+                RefreshMinimapCoord();
+            }
+        }
+
+        private float _minimapCoordTimer;
+
+        /// <summary>
+        /// 小地图下方那行坐标：原先是设计稿地名「昆仑墟 · 深渊」，看起来像当前区域。
+        /// 现在写玩家真实世界坐标（平面轴 X/Z，与地图页口径一致），拿不到位姿就显示「—」。
+        /// </summary>
+        private void RefreshMinimapCoord()
+        {
+            if (_minimapCoordLabel == null) return;
+            _minimapCoordLabel.Text = PluginNavigationBridge.TryGetPlayerPose(out var pos, out _)
+                ? $"X:{pos.X:0} Z:{pos.Z:0}"
+                : "—";
+        }
+
+        /// <summary>把本地角色当前的控制状态刷到左下玩家面板（与 <see cref="ControlStateManager"/> 同一数据源）。</summary>
+        private void RefreshControlChips()
+        {
+            if (_controlChips == null) return;
+
+            ulong id = HundunWorldGame.Instance?.PlayerId ?? 0UL;
+            var states = id == 0UL ? null : ControlStateManager.Instance.GetActiveControlStates(id);
+            if (states != null)
+                states.Sort((a, b) => a.State.CompareTo(b.State));
+
+            int count = states?.Count ?? 0;
+            for (int i = 0; i < _controlChips.Length; i++)
+            {
+                var chip = _controlChips[i];
+                if (chip == null) continue;
+
+                if (i < count)
+                {
+                    chip.SetState(states[i].State, states[i].RemainingTime);
+                    chip.Visible = true;
+                }
+                else
+                {
+                    chip.Visible = false;
+                }
+            }
         }
 
         /// <summary>每帧从绑定数据源刷新玩家身份与血/气/经验。未绑定时保持设计稿 mock。</summary>
@@ -1360,6 +1426,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 _mpBar.Value = mpRatio;
             if (_mpValueLabel != null)
                 _mpValueLabel.Text = $"{_boundCharacter.CurrentEnergy:N0} / {_boundCharacter.MaxEnergy:N0}";
+
+            // 经验条：同一次刷新里跟血/气一起更新，否则绑定后经验条会永远停在设计稿 54%
+            if (_xpBar != null && _boundCharacter.MaxExp > 0)
+                _xpBar.Value = Mathf.Clamp((float)_boundCharacter.Exp / _boundCharacter.MaxExp, 0f, 1f);
         }
 
         /// <summary>刷新玩家身份信息（名称、等级、头像字）。未绑定时保留设计稿 mock。</summary>
@@ -1403,88 +1473,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// HUD 背景层：垂直墨底渐变 + 4 处径向水墨晕染 + 两层墨山剪影 + 底部压暗。
         /// 对应设计 <c>.hud-background</c> / <c>.ink-splash</c> / <c>.ink-mountain</c>。
         /// </summary>
-        private sealed class HudBackdrop : ContainerControl
-        {
-            /// <summary>近景墨山脊线（x 比例, y 比例，0=山带顶部，1=屏幕底部）</summary>
-            private static readonly Float2[] NearRidge =
-            {
-                new Float2(0f, 0.62f), new Float2(0.14f, 0.40f), new Float2(0.26f, 0.58f),
-                new Float2(0.38f, 0.30f), new Float2(0.52f, 0.52f), new Float2(0.66f, 0.36f),
-                new Float2(0.80f, 0.56f), new Float2(0.92f, 0.42f), new Float2(1f, 0.60f),
-            };
-
-            /// <summary>远景墨山脊线</summary>
-            private static readonly Float2[] FarRidge =
-            {
-                new Float2(0f, 0.74f), new Float2(0.12f, 0.60f), new Float2(0.24f, 0.70f),
-                new Float2(0.36f, 0.52f), new Float2(0.50f, 0.66f), new Float2(0.62f, 0.56f),
-                new Float2(0.76f, 0.68f), new Float2(0.88f, 0.58f), new Float2(1f, 0.70f),
-            };
-
-            /// <inheritdoc />
-            public override void Draw()
-            {
-                if (!Visible || Width <= 0f || Height <= 0f)
-                    return;
-
-                var savedBg = BackgroundColor;
-                BackgroundColor = Color.Transparent;
-
-                // 1. 墨底渐变（近似 linear-gradient(135deg, base-secondary, base-default)）
-                for (int i = 0; i < BackdropGradientSteps; i++)
-                {
-                    float t0 = (float)i / BackdropGradientSteps;
-                    float t1 = (float)(i + 1) / BackdropGradientSteps;
-                    Color c = Color.Lerp(InkWashTheme.BaseSecondary, InkWashTheme.BaseDefault, (t0 + t1) * 0.5f);
-                    Render2D.FillRectangle(new Rectangle(0f, t0 * Height, Width, (t1 - t0) * Height + 1f), c);
-                }
-
-                // 2. 水墨晕染（设计 4 处 .ink-splash）
-                InkRenderHelper.FillRadialGradient(new Float2(Width * 0.06f, Height * 0.08f), 150f,
-                    InkFill(InkWashTheme.BaseTertiary, 0.30f), Color.Transparent, 12);
-                InkRenderHelper.FillRadialGradient(new Float2(Width - 50f, Height * 0.30f + 100f), 100f,
-                    InkFill(InkWashTheme.BaseElevated, 0.25f), Color.Transparent, 12);
-                InkRenderHelper.FillRadialGradient(new Float2(Width * 0.35f + 180f, Height - 100f), 180f,
-                    InkFill(InkWashTheme.BaseElevated, 0.25f), Color.Transparent, 12);
-                InkRenderHelper.FillRadialGradient(new Float2(60f, Height * 0.55f + 150f), 150f,
-                    InkFill(InkWashTheme.VermilionPrimary, 0.08f), Color.Transparent, 12);
-
-                // 3. 远景墨山（先远后近）
-                DrawMountain(FarRidge, MountainFarHeight, InkFill(InkWashTheme.BaseSecondary, 0.70f));
-                DrawMountain(NearRidge, MountainNearHeight, InkFill(InkWashTheme.BaseTertiary, 0.55f));
-
-                // 4. 底部压暗（设计墨山渐变到 --bg-base-default）
-                for (int i = 0; i < MountainFadeSteps; i++)
-                {
-                    float t0 = (float)i / MountainFadeSteps;
-                    float t1 = (float)(i + 1) / MountainFadeSteps;
-                    float alpha = t1 * t1 * 0.95f;
-                    Render2D.FillRectangle(
-                        new Rectangle(0f, Height - MountainNearHeight * (1f - t0), Width,
-                            MountainNearHeight * (t1 - t0) + 1f),
-                        InkFill(InkWashTheme.BaseDefault, alpha));
-                }
-
-                base.Draw();
-                BackgroundColor = savedBg;
-            }
-
-            /// <summary>按脊线绘制一层墨山剪影（脊线到屏幕底部填充）。</summary>
-            private void DrawMountain(Float2[] ridge, float bandHeight, Color color)
-            {
-                float top = Height - bandHeight;
-                for (int i = 0; i < ridge.Length - 1; i++)
-                {
-                    float x0 = ridge[i].X * Width;
-                    float y0 = top + ridge[i].Y * bandHeight;
-                    float x1 = ridge[i + 1].X * Width;
-                    float y1 = top + ridge[i + 1].Y * bandHeight;
-                    Render2D.FillTriangle(new Float2(x0, Height), new Float2(x0, y0), new Float2(x1, y1), color);
-                    Render2D.FillTriangle(new Float2(x0, Height), new Float2(x1, y1), new Float2(x1, Height), color);
-                }
-            }
-        }
-
         // ===================================================================
         // 嵌套控件：圆角面板 / 圆角单元 / 圆形头像
         // =======================================================================
@@ -1688,47 +1676,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         // ===================================================================
         // 嵌套控件：队伍成员卡（低血脉冲）
         // =======================================================================
-
-        /// <summary>队伍成员卡：左侧 2px 强调条；低血成员按 1.6s 周期呼吸辉光（对应设计 lowHpPulse）。</summary>
-        private sealed class HudPartyRow : HudRoundCell
-        {
-            /// <summary>左侧强调条颜色（青=常规，朱红=低血）</summary>
-            public Color AccentColor { get; set; } = InkWashTheme.JadePrimary;
-
-            /// <summary>是否低血（触发脉冲）</summary>
-            public bool LowHp { get; set; }
-
-            private float _pulseTime;
-
-            /// <inheritdoc />
-            public override void Update(float deltaTime)
-            {
-                base.Update(deltaTime);
-                if (LowHp)
-                    _pulseTime += deltaTime;
-            }
-
-            /// <inheritdoc />
-            public override void Draw()
-            {
-                base.Draw();
-
-                Render2D.FillRectangle(new Rectangle(0f, 0f, 2f, Height), AccentColor);
-
-                if (LowHp)
-                {
-                    float phase = 0.5f + 0.5f * Mathf.Sin(_pulseTime * 3.93f); // 1.6s 周期
-                    IniLowPulse(phase);
-                }
-            }
-
-            /// <summary>绘制低血呼吸辉光。</summary>
-            private void IniLowPulse(float phase)
-            {
-                Color glow = new Color(AccentColor.R, AccentColor.G, AccentColor.B, 0.10f + 0.28f * phase);
-                InkRenderHelper.DrawRoundedRectangle(new Rectangle(0f, 0f, Width, Height), Radius, glow, 1f);
-            }
-        }
 
         // ===================================================================
         // 嵌套控件：技能槽

@@ -173,3 +173,186 @@ public sealed class OrleansQuestProgressWriter : IQuestProgressWriter
         return advanced;
     }
 }
+
+/// <summary>
+/// 把 <see cref="IFavorabilityWriter"/> 落到 <c>IFavorabilityGrain.AddAsync</c>。
+/// <para>
+/// 玩家键与背包用同一个 <see cref="GrainKeyMapper.ToInventoryKey"/>：好感是按角色记的，
+/// 而研读门槛读的也是同一角色 grain 上的 <c>GetByDomainAsync()</c>——两处键算得不同，
+/// 表现就是"杀了一百只怪，好感门槛纹丝不动"，且没有任何一方报错。
+/// </para>
+/// </summary>
+/// <summary>
+/// Orleans 版击杀经验写入端：把 <c>KillXp</c> 事件落到 <see cref="ICharacterGrain.AddExpAsync"/>。
+/// <para>Grain 键用 <c>(long)characterId</c>——与 <c>QuestHandler</c>、<c>SyncHandshakeHandler</c>
+/// 取同一角色 Grain 的写法一致。换成别的键会得到"经验加到了一个没人读的 grain 里"：
+/// 加经验返回成功、角色等级不动、日志干净。</para>
+/// </summary>
+public sealed class OrleansExperienceWriter : IExperienceWriterWithResult
+{
+    private readonly IClusterClient _clusterClient;
+
+    /// <summary>创建适配器。</summary>
+    public OrleansExperienceWriter(IClusterClient clusterClient)
+    {
+        _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> AddExpAsync(ulong characterId, long amount, string reason, CancellationToken cancellationToken = default)
+        => (await AddExpWithResultAsync(characterId, amount, reason, cancellationToken).ConfigureAwait(false)).Success;
+
+    /// <inheritdoc />
+    public async Task<ExpGrant> AddExpWithResultAsync(ulong characterId, long amount, string reason, CancellationToken cancellationToken = default)
+    {
+        if (characterId == 0UL || amount <= 0L) return ExpGrant.Failed;
+        try
+        {
+            var grain = _clusterClient.GetGrain<Horizon.Orleans.Interface.ICharacterGrain>((long)characterId);
+            var result = await grain.AddExpAsync(amount).ConfigureAwait(false);
+            // AddExpAsync 返回结构化结果（含是否升级）；用它而不是"没抛异常就算成功"，
+            // 否则"上限满级还继续加经验"这种情形会一直报成功。
+            if (result == null || !result.Success) return ExpGrant.Failed;
+            return new ExpGrant { Success = true, Level = result.Level, Experience = result.Experience };
+        }
+        catch
+        {
+            return ExpGrant.Failed;
+        }
+    }
+}
+
+/// <summary>
+/// Orleans 版金币入账写入端：把 <c>KillMoney</c> 事件落到 <see cref="Horizon.Orleans.Interface.ICurrencyGrain.AddAsync"/>。
+/// <para>Grain 键用 <c>(long)characterId</c>——与 <c>ShopHandler</c>/<c>SkillHandler</c>/<c>CraftHandler</c>
+/// 取同一个钱包的写法逐字相同。用别的键会得到"钱加到了一个没人读的 grain 里"：
+/// 商店买不起东西、角色口袋却没变化，而这条链的日志全是绿的。</para>
+/// <para>成功判据取回执（<c>Ok</c> 且余额确实增加了这么多），不是"没抛异常"：
+/// 钱包在越界/未登记货币时是**一分不入地拒绝**，那必须算失败并被调用方计数。</para>
+/// </summary>
+public sealed class OrleansCurrencyWriter : ICurrencyWriter
+{
+    private readonly IClusterClient _clusterClient;
+
+    /// <summary>创建适配器。</summary>
+    public OrleansCurrencyWriter(IClusterClient clusterClient)
+    {
+        _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> AddGoldAsync(ulong characterId, long amount, string source, CancellationToken cancellationToken = default)
+    {
+        if (characterId == 0UL || amount <= 0L) return false;
+        try
+        {
+            var wallet = _clusterClient.GetGrain<Horizon.Orleans.Interface.ICurrencyGrain>((long)characterId);
+            var mutation = await wallet.AddAsync(Horizon.Game.Sim.Economy.WalletCurrency.Gold, amount, source).ConfigureAwait(false);
+            return mutation is { Ok: true } && mutation.BalanceAfter - mutation.BalanceBefore == amount;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+}
+
+/// <summary>
+/// 任务持有状态读取端（条件掉落的判据）：查该角色**进行中**的任务列表里有没有这个任务 id。
+/// <para>用的 id 口径与怪物编辑器校验器一致（<c>QuestId</c> = 任务模板 id，见
+/// <c>MonsterValidator</c> 对 <c>questIds</c> 的对账），两边各用一套键会让条件掉落永远判不过。</para>
+/// </summary>
+public sealed class OrleansQuestStateReader : IQuestStateReader
+{
+    private readonly IClusterClient _clusterClient;
+
+    /// <summary>创建适配器。</summary>
+    public OrleansQuestStateReader(IClusterClient clusterClient)
+    {
+        _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyCollection<int>?> ActiveQuestIdsAsync(ulong characterId, CancellationToken cancellationToken = default)
+    {
+        if (characterId == 0UL) return Array.Empty<int>();
+        try
+        {
+            var playerKey = GrainKeyMapper.ToInventoryKey(characterId);
+            var questGrain = _clusterClient.GetGrain<Horizon.Orleans.Interface.IQuestGrain>(playerKey);
+            var active = await questGrain.GetActiveQuestsAsync().ConfigureAwait(false);
+            if (active is null) return null;
+            var ids = new List<int>(active.Count);
+            for (var i = 0; i < active.Count; i++)
+            {
+                var q = active[i];
+                // 与 QueryHoldAsync 同一口径：只有进行中（Status==0）才算持有。
+                if (q is not null && q.Status == 0 && q.QuestId > 0) ids.Add(q.QuestId);
+            }
+            return ids;
+        }
+        catch
+        {
+            // 问不出来 ≠ 不配拿——但条件件这一侧只能"判不了→不满足"；返回 null 让派生出显形。
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<QuestHoldState> QueryHoldAsync(ulong characterId, int questId, CancellationToken cancellationToken = default)
+    {
+        if (characterId == 0UL || questId <= 0) return QuestHoldState.NotHeld;
+
+        try
+        {
+            var playerKey = GrainKeyMapper.ToInventoryKey(characterId);
+            var questGrain = _clusterClient.GetGrain<Horizon.Orleans.Interface.IQuestGrain>(playerKey);
+            var active = await questGrain.GetActiveQuestsAsync().ConfigureAwait(false);
+            if (active is null) return QuestHoldState.Unknown;
+
+            for (var i = 0; i < active.Count; i++)
+            {
+                var quest = active[i];
+                if (quest is null || quest.QuestId != questId) continue;
+                // Status == 0 = 进行中：已完成的任务不再算"持有"，
+                // 否则"做完任务后还能继续从怪身上掉那件任务奖励"这种刷取会成立。
+                if (quest.Status == 0) return QuestHoldState.Held;
+            }
+            return QuestHoldState.NotHeld;
+        }
+        catch
+        {
+            // 问不出来 ≠ 玩家不配拿。调用方必须能分辨这两种情况（Unknown vs NotHeld）。
+            return QuestHoldState.Unknown;
+        }
+    }
+}
+
+public sealed class OrleansFavorabilityWriter : IFavorabilityWriter
+{
+    private readonly IClusterClient _clusterClient;
+
+    /// <summary>创建适配器。</summary>
+    public OrleansFavorabilityWriter(IClusterClient clusterClient)
+    {
+        _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> AddAsync(Guid playerId, int domain, int delta, string targetKey, CancellationToken cancellationToken = default)
+    {
+        if (playerId == Guid.Empty || delta == 0 || domain < 1 || domain > 5) return false;
+
+        var grain = _clusterClient.GetGrain<Horizon.Orleans.Interface.IFavorabilityGrain>(playerId);
+        try
+        {
+            await grain.AddAsync(domain, delta, targetKey).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception)
+        {
+            // 实时链路（击杀事件）不能因为好感系统不可用而失败；调用方按计数对账。
+            return false;
+        }
+    }
+}

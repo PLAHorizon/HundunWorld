@@ -294,6 +294,8 @@ public sealed class SyncHandshakeHandler : SyncPacketFlowHandlerBase
             handshake.Nickname = profile.Nickname ?? "";
             handshake.Level = profile.Level;
             handshake.Title = profile.Title ?? "";
+            // 阵营也走同一通道：PvP 合法性必须由服务端档案判，客户端自报值一律冲掉。
+            handshake.Faction = profile.Faction;
         }
         catch (Exception ex)
         {

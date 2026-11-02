@@ -82,19 +82,19 @@ namespace HundunWorld.Game.UI.Components
             {
                 case ToastType.Success:
                     iconColor = UIStyleTokens.StatusSuccess;
-                    iconText = "✓";
+                    iconText = "√";
                     break;
                 case ToastType.Warning:
                     iconColor = UIStyleTokens.StatusAlert;
-                    iconText = "⚠";
+                    iconText = "※";
                     break;
                 case ToastType.Error:
                     iconColor = UIStyleTokens.StatusError;
-                    iconText = "✗";
+                    iconText = "×";
                     break;
                 default:
                     iconColor = UIStyleTokens.StatusInfo;
-                    iconText = "ℹ";
+                    iconText = "◆";
                     break;
             }
             

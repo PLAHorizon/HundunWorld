@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Out-of-tree compile gate for the PCG plugin's EDITOR module (Source/PCGEditor).
+
+    Why this exists: the Flax installer ships no FlaxEditor.CSharp.dll and no editor C# sources, so an
+    editor-target mistake otherwise only surfaces when the Flax editor rebuilds the project's scripts - a
+    minute-per-iteration loop with terse output. The editor managed API actually lives inside the
+    editor-target FlaxEngine.CSharp.dll (1183 FlaxEditor.* types), so referencing that one DLL is enough to
+    type-check VisjectSurface-derived code with `dotnet build` before ever launching the editor.
+
+    FLAX_EDITOR is defined deliberately: the runtime module keeps actor-spawning and debug-drawing code
+    behind that guard (Actor.OnDebugDraw and DebugDraw.* are not exported to non-editor targets), and
+    without the constant this harness would silently not compile those paths.
+
+    Like PCGVerify, this only proves the code compiles and is self-consistent. Node spawning, canvas
+    interaction, asset opening and viewport drawing still have to be exercised in the editor.
+
+    Usage:
+        dotnet build Tools/PCGEditorVerify/PCGEditorVerify.csproj
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>PCGEditorVerify</AssemblyName>
+    <RootNamespace>PCGEditorVerify</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <NoWarn>1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);FLAX_EDITOR</DefineConstants>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.12</EngineRoot>
+    <PluginRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\PCG\Source</PluginRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(EngineRoot)\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The runtime module, which the editor module depends on. -->
+    <Compile Include="$(PluginRoot)\PCG\Data\*.cs" />
+    <Compile Include="$(PluginRoot)\PCG\Graph\*.cs" />
+    <Compile Include="$(PluginRoot)\PCG\Execution\*.cs" />
+    <Compile Include="$(PluginRoot)\PCG\Terrain\*.cs" />
+    <Compile Include="$(PluginRoot)\PCG\Nodes\*.cs" />
+    <Compile Include="$(PluginRoot)\PCG\Runtime\*.cs" />
+    <Compile Include="$(PluginRoot)\PCG\Tests\*.cs" />
+    <!-- The module under test. Flax's *Build.cs module rules reference Flax.Build, which is not part of the
+         scripting API, so they are excluded from this gate. -->
+    <Compile Include="$(PluginRoot)\PCGEditor\**\*.cs" Exclude="$(PluginRoot)\PCGEditor\**\*.Build.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Also keep the module-rule files out of the runtime glob, for the same reason. -->
+    <Compile Remove="$(PluginRoot)\PCG\**\*.Build.cs" />
+  </ItemGroup>
+
+</Project>

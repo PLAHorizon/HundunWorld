@@ -1,0 +1,31 @@
+{
+  "animSetId": "animset_sword_combo",
+  "attackCombos": [
+    {
+      "animSetId": "sword_combo_stage_1",
+      "characterAnims": [
+        { "montage1PPath": "Combat/Sword/Slash_1P_1", "montage3PPath": "Combat/Sword/Slash_3P_1" }
+      ]
+    },
+    {
+      "animSetId": "sword_combo_stage_2",
+      "characterAnims": [
+        { "montage1PPath": "Combat/Sword/Slash_1P_2", "montage3PPath": "Combat/Sword/Slash_3P_2" }
+      ]
+    },
+    {
+      "animSetId": "sword_combo_stage_3",
+      "characterAnims": [
+        { "montage1PPath": "Combat/Sword/Slash_1P_3", "montage3PPath": "Combat/Sword/Slash_3P_3" }
+      ]
+    }
+  ],
+  "heavyAttackCombos": [
+    {
+      "animSetId": "sword_combo_heavy",
+      "characterAnims": [
+        { "montage1PPath": "Combat/Sword/Heavy_1P", "montage3PPath": "Combat/Sword/Heavy_3P" }
+      ]
+    }
+  ]
+}

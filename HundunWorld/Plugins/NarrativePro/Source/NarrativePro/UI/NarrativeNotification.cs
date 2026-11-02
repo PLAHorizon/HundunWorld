@@ -6,10 +6,25 @@ namespace NarrativePro.UI
 {
     public class NarrativeNotification : Script
     {
+        /// <summary>当前实例（对应 UE5 通知队列的蓝图单例；由运行期引导创建并登记）。</summary>
+        public static NarrativeNotification Instance { get; private set; }
+
         public float DisplayDuration = 3f;
         public float FadeOutDuration = 1f;
 
         private List<NotificationEntry> _activeNotifications = new List<NotificationEntry>();
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            Instance = this;
+        }
+
+        public override void OnDisable()
+        {
+            if (Instance == this) Instance = null;
+            base.OnDisable();
+        }
 
         public class NotificationEntry
         {
@@ -86,7 +101,10 @@ namespace NarrativePro.UI
 
         private static NarrativeNotification FindInstance()
         {
-            return null;
+            // 之前恒返回 null → 任务通知的三个静态入口全部空转。
+            // 现在优先取引导登记的实例，其次扫描场景内已挂载的面板脚本。
+            if (Instance != null) return Instance;
+            return Level.FindScript<NarrativeNotification>();
         }
     }
 }

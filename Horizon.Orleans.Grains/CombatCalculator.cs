@@ -1,6 +1,8 @@
 using Horizon.Orleans.Interface;
 using Horizon.Game.Message.Network;
 
+using Horizon.Model.GameModel;
+
 namespace Horizon.Orleans.Grains
 {
     /// <summary>
@@ -206,6 +208,84 @@ namespace Horizon.Orleans.Grains
             return bonus;
         }
 
+        /// <summary>一次循环节推进的结果（纯函数，便于回归用例逐值核对）。</summary>
+        public readonly record struct WuxingCycleStep(
+            int Stack, float Multiplier, bool Completed, int CompletionCount, int LastElement, DateTime ExpireAt);
+
+        /// <summary>
+        /// 五行循环节推进一步（方案 §5.1 的全部规则，无任何 Grain/存储依赖）：
+        /// 窗口超时重新起链；<b>起链那一式就占周天的第一行</b>，之后打出上一行的"子行"为顺生 → 层数 +1；
+        /// 同属与逆生都不掉层，只把链移到当前行并刷新窗口；满 <paramref name="maxStack"/> 层即周天圆满
+        /// （清零、计数 +1、那一击再乘 <paramref name="completionMultiplier"/>）；无属性式（0）完全不碰链。
+        /// </summary>
+        public static WuxingCycleStep StepWuxingCycle(
+            int stack, int lastElement, DateTime expireAt, int completionCount,
+            int element, DateTime now,
+            int windowSeconds = 3, int maxStack = 5,
+            float bonusPerStack = 0.03f, float completionMultiplier = 1.25f)
+        {
+            if (element <= 0)
+                return new WuxingCycleStep(stack, 1f + bonusPerStack * stack, false, completionCount, lastElement, expireAt);
+
+            var current = expireAt != default && now > expireAt ? 0 : stack;
+            var generated = lastElement > 0 && GenerateOf(lastElement) == element;
+            // 第一式必须自己占一层：节数数的是"本轮周天里已走过几行"，起手那行就是其中一行。
+            // 少这一层，按相生序打完五行只到 4 层，§5.1 的设计意图（周天=五行各一式、D4 强制兼修）永远凑不成。
+            var isChainAnchor = current == 0;
+            if (generated || isChainAnchor) current++;
+
+            var completed = false;
+            if (current >= maxStack)
+            {
+                current = 0;
+                completionCount++;
+                completed = true;
+            }
+
+            float multiplier = 1f + bonusPerStack * current;
+            if (completed) multiplier *= completionMultiplier;
+
+            return new WuxingCycleStep(current, multiplier, completed, completionCount, element, now.AddSeconds(windowSeconds));
+        }
+
+        /// <summary>
+        /// 五行阶梯的基座系数与倍率。判定只看 <c>skill_grade</c>：有阶位才说明这一行的
+        /// damage_multiplier 是设计过的阶梯值，否则该列仍是默认的 1.0，乘上去等于把老技能砍到 0.25。
+        /// </summary>
+        public static float SkillLadderFactor(SkillTemplateEntity? template, out float multiplier)
+        {
+            multiplier = 1f;
+            if (template == null || template.SkillGrade <= 0) return 0.6f;
+
+            multiplier = template.DamageMultiplier > 0f ? (float)template.DamageMultiplier : 1f;
+            return 0.25f;
+        }
+
+        /// <summary>
+        /// 五行相克（有向）：本行克到的那一行。1金 2木 3水 4火 5土 →
+        /// 金克木、木克土、土克水、水克火、火克金（与客户端 WuxingRules.GetCounterElement 同表）。
+        /// </summary>
+        public static int CounteredElement(int element) => element switch
+        {
+            1 => 2,   // 金克木
+            2 => 5,   // 木克土
+            5 => 3,   // 土克水
+            3 => 4,   // 水克火
+            4 => 1,   // 火克金
+            _ => 0,
+        };
+
+        /// <summary>
+        /// 守方这一击的护体行（§5.3）：玩家指定的镇岳行优先，未指定（0）才退化为防御向量最高行。
+        /// 做成纯函数是因为"指定行必须压过自动行"这件事只有这一处口径，客户端与服务端都得照它来。
+        /// </summary>
+        public static int ResolveGuardRow(int guardElement, int dominantDefenseRow) =>
+            guardElement > 0 ? guardElement : dominantDefenseRow;
+
+        /// <summary>攻方这一行是否克得住守方那一行（破势判定用）。</summary>
+        public static bool Counters(int attackElement, int defendElement) =>
+            attackElement > 0 && defendElement > 0 && CounteredElement(attackElement) == defendElement;
+
         /// <summary>
         /// 五行相生关系对集合（无序）
         /// 金生水(1,3)、水生木(3,2)、木生火(2,4)、火生土(4,5)、土生金(5,1)
@@ -217,6 +297,24 @@ namespace Horizon.Orleans.Grains
             (2, 4), (4, 2), // 木生火
             (4, 5), (5, 4), // 火生土
             (5, 1), (1, 5), // 土生金
+        };
+
+        /// <summary>
+        /// 五行相生（有向）：本行"生"出的下一行。1金 2木 3水 4火 5土 →
+        /// 金生水、水生木、木生火、火生土、土生金。
+        /// <para>
+        /// 与客户端 <c>WuxingRules.GetGenerateElement</c> 同表。<see cref="WuxingSynergyPairs"/>
+        /// 是无序对集合，判不出方向，所以循环节这种"必须按顺序续链"的判定不能复用它的表。
+        /// </para>
+        /// </summary>
+        public static int GenerateOf(int element) => element switch
+        {
+            1 => 3,   // 金生水
+            3 => 2,   // 水生木
+            2 => 4,   // 木生火
+            4 => 5,   // 火生土
+            5 => 1,   // 土生金
+            _ => 0,
         };
 
         /// <summary>

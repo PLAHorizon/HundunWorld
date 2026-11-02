@@ -95,8 +95,8 @@ public class DsWorldScaleTests
         // 每个玩家的预测位置自维护（模拟真实客户端），避免服务端持续下发修正干扰压测。
         var predicted = new float[PlayerCount];
         var sw = new Stopwatch();
-        long maxTickMs = 0;
-        long totalMs = 0;
+        var tickMs = new double[Ticks];
+        var maxTickMs = 0.0;
         var snapshotTicks = 0;
         var totalEntitiesInLastSnapshot = 0;
 
@@ -113,8 +113,8 @@ public class DsWorldScaleTests
             var result = world.Tick();
             sw.Stop();
 
-            var ms = sw.ElapsedMilliseconds;
-            totalMs += ms;
+            var ms = sw.Elapsed.TotalMilliseconds;
+            tickMs[tick - 1] = ms;
             if (ms > maxTickMs) maxTickMs = ms;
 
             if (result.WorldSnapshot is not null)
@@ -124,7 +124,11 @@ public class DsWorldScaleTests
             }
         }
 
-        var avgMs = (double)totalMs / Ticks;
+        var avgMs = tickMs.Average();
+        // 高分位：600 个 tick 里第 6 高的那个（99% 的 tick 都在它以下）。
+        var ordered = (double[])tickMs.Clone();
+        Array.Sort(ordered);
+        var p99Ms = ordered[Ticks - 1 - Ticks / 100];
 
         // --- 正确性断言（规模下"东西还在"）---
         Assert.Equal(PlayerCount, world.PlayerCount);
@@ -133,11 +137,20 @@ public class DsWorldScaleTests
         Assert.Equal(PlayerCount + SpawnPoints * MonstersPerPoint, totalEntitiesInLastSnapshot);
 
         // --- 预算断言（宽松：只拦数量级退化）---
-        // 60Hz 单 tick 预算 16.7ms；这里给 50ms 上限（约 3 帧预算），
-        // 目的是拦住"加了怪物后单 tick 变成几百毫秒"这类结构性退化，而不是追求精确基线。
-        Assert.True(maxTickMs <= 50,
-            $"单 tick 最坏耗时 {maxTickMs}ms 超过 50ms 上限（均值 {avgMs:F2}ms）——" +
-            $"存在 tick 堆积风险（玩家 {PlayerCount} / 怪 {SpawnPoints * MonstersPerPoint}）。");
+        // 60Hz 单 tick 预算 16.7ms。
+        // **为什么不用"单 tick 最坏耗时"当闸门**（原来的写法）：一次 GC 就能把 max 抬到均值的百倍
+        // （实测均值 0.2～0.5ms，而 max 在 55ms 与 125ms 之间随机跳，同一段代码连跑三次两次过一次红）。
+        // 随机红的闸门会把人训练成忽略它，而且它拦的从来不是"每 tick 变重"——那正是本测试想拦的退化。
+        // 换成两把都吃真实成本的尺子：
+        //   均值 = 总成本/tick 数，任何"每 tick 加一点成本"的改动都会直接顶上来；
+        //   p99 = 第 6 高的 tick，孤立尖峰进不了前 1%，但周期性退化（每 ≤100 tick 重一次）一定进得来。
+        // max 继续打印，只作观测，不当判据。
+        Assert.True(avgMs <= 8.0,
+            $"单 tick 平均耗时 {avgMs:F3}ms 超过 8ms 上限（p99 {p99Ms:F2}ms，max {maxTickMs:F2}ms，" +
+            $"玩家 {PlayerCount} / 怪 {SpawnPoints * MonstersPerPoint}）——每 tick 成本出现数量级退化。");
+        Assert.True(p99Ms <= 25.0,
+            $"单 tick p99 耗时 {p99Ms:F2}ms 超过 25ms 上限（均值 {avgMs:F3}ms，max {maxTickMs:F2}ms，" +
+            $"玩家 {PlayerCount} / 怪 {SpawnPoints * MonstersPerPoint}）——存在周期性 tick 堆积。");
     }
 
     [Fact]

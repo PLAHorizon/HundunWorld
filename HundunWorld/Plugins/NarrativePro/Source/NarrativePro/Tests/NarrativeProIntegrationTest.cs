@@ -112,8 +112,8 @@ namespace NarrativePro.Tests
 
                 Assert(quest.QuestCompletion == EQuestCompletion.Started, "Quest is started after BeginQuest");
                 Assert(quest.CurrentState == startState, "Quest current state is Start");
-
-                File.Delete(Path.GetTempPath() + "TestQuest.json");
+                // （原此处还有一次对 TestQuestFactoryLoad 临时文件的 File.Delete：文件彼时已删，
+                //  必抛 FileNotFoundException 被 catch 吞成一条假 FAIL —— 属本文件内的残留缺陷，已移除。）
             }
             catch (Exception ex)
             {

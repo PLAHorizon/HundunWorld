@@ -1,0 +1,50 @@
+﻿{
+  "$type": "GameplayEffectItem",
+  "itemClassId": "item_ration",
+  "displayName": "行军口粮",
+  "description": "炒米拌蜜，压成砖状。行路三日不断顿。使用时恢复体力。",
+  "weight": 0.6,
+  "baseValue": 40,
+  "baseScore": 0,
+  "bStackable": true,
+  "maxStackSize": 5,
+  "useActionText": "食用",
+  "thumbnailPath": "",
+  "useSoundPath": "",
+  "pickupMeshData": {
+    "pickupMeshPath": "Content/Models/Items/SM_Item_Ration",
+    "pickupMeshMaterialPaths": [
+      "Content/Materials/M_ItemRation"
+    ],
+    "pickupOffset": {
+      "translation": {
+        "x": 0.0,
+        "y": 45.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      }
+    }
+  },
+  "gameplayEffectId": "GE_Heal_SetByCaller",
+  "setByCallerValues": {
+    "Heal.Amount": 25
+  },
+  "effectLevel": 1,
+  "stats": [
+    {
+      "statDisplayName": "恢复",
+      "stringVariable": "Heal.Amount",
+      "statTooltip": "食用后恢复 25 点体力。"
+    }
+  ]
+}

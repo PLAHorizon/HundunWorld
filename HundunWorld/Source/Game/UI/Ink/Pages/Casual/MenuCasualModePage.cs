@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Casual
 {
-    public class MenuCasualModePage : ContainerControl, IInkPage
+    public class MenuCasualModePage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private Float2 _screenSize;
 
@@ -18,13 +20,39 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
 
         private InkPanel _dailySummaryPanel;
         private InkBar _vitalityBar;
+
+        // 顶栏身份/货币/时辰：此前都是构造里的局部变量、没人给它们定位，全部叠在 (0,0)（2026-10-29 截图实测）
+        private Label _charNameLabel;
+        private Label _charLevelLabel;
+        private Label _charSchoolLabel;
+        private Label _vitalityValueLabel;
+        private Label _currencyCoinLabel;
+        private Label _currencyIngotLabel;
+        private Label _timePeriodLabel;
+        private Label _timeQuarterLabel;
+        private Control _avatarBox;
         private InkBar _activityBar;
 
         private InkButton[] _tabButtons;
+        private Label _sampleNote;
+        private InkButton _filterButton;
 
         private ActivityCardView[] _activityCards;
 
         private InkPanel _rewardPreviewBar;
+
+        // 活跃度汇总 / 奖励总览两块面板的子控件引用：构造时全是局部变量且没有定位，全部叠在 (0,0)。
+        private Label _summaryLabel;
+        private Label _summaryValue;
+        private readonly List<Label> _milestoneLabels = new List<Label>();
+        private readonly List<Label> _statNumLabels = new List<Label>();
+        private readonly List<Label> _statTextLabels = new List<Label>();
+        private Control _summaryIcon;
+        private Label _previewTitle;
+        private Label _previewSubtitle;
+        private Label _previewItemCount;
+        private InkButton _previewDetailButton;
+        private readonly List<(Label Name, Label Qty)> _previewChips = new List<(Label, Label)>();
 
         // ------------------------------------------------------------------
         // 活动卡示例数据
@@ -112,48 +140,48 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
         /// <summary>6 张活动卡设计数据（顺序与设计稿 article 顺序一致）。</summary>
         private static readonly ActivityCardSpec[] _activitySpecs =
         {
-            new ActivityCardSpec("每日签到", "签到打卡，连签7天获额外奖励", "连签进度", "6 / 7 天", 0.85f,
-                "进行中", false, "签", "23:45:12",
+            new ActivityCardSpec("每日签到", "签到打卡，连签7天获额外奖励", "连签进度", "0 / 7 天", 0f,
+                "未开始", false, "签", "—",
                 new[]
                 {
                     new ActivityRewardSpec("×500", "铜钱", InkWashTheme.InkQuality.Common, "钱"),
                     new ActivityRewardSpec("×1", "玉色签到卡", InkWashTheme.InkQuality.Uncommon, "卡"),
                 }),
 
-            new ActivityCardSpec("闲庭信步", "在城镇中散步10分钟，感受江湖烟火", "散步里程", "4 / 10 公里", 0.40f,
-                "进行中", false, "步", "无限制",
+            new ActivityCardSpec("闲庭信步", "在城镇中散步10分钟，感受江湖烟火", "散步里程", "0 / 10 公里", 0f,
+                "未开始", false, "步", "—",
                 new[]
                 {
                     new ActivityRewardSpec("×2000", "经验", InkWashTheme.InkQuality.Rare, "验"),
                     new ActivityRewardSpec("×1", "轻功残页", InkWashTheme.InkQuality.Epic, "页"),
                 }),
 
-            new ActivityCardSpec("品茗对弈", "与NPC对弈一局，以棋会友", "对弈状态", "等待对手", 0.15f,
-                "进行中", false, "弈", "02:30:00",
+            new ActivityCardSpec("品茗对弈", "与NPC对弈一局，以棋会友", "对弈状态", "未开始", 0f,
+                "未开始", false, "弈", "—",
                 new[]
                 {
                     new ActivityRewardSpec("×1", "棋谱", InkWashTheme.InkQuality.Rare, "谱"),
                     new ActivityRewardSpec("×50", "元宝", InkWashTheme.InkQuality.Epic, "宝"),
                 }),
 
-            new ActivityCardSpec("听书赏曲", "在茶馆听书30分钟，闲品江湖事", "聆听进度", "12 / 30 分钟", 0.40f,
-                "进行中", false, "曲", "05:15:30",
+            new ActivityCardSpec("听书赏曲", "在茶馆听书30分钟，闲品江湖事", "聆听进度", "0 / 30 分钟", 0f,
+                "未开始", false, "曲", "—",
                 new[]
                 {
                     new ActivityRewardSpec("×1500", "经验", InkWashTheme.InkQuality.Rare, "验"),
                     new ActivityRewardSpec("×300", "铜钱", InkWashTheme.InkQuality.Common, "钱"),
                 }),
 
-            new ActivityCardSpec("垂钓时光", "完成钓鱼3次，享受悠然午后", "钓鱼进度", "1 / 3 次", 0.33f,
-                "进行中", false, "钓", "12:00:00",
+            new ActivityCardSpec("垂钓时光", "完成钓鱼3次，享受悠然午后", "钓鱼进度", "0 / 3 次", 0f,
+                "未开始", false, "钓", "—",
                 new[]
                 {
                     new ActivityRewardSpec("×5", "鱼饵", InkWashTheme.InkQuality.Common, "饵"),
                     new ActivityRewardSpec("×3", "烹饪材料", InkWashTheme.InkQuality.Uncommon, "材"),
                 }),
 
-            new ActivityCardSpec("飞花令", "参与诗词小游戏，以诗会友", "吟诗进度", "第 8 联", 0.75f,
-                "即将结束", true, "花", "18:22:45",
+            new ActivityCardSpec("飞花令", "参与诗词小游戏，以诗会友", "吟诗进度", "未开始", 0f,
+                "未开始", false, "花", "—",
                 new[]
                 {
                     new ActivityRewardSpec("×2", "诗词残卷", InkWashTheme.InkQuality.Rare, "卷"),
@@ -213,7 +241,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Parent = this
             };
             // 返回战斗 HUD（设计隐藏出口 back-hud）
-            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
         }
 
         private void BuildLeftNav()
@@ -263,8 +291,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
             };
 
             string[] navItems = { "不肝", "抽卡", "活动", "通行证", "属性", "奇珍阁", "设置" };
-            int[] badgeIndices = { 0, 2 };
-            int[] badgeValues = { 6, 3 };
 
             // 左侧导航即设计链路（批次5 §3.2）：不肝→抽卡→活动→通行证→属性→奇珍阁→设置
             string[] navTargets =
@@ -304,21 +330,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                     navItem.TextColor = InkWashTheme.TextSecondary;
                 }
 
-                if (badgeIndices.Contains(i))
-                {
-                    int idx = Array.IndexOf(badgeIndices, i);
-                    var badge = new Label
-                    {
-                        Text = badgeValues[idx].ToString(),
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                        TextColor = InkWashTheme.PaperBright,
-                        Size = new Float2(28f, 16f),
-                        Location = new Float2(204f, 18f),
-                        HorizontalAlignment = TextAlignment.Center,
-                        VerticalAlignment = TextAlignment.Center,
-                        Parent = navItem
-                    };
-                }
+                // 活动/通行证等待办数没有服务端来源：左栏不再挂写死的角标（原为 不肝 6 / 活动 3）
 
                 // 左栏项直达对应菜单（设计链路）
                 int navIndex = i;
@@ -345,7 +357,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
 
             var serverName = new Label
             {
-                Text = "江南 · 烟雨楼",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextDisabled,
                 Size = new Float2(196f, 16f),
@@ -355,7 +367,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
 
             var versionLabel = new Label
             {
-                Text = "v 2.4.1 · 烽火连城",
+                Text = "混沌世界 v1.2.0",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 TextColor = InkWashTheme.TextDisabled,
                 Size = new Float2(208f, 14f),
@@ -374,32 +386,32 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Parent = this
             };
 
-            var avatarCircle = new ContainerControl
+            _avatarBox = new ContainerControl
             {
                 Size = new Float2(36f, 36f),
                 BackgroundColor = InkWashTheme.BaseElevated,
                 Parent = _topBar
             };
 
-            var charName = new Label
+            _charNameLabel = new Label
             {
-                Text = "江湖过客",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 TextColor = InkWashTheme.PaperBright,
                 Parent = _topBar
             };
 
-            var charLevel = new Label
+            _charLevelLabel = new Label
             {
-                Text = "Lv. 42",
+                Text = "Lv.—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _topBar
             };
 
-            var charSchool = new Label
+            _charSchoolLabel = new Label
             {
-                Text = "无门无派",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _topBar
@@ -410,47 +422,51 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Height = 8f,
                 Parent = _topBar
             };
-            _vitalityBar.Value = 120f / 180f;
+            _vitalityBar.Value = 0f;
 
-            var vitalityValue = new Label
+            _vitalityValueLabel = new Label
             {
-                Text = "120/180",
+                Text = "0/0",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _topBar
             };
 
-            var currencyCoin = new Label
+            _currencyCoinLabel = new Label
             {
-                Text = "12,450",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _topBar
             };
 
-            var currencyIngot = new Label
+            _currencyIngotLabel = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.JadeBright,
                 Parent = _topBar
             };
 
-            var timePeriod = new Label
+            _timePeriodLabel = new Label
             {
-                Text = "戌时",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _topBar
             };
 
-            var timeQuarter = new Label
+            _timeQuarterLabel = new Label
             {
-                Text = "三刻",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _topBar
             };
+
+            // 真实玩家信息可用时覆盖设计稿示例值（门派/元宝/时辰暂无数据源）
+            InkPlayerHeaderBinder.Bind(_charNameLabel, _charLevelLabel, _currencyCoinLabel);
+            InkPlayerHeaderBinder.BindSect(_charSchoolLabel);
         }
 
         private void BuildContentArea()
@@ -501,8 +517,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 BackgroundColor = InkWashTheme.GoldPrimary * 0.12f,
                 Parent = _dailySummaryPanel
             };
+            _summaryIcon = summaryIcon;
 
-            var summaryLabel = new Label
+            _summaryLabel = new Label
             {
                 Text = "今日活跃度",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
@@ -510,9 +527,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Parent = _dailySummaryPanel
             };
 
-            var summaryValue = new Label
+            _summaryValue = new Label
             {
-                Text = "325 / 500",
+                Text = "0 / 500",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 18f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _dailySummaryPanel
@@ -523,7 +540,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Height = 8f,
                 Parent = _dailySummaryPanel
             };
-            _activityBar.Value = 325f / 500f;
+            _activityBar.Value = 0f;
 
             var milestoneLabels = new[] { "100", "200", "300", "400", "500" };
             for (int i = 0; i < milestoneLabels.Length; i++)
@@ -532,12 +549,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 {
                     Text = milestoneLabels[i],
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
-                    TextColor = i < 3 ? InkWashTheme.JadeBright : InkWashTheme.TextDisabled,
+                    TextColor = InkWashTheme.TextDisabled,
+                    HorizontalAlignment = TextAlignment.Center,
                     Parent = _dailySummaryPanel
                 };
+                _milestoneLabels.Add(milestone);
             }
 
-            int[] statNums = { 2, 3, 1 };
+            int[] statNums = { 0, 0, 0 };
             string[] statLabels = { "已完成", "进行中", "待开始" };
             for (int i = 0; i < statNums.Length; i++)
             {
@@ -546,16 +565,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                     Text = statNums[i].ToString(),
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 20f),
                     TextColor = InkWashTheme.PaperBright,
+                    HorizontalAlignment = TextAlignment.Center,
                     Parent = _dailySummaryPanel
                 };
+                _statNumLabels.Add(statNum);
 
                 var statLabel = new Label
                 {
                     Text = statLabels[i],
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                     TextColor = InkWashTheme.TextDisabled,
+                    HorizontalAlignment = TextAlignment.Center,
                     Parent = _dailySummaryPanel
                 };
+                _statTextLabels.Add(statLabel);
             }
         }
 
@@ -581,13 +604,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 }
             }
 
-            var filterButton = new InkButton
+            // 任务与奖励都是设计稿目录数据（没有服务端任务系统），在筛选条这一行如实标注
+            _sampleNote = new Label
+            {
+                Text = "闲趣任务与奖励尚未接入服务端，以下为目录样例",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextDisabled,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _contentArea
+            };
+
+            // 原来是局部变量且从未定位：一直贴在内容区左上角（0,0），压在活跃度面板上
+            _filterButton = new InkButton
             {
                 Width = 60f,
                 Height = 28f,
                 Text = "筛选",
                 Variant = InkButtonVariant.Ghost,
                 TextColor = InkWashTheme.TextDisabled,
+                Enabled = false, // 活动列表没有可筛的数据源
                 Parent = _contentArea
             };
         }
@@ -711,7 +747,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                     TextColor = InkWashTheme.GoldBright,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.StretchAll,
+                    // 插画块 64×64：StretchAll 会被撑成 164×84，字偏出框外
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = Float2.Zero,
+                    Size = new Vector2(IllustrationSize, IllustrationSize),
                     Parent = _illustration
                 };
 
@@ -910,6 +949,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
             private const float CornerRadius = 2f;
 
             private readonly Color _borderColor;
+            private Label _glyph;
+
+            /// <inheritdoc />
+            protected override void OnSizeChanged()
+            {
+                base.OnSizeChanged();
+                if (_glyph != null)
+                {
+                    _glyph.Location = Float2.Zero;
+                    _glyph.Size = Size;
+                }
+            }
 
             /// <summary>
             /// 构造函数。
@@ -930,9 +981,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                     TextColor = _borderColor,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.StretchAll,
+                    // 奖励图标块尺寸由布局期给（28×28）：这里在 OnSizeChanged 里钉住
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = Float2.Zero,
                     Parent = this
                 };
+                _glyph = glyphLabel;
             }
 
             /// <inheritdoc />
@@ -981,7 +1035,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Parent = _rewardPreviewBar
             };
 
-            var previewTitle = new Label
+            _previewTitle = new Label
             {
                 Text = "今日奖励总览",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
@@ -989,7 +1043,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Parent = _rewardPreviewBar
             };
 
-            var previewSubtitle = new Label
+            _previewSubtitle = new Label
             {
                 Text = "完成全部活动预计可获得",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
@@ -997,15 +1051,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Parent = _rewardPreviewBar
             };
 
-            var itemCount = new Label
+            _previewItemCount = new Label
             {
-                Text = "共 8 项奖励",
+                Text = "共 9 项奖励",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextDisabled,
                 Parent = _rewardPreviewBar
             };
 
-            var detailButton = new InkButton
+            _previewDetailButton = new InkButton
             {
                 Width = 60f,
                 Height = 28f,
@@ -1013,6 +1067,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 Variant = InkButtonVariant.Ghost,
                 Parent = _rewardPreviewBar
             };
+            // 奖励总览的明细就是活动列表本身（奖励来自各活动），详情直接跳到活动页
+            _previewDetailButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.NavActivities);
 
             string[] rewardNames = { "铜钱", "元宝", "经验", "玉色签到卡", "轻功残页", "棋谱", "鱼饵", "烹饪材料", "诗词残卷" };
             string[] rewardQty = { "×800", "×80", "×3500", "×1", "×1", "×1", "×5", "×3", "×2" };
@@ -1034,6 +1090,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                     TextColor = InkWashTheme.GoldBright,
                     Parent = _rewardPreviewBar
                 };
+                _previewChips.Add((rewardName, rewardQtyLabel));
             }
         }
 
@@ -1063,6 +1120,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 _contentArea.Location = new Float2(240f, 60f);
             }
 
+            // 顶栏一行：头像 → 姓名/等级/门派 → 体力条 → 时辰/货币（靠右）
+            float barW = sw - 240f;
+            if (_avatarBox != null) _avatarBox.Bounds = new Rectangle(16f, 12f, 36f, 36f);
+            if (_charNameLabel != null) _charNameLabel.Bounds = new Rectangle(64f, 8f, 140f, 20f);
+            if (_charLevelLabel != null) _charLevelLabel.Bounds = new Rectangle(64f, 30f, 70f, 18f);
+            if (_charSchoolLabel != null) _charSchoolLabel.Bounds = new Rectangle(140f, 30f, 90f, 18f);
+            if (_vitalityBar != null) _vitalityBar.Bounds = new Rectangle(244f, 26f, 140f, 8f);
+            if (_vitalityValueLabel != null) _vitalityValueLabel.Bounds = new Rectangle(392f, 20f, 70f, 18f);
+            if (_timePeriodLabel != null) _timePeriodLabel.Bounds = new Rectangle(barW - 420f, 20f, 48f, 18f);
+            if (_timeQuarterLabel != null) _timeQuarterLabel.Bounds = new Rectangle(barW - 366f, 20f, 40f, 18f);
+            if (_currencyCoinLabel != null) _currencyCoinLabel.Bounds = new Rectangle(barW - 300f, 20f, 90f, 18f);
+            if (_currencyIngotLabel != null) _currencyIngotLabel.Bounds = new Rectangle(barW - 190f, 20f, 80f, 18f);
+
             float padding = 24f;
 
             if (_dailySummaryPanel != null)
@@ -1081,6 +1151,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 }
             }
 
+            // 筛选按钮贴内容区右缘，样例说明放在它左边（避免与按钮重叠）
+            float contentRight = padding + (sw - 240f - padding * 2f);
+            if (_filterButton != null)
+            {
+                _filterButton.Location = new Float2(contentRight - 60f, 166f);
+            }
+            if (_sampleNote != null)
+            {
+                _sampleNote.Location = new Float2(contentRight - 60f - 16f - 320f, 160f);
+                _sampleNote.Size = new Float2(320f, 40f);
+            }
+
             float cardWidth = (sw - 240f - padding * 2f - 24f) / 3f;
             float cardHeight = 220f;
             float cardGridX = padding;
@@ -1092,8 +1174,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
                 {
                     _activityCards[i].Size = new Float2(cardWidth, cardHeight);
                     _activityCards[i].Location = new Float2(cardGridX, cardGridY);
-                    // 卡片内部为浮动布局：尺寸变化后必须重排子控件
-                    _activityCards[i].LayoutCard();
+
+                    // 卡片内部为浮动布局：尺寸变化后必须重排子控件。
+                    // 单卡异常不能带走后面的汇总/奖励条排布（那两块会停在 (0,0) 叠字）。
+                    try
+                    {
+                        _activityCards[i].LayoutCard();
+                    }
+                    catch (Exception ex)
+                    {
+                        FlaxEngine.Debug.LogError($"[MenuCasualModePage] 活动卡#{i} 重排失败: {ex.Message}");
+                    }
                 }
 
                 cardGridX += cardWidth + 12f;
@@ -1108,6 +1199,103 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
             {
                 _rewardPreviewBar.Size = new Float2(sw - 240f - padding * 2f, 80f);
                 _rewardPreviewBar.Location = new Float2(padding, cardGridY + 20f);
+            }
+
+            LayoutSummaryInner();
+            LayoutRewardPreviewInner();
+        }
+
+        /// <summary>
+        /// 活跃度汇总面板的内部排布（构造时这些子控件都没有位置，全部叠在 (0,0)）。
+        /// 左：图标 + 标题 + 数值 + 进度条 + 刻度；右：已完成/进行中/待开始三组。
+        /// </summary>
+        private void LayoutSummaryInner()
+        {
+            if (_dailySummaryPanel == null)
+                return;
+
+            float w = _dailySummaryPanel.Size.X;
+
+            if (_summaryIcon != null)
+                _summaryIcon.Location = new Float2(24f, 36f);
+            if (_summaryLabel != null)
+            {
+                _summaryLabel.Location = new Float2(88f, 30f);
+                _summaryLabel.Size = new Float2(140f, 18f);
+            }
+            if (_summaryValue != null)
+            {
+                _summaryValue.Location = new Float2(88f, 50f);
+                _summaryValue.Size = new Float2(160f, 26f);
+            }
+
+            float barX = 260f;
+            float barW = Math.Max(120f, w - barX - 360f);
+            if (_activityBar != null)
+            {
+                _activityBar.Location = new Float2(barX, 46f);
+                _activityBar.Size = new Float2(barW, 8f);
+            }
+
+            for (int i = 0; i < _milestoneLabels.Count; i++)
+            {
+                float x = barX + barW * i / Math.Max(1, _milestoneLabels.Count - 1);
+                _milestoneLabels[i].Location = new Float2(x - 20f, 62f);
+                _milestoneLabels[i].Size = new Float2(40f, 14f);
+            }
+
+            for (int i = 0; i < _statNumLabels.Count; i++)
+            {
+                float x = w - 340f + i * 110f;
+                _statNumLabels[i].Location = new Float2(x, 26f);
+                _statNumLabels[i].Size = new Float2(90f, 26f);
+                if (i < _statTextLabels.Count)
+                {
+                    _statTextLabels[i].Location = new Float2(x, 52f);
+                    _statTextLabels[i].Size = new Float2(90f, 16f);
+                }
+            }
+        }
+
+        /// <summary>奖励总览条的内部排布：标题/副标题/数量在左，详情按钮在右，9 项奖励横排。</summary>
+        private void LayoutRewardPreviewInner()
+        {
+            if (_rewardPreviewBar == null)
+                return;
+
+            float w = _rewardPreviewBar.Size.X;
+
+            if (_previewTitle != null)
+            {
+                _previewTitle.Location = new Float2(24f, 8f);
+                _previewTitle.Size = new Float2(180f, 20f);
+            }
+            if (_previewSubtitle != null)
+            {
+                _previewSubtitle.Location = new Float2(24f, 32f);
+                _previewSubtitle.Size = new Float2(200f, 16f);
+            }
+            if (_previewItemCount != null)
+            {
+                _previewItemCount.Location = new Float2(232f, 32f);
+                _previewItemCount.Size = new Float2(100f, 16f);
+            }
+            if (_previewDetailButton != null)
+                _previewDetailButton.Location = new Float2(w - 84f, 26f);
+
+            if (_previewChips.Count == 0)
+                return;
+
+            float chipAreaX = 360f;
+            float chipAreaW = Math.Max(200f, w - chipAreaX - 110f);
+            float chipW = chipAreaW / _previewChips.Count;
+            for (int i = 0; i < _previewChips.Count; i++)
+            {
+                float x = chipAreaX + chipW * i;
+                _previewChips[i].Name.Location = new Float2(x, 26f);
+                _previewChips[i].Name.Size = new Float2(chipW - 4f, 16f);
+                _previewChips[i].Qty.Location = new Float2(x, 46f);
+                _previewChips[i].Qty.Size = new Float2(chipW - 4f, 16f);
             }
         }
 
@@ -1141,3 +1329,4 @@ namespace HundunWorld.Game.UI.Ink.Pages.Casual
         }
     }
 }
+

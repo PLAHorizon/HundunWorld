@@ -89,6 +89,14 @@ namespace PCG.Execution
             /// <summary>Human-readable description.</summary>
             public string Description;
 
+            /// <summary>
+            /// Authored parameter slots, positionally indexed. Null when the node takes no parameters.
+            /// </summary>
+            public PCGNodeParameterInfo[] Parameters;
+
+            /// <summary>Number of declared parameter slots.</summary>
+            public int ParameterCount => Parameters?.Length ?? 0;
+
             /// <inheritdoc />
             public override string ToString() => $"{DisplayName} ({TypeId}) [{Category}]";
         }
@@ -115,8 +123,13 @@ namespace PCG.Execution
         /// <param name="factory">Factory creating instances from serialized data.</param>
         /// <param name="displayName">Optional display name; defaults to the type id.</param>
         /// <param name="description">Optional description.</param>
+        /// <param name="parameters">
+        /// Declared parameter slots, in the order the node reads them. Supplying them is what lets the
+        /// compiler reject a value authored into the wrong slot and lets the graph editor label the fields;
+        /// a node registered without them cannot be validated or rendered with names.
+        /// </param>
         public static void Register(string typeId, string category, NodeFactory factory,
-            string displayName = null, string description = null)
+            string displayName = null, string description = null, PCGNodeParameterInfo[] parameters = null)
         {
             if (string.IsNullOrEmpty(typeId))
                 throw new ArgumentException("Node type id cannot be null or empty.", nameof(typeId));
@@ -131,6 +144,7 @@ namespace PCG.Execution
                 Category = string.IsNullOrEmpty(category) ? "Misc" : category,
                 Factory = factory,
                 Description = description,
+                Parameters = parameters,
             };
 
             if (Types.TryGetValue(typeId, out var existing))

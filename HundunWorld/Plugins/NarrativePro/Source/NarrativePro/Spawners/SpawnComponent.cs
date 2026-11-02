@@ -43,16 +43,23 @@ namespace NarrativePro.Spawners
             return combined;
         }
 
-        /// <summary>是否应当生成 Actor。子类可覆盖以加入生成条件判断。</summary>
+        /// <summary>
+        /// 是否应当生成 Actor。子类可覆盖以加入生成条件判断。
+        /// 判据本体住在 <see cref="SpawnDecisionRules.ShouldSpawnActor"/>。
+        /// </summary>
         public virtual bool ShouldSpawnActor()
         {
-            return SpawnedActor == null;
+            return SpawnDecisionRules.ShouldSpawnActor(SpawnedActor != null, false, false, true);
         }
 
-        /// <summary>是否应当反生成（移除）Actor。子类可覆盖。</summary>
+        /// <summary>
+        /// 是否应当反生成（移除）Actor。子类可覆盖。
+        /// 对应 UE5 <c>USpawnComponent::ShouldDespawnActor</c>（SpawnComponent.cpp:17-20），
+        /// 本体在 <see cref="SpawnDecisionRules.ShouldDespawnActor"/>。
+        /// </summary>
         public virtual bool ShouldDespawnActor()
         {
-            return SpawnedActor != null;
+            return SpawnDecisionRules.ShouldDespawnActor(SpawnedActor != null);
         }
 
         /// <summary>尝试生成 Actor。返回是否成功。</summary>
@@ -64,9 +71,22 @@ namespace NarrativePro.Spawners
             if (spawned != null)
             {
                 SpawnedActor = spawned;
+
+                // UE5 SpawnComponent 生成后即向存档系统登记动态生成的 Actor（记录其来源资产路径），
+                // 使其状态进入存档记录、反生成/重登后可被恢复。
+                NarrativePro.SaveSystem.SaveSystemStatics.NotifyActorDynamicallySpawned(spawned, GetSpawnedAssetPath());
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// 所生成 Actor 的来源资产/Prefab 路径，供存档系统登记。
+        /// 对应 UE5 登记时记录的类路径。基类无固定来源（由 <see cref="SpawnActor"/> 子类决定），返回 null。
+        /// </summary>
+        public virtual string GetSpawnedAssetPath()
+        {
+            return null;
         }
 
         /// <summary>尝试反生成 Actor。返回是否成功。</summary>

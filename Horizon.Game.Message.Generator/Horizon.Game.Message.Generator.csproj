@@ -43,7 +43,7 @@
        - FlaxToolsDir / CopyToFlax 均可在命令行覆盖（-p:CopyToFlax=false 关闭分发）；
        - 仅当目标目录存在时才执行；写入 Program Files 失败按警告处理，不阻断编译。 -->
   <PropertyGroup>
-    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
+    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.13\Binaries\Tools</FlaxToolsDir>
     <CopyToFlax Condition="'$(CopyToFlax)' == ''">true</CopyToFlax>
   </PropertyGroup>
 

@@ -14,18 +14,13 @@ namespace HundunWorld.Game.Combat
         private static TargetSelectionSystem _instance;
         public static TargetSelectionSystem Instance => _instance;
 
+        /// <summary>
+        /// 技能目标的最大生效距离（厘米；Flax 单位是厘米）。
+        /// 原先按"米"写成 50f，在厘米制下等于 0.5 米，目标一离开脚下就判失效。
+        /// </summary>
         [Header("选择设置")]
-        [Tooltip("最大选择距离")]
-        public float MaxSelectDistance = 50f;
-
-        [Tooltip("目标高亮颜色")]
-        public Color HighlightColor = new Color(1.0f, 1.0f, 0.0f, 0.8f);
-
-        [Tooltip("是否显示选择框")]
-        public bool ShowSelectionBox = true;
-
-        [Tooltip("选择框线条宽度")]
-        public float SelectionLineWidth = 2.0f;
+        [Tooltip("最大选择距离（厘米）")]
+        public float MaxSelectDistance = 6000f;
 
         [Tooltip("是否启用调试日志")]
         public bool EnableDebugLog = false;
@@ -33,17 +28,11 @@ namespace HundunWorld.Game.Combat
         // 当前选中的目标
         private Actor _currentTarget;
 
-        // 可选择的目标列表
+        /// <summary>可选敌对目标列表，由 <see cref="SetSelectableTargets"/> 发布（本系统不再自行扫描场景）。</summary>
         private List<Actor> _selectableTargets = new List<Actor>();
 
         // 当前目标索引
         private int _currentTargetIndex = -1;
-
-        // 上次更新目标列表的时间
-        private float _lastUpdateTime = 0f;
-
-        // 目标列表更新间隔（秒）
-        private const float UpdateInterval = 0.5f;
 
         public override void OnAwake()
         {
@@ -56,177 +45,32 @@ namespace HundunWorld.Game.Combat
 
         public override void OnUpdate()
         {
-            // 定期更新可选择目标列表
-            if (Time.GameTime - _lastUpdateTime > UpdateInterval)
-            {
-                UpdateSelectableTargets();
-                _lastUpdateTime = Time.GameTime;
-            }
+            // 输入绑定（Tab / Shift+Tab / Ctrl+左键 / ESC）与脚下高亮环已全部迁到
+            // HundunWorld.Game.Selection.WorldSelectionService：
+            //   - Tab 单键归第三人称相机（ThirdPersonCamera.cs 的 LockOn 开关），此处再抢一次会出现
+            //     "按 Tab 既换目标又开关镜头锁定"；目标循环改走 Shift+Tab。
+            //   - 原每 0.5 秒 Level.GetActors 全场景扫描按 Tag=="Monster"/Layer 8 判敌对，而全仓没有
+            //     任何 Actor 带这些 Tag，扫描结果恒空；敌对判定现在由 SelectableEntityTag 提供。
 
             // 检查当前目标是否仍然有效
             if (_currentTarget != null && !IsValidTarget(_currentTarget))
             {
                 DeselectTarget();
             }
-
-            // Tab键切换目标
-            if (Input.GetKeyDown(KeyboardKeys.Tab))
-            {
-                SelectNextTarget();
-            }
-
-            // Shift+Tab 反向切换
-            if (Input.GetKey(KeyboardKeys.Shift) && Input.GetKeyDown(KeyboardKeys.Tab))
-            {
-                SelectPreviousTarget();
-            }
-
-            // 鼠标左键点击选择（按住Ctrl时）
-            if (Input.GetKey(KeyboardKeys.Control) && Input.GetMouseButtonDown(MouseButton.Left))
-            {
-                TrySelectTargetAtCursor();
-            }
-
-            // 取消选择（ESC键）
-            if (Input.GetKeyDown(KeyboardKeys.Escape))
-            {
-                DeselectTarget();
-            }
-
-            // 渲染目标高亮
-            if (_currentTarget != null && ShowSelectionBox)
-            {
-                DrawTargetHighlight(_currentTarget);
-            }
         }
 
         /// <summary>
-        /// 更新可选择目标列表（敌对单位，距离内）
+        /// 由选中系统发布"当前可选的敌对目标"有序列表（按距离升序），
+        /// 供 <see cref="GetNearestEnemy"/> / <see cref="GetAllSelectableTargets"/> 消费。
         /// </summary>
-        private void UpdateSelectableTargets()
+        public void SetSelectableTargets(List<Actor> targets)
         {
             _selectableTargets.Clear();
+            if (targets != null)
+                _selectableTargets.AddRange(targets);
 
-            // 获取玩家位置
-            var playerPos = Actor.Position;
-
-            // 查找场景中所有Actor
-            var allActors = Level.GetActors<Actor>(true);
-            
-            foreach (var actor in allActors)
-            {
-                // 跳过自己
-                if (actor == Actor)
-                    continue;
-
-                // 检查是否是敌对单位
-                if (!IsHostile(actor))
-                    continue;
-
-                // 检查是否存活
-                if (!IsAlive(actor))
-                    continue;
-
-                // 检查距离
-                float distance = Vector3.Distance(playerPos, actor.Position);
-                if (distance <= MaxSelectDistance)
-                {
-                    _selectableTargets.Add(actor);
-                }
-            }
-
-            // 按距离排序（近到远）
-            _selectableTargets.Sort((a, b) =>
-            {
-                float distA = Vector3.Distance(playerPos, a.Position);
-                float distB = Vector3.Distance(playerPos, b.Position);
-                return distA.CompareTo(distB);
-            });
-
-            if (EnableDebugLog && _selectableTargets.Count > 0)
-                Debug.Log($"[TargetSelectionSystem] 找到 {_selectableTargets.Count} 个可选目标");
-        }
-
-        /// <summary>
-        /// 选择下一个目标（Tab键）
-        /// </summary>
-        private void SelectNextTarget()
-        {
-            if (_selectableTargets.Count == 0)
-            {
-                if (EnableDebugLog)
-                    Debug.Log("[TargetSelectionSystem] 没有可选择的目标");
-                return;
-            }
-
-            _currentTargetIndex = (_currentTargetIndex + 1) % _selectableTargets.Count;
-            _currentTarget = _selectableTargets[_currentTargetIndex];
-
-            if (EnableDebugLog)
-                Debug.Log($"[TargetSelectionSystem] 切换目标: {_currentTarget.Name} ({_currentTargetIndex + 1}/{_selectableTargets.Count})");
-            
-            // 触发目标切换事件
-            OnTargetChanged?.Invoke(_currentTarget);
-        }
-
-        /// <summary>
-        /// 选择上一个目标（Shift+Tab）
-        /// </summary>
-        private void SelectPreviousTarget()
-        {
-            if (_selectableTargets.Count == 0)
-            {
-                if (EnableDebugLog)
-                    Debug.Log("[TargetSelectionSystem] 没有可选择的目标");
-                return;
-            }
-
-            _currentTargetIndex--;
-            if (_currentTargetIndex < 0)
-                _currentTargetIndex = _selectableTargets.Count - 1;
-
-            _currentTarget = _selectableTargets[_currentTargetIndex];
-
-            if (EnableDebugLog)
-                Debug.Log($"[TargetSelectionSystem] 切换目标: {_currentTarget.Name} ({_currentTargetIndex + 1}/{_selectableTargets.Count})");
-            
-            OnTargetChanged?.Invoke(_currentTarget);
-        }
-
-        /// <summary>
-        /// 尝试选择鼠标指向的目标
-        /// </summary>
-        private void TrySelectTargetAtCursor()
-        {
-            var camera = Camera.MainCamera;
-            if (camera == null) return;
-
-            // 从鼠标位置发射射线
-            var mousePos = Input.MousePosition;
-            var ray = camera.ConvertMouseToRay(mousePos);
-            
-            // 射线检测
-            if (Physics.RayCast(ray.Position, ray.Direction, out RayCastHit hit, MaxSelectDistance))
-            {
-                // 获取碰撞的Actor
-                Actor hitActor = null;
-                if (hit.Collider != null)
-                {
-                    // 尝试获取父级Actor
-                    hitActor = hit.Collider.Parent as Actor;
-                }
-                
-                if (hitActor != null && IsHostile(hitActor) && IsAlive(hitActor))
-                {
-                    _currentTarget = hitActor;
-                    _currentTargetIndex = _selectableTargets.IndexOf(hitActor);
-                    
-                    if (EnableDebugLog)
-                        Debug.Log($"[TargetSelectionSystem] 点击选择目标: {hitActor.Name}");
-                    
-                    OnTargetChanged?.Invoke(_currentTarget);
-                }
-            }
+            if (_currentTarget != null)
+                _currentTargetIndex = _selectableTargets.IndexOf(_currentTarget);
         }
 
         /// <summary>
@@ -269,70 +113,27 @@ namespace HundunWorld.Game.Combat
         }
 
         /// <summary>
-        /// 绘制目标高亮
-        /// </summary>
-        private void DrawTargetHighlight(Actor target)
-        {
-            try
-            {
-                // 获取目标包围盒
-                var center = target.Position;
-                
-                // 估算目标大小（如果有碰撞体）
-                float radius = 1.0f;
-                var collider = target.GetChild<Collider>();
-                if (collider != null)
-                {
-                    // 使用Actor的包围盒作为替代
-                    var bounds = target.Box;
-                    radius = Math.Max(bounds.Size.X, bounds.Size.Z) * 0.5f;
-                }
-
-                // 绘制地面选择圈
-                DebugDraw.DrawCircle(center, Vector3.Up, radius, HighlightColor, 0.0f);
-
-                // 绘制第二个圈（动态效果）
-                float pulseRadius = radius + Mathf.Sin(Time.GameTime * 3.0f) * 0.2f;
-                DebugDraw.DrawCircle(center, Vector3.Up, pulseRadius, 
-                    new Color(HighlightColor.R, HighlightColor.G, HighlightColor.B, HighlightColor.A * 0.5f), 0.0f);
-
-                // 绘制头顶箭头指示
-                Vector3 arrowPos = center + new Vector3(0, radius * 2.0f + 1.0f, 0);
-                Vector3 arrowEnd = arrowPos - new Vector3(0, 0.8f, 0);
-                DebugDraw.DrawLine(arrowPos, arrowEnd, HighlightColor, 0.0f);
-                
-                // 箭头顶点
-                Vector3 arrowLeft = arrowEnd + new Vector3(-0.3f, 0.3f, 0);
-                Vector3 arrowRight = arrowEnd + new Vector3(0.3f, 0.3f, 0);
-                DebugDraw.DrawLine(arrowEnd, arrowLeft, HighlightColor, 0.0f);
-                DebugDraw.DrawLine(arrowEnd, arrowRight, HighlightColor, 0.0f);
-
-                // 在目标上方显示名称
-                var textPos = center + new Vector3(0, radius * 2.0f + 1.5f, 0);
-                DebugDraw.DrawText(target.Name, textPos, HighlightColor, 12, 0.0f);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[TargetSelectionSystem] 绘制高亮失败: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 判断是否是敌对单位
+        /// 判断是否是敌对单位。
+        /// <para>
+        /// 主判据是 <see cref="HundunWorld.Game.Selection.SelectableEntityTag"/> 的 Kind——该标记由
+        /// FlaxActorSyncSystem 按服务端下发的 EntityType 挂载，是网络层的事实源。
+        /// 原先只认 <c>Actor.Tag</c> 与 Layer 8，而全仓没有任何 Actor 带这些 Tag/Layer，
+        /// 导致 <see cref="SetTarget"/> 恒拒绝、技能永远取不到目标。Tag 判据保留给手工摆放的场景怪。
+        /// </para>
         /// </summary>
         private bool IsHostile(Actor actor)
         {
-            // 方法1: 通过Tag判断
+            if (actor == null)
+                return false;
+
+            var tag = actor.GetScript<HundunWorld.Game.Selection.SelectableEntityTag>();
+            if (tag != null)
+                return tag.Kind == HundunWorld.Game.Selection.SelectableKind.Monster;
+
             if (actor.Tag == "Enemy" || actor.Tag == "Monster" || actor.Tag == "Boss")
                 return true;
 
-            // 方法2: 通过脚本判断（如果有敌对标识组件）
-            // var enemyComponent = actor.GetScript<EnemyComponent>();
-            // if (enemyComponent != null)
-            //     return true;
-
-            // 方法3: 通过层级判断
-            if (actor.Layer == 8) // 假设Layer 8 是敌对单位层
+            if (actor.Layer == 8) // 约定 Layer 8 = 敌对单位层
                 return true;
 
             return false;
@@ -357,7 +158,13 @@ namespace HundunWorld.Game.Combat
         }
 
         /// <summary>
-        /// 检查目标是否仍然有效
+        /// 检查目标是否仍然有效：**只判实体是否还存在**。
+        /// <para>
+        /// 原先还有一条"离玩家超过 MaxSelectDistance×1.5 就自动丢目标"，但选中语义是粘住的——
+        /// 玩家没改选、没点空地之前，走远不该让目标凭空消失（表现上就是"打着打着目标自己没了"）。
+        /// 目标真正消失由 AOI 决定：服务端按 chunk 订阅裁剪视野，实体离开 AOI 时下发 Despawn，
+        /// FlaxActorSyncSystem 销毁对应 Actor，这里在下一帧自然判为无效。
+        /// </para>
         /// </summary>
         private bool IsValidTarget(Actor target)
         {
@@ -365,11 +172,6 @@ namespace HundunWorld.Game.Combat
                 return false;
 
             if (!IsAlive(target))
-                return false;
-
-            // 检查距离
-            float distance = Vector3.Distance(Actor.Position, target.Position);
-            if (distance > MaxSelectDistance * 1.5f) // 给一点容差
                 return false;
 
             return true;

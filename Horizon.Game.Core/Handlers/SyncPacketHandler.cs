@@ -48,6 +48,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     private readonly SyncInteractionHandler _interactionHandler;
     private readonly SyncWorldHandler _worldHandler;
     private readonly SyncCombatHandler _combatHandler;
+    private readonly SyncTraversalHandler _traversalHandler;
 
     public SyncPacketHandler(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, HorizonMessageAdapter adapter, IShardRouter? shardRouter = null, ISessionBindingValidator? sessionBindingValidator = null, IDSyncDataPlane? dsDataPlane = null, IShardRegionResolver? regionResolver = null, SyncSessionState? sessionState = null, IProtocolVersionPolicy? protocolVersionPolicy = null)
         : base(logger, clusterClient, adapter)
@@ -75,6 +76,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         _interactionHandler = new SyncInteractionHandler(logger, clusterClient, _shardRouter, _dsDataPlane, _sessionBindingValidator, _sessionState, connectionIdProvider, rateLimiter);
         _worldHandler = new SyncWorldHandler(logger, clusterClient, _shardRouter, _dsDataPlane, _sessionBindingValidator, _sessionState, connectionIdProvider, regionResolver);
         _combatHandler = new SyncCombatHandler(logger, clusterClient, _shardRouter, _dsDataPlane, _sessionBindingValidator, _sessionState, connectionIdProvider);
+        _traversalHandler = new SyncTraversalHandler(logger, clusterClient, _shardRouter, _dsDataPlane, _sessionBindingValidator, _sessionState, connectionIdProvider);
     }
 
     public override List<MessageType> MessageTypes => new() { MessageType.SyncPacket };
@@ -151,6 +153,8 @@ public sealed class SyncPacketHandler : MessageHandlerBase
                 SceneObjectSyncPacket sceneObject => await _interactionHandler.HandleSceneObjectUplinkAsync(sceneObject),
                 SubscriptionUpdatePacket subscription => await _worldHandler.HandleSubscriptionUpdateAsync(subscription, (long)message.Header.CharacterId),
                 CombatActionPacket combatAction => await _combatHandler.HandleCombatActionAsync(combatAction),
+                TraversalRequestPacket traversal => await _traversalHandler.HandleTraversalRequestAsync(traversal),
+                CorpseLootTakeRequestPacket lootTake => await _combatHandler.HandleCorpseLootTakeAsync(lootTake),
                 BaselineResyncRequestPacket resync => await _worldHandler.HandleBaselineResyncAsync(resync, (long)message.Header.CharacterId),
                 _ => await _worldHandler.HandleUnknownPacketAsync(packet),
             };

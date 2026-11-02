@@ -64,10 +64,39 @@ public class NetworkPerformanceBaselineReportTests
 
         // 6. 验证带宽目标达成（关键回归断言）。
         // 产品目标 = 100kbps/玩家（报告 §5 保留该阈值展示）；
-        // 本机实测 100.75kbps 紧贴目标，CI/低配机器波动更明显 → 断言带 20% 裕量（120kbps）
-        // 以保性能门禁稳定；真实容量规划仍以 100kbps 目标口径执行。
+        // 本机实测 83.20kbps（2026-10-25 重新量：压测里 Identity 改回 spawn-only 之后）→
+        // 断言仍带 20% 裕量（120kbps）以保 CI/低配机器稳定；真实容量规划以 100kbps 目标口径执行。
         Assert.True(report.AvgBandwidthKbps < 120.0,
             $"每玩家平均带宽 {report.AvgBandwidthKbps:F2}kbps 应 < 120kbps（含 CI 裕量的回归断言）");
+
+        // 7. Identity 是 spawn-only：上面的稳态带宽**看不见它的成本**（Update 帧里它是 null）。
+        //    所以"往 Identity 追加字段"这件事必须在这一栏量，否则协议可以无限膨胀而所有门禁都绿。
+        //    取一份填满字符串的最坏形态（真实怪物 Spawn 会带昵称与模型键）。
+        var worstIdentity = new Horizon.Game.Message.Sync.Components.NetworkIdentityAuthComponent
+        {
+            NetworkId = 123456789UL,
+            EntityType = 4,
+            OwnerId = 0UL,
+            Nickname = "一只很长的怪物名字用来测最坏情况",
+            Title = "称号也可能挺长",
+            TemplateId = 100001,
+            ModelKey = "chi_lin_shen_model_key_sample",
+            ModelScale = 1.2f,
+            StandState = 2,
+            Rank = 1,
+            CastSkillId = 800007,
+            CastTotalSeconds = 3.5f,
+            CastElapsedSeconds = 1.25f,
+            CastSchoolMask = 8,
+            CastInterruptible = 1,
+        };
+        var identityBytes = MemoryPack.MemoryPackSerializer.Serialize(worstIdentity).Length;
+        // 上限按**实测 179 字节**（协议 v15）加约 25% 裕量取整：够日常追加几栏，
+        // 又挡住"顺手往 spawn-only 的 Identity 里塞一份名字表/清单"这种把一次成型包撑爆的改法。
+        // 追加字段时这条判据必须重新量并改数——它就是这个字段集合的账本。
+        Assert.True(identityBytes <= 224,
+            $"单份 Identity 序列化为 {identityBytes} 字节（协议 v{Horizon.Game.Message.Sync.SyncProtocolVersion.Current}）：" +
+            "稳态带宽看不见 spawn-only 字段的成本，膨胀只会在这一栏现形");
     }
 
     // ── 弱网压测辅助 ──────────────────────────────────────────────────────

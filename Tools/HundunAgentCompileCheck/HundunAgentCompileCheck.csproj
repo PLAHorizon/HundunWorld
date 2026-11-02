@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    HundunAgent 编辑器模块的离屏编译门：把 HundunAgentEditor 的源码
+    对着 FlaxEngine.CSharp.dll 编一遍（编辑器 API 与运行时 API 同在这个 DLL 内）。
+
+    为什么要有它：引擎那条构建链在本机卡在原生步骤
+    （日志里 `No x64 host compiler tools found for target architecture ARM64`），
+    C# 根本没走到 HundunAgent ⇒ 插件里新加的工具"编没编过"在引擎侧问不出来。
+    这道门只证明 API 用法正确，不证明编辑器能加载插件。
+
+    用法：在仓库根执行 dotnet build Tools/HundunAgentCompileCheck
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>HundunAgentCompileCheck</AssemblyName>
+    <RootNamespace>HundunAgentCompileCheck</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <NoWarn>1591</NoWarn>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.12</EngineRoot>
+    <SourceRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\HundunAgent\Source</SourceRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 递归收源码目录；*.Build.cs 排除（它们依赖 Flax.Build，不在这道门的语境里） -->
+    <Compile Include="$(SourceRoot)\HundunAgentEditor\**\*.cs"
+             Exclude="$(SourceRoot)\HundunAgentEditor\**\*.Build.cs" />
+    <Compile Include="$(SourceRoot)\HundunAgent\**\*.cs"
+             Exclude="$(SourceRoot)\HundunAgent\**\*.Build.cs" />
+  </ItemGroup>
+
+</Project>

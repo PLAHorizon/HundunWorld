@@ -13,6 +13,27 @@ namespace NarrativePro.Character
     public class CharacterAppearanceBase
     {
         // 空基类，仅用于类型识别
+
+        /// <summary>
+        /// 确定性种子合成（FNV-1a）。对应 UE5 中以角色 RandomSeed 初始化 FRandomStream 的做法，
+        /// 保证同一 (seed, key) 在任意进程/任意次运行中产生同一结果。
+        /// </summary>
+        public static int CombineSeeds(int baseSeed, string key)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                if (!string.IsNullOrEmpty(key))
+                {
+                    foreach (char c in key)
+                    {
+                        hash = (hash ^ c) * 16777619u;
+                    }
+                }
+                hash = (hash ^ (uint)baseSeed) * 16777619u;
+                return (int)hash;
+            }
+        }
     }
 
     /// <summary>
@@ -35,15 +56,22 @@ namespace NarrativePro.Character
             return new CharacterCreatorAttribute_Mesh();
         }
 
-        /// <summary>随机获取一个网格属性。</summary>
-        public CharacterCreatorAttribute_Mesh Get()
+        /// <summary>
+        /// 按确定性种子获取一个网格属性。对应 UE5 Variation.Get(RandomSeed)：
+        /// 同一角色（同一种子）每次运行得到同一外观。
+        /// </summary>
+        public CharacterCreatorAttribute_Mesh Get(int seed)
         {
             if (RandomMeshes == null || RandomMeshes.Count == 0) return new CharacterCreatorAttribute_Mesh();
-            int idx = _rng.Next(0, RandomMeshes.Count);
+            int idx = new System.Random(seed).Next(RandomMeshes.Count);
             return GetMesh(idx);
         }
 
-        private static readonly System.Random _rng = new System.Random();
+        /// <summary>随机获取一个网格属性（以实例稳定哈希为种子，保证确定性）。</summary>
+        public CharacterCreatorAttribute_Mesh Get()
+        {
+            return Get(CharacterAppearanceBase.CombineSeeds(0, $"mesh:{RandomMeshes?.Count}"));
+        }
     }
 
     /// <summary>
@@ -60,49 +88,87 @@ namespace NarrativePro.Character
 
         public ScalarVariation() { }
 
-        /// <summary>随机获取一个标量值。</summary>
-        public float Get()
+        /// <summary>按确定性种子获取一个标量值。对应 UE5 Variation.Get(RandomSeed)。</summary>
+        public float Get(int seed)
         {
             if (UpperBound <= LowerBound) return LowerBound;
-            return (float)(_rng.NextDouble() * (UpperBound - LowerBound) + LowerBound);
+            return (float)(new System.Random(seed).NextDouble() * (UpperBound - LowerBound) + LowerBound);
         }
 
-        private static readonly System.Random _rng = new System.Random();
+        /// <summary>随机获取一个标量值（以实例稳定哈希为种子，保证确定性）。</summary>
+        public float Get()
+        {
+            return Get(CharacterAppearanceBase.CombineSeeds(0, $"scalar:{LowerBound}:{UpperBound}"));
+        }
     }
 
     /// <summary>
     /// 向量变化。对应 UE5 FVectorVariation。
-    /// 从 Swatch 资源或硬编码列表中随机选取颜色。
+    /// 从 Swatch 资源或列表中按种子确定性选取颜色。
     /// </summary>
     [Serializable]
     public class VectorVariation
     {
-        /// <summary>色板资源路径（Flax 中无原生 swatch 概念，用字符串占位；需通过自定义资产加载系统使用）。</summary>
+        /// <summary>
+        /// 色板 JSON 文件路径（或经 <see cref="SwatchResolver"/> 解析的资产路径）。
+        /// 非空时优先从色板取色，对应 UE5 VectorVariation 的 Swatch 引用。
+        /// </summary>
         public string SwatchPath = "";
 
-        /// <summary>颜色列表（SwatchPath 为空时使用）。</summary>
+        /// <summary>颜色列表（SwatchPath 为空或未解析时使用）。</summary>
         public List<Color> Vectors = new List<Color>();
+
+        /// <summary>
+        /// 可选：外部色板解析器（路径 → 颜色列表）。默认使用
+        /// <c>CharacterCreatorFactory.LoadColorSwatch</c>（JSON 文件 + 缓存）；
+        /// 游戏侧可注入以支持自定义资产系统。
+        /// </summary>
+        public static Func<string, List<Color>> SwatchResolver = path =>
+        {
+            var swatch = CharacterCreatorFactory.LoadColorSwatch(path);
+            return swatch?.Colors;
+        };
+
+        /// <summary>解析本变化可用的颜色集合（色板优先，其次内联列表）。</summary>
+        public List<Color> ResolveColors()
+        {
+            if (!string.IsNullOrEmpty(SwatchPath))
+            {
+                var resolver = SwatchResolver;
+                if (resolver != null)
+                {
+                    var colors = resolver.Invoke(SwatchPath);
+                    if (colors != null && colors.Count > 0) return colors;
+                }
+            }
+            return Vectors;
+        }
 
         /// <summary>按索引获取；越界返回白色。</summary>
         public Color GetVector(int index)
         {
-            if (Vectors != null && index >= 0 && index < Vectors.Count)
+            var colors = ResolveColors();
+            if (colors != null && index >= 0 && index < colors.Count)
             {
-                return Vectors[index];
+                return colors[index];
             }
             return Color.White;
         }
 
-        /// <summary>随机获取一个颜色。</summary>
-        public Color Get()
+        /// <summary>按确定性种子获取颜色。对应 UE5 Variation.Get(RandomSeed)。</summary>
+        public Color Get(int seed)
         {
-            if (Vectors == null || Vectors.Count == 0) return Color.White;
-            // TODO [需接入 Swatch 资源加载系统]: SwatchPath 当前未实现加载，仅使用硬编码 Vectors 列表
-            int idx = _rng.Next(0, Vectors.Count);
+            var colors = ResolveColors();
+            if (colors == null || colors.Count == 0) return Color.White;
+            int idx = new System.Random(seed).Next(colors.Count);
             return GetVector(idx);
         }
 
-        private static readonly System.Random _rng = new System.Random();
+        /// <summary>随机获取一个颜色（以实例稳定哈希为种子，保证确定性）。</summary>
+        public Color Get()
+        {
+            return Get(CharacterAppearanceBase.CombineSeeds(0, $"vector:{SwatchPath}:{Vectors?.Count}"));
+        }
     }
 
     /// <summary>
@@ -160,9 +226,12 @@ namespace NarrativePro.Character
         public CharacterCreatorVariationSet Variations = new CharacterCreatorVariationSet();
 
         /// <summary>
-        /// 获取最终属性集合。基础属性 + 随机变化合并。
+        /// 获取最终属性集合。基础属性 + 按角色种子生成的确定性变化。
+        /// 对应 UE5 UCharacterAppearance::GetAppearanceAttributes(Requester)（CharacterAppearance.cpp:61-66）：
+        /// 以请求角色的 CharacterRandomSeed 驱动所有 Variation，使同一角色每次得到同一外观。
         /// </summary>
-        public virtual CharacterCreatorAttributeSet GetAppearanceAttributes()
+        /// <param name="randomSeed">角色随机种子（来自 NarrativeCharacter.GetCharacterRandomSeed()）。</param>
+        public virtual CharacterCreatorAttributeSet GetAppearanceAttributes(int randomSeed)
         {
             // 浅拷贝基础属性，避免修改原始数据
             var result = new CharacterCreatorAttributeSet
@@ -193,7 +262,8 @@ namespace NarrativePro.Character
                 ? new List<VectorValueEntry>(CharacterAttributes.VectorEntries)
                 : new List<VectorValueEntry>();
 
-            // 合并 Variations 中的随机变化到 result
+            // 合并 Variations 中的确定性变化到 result（每个条目按 角色种子+slot/tag 派生子种子，
+            // 等价 UE5 中按 slot 顺序消费同一条随机流）
             if (Variations != null)
             {
                 // 网格变化：按 Slot 覆盖或追加
@@ -202,7 +272,8 @@ namespace NarrativePro.Character
                     foreach (var entry in Variations.MeshEntries)
                     {
                         if (entry?.Variation == null) continue;
-                        var meshAttr = entry.Variation.Get();
+                        int subSeed = CharacterAppearanceBase.CombineSeeds(randomSeed, $"mesh:{entry.Slot.TagName}");
+                        var meshAttr = entry.Variation.Get(subSeed);
                         int idx = result.MeshEntries.FindIndex(e => e != null && e.Slot == entry.Slot);
                         if (idx >= 0)
                             result.MeshEntries[idx].Attribute = meshAttr;
@@ -217,7 +288,8 @@ namespace NarrativePro.Character
                     foreach (var entry in Variations.ScalarEntries)
                     {
                         if (entry?.Variation == null) continue;
-                        float value = entry.Variation.Get();
+                        int subSeed = CharacterAppearanceBase.CombineSeeds(randomSeed, $"scalar:{entry.Tag.TagName}");
+                        float value = entry.Variation.Get(subSeed);
                         int idx = result.ScalarEntries.FindIndex(e => e != null && e.Tag == entry.Tag);
                         if (idx >= 0)
                             result.ScalarEntries[idx].Value = value;
@@ -232,7 +304,8 @@ namespace NarrativePro.Character
                     foreach (var entry in Variations.VectorEntries)
                     {
                         if (entry?.Variation == null) continue;
-                        Color value = entry.Variation.Get();
+                        int subSeed = CharacterAppearanceBase.CombineSeeds(randomSeed, $"vector:{entry.Tag.TagName}");
+                        Color value = entry.Variation.Get(subSeed);
                         int idx = result.VectorEntries.FindIndex(e => e != null && e.Tag == entry.Tag);
                         if (idx >= 0)
                             result.VectorEntries[idx].Value = value;
@@ -243,6 +316,16 @@ namespace NarrativePro.Character
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// 获取最终属性集合（无角色种子的兼容入口）。
+        /// 使用以 FormTag 派生的稳定默认种子：结果确定但不随角色变化；
+        /// 需要按角色差异化时请调用 <see cref="GetAppearanceAttributes(int)"/>。
+        /// </summary>
+        public virtual CharacterCreatorAttributeSet GetAppearanceAttributes()
+        {
+            return GetAppearanceAttributes(CharacterAppearanceBase.CombineSeeds(0, $"form:{CharacterAttributes?.FormTag.TagName}"));
         }
     }
 }

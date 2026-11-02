@@ -39,7 +39,7 @@ namespace Game.Combat.Effects
         private void Initialize()
         {
             // 加载字体（使用项目内确认存在的思源宋体）
-            _font = Content.Load<FontAsset>("Content/Fonts/Source_Han_Serif_SC_Light_Light.flax");
+            _font = Content.Load<FontAsset>(MetaHuman.Runtime.MetaHumanAssetUtil.ResolveProjectPath("Content/Fonts/Source_Han_Serif_SC_Light_Light.flax"));
             
             // 获取或创建Canvas用于显示伤害数字
             _canvas = Actor.Parent?.GetScript<UICanvas>();
@@ -49,10 +49,10 @@ namespace Game.Combat.Effects
                 _canvas = new UICanvas();
                 _canvas.Name = "DamageNumberCanvas";
                 var canvasActor = new EmptyActor { Name = "DamageNumberCanvasActor" };
-                canvasActor.SetParent(Actor.Parent, false);
-                // 创建Canvas Actor并添加UICanvas组件
+                // 创建Canvas Actor并生成到玩法场景（无父级版 SpawnActor 会强制落 RootScene，
+                // 且会覆盖上面的 SetParent，故不再挂到 Actor.Parent 下）
+                HundunWorld.Game.HundunWorldGame.SpawnActorToGameplayScene(canvasActor, "DamageNumberCanvasActor");
                 _canvas = canvasActor.AddChild<UICanvas>();
-                Level.SpawnActor(canvasActor);
             }
         }
 

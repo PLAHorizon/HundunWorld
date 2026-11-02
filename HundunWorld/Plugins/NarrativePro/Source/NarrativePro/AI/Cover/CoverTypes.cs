@@ -209,6 +209,56 @@ namespace NarrativePro.AI.Cover
     }
 
     /// <summary>
+    /// 正在运行的掩护生成任务。适配 UE5 FRunningCoverTask（CoverTypes.h:208）。
+    /// 记录一个异步生成任务覆盖的瓦片引用与任务本体；
+    /// <see cref="Equals(object)"/> 复刻 UE5 的 <c>operator==</c>：只要共享任一瓦片引用就视为同一个任务，
+    /// 用于避免为同一批瓦片启动重复任务（NarrativeRecastNavMesh.cpp:161）。
+    /// </summary>
+    public class RunningCoverTask
+    {
+        /// <summary>此任务覆盖的瓦片引用。对应 UE5 TileRefs。</summary>
+        public List<long> TileRefs = new List<long>();
+
+        /// <summary>任务本体。对应 UE5 AsyncTask（FAsyncTask&lt;FCoverTileGeneratorWrapper&gt;*）。</summary>
+        public CoverTileGeneratorWrapper AsyncTask;
+
+        public RunningCoverTask()
+        {
+            AsyncTask = null;
+        }
+
+        public override bool Equals(object other)
+        {
+            if (other is RunningCoverTask otherTask)
+            {
+                foreach (var otherTileRef in otherTask.TileRefs)
+                {
+                    if (TileRefs.Contains(otherTileRef))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 与 UE5 的共享瓦片语义等价，因此哈希必须返回常量，
+        /// 保证 List.Contains 走 Equals；请勿把本类型放进 HashSet/字典键。
+        /// </summary>
+        public override int GetHashCode() => 0;
+
+        public static bool operator ==(RunningCoverTask a, RunningCoverTask b)
+        {
+            if (ReferenceEquals(a, b)) return true;
+            if (a is null || b is null) return false;
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(RunningCoverTask a, RunningCoverTask b) => !(a == b);
+    }
+
+    /// <summary>
     /// 掩护射线检测配置。适配 UE5 FCoverTraceConfig。
     /// 定义低掩/高掩/侧探等射线检测参数。
     /// </summary>
@@ -241,17 +291,92 @@ namespace NarrativePro.AI.Cover
             UpdateTraceStarts();
         }
 
+        /// <summary>
+        /// 由纯接缝按 HalfHeight/PeekOverHeight/PeekSideHeight/PeekSideWidth 生成 4 个射线起点，
+        /// 布局规则本体住在 <see cref="CoverGeometryRules.BuildTraceStarts"/>（进程外可断言）。
+        /// </summary>
         public void UpdateTraceStarts()
         {
-            TraceStart[0] = new Vector3(0.0f, 0.0f, HalfHeight);       // 低掩
-            TraceStart[1] = new Vector3(0.0f, 0.0f, PeekOverHeight);    // 高掩
-            TraceStart[2] = new Vector3(0.0f, -PeekSideWidth, PeekSideHeight); // 左探
-            TraceStart[3] = new Vector3(0.0f, PeekSideWidth, PeekSideHeight);   // 右探
+            var starts = CoverGeometryRules.BuildTraceStarts(HalfHeight, PeekOverHeight, PeekSideHeight, PeekSideWidth);
+            for (int i = 0; i < TraceStart.Length && i < starts.Length; i++)
+            {
+                TraceStart[i] = starts[i].ToVector3();
+            }
         }
 
         public Vector3 Low() => TraceStart[0];
         public Vector3 High() => TraceStart[1];
         public Vector3 LeanLeft() => TraceStart[2];
         public Vector3 LeanRight() => TraceStart[3];
+    }
+
+    /// <summary>
+    /// 引擎类型 &lt;-&gt; <see cref="CoverGeometryRules"/> 纯几何类型的逐分量适配。
+    /// 只做搬运、不含任何判定：所有几何/决策规则都住在纯接缝里，线上与 harness 共用同一份。
+    /// <para>
+    /// <see cref="FromGeom(ChainLinkGeom)"/> 刻意不走 <see cref="ChainLink"/> 的构造函数：
+    /// 构造函数会按 Start/End 重算 CoverNormal，而 UE5 的 FilterLinks 合并段时只改写 End、
+    /// 保留原 CoverNormal（NarrativeTileCoverGenerator.cpp:344-346），照抄构造会改变这个陈旧法线。
+    /// </para>
+    /// </summary>
+    public static class CoverTypeConversions
+    {
+        public static CoverVec3 ToGeom(this Vector3 value) => new CoverVec3(value.X, value.Y, value.Z);
+
+        public static Vector3 ToVector3(this CoverVec3 value) => new Vector3(value.X, value.Y, value.Z);
+
+        public static CoverLinkGeom ToGeom(this ChainLink link)
+        {
+            return new CoverLinkGeom(link.ParentTileIndex, link.Start.ToGeom(), link.End.ToGeom(), link.CoverNormal.ToGeom());
+        }
+
+        public static ChainLink FromGeom(this CoverLinkGeom geom)
+        {
+            var link = new ChainLink
+            {
+                ParentTileIndex = geom.ParentTileIndex,
+                Start = geom.Start.ToVector3(),
+                End = geom.End.ToVector3(),
+                CoverNormal = geom.CoverNormal.ToVector3()
+            };
+            return link;
+        }
+
+        public static List<ChainLink> ToChainLinks(this IList<CoverLinkGeom> links)
+        {
+            var result = new List<ChainLink>(links == null ? 0 : links.Count);
+            if (links == null) return result;
+            for (int i = 0; i < links.Count; i++) result.Add(links[i].FromGeom());
+            return result;
+        }
+
+        public static List<CoverLinkGeom> ToGeomLinks(this IList<ChainLink> links)
+        {
+            var result = new List<CoverLinkGeom>(links == null ? 0 : links.Count);
+            if (links == null) return result;
+            for (int i = 0; i < links.Count; i++) result.Add(links[i].ToGeom());
+            return result;
+        }
+
+        public static CoverChainGeom ToGeom(this CoverChainContainer container)
+        {
+            return new CoverChainGeom(container.Chain.ToGeomLinks());
+        }
+
+        public static List<CoverChainGeom> ToGeomChains(this List<CoverChainContainer> containers)
+        {
+            var result = new List<CoverChainGeom>(containers == null ? 0 : containers.Count);
+            if (containers == null) return result;
+            for (int i = 0; i < containers.Count; i++)
+            {
+                result.Add(containers[i] == null ? new CoverChainGeom() : containers[i].ToGeom());
+            }
+            return result;
+        }
+
+        public static CoverContainerGeom ToGeom(this CoverContainer container)
+        {
+            return new CoverContainerGeom(container.ParentTileIndex, container.CoverChainIndex, container.CoverChain.ToGeomLinks());
+        }
     }
 }

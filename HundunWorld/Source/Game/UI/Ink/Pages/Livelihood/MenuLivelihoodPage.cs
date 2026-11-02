@@ -1,6 +1,7 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
     /// + 28px 底部状态栏（服务器 / 延迟 / 版本）。
     /// 全部颜色取自 <see cref="InkWashTheme"/> 设计 Token，无硬编码色值。
     /// </summary>
-    public class MenuLivelihoodPage : ContainerControl, IInkPage
+    public class MenuLivelihoodPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ───────────── 数据模型 ─────────────
 
@@ -227,8 +228,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
 
         private Float2 _screenSize;
 
-        private InkBackgroundLayer _bgLayer;
-        private InkVignette _vignette;
+        // 背景/暗角由外壳提供，页面不再持有对应字段
 
         // 侧边导航栏
         private Panel _sidebar;
@@ -339,6 +339,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
             Size = _screenSize;
 
             BuildData();
+            // 营生没有服务端数据：等级/经验/工具耐久归零、配方全部未解锁（保留技能与配方名录）
+            ResetUserState();
 
             try
             {
@@ -354,6 +356,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
                 _activeSkillIdx = 0;
                 RefreshAllData();
                 ApplyLayout();
+
+                // 顶栏身份接真实数据（货币为设计示例，暂不覆盖）
+                InkPlayerHeaderBinder.Bind(_playerNameLabel, _levelTag);
+                InkPlayerHeaderBinder.BindSect(_sectLabel);
             }
             catch (Exception ex)
             {
@@ -476,6 +482,32 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
         }
 
         /// <summary>已掌握技能数（设计稿「已掌握 4」— 等级达到 4 级视为已掌握）。</summary>
+        /// <summary>
+        /// 营生数据全是设计稿示例（没有等级/配方/工具协议）：把用户态字段归零，
+        /// 名录照旧展示，避免"没练过生活技能却显示 Lv.8 · 已掌握 4 个配方"（2026-10-29）。
+        /// </summary>
+        private void ResetUserState()
+        {
+            if (_skills == null)
+                return;
+
+            foreach (SkillData skill in _skills)
+            {
+                skill.Level = 0;
+                skill.ExpCur = 0;
+                skill.ToolDurability = 0;
+
+                if (skill.Recipes == null)
+                    continue;
+
+                foreach (RecipeData recipe in skill.Recipes)
+                {
+                    recipe.Unlocked = false;
+                    recipe.StatusText = "未解锁";
+                }
+            }
+        }
+
         private int CountMasteredSkills()
         {
             int count = 0;
@@ -502,15 +534,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
 
         private void BuildBackground()
         {
-            _bgLayer = new InkBackgroundLayer
-            {
-                Parent = this
-            };
-
-            _vignette = new InkVignette
-            {
-                Parent = this
-            };
+            // 背景层/暗角由外壳统一提供（本页为沉浸式全屏页），页面不再自绘。
         }
 
         // ───────────── Build: 侧边导航栏 ─────────────
@@ -569,7 +593,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
             string[] mutedPaths =
             {
                 InkPageDomIds.NavPersonalInfo, InkPageDomIds.NavEquipment,
-                InkPageDomIds.NavSkillPanel, InkPageDomIds.NavFriends
+                InkPageDomIds.NavSkillTree, InkPageDomIds.NavFriends
             };
 
             for (int i = 0; i < mutedItems.Length; i++)
@@ -657,13 +681,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
                 TextColor = InkWashTheme.BaseDefault,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                // 头像框 36×36：StretchAll 不跟父尺寸（实测 136×56），字会被裁
+                Location = Float2.Zero,
+                Size = new Vector2(36f, 36f),
                 Parent = _avatar
             };
 
             _playerNameLabel = new Label
             {
-                Text = "无名侠",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
                 TextColor = InkWashTheme.TextDefault,
                 VerticalAlignment = TextAlignment.Center,
@@ -672,21 +698,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
 
             _levelTag = new SkinTag
             {
-                Text = "Lv.42",
+                Text = "—",
                 Skin = TagSkin.Brand,
                 Parent = _topBar
             };
 
             _sectLabel = new Label
             {
-                Text = "逍遥派 · 内门弟子",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 VerticalAlignment = TextAlignment.Center,
                 Parent = _topBar
             };
 
-            string[] currencyValues = { "12,450", "328", "15" };
+            string[] currencyValues = { "—", "—", "—" };
             Color[] currencyColors = { InkWashTheme.GoldPrimary, InkWashTheme.JadeBright, InkWashTheme.VermilionBright };
             for (int i = 0; i < 3; i++)
             {
@@ -804,7 +830,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
                 TextColor = skill.GlyphColor,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                Location = Float2.Zero,
+                Size = new Vector2(32f, 32f),
                 Parent = view.Icon
             };
 
@@ -870,7 +897,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                Location = Float2.Zero,
+                Size = new Vector2(40f, 40f),
                 Parent = _detailIcon
             };
 
@@ -971,7 +999,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                Location = Float2.Zero,
+                Size = new Vector2(24f, 24f),
                 Parent = _toolIcon
             };
 
@@ -1036,9 +1065,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
                 Parent = _mainArea
             };
 
+            // 服务器名/延迟取自真实网关信息，没有网关时显示「—」；版本号走全项目统一口径
+            InkPlayerHeaderBinder.GetGatewayText(out string gatewayRegion, out string gatewayLatency);
+
             _serverLabel = new Label
             {
-                Text = "服务器：逍遥江湖",
+                // 没有网关信息时 GetGatewayText 直接给"未连接"（该页脚字号下"——"实测无字形）
+                Text = "服务器：" + gatewayRegion,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 VerticalAlignment = TextAlignment.Center,
@@ -1047,7 +1080,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
 
             _versionLabel = new Label
             {
-                Text = "延迟 32ms · 版本 v1.2.4",
+                Text = gatewayLatency == "未测得" ? "版本 v1.2.0" : $"延迟 {gatewayLatency} · 版本 v1.2.0",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 HorizontalAlignment = TextAlignment.Far,
@@ -1201,7 +1234,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
                 TextColor = iconColor,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                Location = Float2.Zero,
+                Size = new Vector2(32f, 32f),
                 Parent = view.Icon
             };
 
@@ -1264,17 +1298,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Livelihood
             float sw = _screenSize.X;
             float sh = _screenSize.Y;
             float mainW = sw - SidebarW;
-
-            if (_bgLayer != null)
-            {
-                _bgLayer.Location = Float2.Zero;
-                _bgLayer.Size = new Float2(sw, sh);
-            }
-            if (_vignette != null)
-            {
-                _vignette.Location = Float2.Zero;
-                _vignette.Size = new Float2(sw, sh);
-            }
 
             LayoutSidebar(sh);
             LayoutMainArea(mainW, sh);

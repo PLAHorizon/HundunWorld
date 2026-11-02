@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    NarrativePro 编辑器模块的离屏编译门：把插件运行期源目录与编辑器源目录一起对着
+    FlaxEngine.CSharp.dll 编一遍（编辑器 API 与运行期 API 在同一个装配里）。
+    产物不部署、也不代表编辑器真能加载插件；只证明 API 用法与语法正确。
+
+    用法：在仓库根执行 dotnet build Tools/NarrativeProEditorCompileCheck
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>NarrativeProEditorCompileCheck</AssemblyName>
+    <RootNamespace>NarrativeProEditorCompileCheck</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <DefineConstants>FLAX_EDITOR;FLAX;NET;NET10_0</DefineConstants>
+    <NoWarn>1591;0169;0414;0649;0618;0067</NoWarn>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.13</EngineRoot>
+    <SourceRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\NarrativePro\Source</SourceRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SourceRoot)\NarrativePro\**\*.cs" Exclude="$(SourceRoot)\NarrativePro\**\*.Build.cs;$(SourceRoot)\NarrativePro\NarrativePro.Gen.cs" />
+    <Compile Include="$(SourceRoot)\NarrativeProEditor\**\*.cs" Exclude="$(SourceRoot)\NarrativeProEditor\**\*.Build.cs;$(SourceRoot)\NarrativeProEditor\NarrativeProEditor.Gen.cs" />
+  </ItemGroup>
+
+</Project>

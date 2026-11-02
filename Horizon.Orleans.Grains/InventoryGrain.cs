@@ -1,3 +1,5 @@
+using Horizon.Core.Abstract;
+using Horizon.Entities;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
@@ -19,20 +21,25 @@ namespace Horizon.Orleans.Grains
     {
         /// <summary>
         /// 合法装备槽位上界。必须与客户端 <c>HundunWorld.Game.EquipmentSlot</c> 枚举的最大值一致
-        /// （0=Head … 13=LeftWrist、<b>14=Face</b>）。此前硬编码 13，导致客户端把面饰穿到
-        /// Face 槽时被服务端静默拒绝——面饰永远装不上。
+        /// （0=Head … 14=Face、<b>15=Appearance 外观</b>）。此前硬编码 13，导致客户端把面饰穿到
+        /// Face 槽时被服务端静默拒绝——面饰永远装不上；外观槽追加后同步抬到 15。
         /// </summary>
-        public const int MaxEquippedSlot = 14;
+        public const int MaxEquippedSlot = 15;
 
         private readonly ILogger<InventoryGrain> _logger;
         private readonly IPersistentState<InventoryState> _inventoryState;
 
+        /// <summary>物品模板表上下文。只为把材料缺项说成"锐金砂×6"而不是"物品 910001 需 6"。</summary>
+        private readonly IDataContext<GameEntityContext, Horizon.Model.GameModel.ItemTemplateEntity, int>? _itemTemplateContext;
+
         public InventoryGrain(
             ILogger<InventoryGrain> logger,
-            [PersistentState("inventory", "GameStore")] IPersistentState<InventoryState> inventoryState)
+            [PersistentState("inventory", "GameStore")] IPersistentState<InventoryState> inventoryState,
+            IDataContext<GameEntityContext, Horizon.Model.GameModel.ItemTemplateEntity, int>? itemTemplateContext = null)
         {
             _logger = logger;
             _inventoryState = inventoryState;
+            _itemTemplateContext = itemTemplateContext;
         }
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -196,6 +203,284 @@ namespace Horizon.Orleans.Grains
                 _logger.LogError(ex, "移除物品失败: ItemId={ItemId}", itemId);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 秘籍模板 id 段起点：秘籍 id = 本值 + 它所教的技能 id。
+        /// 与服务端种子、客户端 <c>ItemCatalog.BookIdBase</c> 同一契约，三处必须同值
+        /// （docs/SKILL_WUXING_TREE_DESIGN.md §7.2）。
+        /// </summary>
+        public const int BookItemTemplateBase = 800000;
+
+        /// <summary>物品表里"秘籍"这一档的 <c>item_type</c> 值。</summary>
+        public const int SkillBookItemType = 6;
+
+        /// <summary>
+        /// 一件物品该不该按"秘籍"处理（转投 <c>SkillGrain.LearnFromBookAsync</c>）。
+        /// <para>
+        /// 号段只是**必要条件**，不是判据本身：库里有 15 行五行素材/信物也落在 800000+ 号段内
+        /// （<c>910001..910015</c>，见 <c>docs/TECH_DEBT.md</c> T9）。只看号段会让
+        /// ① 带 <c>use_effect=favor</c> 的信物被当成书研读、好感永远不加；
+        /// ② 无效果的素材被拿去研读一个不存在的技能。
+        /// 所以判据回到模板自己：未声明好感效果 **且** 档位确实是秘籍。
+        /// </para>
+        /// <para>
+        /// <b>查不到模板时退回旧的号段口径</b>（未接库的部署、查询异常）——
+        /// 读不到东西绝不能变成"所有书都用不了"。
+        /// </para>
+        /// </summary>
+        /// <param name="templateId">物品模板 id。</param>
+        /// <param name="profileResolved">是否真的读到了这一行模板。</param>
+        /// <param name="itemType">读到的 <c>item_type</c>（读不到时为 0）。</param>
+        /// <param name="declaresFavorEffect">模板 <c>use_effect</c> 是否声明了 <c>{"kind":"favor"}</c>。</param>
+        public static bool RoutesAsSkillBook(int templateId, bool profileResolved, int itemType, bool declaresFavorEffect)
+        {
+            if (templateId < BookItemTemplateBase) return false;
+            if (declaresFavorEffect) return false;
+            return profileResolved ? itemType == SkillBookItemType : true;
+        }
+
+        public async Task<UseItemResponse> UseItemWithResultAsync(ulong characterId, long itemId, int count)
+        {
+            var response = new UseItemResponse();
+            var take = count > 0 ? count : 1;
+            var state = _inventoryState.State;
+
+            if (!state.Items.TryGetValue(itemId, out var item))
+            {
+                response.Message = "物品不存在";
+                return response;
+            }
+            if (item.Count < take)
+            {
+                response.Message = "物品数量不足";
+                response.RemainingCount = item.Count;
+                return response;
+            }
+
+            // 先问模板"这东西是什么档、声明了什么效果"，再决定走哪条分支。
+            // 判据为什么要改：号段启发式（id ≥ 800000 就当秘籍）**排在**模板事实之前，
+            // 于是同号段里的五行信物（910011..910015，use_effect={"kind":"favor"}）被当成"研读"转投
+            // SkillGrain，好感效果**永远不会生效**——任务奖励发出去就是一张点了没反应的纸；
+            // 而 910001..910010 这 10 件素材会被拿去研读一个不存在的技能。详见 TECH_DEBT T9。
+            // 代价：每次"使用"多一次主键查询；原先非秘籍分支本来就要查一次，所以增量只落在真秘籍上。
+            // 回退：把这三行换回 `if (item.TemplateId >= BookItemTemplateBase)` 即可（其余逻辑未动）。
+            var profile = await ReadItemUseProfileAsync(item.TemplateId);
+            var favorEffect = profile.Favor;
+
+            // 秘籍：转投 SkillGrain 研读。门槛未达不吃书，掷签失败吃一本（由 BookConsumed 表达）。
+            if (RoutesAsSkillBook(item.TemplateId, profile.Resolved, profile.ItemType, favorEffect is not null))
+            {
+                int skillId = item.TemplateId - BookItemTemplateBase;
+                var skillGrain = GrainFactory.GetGrain<ISkillGrain>(
+                    Horizon.Game.Core.GrainKeys.ForEntity(characterId));
+                // 判定要用的事实（背包材料 / 分域好感 / 基础属性）在这里装配。
+                // 本 Grain 处理这条消息期间是独占的（非重入），所以"判定时看到的数量"
+                // 与稍后"真正扣掉的数量"之间不会被别的操作插队。
+                var gate = await BuildLearnGateContextAsync(characterId);
+                var learned = await skillGrain.LearnFromBookAsync((long)characterId, skillId, gate);
+
+                response.Success = learned.Success;
+                response.Message = learned.Message;
+                if (learned.BookConsumed) await UseItemAsync(itemId, take);
+
+                // §14 的特殊材料：只有真习得成功才扣。扣减失败不回滚已成的习得——
+                // 数量判定刚才已经过了，这里失败只可能是写库异常，记 warning 留人对着账补。
+                if (learned.Success)
+                {
+                    for (int i = 0; i < learned.MaterialItemIds.Count && i < learned.MaterialCounts.Count; i++)
+                    {
+                        int templateId = learned.MaterialItemIds[i];
+                        int need = learned.MaterialCounts[i];
+                        if (need <= 0) continue;
+                        if (!await ConsumeByTemplateAsync(characterId, templateId, need))
+                            _logger.LogWarning(
+                                "研读成功但材料扣减不完整: skill={SkillId} template={TemplateId} need={Need}",
+                                skillId, templateId, need);
+                    }
+                }
+
+                response.RemainingCount = state.Items.TryGetValue(itemId, out var left) ? left.Count : 0;
+                return response;
+            }
+
+            // 五行信物一类的"用了就改变角色状态"的效果，只有这一方能同时看到"包里有几件"和
+            // "该扣哪一格"，所以扣减与入账都在本 Grain 内完成：判定与写在同一条消息里，
+            // 非重入 Grain 保证中间没有第二条操作插进来。
+            // favorEffect 已在分支判定前取过（同一次查询，别在这再问一遍库）。
+            var ok = await UseItemAsync(itemId, take);
+            if (ok && favorEffect != null)
+            {
+                var favor = GrainFactory.GetGrain<IFavorabilityGrain>(
+                    Horizon.Game.Core.GrainKeys.ForEntity(characterId));
+                // 不记来源上限：信物本身就是一次性消耗品，成本即闸门
+                int total = await favor.AddAsync(favorEffect.Value.Domain, favorEffect.Value.Delta * take);
+                response.Success = true;
+                response.Message = $"好感 +{favorEffect.Value.Delta * take}（该域现计 {total}）";
+            }
+            else
+            {
+                response.Success = ok;
+                response.Message = ok ? "物品使用成功" : "使用失败";
+            }
+            response.RemainingCount = state.Items.TryGetValue(itemId, out var remaining) ? remaining.Count : 0;
+            return response;
+        }
+
+        /// <summary>
+        /// 读物品模板 <c>use_effect</c> 里的"换该域好感"效果
+        /// （<c>{"kind":"favor","domain":n,"delta":m}</c>）。
+        /// 模板表不可用时按"没有这种效果"处理：普通消耗品的使用绝不能因为查表失败而被拒。
+        /// </summary>
+        /// <summary>
+        /// 一次查询读回"这行物品怎么用"的两条事实：档位 <c>item_type</c> 与 <c>use_effect</c> 里的好感效果。
+        /// 分档判定与扣账都用它，所以**只查一次**（早先两个分支各查一次，改顺序后差点变成三次）。
+        /// </summary>
+        private async Task<(bool Resolved, int ItemType, (int Domain, int Delta)? Favor)> ReadItemUseProfileAsync(int templateId)
+        {
+            if (_itemTemplateContext == null || templateId <= 0) return (false, 0, null);
+            try
+            {
+                var rows = await _itemTemplateContext.QueryAsync(t => t.Id == templateId);
+                var row = rows?.FirstOrDefault();
+                if (row == null) return (false, 0, null);
+                return (true, row.ItemType, ParseFavorEffect(row.UseEffect));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读物品模板失败，按号段旧口径处理。template={TemplateId}", templateId);
+                return (false, 0, null);
+            }
+        }
+
+        /// <summary>解析 <c>{"kind":"favor","domain":n,"delta":m}</c>；格式不对就当作"没有这种效果"。</summary>
+        private static (int Domain, int Delta)? ParseFavorEffect(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(raw);
+                var root = doc.RootElement;
+                if (root.ValueKind != System.Text.Json.JsonValueKind.Object) return null;
+                if (!root.TryGetProperty("kind", out var kind)
+                    || kind.GetString() != "favor") return null;
+                if (!root.TryGetProperty("domain", out var domainEl) || !domainEl.TryGetInt32(out var domain)
+                    || domain < 1 || domain > 5) return null;
+                int delta = root.TryGetProperty("delta", out var deltaEl) && deltaEl.TryGetInt32(out var d) ? d : 0;
+                return delta > 0 ? (domain, delta) : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>模板表不可用时按"没有这种效果"处理：普通消耗品的使用绝不能因为查表失败而被拒。</summary>
+        private async Task<(int Domain, int Delta)?> ReadFavorEffectAsync(int templateId)
+            => (await ReadItemUseProfileAsync(templateId)).Favor;
+
+        /// <summary>
+        /// 装配 §14 动态门槛的判定输入。<b>只有 InventoryGrain 做这件事</b>：它本来就握着背包，
+        /// 而 SkillGrain 反过来问它会与"秘籍研读"那条边凑成 Grain 环（非重入 Grain 互等死锁）。
+        /// 读失败一律按"没有"处理：好感读不到就按零好感判，绝不因为查不到就放行。
+        /// </summary>
+        public async Task<LearnGateContext> BuildLearnGateContextAsync(ulong characterId)
+        {
+            var context = new LearnGateContext();
+
+            var counts = new Dictionary<int, int>();
+            if (_inventoryState.State.Items != null)
+            {
+                foreach (var entry in _inventoryState.State.Items.Values)
+                {
+                    if (entry == null || entry.TemplateId <= 0) continue;
+                    counts.TryGetValue(entry.TemplateId, out var have);
+                    counts[entry.TemplateId] = have + Math.Max(0, entry.Count);
+                }
+            }
+            context.ItemCounts = counts;
+            context.ItemNames = await LoadMaterialNamesAsync();
+
+            try
+            {
+                var favor = GrainFactory.GetGrain<IFavorabilityGrain>(
+                    Horizon.Game.Core.GrainKeys.ForEntity(characterId));
+                context.FavorByDomain = await favor.GetByDomainAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读取分域好感失败，本次按零好感判定。CharacterId={CharacterId}", characterId);
+            }
+
+            try
+            {
+                var info = await GrainFactory.GetGrain<ICharacterGrain>((long)characterId).GetCharacterInfoAsync(null);
+                context.Allocation = info?.Allocation;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读取角色基础属性失败。CharacterId={CharacterId}", characterId);
+            }
+
+            return context;
+        }
+
+        /// <summary>
+        /// 只拉灵材那一段（按 id 区间），不为一句提示把整张物品模板表搬进 Grain。
+        /// 模板表不可用时返回空表，判定文案退化成报 id。
+        /// </summary>
+        private async Task<Dictionary<int, string>> LoadMaterialNamesAsync()
+        {
+            var names = new Dictionary<int, string>();
+            if (_itemTemplateContext == null) return names;
+
+            try
+            {
+                var rows = await _itemTemplateContext.QueryAsync(t => t.Id >= 910000 && t.Id <= 919999);
+                foreach (var t in rows)
+                    if (t != null && !string.IsNullOrWhiteSpace(t.ItemName)) names[t.Id] = t.ItemName!;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读取灵材名称失败，材料缺项将退化为报 id");
+            }
+            return names;
+        }
+
+        /// <summary>
+        /// 按模板 id 跨堆叠扣减（材料可能散在好几个格子里）。先全量核对再动手：
+        /// 不够就一票否决、一格都不扣，避免"扣了一半材料、习得又失败"的半态。
+        /// </summary>
+        public async Task<bool> ConsumeByTemplateAsync(ulong characterId, int templateId, int quantity)
+        {
+            var state = _inventoryState.State;
+            if (quantity <= 0) return true;
+            if (state.Items == null) return false;
+
+            var stackIds = new List<long>();
+            int available = 0;
+            foreach (var entry in state.Items)
+            {
+                if (entry.Value == null || entry.Value.TemplateId != templateId) continue;
+                available += Math.Max(0, entry.Value.Count);
+                stackIds.Add(entry.Key);
+                if (available >= quantity) break;
+            }
+            if (available < quantity) return false;
+
+            int remaining = quantity;
+            foreach (var stackId in stackIds)
+            {
+                if (remaining <= 0) break;
+                if (!state.Items.TryGetValue(stackId, out var item)) continue;
+                int take = Math.Min(remaining, Math.Max(0, item.Count));
+                if (take <= 0) continue;
+                await RemoveItemAsync(stackId, take);
+                remaining -= take;
+            }
+
+            await _inventoryState.WriteStateAsync();
+            return remaining <= 0;
         }
 
         public async Task<bool> UseItemAsync(long itemId, int quantity = 1)

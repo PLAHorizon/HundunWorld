@@ -179,7 +179,7 @@ namespace HundunWorld.Game.UI.GameMain
         private void AddTeamMemberRow(TeamMemberInfo member, float y, float width)
         {
             // 队长标记
-            string leaderMark = member.IsLeader ? "★ " : "  ";
+            string leaderMark = member.IsLeader ? "◆ " : "  ";
 
             var nameLabel = new Label
             {

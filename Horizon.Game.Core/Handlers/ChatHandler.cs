@@ -20,7 +20,7 @@ namespace Horizon.Game.Core.Handlers
     /// <summary>
     /// 游戏内聊天处理器（运行于 Gateway 进程）。
     /// 链路：校验 → 经 <see cref="IChatGrain"/> 落 Game 库（与 IM 隔离）→ 解析收件人 →
-    /// 经 <see cref="IChatPushService"/> 推送给目标连接；同时把本条消息回执给发送者。
+    /// 经 <see cref="IPlayerPushService"/> 推送给目标连接；同时把本条消息回执给发送者。
     /// </summary>
     public class ChatHandler : MessageHandlerBase
     {
@@ -32,14 +32,14 @@ namespace Horizon.Game.Core.Handlers
         private const int NearbyMaxRecipients = 256;
 
         private readonly IClusterClient _clusterClient;
-        private readonly IChatPushService _pushService;
+        private readonly IPlayerPushService _pushService;
         private readonly IShardRouter _shardRouter;
 
         public ChatHandler(
             ILogger<MessageHandlerBase> logger,
             IClusterClient clusterClient,
             HorizonMessageAdapter adapter,
-            IChatPushService pushService,
+            IPlayerPushService pushService,
             IShardRouter shardRouter) : base(logger, clusterClient, adapter)
         {
             _clusterClient = clusterClient;

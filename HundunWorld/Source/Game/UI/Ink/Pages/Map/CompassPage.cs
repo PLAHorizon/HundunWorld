@@ -15,7 +15,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
     /// （朝向/坐标/区域 + 附近方位列表 + 模式切换 + 追踪目标）。
     /// 严格遵循水墨主题 Token，禁止硬编码色值。
     /// </summary>
-    public class CompassPage : ContainerControl, IInkPage
+    public class CompassPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private const float HeaderHeight = 66f;
         private const float DialDiameter = 500f;
@@ -33,6 +33,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
         private InkPanel _bottomPanel;
         private InkButton _compassModeBtn, _mapModeBtn;
 
+        /// <summary>附近方位最多显示几条</summary>
+        private const int PoiRowCount = 3;
+
+        private Label _headingValue;
+        private Label _coordValue;
+        private Label _regionValue;
+        private Label _poiCountLabel;
+        private readonly Label[] _poiGlyph = new Label[PoiRowCount];
+        private readonly Label[] _poiName = new Label[PoiRowCount];
+        private readonly Label[] _poiDist = new Label[PoiRowCount];
+        private Label _navHintLabel;
+        private TrackSelect _trackSelect;
+        private float _navRefreshTimer;
+        private readonly List<MapMarkerView> _navMarkers = new List<MapMarkerView>();
+
         public void BindCharacter(CharacterAttributesComponent component)
         {
             _boundCharacter = component;
@@ -44,7 +59,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             {
                 AnchorPreset = AnchorPresets.StretchAll;
                 Offsets = Margin.Zero;
-                BackgroundColor = InkWashTheme.Void;
+                // 全屏铺底由外壳的墨底背景层统一提供（本页为沉浸式全屏页），页面不再自绘。
+                BackgroundColor = Color.Transparent;
                 ClipChildren = false;
                 AutoFocus = false;
 
@@ -95,12 +111,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             {
                 Variant = InkButtonVariant.Secondary,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕ 关闭",
+                Text = "× 关闭",
                 AnchorPreset = AnchorPresets.TopRight,
                 Location = new Float2(-90f, 16f),
                 Size = new Float2(74f, 26f),
             };
-            _closeBtn.ButtonClicked += (b) => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            _closeBtn.ButtonClicked += (b) => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
             header.AddChild(_closeBtn);
         }
 
@@ -132,10 +148,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             AddChild(_bottomPanel);
 
             // ── 信息三列：朝向 / 坐标 / 区域 ──
+            // 朝向需要先定"北"是哪个轴（工程里没有这个约定），区域没有按点查名的服务端数据；
+            // 两者都显示「—」，只有坐标取本地玩家真实世界坐标。
             float colW = (BottomPanelWidth - 2f) / 3f;
-            BuildInfoCell(0f, colW, "朝向", "北偏东 15°", InkWashTheme.FontRole.Number, 15f);
-            BuildInfoCell(colW + 1f, colW, "坐标", "X:1234 Y:5678 Z:100", InkWashTheme.FontRole.Number, 14f);
-            BuildInfoCell((colW + 1f) * 2f, colW, "区域", "清河 · 开封城郊", InkWashTheme.FontRole.Display, 14f);
+            _headingValue = BuildInfoCell(0f, colW, "朝向", "—", InkWashTheme.FontRole.Number, 15f);
+            _coordValue = BuildInfoCell(colW + 1f, colW, "坐标", "—", InkWashTheme.FontRole.Number, 14f);
+            _regionValue = BuildInfoCell((colW + 1f) * 2f, colW, "区域", "—", InkWashTheme.FontRole.Display, 14f);
 
             // 列分隔线
             _bottomPanel.AddChild(new ContainerControl
@@ -167,15 +185,30 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             });
             _bottomPanel.AddChild(MakeLabel("附近方位", 16f, secTop + 6f, 120f, 18f,
                 InkWashTheme.GoldPrimary, 12f, InkWashTheme.FontRole.Display, TextAlignment.Near));
-            _bottomPanel.AddChild(MakeLabel("3 处", BottomPanelWidth - 16f - 60f, secTop + 6f, 60f, 18f,
-                InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far));
+            _poiCountLabel = MakeLabel("—", BottomPanelWidth - 16f - 60f, secTop + 6f, 60f, 18f,
+                InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far);
+            _bottomPanel.AddChild(_poiCountLabel);
 
+            // 附近方位：真实数据来自 PluginNavigationBridge（与表盘 POI 同一来源、同一"北=-Z"约定）。
+            // 拿不到时三行留空、计数显示「—」，不摆设计稿的虚构地标。
             float rowY = secTop + 28f;
-            BuildPoiRow(rowY, "◆", InkWashTheme.GoldBright, "界碑", TagKind.Brand, "开封城门", "北 200m", false);
-            rowY += 34f;
-            BuildPoiRow(rowY, "●", InkWashTheme.GoldBright, "NPC", TagKind.Neutral, "药师张老", "东南 50m", false);
-            rowY += 34f;
-            BuildPoiRow(rowY, "★", InkWashTheme.JadeBright, "任务", TagKind.Success, "山贼营地", "西 500m", true);
+            for (int i = 0; i < PoiRowCount; i++)
+            {
+                _poiGlyph[i] = MakeLabel("", 0f, rowY + 4f, 18f, 24f, InkWashTheme.GoldBright, 15f,
+                    InkWashTheme.FontRole.Body, TextAlignment.Center);
+                _poiName[i] = MakeLabel("", 28f, rowY + 4f, 260f, 24f, InkWashTheme.TextDefault, 13f,
+                    InkWashTheme.FontRole.Body, TextAlignment.Near);
+                _poiDist[i] = MakeLabel("", BottomPanelWidth - 16f - 110f, rowY + 4f, 110f, 24f, InkWashTheme.TextSecondary, 12f,
+                    InkWashTheme.FontRole.Number, TextAlignment.Far);
+                _bottomPanel.AddChild(_poiGlyph[i]);
+                _bottomPanel.AddChild(_poiName[i]);
+                _bottomPanel.AddChild(_poiDist[i]);
+                rowY += 34f;
+            }
+
+            _navHintLabel = MakeLabel("", 28f, secTop + 28f, BottomPanelWidth - 60f, 24f,
+                InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near);
+            _bottomPanel.AddChild(_navHintLabel);
 
             // ── 模式切换 + 追踪目标 ──
             float modeTop = BottomPanelHeight - 44f;
@@ -215,7 +248,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             // 追踪目标
             _bottomPanel.AddChild(MakeLabel("◎ 追踪目标", BottomPanelWidth - 16f - 240f, modeTop + 4f, 90f, 20f,
                 InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            _bottomPanel.AddChild(new TrackSelect());
+            _trackSelect = new TrackSelect();
+            _bottomPanel.AddChild(_trackSelect);
         }
 
         private void SetMode(bool compass)
@@ -224,13 +258,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             _mapModeBtn.Variant = compass ? InkButtonVariant.Ghost : InkButtonVariant.Brand;
         }
 
-        private void BuildInfoCell(float x, float w, string label, string value,
+        private Label BuildInfoCell(float x, float w, string label, string value,
             InkWashTheme.FontRole valueRole, float valueSize)
         {
             _bottomPanel.AddChild(MakeLabel(label, x + 40f, 10f, w - 56f, 16f,
                 InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            _bottomPanel.AddChild(MakeLabel(value, x + 40f, 28f, w - 56f, 22f,
-                InkWashTheme.TextDefault, valueSize, valueRole, TextAlignment.Near));
+            var valueLabel = MakeLabel(value, x + 40f, 28f, w - 56f, 22f,
+                InkWashTheme.TextDefault, valueSize, valueRole, TextAlignment.Near);
+            _bottomPanel.AddChild(valueLabel);
             // 金色图标（代替 lucide）
             _bottomPanel.AddChild(new ContainerControl
             {
@@ -240,6 +275,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 BackgroundColor = InkWashTheme.GoldPrimary,
                 AutoFocus = false,
             });
+
+            return valueLabel;
         }
 
         private enum TagKind { Brand, Neutral, Success }
@@ -346,6 +383,120 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
         }
 
         // ===============================================================
+        // 底部信息刷新（真实导航数据）
+        // ===============================================================
+
+        /// <summary>刷新间隔（秒）：与罗盘 POI 的 0.5s 保持一致。</summary>
+        private const float NavInfoRefreshInterval = 0.5f;
+
+        public override void Update(float dt)
+        {
+            base.Update(dt);
+            _navRefreshTimer += dt;
+            if (_navRefreshTimer < NavInfoRefreshInterval) return;
+            _navRefreshTimer = 0f;
+            RefreshNavigationInfo();
+        }
+
+        /// <summary>
+        /// 坐标与附近方位取自 <see cref="PluginNavigationBridge"/>（与罗盘表盘 POI 同源）。
+        /// 方位角约定与 <see cref="CompassDial"/> 一致：世界正北 = -Z、正东 = +X。
+        /// 朝向需要玩家 yaw 的权威语义（本工程没有约定），暂显示「—」；区域没有按点查名数据，同样「—」。
+        /// </summary>
+        private void RefreshNavigationInfo()
+        {
+            _navMarkers.Clear();
+            bool hasMarkers = PluginNavigationBridge.TryGetMarkers(_navMarkers);
+            bool hasPose = PluginNavigationBridge.TryGetPlayerPose(out var pos, out _);
+
+            if (_coordValue != null)
+                _coordValue.Text = hasPose ? $"X:{pos.X:0} Y:{pos.Y:0} Z:{pos.Z:0}" : "—";
+
+            if (!hasMarkers || !hasPose || _navMarkers.Count == 0)
+            {
+                for (int i = 0; i < PoiRowCount; i++)
+                {
+                    if (_poiGlyph[i] != null) _poiGlyph[i].Text = "";
+                    if (_poiName[i] != null) _poiName[i].Text = "";
+                    if (_poiDist[i] != null) _poiDist[i].Text = "";
+                }
+                if (_poiCountLabel != null) _poiCountLabel.Text = "—";
+                if (_navHintLabel != null)
+                {
+                    _navHintLabel.Text = "附近方位数据尚未接入服务端";
+                    _navHintLabel.Visible = true;
+                }
+                return;
+            }
+
+            var sorted = new List<(float dist, MapMarkerView v)>(_navMarkers.Count);
+            foreach (var v in _navMarkers)
+            {
+                float dx = v.WorldPosition.X - pos.X;
+                float dz = v.WorldPosition.Z - pos.Z;
+                sorted.Add((Mathf.Sqrt(dx * dx + dz * dz), v));
+            }
+            sorted.Sort((a, b) => a.dist.CompareTo(b.dist));
+
+            for (int i = 0; i < PoiRowCount; i++)
+            {
+                bool has = i < sorted.Count;
+                var v = has ? sorted[i].v : default;
+                float dx = has ? v.WorldPosition.X - pos.X : 0f;
+                float dz = has ? v.WorldPosition.Z - pos.Z : 0f;
+
+                if (_poiGlyph[i] != null)
+                    _poiGlyph[i].Text = has ? (v.SupportsFastTravel ? "◆" : (v.Discovered ? "●" : "○")) : "";
+                if (_poiName[i] != null)
+                    _poiName[i].Text = has ? (string.IsNullOrEmpty(v.Title) ? v.Tag : v.Title) : "";
+                if (_poiDist[i] != null)
+                    _poiDist[i].Text = has ? $"{BearingText(dx, dz)} {sorted[i].dist:0}m" : "";
+            }
+
+            if (_poiCountLabel != null) _poiCountLabel.Text = $"{sorted.Count} 处";
+
+            // 追踪目标：有自动移动目的地时取离目的地最近的 POI 名，否则「未设定」——不摆设计稿的「山贼营地」
+            if (_trackSelect != null)
+            {
+                if (PluginNavigationBridge.TryGetMoveDestination(out var dest))
+                {
+                    string best = "自定义位置";
+                    float bestDist = float.MaxValue;
+                    foreach (var v in _navMarkers)
+                    {
+                        float d = (v.WorldPosition - dest).LengthSquared;
+                        if (d < bestDist)
+                        {
+                            bestDist = d;
+                            best = string.IsNullOrEmpty(v.Title) ? v.Tag : v.Title;
+                        }
+                    }
+                    _trackSelect.Text = best;
+                }
+                else
+                {
+                    _trackSelect.Text = "未设定";
+                }
+            }
+            if (_navHintLabel != null)
+            {
+                // 有数据后不再显示占位说明
+                _navHintLabel.Text = "";
+                _navHintLabel.Visible = false;
+            }
+        }
+
+        /// <summary>方位词：北=0°，按 atan2(dx, -dz) 与八向 45° 分档。</summary>
+        private static string BearingText(float dx, float dz)
+        {
+            // Flax 的 Mathf 没有 Rad2Deg 常量
+            float deg = Mathf.Atan2(dx, -dz) * (180f / (float)Math.PI);
+            if (deg < 0f) deg += 360f;
+            string[] names = { "北", "东北", "东", "东南", "南", "西南", "西", "西北" };
+            return names[(int)Mathf.Round(deg / 45f) % 8];
+        }
+
+        // ===============================================================
         // 嵌套自绘控件
         // ===============================================================
 
@@ -408,9 +559,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             }
         }
 
-        /// <summary>追踪目标下拉框（金6% 底 + gold-subtle 边 + 山贼营地 + ▼）。</summary>
+        /// <summary>追踪目标下拉框（金6% 底 + gold-subtle 边 + 目标名 + ▼）。</summary>
         private sealed class TrackSelect : Control
         {
+            /// <summary>目标名；没有自动移动目的地时为「未设定」。</summary>
+            public string Text { get; set; } = "未设定";
+
             public TrackSelect()
             {
                 AutoFocus = false;
@@ -429,7 +583,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 InkRenderHelper.DrawRoundedRectangle(rect, 6f, InkWashTheme.BorderGoldSubtle, 1f);
                 var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f).GetFont();
                 if (font != null)
-                    Render2D.DrawText(font, "山贼营地", new Rectangle(12f, 0f, Width - 40f, Height),
+                    Render2D.DrawText(font, Text, new Rectangle(12f, 0f, Width - 40f, Height),
                         InkWashTheme.TextDefault, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
                 var cf = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f).GetFont();
                 if (cf != null)
@@ -505,7 +659,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                     else if (!v.Discovered)
                     {
                         // 未发现的 POI 用脉冲星吸引注意
-                        list.Add((angle, "★", InkWashTheme.JadeBright, true));
+                        list.Add((angle, "◆", InkWashTheme.JadeBright, true));
                     }
                     else
                     {
@@ -597,7 +751,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 }
             }
 
-            /// <summary>POI 方向标记（◆0° 金 / ●135° 金 / ★270° 青追踪脉冲）。</summary>
+            /// <summary>POI 方向标记（◆0° 金 / ●135° 金 / ◆270° 青追踪脉冲）。</summary>
             private void DrawPois(Float2 c)
             {
                 var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 17f).GetFont();
@@ -613,7 +767,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 // 回退：内置演示点（NarrativePro 导航不可用时保持既有观感）
                 DrawPoi(font, c, 0f, "◆", InkWashTheme.GoldBright, false);
                 DrawPoi(font, c, 135f * Mathf.DegreesToRadians, "●", InkWashTheme.GoldBright, false);
-                DrawPoi(font, c, 270f * Mathf.DegreesToRadians, "★", InkWashTheme.JadeBright, true);
+                DrawPoi(font, c, 270f * Mathf.DegreesToRadians, "◆", InkWashTheme.JadeBright, true);
+
+                // 静默回退会让人以为盘上是真实方位：标一句"示意"
+                Render2D.DrawText(font, "导航数据不可用 · 方位为示意",
+                    new Rectangle(c.X - 90f, c.Y + Width * 0.5f - 34f, 180f, 16f),
+                    InkWashTheme.TextTertiary, TextAlignment.Center, TextAlignment.Center,
+                    TextWrapping.NoWrap);
             }
 
             private void DrawPoi(Font font, Float2 c, float ang, string glyph, Color color, bool tracked)
@@ -665,12 +825,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
                 return new Float2(c.X + dx * ca - dy * sa, c.Y + dx * sa + dy * ca);
             }
 
-            /// <summary>玩家星（★ 26px 青亮，中心）。</summary>
+            /// <summary>玩家星（◆ 26px 青亮，中心）。</summary>
             private void DrawPlayerStar(Float2 c)
             {
                 var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 26f).GetFont();
                 if (font == null) return;
-                Render2D.DrawText(font, "★", new Rectangle(c.X - 16f, c.Y - 16f, 32f, 32f),
+                Render2D.DrawText(font, "◆", new Rectangle(c.X - 16f, c.Y - 16f, 32f, 32f),
                     InkWashTheme.JadeBright, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
             }
         }

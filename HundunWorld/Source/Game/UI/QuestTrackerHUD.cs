@@ -537,7 +537,7 @@ namespace HundunWorld.Game.UI
                 if (i < quest.Objectives.Count)
                 {
                     var obj = quest.Objectives[i];
-                    string symbol = obj.IsCompleted ? "✓" : "○";
+                    string symbol = obj.IsCompleted ? "√" : "○";
                     string progressText = obj.Required > 1 ? $" ({obj.Current}/{obj.Required})" : "";
                     _objectiveLabels[i].Text = $"{symbol} {obj.Description}{progressText}";
                     _objectiveLabels[i].TextColor = obj.IsCompleted
@@ -551,7 +551,7 @@ namespace HundunWorld.Game.UI
                 }
             }
 
-            _collapseHint.Text = quest.IsCollapsed ? "▸ 点击展开" : "";
+            _collapseHint.Text = quest.IsCollapsed ? "◆ 点击展开" : "";
         }
 
         public void UpdateExpandRatio(float ratio)
@@ -566,7 +566,7 @@ namespace HundunWorld.Game.UI
                     _objectiveLabels[i].TextColor = new Color(color.R, color.G, color.B, alpha);
                 }
             }
-            _collapseHint.Text = ratio < 0.5f ? "▸ 点击展开" : "";
+            _collapseHint.Text = ratio < 0.5f ? "◆ 点击展开" : "";
         }
     }
 }

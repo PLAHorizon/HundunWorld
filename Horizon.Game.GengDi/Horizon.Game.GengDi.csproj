@@ -137,6 +137,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <!-- DPAPI：CredentialProtector 在 #if DESKTOP 下用 ProtectedData；原先靠 Orleans 依赖边传递带入，现显式声明 -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Condition="'$(TargetFramework)' == 'net10.0'" />
   </ItemGroup>
 
   <Target Name="ForceMQTTnetRefs" AfterTargets="ResolvePackageAssets" BeforeTargets="ResolveAssemblyReferences" Condition="'$(TargetFramework)' == 'net10.0'">
@@ -148,11 +150,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FluentAvalonia\FluentAvalonia.csproj" />
-    <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
+    <!-- 只引客户端可见的共享件（MachineIdentifier）；Horizon.Core 带 ~3-4k 行服务端代码
+         （PlayerId 生成 / token 签发 / 密码哈希 / 敏感词过滤 / Cache 推送 / GrainState 基类）不下发 -->
+    <ProjectReference Include="..\Horizon.Share.Client\Horizon.Share.Client.csproj" />
     <ProjectReference Include="..\Horizon.IM.Message\Horizon.IM.Message.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
-    <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
-    <ProjectReference Include="..\Horizon.IoT.MQTT\Horizon.IoT.MQTT.csproj" />
   </ItemGroup>
 
 </Project>

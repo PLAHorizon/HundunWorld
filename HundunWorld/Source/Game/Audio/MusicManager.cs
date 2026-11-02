@@ -6,6 +6,25 @@ using System.Collections.Generic;
 namespace HundunWorld.Game.Audio
 {
     /// <summary>
+    /// 全局音频宿主：BGM/环境音/音效的 AudioSource Actor 统一挂在本宿主之下。
+    /// 背景：Flax 无父级版 <see cref="FlaxEngine.Level.SpawnActor(Actor)"/> 固定落入
+    /// Scenes[0]（常驻 RootScene）且平铺在场景根下，音频 Actor 会把 RootScene 层级堆满。
+    /// 宿主本身有意常驻 RootScene（音频是跨场景的全局共享组件），显式传场景不靠默认落点。
+    /// </summary>
+    public static class AudioHost
+    {
+        private static Actor _host;
+
+        public static Actor Ensure()
+        {
+            if (_host != null) return _host;
+            _host = new EmptyActor { Name = "GlobalAudioHost" };
+            FlaxEngine.Level.SpawnActor(_host, FlaxEngine.Level.GetScene(0));
+            return _host;
+        }
+    }
+
+    /// <summary>
     /// BGM 状态
     /// </summary>
     public enum MusicState
@@ -201,7 +220,7 @@ namespace HundunWorld.Game.Audio
                 source.Clip = clip;
                 source.Volume = 0f; // 从静音开始淡入
                 source.IsLooping = config.IsLooping;
-                Level.SpawnActor(source);
+                source.Parent = AudioHost.Ensure();
                 source.Play();
 
                 _currentSource = source;
@@ -356,7 +375,7 @@ namespace HundunWorld.Game.Audio
                         _baseLoopSource.Clip = clip;
                         _baseLoopSource.Volume = AmbientVolume * 0.5f;
                         _baseLoopSource.IsLooping = true;
-                        Level.SpawnActor(_baseLoopSource);
+                        _baseLoopSource.Parent = AudioHost.Ensure();
                         _baseLoopSource.Play();
                     }
                 }
@@ -428,7 +447,7 @@ namespace HundunWorld.Game.Audio
                 source.Clip = clip;
                 source.Volume = layer.Config.Volume * AmbientVolume;
                 source.IsLooping = false;
-                Level.SpawnActor(source);
+                source.Parent = AudioHost.Ensure();
                 source.Play();
                 layer.Source = source;
             }

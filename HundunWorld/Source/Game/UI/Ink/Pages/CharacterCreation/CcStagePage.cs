@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
@@ -6,51 +6,6 @@ using System;
 
 namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 {
-    /// <summary>
-    /// 一次创角流程的跨页状态。
-    /// 页面由 <see cref="InkPageRouter"/> 的工厂每次导航时新建（旧页会被销毁），
-    /// 所以性别 / 面容预设 / 姓名这类跨步骤数据必须放在页面之外。
-    /// </summary>
-    public sealed class CcSession
-    {
-        /// <summary>当前创角会话。</summary>
-        public static readonly CcSession Current = new CcSession();
-
-        /// <summary>0 = 男，1 = 女。</summary>
-        public int Gender;
-
-        /// <summary>面容风格分类：0 = 风雅，1 = 写实。</summary>
-        public int StyleCategory;
-
-        /// <summary>选中的面容预设下标，-1 表示未选。</summary>
-        public int FacePresetIndex = -1;
-
-        /// <summary>选中的衣装 / 体型下标，写入 <c>AppearanceInfo.Clothing</c>。</summary>
-        public int BodyIndex;
-
-        /// <summary>发色 / 瞳色 / 肤色下标，分别写入 <c>AppearanceInfo.HairColor / EyeColor / SkinColor</c>。</summary>
-        public int HairColorIndex;
-        public int EyeColorIndex;
-        public int SkinColorIndex;
-
-        /// <summary>角色名。</summary>
-        public string CharacterName = string.Empty;
-
-        /// <summary>
-        /// 重置为新一次创角（从选角页点「创建角色」进入时调用）。
-        /// </summary>
-        public void Reset()
-        {
-            Gender = 0;
-            StyleCategory = 0;
-            FacePresetIndex = -1;
-            BodyIndex = 0;
-            HairColorIndex = 0;
-            EyeColorIndex = 0;
-            SkinColorIndex = 0;
-            CharacterName = string.Empty;
-        }
-    }
 
     /// <summary>
     /// 创角 / 选角流程页面的公共舞台。
@@ -74,11 +29,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         /// <summary>左侧操作栏起始 x（参考图内容区左边界）。</summary>
         protected const float RailX = 80f;
 
-        /// <summary>角色立绘预览区（屏幕右半，全高）。</summary>
+        /// <summary>左侧操作栏与立绘的分界（立绘现在全屏铺满，这只是内容栏的排版基准）。</summary>
         protected const float PreviewX = 860f;
-        protected const float PreviewW = 1060f;
 
-        private CcMistBackdrop _backdrop;
+        /// <summary>
+        /// 立绘在画面里的水平偏移（相对页宽）：正的把角色让到中心右侧。
+        /// 全屏铺满后角色默认居中，会和左侧文字抢戏，所以按参考图版式右移。
+        /// </summary>
+        private const float PreviewOffsetXFrac = 0.20f;
+
+        /// <summary>
+        /// 取景俯仰偏移（度）：负值把相机压到腰部以下仰拍，地平线落进画面下三分之一（工作台截图构图）。
+        /// 只给全身页用（取景距离系数 ≥1）；头肩特写仍用基线仰角，否则脸会被台面顶到画面外。
+        /// <para>
+        /// 标定：-18° 时地平线在 78%、脚在 92%（雾光只剩十来个百分点）；-15.5° 抬到 70%/84%，
+        /// 与参考图（地平线 69%、脚 82%）对齐，雾带才有纵向空间铺开。
+        /// </para>
+        /// </summary>
+        protected virtual float PreviewPitchDeg => PreviewFramingScale >= 1f ? -15.5f : 0f;
+
+        private CcStageScrim _backdrop;
         private CcWatermark _watermark;
         private CcHint _backHint;
         private CcChevronBack _backChevron;
@@ -93,13 +63,29 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         protected virtual bool NeedsPreview => true;
 
         /// <summary>
-        /// 取景距离系数：1 = 全身入画（参考图 图片/6、7.png 的性别步骤）；
+        /// 取景距离系数：1 = 自动取景（全身完整入画、留 18% 边距）；
         /// 小于 1 推近做头肩特写（参考图 图片/2-5.png 的面容与捏脸步骤）。
+        /// 全身页放到 1.9：工作台截图的构图是"小立绘 + 大片暗天 + 台面在前"，
+        /// 贴着画幅的全身会把舞台压没（看清脸/捏脸的两页仍用各自的小系数）。
         /// </summary>
-        protected virtual float PreviewFramingScale => 1f;
+        protected virtual float PreviewFramingScale => 2.0f;
 
-        /// <summary>取景瞄准高度占身高的比例（0.5 = 全身居中，约 0.78 = 头肩）。</summary>
-        protected virtual float PreviewFramingHeight => 0.5f;
+        /// <summary>
+        /// 取景瞄准高度占身高的比例（0.5 = 躯干中央，约 0.78 = 头肩）。
+        /// 全身页放到 0.72：工作台截图的立绘是"人物压在画面下半、头顶留一大片暗天、
+        /// 台面铺在前景"，焦点抬到胸口以上才能把人整体压下去；看脸的两页仍用 0.78。
+        /// </summary>
+        protected virtual float PreviewFramingHeight => 1.0f;
+
+        /// <summary>
+        /// 本页的预览身体是否用**基础模板身体**（conform topology，脖子以下、灰模）取代
+        /// 按性别取的那具完整角色（后者自带脑袋，会挡住 MetaHuman 的脸）。
+        /// <para>
+        /// 只有"看脸"的页该开：面容风格预设、捏脸。看身材的页仍用按性别的完整角色。
+        /// 默认 false ⇒ 既有页面行为不变。
+        /// </para>
+        /// </summary>
+        protected virtual bool PreviewUsesTemplateBody => false;
 
         /// <summary>本页是否显示左下角「返回」提示。</summary>
         protected virtual bool NeedsBackHint => true;
@@ -136,25 +122,35 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         /// <summary>搭建背景、预览、确认块、返回提示与水印。</summary>
         private void BuildStage()
         {
-            _backdrop = new CcMistBackdrop
+            if (NeedsPreview)
+            {
+                // 3D 舞台铺满整页（工作台场景同源的暗天+地台），先建它，
+                // 后面的左侧压暗层与所有控件都叠在它上面。
+                Preview = new CharacterPreview3D
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    TransparentBackground = true,
+                    FramingScale = PreviewFramingScale,
+                    FramingHeightFrac = PreviewFramingHeight,
+                    FramingOffsetX = PreviewOffsetXFrac,
+                    FramingPitchDeg = PreviewPitchDeg,
+                    Parent = this,
+                };
+
+                // 预览里是"哪一具身体"完全由性别决定：本流程还没有运行时角色 Actor，
+                // 不走这一步 SetCharacter 取不到模型，画面就只剩雾背景。
+                ApplyPreviewGender();
+
+                // 看脸的页改用基础模板身体（脖子以下）——按性别取的那具自带脑袋，会把脸罩住。
+                Preview.SetTemplateBodyVisible(PreviewUsesTemplateBody);
+            }
+
+            _backdrop = new CcStageScrim
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 Parent = this,
             };
-
-            if (NeedsPreview)
-            {
-                Preview = new CharacterPreview3D
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    TransparentBackground = true,
-                    UseSkyBackdrop = false,
-                    FramingScale = PreviewFramingScale,
-                    FramingHeightFrac = PreviewFramingHeight,
-                    Parent = this,
-                };
-            }
 
             _watermark = new CcWatermark
             {
@@ -184,10 +180,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
                 Parent = this,
             };
             Confirm.Activated += () => ConfirmRequested?.Invoke();
-
-            // 参考图 图片/2-5.png 右上角都有「«」返回箭头；与左下「返回」指向同一动作。
-            _backChevron = new CcChevronBack { Parent = this };
-            _backChevron.Activated += () => BackRequested?.Invoke();
         }
 
         /// <summary>
@@ -208,6 +200,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         private string _watermarkText = string.Empty;
 
         /// <summary>
+        /// 把预览绑到指定性别（默认取当前创角会话）。
+        /// 页面是每次导航新建的，所以进入任一步骤都会按当下性别重新取身体模型。
+        /// </summary>
+        protected void ApplyPreviewGender(int? gender = null)
+        {
+            Preview?.SetBodyGender(gender ?? CcSession.Current.Gender);
+        }
+
+        /// <summary>
         /// 舞台公共部分的设计空间布局；子类覆写后先调 base 再摆自己的控件。
         /// </summary>
         public virtual void RefreshLayout()
@@ -217,8 +218,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
             if (Preview != null)
             {
-                Preview.Size = new Float2(PreviewW, Height);
-                Preview.Location = new Float2(PreviewX, 0f);
+                // 全屏铺满：3D 舞台就是整页背景，角色由 FramingOffsetX 让到右半。
+                Preview.Size = new Float2(Mathf.Max(Width, 1f), Mathf.Max(Height, 1f));
+                Preview.Location = Float2.Zero;
                 Preview.RefreshLayout();
             }
 

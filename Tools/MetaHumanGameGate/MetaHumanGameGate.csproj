@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Source/Game 的离屏编译门（不含 PCG，也不含引擎目标）。
+
+    存在的理由：整条 GameTarget 用 Flax.Build 编时会被并行会话的 PCG 源码错误挡在前面，
+    Game 模块自己的 C# 到底能不能编、创角 UI 那批改动是否真的接上 MetaHuman，
+    就没有任何地方能证明。这道门把 Source/Game 单独编一遍：
+      引用 = FlaxEngine.CSharp.dll + MetaHuman/NarrativePro 插件产物 + Output/Windows 里全部 Horizon/第三方 DLL。
+
+    用法（必须在仓库根跑，HundunWorld/global.json 钉了不存在的 SDK 10.0.300）：
+      dotnet build Tools/MetaHumanGameGate/MetaHumanGameGate.csproj
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>MetaHumanGameGate</AssemblyName>
+    <RootNamespace>MetaHumanGameGate</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>1591;CS0618;CS8632</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.13</EngineRoot>
+    <ProjectRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld</ProjectRoot>
+    <ModuleRoot>$(ProjectRoot)\Plugins\MetaHuman\Source\MetaHuman</ModuleRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+    </Reference>
+    <!--
+      不再引用插件的 DLL，改为把插件 Core+Runtime 的**源码**一起编（与 MetaHumanCompileCheck 同一套）。
+      理由（2026-10-19 实测）：引用盘上的 DLL 会让这道门落后于插件源码。DLL 没刷新时它把新 API 报成
+      "未定义"；DLL 刷新了而插件源码有错，它又看不见。同一个编译进程里两层的源码只有一套事实。
+      GateDll 里若混进 MetaHuman.CSharp.dll 会与源码重复定义，下面已排除。
+    -->
+    <Reference Include="NarrativePro.CSharp">
+      <HintPath>$(ProjectRoot)\Plugins\NarrativePro\Binaries\NarrativeProTarget\Windows\x64\Development\NarrativePro.CSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 契约 DLL 以各工程新编的 net10.0 产物为准（bin/Debug/verify 里那份会过期，
+         曾导致 GetCharacterAppearanceResponse 这类新消息在此门里"不存在"）。 -->
+    <GateDll Include="$(MSBuildThisFileDirectory)..\..\Horizon.Game.Message\bin\Debug\net10.0\*.dll" />
+    <GateDll Include="$(ProjectRoot)\Output\Windows\*.dll" Exclude="$(ProjectRoot)\Output\Windows\MetaHuman.CSharp.dll" />
+    <GateDll Include="$(MSBuildThisFileDirectory)..\..\bin\Debug\verify\*.dll" Exclude="$(MSBuildThisFileDirectory)..\..\bin\Debug\verify\Horizon.Game.Message.dll" />
+    <!-- 用完整路径当引用标识：两个目录里有同名 DLL，按文件名会撞并丢掉一个 -->
+    <Reference Include="@(GateDll->'%(FullPath)')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ProjectRoot)\Source\Game\**\*.cs" Exclude="$(ProjectRoot)\Source\Game\**\*.Build.cs;$(ProjectRoot)\Source\Game\**\obj\**\*.cs" />
+    <Compile Include="$(ModuleRoot)\Core\*.cs" />
+    <Compile Include="$(ModuleRoot)\Runtime\*.cs" />
+  </ItemGroup>
+
+</Project>

@@ -125,7 +125,7 @@ public class PositionDrivenSubscriptionTests
 
     /// <summary>
     /// 验证坐标系转换：UpdateSessionPositionAsync(x, y, z) 的订阅结果
-    /// 必须与 WorldCoord.GetChunksInView(x, z, y, R) 一致（Flax Y-up → ECS Z-up：Y/Z 互换）。
+    /// 必须与 WorldChunkAoi.GetChunksInView(x, z, y, R) 一致（Flax Y-up → ECS Z-up：Y/Z 互换）。
     /// </summary>
     [Fact]
     public async Task UpdateSessionPosition_CoordinateConversion_FlaxYupToEcsZup()
@@ -139,7 +139,7 @@ public class PositionDrivenSubscriptionTests
 
         // Flax Y-up (x=左右, y=上下, z=前后) → ECS Z-up (X=左右, Y=前后, Z=上下)：Y/Z 互换
         // grain 内部调用 GetChunksInView(x, z, y, R)
-        var expectedView = WorldCoord.GetChunksInView(x, z, y, radius);
+        var expectedView = WorldChunkAoi.GetChunksInView(x, z, y, radius);
 
         // 通过 GetSubscribersAsync 间接验证：expectedView 中的每个 chunk 都应有 sessionId 订阅
         // 抽样验证几个 chunk（避免遍历 185193 个）
@@ -230,7 +230,7 @@ public class PositionDrivenSubscriptionTests
         Assert.Equal(2 * expectedCount, chunkCount);
 
         // 验证 session 2001 的视野 chunk 不包含 session 2002
-        var view1 = WorldCoord.GetChunksInView(0f, 0f, 0f, radius);
+        var view1 = WorldChunkAoi.GetChunksInView(0f, 0f, 0f, radius);
         var sampleChunk = view1.First();
         var subscribers = await grain.GetSubscribersAsync(sampleChunk);
         Assert.Contains(2001L, subscribers);

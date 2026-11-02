@@ -203,36 +203,27 @@ namespace NarrativePro.UnrealFramework
             while (TimeOfDay >= 2400f) TimeOfDay -= 2400f;
             while (TimeOfDay < 0f) TimeOfDay += 2400f;
 
-            // 触发区间内的事件
-            float deltaPassed = timeToAdvance;
-            FireEventsInRange(prevTime, TimeOfDay, deltaPassed, bFromAdvanceTime);
+            // 触发区间内的事件（UE5 传下去的是「事件时刻已迟到多久」，按事件逐个算，不是本帧推进量）
+            int daysPassed = NarrativePro.TimeOfDay.TimeOfDayWindowRules.DaysPassedBetween(AccumulatedTime, AccumulatedTimeLastTick);
+            FireEventsInRange(prevTime, TimeOfDay, daysPassed, bFromAdvanceTime);
         }
 
         /// <summary>触发指定时间区间内的事件。</summary>
-        protected virtual void FireEventsInRange(float prevTime, float currentTime, float deltaPassed, bool bFromAdvanceTime)
+        protected virtual void FireEventsInRange(float prevTime, float currentTime, int daysPassed, bool bFromAdvanceTime)
         {
             if (TimeOfDayEvents == null || TimeOfDayEvents.Count == 0) return;
 
-            // 简化版：遍历所有事件，检查是否在区间内
-            // 处理跨午夜的情况
-            bool wrapped = currentTime < prevTime;
             for (int i = TimeOfDayEvents.Count - 1; i >= 0; i--)
             {
                 var evt = TimeOfDayEvents[i];
                 if (evt == null) continue;
-                float t = evt.EventTime;
-                bool inRange;
-                if (!wrapped)
+                // 「这一 tick 要不要派发」的判据本体住在纯接缝 TimeOfDayWindowRules
+                // （UE5 直接复用 IsTimeInRange 的闭区间，含 2400→0 回绕的或分支），进程外可断言边界归属。
+                if (NarrativePro.TimeOfDay.TimeOfDayWindowRules.DidCrossEventTime(prevTime, currentTime, evt.EventTime))
                 {
-                    inRange = t > prevTime && t <= currentTime;
-                }
-                else
-                {
-                    inRange = t > prevTime || t <= currentTime;
-                }
-                if (inRange)
-                {
-                    evt.EventDelegate?.Invoke(t, currentTime, deltaPassed, bFromAdvanceTime);
+                    float timePassedDelta = NarrativePro.TimeOfDay.TimeOfDayWindowRules
+                        .EventTimePassedDelta(currentTime, evt.EventTime, daysPassed);
+                    evt.EventDelegate?.Invoke(evt.EventTime, currentTime, timePassedDelta, bFromAdvanceTime);
                 }
             }
         }
@@ -337,22 +328,18 @@ namespace NarrativePro.UnrealFramework
         // ===== 阵营态度系统 =====
 
         /// <summary>获取一组阵营对另一组阵营的态度。对应 UE5 GetFactionsAttitudeTowardsFactions。
-        /// 任一为敌对则返回敌对；无敌对且至少一个友好则返回友好；否则返回中立。</summary>
+        /// 任一为敌对则返回敌对；无敌对且至少一个友好则返回友好；否则返回中立。
+        /// <para>引擎侧薄适配：容器 → 阵营名集合 + 联盟表委托，聚合规则全部在
+        /// <see cref="NarrativeFactionAttitude.ComputeFactionsAttitude"/>（进程外可断言的同一份实现）。</para></summary>
         public virtual ArsenalStatics.ETeamAttitude GetFactionsAttitudeTowardsFactions(GameplayTagContainer sourceFactions, GameplayTagContainer targetFactions)
         {
             if (sourceFactions == null || targetFactions == null) return ArsenalStatics.ETeamAttitude.Neutral;
 
-            bool anyFriendly = false;
-            foreach (var src in sourceFactions.GetTags())
-            {
-                foreach (var tgt in targetFactions.GetTags())
-                {
-                    var attitude = GetOneWayFactionAttitude(new GameplayTag(src), new GameplayTag(tgt));
-                    if (attitude == ArsenalStatics.ETeamAttitude.Hostile) return ArsenalStatics.ETeamAttitude.Hostile;
-                    if (attitude == ArsenalStatics.ETeamAttitude.Friendly) anyFriendly = true;
-                }
-            }
-            return anyFriendly ? ArsenalStatics.ETeamAttitude.Friendly : ArsenalStatics.ETeamAttitude.Neutral;
+            // 逐对态度仍经本类的 virtual GetOneWayFactionAttitude 取（保持派生类覆写的分发口径），
+            // 聚合顺序（敌对优先 → 友好 → 中立）由纯规则层负责。
+            return NarrativePro.Core.NarrativeFactionAttitude.ComputeFactionsAttitude(
+                sourceFactions.GetTags(), targetFactions.GetTags(),
+                (src, tgt) => GetOneWayFactionAttitude(new GameplayTag(src), new GameplayTag(tgt)));
         }
 
         /// <summary>查询单个阵营对另一阵营的态度。对应 UE5 GetFactionAttitudeTowardsFaction。
@@ -371,15 +358,24 @@ namespace NarrativePro.UnrealFramework
         /// <summary>查询单向阵营态度。对应 UE5 GetOneWayFactionAttitude。</summary>
         public virtual ArsenalStatics.ETeamAttitude GetOneWayFactionAttitude(GameplayTag sourceFaction, GameplayTag targetFaction)
         {
-            if (!sourceFaction.IsValid() || !targetFaction.IsValid()) return ArsenalStatics.ETeamAttitude.Neutral;
-            if (sourceFaction == targetFaction) return ArsenalStatics.ETeamAttitude.Friendly;
+            return NarrativePro.Core.NarrativeFactionAttitude.ComputeOneWayFactionAttitude(
+                sourceFaction.TagName, targetFaction.TagName, LookUpFactionAlliance);
+        }
 
-            if (FactionAllianceMap.TryGetValue(sourceFaction.TagName, out var data) && data != null)
+        /// <summary>
+        /// 联盟表委托实现：把 <see cref="FactionAllianceMap"/> 的一次查表适配成纯规则层的查询签名。
+        /// 查不到记录时返回 Neutral（与旧内联实现的 fallthrough 一致）。
+        /// </summary>
+        private ArsenalStatics.ETeamAttitude LookUpFactionAlliance(string sourceFaction, string targetFaction)
+        {
+            if (string.IsNullOrEmpty(sourceFaction) || string.IsNullOrEmpty(targetFaction))
+                return ArsenalStatics.ETeamAttitude.Neutral;
+
+            if (FactionAllianceMap != null &&
+                FactionAllianceMap.TryGetValue(sourceFaction, out var data) && data != null &&
+                data.AttitudeMap != null && data.AttitudeMap.TryGetValue(targetFaction, out var attitude))
             {
-                if (data.AttitudeMap.TryGetValue(targetFaction.TagName, out var attitude))
-                {
-                    return attitude;
-                }
+                return attitude;
             }
             return ArsenalStatics.ETeamAttitude.Neutral;
         }
@@ -409,7 +405,10 @@ namespace NarrativePro.UnrealFramework
         /// <summary>加载存档。对应 UE5 Load_Implementation。</summary>
         public virtual void Load()
         {
-            // TODO [需接入存档系统]: 从存档恢复时间和阵营数据
+            // Flax-已实现：TimeOfDay/AccumulatedTime/TimeOfDayLastTick 与 FactionAllianceMap
+            // 均为公开字段，由 NarrativeSaveStateArchive（SaveSystem）的反射式字段归档在载入时
+            // 直接恢复（同 PrepareForSave 的保存路径），此处无额外恢复逻辑；保留方法作为
+            // UE5 Load_Implementation 的对等钩子供子类扩展。
         }
 
         // ===== 静态访问 =====
@@ -424,7 +423,20 @@ namespace NarrativePro.UnrealFramework
         /// <summary>获取当前激活场景的 NarrativeGameState。</summary>
         public static NarrativeGameState GetCurrent()
         {
-            return Get(Level.GetScene(0));
+            var state = Get(Level.GetScene(0));
+            if (state != null) return state;
+
+            // 宿主装配模式：本游戏没有 GameMode/世界设置来生成 GameState，运行期引导把它挂在
+            // 运行期宿主 Actor 上（不是场景根 Actor），因此 <c>scene.GetScript</c> 命不中，
+            // 需要按整级脚本再找一次 —— 否则游戏内时间恒为 0，所有 TimeOfDay 条件/事件静默失效。
+            try
+            {
+                return Level.FindScript<NarrativeGameState>();
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 
@@ -601,14 +613,18 @@ namespace NarrativePro.UnrealFramework
     [Serializable]
     public class ScheduledBehavior
     {
-        /// <summary>是否禁用。</summary>
+        /// <summary>是否禁用。对应 UE5 构造函数里的 bDisabled = false（NarrativeGameState.cpp:15）。</summary>
         public bool bDisabled = false;
 
-        /// <summary>开始时间。</summary>
-        public float StartTime = 0f;
+        /// <summary>
+        /// 开始时间。默认值对齐 UE5 <c>UScheduledBehavior::UScheduledBehavior</c>
+        /// （NarrativeGameState.cpp:16 的 <c>StartTime = 1200.f</c>）——
+        /// 调度资产没写这一项时，UE5 得到的是 1200-1400 这段窗口而不是 0-0 的退化窗口。
+        /// </summary>
+        public float StartTime = 1200f;
 
-        /// <summary>结束时间。</summary>
-        public float EndTime = 0f;
+        /// <summary>结束时间。对应 UE5 NarrativeGameState.cpp:17 的 <c>EndTime = 1400.f</c>。</summary>
+        public float EndTime = 1400f;
 
         [NonSerialized]
         protected int _startHandle;
@@ -635,19 +651,14 @@ namespace NarrativePro.UnrealFramework
             if (bFireIfAlreadyStarted)
             {
                 float currentTime = gameState.GetTimeOfDay();
-                bool inRange;
-                if (StartTime < EndTime)
+                // 窗口判据本体在纯接缝：UE5 用 IsTimeInRange（ArsenalStatics.cpp:425-436，两端闭区间；
+                // StartTime > EndTime 走跨午夜「或」分支，StartTime == EndTime 退化成「恰好这一时刻」）。
+                if (NarrativePro.TimeOfDay.TimeOfDayWindowRules.IsTimeInRange(currentTime, StartTime, EndTime))
                 {
-                    inRange = currentTime >= StartTime && currentTime < EndTime;
-                }
-                else
-                {
-                    // 跨午夜
-                    inRange = currentTime >= StartTime || currentTime < EndTime;
-                }
-                if (inRange)
-                {
-                    DispatchHandleStarted(StartTime, currentTime, 0f, false);
+                    // Account for time looping over to next day（UE5 NarrativeGameState.cpp:36）：
+                    // 把「已经错过了多久」作为 TimePassedDelta 传下去，调度目标才能 catchup。
+                    float delta = NarrativePro.TimeOfDay.TimeOfDayWindowRules.CatchUpDelta(currentTime, StartTime);
+                    DispatchHandleStarted(StartTime, currentTime, delta, false);
                 }
             }
         }
@@ -667,12 +678,21 @@ namespace NarrativePro.UnrealFramework
         /// <summary>分发开始事件。对应 UE5 DispatchHandleStarted。</summary>
         protected virtual void DispatchHandleStarted(float eventTime, float actualTime, float timePassedDelta, bool bFiredFromAdvancedTime)
         {
+            // 缺陷5（DescribeBehavior 写而不读）：UE5 的调用方就是这条分发日志
+            // （ScheduledBehavior.cpp DispatchHandleStarted 里 UE_LOG(..., "%s", *DescribeBehavior())），端口对齐
+            NarrativePro.Core.NarrativeLog.Log($"ScheduledBehavior 开始：{DescribeBehavior()}");
+            // UE5 NarrativeGameState.cpp:46-52 的门：实际时刻已不在 [StartTime, EndTime] 内就不派发开始
+            // （大步推进时间跨过整个窗口时，事件仍会命中，但 UE5 选择让这段调度「不开始」）。
+            if (!NarrativePro.TimeOfDay.TimeOfDayWindowRules.ShouldDispatchStarted(actualTime, StartTime, EndTime)) return;
             HandleStarted(eventTime, actualTime, timePassedDelta, bFiredFromAdvancedTime);
         }
 
         /// <summary>分发结束事件。对应 UE5 DispatchHandleEnded。</summary>
         protected virtual void DispatchHandleEnded(float eventTime, float actualTime, float timePassedDelta, bool bFiredFromAdvancedTime)
         {
+            NarrativePro.Core.NarrativeLog.Log($"ScheduledBehavior 结束：{DescribeBehavior()}");
+            // UE5 NarrativeGameState.cpp:54-60 的门：判定的是 End→Start 这段区间（参数顺序刻意交换）
+            if (!NarrativePro.TimeOfDay.TimeOfDayWindowRules.ShouldDispatchEnded(actualTime, StartTime, EndTime)) return;
             HandleEnded(eventTime, actualTime, timePassedDelta, bFiredFromAdvancedTime);
         }
     }

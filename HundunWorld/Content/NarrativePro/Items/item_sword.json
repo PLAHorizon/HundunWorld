@@ -1,0 +1,71 @@
+﻿{
+  "$type": "MeleeWeaponItem",
+  "itemClassId": "item_sword",
+  "displayName": "制式环首刀",
+  "description": "边军淘汰下来的环首刀，刃口重新开过。",
+  "weight": 1.6,
+  "baseValue": 120,
+  "baseScore": 10,
+  "bStackable": false,
+  "maxStackSize": 1,
+  "attackDamage": 18,
+  "heavyAttackDamageMultiplier": 1.5,
+  "comboAnimSetId": "animset_sword_combo",
+  "meleeRange": 160,
+  "meleeAttackAngle": 100,
+  "botAttackRange": 220,
+  "bAllowManualReload": false,
+  "weaponVisualPath": "",
+  "crosshairWidgetPath": "",
+  "pickupMeshData": {
+    "pickupMeshPath": "Content/Models/Items/SM_Item_Sword",
+    "pickupMeshMaterialPaths": [
+      "Content/Materials/M_ItemBlade"
+    ],
+    "pickupOffset": {
+      "translation": {
+        "x": 0.0,
+        "y": 45.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      }
+    }
+  },
+  "armorRating": 0,
+  "attackRating": 18,
+  "stealthRating": -2,
+  "equippableSlotTagNames": [
+    "Narrative.Equipment.WieldSlot.Mainhand"
+  ],
+  "wieldAttachmentConfigs": {
+    "Narrative.Equipment.WieldSlot.Mainhand": {
+      "socketName": "hand_r"
+    }
+  },
+  "holsterAttachmentConfigs": {
+    "Narrative.Equipment.Slot.Weapon.Hip": {
+      "socketName": "spine_03"
+    }
+  },
+  "weaponAbilities": [
+    "ability_sword_slash",
+    "ability_sword_heavy"
+  ],
+  "stats": [
+    {
+      "statDisplayName": "劈砍伤害",
+      "stringVariable": "AttackDamage",
+      "statTooltip": "轻击 18，重击为 1.5 倍。"
+    }
+  ]
+}

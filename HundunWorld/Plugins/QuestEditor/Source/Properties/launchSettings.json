@@ -1,0 +1,18 @@
+﻿{
+  "profiles": {
+    "QuestEditor": {
+      "commandName": "Executable",
+      "workingDirectory": "C:/Works/GitHubProjects/HundunWorld/HundunWorld",
+      "executablePath": "C:/Program Files (x86)/Flax/Flax_1.13/Binaries/Editor/Win64/$(FlaxConfiguration)/FlaxEditor.exe",
+      "commandLineArgs": "-project=\"C:/Works/GitHubProjects/HundunWorld/HundunWorld\"",
+      "nativeDebugging": false
+    },
+    "QuestEditorEditor": {
+      "commandName": "Executable",
+      "workingDirectory": "C:/Works/GitHubProjects/HundunWorld/HundunWorld",
+      "executablePath": "C:/Program Files (x86)/Flax/Flax_1.13/Binaries/Editor/Win64/$(FlaxConfiguration)/FlaxEditor.exe",
+      "commandLineArgs": "-project=\"C:/Works/GitHubProjects/HundunWorld/HundunWorld\"",
+      "nativeDebugging": false
+    }
+  }
+}

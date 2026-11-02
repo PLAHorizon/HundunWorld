@@ -234,8 +234,10 @@ namespace NarrativePro.Music
 
             _activeTheme = NativeMusicThemeTags.TAG_MUSIC_AMBIENT;
 
-            // 应用默认/世界覆盖音乐集（等价 UE5 WorldInit 中的初始化）
-            var musicSet = WorldMusicSetOverride ?? DefaultMusicSet;
+            // 应用默认/世界覆盖音乐集（等价 UE5 WorldInit 中的初始化）。
+            // 场景未配置资产时兜底取磁盘 JSON 装载的默认音乐集（TaggedMusicSetLoader，
+            // 对应 Content/NarrativePro/Music/MusicSet_Default.json）。
+            var musicSet = WorldMusicSetOverride ?? DefaultMusicSet ?? TaggedMusicSetLoader.DefaultSet;
             if (musicSet != null)
             {
                 _currentMusicSet = musicSet;
@@ -302,7 +304,17 @@ namespace NarrativePro.Music
                 Volume = 0,
                 IsLooping = true
             };
-            Level.SpawnActor(source);
+            // 音源作为宿主 Actor 的子级（宿主在玩法场景中），随宿主存亡；
+            // 不再用无父级 SpawnActor 平铺进 Scenes[0]（RootScene）。
+            if (Actor != null)
+            {
+                source.Parent = Actor;
+            }
+            else if (NarrativePro.CommonUI.NarrativeRuntimeBootstrap.TrySpawnToGameplayScene(source, name))
+            {
+                FlaxEngine.Object.Destroy(source);
+                return null;
+            }
             return source;
         }
 

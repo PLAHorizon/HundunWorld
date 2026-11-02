@@ -1,13 +1,14 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Social
 {
-    public class MentorPage : ContainerControl, IInkPage
+    public class MentorPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private const float TopHeaderHeight = 56f;
         private const float ScreenEdge = 16f;
@@ -90,6 +91,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             BuildLeftPanel();
             BuildMiddlePanel();
             BuildRightPanel();
+
+            // 角色等级接真实值；师徒关系/传承没有服务端来源，保持占位
+            InkPlayerHeaderBinder.BindLevel(_charLevelLabel);
         }
 
         // ===================================================================
@@ -147,7 +151,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(560f, 18f),
                 Size = new Float2(80f, 20f),
-                Text = "师徒 IV",
+                Text = "尚未拜师",
                 TextColor = InkWashTheme.TextSecondary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Far,
@@ -160,7 +164,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(640f, 18f),
                 Size = new Float2(100f, 20f),
-                Text = "传承 3,820",
+                Text = "传承 —",
                 TextColor = InkWashTheme.TextBrand,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 HorizontalAlignment = TextAlignment.Far,
@@ -173,7 +177,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(740f, 18f),
                 Size = new Float2(56f, 20f),
-                Text = "Lv.65",
+                Text = "Lv.—",
                 TextColor = InkWashTheme.TextJade,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 HorizontalAlignment = TextAlignment.Far,
@@ -270,7 +274,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(80f, 14f),
                 Size = new Float2(150f, 22f),
-                Text = "孤云长老",
+                Text = "暂无师父",
                 TextColor = InkWashTheme.TextDefault,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -283,7 +287,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(80f, 38f),
                 Size = new Float2(160f, 18f),
-                Text = "少林派 · 武学宗师",
+                Text = "尚无师门",
                 TextColor = InkWashTheme.TextSecondary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -296,7 +300,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(80f, 60f),
                 Size = new Float2(160f, 16f),
-                Text = "2,840 / 3,000",
+                Text = "亲密度 —",
                 TextColor = InkWashTheme.TextBrand,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -307,9 +311,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _intimacyBar = new InkBar
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(80f, 56f),
+                Location = new Float2(80f, 78f),
                 Size = new Float2(160f, 6f),
-                Value = 2840f / 3000f,
+                Value = 0f,
                 FillVariant = InkBarFillVariant.Gold,
             };
             _masterInfoPanel.AddChild(_intimacyBar);
@@ -317,9 +321,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _masterDaysLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 80f),
+                Location = new Float2(12f, 98f),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f - 24f, 18f),
-                Text = "拜师 42 日 · 在师门",
+                Text = "拜师后显示在师门天数",
                 TextColor = InkWashTheme.TextJade,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -337,7 +341,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(ScreenEdge, ScreenEdge + RoleTabHeight + 12f + 8f + 130f + 8f),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, 20f),
-                Text = "门下弟子  2 / 3",
+                Text = "门下弟子  0 / 3",
                 TextColor = InkWashTheme.TextGold,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -353,10 +357,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             _leftPanel.AddChild(_discipleListHost);
 
-            string[][] disciples = {
-                new[] { "林", "林清河", "42", "峨眉", "68" },
-                new[] { "慕", "慕晴雪", "38", "唐门", "52" },
-            };
+            // 弟子名单没有服务端来源：空列表由下方既有 emptySlot（可再收 1 名弟子）呈现
+            string[][] disciples = System.Array.Empty<string[]>();
 
             float cursorY = 0f;
             for (int i = 0; i < disciples.Length; i++)
@@ -524,7 +526,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Location = new Float2(ScreenEdge, yPos),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, ActionBtnHeight),
             };
-            _btnRecruit.Clicked += () => EmitGoldBurstAt(_btnRecruit);
+            _btnRecruit.Enabled = false; // 收徒/拜师没有服务端通道
             _leftPanel.AddChild(_btnRecruit);
 
             _btnSeekMaster = new InkButton
@@ -536,7 +538,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Location = new Float2(ScreenEdge, yPos + ActionBtnHeight + ActionBtnGap),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, ActionBtnHeight),
             };
-            _btnSeekMaster.Clicked += () => EmitGoldBurstAt(_btnSeekMaster);
+            _btnSeekMaster.Enabled = false;
             _leftPanel.AddChild(_btnSeekMaster);
 
             _btnDismiss = new InkButton
@@ -548,7 +550,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Location = new Float2(ScreenEdge, yPos + (ActionBtnHeight + ActionBtnGap) * 2f),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, ActionBtnHeight),
             };
-            _btnDismiss.Clicked += () => EmitGoldBurstAt(_btnDismiss);
+            _btnDismiss.Enabled = false;
             _leftPanel.AddChild(_btnDismiss);
         }
 
@@ -620,10 +622,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             // Daily tasks
             string[][] dailyTasks = {
-                new[] { "师徒同心·行侠仗义", "与师父组队击败山贼头目 ×5", "+50 传承 / +10000 经验", "已完成", "5", "5" },
-                new[] { "传道授业·武学切磋", "与师父进行武学切磋 3 场", "+50 传承 / +8000 经验", "进行中", "2", "3" },
-                new[] { "晨昏定省·采药炼丹", "采集灵草 ×10 并炼制丹药", "+50 传承 / +6000 经验", "未开始", "2", "10" },
-                new[] { "游历江湖·名山访胜", "与师门共游名山胜景 ×3 处", "+40 传承 / +5000 经验", "进行中", "1", "3" },
+                new[] { "师徒同心·行侠仗义", "与师父组队击败山贼头目 ×5", "+50 传承 / +10000 经验", "未开始", "0", "5" },
+                new[] { "传道授业·武学切磋", "与师父进行武学切磋 3 场", "+50 传承 / +8000 经验", "未开始", "0", "3" },
+                new[] { "晨昏定省·采药炼丹", "采集灵草 ×10 并炼制丹药", "+50 传承 / +6000 经验", "未开始", "0", "10" },
+                new[] { "游历江湖·名山访胜", "与师门共游名山胜景 ×3 处", "+40 传承 / +5000 经验", "未开始", "0", "3" },
                 new[] { "尊师重道·奉茶请安", "向师父奉茶 1 次，以尽弟子之礼", "+30 传承 / +3000 经验", "未开始", "0", "1" },
             };
 
@@ -654,9 +656,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             // Weekly tasks
             string[][] weeklyTasks = {
-                new[] { "师门试炼·组队通关副本", "与师父组队通关「千机塔」第 3 层", "+200 传承", "进行中", "1", "3" },
-                new[] { "传授武学·指点招式", "师父指点弟子武学招式 5 次", "+150 传承", "进行中", "3", "5" },
-                new[] { "切磋武艺·师徒论剑", "与同门师兄弟切磋 10 场", "+180 传承", "进行中", "8", "10" },
+                new[] { "师门试炼·组队通关副本", "与师父组队通关「千机塔」第 3 层", "+200 传承", "未开始", "0", "3" },
+                new[] { "传授武学·指点招式", "师父指点弟子武学招式 5 次", "+150 传承", "未开始", "0", "5" },
+                new[] { "切磋武艺·师徒论剑", "与同门师兄弟切磋 10 场", "+180 传承", "未开始", "0", "10" },
             };
 
             for (int i = 0; i < weeklyTasks.Length; i++)
@@ -770,11 +772,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 // 有「前往」按钮时奖励文字上移至顶栏右侧，腾出中部右侧给按钮（对齐设计 mentor.html btn-go-dungeon）。
-                Location = goDomId != null ? new Float2(312f, 6f) : new Float2(310f, 26f),
-                Size = goDomId != null ? new Float2(138f, 20f) : new Float2(140f, 32f),
+                // 无按钮的行文字更长（"+50 传承 / +10000 经验"），框宽 160 + 字号 10 才不会被行右缘截断。
+                Location = goDomId != null ? new Float2(312f, 6f) : new Float2(296f, 26f),
+                Size = goDomId != null ? new Float2(138f, 20f) : new Float2(160f, 20f),
                 Text = reward,
                 TextColor = InkWashTheme.TextBrand,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 10f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
@@ -846,9 +849,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _graduationPanel.AddChild(_graduationBar);
 
             string[][] conditions = {
-                new[] { "✓", "师徒亲密度 ≥2000" },
-                new[] { "✓", "累计在线 ≥100 时" },
-                new[] { "✓", "完成日常 ≥20 次" },
+                new[] { "√", "师徒亲密度 ≥2000" },
+                new[] { "√", "累计在线 ≥100 时" },
+                new[] { "√", "完成日常 ≥20 次" },
                 new[] { "○", "等级达到 Lv.50" },
                 new[] { "○", "通关出师试炼副本" },
             };
@@ -941,7 +944,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(x, ScreenEdge + 64f),
                 Size = new Float2(w, 18f),
-                Text = "3,820 / 5,000  传承值",
+                // 传承值没有任何服务端来源：不要显示"0 / 5,000"假装计数已归零
+                Text = "— 传承值",
                 TextColor = InkWashTheme.TextBrand,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -1065,7 +1069,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(x, yPos),
                 Size = new Float2(w, 20f),
-                Text = "3,820 传承",
+                // 传承余额同样无数据源，原来写死 3,820
+                Text = "— 传承",
                 TextColor = InkWashTheme.TextBrand,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                 HorizontalAlignment = TextAlignment.Far,

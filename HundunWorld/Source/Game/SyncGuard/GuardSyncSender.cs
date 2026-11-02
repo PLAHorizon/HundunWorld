@@ -194,6 +194,10 @@ public sealed class GuardSyncSender : IGuardSyncSender
                 entityId = combat.AttackerId;
                 return true;
 
+            case TraversalRequestPacket traversal:
+                entityId = traversal.CharacterId;
+                return true;
+
             default:
                 entityId = 0;
                 return false;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FlaxEngine;
@@ -392,19 +392,13 @@ namespace HundunWorld.Game.UI.Character
                     {
                         var result = await CharacterService.Instance.DeleteCharacterAsync(character.CharacterId);
 
-                        if (result)
-                        {
-                            _characters.RemoveAll(c => c.CharacterId == character.CharacterId);
-                            if (_selectedCharacterId == character.CharacterId.ToString())
-                            {
-                                _selectedCharacterId = null;
-                            }
-                            RefreshCharacterList();
-                        }
-                        else
+                        if (!result)
                         {
                             Debug.LogError("[CharacterSelectionUI] 角色删除失败");
                         }
+                        // 删除成功后不在这里动 _characters：result 只表示请求已发出，
+                        // 服务端回执会经 CharacterManager 发布 CharacterListUpdated，
+                        // 由 OnCharacterListUpdated 整体刷新，界面与库才不会各说各话。
                     }
                     catch (Exception ex)
                     {

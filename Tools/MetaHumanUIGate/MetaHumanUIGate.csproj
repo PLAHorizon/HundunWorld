@@ -1,0 +1,52 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MetaHuman 数值捏脸 UI 的离屏编译门（仿 Tools/MetaHumanCompileCheck）。
+
+    把新面板 MetaHumanSculptPanel.cs 连同 MetaHuman 插件的 Core + Runtime 源码，
+    只对着引擎的 FlaxEngine.CSharp.dll 编一遍，证明「API 用法正确、代码自洽」。
+    Source/Game 整体带 Orleans/网络 DLL 编不进这个门，所以本门只覆盖自成一体的面板类；
+    CcCreationPages.cs / MainUIManager.cs 里的 Ink 接合（找预览 Actor、挂组件、注册页）进不了本门，
+    只能人肉复核。
+
+    用法：在仓库根执行 dotnet build Tools/MetaHumanUIGate/MetaHumanUIGate.csproj（可带增量关闭开关）后看错误/警告数。
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>MetaHumanUIGate</AssemblyName>
+    <RootNamespace>MetaHumanUIGate</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.13</EngineRoot>
+    <ModuleRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\MetaHuman\Source\MetaHuman</ModuleRoot>
+    <UiRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Source\Game\UI\Ink\Pages\CharacterCreation</UiRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ModuleRoot)\Core\*.cs" />
+    <Compile Include="$(ModuleRoot)\Runtime\*.cs" />
+    <!-- 只有自成一体的捏脸面板进得了这个门；Ink 舞台接合留在 CcCreationPages.cs，人肉复核。 -->
+    <Compile Include="$(UiRoot)\MetaHumanSculptPanel.cs" />
+    <!-- 面板的发型按钮要用它（纯 System 依赖，自成一体的静态表），不放进门就会 CS0234。 -->
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\HundunWorld\Source\Game\Character\HairStyleCatalog.cs" />
+    <Compile Include="$(UiRoot)\CcControls.cs" />
+    <Compile Include="$(UiRoot)\CcFacePresets.cs" />
+    <Compile Include="$(UiRoot)\CcSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\HundunWorld\Source\Game\UI\Ink\InkBackgrounds.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\HundunWorld\Source\Game\UI\StyleSystem\InkWashTheme.cs" />
+  </ItemGroup>
+
+</Project>

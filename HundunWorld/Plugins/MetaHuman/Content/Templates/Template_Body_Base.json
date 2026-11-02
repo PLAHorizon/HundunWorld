@@ -1,0 +1,2263 @@
+{
+  "TemplateId": "metahuman.body_base",
+  "DisplayName": "MetaHuman 身体基础模板",
+  "Version": {
+    "Major": 1,
+    "Minor": 1,
+    "Revision": 0
+  },
+  "Author": "身体模板生成器",
+  "HeadAsset": "",
+  "BodyAsset": "Content/Character/Models/Ada_BodyMesh",
+  "LodCount": 8,
+  "SkeletonSlotMap": {
+    "body.spine": [
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "spine_04",
+      "pelvis"
+    ],
+    "body.arm_l": [
+      "upperarm_bicep_l",
+      "upperarm_tricep_l",
+      "hand_l"
+    ],
+    "body.arm_r": [
+      "upperarm_bicep_r",
+      "upperarm_tricep_r",
+      "hand_r"
+    ],
+    "body.leg_l": [
+      "thigh_fwd_l",
+      "calf_knee_l",
+      "foot_l"
+    ],
+    "body.leg_r": [
+      "thigh_fwd_r",
+      "calf_knee_r",
+      "foot_r"
+    ],
+    "body.shoulder": [
+      "clavicle_l",
+      "clavicle_r",
+      "shoulders"
+    ],
+    "body.head": [
+      "head",
+      "neck_01",
+      "neck_02"
+    ],
+    "body.pelvis": [
+      "pelvis"
+    ]
+  },
+  "MorphCatalog": [],
+  "Parameters": [
+    {
+      "Id": "body.height",
+      "DisplayName": "身高",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 135.0,
+      "Max": 220.0,
+      "Default": 177.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "root",
+          "Gain": 0.005633802816901409,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -1.0
+        }
+      ]
+    },
+    {
+      "Id": "body.bust",
+      "DisplayName": "胸围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 75.0,
+      "Max": 160.0,
+      "Default": 117.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_04",
+          "Gain": 0.012,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -1.41
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_l",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.705
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_r",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.705
+        }
+      ]
+    },
+    {
+      "Id": "body.bust_span",
+      "DisplayName": "胸间距",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 14.0,
+      "Max": 36.0,
+      "Default": 25.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_l",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.25
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_r",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.25
+        }
+      ]
+    },
+    {
+      "Id": "body.underbust",
+      "DisplayName": "下胸围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 62.0,
+      "Max": 165.0,
+      "Default": 113.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_03",
+          "Gain": 0.012,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -1.362
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_04",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.681
+        }
+      ]
+    },
+    {
+      "Id": "body.waist",
+      "DisplayName": "腰围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 55.0,
+      "Max": 160.0,
+      "Default": 107.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_02",
+          "Gain": 0.013,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -1.3975
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_03",
+          "Gain": 0.013,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -1.3975
+        }
+      ]
+    },
+    {
+      "Id": "body.rise",
+      "DisplayName": "躯干长",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 58.0,
+      "Max": 140.0,
+      "Default": 99.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_01",
+          "Gain": 0.3,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -29.7
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_02",
+          "Gain": 0.3,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -29.7
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_03",
+          "Gain": 0.25,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -24.75
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_04",
+          "Gain": 0.15,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -14.85
+        }
+      ]
+    },
+    {
+      "Id": "body.inseam",
+      "DisplayName": "内缝长(腿长)",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 48.0,
+      "Max": 110.0,
+      "Default": 79.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "foot_l",
+          "Gain": 0.5,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -39.5
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "foot_r",
+          "Gain": 0.5,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -39.5
+        }
+      ]
+    },
+    {
+      "Id": "body.hip",
+      "DisplayName": "臀围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 76.0,
+      "Max": 165.0,
+      "Default": 120.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "pelvis",
+          "Gain": 0.012,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -1.446
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_01",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.723
+        }
+      ]
+    },
+    {
+      "Id": "body.high_hip",
+      "DisplayName": "髋围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 66.0,
+      "Max": 165.0,
+      "Default": 115.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "pelvis",
+          "Gain": 0.013,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -1.5014999999999998
+        }
+      ]
+    },
+    {
+      "Id": "body.neck_base",
+      "DisplayName": "颈根围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 33.0,
+      "Max": 65.0,
+      "Default": 49.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "neck_01",
+          "Gain": 0.02,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.98
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_l",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.294
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_r",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.294
+        }
+      ]
+    },
+    {
+      "Id": "body.neck",
+      "DisplayName": "颈围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 31.0,
+      "Max": 56.0,
+      "Default": 43.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "neck_01",
+          "Gain": 0.022,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.957
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "neck_02",
+          "Gain": 0.018,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.7829999999999999
+        }
+      ]
+    },
+    {
+      "Id": "body.thigh",
+      "DisplayName": "大腿围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 39.0,
+      "Max": 105.0,
+      "Default": 72.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_fwd_l",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.72
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_fwd_r",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.72
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_bck_l",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.72
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_bck_r",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.72
+        }
+      ]
+    },
+    {
+      "Id": "body.knee",
+      "DisplayName": "膝围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 26.0,
+      "Max": 57.0,
+      "Default": 41.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "calf_knee_l",
+          "Gain": 0.02,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.8300000000000001
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "calf_knee_r",
+          "Gain": 0.02,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.8300000000000001
+        }
+      ]
+    },
+    {
+      "Id": "body.calf",
+      "DisplayName": "小腿围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 26.0,
+      "Max": 60.0,
+      "Default": 43.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "calf_knee_l",
+          "Gain": 0.018,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.7739999999999999
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "calf_knee_r",
+          "Gain": 0.018,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.7739999999999999
+        }
+      ]
+    },
+    {
+      "Id": "body.front_interscye_length",
+      "DisplayName": "前肩缝长",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 27.0,
+      "Max": 55.0,
+      "Default": 41.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "clavicle_l",
+          "Gain": 0.5,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -20.5
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "clavicle_r",
+          "Gain": 0.5,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -20.5
+        }
+      ]
+    },
+    {
+      "Id": "body.upper_arm_length",
+      "DisplayName": "上臂长",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 25.0,
+      "Max": 54.0,
+      "Default": 39.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "hand_l",
+          "Gain": 0.3,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -11.85
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "hand_r",
+          "Gain": 0.3,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -11.85
+        }
+      ]
+    },
+    {
+      "Id": "body.lower_arm_length",
+      "DisplayName": "前臂长",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 18.0,
+      "Max": 35.0,
+      "Default": 26.5,
+      "Step": 0.01,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "hand_l",
+          "Gain": 0.2,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -5.300000000000001
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "hand_r",
+          "Gain": 0.2,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -5.300000000000001
+        }
+      ]
+    },
+    {
+      "Id": "body.bicep",
+      "DisplayName": "肱二头围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 20.0,
+      "Max": 63.0,
+      "Default": 41.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_bicep_l",
+          "Gain": 0.018,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.747
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_bicep_r",
+          "Gain": 0.018,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.747
+        }
+      ]
+    },
+    {
+      "Id": "body.elbow",
+      "DisplayName": "肘围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 16.0,
+      "Max": 48.0,
+      "Default": 32.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_tricep_l",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.32
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_tricep_r",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.32
+        }
+      ]
+    },
+    {
+      "Id": "body.wrist",
+      "DisplayName": "腕围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 11.0,
+      "Max": 32.0,
+      "Default": 21.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "hand_l",
+          "Gain": 0.016,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.34400000000000003
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "hand_r",
+          "Gain": 0.016,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.34400000000000003
+        }
+      ]
+    },
+    {
+      "Id": "body.neck_to_waist",
+      "DisplayName": "颈到腰长",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 27.0,
+      "Max": 53.0,
+      "Default": 40.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_01",
+          "Gain": 0.35,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -14.0
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_02",
+          "Gain": 0.35,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -14.0
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_03",
+          "Gain": 0.3,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -12.0
+        }
+      ]
+    },
+    {
+      "Id": "body.across_shoulder",
+      "DisplayName": "肩宽",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 22.0,
+      "Max": 54.0,
+      "Default": 38.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_l",
+          "Gain": 0.014,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.532
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_r",
+          "Gain": 0.014,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.532
+        }
+      ]
+    },
+    {
+      "Id": "body.shoulder_height",
+      "DisplayName": "肩高",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 112.0,
+      "Max": 192.0,
+      "Default": 152.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_03",
+          "Gain": 0.35,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -53.199999999999996
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_04",
+          "Gain": 0.35,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -53.199999999999996
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "clavicle_l",
+          "Gain": 0.15,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -22.8
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "clavicle_r",
+          "Gain": 0.15,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -22.8
+        }
+      ]
+    },
+    {
+      "Id": "body.shoulder_to_apex",
+      "DisplayName": "肩到乳点",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 19.0,
+      "Max": 44.0,
+      "Default": 31.5,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "spine_04",
+          "Gain": 0.6,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -18.9
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "clavicle_l",
+          "Gain": 0.2,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -6.300000000000001
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "clavicle_r",
+          "Gain": 0.2,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -6.300000000000001
+        }
+      ]
+    },
+    {
+      "Id": "body.neck_length",
+      "DisplayName": "颈长",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": 4.0,
+      "Max": 18.0,
+      "Default": 11.0,
+      "Step": 0.01,
+      "Effects": [
+        {
+          "Kind": "BoneTranslate",
+          "Target": "neck_01",
+          "Gain": 0.5,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -5.5
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "neck_02",
+          "Gain": 0.3,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -3.3
+        },
+        {
+          "Kind": "BoneTranslate",
+          "Target": "head",
+          "Gain": 0.2,
+          "Axis": {
+            "X": 0.0,
+            "Y": 1.0,
+            "Z": 0.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -2.2
+        }
+      ]
+    },
+    {
+      "Id": "body.forearm",
+      "DisplayName": "前臂围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 14.0,
+      "Max": 50.0,
+      "Default": 32.0,
+      "Step": 0.5,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "hand_l",
+          "Gain": 0.012,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.384
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "hand_r",
+          "Gain": 0.012,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.384
+        }
+      ]
+    },
+    {
+      "Id": "body.hand_circumference",
+      "DisplayName": "手围",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 12.0,
+      "Max": 32.0,
+      "Default": 22.0,
+      "Step": 0.01,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "hand_l",
+          "Gain": 0.016,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.352
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "hand_r",
+          "Gain": 0.016,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.352
+        }
+      ]
+    },
+    {
+      "Id": "body.fat",
+      "DisplayName": "体脂",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 0.0,
+      "Max": 1.0,
+      "Default": 0.5,
+      "Step": 0.01,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_02",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.005
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_03",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.005
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "pelvis",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.005
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_fwd_l",
+          "Gain": 0.007,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.0035
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_fwd_r",
+          "Gain": 0.007,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.0035
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_bicep_l",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.003
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_bicep_r",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.003
+        }
+      ]
+    },
+    {
+      "Id": "body.masculine_feminine",
+      "DisplayName": "雄性化/雌性化",
+      "Region": "Body",
+      "Kind": "Proportion",
+      "Side": "None",
+      "PairId": null,
+      "Min": -2.0,
+      "Max": 2.0,
+      "Default": 0.0,
+      "Step": 0.01,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_l",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.0
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "clavicle_r",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.0
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "pelvis",
+          "Gain": -0.008,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": 0.0
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_01",
+          "Gain": -0.004,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": 0.0
+        }
+      ]
+    },
+    {
+      "Id": "body.muscularity",
+      "DisplayName": "肌肉量",
+      "Region": "Body",
+      "Kind": "BodyShape",
+      "Side": "None",
+      "PairId": null,
+      "Min": 0.0,
+      "Max": 1.0,
+      "Default": 0.5,
+      "Step": 0.01,
+      "Effects": [
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_bicep_l",
+          "Gain": 0.012,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.006
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_bicep_r",
+          "Gain": 0.012,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.006
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_tricep_l",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.005
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "upperarm_tricep_r",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.005
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_fwd_l",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.005
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_fwd_r",
+          "Gain": 0.01,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.005
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_bck_l",
+          "Gain": 0.008,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.004
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "thigh_bck_r",
+          "Gain": 0.008,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.004
+        },
+        {
+          "Kind": "BoneScale",
+          "Target": "spine_03",
+          "Gain": 0.006,
+          "Axis": {
+            "X": 1.0,
+            "Y": 0.0,
+            "Z": 1.0
+          },
+          "BaseColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "TargetColor": {
+            "R": 0,
+            "G": 0,
+            "B": 0
+          },
+          "Offset": -0.003
+        }
+      ]
+    }
+  ],
+  "Presets": [],
+  "Constraints": [],
+  "RequiresBlendShapeImport": true,
+  "_Provenance": {
+    "contours_from": "body_model.dna@desc:196 (model_version=0.5.0)",
+    "joint_names_from": "body_joint_mapping.json@JointPropagationMap",
+    "length_channel": "BoneTranslate 沿 Y，份额之和=1 ⇒ 1cm 偏差 = 1cm 链位移",
+    "girth_channel": "BoneScale 只压 X/Z；Gain=每 1cm 周长的半径缩放率，Offset=-默认值*Gain ⇒ 默认零贡献",
+    "semantic_axes": [
+      "Fat",
+      "Masculine/Feminine",
+      "Muscularity"
+    ],
+    "skipped": [],
+    "anchors_used": [
+      "calf_knee_l",
+      "calf_knee_r",
+      "clavicle_l",
+      "clavicle_r",
+      "foot_l",
+      "foot_r",
+      "hand_l",
+      "hand_r",
+      "head",
+      "neck_01",
+      "neck_02",
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "spine_04",
+      "thigh_bck_l",
+      "thigh_bck_r",
+      "thigh_fwd_l",
+      "thigh_fwd_r",
+      "upperarm_bicep_l",
+      "upperarm_bicep_r",
+      "upperarm_tricep_l",
+      "upperarm_tricep_r"
+    ],
+    "notes": "pose_logic 的 57 条实测是关节限位与脊柱/颈部分配，不是围度约束，故未编进 Constraints。"
+  }
+}

@@ -103,14 +103,6 @@ namespace NarrativePro.UnrealFramework
             return classPath;
         }
 
-        /// <summary>开始初始加载。从 InitializeObjectReferences 调用。对应 UE5 StartInitialLoading。</summary>
-        public virtual void StartInitialLoading()
-        {
-            NarrativeLog.Log("[NarrativeAssetManager] StartInitialLoading");
-            InitializeGAS();
-            // TODO [需接入资产加载系统]: 加载 Narrative 默认资产、标签等
-        }
-
         /// <summary>线程安全地将已加载资产加入驻留内存列表。对应 UE5 AddLoadedAsset。</summary>
         /// <param name="asset">要驻留的资产。</param>
         public virtual void AddLoadedAsset(object asset)
@@ -120,13 +112,6 @@ namespace NarrativePro.UnrealFramework
             {
                 LoadedAssets.Add(asset);
             }
-        }
-
-        /// <summary>初始化 GAS（Gameplay Ability System）。对应 UE5 InitializeGAS。</summary>
-        public virtual void InitializeGAS()
-        {
-            NarrativeLog.Log("[NarrativeAssetManager] InitializeGAS");
-            // TODO [需接入 GAS 系统]: 注册 GameplayTag、加载默认 AttributeData、Effect 等
         }
 
         /// <summary>清空资产缓存（用于关卡切换或内存压力释放）。</summary>

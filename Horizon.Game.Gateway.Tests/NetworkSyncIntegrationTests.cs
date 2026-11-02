@@ -415,7 +415,7 @@ public class NetworkSyncIntegrationTests
     {
         var grain = CreateGrain();
         var observer = new CapturingFanoutObserver();
-        var interest = WorldCoord.GetChunksInView(0f, 0f, 0f, radius: 1).ToArray();
+        var interest = WorldChunkAoi.GetChunksInView(0f, 0f, 0f, radius: 1).ToArray();
         await grain.SubscribeFanoutAsync(Guid.NewGuid(), observer);
 
         await grain.EnterWorldAsync(1001, 1001, 0f, 0f, 0f, interest);

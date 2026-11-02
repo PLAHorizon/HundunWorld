@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using FlaxEngine;
 
 namespace HundunWorld.Game.UI.Ink.Components

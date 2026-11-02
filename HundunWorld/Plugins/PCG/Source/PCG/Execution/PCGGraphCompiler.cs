@@ -1,5 +1,5 @@
-// PCG Plugin - Graph compiler
-// Part of the FlaxEngine PCG plugin. See docs/PCG_PLUGIN_DESIGN.md §4.1 note 5 and §4.5.
+// PCG 插件 - 图编译器
+// FlaxEngine PCG 插件的一部分。见 docs/PCG_PLUGIN_DESIGN.md §4.1 注 5 与 §4.5。
 
 using System;
 using System.Collections.Generic;
@@ -9,29 +9,29 @@ using PCG.Graph;
 
 namespace PCG.Execution
 {
-    /// <summary>Severity of a compilation diagnostic.</summary>
+    /// <summary>一次编译诊断的严重度。</summary>
     public enum PCGCompileSeverity
     {
-        /// <summary>Reported but the graph still runs.</summary>
+        /// <summary>会报告，但图照样能运行。</summary>
         Warning = 0,
 
-        /// <summary>The graph cannot run.</summary>
+        /// <summary>图不能运行。</summary>
         Error = 1,
     }
 
-    /// <summary>One compilation diagnostic, addressable back to graph elements for editor highlighting.</summary>
+    /// <summary>一条编译诊断，可回溯到图元素以便编辑器高亮。</summary>
     public sealed class PCGCompileDiagnostic
     {
-        /// <summary>Severity.</summary>
+        /// <summary>严重度。</summary>
         public PCGCompileSeverity Severity;
 
-        /// <summary>Message.</summary>
+        /// <summary>消息。</summary>
         public string Message;
 
-        /// <summary>Index of the offending node, or -1.</summary>
+        /// <summary>出问题的节点下标，或 -1。</summary>
         public int NodeIndex = -1;
 
-        /// <summary>Index of the offending edge, or -1.</summary>
+        /// <summary>出问题的边下标，或 -1。</summary>
         public int EdgeIndex = -1;
 
         /// <inheritdoc />
@@ -39,13 +39,13 @@ namespace PCG.Execution
             $"[{Severity}] {(NodeIndex >= 0 ? $"node {NodeIndex}: " : string.Empty)}{Message}";
     }
 
-    /// <summary>Raised when a graph is executed without compiling successfully.</summary>
+    /// <summary>在未编译成功的情况下执行图时抛出。</summary>
     public sealed class PCGCompilationException : Exception
     {
-        /// <summary>Diagnostics that caused the failure.</summary>
+        /// <summary>造成这次失败的诊断项。</summary>
         public IReadOnlyList<PCGCompileDiagnostic> Diagnostics { get; }
 
-        /// <summary>Creates the exception.</summary>
+        /// <summary>创建这个异常。</summary>
         public PCGCompilationException(IReadOnlyList<PCGCompileDiagnostic> diagnostics)
             : base(Summarize(diagnostics))
         {
@@ -72,44 +72,44 @@ namespace PCG.Execution
         }
     }
 
-    /// <summary>A compiled, executable graph.</summary>
+    /// <summary>一份已编译、可执行的图。</summary>
     public sealed class PCGCompiledGraph
     {
-        /// <summary>Node instances, indexed by graph node index.</summary>
+        /// <summary>节点实例，按图里的节点下标索引。</summary>
         public PCGNodeBase[] Nodes;
 
         /// <summary>
-        /// Upstream inputs for each node, indexed by graph node index. Each entry is a per-input-pin array
-        /// of <c>(upstreamNodeIndex, upstreamOutputPinIndex)</c> pairs, in edge order.
+        /// 每个节点的上游输入，按图里的节点下标索引。每个条目是一个按输入 pin 排的数组，
+        /// 里面装 <c>(上游节点下标, 上游输出 pin 下标)</c> 对，按边顺序。
         /// </summary>
         public PCGInputLink[][][] Links;
 
-        /// <summary>Node indices in dependency order: every node appears after all of its inputs.</summary>
+        /// <summary>依赖顺序下的节点下标：每个节点都出现在它所有输入之后。</summary>
         public int[] ExecutionOrder;
 
-        /// <summary>Nodes that feed no consumer, in graph order. These are the outputs to evaluate.</summary>
+        /// <summary>不喂给任何消费者的节点，按图顺序。这些就是要求值的输出。</summary>
         public int[] SinkNodes;
 
-        /// <summary>Stable structural hash of the topology. Parameter values are deliberately excluded.</summary>
+        /// <summary>拓扑的稳定结构哈希。参数值刻意排除在外。</summary>
         public int StructuralHash;
 
-        /// <summary>Diagnostics from compilation, including warnings that did not stop execution.</summary>
+        /// <summary>编译产生的诊断，包括那些没挡住执行的警告。</summary>
         public IReadOnlyList<PCGCompileDiagnostic> Diagnostics;
 
-        /// <summary>The graph this was compiled from.</summary>
+        /// <summary>它是从哪张图编译来的。</summary>
         public PCGGraph Source;
 
-        /// <summary>Gets the number of executable nodes.</summary>
+        /// <summary>取得可执行节点的数量。</summary>
         public int NodeCount => Nodes?.Length ?? 0;
     }
 
-    /// <summary>A resolved upstream connection for one input pin.</summary>
+    /// <summary>一个已解析的上游连接，对应一个输入 pin。</summary>
     public struct PCGInputLink
     {
-        /// <summary>Index of the node producing the data.</summary>
+        /// <summary>产出这份数据的节点下标。</summary>
         public int SourceNodeIndex;
 
-        /// <summary>Output pin index on the source node.</summary>
+        /// <summary>来源节点上的输出 pin 下标。</summary>
         public int SourcePinIndex;
 
         /// <inheritdoc />
@@ -117,37 +117,44 @@ namespace PCG.Execution
     }
 
     /// <summary>
-    /// Turns a <see cref="PCGGraph"/> into an executable <see cref="PCGCompiledGraph"/>.
+    /// 把一张 <see cref="PCGGraph"/> 变成可执行的 <see cref="PCGCompiledGraph"/>。
     /// </summary>
     /// <remarks>
-    /// <para>Compilation is where four things happen that cannot be deferred to run time:</para>
+    /// <para>编译这一步做了四件没法推迟到运行时的事情：</para>
     /// <list type="number">
-    /// <item><b>Cycle detection.</b> A pull-based executor recurses through inputs, so a cycle (A feeds B
-    /// feeds A) would recurse until the stack overflows. Users can create one in seconds in a graph editor,
-    /// so it must be caught here and reported against the offending nodes and edges, never left to a
-    /// run-time depth guard.</item>
-    /// <item><b>Topological order.</b> Gives the executor a dependency-ordered plan, which is what makes
-    /// result caching and future dirty-marking propagation possible.</item>
-    /// <item><b>Parameter and connection validation.</b> Surfaces unknown node types, bad pin indices and
-    /// missing required inputs as editor-facing diagnostics rather than run-time exceptions.</item>
-    /// <item><b>Structural hashing.</b> Distinguishes "only a parameter changed" (incremental re-run) from
-    /// "the topology changed" (full recompile).</item>
+    /// <item><b>成环检测。</b>拉取式的执行器会顺着输入递归，所以一个环（A 喂 B
+    /// 喂 A）会一路递归到栈溢出。用户在图编辑器里几秒就能造出一个，
+    /// 所以它必须在这里被抓住、并报到出问题的节点与边上，绝不能留给
+    /// 运行时的深度守卫。</item>
+    /// <item><b>拓扑排序。</b>给执行器一份按依赖排好的计划，这正是
+    /// 结果缓存与将来脏标记传播得以可能的前提。</item>
+    /// <item><b>参数与连接校验。</b>把认不出的节点类型、错的 pin 下标、
+    /// 缺失的必需输入变成给编辑器看的诊断，而不是运行时的异常。</item>
+    /// <item><b>结构哈希。</b>区分"只改了参数"（增量重跑）与
+    /// "拓扑变了"（整体重编译）。</item>
     /// </list>
     /// </remarks>
     public static class PCGGraphCompiler
     {
         /// <summary>
-        /// Compiles a graph.
+        /// 编译一张图。
         /// </summary>
-        /// <param name="graph">Graph to compile.</param>
-        /// <param name="compiled">The compiled graph, or null when a hard error occurred.</param>
-        /// <returns>True when the graph compiled without errors.</returns>
+        /// <param name="graph">要编译的图。</param>
+        /// <param name="compiled">编译结果；出现硬错误时为 null。</param>
+        /// <returns>图在无错误的前提下编译成功时为真。</returns>
         public static bool TryCompile(PCGGraph graph, out PCGCompiledGraph compiled)
         {
             compiled = null;
 
             if (graph == null)
                 return false;
+
+            // 编译前先确保**节点表装好了**。这一步是补一个真缺陷：编辑器那一侧由画布安装（`PCGNodeArchetypes.Build`
+            // 见到空表就注册），而运行期是另一条入口——PIE / 游戏里没有画布，表可能被脚本重载清过而没人重装，
+            // 于是本该能跑的图在运行时报「Unknown node type 'LandscapeSampler' … a plugin that is not loaded」，
+            // 表现就是"编辑器里跑得好好的图，一进 PIE 就编译失败"。`RegisterAll` 是幂等的（重复调用只覆盖同一张表），
+            // 所以这里无条件调一次，代价可以忽略。
+            PCG.Runtime.PCGNodeRegistration.RegisterAll();
 
             var diagnostics = new List<PCGCompileDiagnostic>();
             int nodeCount = graph.NodeCount;
@@ -176,7 +183,7 @@ namespace PCG.Execution
 
             var settings = graph.Settings ?? new PCGGraphSettings();
 
-            // ---- Instantiate nodes -------------------------------------------------
+            // ---- 实例化节点 -------------------------------------------------
             var nodes = new PCGNodeBase[nodeCount];
             for (int i = 0; i < nodeCount; i++)
             {
@@ -204,8 +211,8 @@ namespace PCG.Execution
                     continue;
                 }
 
-                // Defensive: the instance's declared id must match the serialized one, otherwise the graph
-                // would silently execute a different node than it names.
+                // 防御性的：实例自己声明的 id 必须与序列化下来的那个一致，否则这张图
+                // 会静静地执行一个与它名字所指不同的节点。
                 if (!string.Equals(instance.TypeId, node.TypeId, StringComparison.Ordinal))
                 {
                     diagnostics.Add(new PCGCompileDiagnostic
@@ -217,12 +224,13 @@ namespace PCG.Execution
                     continue;
                 }
 
+                ValidateParameterSlots(node, i, diagnostics);
                 nodes[i] = instance;
             }
 
-            // ---- Resolve edges -----------------------------------------------------
-            // Each node's per-pin link buckets are built as lists first, then frozen to arrays, so edges can
-            // be appended without knowing the final counts up front.
+            // ---- 解析边 -----------------------------------------------------
+            // 每个节点按 pin 分桶的链接先建成列表、再冻成数组，于是边的追加
+            // 不需要预先知道最终的个数。
             var buckets = new List<PCGInputLink>[nodeCount][];
             var links = new PCGInputLink[nodeCount][][];
 
@@ -275,7 +283,7 @@ namespace PCG.Execution
                 var targetNode = nodes[edge.InputNodeIndex];
                 if (sourceNode == null || targetNode == null)
                 {
-                    // Already reported as a node error; do not pile on.
+                    // 已经作为节点错误报过了；不要再叠一条。
                     continue;
                 }
 
@@ -308,7 +316,7 @@ namespace PCG.Execution
                     continue;
                 }
 
-                // Self-connection is a one-node cycle; report it as a cycle so the message is familiar.
+                // 自连接是一个单节点的环；按环来报，好让消息是熟悉的。
                 if (edge.OutputNodeIndex == edge.InputNodeIndex)
                 {
                     diagnostics.Add(new PCGCompileDiagnostic
@@ -344,7 +352,7 @@ namespace PCG.Execution
                 });
             }
 
-            // Freeze the buckets into the link arrays the executor consumes.
+            // 把这些桶冻成执行器消费的那几份链接数组。
             for (int i = 0; i < nodeCount; i++)
             {
                 var perPin = buckets[i];
@@ -355,7 +363,7 @@ namespace PCG.Execution
                 links[i] = frozen;
             }
 
-            // ---- Required inputs ---------------------------------------------------
+            // ---- 必需输入 ---------------------------------------------------
             for (int i = 0; i < nodeCount; i++)
             {
                 var node = nodes[i];
@@ -380,7 +388,7 @@ namespace PCG.Execution
                 }
             }
 
-            // ---- Cycle detection (DFS three-colour) --------------------------------
+            // ---- 成环检测（DFS 三色标记） --------------------------------
             var colour = new byte[nodeCount]; // 0 = white, 1 = grey, 2 = black
             var stack = new Stack<int>();
             bool hasCycle = false;
@@ -396,7 +404,7 @@ namespace PCG.Execution
 
             if (hasCycle)
             {
-                // A cyclic graph has no valid order, so stop before producing a plan.
+                // 有环的图没有合法的顺序，所以在产出计划之前停下。
                 compiled = new PCGCompiledGraph
                 {
                     Nodes = nodes,
@@ -411,7 +419,7 @@ namespace PCG.Execution
                 return false;
             }
 
-            // ---- Validate node count budget ---------------------------------------
+            // ---- 校验节点数量预算 ---------------------------------------
             if (nodeCount > settings.MaxExpandedNodeCount)
             {
                 diagnostics.Add(new PCGCompileDiagnostic
@@ -422,10 +430,10 @@ namespace PCG.Execution
                 });
             }
 
-            // ---- Topological order (Kahn) -----------------------------------------
+            // ---- 拓扑排序（Kahn） -----------------------------------------
             var executionOrder = TopologicalOrder(nodeCount, nodes, links, diagnostics);
 
-            // ---- Find sinks -------------------------------------------------------
+            // ---- 找汇点 -------------------------------------------------------
             var hasConsumer = new bool[nodeCount];
             for (int i = 0; i < nodeCount; i++)
             {
@@ -475,7 +483,7 @@ namespace PCG.Execution
             return !hasError;
         }
 
-        /// <summary>Compiles a graph, throwing when it cannot run.</summary>
+        /// <summary>编译一张图，跑不了就抛。</summary>
         public static PCGCompiledGraph Compile(PCGGraph graph)
         {
             if (!TryCompile(graph, out var compiled))
@@ -487,7 +495,7 @@ namespace PCG.Execution
         private static bool DetectCycle(
             int start, PCGInputLink[][][] links, byte[] colour, Stack<int> path, List<PCGCompileDiagnostic> diagnostics)
         {
-            // Iterative DFS: recursion here would be the very thing that overflows on a deep graph.
+            // 迭代式 DFS：这里用递归的话，递归本身就会在深图上溢出。
             var frames = new Stack<(int node, int pin, int link)>();
             colour[start] = 1;
             path.Push(start);
@@ -517,7 +525,7 @@ namespace PCG.Execution
 
                 var next = bucket[frame.link].SourceNodeIndex;
 
-                // Resume this frame at the next link once the child is processed.
+                // 子节点处理完之后，从下一条链接继续这一帧。
                 frames.Push((frame.node, frame.pin, frame.link + 1));
 
                 if (next < 0 || next >= colour.Length)
@@ -563,8 +571,8 @@ namespace PCG.Execution
         private static int[] TopologicalOrder(
             int nodeCount, PCGNodeBase[] nodes, PCGInputLink[][][] links, List<PCGCompileDiagnostic> diagnostics)
         {
-            // Kahn's algorithm over the "depends on" graph: a node becomes ready once all upstream nodes it
-            // consumes have been emitted.
+            // 在"依赖于"这张图上跑 Kahn 算法：一个节点在它所有上游
+            // 都已被发出之后就就绪。
             var indegree = new int[nodeCount];
             var consumers = new List<int>[nodeCount];
             for (int i = 0; i < nodeCount; i++)
@@ -585,7 +593,7 @@ namespace PCG.Execution
                         if (src < 0 || src >= nodeCount || nodes[src] == null)
                             continue;
 
-                        // Multiple edges from the same node to the same node count once.
+                        // 同一个节点到同一个节点的多条边只算一次。
                         if (seen.Add(src))
                         {
                             indegree[i]++;
@@ -619,7 +627,7 @@ namespace PCG.Execution
 
             if (order.Count != nodeCount)
             {
-                // Reached only if a cycle slipped past detection; report rather than return a partial plan.
+                // 只有当某个环漏过了检测才会走到这里；宁可报出来，也不交回一份半成品计划。
                 diagnostics.Add(new PCGCompileDiagnostic
                 {
                     Severity = PCGCompileSeverity.Error,
@@ -632,13 +640,13 @@ namespace PCG.Execution
         }
 
         /// <summary>
-        /// Hashes the graph structure: node types, node identity by index, edge endpoints and non-exposed
-        /// parameter values.
+        /// 给图的结构做哈希：节点类型、按下标认定的节点身份、边的两端，以及未被暴露的
+        /// 参数值。
         /// </summary>
         /// <remarks>
-        /// Parameter values matter here because a literal node parameter (a sampler's point count, say)
-        /// changes what the graph computes. Values that are exposed as graph parameters are <b>not</b>
-        /// included, because those are overridden per volume and must not force a recompile.
+        /// 参数值之所以在这里要紧，是因为一个字面量的节点参数（比如采样器的点数）
+        /// 会改变这张图算的是什么；而作为图参数被暴露出去的值<b>不</b>计入，
+        /// 因为那些是按体积覆盖的，不该逼着整体重编译。
         /// </remarks>
         public static int ComputeStructuralHash(PCGGraph graph)
         {
@@ -672,7 +680,7 @@ namespace PCG.Execution
                     hash = hash * 31 + edge.InputPinIndex;
                 }
 
-                // Fold in the non-exposed parameter values.
+                // 把未被暴露的参数值一起折进来。
                 var exposed = new HashSet<(int, int)>();
                 if (graph.ExposedParameters != null)
                 {
@@ -703,13 +711,79 @@ namespace PCG.Execution
             }
         }
 
+        /// <summary>
+        /// 拿节点存下的值与它的类型声明的参数槽位做核对。
+        /// </summary>
+        /// <remarks>
+        /// 少了这一步，写进错槽位的值就是隐形的：<c>PCGNodeParameters</c> 对类型不符
+        /// 回答的是节点自己的默认值，于是这张图会跑起来，并静静地无视
+        /// 设计者输入的东西。种类写错是错误，因为跑出来的会与图所展示的不同；
+        /// 多出来的槽位只是警告，因为没人读它——那浪费力气
+        /// 但不会误导。
+        /// </remarks>
+        private static void ValidateParameterSlots(PCGNode node, int nodeIndex, List<PCGCompileDiagnostic> diagnostics)
+        {
+            if (node?.Values == null || node.Values.Length == 0)
+                return;
+
+            if (!PCGNodeRegistry.TryGet(node.TypeId ?? string.Empty, out var info))
+                return;
+
+            var schema = info.Parameters;
+
+            if (schema == null || schema.Length == 0)
+            {
+                diagnostics.Add(new PCGCompileDiagnostic
+                {
+                    Severity = PCGCompileSeverity.Warning,
+                    Message = $"'{node.TypeId}' declares no parameters but the graph stores {node.Values.Length} " +
+                              $"value(s) on node {nodeIndex}; nothing reads them.",
+                    NodeIndex = nodeIndex,
+                });
+                return;
+            }
+
+            for (int v = 0; v < node.Values.Length; v++)
+            {
+                var value = node.Values[v];
+                if (value == null)
+                    continue;
+
+                if (v >= schema.Length)
+                {
+                    diagnostics.Add(new PCGCompileDiagnostic
+                    {
+                        Severity = PCGCompileSeverity.Warning,
+                        Message = $"'{node.TypeId}' node {nodeIndex} stores a value at slot {v} " +
+                                  $"({value.GetType().Name}), past its {schema.Length} declared parameter slot(s); " +
+                                  "the node never reads it.",
+                        NodeIndex = nodeIndex,
+                    });
+                    continue;
+                }
+
+                var slot = schema[v];
+                if (slot.IsCompatible(value))
+                    continue;
+
+                diagnostics.Add(new PCGCompileDiagnostic
+                {
+                    Severity = PCGCompileSeverity.Error,
+                    Message = $"'{node.TypeId}' node {nodeIndex}, parameter '{slot.Name}' expects {slot.Kind} " +
+                              $"but the graph holds a {value.GetType().Name}. The node would ignore this value " +
+                              "and use its default, so the run would not match the graph.",
+                    NodeIndex = nodeIndex,
+                });
+            }
+        }
+
         private static int StableStringHash(string s)
         {
             if (s == null)
                 return 0;
 
-            // Deliberately not string.GetHashCode: that is randomised per process on modern .NET, which
-            // would make the structural hash differ between runs and defeat incremental execution.
+            // 刻意不用 string.GetHashCode：现代 .NET 上它每个进程都随机化，
+            // 那会让结构哈希在两次运行之间不同，从而把增量执行废掉。
             unchecked
             {
                 int hash = 23;

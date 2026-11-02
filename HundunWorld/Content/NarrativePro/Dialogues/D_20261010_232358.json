@@ -1,0 +1,43 @@
+{
+  "dialogueId": "D_20261010_232358",
+  "speakers": [
+    {
+      "speakerId": "npc",
+      "displayName": "NPC",
+      "tags": [],
+      "isPlayer": false
+    },
+    {
+      "speakerId": "player",
+      "displayName": "\u73A9\u5BB6",
+      "tags": [],
+      "isPlayer": true
+    }
+  ],
+  "config": {
+    "endDialogueDist": 1200,
+    "showCinematicBars": false,
+    "unskippable": false,
+    "freeMovement": true,
+    "canBeExited": true,
+    "priority": 0
+  },
+  "npcReplies": [
+    {
+      "id": "root",
+      "speakerId": "npc",
+      "isRoot": true,
+      "isSkippable": true,
+      "line": {
+        "Text": "\u2026\u2026",
+        "Duration": 0,
+        "DurationSecondsOverride": 0
+      },
+      "npcReplies": [],
+      "playerReplies": [],
+      "nodePosX": 0,
+      "nodePosY": 0
+    }
+  ],
+  "playerReplies": []
+}

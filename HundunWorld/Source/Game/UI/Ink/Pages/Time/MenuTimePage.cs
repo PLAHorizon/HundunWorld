@@ -3,11 +3,12 @@ using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Timing
 {
-    public class MenuTimePage : ContainerControl, IInkPage
+    public class MenuTimePage : ContainerControl, IInkPage, IInkNavigationSource
     {
         /// <summary>
         /// 标准导航事件（对齐 Ink 页面契约，由工厂 HookNavigationRequested 挂钩后经路由器跳转）。
@@ -22,6 +23,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
         private ContainerControl _playerAvatar;
         private Label _playerNameLabel;
         private Label _playerLevelLabel;
+        private Label _playerSectLabel;
         private Label _currencyCoinLabel;
         private Label _currencyIngotLabel;
         private InkButton _questButton;
@@ -42,6 +44,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
         private Label _dateLabel;
         private Label _shichenLabel;
         private Label _weatherLabel;
+        private Label _dateLabelTag;
+        private Label _shichenLabelTag;
+        private Label _weatherLabelTag;
 
         private InkPanel _fastForwardPanel;
         private Label _fastForwardTitle;
@@ -62,9 +67,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
         private string[] _shichenNames = { "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥" };
         private string[] _shichenActivities = { "夜市", "巡夜", "晨钟", "早市", "早课", "武馆", "集市", "茶馆", "比武", "晚歇", "花灯", "夜行" };
-        private string _currentShichen = "午时";
-        private string _currentDate = "三月初七";
-        private string _currentWeather = "晴";
+        private string _currentShichen = "—";
+        private string _currentDate = "—";
+        private string _currentWeather = "—";
 
         public MenuTimePage()
         {
@@ -92,6 +97,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
                 ApplyLayout();
                 RefreshAllData();
+
+                // 顶栏身份接真实数据（银两没有数据源，保持 —）
+                InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelLabel, _currencyCoinLabel, "", "铜钱 ");
+                InkPlayerHeaderBinder.BindSect(_playerSectLabel);
             }
             catch (Exception ex)
             {
@@ -101,13 +110,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
         private void BuildAtmosphere()
         {
-            var vignette = new InkVignette();
-            vignette.AnchorPreset = AnchorPresets.StretchAll;
-            AddChild(vignette);
-
-            var bgLayer = new InkBackgroundLayer();
-            bgLayer.AnchorPreset = AnchorPresets.StretchAll;
-            AddChild(bgLayer);
+            // 全局墨底背景层与暗角晕影由外壳统一提供（本页为沉浸式全屏页），页面不再自绘：
+            // 原实现与外壳层叠加会得到双份墨底 + 双层暗角。
         }
 
         private void BuildLeftNav()
@@ -228,7 +232,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 Parent = _topBar
             };
             // 返回战斗 HUD（设计隐藏出口 back-hud）
-            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
 
             _playerAvatar = new ContainerControl
             {
@@ -243,13 +247,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 TextColor = InkWashTheme.TextOnBrand,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.StretchAll,
+                // 头像圈 40×40：StretchAll 会被撑成 140×60，字被裁
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Vector2(40f, 40f),
                 Parent = _playerAvatar
             };
 
             _playerNameLabel = new Label
             {
-                Text = "无名侠",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
                 TextColor = InkWashTheme.PaperBright,
                 Parent = _topBar
@@ -257,19 +264,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
             _playerLevelLabel = new Label
             {
-                Text = "Lv.42",
+                Text = "Lv.—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _topBar
             };
 
-            var sectLabel = new Label
+            _playerSectLabel = new Label
             {
-                Text = "逍遥派",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.GoldBright,
                 Size = new Float2(80f, 20f),
-                Location = new Float2(196f, 16f),
                 Parent = _topBar
             };
 
@@ -286,7 +292,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
             _currencyCoinLabel = new Label
             {
-                Text = "铜钱 12,450",
+                Text = "铜钱 —",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.PaperAged,
                 Parent = _topBar
@@ -294,7 +300,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
             _currencyIngotLabel = new Label
             {
-                Text = "银两 328",
+                Text = "银两 —",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.GoldBright,
                 Parent = _topBar
@@ -330,12 +336,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
             {
                 Size = new Float2(500f, 500f),
                 BackgroundColor = Color.Transparent,
+                // 12 个时辰别称画在半径 255 处（左右两个极点 x≈485 宽 40），会越过 500 宽的面板边界；
+                // InkPanel 默认 ClipChildren=true，卯/酉两侧的别称会被切掉半截。
+                ClipChildren = false,
                 Parent = _dialSection
             };
 
             _centerShichenLabel = new Label
             {
-                Text = "午时",
+                Text = _currentShichen,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 30f),
                 TextColor = InkWashTheme.GoldBright,
                 Width = 100f,
@@ -346,7 +355,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
             _centerDateLabel = new Label
             {
-                Text = "三月初七",
+                Text = _currentDate,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
                 TextColor = InkWashTheme.GoldDeep,
                 Width = 100f,
@@ -365,11 +374,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 float x = centerX + (float)Math.Cos(radian) * radius;
                 float y = centerY + (float)Math.Sin(radian) * radius;
 
+                // 当前时辰没有数据源（世界时间同步尚未接入客户端），表盘不标亮任何一格
                 var shichenLabel = new Label
                 {
                     Text = _shichenNames[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, i == 6 ? 24f : 18f),
-                    TextColor = i == 6 ? InkWashTheme.GoldPrimary : InkWashTheme.PaperAged,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
+                    TextColor = InkWashTheme.PaperAged,
                     Width = 30f,
                     Height = 30f,
                     HorizontalAlignment = TextAlignment.Center,
@@ -385,8 +395,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 var activityLabel = new Label
                 {
                     Text = _shichenActivities[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, i == 6 ? 11f : 10f),
-                    TextColor = i == 6 ? InkWashTheme.GoldBright : InkWashTheme.PaperFaded,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                    TextColor = InkWashTheme.PaperFaded,
                     Width = 40f,
                     Height = 16f,
                     HorizontalAlignment = TextAlignment.Center,
@@ -400,6 +410,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 Text = "● 当前时辰",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.GoldPrimary,
+                Visible = false, // 没有当前时辰数据，不亮图例
                 Parent = _dialSection
             };
 
@@ -444,55 +455,58 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
             _dateLabel = new Label
             {
-                Text = "三月初七",
+                Text = _currentDate,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
                 TextColor = InkWashTheme.TextOnPaper,
                 HorizontalAlignment = TextAlignment.Center,
                 Parent = _currentTimePanel
             };
 
-            var dateLabelTag = new Label
+            _dateLabelTag = new Label
             {
                 Text = "日期",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperDark,
                 HorizontalAlignment = TextAlignment.Center,
+                Size = new Float2(100f, 16f),
                 Parent = _currentTimePanel
             };
 
             _shichenLabel = new Label
             {
-                Text = "午时",
+                Text = _currentShichen,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
                 TextColor = InkWashTheme.TextOnPaper,
                 HorizontalAlignment = TextAlignment.Center,
                 Parent = _currentTimePanel
             };
 
-            var shichenLabelTag = new Label
+            _shichenLabelTag = new Label
             {
                 Text = "时辰",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperDark,
                 HorizontalAlignment = TextAlignment.Center,
+                Size = new Float2(100f, 16f),
                 Parent = _currentTimePanel
             };
 
             _weatherLabel = new Label
             {
-                Text = "晴",
+                Text = _currentWeather,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 18f),
                 TextColor = InkWashTheme.TextOnPaper,
                 HorizontalAlignment = TextAlignment.Center,
                 Parent = _currentTimePanel
             };
 
-            var weatherLabelTag = new Label
+            _weatherLabelTag = new Label
             {
                 Text = "天气",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.PaperDark,
                 HorizontalAlignment = TextAlignment.Center,
+                Size = new Float2(100f, 16f),
                 Parent = _currentTimePanel
             };
 
@@ -518,8 +532,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
             _btnWait1Shichen = new InkButton
             {
                 Text = "等待1时辰",
-                Variant = InkButtonVariant.Primary,
+                Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Lg,
+                Enabled = false, // 时间快进没有服务端时辰系统支撑，按钮保持可见但不可点
                 Parent = _fastForwardPanel
             };
 
@@ -528,6 +543,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 Text = "等待至黄昏",
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Lg,
+                Enabled = false,
                 Parent = _fastForwardPanel
             };
 
@@ -536,6 +552,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 Text = "等待至黎明",
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Lg,
+                Enabled = false,
                 Parent = _fastForwardPanel
             };
 
@@ -572,6 +589,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                     Text = effects[i],
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                     TextColor = InkWashTheme.PaperAged,
+                    Wrapping = TextWrapping.WrapWords,
                     Parent = _effectPanel
                 };
             }
@@ -585,9 +603,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
             _hintText = new Label
             {
-                Text = "等待时间可能触发随机事件",
+                Text = "时辰系统尚未开放：世界时间/天气同步未接入，暂不可快进",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.GoldBright,
+                Wrapping = TextWrapping.WrapWords,
                 Parent = _hintBar
             };
         }
@@ -604,7 +623,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
             _versionLabel = new Label
             {
-                Text = "混沌世界 v1.0.0",
+                Text = "混沌世界 v1.2.0",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.TextTertiary,
                 Parent = _bottomBar
@@ -612,7 +631,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
             _pingLabel = new Label
             {
-                Text = "混沌盛世 · 32ms",
+                // 底栏只放"延迟"，不摆设计稿里的世界名；未测得时给正文字样（「—」小字号无字形）
+                Text = "延迟 未测得",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.TextTertiary,
                 Parent = _bottomBar
@@ -640,13 +660,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
                 _backButton.Location = new Float2(24f, 12f);
             if (_playerAvatar != null)
                 _playerAvatar.Location = new Float2(72f, 10f);
+            // 顶栏从左到右：头像 → 昵称(124, 宽120) → 门派(252) → 等级(340) → 任务(410)，
+            // 各段留固定槽位，避免真实昵称比设计稿示例长时把门派/等级叠在一起。
             if (_playerNameLabel != null)
+            {
                 _playerNameLabel.Location = new Float2(124f, 10f);
+                _playerNameLabel.Size = new Float2(120f, 22f);
+            }
+            if (_playerSectLabel != null)
+                _playerSectLabel.Location = new Float2(252f, 16f);
             if (_playerLevelLabel != null)
-                _playerLevelLabel.Location = new Float2(280f, 12f);
-            // 顶栏「任务」入口（→ nav-quests）与货币标签：原未定位会堆叠在 (0,0) 压住返回键，此处显式排布。
+                _playerLevelLabel.Location = new Float2(340f, 12f);
             if (_questButton != null)
-                _questButton.Location = new Float2(350f, 16f);
+                _questButton.Location = new Float2(410f, 16f);
             if (_currencyCoinLabel != null)
                 _currencyCoinLabel.Location = new Float2(sw - 240f - 250f, 20f);
             if (_currencyIngotLabel != null)
@@ -674,9 +700,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
             if (_legendLabel1 != null)
                 _legendLabel1.Location = new Float2((dialWidth - 300f) * 0.5f, sh - 92f - 40f);
             if (_legendLabel2 != null)
-                _legendLabel2.Location = new Float2((dialWidth - 300f) * 0.5f + 100f, sh - 92f - 40f);
+                _legendLabel2.Location = new Float2((dialWidth - 200f) * 0.5f, sh - 92f - 40f);
             if (_legendLabel3 != null)
-                _legendLabel3.Location = new Float2((dialWidth - 300f) * 0.5f + 200f, sh - 92f - 40f);
+                _legendLabel3.Location = new Float2((dialWidth - 200f) * 0.5f + 100f, sh - 92f - 40f);
 
             float panelWidth = (sw - 240f) * 0.45f;
             if (_panelSection != null)
@@ -695,17 +721,29 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
             if (_currentTimeTitle != null)
                 _currentTimeTitle.Location = new Float2(padding, 16f);
 
+            // 三格：数值 56 起、标签（日期/时辰/天气）84 起。
+            // 标签原来是局部变量、从未定位，全叠在面板 (0,0) 压着标题；数值也没给宽度，居中基准是默认 100。
             float gridWidth = (panelWidth - padding * 4f - 16f) / 3f;
-            if (_dateLabel != null)
-                _dateLabel.Location = new Float2(padding, 56f);
-            if (_shichenLabel != null)
-                _shichenLabel.Location = new Float2(padding + gridWidth + 8f, 56f);
-            if (_weatherLabel != null)
-                _weatherLabel.Location = new Float2(padding + (gridWidth + 8f) * 2f, 56f);
+            float[] gridX = { padding, padding + gridWidth + 8f, padding + (gridWidth + 8f) * 2f };
+            Label[] gridValues = { _dateLabel, _shichenLabel, _weatherLabel };
+            Label[] gridTags = { _dateLabelTag, _shichenLabelTag, _weatherLabelTag };
+            for (int i = 0; i < gridX.Length; i++)
+            {
+                if (gridValues[i] != null)
+                {
+                    gridValues[i].Location = new Float2(gridX[i], 56f);
+                    gridValues[i].Size = new Float2(gridWidth, 24f);
+                }
+                if (gridTags[i] != null)
+                {
+                    gridTags[i].Location = new Float2(gridX[i], 84f);
+                    gridTags[i].Size = new Float2(gridWidth, 16f);
+                }
+            }
 
             if (_fastForwardPanel != null)
             {
-                _fastForwardPanel.Size = new Float2(panelWidth - padding * 2f, 160f);
+                _fastForwardPanel.Size = new Float2(panelWidth - padding * 2f, 204f);
                 _fastForwardPanel.Location = new Float2(padding, padding + 164f);
             }
 
@@ -724,37 +762,42 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
             if (_btnWaitDawn != null)
             {
                 _btnWaitDawn.Size = new Float2(panelWidth - padding * 4f, 44f);
-                _btnWaitDawn.Location = new Float2(padding, 100f);
+                _btnWaitDawn.Location = new Float2(padding, 148f);
             }
 
             if (_effectPanel != null)
             {
-                _effectPanel.Size = new Float2(panelWidth - padding * 2f, 200f);
-                _effectPanel.Location = new Float2(padding, padding + 356f);
+                _effectPanel.Size = new Float2(panelWidth - padding * 2f, 264f);
+                _effectPanel.Location = new Float2(padding, padding + 380f);
             }
 
             if (_effectTitle != null)
                 _effectTitle.Location = new Float2(padding, 16f);
 
-            float effectY = 56f;
+            float effectY = 52f;
             for (int i = 0; i < _effectLabels.Length; i++)
             {
                 if (_effectLabels[i] != null)
                 {
-                    _effectLabels[i].Size = new Float2(panelWidth - padding * 4f - 32f, 40f);
+                    _effectLabels[i].Size = new Float2(panelWidth - padding * 4f - 32f, 56f);
                     _effectLabels[i].Location = new Float2(padding * 2f, effectY);
-                    effectY += 56f;
+                    // 不加换行时长句会直接画到面板外面（右侧被裁半句）
+                    _effectLabels[i].Wrapping = TextWrapping.WrapWords;
+                    effectY += 72f;
                 }
             }
 
             if (_hintBar != null)
             {
-                _hintBar.Size = new Float2(panelWidth - padding * 2f, 44f);
-                _hintBar.Location = new Float2(padding, padding + 572f);
+                _hintBar.Size = new Float2(panelWidth - padding * 2f, 52f);
+                _hintBar.Location = new Float2(padding, padding + 656f);
             }
 
             if (_hintText != null)
-                _hintText.Location = new Float2(padding + 12f, 10f);
+            {
+                _hintText.Location = new Float2(padding + 12f, 8f);
+                _hintText.Size = new Float2(panelWidth - padding * 4f - 12f, 36f);
+            }
 
             if (_bottomBar != null)
             {
@@ -776,6 +819,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
 
         public void RefreshAllData()
         {
+            InkPlayerHeaderBinder.GetGatewayText(out _, out string latency);
+            if (_pingLabel != null)
+                _pingLabel.Text = "延迟 " + latency;
+
             if (_centerShichenLabel != null)
                 _centerShichenLabel.Text = _currentShichen;
             if (_centerDateLabel != null)
@@ -808,3 +855,5 @@ namespace HundunWorld.Game.UI.Ink.Pages.Timing
         }
     }
 }
+
+

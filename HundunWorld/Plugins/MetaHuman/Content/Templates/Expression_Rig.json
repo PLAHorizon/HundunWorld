@@ -1,0 +1,251 @@
+{
+ "source": "Tools/MetaHumanBuildExpressionRig.py；权重取自 Ada_FaceMesh_conformhead4.glb（12 影响），角度/位移量级取自 Tools/MetaHumanEyelidClosureProbe.py 的蒙皮实测",
+ "pending": [
+  "jaw 的真 rig logic 关节仍未解：当前用 12IPV_LipLower 组平移近似（3cm→约 8mm 开口），不是 UE 里下颌骨带牙齿/下巴一起转的效果；下齿骨平移会把牙齿网格拉成长条（已实测），故牙齿保持原位"
+ ],
+ "channels": [
+  {
+   "control": "CTRL_L_eye_blink.ty",
+   "pivotBone": "FACIAL_L_Eye",
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "groups": [
+    {
+     "bones": [
+      "FACIAL_L_EyelidUpperA3",
+      "FACIAL_L_EyelidUpperA2",
+      "FACIAL_L_EyelidUpperA1",
+      "FACIAL_L_EyelidUpperFurrow2",
+      "FACIAL_L_EyelidUpperFurrow3",
+      "FACIAL_L_EyelidUpperFurrow1",
+      "FACIAL_L_EyelidUpperB2",
+      "FACIAL_L_EyelidUpperB3",
+      "FACIAL_L_EyelidUpperB1"
+     ],
+     "angleAtOne": 110.0
+    },
+    {
+     "bones": [
+      "FACIAL_L_EyelidLowerA2",
+      "FACIAL_L_EyelidLowerA1",
+      "FACIAL_L_EyelidLowerA3",
+      "FACIAL_L_EyelidLowerB3",
+      "FACIAL_L_EyelidLowerB1",
+      "FACIAL_L_EyelidLowerB2"
+     ],
+     "angleAtOne": -30.0
+    }
+   ]
+  },
+  {
+   "control": "CTRL_L_eye_eyelidU.ty",
+   "pivotBone": "FACIAL_L_Eye",
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "groups": [
+    {
+     "bones": [
+      "FACIAL_L_EyelidUpperA3",
+      "FACIAL_L_EyelidUpperA2",
+      "FACIAL_L_EyelidUpperA1",
+      "FACIAL_L_EyelidUpperFurrow2",
+      "FACIAL_L_EyelidUpperFurrow3",
+      "FACIAL_L_EyelidUpperFurrow1",
+      "FACIAL_L_EyelidUpperB2",
+      "FACIAL_L_EyelidUpperB3",
+      "FACIAL_L_EyelidUpperB1"
+     ],
+     "angleAtOne": -40.0
+    }
+   ]
+  },
+  {
+   "control": "CTRL_L_eye_eyelidD.ty",
+   "pivotBone": "FACIAL_L_Eye",
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "groups": [
+    {
+     "bones": [
+      "FACIAL_L_EyelidLowerA2",
+      "FACIAL_L_EyelidLowerA1",
+      "FACIAL_L_EyelidLowerA3",
+      "FACIAL_L_EyelidLowerB3",
+      "FACIAL_L_EyelidLowerB1",
+      "FACIAL_L_EyelidLowerB2"
+     ],
+     "angleAtOne": 25.0
+    }
+   ]
+  },
+  {
+   "control": "CTRL_R_eye_blink.ty",
+   "pivotBone": "FACIAL_R_Eye",
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "groups": [
+    {
+     "bones": [
+      "FACIAL_R_EyelidUpperA1",
+      "FACIAL_R_EyelidUpperA3",
+      "FACIAL_R_EyelidUpperA2",
+      "FACIAL_R_EyelidUpperFurrow1",
+      "FACIAL_R_EyelidUpperFurrow3",
+      "FACIAL_R_EyelidUpperFurrow2",
+      "FACIAL_R_EyelidUpperB1",
+      "FACIAL_R_EyelidUpperB2",
+      "FACIAL_R_EyelidUpperB3"
+     ],
+     "angleAtOne": 110.0
+    },
+    {
+     "bones": [
+      "FACIAL_R_EyelidLowerB3",
+      "FACIAL_R_EyelidLowerB2",
+      "FACIAL_R_EyelidLowerB1",
+      "FACIAL_R_EyelidLowerA2",
+      "FACIAL_R_EyelidLowerA3",
+      "FACIAL_R_EyelidLowerA1"
+     ],
+     "angleAtOne": -30.0
+    }
+   ]
+  },
+  {
+   "control": "CTRL_R_eye_eyelidU.ty",
+   "pivotBone": "FACIAL_R_Eye",
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "groups": [
+    {
+     "bones": [
+      "FACIAL_R_EyelidUpperA1",
+      "FACIAL_R_EyelidUpperA3",
+      "FACIAL_R_EyelidUpperA2",
+      "FACIAL_R_EyelidUpperFurrow1",
+      "FACIAL_R_EyelidUpperFurrow3",
+      "FACIAL_R_EyelidUpperFurrow2",
+      "FACIAL_R_EyelidUpperB1",
+      "FACIAL_R_EyelidUpperB2",
+      "FACIAL_R_EyelidUpperB3"
+     ],
+     "angleAtOne": -40.0
+    }
+   ]
+  },
+  {
+   "control": "CTRL_R_eye_eyelidD.ty",
+   "pivotBone": "FACIAL_R_Eye",
+   "axis": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "groups": [
+    {
+     "bones": [
+      "FACIAL_R_EyelidLowerB3",
+      "FACIAL_R_EyelidLowerB2",
+      "FACIAL_R_EyelidLowerB1",
+      "FACIAL_R_EyelidLowerA2",
+      "FACIAL_R_EyelidLowerA3",
+      "FACIAL_R_EyelidLowerA1"
+     ],
+     "angleAtOne": 25.0
+    }
+   ]
+  },
+  {
+   "control": "CTRL_C_jaw.ty",
+   "pivotBone": "",
+   "axis": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "groups": [],
+   "translates": [
+    {
+     "bones": [
+      "FACIAL_R_12IPV_LipLower8",
+      "FACIAL_R_12IPV_LipLower10",
+      "FACIAL_R_12IPV_LipLower13",
+      "FACIAL_R_12IPV_LipLower12",
+      "FACIAL_R_12IPV_LipLower15",
+      "FACIAL_R_12IPV_LipLower14",
+      "FACIAL_R_12IPV_LipLower11",
+      "FACIAL_R_12IPV_LipLower7",
+      "FACIAL_R_12IPV_LipLower9",
+      "FACIAL_R_12IPV_LipLower6",
+      "FACIAL_L_12IPV_LipLower21",
+      "FACIAL_L_12IPV_LipLower24",
+      "FACIAL_L_12IPV_LipLower20",
+      "FACIAL_L_12IPV_LipLower16",
+      "FACIAL_L_12IPV_LipLower19",
+      "FACIAL_L_12IPV_LipLower18",
+      "FACIAL_L_12IPV_LipLower23",
+      "FACIAL_L_12IPV_LipLower22",
+      "FACIAL_L_12IPV_LipLower17",
+      "FACIAL_R_12IPV_LipLower20",
+      "FACIAL_R_12IPV_LipLower21",
+      "FACIAL_R_12IPV_LipLower22",
+      "FACIAL_R_12IPV_LipLower23",
+      "FACIAL_R_12IPV_LipLower24",
+      "FACIAL_R_12IPV_LipLower19",
+      "FACIAL_R_12IPV_LipLower18",
+      "FACIAL_R_12IPV_LipLower17",
+      "FACIAL_R_12IPV_LipLower16",
+      "FACIAL_L_12IPV_LipLower7",
+      "FACIAL_L_12IPV_LipLower9",
+      "FACIAL_L_12IPV_LipLower8",
+      "FACIAL_L_12IPV_LipLower13",
+      "FACIAL_L_12IPV_LipLower12",
+      "FACIAL_L_12IPV_LipLower11",
+      "FACIAL_L_12IPV_LipLower15",
+      "FACIAL_L_12IPV_LipLower14",
+      "FACIAL_L_12IPV_LipLower10",
+      "FACIAL_L_12IPV_LipLower6",
+      "FACIAL_L_12IPV_LipLower4",
+      "FACIAL_L_12IPV_LipLower3",
+      "FACIAL_L_12IPV_LipLower2",
+      "FACIAL_L_12IPV_LipLower1",
+      "FACIAL_L_12IPV_LipLower5",
+      "FACIAL_R_12IPV_LipLower1",
+      "FACIAL_R_12IPV_LipLower3",
+      "FACIAL_R_12IPV_LipLower2",
+      "FACIAL_R_12IPV_LipLower5",
+      "FACIAL_R_12IPV_LipLower4",
+      "FACIAL_L_12IPV_LipLowerOuterSkin3",
+      "FACIAL_R_12IPV_LipLowerSkin",
+      "FACIAL_R_12IPV_LipLowerOuterSkin1",
+      "FACIAL_R_12IPV_LipLowerOuterSkin2",
+      "FACIAL_R_12IPV_LipLowerOuterSkin3",
+      "FACIAL_L_12IPV_LipLowerOuterSkin2",
+      "FACIAL_L_12IPV_LipLowerOuterSkin1",
+      "FACIAL_L_12IPV_LipLowerSkin"
+     ],
+     "deltaAtOneCm": [
+      0.0,
+      -3.0,
+      0.0
+     ]
+    }
+   ]
+  }
+ ]
+}

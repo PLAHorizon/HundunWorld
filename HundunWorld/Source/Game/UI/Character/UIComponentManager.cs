@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -102,7 +102,6 @@ namespace HundunWorld.Game.UI.Character
         {
             if (_creationUI.GenderSelectionUI != null) _creationUI.GenderSelectionUI.Visible = false;
             if (_creationUI.FacePresetSelectionUI != null) _creationUI.FacePresetSelectionUI.Visible = false;
-            if (_creationUI.IntegratedCreationUI != null) _creationUI.IntegratedCreationUI.Visible = false;
             if (_creationUI.NamingCompleteUI != null) _creationUI.NamingCompleteUI.Visible = false;
 
             if (visible)
@@ -118,7 +117,6 @@ namespace HundunWorld.Game.UI.Character
         {
             if (_creationUI.GenderSelectionUI != null) _creationUI.GenderSelectionUI.Hide();
             if (_creationUI.FacePresetSelectionUI != null) _creationUI.FacePresetSelectionUI.Hide();
-            if (_creationUI.IntegratedCreationUI != null) _creationUI.IntegratedCreationUI.Hide();
             if (_creationUI.NamingCompleteUI != null) _creationUI.NamingCompleteUI.Hide();
 
             if (_ctrlNextStepButton != null) _ctrlNextStepButton.Visible = false;
@@ -137,10 +135,8 @@ namespace HundunWorld.Game.UI.Character
                     if (_ctrlNextStepButton != null) _ctrlNextStepButton.Visible = true;
                     break;
                 case CreationStep.DetailedCreation:
-                    if (_creationUI.IntegratedCreationUI != null)
-                    {
-                        _creationUI.IntegratedCreationUI.Show();
-                    }
+                    // 旧"精细捏脸"面板（IntegratedCharacterCreationUI）已删除：
+                    // 该步骤只有 Ink 的 CcFaceSculptPage 一条实现，这里不再兜底。
                     if (_ctrlNextStepButton != null) _ctrlNextStepButton.Visible = true;
                     break;
                 case CreationStep.NamingComplete:
@@ -337,14 +333,6 @@ namespace HundunWorld.Game.UI.Character
         public void SetFacePresetGender(int gender)
         {
             _creationUI.FacePresetSelectionUI?.SetGender(gender == 0 ? "male" : "female");
-        }
-
-        /// <summary>
-        /// 设置精细捏脸步骤的数据
-        /// </summary>
-        public void SetIntegratedCreationStepData(StepData data)
-        {
-            _creationUI.IntegratedCreationUI?.SetStepData(data);
         }
 
         /// <summary>

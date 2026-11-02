@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MetaHuman 纯数据核的离线断言工装。
+
+    只编译 Source/MetaHuman/Core/*.cs（那层不依赖 Flax），因此可以脱离引擎跑真断言：
+    求解等价性、回溯任意步、发布封存、快照往返、约束钳位、模板自检真拦错。
+    它不替代 Flax 构建——写回端/编辑器/资产注册仍需通过编辑器构建与 PIE 验证。
+
+    用法：在仓库根执行 dotnet run -p Tools/MetaHumanVerify/MetaHumanVerify.csproj
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>MetaHumanVerify</AssemblyName>
+    <RootNamespace>MetaHumanVerify</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <NoWarn>1591;CS0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\..\HundunWorld\Plugins\MetaHuman\Source\MetaHuman\Core\*.cs" />
+  </ItemGroup>
+
+</Project>

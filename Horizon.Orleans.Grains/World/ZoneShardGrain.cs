@@ -69,6 +69,13 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// <summary>per-player 修正风暴追踪器（修正计数滑动窗口 + 告警限频）。</summary>
     private readonly Dictionary<ulong, StormTracker> _correctionStormTrackers = new();
     private const int CorrectionStormThreshold = 5;
+
+    /// <summary>
+    /// 玩家实体下发给客户端的网络类型。原先写死裸 <c>0</c>（在共享枚举里是 <c>Unknown</c>），
+    /// 客户端按 EntityType 分流 Actor 外观后必须给出真类型，否则 Orleans 通道的玩家会退化成"未知实体"。
+    /// 与 DS 通道 <c>DsWorldSession.EntityTypePlayer</c> 同值，保证两条通道对客户端表现一致。
+    /// </summary>
+    private const int EntityTypePlayer = (int)Horizon.Game.Message.Network.NetworkEntityType.RemotePlayer;
     private const float CorrectionStormWindowSeconds = 2.0f;
     private const float CorrectionStormAlertCooldownSeconds = 10.0f;
 
@@ -248,6 +255,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             HardSpeedCap = MovementValidator.DefaultHardSpeedCap,
             MaxSpeed = MovementFormula.DefaultMaxSpeed,
             TickDtSeconds = 1f / 60f,
+            // 服务端没有地面采样器，权威 Z 必须由世界底限兜住，否则下坠值会被持久化并反向拽落客户端
+            // （详见 MovementValidator.Options.WorldFloorZ）。玩法区地面碰撞体顶面在 Z=0，与客户端
+            // HundunWorldGame.TryLayRuntimeGround 铺的那块板同高；真实地形碰撞恢复后此项应换成高度图采样。
+            WorldFloorZ = 0f,
         });
     }
 
@@ -571,7 +582,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         var ecsY = z; // Flax Z → ECS Y
         var ecsZ = y; // Flax Y → ECS Z
         var chunkCoord = WorldCoord.ToChunk(ecsX, ecsY, ecsZ);
-        WorldCoord.FillChunksInView(_aoiViewBuffer, chunkCoord.X, chunkCoord.Y, chunkCoord.Z, SessionAoiRadiusChunks);
+        WorldChunkAoi.FillChunksInView(_aoiViewBuffer, chunkCoord.X, chunkCoord.Y, chunkCoord.Z, SessionAoiRadiusChunks);
 
         var oldView = _aoi.GetSubscriptions(sessionId);
 
@@ -732,7 +743,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     Identity = new NetworkIdentityAuthComponent
                     {
                         NetworkId = kv.Key,
-                        EntityType = 0,
+                        EntityType = EntityTypePlayer,
                         OwnerId = kv.Key,
                         Nickname = e.Nickname,
                         Title = e.Title,
@@ -1045,7 +1056,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     Identity = new NetworkIdentityAuthComponent
                     {
                         NetworkId = entityId,
-                        EntityType = 0,
+                        EntityType = EntityTypePlayer,
                         OwnerId = entityId,
                         Nickname = entity.Nickname,
                         Title = entity.Title,
@@ -1959,7 +1970,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             Identity = new NetworkIdentityAuthComponent
             {
                 NetworkId = entityId,
-                EntityType = 0,
+                EntityType = EntityTypePlayer,
                 OwnerId = entityId,
                 Nickname = nickname,
                 Title = title,
@@ -2095,6 +2106,55 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         return Task.FromResult(true);
     }
+
+    /// <inheritdoc />
+    public Task<TraversalResultPacket> SubmitTraversalRequestAsync(TraversalRequestPacket request)
+    {
+        var entityId = request.CharacterId;
+        var plan = new TraversalPlan
+        {
+            StartX = request.StartX,
+            StartY = request.StartY,
+            StartZ = request.StartZ,
+            EndX = request.EndX,
+            EndY = request.EndY,
+            EndZ = request.EndZ,
+            Duration = request.Duration,
+            ArcHeight = request.ArcHeight,
+            EndYaw = request.EndYaw,
+        };
+
+        // 曲线版本不一致时拒绝：两端采样不同曲线会让权威位置与客户端预测持续漂移。
+        var reason = request.CurveVersion != TraversalMath.Version
+            ? TraversalRejectReason.InvalidNumbers
+            : _simWorld.TryBeginTraversal(entityId, plan, _tickCount);
+
+        var entity = _simWorld.GetEntity(entityId);
+        var result = new TraversalResultPacket
+        {
+            CharacterId = request.CharacterId,
+            ClientTick = request.ClientTick,
+            Accepted = reason == TraversalRejectReason.None,
+            Status = (byte)reason,
+            EndX = entity?.X ?? request.EndX,
+            EndY = entity?.Y ?? request.EndY,
+            EndZ = entity?.Z ?? request.EndZ,
+            ServerTick = _tickCount,
+        };
+
+        if (result.Accepted)
+            TraversalRequestsAccepted++;
+        else
+            TraversalRequestsRejected++;
+
+        return Task.FromResult(result);
+    }
+
+    /// <summary>受理的翻越请求数（诊断：客户端"能翻"而服务端计数不动时查这里）。</summary>
+    public int TraversalRequestsAccepted { get; private set; }
+
+    /// <summary>拒绝的翻越请求数（与 <see cref="TraversalRequestsAccepted"/> 成对，禁止只记一边）。</summary>
+    public int TraversalRequestsRejected { get; private set; }
 
     /// <inheritdoc />
     public Task SubmitInputAsync(ulong entityId, InputPacket input, float reportedEndX, float reportedEndY, float reportedEndZ)

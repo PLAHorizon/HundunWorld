@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Horizon.QuestCli</RootNamespace>
+    <AssemblyName>Horizon.QuestCli</AssemblyName>
+    <!-- 不要开 InvariantGlobalization：Microsoft.Data.SqlClient 在不变区域模式下直接抛异常。 -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
+    <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Sim\Horizon.Game.Sim.csproj" />
+    <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
+  </ItemGroup>
+
+</Project>

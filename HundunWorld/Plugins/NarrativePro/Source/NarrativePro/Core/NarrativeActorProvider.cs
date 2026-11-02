@@ -5,25 +5,6 @@ using NarrativePro.Items;
 
 namespace NarrativePro.Core
 {
-    /// <summary>
-    /// 实例化 Actor 提供者包装。对应 UE5 FInstancedActorProvider。
-    /// </summary>
-    [Serializable]
-    public class InstancedActorProvider
-    {
-        public NarrativeActorProvider Provider;
-    }
-
-    /// <summary>
-    /// 实例化 Transform 提供者包装。对应 UE5 FInstancedTransformProvider。
-    /// </summary>
-    [Serializable]
-    public class InstancedTransformProvider
-    {
-        public NarrativeTransformProvider Provider;
-    }
-
-    /// <summary>
     /// 提供者基类。对应 UE5 UNarrativeProviderBase。
     /// 基于 EQSContexts 概念，提供 Actor/Transform 查询。
     /// </summary>
@@ -58,6 +39,19 @@ namespace NarrativePro.Core
     [Serializable]
     public abstract class NarrativeActorProvider : NarrativeTransformProvider
     {
+        /// <summary>
+        /// Actor 就绪通知。对应 UE5 <c>FOnProviderActorReady</c>：
+        /// 异步节点（<c>AsyncAction_ProvideActor</c>）在 PollInterval&lt;=0 时等这个事件而不是轮询。
+        /// 事件本身不参与序列化（System.Text.Json 不序列化事件），故无需额外标记。
+        /// </summary>
+        public event Action<Actor> OnProviderActorReady;
+
+        /// <summary>由具体提供者在异步生成完成时调用（UE5 的 OnProviderActorReady.Broadcast）。</summary>
+        protected void NotifyActorReady(Actor actor)
+        {
+            if (actor == null) return;
+            OnProviderActorReady?.Invoke(actor);
+        }
         /// <summary>提供 Actor。</summary>
         public abstract Actor ProvideActor(object worldContextObject);
 

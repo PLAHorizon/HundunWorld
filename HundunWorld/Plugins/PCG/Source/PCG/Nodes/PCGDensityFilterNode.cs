@@ -94,12 +94,24 @@ namespace PCG.Nodes
             var points = input.Points;
             var keep = new List<int>(points.Length);
 
-            for (int i = 0; i < points.Length; i++)
+            // Whether a point survives is a per-point question - its own density against its own draw - so the
+            // decision runs across workers while the surviving indices are still collected in point order
+            // below. Gathering in parallel would reorder the output, and downstream nodes index points by
+            // position, so the order is part of the contract.
+            var passes = new bool[points.Length];
+
+            PCG.Execution.PCGParallel.For(points.Length, i =>
             {
                 context.ThrowIfCancelled(i);
 
                 bool inRange = points[i].Density >= MinDensity && points[i].Density <= MaxDensity;
                 if (inRange != Invert)
+                    passes[i] = true;
+            });
+
+            for (int i = 0; i < passes.Length; i++)
+            {
+                if (passes[i])
                     keep.Add(i);
             }
 

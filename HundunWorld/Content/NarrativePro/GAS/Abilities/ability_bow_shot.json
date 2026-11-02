@@ -1,0 +1,12 @@
+{
+  "abilityName": "角弓·射击",
+  "abilityClass": "NarrativeRangedShotAbility",
+  "inputTag": "Narrative.Input.Attack",
+  "isMelee": false,
+  "isHeavyAttack": false,
+  "requiresAmmo": true,
+  "damageEffectPath": "effect_damage_ranged",
+  "defaultAttackDamage": 12,
+  "botAttackFrequency": 0.8,
+  "botAttackRange": 1800
+}

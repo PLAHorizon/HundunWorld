@@ -1,14 +1,27 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Horizon.Game.Message.Network;
 using Orleans;
 
 namespace Horizon.Orleans.Interface.World;
 
 /// <summary>
 /// P3.3 GM 命令 Grain 契约（全局单例）。<br/>
-/// 负责：角色查询/封禁/补偿、公告/邮件管理、经济数据看板、异常行为审计。
+/// 负责：角色查询/封禁/补偿、公告/邮件管理、经济数据看板、异常行为审计，
+/// 以及**脚本化世界生成（怪物/NPC/特殊事件）的权威授权裁决**。
 /// </summary>
-[global::Orleans.CodeGeneration.Version(1)]
+/// <remarks>
+/// <para>
+/// <b>Version(2)</b>：新增脚本授权方法。升版后 <b>Silo 与网关必须同批构建部署</b>，
+/// 新旧混跑会 <c>TypeLoadException</c>；部署前需先终止旧 Silo 进程。
+/// </para>
+/// <para>
+/// <b>身份口径（重要）</b>：所有 <c>gmId</c> / <c>operatorId</c> 必须由调用方（网关或 WebApi）
+/// 从<b>已验签的 AuthToken</b> 或<b>管理会话</b>解出后传入。Grain 不信任 body 自报身份，
+/// 并对每个操作校验该 id 的权限位（历史版本"零鉴权、全靠调用方自觉"的口径已废弃）。
+/// </para>
+/// </remarks>
+[global::Orleans.CodeGeneration.Version(2)]
 public interface IGmCommandGrain : IGrainWithIntegerKey
 {
     // --- 角色管理 ---
@@ -46,6 +59,30 @@ public interface IGmCommandGrain : IGrainWithIntegerKey
 
     /// <summary>查询审计日志。</summary>
     Task<GmAuditEntry[]> QueryAuditLogsAsync(DateTime? from, DateTime? to, long? gmId, int limit);
+
+    // --- 脚本化世界生成授权（DS 怪物/NPC/特殊事件） ---
+
+    /// <summary>读取某操作者的脚本授权快照（含配额余量口径由裁决侧给出，这里只给授权位与到期）。</summary>
+    Task<GmScriptGrantSnapshot?> GetScriptPermissionsAsync(long operatorId);
+
+    /// <summary>
+    /// 授予脚本权限。<paramref name="callerId"/> 自身权限位必须覆盖
+    /// <paramref name="flags"/>。调用者权限不足时直接拒绝（不凭空造权）。
+    /// </summary>
+    Task<GmOperationResult> GrantScriptAsync(long operatorId, ScriptPermissionFlags flags, TimeSpan ttl, long callerId, string reason);
+
+    /// <summary>回收脚本权限。</summary>
+    Task<GmOperationResult> RevokeScriptAsync(long operatorId, long callerId, string reason);
+
+    /// <summary>
+    /// **唯一裁决点**：权限位 → 模板白名单 → 冷却 → 配额 → 距离 → shard 归属 → 实体预算，
+    /// 全部通过后扣预算、落审计并签发一次性 HMAC 令牌。
+    /// <para>网关与 DS 都不得自行判断"谁有权"；DS 只验签。</para>
+    /// </summary>
+    Task<GmScriptVerdict> TryConsumeScriptAsync(GmScriptTicket ticket);
+
+    /// <summary>查询脚本操作审计（按操作者过滤）。</summary>
+    Task<GmAuditEntry[]> QueryScriptAuditAsync(long? operatorId, int limit);
 }
 
 /// <summary>GM 角色信息。</summary>

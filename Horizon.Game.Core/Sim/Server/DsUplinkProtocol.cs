@@ -73,6 +73,182 @@ public enum DsUplinkMessageKind : byte
     /// <para>尾部追加（kind=7），旧网关遇到未知 kind 只跳过，前向兼容。</para>
     /// </summary>
     SessionEnd = 7,
+
+    /// <summary>
+    /// **网关 → DS**：脚本化世界生成指令（怪物/NPC/特殊事件/触发区域）。
+    /// <para>
+    /// 与 <see cref="SessionEnd"/> 同为网关主动下发，复用 DS 已建立的那条上行 TCP 连接。
+    /// 尾部追加（kind=8），旧 DS 遇到未知 kind 只跳过，前向兼容。
+    /// </para>
+    /// <para>
+    /// <b>DS 侧不做授权判定</b>：载荷内的 <see cref="Horizon.Game.Message.Network.ScriptGrantToken"/>
+    /// 由 Orleans Grain 裁决通过后 HMAC 签发，DS 只验签、只验过期/重放/shard 归属。
+    /// 这样 60Hz tick 内不需要任何跨进程 RPC。
+    /// </para>
+    /// </summary>
+    ScriptedSpawn = 8,
+
+    /// <summary>
+    /// **DS → 网关**：世界实体身份描述符（生成 / 移除），网关据此建 per-shard 注册表。
+    /// <para>
+    /// 与 <see cref="GameplayEvent"/> 同为 DS 主动上送的稀疏事件，由宿主随 tick 结果批量发送
+    /// （尾部追加，kind=9），旧网关遇到未知 kind 只跳过，前向兼容。
+    /// </para>
+    /// <para>
+    /// <b>为什么需要它</b>：<c>entityId → (类别, 模板 id)</c> 的映射**只活在 DS 会话里**
+    /// （<c>DsWorldSession._monstersById</c>，公开口子只有测试用的 <c>TryGetMonster</c>），
+    /// 而下行同步包 <c>EntityDelta</c> 根本不带模板 id。于是网关与业务层都读不出"玩家面前的这个
+    /// 实体是谁"，任务侧的"与某 NPC 对话 / 与某物品交互"就只能采信客户端自报的模板 id——
+    /// 那是可伪造的。本消息把权威身份搬到网关，让"和谁说过话"由服务端判定。
+    /// </para>
+    /// <para>
+    /// 坐标沿用**下行协议同一空间（Flax Y-up）**，与 <c>DsPositionWritebackService</c> 写回
+    /// Redis 前的换轴方向一致；换轴只在网关的比较处做一次，DS 不做二次解释。
+    /// </para>
+    /// </summary>
+    EntityDescriptor = 9,
+
+    /// <summary>
+    /// **网关 → DS**：客户端的一次尸体拾取请求（尾部追加，kind=10）。
+    /// <para>只带"谁、哪具尸体、哪个槽、离多远"——距离由 DS 量，窗口由 DS 判，
+    /// **列表归属仍在 Orleans**：DS 判完本地两道门后把请求转给网关（见 <see cref="CorpseLootForward"/>），
+    /// 由网关那侧问 Grain。这样 60Hz tick 里不需要 DS 持 Orleans 客户端。</para>
+    /// </summary>
+    CorpseLootRequest = 10,
+
+    /// <summary>**DS → 网关**：把已过本地门槛的拾取请求转给权威侧（kind=11）。</summary>
+    CorpseLootForward = 11,
+
+    /// <summary>**网关 → DS**：权威侧的裁决回执（kind=12），DS 据此发入包事件并回客户端。</summary>
+    CorpseLootResult = 12,
+
+    /// <summary>**DS → 网关**：登记一具尸体的拾取列表给权威侧（kind=13）。</summary>
+    CorpseLootRegister = 13,
+
+    /// <summary>**DS → 网关**：这具尸体的拾取列表作废（到期收尸/摘除，kind=14）。</summary>
+    CorpseLootGone = 14,
+
+    /// <summary>
+    /// **网关 → DS**：玩家的权威等级与累计经验（kind=15）。
+    /// <para>触发点：击杀经验已经落进 <c>CharacterGrain</c> 之后。DS 只知道自己发了多少，
+    /// 不知道绝对值——用本会话累计冒充会让经验条每次登录从 0 重算。
+    /// 旧 DS 遇到未知 kind 直接跳过（前向兼容）。</para>
+    /// </summary>
+    PlayerProgress = 15,
+}
+
+/// <summary>
+/// 玩家权威进度（网关 → DS，<see cref="DsUplinkMessageKind.PlayerProgress"/>）。
+/// </summary>
+[MemoryPackable]
+public partial class DsPlayerProgressNotice
+{
+    /// <summary>角色 ID（本架构中 sessionId == characterId）。</summary>
+    public long CharacterId { get; set; }
+
+    /// <summary>当前等级（0 = 不下发）。</summary>
+    public int Level { get; set; }
+
+    /// <summary>累计经验（-1 = 不下发；0 是合法值）。</summary>
+    public long Exp { get; set; } = -1L;
+}
+
+/// <summary>尸体拾取列表登记（DS → 网关 → 权威侧）。</summary>
+[MemoryPackable]
+public partial class DsCorpseLootRegister
+{
+    public ulong CorpseEntityId { get; set; }
+    public long ExpireTick { get; set; }
+    public float PickupDistanceMeters { get; set; }
+
+    /// <summary>槽序与 DS 死亡那一拍一致：普通件 → 条件件 → 金币。</summary>
+    public CorpseLootSlotWire[] Slots { get; set; } = Array.Empty<CorpseLootSlotWire>();
+
+    /// <summary>
+    /// 击杀参与者（谁能取，AC `DIDNT_KILL`）；空 = 不限制。
+    /// <para>尾部追加：老 DS 不发这一格时反序列化成空数组，语义恰好是"不限制"（历史行为）。</para>
+    /// </summary>
+    public ulong[] Contributors { get; set; } = Array.Empty<ulong>();
+}
+
+/// <summary>一个槽的线上形态。</summary>
+[MemoryPackable]
+public partial class CorpseLootSlotWire
+{
+    public int ItemId { get; set; }
+    public int Count { get; set; }
+    public int ConditionKind { get; set; }
+    public int QuestId { get; set; }
+    public int Money { get; set; }
+}
+
+/// <summary>尸体拾取列表作废（DS → 网关 → 权威侧）。</summary>
+[MemoryPackable]
+public partial class DsCorpseLootGone
+{
+    public ulong CorpseEntityId { get; set; }
+}
+
+/// <summary>客户端拾取请求（网关 → DS）。</summary>
+[MemoryPackable]
+public partial class DsCorpseLootRequest
+{
+    /// <summary>发起的会话（本架构中 sessionId == characterId）。</summary>
+    public long SessionId { get; set; }
+
+    /// <summary>尸体实体 id。</summary>
+    public ulong CorpseEntityId { get; set; }
+
+    /// <summary>槽号（0 基）。</summary>
+    public int SlotIndex { get; set; }
+
+    /// <summary>玩家与尸体之间的距离（米，由网关按权威坐标算好）。</summary>
+    public float DistanceMeters { get; set; }
+
+    /// <summary>请求关联 id（回执配对用；DS 原样带回）。</summary>
+    public long RequestId { get; set; }
+}
+
+/// <summary>转发给权威侧的拾取请求（DS → 网关）。</summary>
+[MemoryPackable]
+public partial class DsCorpseLootForward
+{
+    public long SessionId { get; set; }
+    public ulong CorpseEntityId { get; set; }
+    public int SlotIndex { get; set; }
+    public long RequestId { get; set; }
+
+    /// <summary>DS 判定时用的 tick（权威侧据此复核窗口；不同进程的时钟不一定同步，所以带上而不是让网关猜）。</summary>
+    public long ServerTick { get; set; }
+
+    /// <summary>
+    /// 取的人是谁（角色 id，DS 从自己的会话表查出来）。权威侧的"击杀参与者"判据只看这一格：
+    /// 用 <see cref="SessionId"/> 代替会把"会话 id 恰好等于角色 id"这条约定变成权限本身。
+    /// </summary>
+    public ulong TakerCharacterId { get; set; }
+}
+
+/// <summary>权威侧裁决回执（网关 → DS）。</summary>
+[MemoryPackable]
+public partial class DsCorpseLootResult
+{
+    public long RequestId { get; set; }
+
+    /// <summary>要回给哪个会话（网关据此找连接并下发）。</summary>
+    public long SessionId { get; set; }
+
+    /// <summary>实际取走的槽号（请求传 -1 时由权威侧回填；-1 = 没取到）。</summary>
+    public int SlotIndex { get; set; } = -1;
+
+    /// <summary><c>CorpseLootTakeStatus</c> 的字节值（1=Taken … 7=UnknownCorpse、8=NotYours）。</summary>
+    public byte Status { get; set; }
+
+    /// <summary>取走时的槽内容（未取走时全 0）。</summary>
+    public int ItemId { get; set; }
+    public int Count { get; set; }
+    public int ConditionKind { get; set; }
+    public int QuestId { get; set; }
+    public int Money { get; set; }
 }
 
 /// <summary>会话结束通知（网关 → DS）：这些会话已断开，DS 应移除对应玩家实体。</summary>
@@ -81,6 +257,20 @@ public partial class DsSessionEndNotice
 {
     /// <summary>已结束的会话 ID 集合（本架构中 sessionId == characterId）。</summary>
     public long[] SessionIds { get; set; } = Array.Empty<long>();
+}
+
+/// <summary>
+/// 脚本化世界生成指令信封（网关 → DS，<see cref="DsUplinkMessageKind.ScriptedSpawn"/>）。
+/// <para>
+/// 网关**不解释也不放行**指令内容：它只是把 Grain 裁决产物（已签名的
+/// <see cref="ScriptGrantToken"/>）搬到 DS 已建立的连接上。DS 验签通过后在 tick 边界消费。
+/// </para>
+/// </summary>
+[MemoryPackable]
+public partial class DsScriptedSpawnEnvelope
+{
+    /// <summary>Grain 裁决通过后签发的自证令牌；DS 验签失败即丢弃并计数。</summary>
+    public Horizon.Game.Message.Network.ScriptGrantToken? Token { get; set; }
 }
 
 /// <summary>DS 注册请求（M2.1 / M2.4）。</summary>
@@ -173,8 +363,14 @@ public partial class DsGameplayEventBatch
 /// 跨层玩法事件的可序列化形态。
 /// <para>
 /// 刻意与 <see cref="DsGameplayEvent"/> 分离：后者是内核结构（含 <c>BuildIdempotencyKey</c>
-/// 这类行为），本 DTO 是线上契约。两者字段一一对应，转换在网关侧完成——
-/// 这样内核改字段不会静默改变线上格式。
+/// 这类行为），本 DTO 是线上契约。
+/// <para>
+/// **两边分开写，就一定会漏字段**——这不是假设：金币接进钱包那一轮，内核侧新加了
+/// <c>Money</c>，这里没跟上，于是生产链路上每条击杀金币事件跨过这道转换后金额归零，
+/// 被消费端"金额 ≤0 就算处理过"那一档安静吞掉，而所有直接喂内核事件的单测全绿。
+/// 所以「字段一一对应」不写进注释当承诺，改由 <c>DsUplinkProtocolTests</c> 里两条判据守着：
+/// 逐槽位往返（每格填互不相同的哨兵值，错位与漏传都当场红）与成员名集合对照（内核新加一格，
+/// DTO 没跟上就红）。
 /// </para>
 /// </summary>
 [MemoryPackable]
@@ -204,6 +400,15 @@ public partial class DsGameplayEventDto
     /// <summary>物品数量。</summary>
     public int ItemCount { get; set; }
 
+    /// <summary>条件掉落要判的任务 id（尾部追加；旧批次没有这一项时反序列化为 0，等价"无条件"）。</summary>
+    public int QuestId { get; set; }
+
+    /// <summary>
+    /// 金币金额（仅 <see cref="DsGameplayEventKind.KillMoney"/> 用；尾部追加，其余事件为 0）。
+    /// <para>DS 与网关同源构建，这里不承诺跨版本混跑；追加在尾部是为了不动既有槽位序号。</para>
+    /// </summary>
+    public long Money { get; set; }
+
     /// <summary>转换为内核事件。</summary>
     public DsGameplayEvent ToCoreEvent() => new DsGameplayEvent
     {
@@ -215,6 +420,8 @@ public partial class DsGameplayEventDto
         MonsterTemplateId = MonsterTemplateId,
         ItemId = ItemId,
         ItemCount = ItemCount,
+        QuestId = QuestId,
+        Money = Money,
     };
 
     /// <summary>由内核事件构造 DTO。</summary>
@@ -228,6 +435,91 @@ public partial class DsGameplayEventDto
         MonsterTemplateId = e.MonsterTemplateId,
         ItemId = e.ItemId,
         ItemCount = e.ItemCount,
+        QuestId = e.QuestId,
+        Money = e.Money,
+    };
+}
+
+/// <summary>
+/// 一批世界实体身份描述符（DS → 网关，<see cref="DsUplinkMessageKind.EntityDescriptor"/>）。
+/// <para>
+/// 批量而非逐条：一次刷怪/一轮清场会瞬间产生几十条变更，与快照、玩法事件同一套批次纪律。
+/// </para>
+/// </summary>
+[MemoryPackable]
+public partial class DsEntityDescriptorBatch
+{
+    /// <summary>本批发出的 shard（注册表按 shard 分片，DS 摘除时整片淘汰）。</summary>
+    public long ShardId { get; set; }
+
+    /// <summary>批次内条目。</summary>
+    public DsEntityDescriptorDto[] Descriptors { get; set; } = Array.Empty<DsEntityDescriptorDto>();
+}
+
+/// <summary>
+/// 单个实体身份：把 DS 私有的 <c>entityId → (类别, 模板 id, 位置)</c> 搬到网关。
+/// <para>
+/// <see cref="ScriptedKind"/> 直接搬 <see cref="Horizon.Game.Message.Network.ScriptedKind"/> 的整数值，
+/// 静态刷怪点（非脚本生成）为 0 = <c>None</c>，语义上就是"怪"。<b>线上契约刻意只带原始整数</b>：
+/// 网关/任务侧各自决定怎么解释（见 <c>DsEntityRegistry.ToQuestKind</c>），DS 不在这里做业务判定。
+/// </para>
+/// </summary>
+[MemoryPackable]
+public partial class DsEntityDescriptorDto
+{
+    /// <summary>运行时实体 ID（<c>(spawnPointId&lt;&lt;32)|(slot+1)</c>；玩家 id 不在此表内）。</summary>
+    public ulong EntityId { get; set; }
+
+    /// <summary>生成类别原值（<see cref="Horizon.Game.Message.Network.ScriptedKind"/>；0=静态点怪物）。</summary>
+    public byte ScriptedKind { get; set; }
+
+    /// <summary>模板 ID（怪物模板 / NPC 模板 / 物品模板，按 <see cref="ScriptedKind"/> 定语义）。</summary>
+    public int TemplateId { get; set; }
+
+    /// <summary>所属刷怪点 ID（脚本生成点为负数域）。</summary>
+    public int SpawnPointId { get; set; }
+
+    /// <summary>X（Flax Y-up，与下行快照同空间）。</summary>
+    public float X { get; set; }
+
+    /// <summary>Y（Flax 上下）。</summary>
+    public float Y { get; set; }
+
+    /// <summary>Z（Flax 前后）。</summary>
+    public float Z { get; set; }
+
+    /// <summary>true = 该实体已离开世界，注册表应删除该条目。</summary>
+    public bool Removed { get; set; }
+
+    /// <summary>这具尸体仍可被拾取（尾部追加；旧网关忽略该成员）。</summary>
+    public bool CorpseInteractable { get; set; }
+
+    /// <summary>转换为内核结构。</summary>
+    public DsEntityDescriptor ToCore() => new DsEntityDescriptor
+    {
+        EntityId = EntityId,
+        ScriptedKind = ScriptedKind,
+        TemplateId = TemplateId,
+        SpawnPointId = SpawnPointId,
+        X = X,
+        Y = Y,
+        Z = Z,
+        Removed = Removed,
+        CorpseInteractable = CorpseInteractable,
+    };
+
+    /// <summary>由内核结构构造 DTO。</summary>
+    public static DsEntityDescriptorDto FromCore(in DsEntityDescriptor d) => new DsEntityDescriptorDto
+    {
+        EntityId = d.EntityId,
+        ScriptedKind = d.ScriptedKind,
+        TemplateId = d.TemplateId,
+        SpawnPointId = d.SpawnPointId,
+        X = d.X,
+        Y = d.Y,
+        Z = d.Z,
+        Removed = d.Removed,
+        CorpseInteractable = d.CorpseInteractable,
     };
 }
 

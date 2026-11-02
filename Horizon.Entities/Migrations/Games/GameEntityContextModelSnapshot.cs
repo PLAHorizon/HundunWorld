@@ -3880,6 +3880,135 @@ namespace Horizon.Entities.Migrations.Games
                             t.HasComment("游戏分区信息表");
                         });
                 });
+            modelBuilder.Entity("Horizon.Model.GameModel.EconomyLedgerEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id")
+                        .HasColumnOrder(1);
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AreaId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("BalanceAfter")
+                        .HasColumnType("bigint")
+                        .HasColumnName("balance_after");
+
+                    b.Property<decimal>("CharacterId")
+                        .HasColumnType("decimal(20,0)")
+                        .HasColumnName("character_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CurrencyType")
+                        .HasColumnType("int")
+                        .HasColumnName("currency_type");
+
+                    b.Property<long>("Delta")
+                        .HasColumnType("bigint")
+                        .HasColumnName("delta");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GameUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsValid")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsValid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(96)
+                        .HasColumnType("nvarchar(96)")
+                        .HasColumnName("reason");
+
+                    b.Property<int>("ServerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId", "CreatedAt");
+
+                    b.HasIndex("CurrencyType", "CreatedAt");
+
+                    b.ToTable("Game_HunduShijie_EconomyLedger", t =>
+                        {
+                            t.HasComment("经济逐笔流水表");
+                        });
+                });
+
+            modelBuilder.Entity("Horizon.Model.GameModel.EconomySnapshotEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id")
+                        .HasColumnOrder(1);
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Accounts")
+                        .HasColumnType("int")
+                        .HasColumnName("accounts");
+
+                    b.Property<int>("AreaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrencyType")
+                        .HasColumnType("int")
+                        .HasColumnName("currency_type");
+
+                    b.Property<long>("Earned")
+                        .HasColumnType("bigint")
+                        .HasColumnName("earned");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GameUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsValid")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsValid");
+
+                    b.Property<int>("RowsOffBook")
+                        .HasColumnType("int")
+                        .HasColumnName("rows_off_book");
+
+                    b.Property<int>("ServerId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Spent")
+                        .HasColumnType("bigint")
+                        .HasColumnName("spent");
+
+                    b.Property<long>("Supply")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supply");
+
+                    b.Property<DateTime>("TakenAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("taken_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrencyType", "TakenAt");
+
+                    b.ToTable("Game_HunduShijie_EconomySnapshot", t =>
+                        {
+                            t.HasComment("经济周期快照表");
+                        });
+                });
+
+
 #pragma warning restore 612, 618
         }
     }

@@ -1,0 +1,26 @@
+{
+  "defaultSaveName": "NarrativeSave",
+  "defaultUsername": "",
+  "gameEntryMap": "",
+  "characterCreatorMap": "",
+  "bLoadCharacterCreatorOnNewGame": false,
+  "numSaveSlots": 20,
+  "metadataSaveFileName": "NarrativeMetadata",
+  "interactionTraceProfile": "Interaction",
+  "weaponTraceChannel": 0,
+  "interactionTraceChannel": 0,
+  "chainLinkAngleTolerance": 45,
+  "smallestChainLinkLength": 100,
+  "chainLinkCorrectionAngleTolerance": 15,
+  "correctionIterationCount": 2,
+  "bDisplayProjectSettingsNotification": true,
+  "tagFriendlyDisplayNames": {
+    "item_sword": "制式环首刀",
+    "item_bow": "桑木角弓",
+    "item_arrow": "柳木箭",
+    "item_ration": "行军口粮",
+    "item_herb": "三七药草",
+    "item_cloak": "麻布斗篷",
+    "Quest.HerbRations.Active": "药草与口粮（进行中）"
+  }
+}

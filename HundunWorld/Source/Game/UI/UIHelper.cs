@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using System;
 using System.Collections.Generic;
@@ -627,7 +627,9 @@ namespace HundunWorld.Game.UI
         {
             Actor Actor = new EmptyActor();
             Actor.Name = name;
-            Level.SpawnActor(Actor);
+            // UI 浮层 Canvas：优先玩法场景（随切场景自然清理），无玩法场景（登录等）退回全局 RootScene。
+            var target = HundunWorldGame.FindGameWorldScene() ?? FlaxEngine.Level.GetScene(0);
+            Level.SpawnActor(Actor, target);
             // 方法1：从当前Actor查找
             var canvas = Actor.AddChild<UICanvas>();
 
@@ -651,7 +653,9 @@ namespace HundunWorld.Game.UI
         private static Components.ToastManager CreateShared()
         {
             var canvas = new UICanvas { Name = "ToastCanvas" };
-            FlaxEngine.Level.SpawnActor(canvas);
+            // 有意常驻 RootScene（0 号场景）：toast 是全局共享 UI，跨场景可用。
+            // 显式传场景而非依赖"无父级默认落 Scenes[0]"的隐式行为。
+            FlaxEngine.Level.SpawnActor(canvas, FlaxEngine.Level.GetScene(0));
             var manager = new Components.ToastManager();
             if (canvas.GUI != null)
                 canvas.GUI.AddChild(manager);

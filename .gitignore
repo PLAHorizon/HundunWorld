@@ -137,3 +137,42 @@ Saved/
 /nul
 /README.md
 /TestOutput
+/.compile-temp/verify-game/sweep
+/.yy_research
+/.qcli_probe
+/.dbg
+
+# GASP generated data (rebuild with Tools/GaspBakeAnimations.py / GaspSkeletonExport.py)
+/HundunWorld/Content/Gasp/
+/Tools/_generated/
+/Tools/GaspHarness/bin/
+/Tools/GaspHarness/obj/
+
+# 大体量外部栅格源数据（GEBCO 等），只留本地不入库
+/Data/
+
+# ---- 调试现场与一次性产物（不参与功能代码/设计文档/迁移历史）----
+/.compile-temp/
+/_quarantine/
+/Tools/_*/
+/Tools/reports/
+/Tools/mh_chain/
+/HundunWorld/Tools/
+/HundunWorld/Data/
+**/__pycache__/
+
+# 探针脚本产物
+*.aggbak
+*.rsp
+*.response
+*.out
+*.err
+
+# 调试截图 / 栅格转储（引擎 Content 内的资产不受此条影响）
+/docs/**/*.png
+/docs/**/*.jpg
+/Tools/*.png
+/Tools/*.jpg
+/Tools/*.glb
+/Tools/*.npz
+

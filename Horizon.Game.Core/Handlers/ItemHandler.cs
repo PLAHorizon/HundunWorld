@@ -119,6 +119,10 @@ namespace Horizon.Game.Core.Handlers
                     equipItemMessage.CharacterId, equipItemMessage.ItemId, equipItemMessage.TemplateId,
                     equipItemMessage.Slot, equipItemMessage.Unequip);
 
+                // 穿戴/卸下会改变装备生命与防御：让角色侧重算画像与血池上限。
+                // 不通知的话服务端会一直用旧上限判死，而客户端血条已经按新装备涨上去了。
+                if (ok) InvalidateCombatProfile(equipItemMessage.CharacterId);
+
                 var response = new EquipItemMessage
                 {
                     CharacterId = equipItemMessage.CharacterId,
@@ -323,30 +327,14 @@ namespace Horizon.Game.Core.Handlers
 
                 var inventory = _clusterClient.GetGrain<Horizon.Orleans.Interface.IInventoryGrain>(
                     Horizon.Game.Core.Sim.Server.GrainKeyMapper.ToInventoryKey(request.CharacterId));
-                var info = await inventory.GetInventoryAsync();
 
-                var target = null as ItemInfo;
-                foreach (var item in info.Items)
-                {
-                    if (item.ItemId == request.ItemId) { target = item; break; }
-                }
-
-                if (target is null)
-                {
-                    response.Message = "物品不存在";
-                }
-                else if (target.Count < count)
-                {
-                    response.Message = "物品数量不足";
-                    response.RemainingCount = target.Count;
-                }
-                else
-                {
-                    var ok = await inventory.UseItemAsync(request.ItemId, count);
-                    response.Success = ok;
-                    response.RemainingCount = ok ? Math.Max(0, target.Count - count) : target.Count;
-                    response.Message = ok ? "物品使用成功" : "使用失败";
-                }
+                // 存在性、数量、秘籍研读、消耗与剩余量都由 InventoryGrain 一处判定：
+                // 物品效果如果在这里再算一遍，两个 handler 的分支迟早分叉。
+                var result = await inventory.UseItemWithResultAsync(request.CharacterId, request.ItemId, count);
+                response.Success = result.Success;
+                response.Message = result.Message;
+                response.RemainingCount = result.RemainingCount;
+                response.Effects = result.Effects;
             }
             catch (Exception ex)
             {
@@ -385,6 +373,7 @@ namespace Horizon.Game.Core.Handlers
                 response.Success = ok;
                 response.Message = text;
                 response.Gems = gems;
+                if (ok) InvalidateCombatProfile(request.CharacterId);   // 宝石五行变化 → 受击画像重算
             }
             catch (Exception ex)
             {

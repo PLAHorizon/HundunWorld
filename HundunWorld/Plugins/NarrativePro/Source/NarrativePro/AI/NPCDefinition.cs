@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FlaxEngine;
 using NarrativePro.Character;
 using NarrativePro.Items;
 
@@ -75,14 +76,59 @@ namespace NarrativePro.AI
     }
 
     /// <summary>
-    /// Ped NPC 定义。对应 UE5 UPedNPCDefinition。
-    /// 用于群体 AI（Mass Entity）的简化 NPC 定义。
-    /// 注：Flax 无 Mass Entity 系统，此处仅保留数据结构。
+    /// Ped NPC 定义。对应 UE5 <c>UPedNPCDefinition</c>（<c>Public/AI/PedNPCDefinition.h:14-30</c>）。
+    /// 用于群体 AI（Mass Entity）的简化 NPC 定义：只提供表现资产，不含交互/商店等重数据。
     /// </summary>
     [Serializable]
     public class PedNPCDefinition : NPCDefinition
     {
+        /// <summary>
+        /// 烘焙后的群体外观（低精度、合批用的静态网格）。
+        /// 对应 UE5 <c>BakedPedMesh</c>（<c>PedNPCDefinition.h:21-22</c>，TSoftObjectPtr&lt;UStaticMesh&gt;）。
+        /// Flax 中以资产路径表达惰性引用，由 <c>MassPedRepresentationSubsystem</c> 解析成可视化描述句柄。
+        /// </summary>
+        public string BakedPedMeshPath = "";
+
+        /// <summary>
+        /// 高精度行人骨骼网格。对应 UE5 <c>PedMesh</c>（<c>PedNPCDefinition.h:25-26</c>，TSoftObjectPtr&lt;USkeletalMesh&gt;）。
+        /// 近景 Actor 表现用它替换烘焙网格。
+        /// </summary>
+        public string PedMeshPath = "";
+
+        /// <summary>
+        /// 高精度行人网格的动画蓝图/动画实例类。对应 UE5 <c>PedMeshAnimBP</c>
+        /// （<c>PedNPCDefinition.h:28-29</c>，TSoftClassPtr&lt;UAnimInstance&gt;）。
+        /// Flax 无 AnimBlueprint，对应物是 <c>AnimInstance</c> 脚本类型或动画资产路径。
+        /// </summary>
+        public string PedMeshAnimBPPath = "";
+
         /// <summary>Ped 类型标签（用于群体生成器分类）</summary>
         public string PedTypeTag = "";
+
+        /// <summary>取烘焙群体网格资产。对应 UE5 <c>BakedPedMesh.LoadSynchronous()</c>。Flax 静态网格资产类型为 <c>Model</c>。</summary>
+        public Model BakedPedMesh => LoadAsset<Model>(BakedPedMeshPath);
+
+        /// <summary>取高精度骨骼网格资产。对应 UE5 <c>PedMesh.LoadSynchronous()</c>。</summary>
+        public SkinnedModel PedMesh => LoadAsset<SkinnedModel>(PedMeshPath);
+
+        private static T LoadAsset<T>(string path) where T : FlaxEngine.Asset
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+            var manager = NarrativePro.UnrealFramework.NarrativeAssetManager.Get();
+            var asset = manager != null ? manager.GetAsset<T>(path) : null;
+            if (asset == null)
+            {
+                try
+                {
+                    asset = FlaxEngine.Content.Load<T>(path);
+                }
+                catch
+                {
+                    // 资产缺失：保持 null，调用方按「无烘焙网格」降级
+                    return null;
+                }
+            }
+            return asset;
+        }
     }
 }

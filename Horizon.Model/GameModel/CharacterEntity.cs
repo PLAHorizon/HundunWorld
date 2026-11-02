@@ -36,6 +36,27 @@ namespace Horizon.Model.GameModel
         [Column("character_name", TypeName = "nvarchar(20)", Order = 3), TableDescription(TypeName = "nvarchar(20)", Name = "character_name", Order = "3", Description = "角色名")]
         [Comment("角色名")]
         public string CharacterName { get; set; }
+
+        // ===== 数字人外观落库（grain 状态存在 Redis，Redis 被清就回到默认脸，权威副本必须在 SQL）=====
+        [Column("meta_human_look", TypeName = "varbinary(max)", Order = 300), TableDescription(TypeName = "varbinary(max)", Name = "meta_human_look", Order = "300", Description = "数字人外观差量 blob")]
+        [Comment("数字人外观 blob")]
+        public byte[]? MetaHumanLook { get; set; }
+
+        [Column("meta_human_template_id", TypeName = "nvarchar(128)", Order = 301), TableDescription(TypeName = "nvarchar(128)", Name = "meta_human_template_id", Order = "301", Description = "外观所依据的模板 Id")]
+        [Comment("数字人外观模板 Id")]
+        public string? MetaHumanTemplateId { get; set; }
+
+        [Column("meta_human_checksum", TypeName = "int", Order = 302), TableDescription(TypeName = "int", Name = "meta_human_checksum", Order = "302", Description = "外观 blob 的 FNV-1a 校验和（uint 按 int 存）")]
+        [Comment("数字人外观校验和")]
+        public int? MetaHumanChecksum { get; set; }
+
+        [Column("meta_human_revision", TypeName = "int", Order = 303), TableDescription(TypeName = "int", Name = "meta_human_revision", Order = "303", Description = "外观版本号（每次成功提交自增）")]
+        [Comment("数字人外观版本号")]
+        public int? MetaHumanRevision { get; set; }
+
+        [Column("meta_human_published", TypeName = "bit", Order = 304), TableDescription(TypeName = "bit", Name = "meta_human_published", Order = "304", Description = "外观是否已发布（发布后服务端拒改）")]
+        [Comment("数字人外观已发布")]
+        public bool MetaHumanPublished { get; set; }
         
         /// <summary>
         /// 等级

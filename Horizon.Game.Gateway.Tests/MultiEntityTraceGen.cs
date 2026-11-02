@@ -640,7 +640,7 @@ public static class MultiEntityTraceGen
                 var py = step.AuthoritativeEnd.Y;
                 var pz = step.AuthoritativeEnd.Z;
 
-                var sub = WorldCoord.GetChunksInView(px, py, pz, AoiRadiusChunks);
+                var sub = WorldChunkAoi.GetChunksInView(px, py, pz, AoiRadiusChunks);
                 var prev = lastSubs[e.Id];
 
                 var added = new List<ulong>();

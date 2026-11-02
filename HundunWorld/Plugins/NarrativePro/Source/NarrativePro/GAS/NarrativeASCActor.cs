@@ -14,6 +14,12 @@ namespace NarrativePro.GAS
         /// <summary>默认属性初始化效果路径。</summary>
         public string DefaultAttributesEffectPath = "";
 
+        /// <summary>启动时一次性应用的效果路径列表。</summary>
+        public System.Collections.Generic.List<string> StartupEffectPaths = new System.Collections.Generic.List<string>();
+
+        /// <summary>默认授予的能力路径列表。</summary>
+        public System.Collections.Generic.List<string> DefaultAbilityPaths = new System.Collections.Generic.List<string>();
+
         /// <summary>ASC 等级。</summary>
         public int Level = 1;
 
@@ -29,11 +35,20 @@ namespace NarrativePro.GAS
                 if (_asc == null)
                 {
                     _asc = AddScript<NarrativeAbilitySystemComponent>();
-                    if (_asc != null)
-                    {
-                        _asc.DefaultAttributesEffectPath = DefaultAttributesEffectPath;
-                        _asc.Level = Level;
-                    }
+                }
+
+                if (_asc != null)
+                {
+                    // 把 Actor 上的 GAS 配置灌给 ASC。
+                    // AddScript 出来的脚本 OnEnable 已经用空配置跑过一次初始化，
+                    // 那种情况下必须重刷，否则配置会被静默丢掉。
+                    _asc.DefaultAttributesEffectPath = DefaultAttributesEffectPath;
+                    _asc.StartupEffectPaths = StartupEffectPaths;
+                    _asc.DefaultAbilityPaths = DefaultAbilityPaths;
+                    _asc.Level = Level;
+
+                    if (_asc.AreStartupEffectsApplied) _asc.ReapplyStartupEffects();
+                    else _asc.InitializeAttributes();
                 }
             }
             return _asc;

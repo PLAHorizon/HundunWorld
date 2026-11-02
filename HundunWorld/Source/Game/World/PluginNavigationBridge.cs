@@ -311,6 +311,41 @@ namespace HundunWorld.Game.Navigation
         }
 
         /// <summary>
+        /// 把大地图归一化坐标（0~1，左上为原点）反投影为世界位置。
+        /// <para>
+        /// 地图只提供 XZ，<paramref name="worldY"/> 由调用方给（通常是玩家当前高度）；
+        /// 最终落点是否贴地仍由 <c>PlayerController</c> 的导航吸附决定，这里不猜地形高度。
+        /// 地图未配置或坐标越界时返回 false。
+        /// </para>
+        /// </summary>
+        public static bool TryUnprojectWorldMapNormalized(Float2 normalized, float worldY, out Vector3 world)
+        {
+            world = Vector3.Zero;
+
+            if (normalized.X < 0f || normalized.X > 1f || normalized.Y < 0f || normalized.Y > 1f)
+                return false;
+            if (!TryGetMapProjection(out var origin, out var mapWidth)) return false;
+
+            world = NavigatorStatics.NormalizedMapPositionToWorld(normalized, origin, mapWidth, worldY);
+            return true;
+        }
+
+        /// <summary>
+        /// 取本地玩家的 <see cref="PlayerController"/>，供 UI 主动发起"走到这里"。
+        /// 本地玩家不是 <c>CharacterRoot</c> 结构（无该脚本）时返回 false。
+        /// </summary>
+        public static bool TryGetLocalPlayerController(out PlayerController controller)
+        {
+            controller = null;
+
+            var local = HundunWorldGame.Instance?.LocalPlayerActor;
+            if (local == null) return false;
+
+            controller = local.GetScript<PlayerController>();
+            return controller != null;
+        }
+
+        /// <summary>
         /// 把世界坐标点列投影为大地图的归一化坐标（0~1，左上为原点）。
         /// 地图未配置时返回 false 且清空结果。UI 侧只走这个出口，不直接依赖插件投影函数。
         /// </summary>

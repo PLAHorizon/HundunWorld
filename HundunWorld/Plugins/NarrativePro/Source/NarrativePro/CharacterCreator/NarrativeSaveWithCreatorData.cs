@@ -29,7 +29,11 @@ namespace NarrativePro.CharacterCreator
             }
         }
 
-        /// <summary>设置创建器数据网格</summary>
+        /// <summary>
+        /// 设置创建器数据网格。对应 UE5 SetCreatorDataMesh（NarrativeSaveWithCreatorData.cpp:15-45）：
+        /// 以 MeshItem 的 MeshAttributes 为基础写入 slot 条目，补齐材质/Morph，
+        /// 并按路径解析 1P 网格、记录附着参数；嵌套标量/向量选项的默认值写入全局值表。
+        /// </summary>
         public virtual void SetCreatorDataMesh(CharacterCreatorItem_Mesh meshItem)
         {
             if (meshItem == null || CharacterCreatorAttributes == null) return;
@@ -42,27 +46,72 @@ namespace NarrativePro.CharacterCreator
                 CharacterCreatorAttributes.MeshEntries.Add(entry);
             }
 
-            // 更新网格属性
-            entry.Attribute.bUseLeaderPose = meshItem.bUseLeaderPose;
-            entry.Attribute.MeshAnimBPPath = meshItem.MeshAnimBPPath;
+            var attribute = entry.Attribute;
+
+            // 实际设置网格资产（对应 UE5 MeshAttributes 拷贝）：按路径加载 SkinnedModel
+            if (!string.IsNullOrEmpty(meshItem.MeshPath))
+            {
+                attribute.Mesh = Content.Load<SkinnedModel>(meshItem.MeshPath);
+            }
+            if (!string.IsNullOrEmpty(meshItem.Mesh1PPath))
+            {
+                attribute.Mesh1P = Content.Load<SkinnedModel>(meshItem.Mesh1PPath);
+            }
+
+            // 路径本身也要留下：外观数据要进 JSON 存档（读档时按路径重新解析资产），
+            // 只留 SkinnedModel 引用会在下一次会话变成 null（外观被重掷的直接原因之一）。
+            attribute.MeshPath = meshItem.MeshPath ?? "";
+            attribute.Mesh1PPath = meshItem.Mesh1PPath ?? "";
+
+            // 附着与动画设置
+            attribute.bUseLeaderPose = meshItem.bUseLeaderPose;
+            attribute.MeshAnimBPPath = meshItem.MeshAnimBPPath;
+            attribute.MeshAttachSocket = meshItem.MeshAttachSocket;
+            attribute.MeshAttachOffset = meshItem.MeshAttachOffset;
 
             // 转换材质选项为材质
-            entry.Attribute.MeshMaterials.Clear();
+            attribute.MeshMaterials.Clear();
             foreach (var matOption in meshItem.MaterialOptions)
             {
                 if (matOption != null)
                 {
-                    entry.Attribute.MeshMaterials.Add(matOption.GetDefaultMaterial());
+                    attribute.MeshMaterials.Add(matOption.GetDefaultMaterial());
                 }
             }
 
             // 转换 Morph
-            entry.Attribute.Morphs.Clear();
+            attribute.Morphs.Clear();
             foreach (var morph in meshItem.Morphs)
             {
                 if (morph != null)
                 {
-                    entry.Attribute.Morphs.Add(morph);
+                    attribute.Morphs.Add(morph);
+                }
+            }
+
+            // 隐藏 slot 集合（对应 UE5 HideSlots）
+            attribute.HideSlots.Clear();
+            foreach (var hideSlot in meshItem.HideSlots)
+            {
+                if (hideSlot.IsValid()) attribute.HideSlots.Add(hideSlot);
+            }
+
+            // 嵌套标量/向量选项：默认值登记进全局值表，供材质参数/Morph 引用
+            foreach (var scalarOption in meshItem.ScalarOptions)
+            {
+                if (scalarOption != null && scalarOption.ScalarTagID.IsValid())
+                {
+                    SetCreatorScalarValue(scalarOption.ScalarTagID, scalarOption.DefaultValue);
+                }
+            }
+            foreach (var vectorOption in meshItem.VectorOptions)
+            {
+                if (vectorOption != null && vectorOption.VectorTagID.IsValid()
+                    && !CharacterCreatorAttributes.VectorEntries.Exists(e => e != null && e.Tag == vectorOption.VectorTagID))
+                {
+                    // 未设置时取色板首色作为默认值（对应 UE5 色板默认）
+                    var swatch = CharacterCreatorFactory.LoadColorSwatch(vectorOption.AvailableOptionsSwatchPath);
+                    SetCreatorVectorValue(vectorOption.VectorTagID, swatch != null && swatch.Colors.Count > 0 ? swatch.Colors[0] : Color.White);
                 }
             }
         }

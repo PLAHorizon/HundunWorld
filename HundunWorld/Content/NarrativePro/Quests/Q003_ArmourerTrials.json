@@ -1,0 +1,213 @@
+﻿{
+  "questId": "Q003_ArmourerTrials",
+  "questName": "铁匠的三项试炼",
+  "questDescription": "校对新增任务/条件/事件的作者入口：装备、使用、拾取、交互、加目标、等事件、完成数据任务，并按等级/距离/ perks/时辰把关。",
+  "questDialogueClass": "D002_NightfallSendOff",
+  "startStateId": "s_begin",
+  "//": "本任务专用于跑通端口新补齐的可作者词汇表（对应上游 Content/Pro/Core/Tales 的 BPT_*/BPC_*/BPE_*），不是主线玩法内容。",
+  "states": [
+    {
+      "id": "s_begin",
+      "description": "领受试炼",
+      "stateType": 0,
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "s_forge",
+      "description": "备料与着装",
+      "stateType": 0,
+      "position": {
+        "x": 400,
+        "y": 0
+      },
+      "conditions": [
+        {
+          "type": "LevelCheck",
+          "requiredLevel": 3,
+          "bNot": false
+        },
+        {
+          "type": "HasPerk",
+          "perkClassId": "/NarrativePro/Pro/Core/Data/SkillTrees/Fortitude/Perks/Perk_Juggernaut"
+        }
+      ]
+    },
+    {
+      "id": "s_night",
+      "description": "夜里送到铁砧旁",
+      "stateType": 0,
+      "position": {
+        "x": 800,
+        "y": 0
+      },
+      "conditions": [
+        {
+          "type": "IsTimeInRange",
+          "rangeMin": 1800.0,
+          "rangeMax": 600.0
+        },
+        {
+          "type": "CheckDistance",
+          "otherActorName": "npc_village_smith",
+          "maxDist": 900.0
+        }
+      ]
+    },
+    {
+      "id": "s_success",
+      "description": "试炼通过",
+      "stateType": 1,
+      "position": {
+        "x": 1200,
+        "y": 0
+      },
+      "events": [
+        {
+          "type": "AddCurrency",
+          "amount": 500,
+          "currency": "Currency"
+        },
+        {
+          "type": "GiveXP",
+          "xpToGive": 250.0,
+          "level": 1.0
+        },
+        {
+          "type": "BeginDialogue",
+          "dialogueClassId": "D001_HerbRationsIntro",
+          "priority": -1
+        }
+      ]
+    },
+    {
+      "id": "s_fail",
+      "description": "试炼失败",
+      "stateType": 2,
+      "position": {
+        "x": 1200,
+        "y": 120
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "b_gear",
+      "description": "穿上并挥一次剑",
+      "fromStateId": "s_begin",
+      "toStateId": "s_forge",
+      "hidden": false,
+      "position": {
+        "x": 200,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "EquipItemTask",
+          "targetId": "equip_sword",
+          "itemClassId": "item_sword",
+          "itemDisplayName": "铁匠短剑",
+          "bEquipOnBegin": true
+        },
+        {
+          "type": "UseItemTask",
+          "targetId": "use_ration",
+          "itemClassId": "item_ration",
+          "bUseOnBegin": false
+        },
+        {
+          "type": "WieldWeaponTask",
+          "targetId": "wield_sword",
+          "itemClassId": "item_sword"
+        }
+      ],
+      "events": [
+        {
+          "type": "ConsumeItemEvent",
+          "itemId": "item_ration",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "b_fetch",
+      "description": "取走砧边的矿料包",
+      "fromStateId": "s_forge",
+      "toStateId": "s_night",
+      "hidden": false,
+      "position": {
+        "x": 600,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "TakePickupTask",
+          "targetId": "pickup_ore",
+          "pickupClassId": "item_herb",
+          "quantityToGive": 2,
+          "bSpawnIfMissing": false
+        },
+        {
+          "type": "InteractWithObjectTask",
+          "targetId": "interact_forge",
+          "targetNpcId": "npc_village_smith",
+          "requiredInteract": 1
+        }
+      ]
+    },
+    {
+      "id": "b_goal",
+      "description": "让铁匠去砧边等着",
+      "fromStateId": "s_night",
+      "toStateId": "s_success",
+      "hidden": false,
+      "position": {
+        "x": 1000,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "AddGoalAndWaitTask",
+          "targetId": "goal_forge",
+          "npcId": "npc_village_smith",
+          "goalClassPath": "NPCGoal_Location",
+          "goalKey": "ForgeStation",
+          "goalScore": 2.0,
+          "bTriggerReselect": true
+        },
+        {
+          "type": "WaitGameplayEventTask",
+          "targetId": "wait_hit",
+          "eventTag": "Narrative.GameplayEvent.Reload",
+          "targetNpcId": "npc_village_smith",
+          "progressToAdd": 1
+        },
+        {
+          "type": "CompleteDataTaskTask",
+          "targetId": "data_herb",
+          "dataTaskName": "HerbRations"
+        }
+      ]
+    },
+    {
+      "id": "b_fail",
+      "description": "放弃试炼",
+      "fromStateId": "s_night",
+      "toStateId": "s_fail",
+      "hidden": false,
+      "position": {
+        "x": 1000,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "UnequipItemTask",
+          "targetId": "unequip_sword",
+          "itemClassId": "item_sword"
+        }
+      ]
+    }
+  ]
+}

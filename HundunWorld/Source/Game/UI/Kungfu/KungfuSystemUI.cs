@@ -469,7 +469,7 @@ namespace HundunWorld.Game.UI.Kungfu
                 Parent = qiShuContent,
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Size = new Float2(200, 40),
-                Text = "✦ ✧ ✣ ✤",
+                Text = "◆ ◆ ◆ ◆",
                 TextColor = KungfuTheme.Colors.Accent,
                 Font = KungfuTheme.Fonts.GetTitleFont(),
                 HorizontalAlignment = TextAlignment.Center

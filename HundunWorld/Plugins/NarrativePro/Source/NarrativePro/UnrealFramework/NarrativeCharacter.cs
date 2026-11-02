@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using FlaxEngine;
+using NarrativePro.AI;
 using NarrativePro.Character;
 using NarrativePro.Core;
 using NarrativePro.GAS;
 using NarrativePro.Interaction;
 using NarrativePro.Items;
+using NarrativePro.Tales;
 
 namespace NarrativePro.UnrealFramework
 {
@@ -34,25 +36,6 @@ namespace NarrativePro.UnrealFramework
 
         /// <summary>目标手槽位标签容器。</summary>
         public GameplayTagContainer WieldSlots = new GameplayTagContainer();
-    }
-
-    /// <summary>
-    /// 近战战斗数据。对应 UE5 FMeleeCombatData。
-    /// </summary>
-    [Serializable]
-    public class MeleeCombatData
-    {
-        /// <summary>无武器攻击时使用的检测数据。</summary>
-        public float TraceDistance = 300f;
-
-        /// <summary>无武器攻击时使用的检测半径。</summary>
-        public float TraceRadius = 100f;
-
-        /// <summary>普通近战连击动画集路径列表。</summary>
-        public List<string> AttackComboPaths = new List<string>();
-
-        /// <summary>重击近战连击动画集路径列表。</summary>
-        public List<string> HeavyAttackComboPaths = new List<string>();
     }
 
     /// <summary>
@@ -116,8 +99,14 @@ namespace NarrativePro.UnrealFramework
         /// <summary>遍历时是否按下了跳跃。</summary>
         public bool bPressedJump = false;
 
-        /// <summary>是否为可攀爬对象。</summary>
-        public bool IsClimbableObject = false;
+        /// <summary>
+        /// 命中的攀爬物（对应 UE5 FAttachWarpProps::ClimbableActor，NarrativeCharacter.h:57）。
+        /// 取代此前端口的死布尔 IsClimbableObject：UE5 里该 bool 只是扫描通道的副产物，
+        /// 攀爬行为全部经 ClimbableActor 的 IClimbableActor 接口派发（Movement.cpp:1525-1527），
+        /// 保留接口引用即保留全部真相，布尔为冗余真相源，已删除。
+        /// </summary>
+        [NonSerialized]
+        public NarrativePro.World.IClimbable ClimbableActor;
 
         /// <summary>是否有正前方 ledge。</summary>
         public bool HasFrontLedge = false;
@@ -155,7 +144,7 @@ namespace NarrativePro.UnrealFramework
             props.OverrideLayerBlendOut = 0f;
             props.OptionalBlendInTime = -1f;
             props.bPressedJump = false;
-            props.IsClimbableObject = false;
+            props.ClimbableActor = null; // UE5 ClearProps 不清 AActor*（先取后用，Movement.cpp:1514），端口调用序相同，显式清零更稳
             props.HasFrontLedge = false;
             props.HasBackLedge = false;
             props.HasBackFloor = false;
@@ -204,8 +193,8 @@ namespace NarrativePro.UnrealFramework
     {
         // ===== 配置字段 =====
 
-        /// <summary>是否需要地图标记。对应 UE5 bWantsMapMarker。</summary>
-        public bool bWantsMapMarker = false;
+        /// <summary>是否需要地图标记。对应 UE5 bWantsMapMarker（NarrativeCharacter.cpp:113 类默认值为 true）。</summary>
+        public bool bWantsMapMarker = true;
 
         /// <summary>默认属性初始化效果路径（Instant 类型，设置 BaseValue）。</summary>
         public string DefaultAttributesPath = "";
@@ -216,11 +205,17 @@ namespace NarrativePro.UnrealFramework
         /// <summary>默认授予的能力路径列表。</summary>
         public List<string> DefaultAbilityPaths = new List<string>();
 
-        /// <summary>等级指数 X（越小则基础 XP 越高）。</summary>
-        public float LevelExponentX = 0.1f;
+        /// <summary>等级曲线 X。对应 UE5 <c>LevelExponentX</c>（NarrativeCharacter.cpp:106 = 0.07）。</summary>
+        public float LevelExponentX = 0.07f;
 
-        /// <summary>等级指数 Y（越大则等级间跳跃越大，指数增长）。</summary>
-        public float LevelExponentY = 1.0f;
+        /// <summary>等级曲线 Y。对应 UE5 <c>LevelExponentY</c>（NarrativeCharacter.cpp:107 = 2.0）。</summary>
+        public float LevelExponentY = 2.0f;
+
+        /// <summary>
+        /// 升级时是否重灌初始属性（让 MaxHealth 这类按等级缩放的派生值跟着升）。
+        /// 对应 UE5 <c>bReapplyAttributesOnLevelUp</c>（NarrativeCharacter.cpp:108，默认 false）。
+        /// </summary>
+        public bool bReapplyAttributesOnLevelUp = false;
 
         /// <summary>遍历动作选择表路径（替代 UE5 UChooserTable*）。</summary>
         public string TraversalTablePath = "";
@@ -230,8 +225,8 @@ namespace NarrativePro.UnrealFramework
 
         // ===== 运行时状态 =====
 
-        /// <summary>角色随机种子（生成一次并同步）。</summary>
-        public int CharacterRandomSeed = 0;
+        /// <summary>角色随机种子（生成一次并同步）。-1 = 尚未赋值，启用时 roll；对应 UE5 NarrativeCharacter.cpp:110。</summary>
+        public int CharacterRandomSeed = -1;
 
         /// <summary>是否处于布娃娃状态。</summary>
         public bool bIsRagdoll = false;
@@ -286,6 +281,18 @@ namespace NarrativePro.UnrealFramework
         [NonSerialized]
         protected CharacterMapMarker MapMarker;
 
+        /// <summary>交互组件（UE5 角色类默认对象，本端口在 OnEnable 里构建）。</summary>
+        [NonSerialized]
+        protected NarrativeInteractionComponent InteractionComp;
+
+        /// <summary>Tales 组件（对话/任务状态宿主，仅本地玩家角色默认构建）。</summary>
+        [NonSerialized]
+        protected TalesComponent TalesComp;
+
+        /// <summary>脚步 foley 组件（对应 UE5 由动画脚步 Notify 承担的职责）。</summary>
+        [NonSerialized]
+        protected NarrativeFootstepFoley FootstepFoleyComp;
+
         /// <summary>外观资产。</summary>
         [NonSerialized]
         protected CharacterAppearanceBase Appearance;
@@ -293,6 +300,13 @@ namespace NarrativePro.UnrealFramework
         /// <summary>角色定义（运行时设置）。</summary>
         [NonSerialized]
         protected CharacterDefinition CharacterDefinition;
+
+        /// <summary>本角色的动画实例（对应 UE5 骨骼网格上的 AnimInstance，见 <see cref="GetCharacterAnimInstance"/>）。</summary>
+        [NonSerialized]
+        protected NarrativeAnimInstance CharacterAnimInstance;
+
+        /// <summary>子对象是否已构建（幂等标记，OnDisable 时复位）。</summary>
+        private bool _bSubobjectsEnsured;
 
         // ===== 事件 =====
 
@@ -332,24 +346,339 @@ namespace NarrativePro.UnrealFramework
         {
             base.OnEnable();
 
-            // 生成随机种子
-            if (CharacterRandomSeed == 0)
+            // 生成随机种子：判据用「小于 0」而不是「等于 0」——UE5 NarrativeCharacter.cpp:860
+            // 的哨兵就是负数（CDO 默认 -1），所以作者真填 0 当种子时端口也该留着。
+            if (CharacterRandomSeed < 0)
             {
                 CharacterRandomSeed = new System.Random().Next();
             }
 
-            // 查找子组件
+            // UE5 里 ASC / 背包 / 交互 / 移动 / 视觉这些是角色的类默认子对象，
+            // Actor 构造时就存在；Flax 端口没有类构造器，必须在启用时显式构建，
+            // 否则下面所有 GetScript 都拿到 null，整套系统静默空转。
+            EnsureSubobjects();
+
+            // UE5 的砸趴分支用 GetWorld()->TimeSince(CreationTime) > 3 挡住"出生瞬间就结算坠落"
+            // （NarrativeCharacter.cpp:252），端口的 CreationTime 就是启用时刻。
+            _creationUtcTime = System.DateTime.UtcNow;
+
+            // 查找子组件（EnsureSubobjects 已保证存在，这里再解析一次以复用场景手工挂载的实例）
             AbilitySystemComponent = Actor.GetScript<NarrativeAbilitySystemComponent>();
             AttributeSetBase = Actor.GetScript<NarrativeAttributeSetBase>();
             InventoryComponent = Actor.GetScript<NarrativeInventoryComponent>();
             EquipmentComp = Actor.GetScript<EquipmentComponent>();
             CharVisual = Actor.GetScript<NarrativeCharacterVisual>();
             MapMarker = Actor.GetScript<CharacterMapMarker>();
+            InteractionComp = ResolveInteractionComponent();
+            TalesComp = Actor.GetScript<TalesComponent>();
+            FootstepFoleyComp = Actor.GetScript<NarrativeFootstepFoley>();
+
+            // 属性集可能由 ASC 在启用时创建（ASC.InitializeAttributes 会 AddScript），
+            // 因此要在 ASC 之后再解析一次，保证角色侧引用不为空。
+            AttributeSetBase ??= AbilitySystemComponent?.GetAttributeSet();
+
+            // UE5 把 OnXPChanged 绑在属性集的委托上；端口属性集是 C# 事件，且它可能晚于角色启用
+            // （由 ASC 在初始化里创建），所以订阅必须排在这里而不是更早。
+            SubscribeAttributeHooks();
+
+            // 场景预置的 ASC 不走子对象构建分支，这里再补一次绑定（幂等）
+            BindDeathCallbacks();
+
+            // 注册进角色子系统（对应 UE5 WorldSubsystem 的自动登记）
+            RegisterWithCharacterSubsystem();
         }
 
         public override void OnDisable()
         {
+            UnbindDeathCallbacks();
+            UnsubscribeAttributeHooks();
+
+            var subsystem = NarrativeCharacterSubsystem.Instance;
+            if (subsystem != null && Actor != null)
+            {
+                subsystem.UnregisterCharacter(Actor);
+            }
+
+            _bRegisteredWithSubsystem = false;
+            _bSubobjectsEnsured = false;
             base.OnDisable();
+        }
+
+        // ===== 子对象构建（对应 UE5 类默认对象 / PostInitializeComponents）=====
+
+        /// <summary>
+        /// 构建并持有 UE5 由角色类默认对象提供的全部子组件：
+        /// ASC + 属性集、背包、交互组件、（玩家）Tales 组件、移动、视觉、脚步 foley。
+        /// 幂等：场景里已手工挂载的组件只复用，不会重复创建；派生类可重写以增删组件。
+        /// </summary>
+        public virtual void EnsureSubobjects()
+        {
+            if (_bSubobjectsEnsured || Actor == null) return;
+            _bSubobjectsEnsured = true;
+
+            // 编辑态不装配运行期子对象（对应 UE5 的类默认对象只在游戏 World 里实例化），
+            // 避免在编辑器打开场景时给 Actor 追加脚本、污染场景资产。
+            if (!Engine.IsPlayMode) return;
+
+            EnsureAbilitySystemComponent();
+            EnsureInventoryComponent();
+            // 装备/持握组件：UE5 由角色类默认对象提供，Flax 侧必须显式装配。
+            // 没有它，EquipItem/WieldWeapon/GiveWeaponAbilities、取武器攻击与毒药读取都会静默失败
+            //（玩家已在派生类补齐，这里是 NPC 与直接挂载角色的通路）。
+            if (Actor.GetScript<NarrativePro.Items.EquipmentComponent>() == null)
+            {
+                Actor.AddScript<NarrativePro.Items.EquipmentComponent>();
+            }
+            EnsureInteractionComponent();
+            EnsureTalesComponent();
+            EnsureMovementComponent();
+            EnsureCharacterVisual();
+            EnsureFootstepFoley();
+
+            // UE5 在 OnCharacterVisualInitialized（NarrativeCharacter.cpp:664）里，即派系就绪之后
+            // 调 RegisterCharacterMapMarker；端口同样排在视觉/交互装配之后。
+            RegisterCharacterMapMarker();
+        }
+
+        /// <summary>
+        /// 创建并登记本角色的地图标记。对应 UE5
+        /// <c>ANarrativeCharacter::RegisterCharacterMapMarker</c>（NarrativeCharacter.cpp:952-977）。
+        /// UE5 用 <c>NewObject&lt;UCharacterMapMarker&gt;(this)</c> 挂在角色 Actor 上；
+        /// Flax 端口里 <see cref="CharacterMapMarker"/> 不是 Script（<c>MapMarker</c> 是纯对象，
+        /// 由 <c>MapMarker.RegisterMarker()</c> 登记进 <c>NavigationSubsystem</c> 的导航器列表），
+        /// 所以这里对应的是"直接 new 一份并登记"。
+        /// 此前端口只在 OnEnable 里 <c>GetScript</c> 查找、没有任何地方构造它，
+        /// 于是代码生成的角色（NPC、子系统装配的玩家角色）地图标记整条不存在，
+        /// 死亡/复活时的标记增删（SetDead 分支）也因引用为空而空转。
+        /// </summary>
+        /// <returns>是否成功登记。</returns>
+        public virtual bool RegisterCharacterMapMarker()
+        {
+            if (!bWantsMapMarker || Actor == null) return false;
+            if (MapMarker != null) return true;
+
+            MapMarker = new CharacterMapMarker
+            {
+                ActorOwner = Actor
+            };
+
+            // UE5 :964-968：本地玩家在自己看的世界地图上可见；其它角色默认只进小地图/罗盘。
+            // UE5 的判据是 IsLocallyControlled() && IsPlayerControlled()，端口这一层没有
+            // IsPlayerControlled 的等价物（角色是否由玩家驱动由派生类与控制器决定），
+            // 因此只按 IsLocallyControlled 收敛，语义保守：不会把别人升成世界地图标记。
+            if (IsLocallyControlled())
+            {
+                MapMarker.MarkerDomain.AddTag(NarrativePro.Navigation.NavigatorGameplayTags.NavigatorTypes_Worldmap);
+            }
+
+            MapMarker.DefaultMarkerSettings.MarkerTitleText = GetCharacterName();
+            MapMarker.RegisterMarker();
+            return true;
+        }
+
+        /// <summary>
+        /// 是否允许创建运行期子对象：仅在 Play 模式、且 Actor 有效时为真。
+        /// 编辑态一律只查不建，避免给场景资产追加脚本。
+        /// </summary>
+        protected bool bCanCreateSubobjects => Actor != null && Engine.IsPlayMode;
+
+        /// <summary>
+        /// 构建并返回本角色的 ASC（对应 UE5 <c>ANarrativeCharacter</c> 构造函数里的
+        /// <c>AbilitySystemComponent = CreateDefaultSubobject&lt;UNarrativeAbilitySystemComponent&gt;</c>）。
+        /// 创建后把角色上的 GAS 配置灌入并刷新启动效果（<c>AddScript</c> 出的脚本
+        /// OnEnable 已用空配置跑过一次初始化，不重刷会静默丢配置）。
+        /// </summary>
+        public virtual NarrativeAbilitySystemComponent EnsureAbilitySystemComponent()
+        {
+            if (Actor == null) return AbilitySystemComponent;
+
+            AbilitySystemComponent = Actor.GetScript<NarrativeAbilitySystemComponent>();
+            if (AbilitySystemComponent == null && bCanCreateSubobjects)
+            {
+                AbilitySystemComponent = Actor.AddScript<NarrativeAbilitySystemComponent>();
+                if (AbilitySystemComponent != null)
+                {
+                    AbilitySystemComponent.DefaultAttributesEffectPath = DefaultAttributesPath;
+                    AbilitySystemComponent.StartupEffectPaths = StartupEffectPaths;
+                    AbilitySystemComponent.DefaultAbilityPaths = DefaultAbilityPaths;
+
+                    if (AbilitySystemComponent.AreStartupEffectsApplied)
+                    {
+                        AbilitySystemComponent.ReapplyStartupEffects();
+                    }
+                    else
+                    {
+                        AbilitySystemComponent.InitializeAttributes();
+                    }
+                }
+            }
+
+            // 属性集由 ASC 的初始化创建；角色侧缓存同一实例
+            AttributeSetBase = Actor.GetScript<NarrativeAttributeSetBase>() ?? AbilitySystemComponent?.GetAttributeSet();
+
+            // UE5 由角色类默认对象读取 UCharacterDefinition::AbilityConfiguration 灌入 ASC。
+            // 这里两条路都要覆盖：场景预置的 ASC（GetScript 命中，不走下面的 AddScript 分支）
+            // 与刚新建的 ASC（AddScript 的 OnEnable 已用空配置初始化过，
+            // ApplyAbilityConfiguration 会合并路径并立即补应用效果与能力）。
+            ApplyDefinitionAbilityConfiguration();
+
+            // 死亡回调在 ASC 落定的这一刻绑定：场景预置的 ASC 不会走 OnEnable 的 AddScript 分支，
+            // 惰性构建（GetAbilitySystemComponent）又可能晚于 OnEnable，两处都得绑到。
+            BindDeathCallbacks();
+            return AbilitySystemComponent;
+        }
+
+        /// <summary>
+        /// 把 <see cref="CharacterDefinition.AbilityConfigurationPath"/> 指向的能力配置灌入本角色的 ASC
+        /// （对应 UE5 <c>UCharacterDefinition::AbilityConfiguration</c> 软引用在角色初始化时被读进 ASC）。
+        /// 走 <c>NarrativeAbilitySystemComponent.ApplyAbilityConfiguration(path)</c> →
+        /// <c>NarrativeGASAssetRegistry.LoadAbilityConfiguration</c>，因此
+        /// <c>DefaultAttributes / StartupEffects / DefaultAbilityPaths</c> 三组字段由同一条既有用量通路填充，
+        /// 玩家与 NPC 共用（定义分别是 PlayerDefinition / NPCDefinition）。
+        /// 幂等：ASC 侧只做合并，重复调用不会二次扣属性。
+        /// </summary>
+        public virtual bool ApplyDefinitionAbilityConfiguration()
+        {
+            // 不调用 EnsureAbilitySystemComponent()，避免与本方法的调用点形成递归
+            var asc = AbilitySystemComponent ?? Actor?.GetScript<NarrativeAbilitySystemComponent>();
+            if (asc == null) return false;
+
+            var definition = GetCharacterDefinition();
+            if (definition == null || string.IsNullOrEmpty(definition.AbilityConfigurationPath)) return false;
+
+            // 本方法有两个调用点（ASC 构建、定义设置），而 ASC 的 ApplyAbilityConfiguration 在
+            // 启动窗口已过的场合会立刻再应用一次效果——同一条配置路径只灌一次，
+            // 否则定义上的默认属性效果会按次数线性叠加（如 AttackDamage 翻倍）。
+            if (string.Equals(_appliedDefinitionAbilityConfigurationPath, definition.AbilityConfigurationPath, StringComparison.Ordinal))
+            {
+                return false;
+            }
+            _appliedDefinitionAbilityConfigurationPath = definition.AbilityConfigurationPath;
+
+            return asc.ApplyAbilityConfiguration(definition.AbilityConfigurationPath);
+        }
+
+        /// <summary>已灌入 ASC 的定义能力配置路径（防止双调用点重复应用效果）。</summary>
+        [NonSerialized]
+        private string _appliedDefinitionAbilityConfigurationPath = "";
+
+        /// <summary>构建并返回背包组件（对应 UE5 角色类默认对象 <c>InventoryComponent</c>）。</summary>
+        public virtual NarrativeInventoryComponent EnsureInventoryComponent()
+        {
+            if (Actor == null) return InventoryComponent;
+
+            InventoryComponent = Actor.GetScript<NarrativeInventoryComponent>();
+            if (InventoryComponent == null && bCanCreateSubobjects)
+            {
+                InventoryComponent = Actor.AddScript<NarrativeInventoryComponent>();
+            }
+            return InventoryComponent;
+        }
+
+        /// <summary>
+        /// 解析 Actor 上已有的交互组件。
+        /// Flax 的 <c>GetScript&lt;TBase&gt;</c> 不保证命中派生脚本，故按具体类型逐一探测。
+        /// </summary>
+        protected virtual NarrativeInteractionComponent ResolveInteractionComponent()
+        {
+            if (Actor == null) return null;
+
+            var component = Actor.GetScript<PlayerInteractionComponent>() as NarrativeInteractionComponent;
+            component ??= Actor.GetScript<NPCInteractionComponent>() as NarrativeInteractionComponent;
+            component ??= Actor.GetScript<NarrativeInteractionComponent>();
+            return component;
+        }
+
+        /// <summary>构建并返回交互组件（对应 UE5 角色类默认对象）。</summary>
+        public virtual NarrativeInteractionComponent EnsureInteractionComponent()
+        {
+            if (Actor == null) return InteractionComp;
+
+            InteractionComp = ResolveInteractionComponent();
+            if (InteractionComp == null && bCanCreateSubobjects)
+            {
+                InteractionComp = CreateInteractionComponent();
+            }
+            return InteractionComp;
+        }
+
+        /// <summary>创建交互组件的默认类型（玩家/NPC 子类各自重写为对应派生类）。</summary>
+        protected virtual NarrativeInteractionComponent CreateInteractionComponent()
+        {
+            return Actor.AddScript<NarrativeInteractionComponent>();
+        }
+
+        /// <summary>是否应为本角色构建 Tales 组件（对应 UE5 仅玩家侧持有任务/对话状态机）。</summary>
+        protected virtual bool ShouldCreateTalesComponent() => false;
+
+        /// <summary>构建并返回 Tales 组件（仅本地玩家角色默认构建，避免 NPC 抢注激活组件）。</summary>
+        public virtual TalesComponent EnsureTalesComponent()
+        {
+            if (Actor == null) return TalesComp;
+
+            TalesComp = Actor.GetScript<TalesComponent>();
+            if (TalesComp == null && ShouldCreateTalesComponent() && bCanCreateSubobjects)
+            {
+                TalesComp = Actor.AddScript<TalesComponent>();
+            }
+            return TalesComp;
+        }
+
+        /// <summary>构建并返回移动组件（对应 UE5 <c>NarrativeCharacterMovement</c> 类默认对象）。</summary>
+        public virtual NarrativeCharacterMovement EnsureMovementComponent()
+        {
+            if (Actor == null) return null;
+
+            var movement = Actor.GetScript<NarrativeCharacterMovement>();
+            if (movement == null && bCanCreateSubobjects)
+            {
+                movement = Actor.AddScript<NarrativeCharacterMovement>();
+            }
+            return movement;
+        }
+
+        /// <summary>构建并返回角色视觉（对应 UE5 <c>CharacterVisual</c> 类默认对象）。</summary>
+        public virtual NarrativeCharacterVisual EnsureCharacterVisual()
+        {
+            if (Actor == null) return CharVisual;
+
+            CharVisual = Actor.GetScript<NarrativeCharacterVisual>();
+            if (CharVisual == null && bCanCreateSubobjects)
+            {
+                CharVisual = Actor.AddScript<NarrativeCharacterVisual>();
+            }
+            return CharVisual;
+        }
+
+        /// <summary>
+        /// 构建并返回脚步 foley 组件（UE5 由动画脚步 Notify 发声，Flax 侧需要一个真实挂载的驱动脚本，
+        /// 否则 <see cref="NarrativePro.Character.NarrativeCharacterFoleyExtensions.ResolveBank"/> 永远解析不到库）。
+        /// </summary>
+        public virtual NarrativeFootstepFoley EnsureFootstepFoley()
+        {
+            if (Actor == null) return FootstepFoleyComp;
+
+            FootstepFoleyComp = Actor.GetScript<NarrativeFootstepFoley>();
+            if (FootstepFoleyComp == null && bCanCreateSubobjects)
+            {
+                FootstepFoleyComp = Actor.AddScript<NarrativeFootstepFoley>();
+            }
+            return FootstepFoleyComp;
+        }
+
+        /// <summary>是否已登记进角色子系统（幂等标记，避免引导补票时重复登记）。</summary>
+        private bool _bRegisteredWithSubsystem;
+
+        /// <summary>把角色登记进 <see cref="NarrativeCharacterSubsystem"/>（子系统未就绪时静默跳过，幂等）。</summary>
+        public virtual void RegisterWithCharacterSubsystem()
+        {
+            if (_bRegisteredWithSubsystem) return;
+
+            var subsystem = NarrativeCharacterSubsystem.Instance;
+            if (subsystem == null || Actor == null) return;
+
+            subsystem.RegisterCharacter(Actor, GetCharacterDefinition() as NPCDefinition);
+            _bRegisteredWithSubsystem = true;
         }
 
         public override void OnUpdate()
@@ -369,25 +698,60 @@ namespace NarrativePro.UnrealFramework
         // ===== 属性/能力访问 =====
 
         /// <summary>返回能力系统组件。对应 UE5 GetAbilitySystemComponent。</summary>
-        public virtual NarrativeAbilitySystemComponent GetAbilitySystemComponent() => AbilitySystemComponent;
+        public virtual NarrativeAbilitySystemComponent GetAbilitySystemComponent()
+        {
+            // 角色可能在 OnEnable 之前被外部（生成器/存档恢复）访问，这里兜底构建
+            return AbilitySystemComponent != null ? AbilitySystemComponent : EnsureAbilitySystemComponent();
+        }
 
         /// <summary>返回 NarrativeAbilitySystemComponent。对应 UE5 GetNarrativeAbilitySystemComponent。</summary>
-        public virtual NarrativeAbilitySystemComponent GetNarrativeAbilitySystemComponent() => AbilitySystemComponent;
+        public virtual NarrativeAbilitySystemComponent GetNarrativeAbilitySystemComponent() => GetAbilitySystemComponent();
 
         /// <summary>获取属性集基类。</summary>
-        public virtual NarrativeAttributeSetBase GetAttributeSetBase() => AttributeSetBase;
+        public virtual NarrativeAttributeSetBase GetAttributeSetBase()
+        {
+            AttributeSetBase ??= Actor?.GetScript<NarrativeAttributeSetBase>() ?? GetAbilitySystemComponent()?.GetAttributeSet();
+            return AttributeSetBase;
+        }
 
         /// <summary>获取背包组件。</summary>
-        public virtual NarrativeInventoryComponent GetInventoryComponent() => InventoryComponent;
+        public virtual NarrativeInventoryComponent GetInventoryComponent()
+        {
+            return InventoryComponent != null ? InventoryComponent : EnsureInventoryComponent();
+        }
 
         /// <summary>获取交互组件。子类可重写。</summary>
-        public virtual NarrativeInteractionComponent GetInteractionComponent() => null;
+        public virtual NarrativeInteractionComponent GetInteractionComponent()
+        {
+            return InteractionComp != null ? InteractionComp : EnsureInteractionComponent();
+        }
 
         /// <summary>获取装备组件。</summary>
-        public virtual EquipmentComponent GetEquipmentComponent() => EquipmentComp;
+        public virtual EquipmentComponent GetEquipmentComponent()
+        {
+            EquipmentComp ??= Actor?.GetScript<EquipmentComponent>();
+            return EquipmentComp;
+        }
 
         /// <summary>获取角色视觉。</summary>
-        public virtual NarrativeCharacterVisual GetCharacterVisual() => CharVisual;
+        public virtual NarrativeCharacterVisual GetCharacterVisual()
+        {
+            return CharVisual != null ? CharVisual : EnsureCharacterVisual();
+        }
+
+        /// <summary>获取 Tales 组件（对话/任务状态机宿主，未构建时返回 null）。</summary>
+        public virtual TalesComponent GetTalesComponent()
+        {
+            TalesComp ??= Actor?.GetScript<TalesComponent>();
+            return TalesComp;
+        }
+
+        /// <summary>获取脚步 foley 组件。</summary>
+        public virtual NarrativeFootstepFoley GetFootstepFoleyComponent()
+        {
+            FootstepFoleyComp ??= Actor?.GetScript<NarrativeFootstepFoley>();
+            return FootstepFoleyComp;
+        }
 
         /// <summary>获取地图标记组件。</summary>
         public virtual CharacterMapMarker GetMarkerComponent() => MapMarker;
@@ -455,7 +819,15 @@ namespace NarrativePro.UnrealFramework
         /// <summary>获取攻击范围。</summary>
         public virtual float GetAttackRange()
         {
-            // TODO [需接入装备系统]: 根据装备武器返回攻击范围
+            // Flax-已实现: 优先取当前手持武器的攻击范围（对应 UE5 装备武器碰撞胶囊范围）
+            var equipment = GetEquipmentComponent();
+            if (equipment != null && equipment.WieldedWeapons != null)
+            {
+                foreach (var kv in equipment.WieldedWeapons)
+                {
+                    if (kv.Value != null) return kv.Value.GetAttackRange();
+                }
+            }
             return 200f;
         }
 
@@ -475,32 +847,85 @@ namespace NarrativePro.UnrealFramework
             AttributeSetBase.Stamina.SetCurrentValue(clamped);
         }
 
-        /// <summary>根据 XP 计算等级。对应 UE5 XPToLevel。</summary>
+        /// <summary>
+        /// 根据 XP 计算等级。对应 UE5 <c>XPToLevel</c>（NarrativeCharacter.cpp:1715-1718）＝
+        /// <c>TruncToInt(LevelExponentX * Sqrt(XP)) + 1</c>。
+        /// 规则本体在 <see cref="NarrativePro.Character.ExperienceRules"/>（线上同一条，harness 直接断）。
+        /// </summary>
         public virtual int XPToLevel(float xp)
         {
-            if (xp <= 0f) return 1;
-            // 简化：level = floor(xp^(X / Y))
-            float levelF = Mathf.Pow(xp, LevelExponentX / Mathf.Max(LevelExponentY, 0.0001f));
-            return Math.Max(1, (int)Math.Floor(levelF));
+            return NarrativePro.Character.ExperienceRules.XpToLevel(xp, LevelExponentX);
         }
 
-        /// <summary>根据等级计算 XP。对应 UE5 LevelToXP。</summary>
+        /// <summary>
+        /// 根据等级计算该级起始 XP。对应 UE5 <c>LevelToXP</c>（<c>:1720-1723</c>）＝
+        /// <c>Pow((Level - 1) / LevelExponentX, LevelExponentY)</c>，是 <see cref="XPToLevel"/> 的解析反函数。
+        /// </summary>
         public virtual float LevelToXP(int level)
         {
-            if (level <= 1) return 0f;
-            // 反函数：xp = level^(Y / X)
-            float exponent = LevelExponentY / Mathf.Max(LevelExponentX, 0.0001f);
-            return Mathf.Pow(level, exponent);
+            return NarrativePro.Character.ExperienceRules.LevelToXp(level, LevelExponentX, LevelExponentY);
         }
 
         /// <summary>获取距离下一级的百分比。</summary>
         public virtual float GetPercentToNextLevel()
         {
-            int currentLevel = GetCharacterLevel();
-            float currentLevelXP = LevelToXP(currentLevel);
-            float nextLevelXP = LevelToXP(currentLevel + 1);
-            if (nextLevelXP <= currentLevelXP) return 0f;
-            return Mathf.Clamp((GetXP() - currentLevelXP) / (nextLevelXP - currentLevelXP), 0f, 1f);
+            return NarrativePro.Character.ExperienceRules.PercentToNextLevel(
+                GetXP(), GetCharacterLevel(), LevelExponentX, LevelExponentY);
+        }
+
+        /// <summary>
+        /// 绑属性集事件（现在是 XP，日后同类回调并入这里）。
+        /// 先解再订，保证 OnEnable 反复触发（重生/换宿主）时不会重复计数。
+        /// </summary>
+        private void SubscribeAttributeHooks()
+        {
+            if (AttributeSetBase == null) return;
+            AttributeSetBase.OnXPChanged -= HandleXPChanged;
+            AttributeSetBase.OnXPChanged += HandleXPChanged;
+        }
+
+        private void UnsubscribeAttributeHooks()
+        {
+            if (AttributeSetBase != null)
+            {
+                AttributeSetBase.OnXPChanged -= HandleXPChanged;
+            }
+        }
+
+        /// <summary>
+        /// XP 变化 → 是否跨级 → 升级。对应 UE5 <c>ANarrativeCharacter::OnXPChanged</c>
+        /// （NarrativeCharacter.cpp:1696-1703）：比较的是换算出的等级而不是 XP 差，
+        /// 所以一次加满多级也只报一次 <see cref="OnLevelUp"/>。
+        /// </summary>
+        protected virtual void HandleXPChanged(float newValue, float oldValue)
+        {
+            if (!NarrativePro.Character.ExperienceRules.DidLevelUp(oldValue, newValue, LevelExponentX))
+            {
+                return;
+            }
+
+            OnLevelUp(XPToLevel(newValue));
+        }
+
+        /// <summary>
+        /// 升级回调。对应 UE5 <c>OnLevelUp_Implementation</c>（<c>:1705-1713</c>）：
+        /// 开关打开时重灌基础属性，让按等级缩放的派生值（MaxHealth 等）跟着涨。
+        /// 端口重灌走 ASC 的等价入口：启动效果已灌过时必须用
+        /// <c>ReapplyStartupEffects</c>（清标记重跑），单独调 <c>InitializeAttributes</c>
+        /// 会被幂等门控吞掉（见 SetDead 复活分支同一口径）。
+        /// </summary>
+        public virtual void OnLevelUp(int newLevel)
+        {
+            if (!bReapplyAttributesOnLevelUp || AbilitySystemComponent == null) return;
+
+            if (AbilitySystemComponent.AreStartupEffectsApplied)
+            {
+                AbilitySystemComponent.ReapplyStartupEffects();
+            }
+            else
+            {
+                AbilitySystemComponent.InitializeAttributes();
+            }
         }
 
         // ===== 角色定义 =====
@@ -515,6 +940,11 @@ namespace NarrativePro.UnrealFramework
                 ApplyDefaultFactions(newDefinition.DefaultFactions);
                 ApplyDefaultOwnedTags(newDefinition.DefaultOwnedTags);
 
+                // 定义晚于 ASC 到达是本工程的常态（NPC 生成先 EnsureSubobjects 建 ASC，
+                // 之后才 SetNPCDefinition），所以这里补一次能力配置灌入：
+                // ASC 已过启动窗口时 ApplyAbilityConfiguration 会立即应用效果并授予能力。
+                ApplyDefinitionAbilityConfiguration();
+
                 if (!bInitializedNewCharacter)
                 {
                     InitNewCharacter(newDefinition);
@@ -523,16 +953,59 @@ namespace NarrativePro.UnrealFramework
             }
         }
 
+        /// <summary>
+        /// 默认物品装载（首次初始化时发放）。对应 UE5 <c>GetDefaultItemLoadout</c> BP 虚函数：
+        /// 基类取角色定义的 <c>DefaultItemLoadout</c>；NPC 重写以支持生成参数覆盖
+        /// （<see cref="NarrativeNPCCharacter.GetDefaultItemLoadout"/>）。
+        /// </summary>
+        public virtual List<LootTableRoll> GetDefaultItemLoadout()
+        {
+            return CharacterDefinition?.DefaultItemLoadout ?? new List<LootTableRoll>();
+        }
+
         /// <summary>首次初始化新角色时调用。对应 UE5 InitNewCharacter_Implementation。</summary>
         public virtual void InitNewCharacter(CharacterDefinition newDefinition)
         {
-            // 子类可重写以发放默认物品、应用外观等
+            // UE5 NarrativeCharacter.cpp:740：首次创建角色即发放默认物品装载——
+            // 遍历 GetDefaultItemLoadout()，逐表 TryAddFromLootTable 进背包，
+            // 并把同一批表注入 ASC.DeathLootTables 实现「击杀掉落」。
+            // 玩家与 NPC 共用本调用点（NPC 侧 NarrativeNPCCharacter 重写只影响装载来源）。
+            var inventory = GetInventoryComponent();
+
+            // 定义上的起始货币（对应 UE5 UCharacterDefinition::DefaultCurrency 在 InitCharacter 里
+            // 走 Inventory->SetCurrency/AddCurrency）。此前没有任何消费点，NPC 钱包恒为 0，
+            // 商人买卖校验（AllowLootItem/AllowStoreItem 的货币判定）因此永远只能靠游戏侧手工灌值。
+            if (newDefinition != null && newDefinition.DefaultCurrency != 0)
+            {
+                inventory?.AddCurrency(newDefinition.DefaultCurrency);
+            }
+
+            var loadout = GetDefaultItemLoadout();
+            if (loadout == null || loadout.Count == 0) return;
+
+            var results = new List<ItemAddResult>();
+            foreach (var roll in loadout)
+            {
+                if (roll == null) continue;
+
+                if (inventory != null)
+                {
+                    inventory.TryAddFromLootTable(roll, results);
+                }
+
+                if (AbilitySystemComponent != null && !AbilitySystemComponent.DeathLootTables.Contains(roll))
+                {
+                    AbilitySystemComponent.DeathLootTables.Add(roll);
+                }
+            }
         }
 
         /// <summary>应用默认阵营。</summary>
         protected virtual void ApplyDefaultFactions(GameplayTagContainer factions)
         {
-            // TODO [需接入 NarrativeGameState 系统]: 接入 NarrativeGameState 的阵营系统
+            // Flax-已实现: 阵营态度查询直接以定义 DefaultFactions 为数据源
+            // （UnrealFramework/NarrativePlayerController.cs、NarrativeNPCCharacter.cs 的 GetTeamAttitudeTowards
+            // 经 NarrativeGameState.GetFactionsAttitudeTowardsFactions 消费），无需 UE5 的 PlayerState 注册步骤。
         }
 
         /// <summary>应用默认拥有标签。</summary>
@@ -601,12 +1074,104 @@ namespace NarrativePro.UnrealFramework
             return null;
         }
 
+        /// <summary>
+        /// 本角色是否由本地玩家控制器操控。对应 UE5 <c>APawn::IsLocallyControlled</c>
+        /// （<c>Controller && Controller->IsLocalPlayerController()</c>）。
+        /// Flax 中 NarrativePlayerController 仅存在于本地（远端角色不挂该控制器），
+        /// 故以「所属控制器 Actor 上是否存在 NarrativePlayerController 脚本」判定。
+        /// 子类（NarrativePlayerCharacter）缓存了控制器，可直接命中。
+        /// </summary>
+        public virtual bool IsLocallyControlled()
+        {
+            // 玩家角色走缓存控制器快速路径（SetCachedPlayerController 仅本地接线时调用）
+            if (this is NarrativePlayerCharacter playerCharacter)
+            {
+                return playerCharacter.GetPlayerController() != null;
+            }
+
+            var controllerActor = GetOwningController();
+            if (controllerActor == null) return false;
+            return controllerActor.GetScript<NarrativePlayerController>() != null;
+        }
+
         // ===== 死亡处理 =====
 
-        /// <summary>处理死亡。对应 UE5 HandleDeath_Implementation。</summary>
-        protected virtual void HandleDeath(Actor killedActor, NarrativeAbilitySystemComponent killedActorASC)
+        /// <summary>
+        /// 绑定死亡状态回调。对应 UE5 <c>AbilitySystemComponent->OnDeathStateChanged.AddUniqueDynamic(
+        /// this, &amp;ANarrativeCharacter::HandleDeath)</c>（NarrativeCharacter.cpp:1645）。
+        /// 先减后加：OnEnable 与 ASC 惰性构建两处都会调用，必须幂等。
+        /// </summary>
+        protected virtual void BindDeathCallbacks()
         {
-            NarrativeLog.Log($"[NarrativeCharacter] {Actor?.Name} 处理死亡事件");
+            if (AbilitySystemComponent == null) return;
+            AbilitySystemComponent.OnDeathStateChanged -= HandleDeath;
+            AbilitySystemComponent.OnDeathStateChanged += HandleDeath;
+        }
+
+        /// <summary>解绑死亡状态回调（OnDisable；Flax 脚本会随 Actor 复用，残留委托会把已回收角色再拖回来）。</summary>
+        protected virtual void UnbindDeathCallbacks()
+        {
+            if (AbilitySystemComponent == null) return;
+            AbilitySystemComponent.OnDeathStateChanged -= HandleDeath;
+        }
+
+        /// <summary>处理死亡/复活。对应 UE5 <c>HandleDeath_Implementation</c>（NarrativeCharacter.cpp:1806-1878）。</summary>
+        /// <param name="killedActor">状态变化的 Actor（本角色）。</param>
+        /// <param name="killedActorASC">其能力系统组件。</param>
+        /// <param name="bIsDead">true=死亡，false=复活（UE5 同一委托带此状态）。</param>
+        protected virtual void HandleDeath(Actor killedActor, NarrativeAbilitySystemComponent killedActorASC, bool bIsDead)
+        {
+            NarrativeLog.Log($"[NarrativeCharacter] {GetCharacterName()}: Message, death state is now: {(bIsDead ? "dead" : "alive")}");
+
+            // 复活按初始值重灌属性与启动效果。对应 UE5 :1812-1816（InitializeAttributes + AddStartupEffects）；
+            // 端口的这两步合在 InitializeAttributes 里（由 bStartupEffectsApplied 幂等门控），
+            // ReapplyStartupEffects 就是"清标记 + 重跑"的等价入口，单独调 InitializeAttributes 会被门控吞掉。
+            if (!bIsDead)
+            {
+                AbilitySystemComponent?.ReapplyStartupEffects();
+            }
+
+            // 死亡即倒地、复活即起身（对应 UE5 :1833 SetRagdoll(bIsDead)），
+            // 碰撞/输入/AI 的停与复都由移动组件的 OnEnterRagdoll/OnExitRagdoll 沿同一条路做。
+            SetRagdoll(bIsDead);
+
+            // 蒙太奇清场。UE5 只在复活时清（:1836-1844，因为它把尸体直接挪回玩家起点、不接起身动画）；
+            // 端口死亡侧同样清一次：此刻被打断的是仍在播的攻击连段，尸体不该继续挥刀。
+            var anim = GetCharacterAnimInstance();
+            if (anim != null)
+            {
+                if (!bIsDead) anim.OverrideLayerBlendOutTime = 0f;
+                anim.BPStopAllMontages(0f);
+            }
+
+            // UE5 :1846-1877 的胶囊/网格响应通道与地图标记增删：
+            // 端口的角色没有胶囊（碰撞体是子 Actor，已由移动组件挂起），地图标记由
+            // CharacterMapMarker 自身随 Owner 状态呈现，尸体可搜刮走 NPCInteractable.bIsAlive。
+            var marker = GetMarkerComponent();
+            if (marker != null)
+            {
+                if (bIsDead) marker.RemoveMarker();
+                else marker.RegisterMarker();
+            }
+        }
+
+        /// <summary>
+        /// 本角色的动画实例。对应 UE5 <c>GetCharacterAnimInstance</c>。
+        /// UE5 的 AnimInstance 由骨骼网格组件按 AnimBP 类自动实例化；Flax 的动画由 AnimationGraph
+        /// 资产驱动、托管层没有 AnimInstance 对象，这里按角色惰性持有一份端口数据实例，
+        /// 让蒙太奇/覆盖层这类 UE5 动画入口在本端口有真实的调用落点。
+        /// </summary>
+        public virtual NarrativeAnimInstance GetCharacterAnimInstance()
+        {
+            if (CharacterAnimInstance == null)
+            {
+                CharacterAnimInstance = new NarrativeAnimInstance
+                {
+                    NarrativeCharacterRef = this
+                };
+                CharacterAnimInstance.NativeInitializeAnimation();
+            }
+            return CharacterAnimInstance;
         }
 
         // ===== 位置查询 =====
@@ -651,22 +1216,74 @@ namespace NarrativePro.UnrealFramework
         /// <summary>激活/取消激活一个 NarrativeEvent。返回是否成功。</summary>
         public virtual bool SetEventActive(object narrativeEvent, bool bActivate)
         {
-            // TODO [需接入 NarrativeEvent 系统]: 接入 NarrativeEvent 系统
+            // Flax-不兼容: 插件端口暂无 NarrativeEvent 子系统（已全库检索无对应类），UE5 侧此为事件队列激活入口；
+            // 保留签名作为接入点，当前恒返回 false。
             return false;
         }
 
         // ===== 跳跃/着陆（UE5 重写）=====
 
-        /// <summary>角色跳跃时调用。对应 UE5 OnJumped_Implementation。</summary>
+        /// <summary>
+        /// 角色跳跃时调用。对应 UE5 OnJumped_Implementation。
+        /// UE5 玩家以跳跃输入驱动遍历发现（NarrativeCharacterMovement.cpp:1583 PressedJump 分支），
+        /// 本端口在跳跃事件里补同款请求：游戏侧调 OnJumped 即自动获得「对着攀爬物起跳=抓面攀爬」。
+        /// </summary>
         public virtual void OnJumped()
         {
             OnJumpedDelegate?.Invoke();
+
+            var movement = GetNarrativeCharacterMovement();
+            Float2 input = movement != null ? movement.LocalInputVector : Float2.Zero;
+            TryAttachWarp(true, input, -1f);
         }
 
         /// <summary>角色着陆时调用。对应 UE5 Landed。</summary>
         public virtual void Landed(RayCastHit hit)
         {
             // 子类可重写
+        }
+
+        private System.DateTime _creationUtcTime = System.DateTime.MinValue;
+
+        /// <summary>
+        /// 落地结算：坠落伤害 + 陡落砸趴。对应 UE5 <c>ANarrativeCharacter::Landed</c>
+        /// （NarrativeCharacter.cpp:230-259），由 <c>NarrativeCharacterMovement</c> 的
+        /// 重力/落地积分器在 FALLING→WALKING 收口处调用（端口里那是唯一的落地点）。
+        /// <para>
+        /// 与 UE5 的两处有意差别，都记在这儿备查：
+        /// ① UE5 用曲线资产求比例，端口把曲线离散成移动组件上的三个作者可调参数
+        ///    （起算/封顶/封顶比例），规则本体在 <see cref="NarrativePro.Character.FallDamageRules"/>；
+        /// ② UE5 的砸趴分支带 <c>GetNetMode() == NM_Standalone</c> 门槛，
+        ///    端口没有等价的"单机"概念（移动积分在谁的进程里跑就谁结算），因此不加这层门。
+        ///    联网侧若由此产生分歧表现，需要按复制方案重新评估。
+        /// </para>
+        /// </summary>
+        public virtual void LandedFromFallImpact(
+            float impactZVelocity, NarrativePro.Character.NarrativeCharacterMovement movement)
+        {
+            if (movement == null) return;
+
+            float damagePercent = NarrativePro.Character.FallDamageRules.EvaluateDamagePercent(
+                impactZVelocity,
+                movement.FallDamageStartZVelocity,
+                movement.FallDamageFullZVelocity,
+                movement.FallDamageMaxPercent);
+
+            if (NarrativePro.Character.FallDamageRules.ShouldApplyDamage(damagePercent)
+                && AbilitySystemComponent != null)
+            {
+                AbilitySystemComponent.DealDamage(GetMaxHealth() * damagePercent);
+            }
+
+            float ageSeconds = _creationUtcTime == System.DateTime.MinValue
+                ? float.PositiveInfinity
+                : (float)(System.DateTime.UtcNow - _creationUtcTime).TotalSeconds;
+
+            if (NarrativePro.Character.FallDamageRules.ShouldRagdollOnLanding(
+                    impactZVelocity, ageSeconds, movement.EnterRagdollFallZImpactGroundThreshold))
+            {
+                RagdollForDuration(3f);
+            }
         }
 
         /// <summary>角色掉出世界时调用。对应 UE5 FellOutOfWorld。</summary>
@@ -694,7 +1311,10 @@ namespace NarrativePro.UnrealFramework
         /// <summary>出鞘状态改变时的本地处理。对应 UE5 OnRep_WieldState。</summary>
         protected virtual void OnWieldStateChanged()
         {
-            // TODO [需接入 CharVisual 系统]: 通知 CharVisual 切换武器视觉
+            // Flax-已实现: 武器视觉切换由 Weapons/WeaponVisual.cs 依据 WeaponItem.WeaponVisualPath 驱动
+            // （Character/NarrativeCharacterVisual.cs 的 AddWeaponVisual/RemoveWeaponVisual 是其唯一生成/移除入口），
+            // 本方法保留为派生类扩展点，避免与武器视觉系统双重生成。
+            NarrativeLog.Log($"[NarrativeCharacter] {Actor?.Name} 持有状态改变");
         }
 
         /// <summary>获取主手或副手的武器。对应 UE5 GetWeapon。</summary>
@@ -735,7 +1355,12 @@ namespace NarrativePro.UnrealFramework
             {
                 AbilitySystemComponent.DealDamage(damage);
             }
-            // TODO [需接入物理系统]: 应用冲量到物理组件
+            // Flax-已实现: 角色 Actor 若挂有 RigidBody，按投射物同口径写入线速度近似冲量效果（Flax 骨骼角色无常驻刚体时降级跳过）
+            var rigidBody = Actor != null ? Actor.GetScript<RigidBody>() : null;
+            if (rigidBody != null)
+            {
+                rigidBody.LinearVelocity = impulse;
+            }
         }
 
         /// <summary>是否可以进入布娃娃状态。</summary>
@@ -765,10 +1390,31 @@ namespace NarrativePro.UnrealFramework
             }
         }
 
-        /// <summary>布娃娃状态改变时的本地处理。对应 UE5 OnRep_bIsRagdoll。</summary>
+        /// <summary>
+        /// 布娃娃状态改变时的本地处理。对应 UE5 <c>OnRep_bIsRagdoll</c>（NarrativeCharacter.cpp:1369-1384）：
+        /// 进入切 Custom/CMOVE_Ragdoll、退出回 MOVE_Walking——UE5 在这个入口里只做切档，
+        /// 碰撞/物理/覆盖层都在移动组件的 OnEnterRagdoll/OnExitRagdoll 内完成，端口保持同一分层。
+        /// </summary>
         protected virtual void OnRagdollChanged()
         {
-            // TODO [需接入物理系统]: 切换骨骼物理模拟
+            var movement = GetNarrativeCharacterMovement();
+            if (movement != null)
+            {
+                if (bIsRagdoll)
+                {
+                    movement.SetMovementMode(NarrativeMovementMode.Custom, (byte)NarrativeCustomMovementMode.Ragdoll);
+                }
+                else
+                {
+                    movement.SetMovementMode(NarrativeMovementMode.Walking);
+                }
+            }
+            else if (bIsRagdoll)
+            {
+                // 没有移动组件时布娃娃无处落地（UE5 的角色必带 CMC），显式说明而不是静默假成功
+                NarrativeLog.LogWarning($"[NarrativeCharacter] {Actor?.Name} 缺少 NarrativeCharacterMovement，Ragdoll 无法切换移动模式");
+            }
+
             NarrativeLog.Log($"[NarrativeCharacter] {Actor?.Name} Ragdoll = {bIsRagdoll}");
         }
 
@@ -794,7 +1440,8 @@ namespace NarrativePro.UnrealFramework
         /// <summary>移动忽略 Actor 列表改变时的本地处理。对应 UE5 OnRep_ReplicatedMoveIgnoreActors。</summary>
         protected virtual void OnMoveIgnoreActorsChanged()
         {
-            // TODO [需接入移动组件系统]: 通知移动组件更新忽略列表
+            // Flax-已实现: 忽略列表已在 MoveIgnoreActors 字段维护并即时增删（见 AddMoveIgnore/RemoveMoveIgnore），
+            // 端口移动为自研运动学逻辑、无 UE5 CharacterMovement 的批量更新通知入口，无需额外同步。
         }
 
         // ===== 随机种子 =====
@@ -810,17 +1457,41 @@ namespace NarrativePro.UnrealFramework
 
         // ===== 遍历（Traversal）=====
 
-        /// <summary>尝试执行 AttachWarp（跨越/攀爬）。对应 UE5 TryAttachWarp。</summary>
+        /// <summary>
+        /// 尝试执行 AttachWarp（跨越/攀爬）。对应 UE5 ANarrativeCharacter::TryAttachWarp
+        /// （NarrativeCharacter.cpp:2027：先经移动组件 <c>TryFindAttachTransform</c> 求出 warp 属性，
+        /// 成功才 Server/MultiCast PlayAttachWarp）。
+        /// 端口：发现与攀爬积分在 <see cref="NarrativePro.Character.NarrativeCharacterMovement"/>
+        /// （对应 UE5 把扫描逻辑放在 CMC 的分层），Flax 无 MotionWarping/蒙太奇，
+        /// 成功路径 = PlayAttachWarp（事件）+ movement.BeginClimb（确定性位移）。
+        /// </summary>
         /// <param name="pressedJump">是否按下跳跃。</param>
         /// <param name="inputVector">输入向量。</param>
         /// <param name="optionalInBlendTime">可选 blend in 时间（-1 使用默认）。</param>
         /// <returns>是否成功开始遍历。</returns>
         public virtual bool TryAttachWarp(bool pressedJump, Float2 inputVector, float optionalInBlendTime)
         {
-            // 简化版：仅记录请求，TODO [需接入遍历检测系统]: 实现 ledge 检测和动画选择
+            var movement = GetNarrativeCharacterMovement();
+            if (movement == null) return false;
+            if (movement.IsSequencerControlled || IsMovementLocked() || !IsAlive()) return false;
+
+            // 攀爬中的跳跃 = 顶部起身的请求（UE5 把 PressedJump 透传给 TryFindClimbTransform，:1527）。
+            if (movement.IsClimbing())
+            {
+                movement.RequestClimbJump();
+                return true;
+            }
+
             AttachWarpProps.bPressedJump = pressedJump;
-            AttachWarpProps.OptionalBlendInTime = optionalInBlendTime;
-            return false;
+            if (!movement.TryFindAttachTransform(AttachWarpProps, pressedJump, inputVector, optionalInBlendTime))
+            {
+                return false;
+            }
+
+            // 本地等价 ServerPlayAttachWarp → MultiCastPlayAttachWarp（Movement.cpp:2340 处 SetMovementMode(Custom, Climb)）。
+            PlayAttachWarp(AttachWarpProps);
+            movement.BeginClimb(AttachWarpProps);
+            return true;
         }
 
         /// <summary>播放 AttachWarp 蒙太奇的本地处理。对应 UE5 MultiCastPlayAttachWarp。</summary>

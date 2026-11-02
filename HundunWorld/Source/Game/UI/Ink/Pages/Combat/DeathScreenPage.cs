@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
@@ -9,13 +9,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
     /// <summary>
     /// 阵亡界面页面。
     /// 全屏半透明遮罩（<see cref="InkWashTheme.Scrim"/>）+ 居中"殒命"标题
-    /// （<see cref="InkTextBlock"/> Display 样式，朱红色）+ 损失信息
-    /// （mock 经验损失 500 / 铜钱损失 200，<see cref="InkTextBlock"/> Body 样式）。
+    /// （<see cref="InkTextBlock"/> Display 样式，朱红色）+ 损失信息（惩罚数值暂无服务端字段，显示占位）。
     /// 底部提供朱红"破招"按钮（<see cref="InkButton"/> <see cref="InkButtonVariant.Vermilion"/> 变体，
     /// 尝试以武学破除死亡）与幽影"返回"按钮（<see cref="InkButton"/> <see cref="InkButtonVariant.Ghost"/> 变体，
     /// 返回复活点）。
     /// 通过 <see cref="ReviveRequested"/> 与 <see cref="ReturnRequested"/> 事件通知外部。
-    /// 全部数据为 mock，通过 <see cref="RefreshLayout"/> 支持屏幕尺寸变化。
+    /// 由 <c>MainUIManager</c> 在本地玩家 <c>IsDead</c> 翻转时自动弹出。
     /// </summary>
     public class DeathScreenPage : ContainerControl, IInkPage
     {
@@ -66,7 +65,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// <summary>副标题（汝之武途，至此终结）</summary>
         private InkTextBlock _subtitleText;
 
-        /// <summary>原地复活按钮冷却提示（15秒）</summary>
+        /// <summary>复活按钮下方的说明文字（原设计稿的「15秒」冷却并不存在）。</summary>
         private InkTextBlock _reviveCooldownText;
 
         /// <summary>损失信息文本（Body 样式）</summary>
@@ -89,11 +88,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         // mock 数据
         // =======================================================================
 
-        /// <summary>mock 经验损失值</summary>
-        private int _expLoss = 500;
-
-        /// <summary>mock 铜钱损失值</summary>
-        private int _coinLoss = 200;
+        /// <summary>
+        /// 死亡损失文案。服务端目前不下发死亡惩罚（经验/银两扣多少没有权威字段），
+        /// 所以这里只显示占位，不再拿设计稿的 500/200 充数；将来有下行通道时改由 SetLoss 注入。
+        /// </summary>
 
         // ===================================================================
         // 构造函数
@@ -181,7 +179,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         {
             _lossText = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = $"损失银两 ×{_expLoss}，经验 ×{_coinLoss}",
+                Text = "损失银两 ×—，经验 ×—",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(LossWidth, LossHeight),
                 HorizontalAlignment = TextAlignment.Center,
@@ -209,12 +207,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             _reviveButton.ButtonClicked += OnReviveButtonClicked;
             AddChild(_reviveButton);
 
-            // 冷却提示（设计稿 .death-cooldown「15秒」）
+            // 复活按钮下的说明：没有真实的"冷却 15 秒"机制（服务端也没有冷却字段），
+            // 这里只说明"点了会发生什么"，不再摆一个不会动的「15秒」。
             _reviveCooldownText = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "15秒",
+                Text = "由服务端结算",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(60f, 18f),
+                Size = new Float2(120f, 18f),
                 HorizontalAlignment = TextAlignment.Center,
                 TextColor = InkWashTheme.TextFaint,
             };
@@ -343,7 +342,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             if (_reviveCooldownText != null && _reviveButton != null)
             {
                 _reviveCooldownText.Location = new Float2(
-                    _reviveButton.Location.X + (ButtonWidth - 60f) * 0.5f,
+                    _reviveButton.Location.X + (ButtonWidth - 120f) * 0.5f,
                     _reviveButton.Location.Y + ButtonHeight + 4f);
             }
 

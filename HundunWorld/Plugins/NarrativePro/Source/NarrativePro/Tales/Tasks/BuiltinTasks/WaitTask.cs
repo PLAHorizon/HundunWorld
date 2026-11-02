@@ -7,7 +7,7 @@ namespace NarrativePro.Tales.Tasks
         public float WaitDuration { get; set; } = 5f;
         private float _elapsedTime = 0f;
 
-        protected override void BeginTask()
+        protected override void OnBeginTask()
         {
             _elapsedTime = 0f;
             TickInterval = 0.1f;

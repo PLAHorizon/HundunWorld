@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -93,11 +93,42 @@ namespace HundunWorld.Game.UI
             }
         }
 
+        /// <summary>
+        /// 脚本是否处于激活生命周期。OnEnable 置真、OnDisable 置假。
+        /// 用于识别"上一轮 Play 遗留、但从未走完销毁流程"的僵尸单例引用。
+        /// </summary>
+        private bool _alive;
+
+        public override void OnEnable()
+        {
+            _alive = true;
+            if (_instance == null)
+                _instance = this;
+        }
+
+        public override void OnDisable()
+        {
+            _alive = false;
+
+            // Flax 退出播放模式时不会调用场景脚本的 OnDestroy，只会禁用脚本（见 GameStartup
+            // 用 OnDisable 兜底清理网络任务的同一处理）。不在这里放手 _instance，它就会
+            // 一直指向上一轮已死的脚本：下一轮 RootScene 里真正的 UIStateManager 在 OnAwake
+            // 看到 _instance 非空便自我销毁，于是整轮都在对僵尸实例读写会话/角色列表；
+            // 而那个重复实例延后的 OnDestroy 又会把 AuthenticationManager / CharacterManager
+            // 单例连同页面刚建立的事件订阅一起抹掉 —— 选角列表随机空白的真因。
+            if (_instance == this)
+                _instance = null;
+        }
+
         public override void OnAwake()
         {
-            if (_instance == null)
+            // 上一轮 PIE 遗留的 _instance 指向已死脚本（Flax 退出播放模式不叫 OnDestroy），
+            // 它既不是可用单例、也不该把本轮真正的实例挤掉，所以按"不存活"直接接管。
+            // `_instance == this` 一支覆盖 OnEnable 已抢先认领的情况（此时仍要补上静态标记）。
+            if (_instance == this || _instance == null || !_instance._alive)
             {
                 _instance = this;
+                _alive = true;
                 // 保持状态管理器的持久性，不要销毁Actor
                 Actor.SetStaticFlag(StaticFlags.FullyStatic, true);
             }
@@ -137,14 +168,20 @@ namespace HundunWorld.Game.UI
         
         public override void OnDestroy()
         {
+            // 只有权威实例才有权清理全局 Manager 单例。
+            // 重复实例（OnAwake 里 Destroy(this) 的那个）的 OnDestroy 会在同一轮运行里稍后才跑，
+            // 若照常清理，就会把刚订阅好角色列表事件的页面一起抹掉。
+            if (_instance != this)
+            {
+                _alive = false;
+                return;
+            }
+
             // 清理状态管理器资源
             CleanupStateManager();
-            
-            // 濡傛灉杩欐槸褰撳墠瀹炰緥锛屾竻绌洪潤鎬佸紩鐢?
-            if (_instance == this)
-            {
-                _instance = null;
-            }
+
+            _alive = false;
+            _instance = null;
         }
         
         /// <summary>

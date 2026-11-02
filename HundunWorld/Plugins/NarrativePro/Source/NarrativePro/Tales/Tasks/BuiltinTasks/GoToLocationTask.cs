@@ -28,7 +28,7 @@ namespace NarrativePro.Tales.Tasks
 
         private bool _targetResolved;
 
-        protected override void BeginTask()
+        protected override void OnBeginTask()
         {
             TickInterval = 0.25f;
             _targetResolved = false;

@@ -6,6 +6,7 @@ namespace NarrativePro.GAS
     /// <summary>
     /// 角色动画对（1P 和 3P 蒙太奇）。对应 UE5 FNarrativeCharacterAnimation。
     /// 简化点：UE5 UAnimMontage 用字符串路径占位（Flax 中用 AnimationAsset 或 Asset 路径）。
+    /// 实际消费者：UnrealFramework/NarrativeAnimInstance.cs（连击/硬直动画集查询）。
     /// </summary>
     [Serializable]
     public class NarrativeCharacterAnimation
@@ -32,6 +33,9 @@ namespace NarrativePro.GAS
     [Serializable]
     public class NarrativeAnimSet
     {
+        /// <summary>注册键（可选；空时按 JSON 文件名注册，见 NarrativeCombatAnimSets）。</summary>
+        public string AnimSetId = "";
+
         /// <summary>动画对列表。</summary>
         public List<NarrativeCharacterAnimation> CharacterAnims = new List<NarrativeCharacterAnimation>();
 
@@ -58,6 +62,9 @@ namespace NarrativePro.GAS
     [Serializable]
     public class AttackComboAnimSet
     {
+        /// <summary>注册键（可选；空时按 JSON 文件名注册，见 NarrativeCombatAnimSets）。</summary>
+        public string AnimSetId = "";
+
         /// <summary>普通攻击连击动画集列表。</summary>
         public List<NarrativeAnimSet> AttackCombos = new List<NarrativeAnimSet>();
 

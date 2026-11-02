@@ -144,13 +144,13 @@ namespace HundunWorld.Game.Network.Handlers
             if (manager == null)
                 return;
 
-            if (!TryBuildAppearance(response.Entries, out var bodyId, out var accessoryIds, out var weaponIds))
+            if (!TryBuildAppearance(response.Entries, out var bodyId, out var accessoryIds, out var weaponIds, out var appearanceId))
                 return;
 
             // Initialize 可重复调用：内部会先清掉旧的配饰/武器再挂新的。
-            manager.Initialize(bodyId, accessoryIds, weaponIds);
+            manager.Initialize(bodyId, accessoryIds, weaponIds, appearanceId);
 
-            Debug.Log($"[RoleEquipmentSync] 已应用服务端权威装备: Body={bodyId}, " +
+            Debug.Log($"[RoleEquipmentSync] 已应用服务端权威装备: Body={bodyId}, Appearance={appearanceId}, " +
                       $"Accessories=[{string.Join(",", accessoryIds)}], Weapons=[{string.Join(",", weaponIds)}]");
         }
 
@@ -166,11 +166,13 @@ namespace HundunWorld.Game.Network.Handlers
             List<EquippedSlotEntry> entries,
             out int bodyEquipmentId,
             out List<int> accessoryIds,
-            out List<int> weaponIds)
+            out List<int> weaponIds,
+            out int appearanceEquipmentId)
         {
             bodyEquipmentId = 0;
             accessoryIds = new List<int>();
             weaponIds = new List<int>();
+            appearanceEquipmentId = 0;
 
             if (entries == null || entries.Count == 0)
                 return false;   // 空清单不动现有渲染：更可能是"还没穿上"而不是"服务端确认什么都没有"
@@ -183,6 +185,10 @@ namespace HundunWorld.Game.Network.Handlers
                 if (slot == ClientSlot.Body)
                 {
                     bodyEquipmentId = entry.TemplateId;
+                }
+                else if (slot == ClientSlot.Appearance)
+                {
+                    appearanceEquipmentId = entry.TemplateId;
                 }
                 else if (slot == ClientSlot.RightHand || slot == ClientSlot.LeftHand)
                 {

@@ -1,0 +1,340 @@
+{
+ "source": "Face_Control_Table.json (MorphCatalog + Controls[].MorphTargets) x Ada_Face_authoritative_names.json (Flax blendshape 名录，带网格前缀)",
+ "note": "warp 形变器名是第三命名族，两张 morph->GUI 表都不认它；本表把它翻成资产里真有的形状名。多目标（同一尾段挂 head 与 cartilage 等多具网格）是正确语义而不是歧义——写回端逐具按自己的名录取，取不到的那具自然跳过。",
+ "rule": "第一档 guiReferee=warp 名剥 head_wmN_ 后作 .dna 表的 morph 键取 GUI 控制，再用同一 GUI 键在 UE 表里指认资产真名（人审表当裁判，词形只作交叉验证）；第二档 exact=归一后 token 集相等；第三档 contains=左岸为右岸真子集且尾段唯一；归一化：_L/_R 归到 left/right、len>3 去尾复数 s",
+ "refereeSources": [
+  "Morph_To_Gui_Map.json (左岸 .dna 控制族名)",
+  "Ue_Morph_To_Gui_Map.json (左岸资产真名)"
+ ],
+ "rulerFix": "上一版只按词形，chinRaise_* 因跨 5 个尾段、noseWrinkler_* 因 wrinkler↔wrinkle 词形差被判 unmapped —— 那是尺子不够，不是没对应；改由 GUI 裁判指认后 4 条全部定档",
+ "refereeOverrodeMechanical": 2,
+ "refereeConfirmsMechanical": 11,
+ "disagreements": [
+  {
+   "warp": "head_wm1_browsRaiseInner_L",
+   "gui": "CTRL_L_brow_raiseIn.ty",
+   "referee": [
+    "head_lod0_mesh__brow_raiseIn_L"
+   ],
+   "mechanical": [
+    "head_lod0_mesh__BraiseIn_Bdown__browInnerRaise_L"
+   ]
+  },
+  {
+   "warp": "head_wm1_browsRaiseInner_R",
+   "gui": "CTRL_R_brow_raiseIn.ty",
+   "referee": [
+    "head_lod0_mesh__brow_raiseIn_R"
+   ],
+   "mechanical": [
+    "head_lod0_mesh__BraiseIn_Bdown__browInnerRaise_R"
+   ]
+  }
+ ],
+ "warpCount": 29,
+ "entryCount": 25,
+ "declinedCount": 4,
+ "unmappedCount": 0,
+ "tally": {
+  "declined": 4,
+  "guiReferee": 25,
+  "refereeOverrodeMechanical": 2,
+  "refereeConfirmsMechanical": 11
+ },
+ "declined": [
+  {
+   "warp": "head_wm13_lips_DL",
+   "reason": "沿用用户对 head_wm13_lips_* 的既有 declined 判定（33/37 定稿那次），表达式通道如需接要另行拍板，不由生成脚本翻案"
+  },
+  {
+   "warp": "head_wm13_lips_DR",
+   "reason": "沿用用户对 head_wm13_lips_* 的既有 declined 判定（33/37 定稿那次），表达式通道如需接要另行拍板，不由生成脚本翻案"
+  },
+  {
+   "warp": "head_wm13_lips_UL",
+   "reason": "沿用用户对 head_wm13_lips_* 的既有 declined 判定（33/37 定稿那次），表达式通道如需接要另行拍板，不由生成脚本翻案"
+  },
+  {
+   "warp": "head_wm13_lips_UR",
+   "reason": "沿用用户对 head_wm13_lips_* 的既有 declined 判定（33/37 定稿那次），表达式通道如需接要另行拍板，不由生成脚本翻案"
+  }
+ ],
+ "unmapped": [],
+ "entries": [
+  {
+   "warp": "head_wm1_blink_L",
+   "shapes": [
+    "head_lod0_mesh__eye_blink_L"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_eye_blink.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_blink_R",
+   "shapes": [
+    "head_lod0_mesh__eye_blink_R"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_eye_blink.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_browsRaiseInner_L",
+   "shapes": [
+    "head_lod0_mesh__brow_raiseIn_L"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_brow_raiseIn.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_browsRaiseInner_R",
+   "shapes": [
+    "head_lod0_mesh__brow_raiseIn_R"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_brow_raiseIn.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_browsRaiseOuter_L",
+   "shapes": [
+    "head_lod0_mesh__brow_raiseOuter_left"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_brow_raiseOut.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_browsRaiseOuter_R",
+   "shapes": [
+    "head_lod0_mesh__brow_raiseOuter_right"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_brow_raiseOut.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_chinRaise_L",
+   "shapes": [
+    "head_lod0_mesh__jaw_lowerChinRaise_L"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_jaw_ChinRaiseU.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_chinRaise_R",
+   "shapes": [
+    "head_lod0_mesh__jaw_lowerChinRaise_R"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_jaw_ChinRaiseU.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_jawOpen",
+   "shapes": [
+    "head_lod0_mesh__jaw_open"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_C_jaw.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_purse_DL",
+   "shapes": [
+    "head_lod0_mesh__mouth_lipsPurse_DL"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_mouth_purseD.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_purse_DR",
+   "shapes": [
+    "head_lod0_mesh__mouth_lipsPurse_DR"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_mouth_purseD.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_purse_UL",
+   "shapes": [
+    "head_lod0_mesh__mouth_lipsPurse_UL"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_mouth_purseU.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_purse_UR",
+   "shapes": [
+    "head_lod0_mesh__mouth_lipsPurse_UR"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_mouth_purseU.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_squintInner_L",
+   "shapes": [
+    "head_lod0_mesh__eye_squintInner_L"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_eye_squintInner.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm1_squintInner_R",
+   "shapes": [
+    "head_lod0_mesh__eye_squintInner_R"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_eye_squintInner.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_browsDown_L",
+   "shapes": [
+    "head_lod0_mesh__brow_down_L"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_brow_down.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_browsDown_R",
+   "shapes": [
+    "head_lod0_mesh__brow_down_R"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_brow_down.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_browsLateral_L",
+   "shapes": [
+    "head_lod0_mesh__brow_lateral_L"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_brow_lateral.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_browsLateral_R",
+   "shapes": [
+    "head_lod0_mesh__brow_lateral_R"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_brow_lateral.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_mouthStretch_L",
+   "shapes": [
+    "head_lod0_mesh__mouth_stretch_left"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_mouth_stretch.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_mouthStretch_R",
+   "shapes": [
+    "head_lod0_mesh__mouth_stretch_right"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_mouth_stretch.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_neckStretch_L",
+   "shapes": [
+    "head_lod0_mesh__neck_stretch_L"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_neck_stretch.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_neckStretch_R",
+   "shapes": [
+    "head_lod0_mesh__neck_stretch_R"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_neck_stretch.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_noseWrinkler_L",
+   "shapes": [
+    "head_lod0_mesh__nose_wrinkle_left"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_L_nose_wrinkleUpper.ty",
+   "meshes": [
+    "head"
+   ]
+  },
+  {
+   "warp": "head_wm2_noseWrinkler_R",
+   "shapes": [
+    "head_lod0_mesh__nose_wrinkle_right"
+   ],
+   "basis": "guiReferee",
+   "gui": "CTRL_R_nose_wrinkleUpper.ty",
+   "meshes": [
+    "head"
+   ]
+  }
+ ]
+}

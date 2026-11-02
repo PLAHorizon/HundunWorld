@@ -28,6 +28,17 @@ namespace Horizon.Orleans.Interface
         /// <param name="characterId">角色Id</param>
         /// <returns>角色信息</returns>
         Task<CharacterInfo> GetCharacterInfoAsync(GameQueryDto gameQueryDto);
+
+        /// <summary>
+        /// 加经验并按曲线升等——<b>服务端唯一的等级写入口</b>。
+        /// <para>
+        /// 角色表的 <c>experience</c> 列自创建置 0 后全仓再无任何写入方，也没有升等逻辑；
+        /// 而技能习得门槛读 <c>learn_level_require</c>。等级不可变等于黄/玄/地/天阶在游戏里永远走不到，
+        /// §14 的动态条件只剩白阶可达。曲线与上限收敛在 ProgressionCurve 一处，调用方不要自己算。
+        /// </para>
+        /// </summary>
+        /// <param name="amount">经验增量，必须为正；一次可跨多级。</param>
+        Task<AddExpResult> AddExpAsync(long amount);
         /// <summary>
         /// 获取用户所有角色
         /// </summary>
@@ -96,6 +107,46 @@ namespace Horizon.Orleans.Interface
         /// <returns>实际 HP 变化量及是否导致死亡。</returns>
         Task<HpChangeResult> RequestHpChangeAsync(int hpDelta, ulong sourceId, DamageType damageType);
 
+        /// <summary>
+        /// 五行权威裁决版 HP 变更。与 <see cref="RequestHpChangeAsync"/> 走同一具裁决体，
+        /// 区别只是把攻方所用元素与攻方五行破防带进来。<br/>
+        /// 减免口径由 <c>ElementalDamageResolver</c> 单点提供：
+        /// 有效防御 = max(0, 通用防御 + 守方命中行五行防御(已高者计) - 攻方破防(已高者计))，
+        /// 曲线 100 常数，克制倍率只作用于攻方取行。
+        /// </summary>
+        /// <param name="hpDelta">HP 变化量（负数为伤害，正数为治疗）。</param>
+        /// <param name="sourceId">伤害/治疗来源实体 ID（0 表示环境）。</param>
+        /// <param name="damageType">伤害类型。</param>
+        /// <param name="attackElement">攻方所用五行（1~5；0 = 无属性，按守方最高防御行处理）。</param>
+        /// <param name="attackerPenetration">攻方五行破防（各来源取最高后的最终向量）。</param>
+        /// <param name="defenderBuffDefense">
+        /// 守方当前生效 Buff 的五行防御（取高侧）。Buff 记录在战斗侧（CombatGrain 的 ActiveEffects），
+        /// 而防御裁决在角色档案侧，所以由战斗侧把这份<b>临时增量</b>随请求带来，
+        /// 与档案自己的常驻来源一起走同一套"已高者计"聚合——两侧各存一份防御会各自漂移。
+        /// </param>
+        Task<HpChangeResult> RequestElementalHpChangeAsync(int hpDelta, ulong sourceId, DamageType damageType,
+            int attackElement, Horizon.Game.Message.Combat.ElementStatVector attackerPenetration,
+            Horizon.Game.Message.Combat.ElementStatVector defenderBuffDefense);
+
+        /// <summary>
+        /// 失效并重算角色侧权威战斗画像（通用攻防基值 + 五行三行来源）。
+        /// <para>
+        /// 穿戴/卸下、镶嵌宝石、加点、技能变更后必须由对应写路径调用：CharacterGrain 按角色 ID 寻址，
+        /// 是唯一能被可靠定向失效的那一层，受击减免读的就是这份画像。
+        /// 不在缓存里、也未被本方法失效的攻方侧画像由 CombatGrain 的 TTL 收敛。
+        /// </para>
+        /// </summary>
+        Task RefreshCombatProfileAsync();
+
+        /// <summary>
+        /// 取角色侧权威战斗画像的下行快照（五行三行 + 通用攻防基值 + 五行属性值）。
+        /// <para>
+        /// 与受击裁决读的是<b>同一份</b> <c>CombatProfile</c>，所以面板显示的三行就是这一击真正生效的三行；
+        /// 客户端自己的"加点 + 装备硬编码表"只在画像取不到时作为镜像兜底。
+        /// </para>
+        /// </summary>
+        Task<Horizon.Game.Message.Network.CharacterAttributeRefreshResponse> GetCombatProfileSnapshotAsync();
+
         // ===== 角色位置缓存（用于 ZoneShardGrain 重激活后恢复实体位置） =====
 
         /// <summary>
@@ -128,6 +179,19 @@ namespace Horizon.Orleans.Interface
         /// </para>
         /// </summary>
         Task<AttributeAllocateResponse> AllocateAttributeAsync(ulong characterId, AttributeAllocationData desired);
+
+        /// <summary>
+        /// 存一份数字人外观。服务端不解释 blob，但三道闸一道不少：
+        /// 已发布拒改、模板不一致拒收、Blob 校验和由服务端另算一遍再比（不信客户端自述）。
+        /// </summary>
+        Task<Horizon.Game.Message.Network.UpdateCharacterAppearanceResponse> UpdateAppearanceAsync(
+            Horizon.Game.Message.Network.MetaHumanLookPayload look);
+
+        /// <summary>读回已存的外观（没有则返回 null）。</summary>
+        Task<Horizon.Game.Message.Network.MetaHumanLookPayload> GetAppearanceAsync();
+
+        /// <summary>外观是否已发布（服务端判定，不是客户端 UI 判定；否则改包就能绕过）。</summary>
+        Task<bool> IsAppearancePublishedAsync();
     }
 
     /// <summary>
@@ -144,6 +208,9 @@ namespace Horizon.Orleans.Interface
 
         /// <summary>当前称号名（空 = 未佩戴称号）。</summary>
         [Id(2)] public string Title { get; set; } = "";
+
+        /// <summary>阵营（0 未入 / 1 正派 / 2 邪派）。PvP 敌对判定的唯一权威输入。</summary>
+        [Id(3)] public int Faction { get; set; }
     }
 
 

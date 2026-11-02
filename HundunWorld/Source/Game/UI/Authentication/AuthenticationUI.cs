@@ -46,7 +46,7 @@ namespace HundunWorld.Game.UI.Authentication
         private volatile bool _isProcessing = false;
         private bool _isFirstLogin = true;
         private bool _isNetworkConnected = false;
-        private bool _autoLoginAttempted = false;
+        private bool _loginPagePrepared = false;
         private System.Threading.CancellationTokenSource _statusCheckCts;
 
         /// <summary>
@@ -66,42 +66,45 @@ namespace HundunWorld.Game.UI.Authentication
             InitializeUI();
             SubscribeEvents();
 
-            if (!_autoLoginAttempted)
+            // 本组件自建的登录页默认收起：Login.scene 自带一套（AuthenticationController 管理），
+            // 只有场景里没有那套时才由 ShowAuthenticationUI 把它放出来。
+            if (_mainContainer != null)
             {
-                _autoLoginAttempted = true;
-                _ = TryAutoLoginAsync();
+                _mainContainer.Visible = false;
+                _mainContainer.Enabled = false;
+            }
+            if (_loginPanel != null) _loginPanel.Visible = false;
+            if (_registerPanel != null) _registerPanel.Visible = false;
+
+            if (!_loginPagePrepared)
+            {
+                _loginPagePrepared = true;
+                _ = PrepareLoginPageAsync();
             }
 
             FlaxEngine.Debug.Log("认证界面重构版初始化完成");
         }
 
-        private async Task TryAutoLoginAsync()
+        private async Task PrepareLoginPageAsync()
         {
             try
             {
-                var result = await AuthenticationManager.Instance.TryAutoLoginAsync();
-                
-                if (result.IsSuccess)
+                var result = await AuthenticationManager.Instance.PrepareLoginPageAsync();
+
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 登录页已就绪: {result.ErrorMessage}");
+
+                if (AuthenticationManager.IsLaunchedFromGengDi)
                 {
-                    FlaxEngine.Debug.Log("[AuthenticationUI] 自动登录成功，隐藏登录界面");
-                    RunOnMainThread(HideAuthenticationUI);
-                }
-                else
-                {
-                    FlaxEngine.Debug.Log($"[AuthenticationUI] 自动登录失败或未启用: {result.ErrorMessage}");
-                    if (AuthenticationManager.IsLaunchedFromGengDi)
+                    RunOnMainThread(() =>
                     {
-                        RunOnMainThread(() =>
-                        {
-                            if (_loginPanel != null)
-                                _loginPanel.SetStatus("登录已过期，请重新登录", UIStyleTokens.StatusWarning);
-                        });
-                    }
+                        if (_loginPanel != null)
+                            _loginPanel.SetStatus("请登录后选择角色", UIStyleTokens.StatusWarning);
+                    });
                 }
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogError($"[AuthenticationUI] 自动登录异常: {ex.Message}");
+                FlaxEngine.Debug.LogError($"[AuthenticationUI] 登录页准备异常: {ex.Message}");
             }
         }
 
@@ -434,7 +437,11 @@ namespace HundunWorld.Game.UI.Authentication
             }
             else
             {
-                FlaxEngine.Debug.LogError("未找到UICanvas或GUI，尝试备用方案");
+                // 这不是故障：登录脚本可能先于场景里的 UICanvas Actor 完成注册而执行，
+                // 备用方案会自行 Spawn 一个专属 Canvas（成功时由 CreateFallbackUICanvas 记录，
+                // 真正失败时它自己会报 Error）。此前在这里无条件报 Error，
+                // 使每次正常登录都留下一条与事实相反的"未找到UICanvas"错误。
+                FlaxEngine.Debug.Log("[AuthenticationUI] 未找到现成 UICanvas，改用备用方案创建专属 Canvas");
                 // 备用方案：直接使用RootControl
                 TryAddToRootControl();
             }
@@ -463,6 +470,7 @@ namespace HundunWorld.Game.UI.Authentication
             {
                 _loginPanel.LoginButtonClicked += OnLoginButtonClicked;
                 _loginPanel.SwitchToRegisterClicked += OnSwitchToRegisterClicked;
+                TryArmSelfTestAutoLogin(_loginPanel);
             }
 
             // 订阅注册面板事件
@@ -471,6 +479,34 @@ namespace HundunWorld.Game.UI.Authentication
                 _registerPanel.RegisterButtonClicked += OnRegisterButtonClicked;
                 _registerPanel.SwitchToLoginClicked += OnSwitchToLoginClicked;
                 _registerPanel.SendVerificationCodeClicked += OnSendVerificationCodeClicked;
+            }
+        }
+
+        /// <summary>
+        /// 自测：<c>%APPDATA%/HundunWorld/auto-login.on</c> 存在时，面板建好后用预填账号走一次真实登录。
+        /// 只服务自动化验证——登录页是旧式 Flax 面板，编辑器工具（ui_input/ui_invoke）点不到它，
+        /// 没有这条通路就进不了选角/世界，后续页面走查全部卡在登录页。正常环境不会有这个文件。
+        /// </summary>
+        private async void TryArmSelfTestAutoLogin(LoginPanel panel)
+        {
+            try
+            {
+                string marker = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "HundunWorld", "auto-login.on");
+                if (!System.IO.File.Exists(marker))
+                    return;
+
+                await Task.Delay(1500);
+                if (panel == null || _loginPanel != panel || _isProcessing)
+                    return;
+
+                FlaxEngine.Debug.Log($"[SelfTest] auto-login fire accountLen={panel.UsernameInput.Text?.Length ?? 0}");
+                OnLoginButtonClicked(panel);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[SelfTest] auto-login failed: {ex.Message}");
             }
         }
 
@@ -780,6 +816,14 @@ namespace HundunWorld.Game.UI.Authentication
         {
             FlaxEngine.Debug.Log($"[ShowLoginPanelInternal] 开始执行, _loginPanel={((_loginPanel != null) ? "not null" : "null")}");
 
+            // 场景自带认证页存在时，所有"显示登录页"的请求都交给它，避免两套登录卡同时出现。
+            var sceneAuth = global::Game.AuthenticationController.Current;
+            if (sceneAuth != null)
+            {
+                RunOnMainThread(() => sceneAuth.ShowAuthUI());
+                return;
+            }
+
             RunOnMainThread(() =>
             {
                 if (_loginPanel == null)
@@ -798,12 +842,14 @@ namespace HundunWorld.Game.UI.Authentication
                 _loginPanel.Enabled = true;
                 FlaxEngine.Debug.Log($"[ShowLoginPanelInternal] 设置_loginPanel.Enabled = true");
 
-                // 2. 强制中心对齐，彻底修复位置错误
-                _loginPanel.Size = ChineseClassicalTheme.GoldenRatioLayout.CalculateLoginPanelSize(); // 确保正确的尺寸
-                _loginPanel.AnchorPreset = AnchorPresets.MiddleCenter;
-                _loginPanel.Pivot = new Float2(0f, 0.5f);
-                _loginPanel.Location = new Float2(-_loginPanel.Size.X / 2f, 0);
+                // 2. LoginPanel 自身就是全屏三栏设计（背景铺满 + 内容层按 1920x1080 等比收敛），
+                //    这里必须保持拉伸铺满；旧代码把它钉成 480x297 居中框，会让整页缩到 25% 且偏出屏幕。
+                _loginPanel.AnchorMin = Float2.Zero;
+                _loginPanel.AnchorMax = Float2.One;
+                _loginPanel.Offsets = Margin.Zero;
+                _loginPanel.Pivot = Float2.Zero;
                 _loginPanel.Scale = Float2.One;
+                _loginPanel.RefreshLayout();
             });
 
             // 3. 加载护照数据，取回后再切主线程回填
@@ -947,6 +993,15 @@ namespace HundunWorld.Game.UI.Authentication
         {
             RunOnMainThread(() =>
             {
+                // Login.scene 自带一套认证页（AuthenticationController 管理）。两套都显示会叠成双份登录卡，
+                // 有场景那套就只让场景那套出面，本组件退化成事件订阅者。
+                var sceneAuth = global::Game.AuthenticationController.Current;
+                if (sceneAuth != null)
+                {
+                    sceneAuth.ShowAuthUI();
+                    return;
+                }
+
                 _mainContainer.Visible = true;
                 _mainContainer.Enabled = true;
                 _ = ShowLoginPanelInternal();
@@ -960,6 +1015,7 @@ namespace HundunWorld.Game.UI.Authentication
         {
             RunOnMainThread(() =>
             {
+                global::Game.AuthenticationController.Current?.HideAuthUI();
                 if (_mainContainer == null) return;
 
                 // 彻底放弃淡出动画，改为立即隐藏，确保在场景切换时无残留
@@ -1046,8 +1102,9 @@ namespace HundunWorld.Game.UI.Authentication
             // 添加UICanvas组件
             var canvas = canvasActor.AddChild<UICanvas>();
 
-            // 将Actor添加到场景
-            Level.SpawnActor(canvasActor);
+            // 有意常驻 RootScene（0 号场景）：主 UI Canvas 是全局共享组件，切场景不销毁。
+            // 显式传场景而非依赖"无父级默认落 Scenes[0]"的隐式行为。
+            Level.SpawnActor(canvasActor, Level.GetScene(0));
 
             // 添加UI容器
             if (canvas?.GUI != null)

@@ -80,6 +80,8 @@ namespace NarrativePro.Items
         {
             // 初始化散布为基础散布
             CurrentSpread = BaseSpreadDegrees;
+            // 对应 UE5 RangedWeaponItem.cpp:34 —— 远程武器默认胶囊体直接吸附控制器 Yaw
+            OwnerCapsuleRotationSetting = ECapsuleRotationSetting.UseControllerYawDirect;
         }
 
         public override void HandleWield()
@@ -133,10 +135,26 @@ namespace NarrativePro.Items
 
         public override float GetWeaponSpread() => CurrentSpread;
 
-        /// <summary>获取此武器的追踪数据。</summary>
-        public virtual CombatTraceData GetTraceData() => TraceData;
+        /// <summary>
+        /// 获取此武器的追踪数据。若本发弹药带 AmmoFragment 且 bOverrideTraceData，使用弹药自己的追踪数据
+        /// （其伤害类型 ID 由弹药的 DamageEffectId 覆盖）。
+        /// 对应 UE5 开火时读取 UAmmoFragment::TraceData 覆盖武器默认追踪参数。
+        /// </summary>
+        public virtual CombatTraceData GetTraceData()
+        {
+            var ammo = FiredAmmoFragment;
+            if (ammo != null && ammo.bOverrideTraceData && ammo.TraceData != null)
+            {
+                if (!string.IsNullOrEmpty(ammo.DamageEffectId))
+                {
+                    ammo.TraceData.DamageTypeId = ammo.DamageEffectId;
+                }
+                return ammo.TraceData;
+            }
+            return TraceData;
+        }
 
-        public override float GetAttackRange() => TraceData?.Range ?? BotAttackRange;
+        public override float GetAttackRange() => GetTraceData()?.Range ?? BotAttackRange;
 
         /// <summary>获取瞄准时相对默认 FOV 的百分比。</summary>
         public virtual float GetAimFOV() => AimFOVPct;
@@ -159,6 +177,7 @@ namespace NarrativePro.Items
             return new Transform(new Vector3(rx, ry, rz));
         }
 
-        public override List<string> GetComboAnims(bool bHeavyAttack) => new System.Collections.Generic.List<string>();
+        // UE5 远程武器不调 GetComboAnims（基类恒返回空数组，WeaponItem.cpp:717），
+        // 射击走 FireRangedAttack 通知窗口，无连击动画数据，故不覆写。
     }
 }

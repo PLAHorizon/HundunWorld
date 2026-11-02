@@ -1,0 +1,42 @@
+{
+  "questId": "Q_20261013_124534",
+  "questName": "\u65B0\u4EFB\u52A1",
+  "questDescription": "",
+  "questDialogueClass": "",
+  "questRequirements": [],
+  "states": [
+    {
+      "id": "start",
+      "description": "\u63A5\u53D7\u59D4\u6258",
+      "stateType": 0,
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "success",
+      "description": "\u4EFB\u52A1\u5B8C\u6210",
+      "stateType": 1,
+      "position": {
+        "x": 400,
+        "y": -120
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "branch_main",
+      "description": "\u5B8C\u6210\u59D4\u6258",
+      "fromStateId": "start",
+      "toStateId": "success",
+      "tasks": [],
+      "hidden": false,
+      "position": {
+        "x": 200,
+        "y": 0
+      }
+    }
+  ],
+  "startStateId": "start"
+}

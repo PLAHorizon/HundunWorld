@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Performance bench for the PCG runtime, answering the Phase 3 acceptance criterion in
+    docs/PCG_PLUGIN_DESIGN.md §9: "100k points, with an explicit time and memory budget".
+
+    That sentence was a target rather than a measurement until this harness existed. It runs the shipped
+    nodes (linked, not reimplemented) over a scatter graph at three sizes and prints per-node timings from the
+    executor's own stats, so the budget is written from numbers and a later regression can be caught by the
+    ceiling asserted here.
+
+    It deliberately contains no terrain and no spawner: those need a live scene, and the point of this harness
+    is the part that is pure managed data. Engine-bound timings belong to PIE, not here.
+
+    Usage:
+        dotnet run project Tools/PCGBench/PCGBench.csproj
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>PCGBench</AssemblyName>
+    <RootNamespace>PCGBench</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.12</EngineRoot>
+    <PluginRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\PCG\Source\PCG</PluginRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="$(PluginRoot)\Data\*.cs" />
+    <Compile Include="$(PluginRoot)\Graph\*.cs" />
+    <Compile Include="$(PluginRoot)\Execution\*.cs" />
+    <Compile Include="$(PluginRoot)\Terrain\*.cs" />
+    <Compile Include="$(PluginRoot)\Nodes\*.cs" />
+    <Compile Include="$(PluginRoot)\Runtime\PCGNodeRegistration.cs" />
+  </ItemGroup>
+
+</Project>

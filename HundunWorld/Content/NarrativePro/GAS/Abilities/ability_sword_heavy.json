@@ -1,0 +1,15 @@
+{
+  "abilityName": "环首刀·重击",
+  "abilityClass": "NarrativeMeleeHeavySlashAbility",
+  "inputTag": "Narrative.Input.AltAttack",
+  "isMelee": true,
+  "isHeavyAttack": true,
+  "damageEffectPath": "effect_damage_melee",
+  "defaultAttackDamage": 20,
+  "meleeSweepRadius": 110,
+  "attackNotifyTriggerTime": 0.3,
+  "attackNotifyDuration": 0.45,
+  "attackPlayRate": 1,
+  "botAttackFrequency": 0.5,
+  "botAttackRange": 240
+}

@@ -49,8 +49,26 @@ namespace PCG.Nodes
             {
                 // Graphs are authored in the editor and stored as plain objects, so a float may well come
                 // back as a double or an int. Convert rather than reject.
-                if (typeof(T).IsEnum && raw is string s)
-                    return (T)Enum.Parse(typeof(T), s, true);
+                if (typeof(T).IsEnum)
+                {
+                    // Convert.ChangeType refuses to produce an enum value, so an enum slot written as its
+                    // integer index - which is how a graph editor stores a dropdown choice - would fall
+                    // through to the catch below and silently keep the node's default, ignoring the user.
+                    if (raw is string enumName)
+                        return (T)Enum.Parse(typeof(T), enumName, true);
+
+                    if (raw is IConvertible numeric)
+                    {
+                        var candidate = Enum.ToObject(typeof(T), numeric.ToInt64(null));
+
+                        // An index outside the declared options is a stale graph value, not a new mode: take
+                        // the fallback rather than hand the node an undefined enum.
+                        if (Enum.IsDefined(typeof(T), candidate))
+                            return (T)candidate;
+
+                        return fallback;
+                    }
+                }
 
                 return (T)Convert.ChangeType(raw, typeof(T));
             }

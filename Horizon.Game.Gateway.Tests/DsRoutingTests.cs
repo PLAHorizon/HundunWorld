@@ -11,6 +11,7 @@ using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Sync;
+using Horizon.Orleans.Interface.Combat;
 using Horizon.Orleans.Interface.World;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -522,5 +523,73 @@ public class DsRoutingTests
             s => s.HandshakeAsync(It.IsAny<HandshakePacket>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<long>()),
             Times.Once);
         Assert.IsType<HandshakePacket>(DecodeResponse(response));
+    }
+
+    // ---------- 战斗上行：DS 权威会话必须转 DS，否则怪一格血都掉不了 ----------
+
+    private static CombatActionPacket MakeCombat(ulong attackerId, ulong targetId) => new()
+    {
+        AttackerId = attackerId,
+        TargetId = targetId,
+        SkillId = 0,
+        ClientTick = 7,
+        AttackerYaw = 0f,
+        ActionKind = CombatActionKind.NormalAttack,
+    };
+
+    private static Mock<ICombatSystemGrain> SetupCombatGrain(Mock<IClusterClient> clusterClient, long shardId)
+    {
+        var grain = new Mock<ICombatSystemGrain>();
+        grain.Setup(g => g.ProcessActionAsync(It.IsAny<CombatActionRequest>()))
+             .ReturnsAsync(new CombatVerdict { IsHit = true, DamageAmount = 33, TargetRemainingHp = 67, TargetMaxHp = 100 });
+        clusterClient.Setup(c => c.GetGrain<ICombatSystemGrain>(shardId, It.IsAny<string>())).Returns(grain.Object);
+        return grain;
+    }
+
+    [Fact]
+    public async Task UseDS_Combat_RoutesToDs_AndSkipsCombatGrain()
+    {
+        // 这一跳缺失时的症状是"我在砍、数字在跳、怪就是不死"：世界、数据面、上行分发都已经受理
+        // 战斗包了，可网关把战斗帧无条件送进 CombatSystemGrain，而那只认识 CharacterGrain 的角色。
+        await using var fakeDs = new FakeDs();
+        var registry = new DSRegistry();
+        registry.RegisterOrUpdate("ds-1", new long[] { 0 }, "127.0.0.1", fakeDs.Port);
+
+        var clusterClient = CreateClusterClientWithSessionGrain(42);
+        var combatGrain = SetupCombatGrain(clusterClient, 0);
+        var plane = new DsSyncDataPlane(registry, NullLogger<DsSyncDataPlane>.Instance,
+            new MutableOptionsMonitor(new GatewayOptions { UseDS = true }));
+        var handler = CreateHandler(clusterClient, plane);
+
+        var combat = MakeCombat(42UL, 4294967298UL);   // 刷怪点 1 / 槽 1 编码出来的怪物实体 id
+        var (success, _) = await handler.RouteHandlerAsync(CreateSyncMessage(combat));
+
+        Assert.True(success);
+        var received = await fakeDs.ReceivedFrame.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(EncodeFrame(combat), received);   // 逐字节：DS 收到的就是客户端那一帧
+        // 转给 DS 之后不得再让 Orleans 裁决同一次攻击：那是同一跳伤害的两个权威
+        combatGrain.Verify(g => g.ProcessActionAsync(It.IsAny<CombatActionRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task NoDS_Combat_StillFallsBackToCombatGrain()
+    {
+        // 反向对照：没有可用 DS 时旧的 Orleans 战斗路径必须照常工作，
+        // 否则这条改动就把战斗整体关掉了（那比原来的 bug 更糟）。
+        var registry = new DSRegistry();   // 什么都不注册 → no_ds
+        var clusterClient = CreateClusterClientWithSessionGrain(42);
+        var combatGrain = SetupCombatGrain(clusterClient, 0);
+        var plane = new DsSyncDataPlane(registry, NullLogger<DsSyncDataPlane>.Instance,
+            new MutableOptionsMonitor(new GatewayOptions { UseDS = true }));
+        var handler = CreateHandler(clusterClient, plane);
+
+        var combat = MakeCombat(42UL, 4294967298UL);
+        var (success, response) = await handler.RouteHandlerAsync(CreateSyncMessage(combat));
+
+        Assert.True(success);
+        combatGrain.Verify(g => g.ProcessActionAsync(It.IsAny<CombatActionRequest>()), Times.Once);
+        var decoded = DecodeResponse(response);
+        var damage = Assert.IsType<DamagePacket>(decoded);
+        Assert.Equal(33, damage.DamageAmount);
     }
 }

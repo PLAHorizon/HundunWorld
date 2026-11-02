@@ -1,271 +1,49 @@
 using FlaxEngine;
 using System;
 using System.Collections.Generic;
-using HundunWorld.Game.ECS.Components;
 using HundunWorld.Game.Combat.Effects;
-using HundunWorld.Game.Character;
-using Game.Character.Attributes;
-using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.Combat
 {
     /// <summary>
-    /// 战斗系统管理器
-    /// 协调伤害计算、效果管理和战斗状态
+    /// 战斗状态与技能效果的宿主：每帧推进效果计时、维护"是否在战斗中"的状态表。
+    /// <para>
+    /// 这里刻意只剩这两件事。原先的攻击结算链（<c>ProcessAttack</c> / <c>AttackAction</c> /
+    /// <c>CombatActionResult</c> / <c>DamageCalculator</c> / <c>SkillInfo</c> / <c>PendingAction</c>）
+    /// 已整体删除：它的唯一调用方 <c>CombatSystemCoordinator</c> 与 <c>SkillCastHelper</c> 本身就是
+    /// 零引用死链，而伤害与五行的权威结算在 CombatGrain / CharacterGrain 一侧（ElementalDamageResolver）。
+    /// 客户端再留一套本地结算，只会让人误以为屏幕上的数字也算数——
+    /// 其中 <c>ConvertToCombatStats</c> 甚至把十个五行字段一律写死成 0。
+    /// </para>
     /// </summary>
     public class CombatSystemManager
     {
         private static CombatSystemManager _instance;
         public static CombatSystemManager Instance => _instance ??= new CombatSystemManager();
 
-        private readonly DamageCalculator _damageCalculator;
         private readonly SkillEffectSystem _effectSystem;
-        private readonly ICharacterAttributeManager _attributeManager;
-        private readonly IControlStateManager _controlManager;
         private readonly Dictionary<ulong, CombatState> _combatStates;
-        private readonly List<PendingAction> _pendingActions;
-        private readonly Dictionary<int, SkillInfo> _skillCache;
+
+        /// <summary>
+        /// 已经处理过死亡的实体。同一次死亡会先到 <c>DamageMessage</c>（剩余血量归零）再到
+        /// <c>DeathMessage</c>，两条都接 here 的话击杀日志会写两遍、选中态会被清两次。
+        /// 实体重新进入战斗（<see cref="GetCombatState"/> 建新状态）时撤掉标记。
+        /// </summary>
+        private readonly HashSet<ulong> _deathHandled = new HashSet<ulong>();
 
         private CombatSystemManager()
         {
-            _damageCalculator = DamageCalculator.Instance;
             _effectSystem = SkillEffectSystem.Instance;
-            _attributeManager = CharacterAttributeManager.Instance;
-            _controlManager = ControlStateManager.Instance;
             _combatStates = new Dictionary<ulong, CombatState>();
-            _pendingActions = new List<PendingAction>();
-            _skillCache = new Dictionary<int, SkillInfo>();
         }
 
         /// <summary>
-        /// 注册技能信息到缓存
-        /// </summary>
-        public void RegisterSkill(SkillInfo skill)
-        {
-            _skillCache[skill.Id] = skill;
-        }
-
-        /// <summary>
-        /// 处理攻击动作
-        /// </summary>
-        public CombatActionResult ProcessAttack(AttackAction attack)
-        {
-            var result = new CombatActionResult();
-
-            try
-            {
-                // 1. 验证攻击合法性
-                if (!ValidateAttack(attack))
-                {
-                    result.IsSuccess = false;
-                    result.ErrorMessage = "攻击条件不满足";
-                    return result;
-                }
-
-                // 2. 检查冷却时间和资源消耗
-                if (!CheckResourceCost(attack.AttackerId, attack.Skill))
-                {
-                    result.IsSuccess = false;
-                    result.ErrorMessage = "资源不足或技能冷却中";
-                    return result;
-                }
-
-                // 3. 计算伤害
-                var attackerStats = ConvertToCombatStats(GetCharacterStats(attack.AttackerId));
-                var defenderStats = ConvertToCombatStats(GetCharacterStats(attack.DefenderId));
-                var previousSkill = GetPreviousSkill(attack.AttackerId);
-                
-                var damageResult = _damageCalculator.CalculateDamage(
-                    attackerStats, 
-                    defenderStats, 
-                    attack.Skill,
-                    previousSkill);
-
-                result.DamageResult = damageResult;
-                result.ActualDamage = damageResult.FinalDamage;
-
-                // 4. 应用伤害到目标
-                ApplyDamage(attack.DefenderId, result.ActualDamage, attack.AttackerId);
-
-                // 5. 记录到DPS统计（新增）
-                DamageMeter.Instance.RecordDamage(
-                    attack.AttackerId, 
-                    attack.DefenderId, 
-                    result.ActualDamage, 
-                    damageResult.IsCritical, 
-                    attack.Skill.Name
-                );
-
-                // 6. 应用技能效果
-                ApplySkillEffects(attack);
-
-                // 7. 更新战斗状态
-                UpdateCombatState(attack.AttackerId, attack.DefenderId, attack.Skill);
-
-                // 8. 消耗资源和设置冷却
-                ConsumeResources(attack.AttackerId, attack.Skill);
-
-                result.IsSuccess = true;
-                Debug.Log($"[CombatSystemManager] 攻击成功: {attackerStats.Name} -> {defenderStats.Name}, 伤害: {result.ActualDamage:F1}");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[CombatSystemManager] 处理攻击时出错: {ex.Message}");
-                result.IsSuccess = false;
-                result.ErrorMessage = ex.Message;
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// 验证攻击合法性
-        /// </summary>
-        private bool ValidateAttack(AttackAction attack)
-        {
-            // 检查目标是否存在且存活
-            if (!IsEntityAlive(attack.DefenderId))
-            {
-                Debug.LogWarning($"[CombatSystemManager] 目标 {attack.DefenderId} 已死亡或不存在");
-                return false;
-            }
-
-            // 检查距离
-            if (!IsInRange(attack.AttackerId, attack.DefenderId, attack.Skill.Range))
-            {
-                Debug.LogWarning($"[CombatSystemManager] 目标超出技能范围");
-                return false;
-            }
-
-            // 检查控制状态
-            if (_effectSystem.HasControlState(attack.AttackerId, ControlState.Stunned))
-            {
-                Debug.LogWarning($"[CombatSystemManager] 攻击者处于眩晕状态");
-                return false;
-            }
-
-            if (_effectSystem.HasControlState(attack.AttackerId, ControlState.Silenced) && 
-                attack.Skill.Type == SkillType.ActiveAttack)
-            {
-                Debug.LogWarning($"[CombatSystemManager] 攻击者处于沉默状态，无法使用攻击技能");
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 检查资源消耗
-        /// </summary>
-        private bool CheckResourceCost(ulong entityId, SkillInfo skill)
-        {
-            var stats = GetCharacterStats(entityId);
-            
-            // 检查能量/法力值
-            float currentEnergy = _attributeManager.GetCurrentEnergy(entityId);
-            if (currentEnergy < skill.EnergyCost)
-            {
-                return false;
-            }
-
-            // 检查技能冷却
-            var combatState = GetCombatState(entityId);
-            if (combatState.SkillCooldowns.ContainsKey(skill.Id) && 
-                combatState.SkillCooldowns[skill.Id] > 0)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 应用伤害到目标
-        /// </summary>
-        private void ApplyDamage(ulong targetId, float damage, ulong attackerId)
-        {
-            var actualDamage = _attributeManager.DealDamage(targetId, damage, attackerId);
-            Debug.Log($"[CombatSystemManager] 对目标 {targetId} 造成伤害: {actualDamage:F1} (来源: {attackerId})");
-            
-            // 检查是否死亡
-            if (!_attributeManager.IsAlive(targetId))
-            {
-                HandleEntityDeath(targetId, attackerId);
-            }
-        }
-
-        /// <summary>
-        /// 应用技能效果
-        /// </summary>
-        private void ApplySkillEffects(AttackAction attack)
-        {
-            // 应用技能附带的效果
-            foreach (var effectId in attack.Skill.Effects)
-            {
-                _effectSystem.ApplyEffect(attack.DefenderId, effectId, attack.AttackerId);
-            }
-
-            // 应用攻击者可能获得的效果（如吸血、增益等）
-            foreach (var selfEffectId in attack.Skill.SelfEffects)
-            {
-                _effectSystem.ApplyEffect(attack.AttackerId, selfEffectId, attack.AttackerId);
-            }
-        }
-
-        /// <summary>
-        /// 更新战斗状态
-        /// </summary>
-        private void UpdateCombatState(ulong attackerId, ulong defenderId, SkillInfo skill)
-        {
-            // 更新攻击者状态
-            var attackerState = GetCombatState(attackerId);
-            attackerState.LastCombatTime = Time.GameTime;
-            attackerState.IsInCombat = true;
-            attackerState.SkillCooldowns[skill.Id] = skill.Cooldown;
-            attackerState.PreviousSkillId = skill.Id;
-
-            // 更新防御者状态
-            var defenderState = GetCombatState(defenderId);
-            defenderState.LastCombatTime = Time.GameTime;
-            defenderState.IsInCombat = true;
-            defenderState.LastAttackerId = attackerId;
-
-            // 更新连击计数
-            if (skill.Type == SkillType.ActiveAttack)
-            {
-                if (Time.GameTime - attackerState.LastAttackTime < 3.0f) // 3秒内的连击
-                {
-                    attackerState.ComboCount++;
-                }
-                else
-                {
-                    attackerState.ComboCount = 1;
-                }
-                attackerState.LastAttackTime = Time.GameTime;
-            }
-        }
-
-        /// <summary>
-        /// 消耗资源
-        /// </summary>
-        private void ConsumeResources(ulong entityId, SkillInfo skill)
-        {
-            _attributeManager.ConsumeEnergy(entityId, skill.EnergyCost);
-            Debug.Log($"[CombatSystemManager] 消耗资源: {skill.EnergyCost} (实体: {entityId})");
-        }
-
-        /// <summary>
-        /// 更新战斗系统
+        /// 更新战斗系统：推进效果计时、递减技能冷却、清理过期战斗状态。
         /// </summary>
         public void Update(float deltaTime)
         {
-            // 更新效果系统
             _effectSystem.UpdateEffects(deltaTime);
-
-            // 更新技能冷却
             UpdateSkillCooldowns(deltaTime);
-
-            // 清理过期的战斗状态
             CleanupExpiredCombatStates();
         }
 
@@ -283,25 +61,18 @@ namespace HundunWorld.Game.Combat
                 {
                     var remaining = cooldown.Value - deltaTime;
                     if (remaining <= 0)
-                    {
                         cooldownsToRemove.Add(cooldown.Key);
-                    }
                     else
-                    {
                         state.SkillCooldowns[cooldown.Key] = remaining;
-                    }
                 }
 
-                // 移除已完成冷却的技能
                 foreach (var skillId in cooldownsToRemove)
-                {
                     state.SkillCooldowns.Remove(skillId);
-                }
             }
         }
 
         /// <summary>
-        /// 清理过期的战斗状态
+        /// 清理过期的战斗状态：10 秒无战斗行为即脱战，30 秒后整条状态丢弃。
         /// </summary>
         private void CleanupExpiredCombatStates()
         {
@@ -311,17 +82,13 @@ namespace HundunWorld.Game.Combat
             foreach (var kvp in _combatStates)
             {
                 var state = kvp.Value;
-                // 如果10秒内没有战斗行为，则退出战斗状态
                 if (currentTime - state.LastCombatTime > 10.0f)
                 {
                     state.IsInCombat = false;
                     state.ComboCount = 0;
-                    
-                    // 如果长时间没有战斗，清理状态
+
                     if (currentTime - state.LastCombatTime > 30.0f)
-                    {
                         statesToRemove.Add(kvp.Key);
-                    }
                 }
             }
 
@@ -332,125 +99,15 @@ namespace HundunWorld.Game.Combat
             }
         }
 
-        /// <summary>
-        /// 获取战斗状态
-        /// </summary>
         private CombatState GetCombatState(ulong entityId)
         {
             if (!_combatStates.ContainsKey(entityId))
             {
                 _combatStates[entityId] = new CombatState();
+                // 复活/重新参战：允许再次处理它的死亡。
+                _deathHandled.Remove(entityId);
             }
             return _combatStates[entityId];
-        }
-
-        /// <summary>
-        /// 获取角色属性（需要与实际系统集成）
-        /// </summary>
-        private HundunWorld.Game.Character.CharacterStats GetCharacterStats(ulong entityId)
-        {
-            return _attributeManager.GetCurrentStats(entityId);
-        }
-
-        /// <summary>
-        /// 将Character命名空间的CharacterStats转换为Combat命名空间的CharacterStats
-        /// </summary>
-        private HundunWorld.Game.Combat.CharacterStats ConvertToCombatStats(HundunWorld.Game.Character.CharacterStats charStats)
-        {
-            return new HundunWorld.Game.Combat.CharacterStats
-            {
-                Name = charStats.Name,
-                Level = charStats.Level,
-                Attack = charStats.Attack,
-                MagicAttack = charStats.MagicAttack,
-                Defense = charStats.Defense,
-                MagicDefense = charStats.MagicDefense,
-                // 注意：Character命名空间的CharacterStats没有五行属性，所以使用默认值
-                MetalAttack = 0,
-                WoodAttack = 0,
-                WaterAttack = 0,
-                FireAttack = 0,
-                EarthAttack = 0,
-                MetalDefense = 0,
-                WoodDefense = 0,
-                WaterDefense = 0,
-                FireDefense = 0,
-                EarthDefense = 0,
-                PhysicalDamageBonus = 0,
-                MagicDamageBonus = 0,
-                ElementalDamageBonus = 0,
-                PhysicalResistance = 0,
-                MagicResistance = 0,
-                ElementalResistance = 0,
-                ElementalDefense = 0,
-                CriticalRate = charStats.CriticalRate,
-                CriticalDamage = charStats.CriticalDamage,
-                CriticalResistance = 0,
-                Element = WuxingElement.None
-            };
-        }
-
-        /// <summary>
-        /// 获取上一个使用的技能
-        /// </summary>
-        private SkillInfo GetPreviousSkill(ulong entityId)
-        {
-            var state = GetCombatState(entityId);
-            if (state.PreviousSkillId > 0 && _skillCache.TryGetValue(state.PreviousSkillId, out var skill))
-            {
-                return skill;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// 检查实体是否存活
-        /// </summary>
-        private bool IsEntityAlive(ulong entityId)
-        {
-            return _attributeManager.IsAlive(entityId);
-        }
-
-        /// <summary>
-        /// 检查是否在范围内
-        /// </summary>
-        private bool IsInRange(ulong attackerId, ulong defenderId, float range)
-        {
-            return _attributeManager.IsInRange(attackerId, defenderId, range);
-        }
-
-        /// <summary>
-        /// 检查实体是否死亡
-        /// </summary>
-        private bool IsEntityDead(ulong entityId, float damage)
-        {
-            var currentHealth = _attributeManager.GetCurrentHealth(entityId);
-            return (currentHealth - damage) <= 0;
-        }
-
-        /// <summary>
-        /// 实体死亡事件
-        /// </summary>
-        public event Action<ulong, ulong> EntityDied;
-
-        /// <summary>
-        /// 处理实体死亡
-        /// </summary>
-        private void HandleEntityDeath(ulong entityId, ulong killerId)
-        {
-            Debug.Log($"[CombatSystemManager] 实体 {entityId} 被 {killerId} 击杀");
-            
-            // 移除所有效果
-            _effectSystem.ClearAllEffects(entityId);
-            
-            // 清理战斗状态
-            if (_combatStates.ContainsKey(entityId))
-            {
-                _combatStates.Remove(entityId);
-            }
-
-            // 触发死亡事件通知外部系统（掉落、经验、UI等）
-            EntityDied?.Invoke(entityId, killerId);
         }
 
         /// <summary>
@@ -466,29 +123,35 @@ namespace HundunWorld.Game.Combat
                 ActiveCooldowns = new Dictionary<int, float>(state.SkillCooldowns)
             };
         }
-    }
 
-    /// <summary>
-    /// 攻击动作
-    /// </summary>
-    public class AttackAction
-    {
-        public ulong AttackerId { get; set; }
-        public ulong DefenderId { get; set; }
-        public SkillInfo Skill { get; set; }
-        public Vector3 AttackPosition { get; set; }
-    }
+        /// <summary>
+        /// 实体死亡事件。CombatHUDManager 用它清除已死目标的选中态、
+        /// CombatLogUI 用它写击杀日志。
+        /// <para>
+        /// 触发方是网络侧的死亡处理：<c>DamageResponseHandler</c> 在收到"剩余血量归零"的伤害包
+        /// 与独立死亡包时调用 <see cref="HandleEntityDeath"/>。这条链以前是断的——事件只有订阅、
+        /// 没有任何 raise，所以"目标死后仍被选中"的现象一直没被修好。
+        /// </para>
+        /// </summary>
+        public event Action<ulong, ulong> EntityDied;
 
-    /// <summary>
-    /// 战斗行动结果
-    /// </summary>
-    public class CombatActionResult
-    {
-        public bool IsSuccess { get; set; }
-        public string ErrorMessage { get; set; }
-        public float ActualDamage { get; set; }
-        public DamageCalculationResult DamageResult { get; set; }
-        public List<int> AppliedEffects { get; set; } = new List<int>();
+        /// <summary>
+        /// 处理实体死亡：清效果、丢状态、通知订阅者。同一次死亡只处理一遍——
+        /// "血量归零的伤害包"和随后的"独立死亡包"会先后到达，不去重就会写两遍击杀日志。
+        /// </summary>
+        public void HandleEntityDeath(ulong entityId, ulong killerId)
+        {
+            if (!_deathHandled.Add(entityId)) return;
+
+            Debug.Log($"[CombatSystemManager] 实体 {entityId} 被 {killerId} 击杀");
+
+            _effectSystem.ClearAllEffects(entityId);
+
+            if (_combatStates.ContainsKey(entityId))
+                _combatStates.Remove(entityId);
+
+            EntityDied?.Invoke(entityId, killerId);
+        }
     }
 
     /// <summary>

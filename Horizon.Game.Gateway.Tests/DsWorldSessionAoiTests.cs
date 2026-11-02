@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Message.Sync;
@@ -54,6 +55,111 @@ public class DsWorldSessionAoiTests
         Assert.Null(steadyTick.InitialSpawnSnapshots);
         Assert.Equal(2, steadyTick.WorldSnapshot!.Deltas.Length);
     }
+
+    [Fact]
+    public void AoiEnabled_EntityLeavesSessionInterest_DespawnSentToThatSessionOnly()
+    {
+        // chunk=16m、半径 1 块 → A 在 chunk0 时订阅 chunk -1..1（约 ±32m）。
+        // B 放 20m（chunk1，可见）；A 往 -X 走过 -16m 后中心落到 chunk -1，订阅变 -2..0，B 出界。
+        var world = new DsWorldSession(MakeAoiOptions(chunkSize: 16, radiusChunks: 1));
+        Assert.True(world.AddPlayer(1001, 1001, 0f, 0f, 0f, out var r1), r1);
+        Assert.True(world.AddPlayer(1002, 1002, 20f, 0f, 0f, out var r2), r2);
+
+        // 首包补发：每个会话收到自己的可见全集，服务端由此建立"已知实体"基线。
+        var joinTick = world.Tick();
+        Assert.NotNull(joinTick.InitialSpawnSnapshots);
+        var seenByA = joinTick.InitialSpawnSnapshots!.Single(s => s.SessionId == 1001)
+            .Snapshot.Deltas.Select(d => d.EntityId).ToArray();
+        Assert.Equal(2, seenByA.Length); // A 看得见自己与 B
+
+        // A 沿 -X 持续移动，直到 B 离开 A 的兴趣范围（4m/s @60Hz，需走 16m 以上 ≈ 250 tick）。
+        DsTickResult? despawnTick = null;
+        DsSnapshotGroup? despawnGroup = null;
+        for (var i = 0; i < 600 && despawnGroup is null; i++)
+        {
+            world.SubmitInput(1001, MakeInput(1001, i + 1, -1f, 0f));
+            var tick = world.Tick();
+            if (tick.SnapshotGroups is null) continue;
+
+            // 定向 Despawn = 受众只有 1 个会话且全部 delta 都是 Despawn 的那一组。
+            var g = tick.SnapshotGroups.FirstOrDefault(g =>
+                g.AudienceSessionIds.Length == 1 &&
+                g.AudienceSessionIds[0] == 1001 &&
+                g.Snapshot.Deltas.Length > 0 &&
+                g.Snapshot.Deltas.All(d => d.Kind == EntityDeltaKind.Despawn));
+
+            if (g is not null)
+            {
+                despawnTick = tick;
+                despawnGroup = g;
+            }
+        }
+
+        Assert.NotNull(despawnGroup);
+        Assert.NotNull(despawnTick);
+        var despawnedIds = despawnGroup!.Snapshot.Deltas.Select(d => d.EntityId).ToArray();
+
+        // 出界的是 B：Despawn 的 ID 必须在 A 原本看见的集合里，且不是 A 此刻仍看见的那个。
+        var stillVisible = despawnTick.SnapshotGroups!.First(g =>
+                g.AudienceSessionIds.SequenceEqual(new[] { 1001L }) &&
+                g.Snapshot.Deltas.Any(d => d.Kind != EntityDeltaKind.Despawn))
+            .Snapshot.Deltas.Select(d => d.EntityId).ToArray();
+        var id = Assert.Single(despawnedIds);
+        Assert.Contains(id, seenByA);
+        Assert.DoesNotContain(id, stillVisible);
+
+        // 不变量：任何会话都收不到"它此刻仍看见的实体"的 Despawn，也不收不到自己的实体。
+        // （出界是相互的：A 看不见 B 的同时 B 也看不见 A，两边各收一份定向 Despawn 属正确行为。）
+        var despawnsBySession = new Dictionary<long, HashSet<ulong>>();
+        var visibleBySession = new Dictionary<long, HashSet<ulong>>();
+        var ownIdBySession = new Dictionary<long, ulong>();
+        foreach (var g in despawnTick.SnapshotGroups!)
+        {
+            var sid = Assert.Single(g.AudienceSessionIds);
+            if (!despawnsBySession.TryGetValue(sid, out var dSet))
+            {
+                dSet = new HashSet<ulong>();
+                despawnsBySession[sid] = dSet;
+                visibleBySession[sid] = new HashSet<ulong>();
+            }
+
+            foreach (var d in g.Snapshot.Deltas)
+            {
+                if (d.Kind == EntityDeltaKind.Despawn) dSet.Add(d.EntityId);
+                else
+                {
+                    visibleBySession[sid].Add(d.EntityId);
+                    if (d.Identity is { } identity && identity.OwnerId == (ulong)sid) ownIdBySession[sid] = identity.NetworkId;
+                }
+            }
+        }
+
+        foreach (var (sid, despawned) in despawnsBySession)
+        {
+            Assert.False(despawned.Overlaps(visibleBySession[sid]),
+                $"会话 {sid} 收到了它此刻仍看见的实体的 Despawn");
+            if (ownIdBySession.TryGetValue(sid, out var own))
+                Assert.DoesNotContain(own, despawned);
+        }
+
+        // 同一实体不得反复 Despawn：已知集合已随之收缩，下一 tick 不该再发。
+        world.SubmitInput(1001, MakeInput(1001, 201, -1f, 0f));
+        var nextTick = world.Tick();
+        Assert.DoesNotContain(nextTick.SnapshotGroups!, g =>
+            g.Snapshot.Deltas.Any(d => d.Kind == EntityDeltaKind.Despawn));
+    }
+
+    private static InputPacket MakeInput(ulong characterId, long clientTick, float moveX, float moveY)
+        => new InputPacket
+        {
+            CharacterId = characterId,
+            ClientTick = clientTick,
+            MoveX = moveX,
+            MoveY = moveY,
+            MaxSpeed = MovementFormula.DefaultMaxSpeed,
+            LookYaw = 0f,
+            LookPitch = 0f,
+        };
 
     [Fact]
     public void AoiEnabled_TwoPlayersFarApart_ProducesTwoGroups_EachWithSingleAudience()

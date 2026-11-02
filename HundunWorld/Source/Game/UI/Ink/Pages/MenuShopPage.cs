@@ -1,6 +1,8 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Horizon.Game.Message.Network;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
@@ -17,11 +19,11 @@ namespace HundunWorld.Game.UI.Ink.Pages
     ///   ＋ 标题行（竖排「市集」+ 商店 + 推荐/装备/消耗品/材料/外观/礼包 分类标签）
     ///   ＋ 商品网格 9 张商品卡（品质色块图标 + 名称 + 品质标签 + 价格 + 购买）
     ///   ＋ 右侧 300px 纸色确认面板（礼包内容 / 单价 / 数量 / 总价 / 当前银两 / 确认购买 / 取消）
-    ///   ＋ 页脚（混沌世界 · v1.0.0 ｜ 商店系统 · 仅供参考）
+    ///   ＋ 页脚（混沌世界 · v1.2.0 ｜ 商店系统 · 仅供参考）
     /// 交互：导航跳转、分类筛选、选中商品、卡片购买、数量增减、确认购买、取消；
     ///       返回战场由顶部信息栏按钮触发（back-hud 出口）。
     /// </summary>
-    public class MenuShopPage : ContainerControl, IInkPage
+    public class MenuShopPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ───────────────────────── 数据模型 ─────────────────────────
 
@@ -110,44 +112,21 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <summary>设计稿分类标签：推荐 / 装备 / 消耗品 / 材料 / 外观 / 礼包。</summary>
         private static readonly string[] TabNames = { "推荐", "装备", "消耗品", "材料", "外观", "礼包" };
 
-        /// <summary>设计稿左侧导航项（当前页「商店」为激活态）。</summary>
-        private static readonly string[] NavNames =
-        {
-            "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店"
-        };
-
-        /// <summary>主导航跳转目标（设计稿各为独立出口）。</summary>
-        private static readonly string[] NavTargets =
-        {
-            "nav-quests", "nav-bestiary", "nav-martial-record",
-            "nav-livelihood", "nav-team", "nav-mail", "nav-shop"
-        };
-
-        /// <summary>当前所在导航项索引（设计稿 shop-nav-item-active：商店）。</summary>
-        private const int NavActiveIndex = 6;
-
-        /// <summary>次级导航项（设计稿 shop-nav-item-muted）。</summary>
-        private static readonly string[] SubNavNames = { "角色", "装备" };
-
-        /// <summary>次级导航跳转目标（null = 客户端暂无该页路由，仅展示不可点击）。</summary>
-        private static readonly string[] SubNavTargets = { null, "nav-equipment" };
+        // 左侧导航不再本页自维护：条目与分组统一由 InkSidebarNav 提供（见 Ink/InkSidebarNav.cs），
+        // 由共用控件 InkSidebarList 渲染，因此"侧边栏能到达除弹框/事件 UI 之外的所有 UI"只需维护一处。
 
         // ───────────────────────── 字段 ─────────────────────────
 
         private Float2 _screenSize;
 
-        // 氛围层
-        private Panel _backgroundLayer;
-        private Panel _vignette;
+        // 氛围层（背景/暗角由外壳提供，页面不再持有）
 
         // 左侧导航栏
         private Panel _sidebar;
         private Panel _brandBlock;
         private Label _brandLabel;
         private InkDivider _brandDivider;
-        private Panel _sidebarNavPanel;
-        private List<Control> _navRows;
-        private List<NavRow> _navItems;
+        private InkSidebarList _sidebarList;
         private Panel _sidebarFooter;
         private InkDivider _sidebarFooterDivider;
         private NavRow _settingsNav;
@@ -209,6 +188,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private PaperOutlineButton _cancelButton;
         private Label _actionHintLabel;
 
+        /// <summary>标题行的"示例货架"小字（没有商人上下文时显示，绑上商人后清空）。</summary>
+        private Label _demoShelfLabel;
+
         // 页脚
         private Panel _footer;
         private InkDivider _footerDivider;
@@ -220,8 +202,20 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private int _selectedTab;
         private int _selectedIndex;
         private int _qty = 1;
-        private int _silverBalance = 328;
-        private int _copperBalance = 12450;
+        private int _silverBalance;
+        private int _copperBalance;
+
+        /// <summary>是否已收到服务端铜钱余额（false 时顶栏显示占位符，不拿示例数字充数）。</summary>
+        private bool _hasCopperSnapshot;
+
+        /// <summary>当前商人对应的运行时实体 id；0 = 没有商人上下文（页面仍是演示数据）。</summary>
+        private ulong _vendorEntityId;
+
+        /// <summary>卡片下标 → 服务端货架格子。只有服务端模式下才有意义。</summary>
+        private readonly System.Collections.Generic.List<int> _serverSlotByCard = new System.Collections.Generic.List<int>();
+
+        /// <summary>已渲染的商店数据版本（与服务端回执对账，见 Update）。</summary>
+        private int _lastShopRevision = -1;
 
         /// <summary>页面导航请求（由 MainUIManager 通过 HookNavigationRequested 订阅）。</summary>
         public event Action<string> NavigationRequested;
@@ -547,6 +541,21 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 };
             }
 
+
+            /// <summary>
+            /// 头像尺寸由调用方在构造后设置；子标签用 StretchAll 时不会跟着变（实测停在父尺寸+100），
+            /// 这里在尺寸变化时把唯一子标签钉回父尺寸。
+            /// </summary>
+            protected override void OnSizeChanged()
+            {
+                base.OnSizeChanged();
+                if (ChildrenCount > 0 && Children[0] is Control child)
+                {
+                    child.Location = Float2.Zero;
+                    child.Size = Size;
+                }
+            }
+
             public override void Draw()
             {
                 if (Visible && Width > 0f && Height > 0f)
@@ -624,6 +633,18 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 };
             }
 
+
+            /// <summary>尺寸由调用方设置；子标签钉回父尺寸（StretchAll 不跟随，实测停父+100）。</summary>
+            protected override void OnSizeChanged()
+            {
+                base.OnSizeChanged();
+                if (ChildrenCount > 0 && Children[0] is Control child)
+                {
+                    child.Location = Float2.Zero;
+                    child.Size = Size;
+                }
+            }
+
             public override void Draw()
             {
                 if (!Visible || Width <= 0f || Height <= 0f)
@@ -692,7 +713,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
                 _priceGlyphLabel = new Label
                 {
-                    Text = copper ? "◎" : "◈",
+                    Text = copper ? "◎" : "◆",
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                     TextColor = copper ? InkWashTheme.PaperAged : InkWashTheme.GoldPrimary,
                     HorizontalAlignment = TextAlignment.Center,
@@ -937,6 +958,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 SelectTab(0);
                 SelectProduct(0);
                 ApplyLayout();
+
+                // 顶栏身份接真实数据（铜钱在页内是示例文案，暂不覆盖）
+                InkPlayerHeaderBinder.Bind(_playerNameLabel, _playerLevelTag);
+                InkPlayerHeaderBinder.BindSect(_playerSectLabel);
+
+                // 从侧栏直接进店时没有商人上下文：标题行标注这是示例货架
+                ApplyDemoShelfHint();
             }
             catch (Exception ex)
             {
@@ -1022,19 +1050,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <summary>全局水墨背景层 + 暗角晕影（设计稿 ink-bg-layer / ink-vignette）。</summary>
         private void BuildAtmosphere()
         {
-            _backgroundLayer = new Panel
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                BackgroundColor = InkWashTheme.Void,
-                Parent = this
-            };
-
-            _vignette = new Panel
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                BackgroundColor = WithAlpha(InkWashTheme.Abyss, 0.35f),
-                Parent = this
-            };
+            // 背景层/暗角由外壳统一提供（本页为沉浸式全屏页），页面不再自绘。
         }
 
         /// <summary>左侧 240px 导航栏：品牌「混沌世界」+ 主导航 + 休闲模式快捷出口 + 次级导航 + 设置。</summary>
@@ -1067,70 +1083,12 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 Parent = _brandBlock
             };
 
-            _sidebarNavPanel = new Panel
+            // 侧边栏导航：共用控件渲染 InkSidebarNav 的完整清单（分组 + 超出可滚动）
+            _sidebarList = new InkSidebarList(InkPageDomIds.NavShop)
             {
-                BackgroundColor = Color.Transparent,
-                Parent = _sidebar
+                Parent = _sidebar,
             };
-
-            _navRows = new List<Control>();
-            _navItems = new List<NavRow>();
-
-            for (int i = 0; i < NavNames.Length; i++)
-            {
-                bool active = i == NavActiveIndex;
-                var row = new NavRow(NavNames[i])
-                {
-                    Active = active,
-                    Parent = _sidebarNavPanel
-                };
-
-                if (!active)
-                {
-                    string target = NavTargets[i];
-                    if (!string.IsNullOrEmpty(target))
-                        row.Clicked += () => NavigationRequested?.Invoke(target);
-                }
-
-                _navItems.Add(row);
-                _navRows.Add(row);
-            }
-
-            // 分隔线 + 快捷跳转：休闲模式（鎏金主 CTA 出口）
-            _navRows.Add(new InkDivider { Parent = _sidebarNavPanel });
-
-            var casualRow = new NavRow("休闲模式", "快捷")
-            {
-                Parent = _sidebarNavPanel
-            };
-            casualRow.Clicked += () => NavigationRequested?.Invoke("nav-casual-mode");
-            _navItems.Add(casualRow);
-            _navRows.Add(casualRow);
-
-            // 分隔线 + 次级导航
-            _navRows.Add(new InkDivider { Parent = _sidebarNavPanel });
-
-            for (int i = 0; i < SubNavNames.Length; i++)
-            {
-                var row = new NavRow(SubNavNames[i])
-                {
-                    Parent = _sidebarNavPanel
-                };
-
-                string target = SubNavTargets[i];
-                if (string.IsNullOrEmpty(target))
-                {
-                    // 客户端暂无该页路由（InkPageRouter 未注册），按设计稿弱化样式展示
-                    row.SetMuted();
-                }
-                else
-                {
-                    row.Clicked += () => NavigationRequested?.Invoke(target);
-                }
-
-                _navItems.Add(row);
-                _navRows.Add(row);
-            }
+            _sidebarList.NavigationRequested += domId => NavigationRequested?.Invoke(domId);
 
             // 底部设置
             _sidebarFooter = new Panel
@@ -1148,7 +1106,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Parent = _sidebarFooter
             };
-            _settingsNav.Clicked += () => NavigationRequested?.Invoke("nav-settings");
+            _settingsNav.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.NavSettings);
         }
 
         /// <summary>右侧主区域容器（顶部信息栏 + 内容区 + 页脚）。</summary>
@@ -1177,7 +1135,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 ButtonSize = InkButtonSize.Sm,
                 Parent = _topHeader
             };
-            _backButton.Clicked += () => NavigationRequested?.Invoke("back-hud");
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
 
             _playerAvatar = new CircleAvatar("侠")
             {
@@ -1186,7 +1144,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _playerNameLabel = new Label
             {
-                Text = "无名侠",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 16f),
                 TextColor = InkWashTheme.TextDefault,
                 VerticalAlignment = TextAlignment.Center,
@@ -1195,14 +1153,14 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _playerLevelTag = new InkTag
             {
-                Text = "Lv.42",
+                Text = "—",
                 TagVariant = InkTagVariant.Vermilion,
                 Parent = _topHeader
             };
 
             _playerSectLabel = new Label
             {
-                Text = "逍遥派",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.TextSecondary,
                 VerticalAlignment = TextAlignment.Center,
@@ -1230,7 +1188,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _copperValueLabel = new Label
             {
-                Text = "12,450",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.TextDefault,
                 HorizontalAlignment = TextAlignment.Far,
@@ -1240,7 +1198,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _silverGlyphLabel = new Label
             {
-                Text = "◈",
+                Text = "◆",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Center,
@@ -1259,7 +1217,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _silverValueLabel = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Far,
@@ -1289,6 +1247,15 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 Text = "商店",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 32f),
                 TextColor = InkWashTheme.TextBrand,
+                VerticalAlignment = TextAlignment.Center,
+                Parent = _contentArea
+            };
+
+            _demoShelfLabel = new Label
+            {
+                Text = string.Empty,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.TextTertiary,
                 VerticalAlignment = TextAlignment.Center,
                 Parent = _contentArea
             };
@@ -1494,7 +1461,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _totalValueLabel = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 18f),
                 TextColor = InkWashTheme.VermilionPrimary,
                 HorizontalAlignment = TextAlignment.Far,
@@ -1523,7 +1490,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _balanceValueLabel = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                 TextColor = InkWashTheme.TextOnPaper,
                 HorizontalAlignment = TextAlignment.Far,
@@ -1566,7 +1533,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
         }
 
-        /// <summary>页脚：混沌世界 · v1.0.0 ／ 商店系统 · 仅供参考。</summary>
+        /// <summary>页脚：混沌世界 · v1.2.0 ／ 商店系统 · 仅供参考。</summary>
         private void BuildFooter()
         {
             _footer = new Panel
@@ -1582,7 +1549,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _footerLeftLabel = new Label
             {
-                Text = "混沌世界 · v1.0.0",
+                Text = "混沌世界 · v1.2.0",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 VerticalAlignment = TextAlignment.Center,
@@ -1672,34 +1639,30 @@ namespace HundunWorld.Game.UI.Ink.Pages
             if (product == null)
                 return;
 
-            int total = product.Price * _qty;
-            if (product.Currency == "银两")
+            // 服务端模式：价格、库存、余额全由服务端裁决，本地只发请求并显示回执。
+            if (_vendorEntityId != 0 && _selectedIndex >= 0 && _selectedIndex < _serverSlotByCard.Count)
             {
-                if (_silverBalance < total)
+                if (HundunWorld.Game.Network.ShopClientService.Instance.Buy(_vendorEntityId, _serverSlotByCard[_selectedIndex], _qty))
                 {
-                    _actionHintLabel.Text = $"银两不足，无法购买「{product.Name}」";
-                    _actionHintLabel.TextColor = InkWashTheme.VermilionPrimary;
-                    return;
+                    _actionHintLabel.Text = "已发送购买请求…";
+                    _actionHintLabel.TextColor = InkWashTheme.JadeDeep;
                 }
-                _silverBalance -= total;
-            }
-            else
-            {
-                if (_copperBalance < total)
+                else
                 {
-                    _actionHintLabel.Text = $"铜钱不足，无法购买「{product.Name}」";
+                    _actionHintLabel.Text = "未连接服务器，无法购买";
                     _actionHintLabel.TextColor = InkWashTheme.VermilionPrimary;
-                    return;
                 }
-                _copperBalance -= total;
+
+                return;
             }
 
-            int boughtQty = _qty;
-            _qty = 1;
-            RefreshBalances();
-            RefreshDetailTotals();
-            _actionHintLabel.Text = $"已购入「{product.Name}」×{boughtQty}，共 {FormatNumber(total)} {product.Currency}";
-            _actionHintLabel.TextColor = InkWashTheme.JadeDeep;
+            // 没有商人上下文时货架是目录样例：既不扣本地余额也不报"已购入"，
+            // 否则等于用编出来的余额演一次购买成功。
+            if (_actionHintLabel != null)
+            {
+                _actionHintLabel.Text = "未与商人交谈，示例货架不可购买";
+                _actionHintLabel.TextColor = InkWashTheme.VermilionPrimary;
+            }
         }
 
         /// <summary>取消本次购买：数量复位为 1。</summary>
@@ -1722,6 +1685,137 @@ namespace HundunWorld.Game.UI.Ink.Pages
         }
 
         /// <summary>商品是否属于当前分类（推荐页展示全部）。</summary>
+        // ───────────────────────── 服务端货架 ─────────────────────────
+
+        /// <summary>
+        /// 打开某个 NPC 的货架（由世界交互入口调用）。
+        /// <para>连接不上时页面保持演示数据，但会明确写一行"未连接"，不假装成功。</para>
+        /// </summary>
+        public void OpenVendor(ulong entityId)
+        {
+            _vendorEntityId = entityId;
+            _lastShopRevision = -1;
+
+            if (!HundunWorld.Game.Network.ShopClientService.Instance.Open(entityId) && _actionHintLabel != null)
+            {
+                _actionHintLabel.Text = "未连接服务器：商人窗口暂时只能看演示数据";
+                _actionHintLabel.TextColor = InkWashTheme.VermilionPrimary;
+            }
+            ApplyDemoShelfHint();
+        }
+
+        /// <summary>没有商人上下文时在标题行标注"示例货架"，绑上商人后清空。</summary>
+        private void ApplyDemoShelfHint()
+        {
+            if (_demoShelfLabel == null)
+                return;
+
+            _demoShelfLabel.Text = _vendorEntityId == 0 ? "未与商人交谈 · 以下为货架示例" : string.Empty;
+        }
+
+        /// <summary>
+        /// 回包在连接线程写缓存，这里在主线程发现版本变了才重绘（与任务页同一条纪律）。
+        /// </summary>
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            // 交互入口可能已经把页面打开（路由会复用实例），这里取走"这次要绑定哪个商人"。
+            var requestedVendor = HundunWorld.Game.Network.ShopClientService.Instance.TakeRequestedVendor();
+            if (requestedVendor != 0) OpenVendor(requestedVendor);
+
+            if (_vendorEntityId == 0) return;
+
+            var service = HundunWorld.Game.Network.ShopClientService.Instance;
+            var revision = service.Revision;
+            if (revision == _lastShopRevision) return;
+
+            _lastShopRevision = revision;
+            ApplyServerShelf(service.Items, service.Gold, service.LastNotice, service.LastReason);
+        }
+
+        /// <summary>
+        /// 把服务端货架映射成卡片并重建。
+        /// <para><b>必须重建而不是改数据</b>：<see cref="ProductCard"/> 在构造时就把名称/价格读进子控件，
+        /// 只改 <see cref="_products"/> 里的对象不会刷新任何一个字。</para>
+        /// </summary>
+        private void ApplyServerShelf(ShopItemDto[] items, long gold, string notice, string reason)
+        {
+            _serverSlotByCard.Clear();
+
+            var list = new System.Collections.Generic.List<ShopProduct>(items?.Length ?? 0);
+            if (items != null)
+            {
+                for (int i = 0; i < items.Length; i++)
+                {
+                    var item = items[i];
+                    if (item == null) continue;
+
+                    var def = HundunWorld.Game.Inventory.ItemCatalog.Resolve(item.ItemId);
+                    var quality = def != null && def.Quality >= 0 && def.Quality <= 4
+                        ? (InkWashTheme.InkQuality)def.Quality
+                        : InkWashTheme.InkQuality.Common;
+
+                    list.Add(new ShopProduct
+                    {
+                        Name = def != null ? def.Name : ("物品 #" + item.ItemId),
+                        QualityLabel = def != null ? def.TypeName : string.Empty,
+                        Quality = quality,
+                        Price = (int)Math.Min(int.MaxValue, Math.Max(0L, item.BuyPrice)),
+                        Currency = "铜钱",
+                        Icon = def != null ? def.Glyph : "货",
+                        // 商人货架不分类：放"推荐"（0 号页本来就展示全部），避免被误塞进某个分类后看不见。
+                        Category = TabNames[0],
+                        Contents = System.Array.Empty<ContentView>(),
+                    });
+                    _serverSlotByCard.Add(item.Slot);
+                }
+            }
+
+            _products = list.ToArray();
+            RebuildCards();
+
+            _copperBalance = (int)Math.Min(int.MaxValue, Math.Max(0L, gold));
+            _hasCopperSnapshot = true;
+            RefreshBalances();
+
+            if (!string.IsNullOrEmpty(notice) && _actionHintLabel != null)
+            {
+                _actionHintLabel.Text = notice;
+                _actionHintLabel.TextColor = string.IsNullOrEmpty(reason)
+                    ? InkWashTheme.JadeDeep
+                    : InkWashTheme.VermilionPrimary;
+            }
+
+            // SelectTab 会重算每张卡片的可见性（含空货架提示），ApplyLayout 再把它们排开。
+            SelectTab(_selectedTab);
+            ApplyLayout();
+        }
+
+        /// <summary>按当前 <see cref="_products"/> 重建卡片；旧的必须解绑并释放，否则会叠在网格里。</summary>
+        private void RebuildCards()
+        {
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                if (_cards[i] == null) continue;
+                _cards[i].Parent = null;
+                _cards[i].Dispose();
+            }
+
+            _cards.Clear();
+
+            for (int i = 0; i < _products.Length; i++)
+            {
+                int index = i;
+                var card = new ProductCard(i, _products[i]) { Parent = _gridContent };
+                card.Clicked += () => SelectProduct(index);
+                card.BuyClicked += () => OnCardBuy(index);
+                _cards.Add(card);
+            }
+
+            _selectedIndex = _products.Length > 0 ? 0 : -1;
+        }
+
         private bool IsVisibleInTab(ShopProduct product)
         {
             if (product == null)
@@ -1750,11 +1844,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
             return 0;
         }
 
-        /// <summary>刷新顶部信息栏货币数值。</summary>
+        /// <summary>刷新顶部信息栏货币数值。铜钱没有服务端快照、银两根本没有下行通道时显示占位符。</summary>
         private void RefreshBalances()
         {
-            _copperValueLabel.Text = FormatNumber(_copperBalance);
-            _silverValueLabel.Text = FormatNumber(_silverBalance);
+            if (_copperValueLabel != null)
+                _copperValueLabel.Text = _hasCopperSnapshot ? FormatNumber(_copperBalance) : "—";
+            if (_silverValueLabel != null)
+                _silverValueLabel.Text = "—";
         }
 
         /// <summary>按当前选中商品重建确认面板内容（礼包内容行 + 数值）。</summary>
@@ -1837,12 +1933,6 @@ namespace HundunWorld.Game.UI.Ink.Pages
             if (sw <= 0f || sh <= 0f)
                 return;
 
-            // ── 氛围层 ──
-            _backgroundLayer.Location = Float2.Zero;
-            _backgroundLayer.Size = new Float2(sw, sh);
-            _vignette.Location = Float2.Zero;
-            _vignette.Size = new Float2(sw, sh);
-
             // ── 左侧导航栏 ──
             _sidebar.Location = Float2.Zero;
             _sidebar.Size = new Float2(SidebarWidth, sh);
@@ -1855,26 +1945,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             _brandDivider.Size = new Float2(SidebarWidth, 1f);
 
             float navPanelH = Mathf.Max(0f, sh - BrandHeight - SidebarFooterHeight);
-            _sidebarNavPanel.Location = new Float2(0f, BrandHeight);
-            _sidebarNavPanel.Size = new Float2(SidebarWidth, navPanelH);
-
-            float navY = 8f;
-            foreach (var row in _navRows)
-            {
-                if (row is InkDivider)
-                {
-                    navY += 8f;
-                    row.Location = new Float2(24f, navY);
-                    row.Size = new Float2(SidebarWidth - 48f, 1f);
-                    navY += 9f;
-                }
-                else
-                {
-                    row.Location = new Float2(0f, navY);
-                    row.Size = new Float2(SidebarWidth, NavItemHeight);
-                    navY += NavItemHeight + 2f;
-                }
-            }
+            _sidebarList.Layout(0f, BrandHeight, SidebarWidth, navPanelH);
 
             _sidebarFooter.Location = new Float2(0f, sh - SidebarFooterHeight);
             _sidebarFooter.Size = new Float2(SidebarWidth, SidebarFooterHeight);
@@ -1980,6 +2051,14 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 Mathf.Max(0f, contentW - ContentPadding - tabBarW),
                 ContentPadding + (TitleRowHeight - TabBarHeight) * 0.5f);
             _tabBar.Size = new Float2(tabBarW, TabBarHeight);
+
+            if (_demoShelfLabel != null)
+            {
+                float hintX = ContentPadding + 240f;
+                _demoShelfLabel.Location = new Float2(hintX, ContentPadding + 18f);
+                _demoShelfLabel.Size = new Float2(
+                    Mathf.Max(0f, _tabBar.Location.X - hintX - 12f), 20f);
+            }
 
             for (int i = 0; i < _tabs.Count; i++)
             {

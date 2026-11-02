@@ -54,6 +54,81 @@ public static class Program
         var options = parsed;
         void Log(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
 
+        // ---- 宠物内容快照装配（与怪物内容同一条纪律：装了用库里的，没装退回硬编码目录）----
+        if (!string.IsNullOrWhiteSpace(options.PetContentPath))
+        {
+            var petReceipt = Horizon.Game.Sim.Pets.PetContentLoader.LoadFile(options.PetContentPath);
+            Log(petReceipt.Ok
+                ? "宠物内容已装配：" + petReceipt.Describe()
+                : "宠物内容装配失败，本 DS 退回硬编码物种目录：" + string.Join(" | ", petReceipt.Problems));
+        }
+
+        // ---- NPC 内容快照装配（与怪物/宠物同一条纪律：装了用库里的，没装退回硬编码三行）----
+        // 未显式配置时探默认导出文件：不探的话"编辑器配好了、游戏里一个 NPC 也没有"，
+        // 且服务与客户端都不报错（刷点/货架/教学/作息全在快照里）。
+        if (string.IsNullOrWhiteSpace(options.NpcContentPath))
+        {
+            var defaultNpcPath = Horizon.Game.Core.Sim.Server.NpcContentLoader.ResolveDefaultPath();
+            if (!string.IsNullOrWhiteSpace(defaultNpcPath))
+            {
+                options.NpcContentPath = defaultNpcPath;
+                Log("未显式配置 NPC 内容，使用默认导出：" + defaultNpcPath);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.NpcContentPath))
+        {
+            var npcReceipt = Horizon.Game.Core.Sim.Server.NpcContentLoader.LoadFile(options.NpcContentPath, out var npcError);
+            if (npcReceipt == null)
+            {
+                Log("NPC 内容装配失败，本 DS 退回硬编码三行 NPC 目录：" + npcError);
+            }
+            else
+            {
+                // 回执要逐项念出来：读到了不等于装上了（问题数为 0 才敢说"已装配"）。
+                Log("NPC 内容已装配：" + npcReceipt.Describe());
+                if (npcReceipt.ProblemCount > 0)
+                {
+                    for (var i = 0; i < npcReceipt.Problems.Count; i++) Log("  NPC 内容问题：" + npcReceipt.Problems[i]);
+                }
+            }
+        }
+
+        // ---- 怪物内容快照装配（必须在 BuildSpawnPoints 之前：点位也来自快照）----
+        var contentLoaded = false;
+        if (!string.IsNullOrWhiteSpace(options.MonsterContentPath))
+        {
+            var receipt = Horizon.Game.Core.Sim.Server.MonsterContentLoader.LoadFile(options.MonsterContentPath);
+            if (receipt.Ok)
+            {
+                contentLoaded = true;
+                Log("怪物内容已装配：" + receipt.Describe());
+            }
+            else
+            {
+                Log("怪物内容装配失败，本 DS 退回代码目录：" + string.Join(" | ", receipt.Problems));
+            }
+        }
+
+        var navGrid = default(Horizon.Game.Sim.Monsters.MonsterNavGrid);
+        if (string.IsNullOrWhiteSpace(options.MonsterNavPath))
+        {
+            // 与 NPC/怪物内容同一条纪律：不显式配置就探默认产物，探到要**念出来**用的是哪份。
+            var defaultNavPath = Horizon.Game.Core.Sim.Server.MonsterNavGridLoader.ResolveDefaultPath();
+            if (!string.IsNullOrWhiteSpace(defaultNavPath))
+            {
+                options.MonsterNavPath = defaultNavPath;
+                Log("未显式配置导航网格，使用默认导出：" + defaultNavPath);
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(options.MonsterNavPath))
+        {
+            navGrid = Horizon.Game.Core.Sim.Server.MonsterNavGridLoader.Load(options.MonsterNavPath, out var navError);
+            // 那一行的判据（含"空图等于没装"那句）住在装载器旁边，宿主只负责念——
+            // 写在 Main 里的日志语句测试调不到，只能被文本针钉住，而文本针挡不住"条件改成永不成立"。
+            Log(Horizon.Game.Core.Sim.Server.MonsterNavGridLoader.DescribeLoad(navGrid, navError));
+        }
+
         var hostOptions = new DsHostOptions
         {
             DsId = options.DsId,
@@ -63,7 +138,8 @@ public static class Program
             AdvertiseHost = options.AdvertiseHost,
             Region = options.Region,
             TicksPerSecond = options.TicksPerSecond,
-            SpawnPoints = BuildSpawnPoints(options),
+            SpawnPoints = contentLoaded ? BuildSpawnPointsFromContent(options) : BuildSpawnPoints(options),
+            NavGrid = navGrid,
             EnableAoiFilter = options.EnableAoiFilter,
             AoiChunkSize = options.AoiChunkSize,
             AoiRadiusChunks = options.AoiRadiusChunks,
@@ -108,7 +184,9 @@ public static class Program
                 }
                 clusterClient = await connectTask.ConfigureAwait(false);
 
-                var lootProvider = new OrleansLootProvider(new OrleansLootTableConfigSource(clusterClient));
+                var lootProvider = new OrleansLootProvider(
+                    new OrleansLootTableConfigSource(clusterClient),
+                    new WuxingDomainLootMapping());
                 var templates = new List<int>();
                 foreach (var sp in hostOptions.SpawnPoints)
                 {
@@ -134,11 +212,35 @@ public static class Program
         }
 
         await using var uplink = new DsUplinkClient(uplinkOptions, Log);
+        // 脚本化世界生成（怪物/NPC/特殊事件）的开关与共享密钥。
+        // 只走环境变量、不落 appsettings：密钥不该进仓库。
+        // 三进程用**同一对**变量注入，避免"三份配置文件抄漏一份"导致的验签全失败：
+        //   ScriptedSpawn__Enabled=1                  开启（缺省关闭 = 灰度安全）
+        //   ScriptedSpawn__SigningKeyBase64=<base64>  与网关/Grain 相同的 HMAC 密钥
+        // 旧名 HZN_SCRIPTED_SPAWN / HZN_SCRIPT_SIGNING_KEY_B64 仍作兼容回退。
+        var scriptedOptions = Horizon.Game.Core.Security.ScriptedSpawnDiagnostics.FromEnvironment();
+        hostOptions.EnableScriptedSpawn = scriptedOptions.Enabled;
+
+        // 尸体拾取：**默认关**。开启条件 = 客户端拾取入口与网关路由都就绪；这里只读环境变量，
+        // 与 ScriptedSpawn 同一个灰度方式（改一行配置就能回退，不用重编）。
+        hostOptions.DeferCorpseLootToAuthority =
+            string.Equals(Environment.GetEnvironmentVariable("CorpseLoot__Enabled"), "1", StringComparison.Ordinal);
+        hostOptions.ScriptedSigningKeyBase64 = scriptedOptions.SigningKeyBase64;
+        hostOptions.MaxScriptedTriggerZones = scriptedOptions.MaxTriggerZonesPerShard;
+        hostOptions.MaxScriptedTriggerZoneTtlSeconds = scriptedOptions.MaxTriggerTtlSeconds;
+        Horizon.Game.Core.Security.ScriptedSpawnDiagnostics.LogStartup(Log, "DS(验签)", scriptedOptions);
+
         await using var runner = new DsHostRunner(hostOptions, uplink, Log);
 
         // 会话结束：网关在客户端断线时经同一条上行连接下发通知，DS 据此回收玩家实体。
         // 不接线的话 DS 会永久保留已断线的玩家并持续广播快照给死会话。
         uplink.SessionEndReceived += runner.NotifySessionEnded;
+        uplink.ScriptedSpawnReceived += runner.NotifyScriptedSpawn;
+        uplink.CorpseLootRequestReceived += runner.NotifyCorpseLootRequest;
+        uplink.CorpseLootResultReceived += runner.NotifyCorpseLootResult;
+        // 击杀经验落库后的权威进度（等级+累计经验）：DS 自己只发经验、不知道绝对值，
+        // 不接这条经验条就永远停在登录时的数。
+        uplink.PlayerProgressReceived += runner.NotifyPlayerProgress;
         // 链路断开（网关崩溃/强杀/重启）：不会再有任何"会话结束"通知到达，
         // DS 必须全量回收玩家会话，否则离线角色作为幽灵永久驻留并被广播（服务端残留根因）。
         uplink.LinkLost += runner.NotifyLinkLost;
@@ -155,7 +257,7 @@ public static class Program
         await runner.StartAsync(shutdown.Token).ConfigureAwait(false);
 
         // 控制面：连接网关 → 注册 → 周期心跳。与 tick 循环解耦（网络抖动不应阻塞模拟）。
-        var controlTask = RunControlPlaneAsync(uplink, uplinkOptions, Log, shutdown.Token);
+        var controlTask = RunControlPlaneAsync(uplink, uplinkOptions, Log, shutdown.Token, runner);
 
         Log($"DS 就绪。Shard={string.Join(',', options.ShardIds)} 数据面端口={options.ListenPort} 网关={options.GatewayHost}:{options.GatewayPort}");
 
@@ -188,12 +290,39 @@ public static class Program
         return 0;
     }
 
+    /// <summary>
+    /// 向网关重放当前世界全部实体身份（注册/重连成功后调用）。
+    /// <para>失败不重试：下一次 tick 的增量仍会发出，且邻近判定本身有"未知即拒绝"的兜底。</para>
+    /// </summary>
+    private static async Task AnnounceEntityDescriptorsAsync(DsUplinkClient uplink, DsHostRunner? runner, Action<string> log)
+    {
+        if (runner is null) return;
+
+        var all = runner.World.CollectAllEntityDescriptors();
+        if (all.Count == 0) return;
+
+        var batch = new DsEntityDescriptorBatch
+        {
+            ShardId = runner.World.ShardId,
+            Descriptors = new DsEntityDescriptorDto[all.Count],
+        };
+        for (var i = 0; i < all.Count; i++)
+        {
+            var d = all[i];
+            batch.Descriptors[i] = DsEntityDescriptorDto.FromCore(in d);
+        }
+
+        var ok = await uplink.SendEntityDescriptorsAsync(batch, CancellationToken.None).ConfigureAwait(false);
+        log($"[DsHost] 实体身份补发 {all.Count} 条（{(ok ? "已送达" : "发送失败，随后续 tick 增量自愈")}）。");
+    }
+
     /// <summary>控制面：连接（带指数退避）→ 注册 → 周期心跳。</summary>
     private static async Task RunControlPlaneAsync(
         DsUplinkClient uplink,
         DsUplinkClientOptions options,
         Action<string> log,
-        CancellationToken ct)
+        CancellationToken ct,
+        DsHostRunner? runner = null)
     {
         if (options.GatewayPort <= 0)
         {
@@ -217,6 +346,11 @@ public static class Program
                         backoff = Math.Min(backoff * 2, options.ReconnectBackoffMaxMs);
                         continue;
                     }
+
+                    // 注册成功 = 网关侧（可能刚重启/刚摘除本片）现在对我们是空的：把世界现状重放一遍。
+                    // 不做这一步的后果很隐蔽——注册表是内存态，网关重启后邻近判定一律落空，
+                    // 而 DS 只在"发生变更的那个 tick"发增量，已存在的实体再也不会被说出名字。
+                    await AnnounceEntityDescriptorsAsync(uplink, runner, log).ConfigureAwait(false);
                 }
                 else
                 {
@@ -321,6 +455,30 @@ public static class Program
         return _orleansHost.Services.GetRequiredService<IClusterClient>();
     }
 
+    /// <summary>
+    /// 从已装配的内容包造刷怪点。
+    /// <para>装配逻辑本体在 <c>Horizon.Game.Core</c> 的 <c>MonsterSpawnPointBuilder</c>：
+    /// 那份代码同时决定血量/攻击/重生秒数/生效等级，写在宿主里就没法被测试直接调用，
+    /// 而会话内部另有一条读内容包的通路——两条通路各算一遍同一个事实，正是"公式配了没人用"
+    /// （重生固定在默认 15 秒）与"刷怪点覆盖等级只影响一半"的分家处。
+    /// 与 <see cref="BuildSpawnPoints"/> 的区别仍刻意维持：那份是开发用最小配置，
+    /// 这份是库里的世界；没给 <c>--monster-content</c> 时行为逐字不变。</para>
+    /// </summary>
+    private static List<SpawnPointConfig> BuildSpawnPointsFromContent(ParsedArgs options)
+    {
+        var explicitShard = options.ShardIds.Length > 0 ? options.ShardIds[0] : -1L;
+        var receipt = Horizon.Game.Core.Sim.Server.MonsterSpawnPointBuilder.Build(explicitShard);
+        for (var i = 0; i < receipt.Problems.Count; i++)
+            Console.WriteLine("[DsHost][怪物内容] " + receipt.Problems[i]);
+        // 跳过数不许沉默：策划把一条线只配在二区，而本 DS 是一区时，世界里少掉的怪
+        // 必须能在这行字里找到解释（否则表现和"内容没装进去"一模一样）。
+        if (receipt.SkippedByShard > 0)
+            Console.WriteLine(string.Format(
+                "[DsHost][怪物内容] 分片不符跳过 {0} 个刷怪点（本会话分片={1}）",
+                receipt.SkippedByShard, explicitShard));
+        return receipt.Points;
+    }
+
     private static List<SpawnPointConfig> BuildSpawnPoints(ParsedArgs options)
     {
         var list = new List<SpawnPointConfig>();
@@ -328,6 +486,7 @@ public static class Program
 
         // 开发用默认刷怪点：沿 X 轴每 60m 一个，每个 3 只怪。
         // 生产应从 GameConfigGrain / 配置表下发——此处仅提供"起得来、看得见怪"的最小配置。
+        // 模板轮换 5 种（= 五行域各一兽），否则开发世界里永远只刷得出 3 个域的书与好感。
         for (var i = 0; i < options.SpawnPointCount; i++)
         {
             var cfg = SpawnPointConfig.Default;
@@ -337,7 +496,7 @@ public static class Program
             cfg.Y = 0f;
             cfg.Z = 0f;
             cfg.MaxAlive = 3;
-            cfg.MonsterTemplateId = 1 + (i % 3);
+            cfg.MonsterTemplateId = 1 + (i % 5);
             list.Add(cfg);
         }
 
@@ -356,6 +515,18 @@ public static class Program
         public int GatewayPort;
         public int TicksPerSecond = 60;
         public int SpawnPointCount;
+
+        /// <summary>怪物内容快照路径；空 = 不装配（沿用代码目录）。</summary>
+        public string MonsterContentPath = string.Empty;
+
+        /// <summary>导航网格文本路径；空 = 无图（全部走直线）。</summary>
+        public string MonsterNavPath = string.Empty;
+
+        /// <summary>宠物内容快照路径；空 = 不装配（沿用硬编码回落目录）。</summary>
+        public string PetContentPath = string.Empty;
+
+        /// <summary>NPC 内容快照路径；空 = 不装配（沿用硬编码三行目录）。</summary>
+        public string NpcContentPath = string.Empty;
 
         /// <summary>Orleans 集群连接串（Redis 聚类）；空 = 不连 Orleans，用内置掉落表。</summary>
         public string? OrleansConnectionString;
@@ -480,6 +651,30 @@ public static class Program
                 {
                     if (int.TryParse(Value(), out var sp) && sp >= 0 && sp <= 1000) result.SpawnPointCount = sp;
                 }
+                else if (a.StartsWith("--monster-content", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 怪物内容快照（编辑器发布 → Horizon.MonsterCli export-content 导出）。
+                    // 装了就用库里的怪与点位，没装就保持"代码目录 + 开发轮换点"的原样。
+                    result.MonsterContentPath = Value();
+                }
+                else if (a.StartsWith("--pet-content", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 宠物内容快照（宠物编辑器发布 → Horizon.PetCli export-content 导出）。
+                    // 装了就用库里的物种，没装就保持硬编码回落目录——两条路都给出同一类型的模板。
+                    result.PetContentPath = Value();
+                }
+                else if (a.StartsWith("--npc-content", StringComparison.OrdinalIgnoreCase))
+                {
+                    // NPC 内容快照（NPC 编辑器发布 → Horizon.NpcCli export-content 导出）。
+                    // 装了就用库里的 NPC 与刷点、且 NpcTemplateCatalog 的授权白名单随之扩大；
+                    // 没装则行为与之前逐字相同（目录退回硬编码三行）。
+                    result.NpcContentPath = Value();
+                }
+                else if (a.StartsWith("--monster-nav", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 导航网格文本（决策 D5 一期：高度图网格）。缺文件只是走直线，不影响启动。
+                    result.MonsterNavPath = Value();
+                }
                 else if (a.StartsWith("--heartbeat-seconds", StringComparison.OrdinalIgnoreCase))
                 {
                     if (int.TryParse(Value(), out var hb) && hb >= 1 && hb <= 300) result.HeartbeatSeconds = hb;
@@ -568,6 +763,10 @@ public static class Program
   --tick-rate=<hz>        模拟频率（默认 60）
   --heartbeat-seconds=<n> 心跳间隔秒数（默认 30；网关 90s 判过期）
   --spawn-points=<n>      生成 n 个开发用刷怪点（默认 0）
+  --monster-content=<p>   怪物内容快照 JSON（怪物编辑器发布后由 MonsterCli export-content 导出）
+  --pet-content=<p>       宠物内容快照 JSON（宠物编辑器发布后由 PetCli export-content 导出）
+  --npc-content=<p>       NPC 内容快照 JSON（NPC 编辑器发布后由 NpcCli export-content 导出）
+  --monster-nav=<p>       导航网格文本（MONSTERNAV 头 + 每格代价；缺省全部走直线）
   --enable-aoi[=true|false] 启用 AOI 分桶快照裁剪（裸开关即 true；默认 false = 全量快照）
   --aoi-chunk-size=<m>    AOI chunk 边长（米，默认 16）
   --aoi-radius=<n>        AOI 视野半径（chunk 数，默认 28 ≈448m）

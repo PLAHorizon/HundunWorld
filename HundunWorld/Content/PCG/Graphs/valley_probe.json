@@ -1,0 +1,979 @@
+﻿{
+  "Format": 2,
+  "Name": "valley_probe",
+  "EditorData": null,
+  "Nodes": [
+    {
+      "TypeId": "Biome",
+      "X": 0,
+      "Y": 0,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "50",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "12",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "200",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1000",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "4",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "25",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "8",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "VolumeSampler",
+      "X": 0,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 forest",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.6",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1.5",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 forest\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SlopeFilter",
+      "X": 600,
+      "Y": 180,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "15",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "90",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 900,
+      "Y": 180,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "00000000000000000000000000000000",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.6",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1.2",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "VolumeSampler",
+      "X": 0,
+      "Y": 360,
+      "Comment": "\u6563\u5E03\u5C42 rocks",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "40",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.4",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 360,
+      "Comment": "\u6563\u5E03\u5C42 rocks\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 600,
+      "Y": 360,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "00000000000000000000000000000000",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.4",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "VolumeSampler",
+      "X": 0,
+      "Y": 540,
+      "Comment": "\u6563\u5E03\u5C42 grass",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "2",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "8",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 540,
+      "Comment": "\u6563\u5E03\u5C42 grass\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 600,
+      "Y": 540,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Hydrology",
+      "X": 0,
+      "Y": 720,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "40",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "250",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "12",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 300,
+      "Y": 720,
+      "Comment": "\u6C34\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "00000000000000000000000000000000",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SplitGrammar",
+      "X": 0,
+      "Y": 900,
+      "Comment": "\u805A\u5C45\u5730 1\uFF1A12 \u4E2A\u5730\u5757\uFF08\u4E0A\u6E38\u70B9\u6570\u51B3\u5B9A\u5B9E\u9645\u4E2A\u6570\uFF09",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "X:0.5,0.5; Z:0.6,0.4",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "120",
+            "40",
+            "120"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 900,
+      "Comment": "\u805A\u5C45\u5730\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 600,
+      "Y": 900,
+      "Comment": "\u623F\u5C4B 1",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "00000000000000000000000000000000",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Cave",
+      "X": 0,
+      "Y": 1080,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.25",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "30",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "400",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "24",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "60",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "10",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "12",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnGeometry",
+      "X": 300,
+      "Y": 1080,
+      "Comment": "\u6D1E\u58C1",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "PointList",
+      "X": 0,
+      "Y": 1260,
+      "Comment": "\u8DEF 1 \u7684\u9014\u7ECF\u70B9\uFF084 \u4E2A\uFF09",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "4",
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "-800",
+            "0",
+            "-600"
+          ]
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "-200",
+            "0",
+            "100"
+          ]
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "300",
+            "0",
+            "-200"
+          ]
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "900",
+            "0",
+            "700"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Path",
+      "X": 300,
+      "Y": 1260,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "40",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "20",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1200",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "120",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 600,
+      "Y": 1260,
+      "Comment": "\u8DEF\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "00000000000000000000000000000000",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    }
+  ],
+  "Edges": [
+    {
+      "FromNode": 1,
+      "FromPin": 0,
+      "ToNode": 2,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 2,
+      "FromPin": 0,
+      "ToNode": 3,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 3,
+      "FromPin": 0,
+      "ToNode": 4,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 5,
+      "FromPin": 0,
+      "ToNode": 6,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 6,
+      "FromPin": 0,
+      "ToNode": 7,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 8,
+      "FromPin": 0,
+      "ToNode": 9,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 9,
+      "FromPin": 0,
+      "ToNode": 10,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 11,
+      "FromPin": 0,
+      "ToNode": 12,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 13,
+      "FromPin": 0,
+      "ToNode": 14,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 14,
+      "FromPin": 0,
+      "ToNode": 15,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 16,
+      "FromPin": 0,
+      "ToNode": 17,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 18,
+      "FromPin": 0,
+      "ToNode": 19,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 19,
+      "FromPin": 0,
+      "ToNode": 20,
+      "ToPin": 0
+    }
+  ],
+  "Exposed": [],
+  "Settings": {
+    "DefaultSeed": 20261008,
+    "EnableDebugDraw": true,
+    "MaxPointBudget": 2000000,
+    "MaxExpandedNodeCount": 4096,
+    "Terrain": null
+  }
+}

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
@@ -6,7 +6,7 @@ using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Guide
 {
-    public class GuideHudPage : ContainerControl, IInkPage
+    public class GuideHudPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private InkBackButton _backButton;
         private GuideStepPanel _stepPanel;
@@ -176,7 +176,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Guide
         private void OnBackClicked()
         {
             Back?.Invoke();
-            NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
         }
 
         private void OnVisionClicked(Button button)

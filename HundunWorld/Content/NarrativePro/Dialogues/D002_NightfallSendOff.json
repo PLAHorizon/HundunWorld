@@ -1,0 +1,134 @@
+{
+  "dialogueId": "D002_NightfallSendOff",
+  "//": "夜路送粮的出发对话：config.showCinematicBars=true 走对话级电影呈现兜底",
+  "//2": "（Dialogue.ApplyCinematicPresentationFallback → NarrativeCinematicBars），",
+  "//3": "玩家选项 p_go 另带一段 cinematicOption（目的地序列 + 自带播放设置），",
+  "//4": "两条通路都由 Tools/NarrativeProHarness Check 15 用真实加载器验证。",
+  "speakers": [
+    {
+      "speakerId": "npc_smith",
+      "displayName": "铁匠·鲁石",
+      "tags": ["Village.Smith"],
+      "isPlayer": false
+    },
+    {
+      "speakerId": "Player",
+      "displayName": "旅人",
+      "tags": ["Player"],
+      "isPlayer": true
+    }
+  ],
+  "config": {
+    "endDialogueDist": 500,
+    "showCinematicBars": true,
+    "unskippable": false,
+    "freeMovement": false,
+    "canBeExited": true,
+    "priority": 1
+  },
+  "npcReplies": [
+    {
+      "id": "n_wait",
+      "speakerId": "npc_smith",
+      "isRoot": true,
+      "isSkippable": false,
+      "nodePosX": 0,
+      "nodePosY": 0,
+      "selectingReplyShotName": "Shot.ForgeWide",
+      "line": {
+        "text": "日头还没落，村里不许挑粮出界。",
+        "duration": 4,
+        "durationSecondsOverride": 3.8,
+        "soundPath": "",
+        "bodyAnimationName": "Gesture.Point",
+        "shotName": "Shot.ForgeWide"
+      },
+      "playerReplies": ["p_go", "p_stay"]
+    },
+    {
+      "id": "n_sendoff",
+      "speakerId": "npc_smith",
+      "isSkippable": true,
+      "nodePosX": 600,
+      "nodePosY": -180,
+      "line": {
+        "text": "去吧，日出前赶回青河渡口就行。",
+        "duration": 4,
+        "durationSecondsOverride": 3.1
+      },
+      "events": [
+        {
+          "type": "StartQuest",
+          "questClassId": "Q002_NightfallRelief",
+          "startFromId": ""
+        }
+      ]
+    },
+    {
+      "id": "n_stay",
+      "speakerId": "npc_smith",
+      "isSkippable": true,
+      "nodePosX": 600,
+      "nodePosY": 180,
+      "line": {
+        "text": "那就再等等，钟没响你出不了村。",
+        "duration": 0
+      },
+      "alternativeLines": [
+        {
+          "text": "灶上还有热水，先灌一壶。",
+          "duration": 3
+        }
+      ]
+    }
+  ],
+  "playerReplies": [
+    {
+      "id": "p_go",
+      "optionText": "钟一响我就走",
+      "hintText": "获得任务：夜路送粮",
+      "autoSelect": false,
+      "autoSelectIfOnlyReply": false,
+      "nodePosX": 300,
+      "nodePosY": -180,
+      "line": {
+        "text": "钟声一落我就出发。",
+        "duration": 3
+      },
+      "npcReplies": ["n_sendoff"],
+      "cinematicOption": {
+        "optionText": "（演出）钟声落下，火把出村",
+        "hintText": "过场：夜路出发 9 秒，可跳过",
+        "destinationSequencePath": "Content/Cinematics/SQ002_Nightfall_Departure.flax",
+        "destinationMarker": "",
+        "blendAnimsBetweenSequences": true,
+        "keepExistingSequenceSettings": false,
+        "destinationPlaybackSettings": {
+          "walkBindingsToStartTransform": true,
+          "updateControlRotationToPawn": true,
+          "showCinematicBars": true,
+          "canSkip": true,
+          "stopDialogue": true,
+          "hideEvenEssentialHUDElements": false,
+          "autoPlay": true,
+          "durationSeconds": 9.0,
+          "playRate": 1.25,
+          "blendOutTime": 0.8
+        }
+      }
+    },
+    {
+      "id": "p_stay",
+      "optionText": "再等等",
+      "autoSelect": false,
+      "autoSelectIfOnlyReply": false,
+      "nodePosX": 300,
+      "nodePosY": 180,
+      "line": {
+        "text": "我在炉边烤会儿火。",
+        "duration": 2
+      },
+      "npcReplies": ["n_stay"]
+    }
+  ]
+}

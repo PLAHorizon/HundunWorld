@@ -177,26 +177,53 @@ public sealed class OrleansGameplayEventSink : IDsGameplayEventSink, IAsyncDispo
 {
     private readonly IInventoryWriter? _inventory;
     private readonly IQuestProgressWriter? _quests;
+    private readonly IFavorabilityWriter? _favorability;
+    private readonly IMonsterDomainResolver _domains;
+    private readonly IExperienceWriter? _experience;
+    private readonly IPlayerProgressNotifier? _progress;
+    private readonly ICurrencyWriter? _currency;
+    private readonly IQuestStateReader? _questStates;
     private readonly int _capacity;
     private readonly System.Threading.Channels.Channel<DsGameplayEvent> _channel;
     private readonly System.Threading.Tasks.Task _pump;
     private readonly CancellationTokenSource _cts = new();
     private readonly Action<string>? _log;
 
+    /// <summary>单次击杀累积的好感点数。</summary>
+    /// <remarks>
+    /// 与"来源上限 20"（<c>FavorabilityGrain.DefaultPerTargetCap</c>）配套：杀满 20 只同类才吃满一来源，
+    /// 正好够 §14 玄·初的 favorNeed 20——所以"在同一片地域多待一会儿"是可玩路径，而不是无谓刷数。
+    /// </remarks>
+    public const int FavorPerKill = 1;
+
     /// <summary>创建接收端。</summary>
     /// <param name="inventory">背包写入端；null = 掉落事件只计数不落库。</param>
     /// <param name="quests">任务进度写入端；null = 击杀事件只计数不落库。</param>
     /// <param name="log">日志回调。</param>
     /// <param name="capacity">队列容量；默认 8192（约 1 秒内数十次群怪死亡的峰值余量）。</param>
+    /// <param name="favorability">分域好感写入端；null = 击杀不涨好感。</param>
+    /// <param name="domains">怪物模板 → 五行域 解析；null 用 <see cref="MonsterTemplateDomainResolver"/>（读怪物模板的 WuxingDomain 列）。</param>
     public OrleansGameplayEventSink(
         IInventoryWriter? inventory,
         IQuestProgressWriter? quests,
         Action<string>? log = null,
-        int capacity = 8192)
+        int capacity = 8192,
+        IFavorabilityWriter? favorability = null,
+        IMonsterDomainResolver? domains = null,
+        IExperienceWriter? experience = null,
+        IQuestStateReader? questStates = null,
+        ICurrencyWriter? currency = null,
+        IPlayerProgressNotifier? progress = null)
     {
         if (capacity <= 0) throw new ArgumentOutOfRangeException(nameof(capacity));
         _inventory = inventory;
         _quests = quests;
+        _favorability = favorability;
+        _domains = domains ?? new MonsterTemplateDomainResolver();
+        _experience = experience;
+        _questStates = questStates;
+        _currency = currency;
+        _progress = progress;
         _log = log;
         _capacity = capacity;
 
@@ -217,6 +244,37 @@ public sealed class OrleansGameplayEventSink : IDsGameplayEventSink, IAsyncDispo
     /// <summary>累计因背压丢弃的事件数。</summary>
     public long DroppedCount { get; private set; }
 
+    /// <summary>累计发放的击杀经验总量（<c>KillXp</c> 事件的产出；0 且 ExpSkippedNoWriter&gt;0 = 没接线）。</summary>
+    public long ExpGranted { get; private set; }
+
+    /// <summary>因"没有经验写入端"而被跳过的事件数（装配缺失的显形计数）。</summary>
+    public long ExpSkippedNoWriter { get; private set; }
+
+    /// <summary>累计入账的击杀金币（<c>KillMoney</c> 的产出；0 而 <see cref="GoldSkippedNoWriter"/> 不为 0 = 没接线）。</summary>
+    public long GoldCredited { get; private set; }
+
+    /// <summary>
+    /// 因没有 <see cref="ICurrencyWriter"/> 而被跳过的金币<b>总额</b>。
+    /// <para>单位刻意与 <see cref="ExpSkippedNoWriter"/>（事件数）不同：排查"我的钱去哪了"时
+    /// 要回答的是"少了多少金币"，不是"少了几条事件"。</para>
+    /// </summary>
+    public long GoldSkippedNoWriter { get; private set; }
+
+    /// <summary>条件掉落：判过、确实发出去的数量（件数，按 ItemCount 累加）。</summary>
+    public long ConditionalLootGranted { get; private set; }
+
+    /// <summary>条件掉落：玩家没持有该任务而拒绝的件数（正常路径，不是故障）。</summary>
+    public long ConditionalLootDeniedNotHeld { get; private set; }
+
+    /// <summary>条件掉落：任务系统问不出结果的件数（grain 不可用/超时——与"没持有"必须分开）。</summary>
+    public long ConditionalLootUnknown { get; private set; }
+
+    /// <summary>条件掉落：因没接 <see cref="IQuestStateReader"/> 而整档跳过的件数（装配缺失的显形）。</summary>
+    public long ConditionalLootSkippedNoReader { get; private set; }
+
+    /// <summary>条件掉落：判过"该给"但没有背包写入端的件数（另一类装配缺失）。</summary>
+    public long ConditionalLootSkippedNoWriter { get; private set; }
+
     /// <summary>累计成功处理（落库）的事件数。</summary>
     public long ProcessedCount { get; private set; }
 
@@ -228,6 +286,12 @@ public sealed class OrleansGameplayEventSink : IDsGameplayEventSink, IAsyncDispo
 
     /// <summary>累计成功入包的物品件数。</summary>
     public long ItemsGranted { get; private set; }
+
+    /// <summary>累计好感入账次数（一次 = 一次击杀，点数见 <see cref="FavorPerKill"/>）。</summary>
+    public long FavorabilityGrants { get; private set; }
+
+    /// <summary>累计好感写入失败次数。</summary>
+    public long FavorabilityFailed { get; private set; }
 
     /// <summary>当前待处理队列长度。</summary>
     public int PendingCount => _channel.Reader.Count;
@@ -302,6 +366,24 @@ public sealed class OrleansGameplayEventSink : IDsGameplayEventSink, IAsyncDispo
                             evt.ActorCharacterId, evt.MonsterTemplateId, 1, _cts.Token).ConfigureAwait(false);
                         QuestObjectiveAdvances += advanced;
                     }
+
+                    // 击杀 → 该怪所属五行域的好感（§14"中级靠区域生物好感"的动态来源）。
+                    // 未定域（0）直接跳过：这不是"漏了"，而是这只怪本来就不该给任何域记账——
+                    // 猜一个域的表现是"金域好感从火域怪身上涨"，任何报错里都看不出来。
+                    var domain = _domains.ResolveDomain(evt.MonsterTemplateId);
+                    if (_favorability is not null && domain >= 1 && domain <= 5 && evt.ActorCharacterId != 0UL)
+                    {
+                        // 好感用 GrainKeys.ForEntity：研读门槛与任务奖励都按这把键读写好感，
+                        // 用背包那把（大端）键会把击杀攒的好感记到没人看的 grain 里 ——
+                        // "刷同级怪涨好感开中级门"于是永远不开，且两端都没有报错。
+                        var favorKey = GrainKeys.ForEntity(evt.ActorCharacterId);
+                        var ok = await _favorability.AddAsync(
+                            favorKey, domain, FavorPerKill, $"monster:{evt.MonsterTemplateId}", _cts.Token)
+                            .ConfigureAwait(false);
+                        if (ok) FavorabilityGrants++;
+                        else FavorabilityFailed++;
+                    }
+
                     ProcessedCount++;
                     return;
                 }
@@ -326,6 +408,150 @@ public sealed class OrleansGameplayEventSink : IDsGameplayEventSink, IAsyncDispo
                     else
                     {
                         ProcessedCount++;
+                    }
+                    return;
+                }
+
+                // 条件掉落：DS 已经掷过骰（确定性归模拟层），这里只判"这个玩家配不配拿"。
+                case DsGameplayEventKind.LootConditional:
+                {
+                    if (evt.ItemId <= 0 || evt.ItemCount <= 0)
+                    {
+                        ProcessedCount++;
+                        return;
+                    }
+
+                    if (_questStates is null)
+                    {
+                        // 没接读取端就不给——绝不"判不了就当满足"，否则条件掉落会变成普通掉落。
+                        ConditionalLootSkippedNoReader++;
+                        ProcessedCount++;
+                        _log?.Invoke($"OrleansGameplayEventSink：条件掉落未接线（无 IQuestStateReader），" +
+                                     $"已跳过物品 {evt.ItemId}×{evt.ItemCount}（任务 {evt.QuestId}）。");
+                        return;
+                    }
+
+                    var hold = await _questStates.QueryHoldAsync(evt.ActorCharacterId, evt.QuestId, _cts.Token)
+                        .ConfigureAwait(false);
+                    switch (hold)
+                    {
+                        case QuestHoldState.Held:
+                        {
+                            if (_inventory is null)
+                            {
+                                // 判过了但没有写入端：与"没有读取端"同类的装配缺失，单独可见。
+                                ConditionalLootSkippedNoWriter++;
+                                ProcessedCount++;
+                                return;
+                            }
+                            var playerId = GrainKeyMapper.ToInventoryKey(evt.ActorCharacterId);
+                            var ok = await _inventory.AddItemAsync(
+                                playerId, evt.ItemId, evt.ItemCount, quality: 0, _cts.Token).ConfigureAwait(false);
+                            if (ok)
+                            {
+                                ConditionalLootGranted += evt.ItemCount;
+                                ItemsGranted += evt.ItemCount;
+                                ProcessedCount++;
+                            }
+                            else
+                            {
+                                FailedCount++;
+                            }
+                            return;
+                        }
+                        case QuestHoldState.NotHeld:
+                            // 正常路径：玩家没接这个任务。计数而不是静默丢弃。
+                            ConditionalLootDeniedNotHeld++;
+                            ProcessedCount++;
+                            return;
+                        default:
+                            // 问不出来（grain 挂了/超时）：与"没持有"分开计，否则会伪装成玩家不满足条件。
+                            ConditionalLootUnknown++;
+                            ProcessedCount++;
+                            return;
+                    }
+                }
+
+                case DsGameplayEventKind.KillXp:
+                {
+                    // 击杀经验（值由 MonsterXpCore 在权威侧算好，含灰名断供与随玩家等级的反比例衰减）。
+                    // **不推进任务、不涨好感**：那两个只认 Kill 事件，否则围观的人都会白得击杀进度。
+                    if (evt.ItemCount <= 0)
+                    {
+                        ProcessedCount++;
+                        return;
+                    }
+                    if (_experience is null)
+                    {
+                        // 没接线时必须看得见：否则"经验系统上线了"这个说法只是事件在发、没人在听。
+                        ExpSkippedNoWriter++;
+                        _log?.Invoke($"OrleansGameplayEventSink：KillXp 未接线（无 IExperienceWriter），已跳过 {evt.ItemCount} 点经验。");
+                        return;
+                    }
+                    ExpGrant? grant = null;
+                    bool granted;
+                    if (_experience is IExperienceWriterWithResult withResult)
+                    {
+                        grant = await withResult.AddExpWithResultAsync(
+                            evt.ActorCharacterId, evt.ItemCount,
+                            $"monster:{evt.MonsterTemplateId}", _cts.Token).ConfigureAwait(false);
+                        granted = grant.Value.Success;
+                    }
+                    else
+                    {
+                        granted = await _experience.AddExpAsync(
+                            evt.ActorCharacterId, evt.ItemCount,
+                            $"monster:{evt.MonsterTemplateId}", _cts.Token).ConfigureAwait(false);
+                    }
+
+                    if (granted)
+                    {
+                        ExpGranted += evt.ItemCount;
+                        // 把权威累计值推回 DS：客户端经验条读的是 DS 玩家快照里的 Exp，
+                        // 不推这一手，经验涨在 Grain 里、玩家屏幕上纹丝不动。
+                        if (grant is { Success: true } g && _progress is not null)
+                        {
+                            try { _progress.Notify((long)evt.ActorCharacterId, g.Level, g.Experience); }
+                            catch (Exception ex) { _log?.Invoke($"OrleansGameplayEventSink：玩家进度推送异常：{ex.Message}"); }
+                        }
+                        ProcessedCount++;
+                    }
+                    else
+                    {
+                        FailedCount++;
+                    }
+                    return;
+                }
+
+                case DsGameplayEventKind.KillMoney:
+                {
+                    // 击杀掉落金币（金额由 MonsterLootCore 在权威侧掷好，与物品同一套盐值与顺序）。
+                    // 单独一种事件而不是挂在 Loot 上：Loot 分支第一句就要求 ItemId/ItemCount 为正，
+                    // 金额挂在上面会被那条判据安静吞掉。
+                    if (evt.Money <= 0)
+                    {
+                        ProcessedCount++;
+                        return;
+                    }
+                    if (_currency is null)
+                    {
+                        // 同 KillXp 的纪律：没接线必须看得见，否则"金币已到账"只是事件在发、没人在听。
+                        GoldSkippedNoWriter += evt.Money;
+                        _log?.Invoke($"OrleansGameplayEventSink：KillMoney 未接线（无 ICurrencyWriter），已跳过 {evt.Money} 金币。");
+                        return;
+                    }
+                    var credited = await _currency.AddGoldAsync(
+                        evt.ActorCharacterId, evt.Money,
+                        $"monster_loot:{evt.MonsterTemplateId}", _cts.Token).ConfigureAwait(false);
+                    if (credited)
+                    {
+                        GoldCredited += evt.Money;
+                        ProcessedCount++;
+                    }
+                    else
+                    {
+                        // 钱包拒绝（越界一分不入）或异常都算失败：**不重试、不静默**，交给计数与告警。
+                        FailedCount++;
                     }
                     return;
                 }

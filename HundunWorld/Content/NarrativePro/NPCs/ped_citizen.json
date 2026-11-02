@@ -1,0 +1,22 @@
+{
+  "Kind": "Ped",
+  "NPCID": "ped_citizen",
+  "NPCName": "赶集村民",
+  "MinLevel": 1,
+  "MaxLevel": 1,
+  "bAllowMultipleInstances": true,
+  "NPCClassPath": "",
+  "ActivityConfigurationPath": "Content/NarrativePro/Activities/DefaultNPCActivityConfiguration.json",
+  "ActivitySchedulePaths": [
+    "Content/NarrativePro/Activities/WorkShiftDaySchedule.json"
+  ],
+  "DefaultOwnedTags": [],
+  "DefaultFactions": [
+    "Narrative.Factions.Heroes"
+  ],
+  "AttackPriority": 0.5,
+  "PedTypeTag": "citizen",
+  "BakedPedMeshPath": "",
+  "PedMeshPath": "",
+  "PedMeshAnimBPPath": ""
+}

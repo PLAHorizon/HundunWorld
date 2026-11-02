@@ -61,8 +61,10 @@ namespace HundunAgent.Tools
             ToolRegistry.Register(new AgentToolDescriptor
             {
                 Name = "game_screenshot",
-                Description = "捕获游戏视口截图（PIE 运行态）并保存为 PNG，返回文件路径。建议在 sim_play 之后调用；失败时回退到整屏截图。",
-                InputSchemaJson = "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"可选保存路径，缺省自动保存到 Logs/HundunAgent/screenshots\"}}}",
+                Description = "捕获游戏画面（PIE 运行态）并保存为 PNG。建议在 sim_play 之后调用；失败时回退到整屏截图。"
+                              + "实测两种引擎侧通道都**不含 GUI**：主渲染任务 backbuffer 只有 3D，编辑器 GameWin 视口的 TakeScreenshot 同样只有 3D"
+                              + "（登录页截出来只有背景渐变）。要看 UI 得截窗口，MCP 侧暂无该通路。",
+                InputSchemaJson = "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"可选保存路径，缺省自动保存到 Logs/HundunAgent/screenshots\"},\"includeUI\":{\"type\":\"boolean\",\"description\":\"是否先走主渲染任务 backbuffer（默认 true；实测仍不含 GUI，保留该参数只为以后引擎支持时切换）\"}}}",
                 Execute = GameScreenshotAsync
             });
         }
@@ -215,11 +217,27 @@ namespace HundunAgent.Tools
 
                 var editor = FlaxEditor.Editor.Instance;
                 var gameViewport = editor?.Windows?.GameWin?.Viewport;
+                bool includeUI = EditorUtils.GetBool(args, "includeUI", true);
+
+                var shotTaken = false;
+                // 引擎主渲染任务的 backbuffer 是"玩家看到的那一帧"（3D + GUI 叠加）。
+                // 编辑器 GameWin 视口的 TakeScreenshot 只截 3D 视口，UI 不在里面。
+                if (includeUI && Engine.IsPlayMode)
+                {
+                    try
+                    {
+                        Screenshot.Capture(path);
+                        shotTaken = true;
+                    }
+                    catch
+                    {
+                        shotTaken = false;
+                    }
+                }
 
                 // GameWin.Viewport 静态类型为 EditorViewport，TakeScreenshot(string) 是否为基类方法未确认，
                 // 故用反射调用（与 viewport_screenshot 对 EditWin 的直接调用互补），失败时回退整屏截图
-                var shotTaken = false;
-                if (gameViewport != null)
+                if (!shotTaken && gameViewport != null)
                 {
                     try
                     {

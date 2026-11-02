@@ -1,5 +1,5 @@
-// PCG Plugin - Graph executor (pull-based)
-// Part of the FlaxEngine PCG plugin. See docs/PCG_PLUGIN_DESIGN.md §4.1 and §4.4.
+// PCG 插件 - 图执行器（拉取式）
+// FlaxEngine PCG 插件的一部分。见 docs/PCG_PLUGIN_DESIGN.md §4.1 与 §4.4。
 
 using System;
 using System.Collections.Generic;
@@ -10,93 +10,109 @@ using PCG.Graph;
 
 namespace PCG.Execution
 {
-    /// <summary>Per-node statistics gathered during a run.</summary>
+    /// <summary>一次运行期间收集的按节点统计。</summary>
     public struct PCGNodeRunStats
     {
-        /// <summary>Index of the node within the graph.</summary>
+        /// <summary>节点在图里的下标。</summary>
         public int NodeIndex;
 
-        /// <summary>Node type id.</summary>
+        /// <summary>节点类型 id。</summary>
         public string TypeId;
 
-        /// <summary>Point count produced by this node.</summary>
+        /// <summary>这个节点产出的点数。</summary>
         public int PointCount;
 
-        /// <summary>Wall-clock milliseconds spent evaluating this node.</summary>
+        /// <summary>求值这个节点花掉的墙上毫秒数。</summary>
         public double Milliseconds;
     }
 
-    /// <summary>Result of one graph execution.</summary>
+    /// <summary>一次图执行的结果。</summary>
     public sealed class PCGExecutionResult
     {
-        /// <summary>Output data per sink node, in <see cref="PCGCompiledGraph.SinkNodes"/> order.</summary>
+        /// <summary>每个汇节点的产出数据，按 <see cref="PCGCompiledGraph.SinkNodes"/> 的顺序。</summary>
         public PCGData[] Outputs;
 
-        /// <summary>Sink node indices matching <see cref="Outputs"/>.</summary>
+        /// <summary>与 <see cref="Outputs"/> 一一对应的汇节点下标。</summary>
         public int[] OutputNodeIndices;
 
-        /// <summary>Total points produced across all nodes, summed over evaluations.</summary>
+        /// <summary>所有节点跨各次求值累加出的总点数。</summary>
         public int TotalPointsProduced;
 
-        /// <summary>Wall-clock duration of the run.</summary>
+        /// <summary>这次运行的墙上时长。</summary>
         public double Milliseconds;
 
-        /// <summary>True when the run was cancelled.</summary>
+        /// <summary>运行被取消时为真。</summary>
         public bool Cancelled;
 
-        /// <summary>Per-node statistics in evaluation order.</summary>
+        /// <summary>按求值顺序排列的按节点统计。</summary>
         public PCGNodeRunStats[] Stats;
 
-        /// <summary>Non-fatal messages raised during the run.</summary>
+        /// <summary>运行期间产生的非致命消息。</summary>
         public string[] Warnings;
 
-        /// <summary>Points produced by the first sink, for convenience.</summary>
+        /// <summary>顺手给出的：第一个汇产出的点。</summary>
         public PCGData PrimaryOutput => Outputs != null && Outputs.Length > 0 ? Outputs[0] : PCGData.Empty;
     }
 
     /// <summary>
-    /// Evaluates a compiled graph by pulling data from its sinks.
+    /// 通过从汇点拉数据来求值一张已编译的图。
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Values are cached per node for the duration of a run, so a node feeding two consumers is evaluated
-    /// once. Cache entries are dropped when the run ends; nothing is retained between runs, which keeps the
-    /// executor free of the cross-run staleness that incremental execution would otherwise have to reason
-    /// about.
+    /// 每个节点的值在一次运行内缓存，所以一个喂给两个消费者的节点只
+    /// 求值一次。缓存条目在运行结束时丢弃；运行之间什么都不保留，这让
+    /// 执行器不必去推理增量执行否则必须面对的跨运行陈旧
+    /// 问题。
     /// </para>
     /// <para>
-    /// <b>Threading.</b> The executor itself must run on whichever thread owns the scene, because nodes may
-    /// create actors. Individual nodes marked <see cref="PCGNodeBase.IsThreadSafe"/> may parallelise their
-    /// own inner loops; they must not touch scene state while doing so. In particular, actor creation,
-    /// foliage writes and debug drawing are main-thread only, so a background run has to hand its
-    /// <see cref="PCGData"/> back to the main thread rather than applying it directly.
+    /// <b>线程。</b>执行器自己必须跑在拥有场景的那个线程上，因为节点可能
+    /// 创建 actor。被标记为 <see cref="PCGNodeBase.IsThreadSafe"/> 的单个节点可以把自己的
+    /// 内层循环并行化；但那样做时不得触碰场景状态。具体说，actor 创建、
+    /// 植被写入与调试绘制都只在主线程，所以一次后台运行必须把自己的
+    /// <see cref="PCGData"/> 交回主线程，而不是直接应用它。
     /// </para>
     /// </remarks>
     public sealed class PCGGraphExecutor
     {
         private readonly PCGCompiledGraph _graph;
+        private readonly PCGNodeBase[] _nodes;
         private readonly PCGData[] _cache;
         private readonly bool[] _evaluated;
         private readonly List<int> _evaluationOrder = new List<int>();
         private readonly List<string> _warnings = new List<string>();
+        private readonly string[] _planWarnings;
         private readonly Dictionary<int, double> _timings = new Dictionary<int, double>();
 
         private int _pointsProduced;
         private int _pointBudget;
 
-        /// <summary>Creates an executor for a compiled graph.</summary>
-        public PCGGraphExecutor(PCGCompiledGraph graph)
+        /// <summary>
+        /// 为一张已编译的图创建执行器。
+        /// </summary>
+        /// <param name="graph">已编译的图，提供拓扑与已编排的节点实例。</param>
+        /// <param name="plan">
+        /// 可选的、每次运行的节点实例，来自 <see cref="PCGExecutionPlan.Build"/>。传它进来是为了
+        /// 带着已暴露参数的覆盖值跑这张图；已编译的图本身永不被修改，于是一次编译
+        /// 可以服务任意多个取值不同的体积。
+        /// </param>
+        public PCGGraphExecutor(PCGCompiledGraph graph, PCGExecutionPlan plan = null)
         {
             _graph = graph ?? throw new ArgumentNullException(nameof(graph));
+            _nodes = plan?.Nodes ?? graph.Nodes;
+
+            // 参数问题属于这次运行，而且必须活过 Execute 的每次运行警告清空：
+            // 清掉那个列表会静静吞掉一个什么都没匹配上的覆盖值。
+            _planWarnings = plan?.Warnings ?? Array.Empty<string>();
+
             _cache = new PCGData[_graph.NodeCount];
             _evaluated = new bool[_graph.NodeCount];
         }
 
         /// <summary>
-        /// Runs the graph.
+        /// 运行这张图。
         /// </summary>
-        /// <param name="context">Execution context. Its <c>Seed</c> and <c>GenerationBounds</c> drive generation.</param>
-        /// <returns>The run result. Check <see cref="PCGExecutionResult.Cancelled"/> before using outputs.</returns>
+        /// <param name="context">执行上下文。它的 <c>Seed</c> 与 <c>GenerationBounds</c> 驱动生成。</param>
+        /// <returns>这次运行的结果。使用产出之前先查 <see cref="PCGExecutionResult.Cancelled"/>。</returns>
         public PCGExecutionResult Execute(PCGExecutionContext context)
         {
             if (context == null)
@@ -113,7 +129,7 @@ namespace PCG.Execution
             Array.Clear(_cache, 0, _cache.Length);
             Array.Clear(_evaluated, 0, _evaluated.Length);
 
-            // Reset the node id used for seeding so every run reproduces the same values.
+            // 重置用于播种的节点 id，好让每一次运行都复现出同样的值。
             int previousNodeId = context.CurrentNodeId;
 
             var sinks = _graph.SinkNodes ?? Array.Empty<int>();
@@ -133,7 +149,7 @@ namespace PCG.Execution
                 context.CurrentNodeId = previousNodeId;
                 stopwatch.Stop();
                 result.Milliseconds = stopwatch.Elapsed.TotalMilliseconds;
-                result.Warnings = _warnings.ToArray();
+                result.Warnings = BuildWarnings();
                 result.Outputs = Array.Empty<PCGData>();
                 result.OutputNodeIndices = Array.Empty<int>();
                 return result;
@@ -149,10 +165,47 @@ namespace PCG.Execution
             result.OutputNodeIndices = sinks;
             result.TotalPointsProduced = _pointsProduced;
             result.Milliseconds = stopwatch.Elapsed.TotalMilliseconds;
-            result.Warnings = _warnings.ToArray();
+            result.Warnings = BuildWarnings();
             result.Stats = BuildStats();
 
             return result;
+        }
+
+        /// <summary>
+        /// 把随计划一起给出的参数层警告与这次运行期间产生的警告合在一起。
+        /// </summary>
+        /// <remarks>
+        /// 计划里那些条目不能改为推进 <c>_warnings</c>：<c>Execute</c> 在每次运行开头会清空
+        /// 那个列表，那会静静吞掉一个没匹配上任何已暴露参数的覆盖值。
+        /// </remarks>
+        /// <summary>
+        /// 把节点自报的问题搬进这次运行的警告里。
+        /// </summary>
+        /// <remarks>
+        /// 正是这个消费者让 <c>PCGNodeBase.LastError</c> 不止是一个测试能读到的字段：一个
+        /// 因为地形缺失而什么都没产出的采样器，或一个模型资产加载失败的生成器，否则会把设计者
+        /// 留在一个空场景里、没有任何一行指向这张图。错误在收走之后被清掉，
+        /// 于是一个被缓存的节点不会在每个消费者拉取时都被报一遍。
+        /// </remarks>
+        private void CollectNodeError(PCGNodeBase node, int nodeIndex)
+        {
+            var message = node?.LastError;
+            if (string.IsNullOrEmpty(message))
+                return;
+
+            _warnings.Add($"node {nodeIndex} ('{node.TypeId}'): {message}");
+            node.ClearError();
+        }
+
+        private string[] BuildWarnings()
+        {
+            if (_planWarnings.Length == 0)
+                return _warnings.ToArray();
+
+            var all = new string[_planWarnings.Length + _warnings.Count];
+            Array.Copy(_planWarnings, 0, all, 0, _planWarnings.Length);
+            _warnings.CopyTo(0, all, _planWarnings.Length, _warnings.Count);
+            return all;
         }
 
         private PCGNodeRunStats[] BuildStats()
@@ -161,7 +214,7 @@ namespace PCG.Execution
             for (int i = 0; i < _evaluationOrder.Count; i++)
             {
                 int nodeIndex = _evaluationOrder[i];
-                var node = _graph.Nodes[nodeIndex];
+                var node = _nodes[nodeIndex];
                 stats[i] = new PCGNodeRunStats
                 {
                     NodeIndex = nodeIndex,
@@ -175,7 +228,7 @@ namespace PCG.Execution
         }
 
         /// <summary>
-        /// Evaluates a node, pulling its inputs first. The result is cached for the rest of the run.
+        /// 求值一个节点，先拉它的输入。结果在本次运行剩余时间里缓存。
         /// </summary>
         private PCGData Evaluate(int nodeIndex, PCGExecutionContext context)
         {
@@ -185,25 +238,31 @@ namespace PCG.Execution
             if (_evaluated[nodeIndex])
                 return _cache[nodeIndex];
 
-            var node = _graph.Nodes[nodeIndex];
+            var node = _nodes[nodeIndex];
             if (node == null)
             {
-                // Compilation guarantees non-null here; treat as empty rather than throwing mid-run.
+                // 编译已保证这里非空；当作空处理，而不是在运行中途抛。
                 _evaluated[nodeIndex] = true;
                 _cache[nodeIndex] = PCGData.Empty;
                 return _cache[nodeIndex];
             }
 
-            // Disabled nodes are pass-throughs: the first input wins, otherwise the node runs anyway so a
-            // disabled sampler still yields an (empty) data set rather than breaking the graph.
-            var start = Stopwatch.GetTimestamp();
+            // 被禁用的节点是原样递出去：第一个输入胜出，否则节点照样求值，
+            // 好让一个被禁用的采样器仍然交出一份（空的）数据，而不是把图弄断。
             var inputs = BuildInputs(nodeIndex, context);
+
+            // 秒表从这里开始计时，而不是 BuildInputs 之前：拉输入会递归求值这个节点整个
+            // 上游子树，所以在它上面启动的秒表会把每个节点的时间报成"它自己的加上它
+            // 消费的一切"。那样按节点的表沿图单调递增，而对找出慢节点毫无用处——
+            // 而那张表存在的唯一理由就是找出慢节点。
+            var start = Stopwatch.GetTimestamp();
 
             PCGData output;
             try
             {
                 context.CurrentNodeId = nodeIndex;
                 output = node.Execute(context, inputs);
+                CollectNodeError(node, nodeIndex);
             }
             catch (OperationCanceledException)
             {
@@ -215,7 +274,7 @@ namespace PCG.Execution
             }
             catch (PCGAttributeException ex)
             {
-                // Attribute misuse is a node bug; surface it with the node identity attached.
+                // 属性误用是节点的缺陷；把节点身份附上一起报出来。
                 throw new PCGNodeExecutionException(
                     $"Node '{node.TypeId}' (index {nodeIndex}) misused an attribute: {ex.Message}", ex);
             }
@@ -239,6 +298,10 @@ namespace PCG.Execution
             _cache[nodeIndex] = output;
             _evaluationOrder.Add(nodeIndex);
 
+            // 在缓存填好之后再记录，于是检视器看到的正是一个下游节点本来会拉到的
+            // 那份东西——并且做了判空，所以没有记录器的运行一如既往地行为。
+            context.Inspection?.Record(nodeIndex, node.TypeId, output);
+
             var elapsed = Stopwatch.GetTimestamp() - start;
             _timings[nodeIndex] = elapsed * 1000.0 / Stopwatch.Frequency;
 
@@ -246,21 +309,21 @@ namespace PCG.Execution
         }
 
         /// <summary>
-        /// Builds the input array for a node, in pin declaration order.
+        /// 为一个节点构造输入数组，按 pin 声明的顺序。
         /// </summary>
         /// <remarks>
-        /// For a multi-connection pin the entry is a <see cref="PCGData"/> array; for a normal pin it is a
-        /// single <see cref="PCGData"/> or null when unconnected. Nodes interpret the two shapes according to
-        /// their own <see cref="PCGPinDefinition.AllowMultiple"/> declarations.
+        /// 允许多连接的 pin，其条目是一个 <see cref="PCGData"/> 数组；普通 pin 的条目是
+        /// 单个 <see cref="PCGData"/>，未连接时为 null。节点按自己的
+        /// <see cref="PCGPinDefinition.AllowMultiple"/> 声明来理解这两种形状。
         /// </remarks>
         private PCGData[] BuildInputs(int nodeIndex, PCGExecutionContext context)
         {
-            var node = _graph.Nodes[nodeIndex];
+            var node = _nodes[nodeIndex];
             var pinDefs = node.InputPins ?? Array.Empty<PCGPinDefinition>();
             var links = _graph.Links[nodeIndex] ?? Array.Empty<PCGInputLink[]>();
 
-            // The array is typed PCGData[] because a single entry may hold either a data set or an array of
-            // them, and PCGData is not an array type. Nodes cast the multi-input entries.
+            // 那个数组之所以定型为 PCGData[]，是因为单个条目可能装着一份数据、也可能装着一份
+            // 数据的数组，而 PCGData 本身不是数组类型。节点自己转读多输入的那些条目。
             var inputs = new PCGData[pinDefs.Length];
 
             for (int pin = 0; pin < pinDefs.Length; pin++)
@@ -275,8 +338,8 @@ namespace PCG.Execution
 
                 if (pinDefs[pin].AllowMultiple)
                 {
-                    // Multi-input pins are evaluated and flattened into an aggregate so the entry stays a
-                    // single PCGData; combiners read the parts from PCGData.Parts.
+                    // 多输入的 pin 会被求值并展平成一个聚合，好让条目始终是
+                    // 单个 PCGData；合并类节点从 PCGData.Parts 里读各部分。
                     var parts = new PCGData[bucket.Length];
                     for (int k = 0; k < bucket.Length; k++)
                     {
@@ -296,11 +359,11 @@ namespace PCG.Execution
         }
 
         /// <summary>
-        /// Evaluates a single node in isolation, evaluating its inputs as needed.
+        /// 单独求值一个节点，需要时先求值它的输入。
         /// </summary>
         /// <remarks>
-        /// Intended for editors that want to preview one node's contribution without running the whole
-        /// graph. A fresh executor is used, so no state leaks between calls.
+        /// 给那些想预览单个节点的贡献、又不想跑完整张图的编辑器用。这里用的是全新的
+        /// 执行器，所以调用之间不会漏状态。
         /// </remarks>
         public static PCGData ExecuteSingleNode(PCGCompiledGraph graph, int nodeIndex, PCGExecutionContext context)
         {
@@ -313,7 +376,7 @@ namespace PCG.Execution
         }
 
         /// <summary>
-        /// Cached result of the node, valid only during a run.
+        /// 该节点的缓存结果，仅在一次运行期间有效。
         /// </summary>
         public PCGData GetCachedResult(int nodeIndex)
         {

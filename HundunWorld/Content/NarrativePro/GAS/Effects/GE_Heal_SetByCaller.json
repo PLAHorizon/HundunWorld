@@ -1,0 +1,18 @@
+{
+  "effectName": "GE_Heal_SetByCaller",
+  "durationType": "Instant",
+  "executeCalcTypeId": "Heal",
+  "stackingType": "None",
+  "maxStacks": 1,
+  "assetTags": [
+    "Narrative.Effect.Heal"
+  ],
+  "modifiers": [
+    {
+      "attributeName": "Heal",
+      "modifierOp": "Add",
+      "magnitude": 0,
+      "setByCallerTag": "Heal.Amount"
+    }
+  ]
+}

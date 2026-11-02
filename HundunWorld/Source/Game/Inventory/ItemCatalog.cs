@@ -17,6 +17,8 @@ namespace HundunWorld.Game.Inventory
         Material = 3,
         Quest = 4,
         Gem = 5,
+        /// <summary>秘籍：与服务端 item_type=6 同序，研读后习得技能。</summary>
+        Book = 6,
     }
 
     /// <summary>
@@ -32,7 +34,7 @@ namespace HundunWorld.Game.Inventory
         public string TypeName = "未知";
         public ItemKind Kind = ItemKind.Unknown;
         public EquipmentSlot? EquipSlot;
-        /// <summary>0..4，与 InkWashTheme.InkQuality 序数一致。</summary>
+        /// <summary>0..6，与 InkWashTheme.InkQuality 序数一致（5=神器、6=神话）。</summary>
         public int Quality;
         public string Description = "";
         /// <summary>装备开放宝石孔数（品质+1，夹 1..5）；非装备为 0。</summary>
@@ -49,18 +51,29 @@ namespace HundunWorld.Game.Inventory
         public float HpRestore;
         public float EnergyRestore;
 
+        /// <summary>秘籍所教技能 id（非秘籍为 0）。技能栏/技能树用它反查 <c>SkillDatabase</c>。</summary>
+        public int TeachesSkillId;
+
+        /// <summary>套装 id（0=无）。来自编辑器导出的内容表；硬编码目录里通常为 0。</summary>
+        public int SetId;
+
+        /// <summary>套装名（SetId=0 时为空）。物品详情用它显示"套装效果"。</summary>
+        public string SetName = "";
+
         public bool IsEquippable => Kind == ItemKind.Equipment && EquipSlot.HasValue;
         public bool IsUsable => Kind == ItemKind.Consumable;
         public bool IsGem => Kind == ItemKind.Gem;
+        public bool IsBook => Kind == ItemKind.Book;
     }
 
     /// <summary>
     /// 客户端物品模板目录：把服务端背包里只有编号的 TemplateId 解析成可渲染、可判定的定义。
     /// <para>
     /// 解析顺序：<b>消耗品表 → 装备表 → 材料表 → 未知回退</b>。
-    /// 注意装备表与材料表存在重叠 ID（两边的 10001 等不同义），当前权威背包数据源
-    /// （本地迁移种子 + DS 掉落）中重叠 ID 均来自装备语义，故装备优先；
-    /// 掉落产生的无法解析 ID 回退为"未知"占位，不允许穿戴/使用。
+    /// 材料表曾用 10001/20001… 与装备同号（所以"装备优先"是必须的），
+    /// 现已整体迁到 <c>700001..700041</c> 段（段即语义，与秘籍 <c>800000+技能id</c> 同构），
+    /// 两侧不再重叠；<c>scripts/sql/015_seed_material_item_templates.sql</c> 是这份表的入库来源，
+    /// 改材料要代码与种子一起改。掉落产生的无法解析 ID 回退为"未知"占位，不允许穿戴/使用。
     /// </para>
     /// </summary>
     public static class ItemCatalog
@@ -86,9 +99,17 @@ namespace HundunWorld.Game.Inventory
         /// <summary>装备开放孔数上限（与 <c>InventoryGrain.MaxGemSlots</c> 对齐）。</summary>
         public const int MaxGemSlots = 5;
 
+        /// <summary>秘籍物品模板 id 起始段：秘籍 id = 本值 + 它所教的技能 id（与服务端种子一致）。</summary>
+        public const int BookIdBase = 800000;
+
         /// <summary>解析模板 ID；永不返回 null，未注册物品返回 Unknown 定义。</summary>
         public static ItemDefinition Resolve(int templateId)
         {
+            // 物品编辑器导出的内容表优先（逐条覆盖）：命中即返回，未命中走下面的硬编码链。
+            // 这样"编辑器改过的物品"立刻生效，而编辑器没管过的物品行为零变化。
+            if (ItemCatalogOverlay.TryResolve(templateId, out var overlayDefinition))
+                return overlayDefinition;
+
             EnsureConsumables();
             if (_cache.TryGetValue(templateId, out var cached))
                 return cached;
@@ -97,6 +118,9 @@ namespace HundunWorld.Game.Inventory
             _cache[templateId] = def;
             return def;
         }
+
+        /// <summary>清空解析缓存（编辑器重新导出内容表后调用）。</summary>
+        public static void InvalidateCache() => _cache.Clear();
 
         private static void EnsureConsumables()
         {
@@ -159,6 +183,9 @@ namespace HundunWorld.Game.Inventory
 
         private static ItemDefinition Build(int templateId)
         {
+            if (templateId >= BookIdBase)
+                return FromBook(templateId);
+
             var equipment = EquipmentDatabase.GetEquipment(templateId);
             if (equipment != null)
                 return FromEquipment(equipment);
@@ -169,6 +196,59 @@ namespace HundunWorld.Game.Inventory
 
             return new ItemDefinition { TemplateId = templateId };
         }
+
+        /// <summary>
+        /// 秘籍物品：模板 id = <see cref="BookIdBase"/> + 技能 id（由技能树种子约定，见
+        /// docs/SKILL_WUXING_TREE_DESIGN.md §7.2）。名字与阶境都反查技能目录，不再另立一份表，
+        /// 免得技能和秘籍两处各改一半。
+        /// </summary>
+        private static ItemDefinition FromBook(int templateId)
+        {
+            int skillId = templateId - BookIdBase;
+            var skill = HundunWorld.Game.Combat.Skills.SkillDatabase.GetSkill(skillId);
+
+            int grade = skill?.Grade ?? 0;
+            int stage = skill?.GradeStage ?? 0;
+            string bookKind = stage >= 3 ? "传承玉简" : stage == 2 ? "残卷" : "秘籍";
+
+            var def = new ItemDefinition
+            {
+                TemplateId = templateId,
+                Name = skill != null ? $"{skill.SkillName}·{bookKind}" : "无名残页",
+                Glyph = stage >= 3 ? "简" : stage == 2 ? "卷" : "籍",
+                TypeName = "秘籍",
+                Kind = ItemKind.Book,
+                Quality = grade < 0 ? 0 : grade > 4 ? 4 : grade,
+                Description = skill?.Description ?? "",
+                TeachesSkillId = skillId,
+            };
+
+            if (skill != null)
+            {
+                def.Stats.Add(("所教技能", skill.SkillName));
+                if (grade > 0)
+                    def.Stats.Add(("阶位", $"{GradeName(grade)}阶·{StageName(stage)}境"));
+                def.Stats.Add(("研习等级", $"{skill.RequiredLevel}"));
+                if (skill.EnergyCost > 0f) def.Stats.Add(("施放耗气", skill.EnergyCost.ToString("0.#")));
+            }
+            else
+            {
+                def.Stats.Add(("状态", "目录里查无此技，需等服务端技能模板下行"));
+            }
+            return def;
+        }
+
+        private static string GradeName(int grade) => grade switch
+        {
+            1 => "白", 2 => "黄", 3 => "玄", 4 => "地", 5 => "天", 6 => "道", 7 => "混沌",
+            _ => "未知",
+        };
+
+        private static string StageName(int stage) => stage switch
+        {
+            1 => "初", 2 => "中", 3 => "极",
+            _ => "未知",
+        };
 
         private static ItemDefinition FromEquipment(EquipmentData equipment)
         {
@@ -184,7 +264,7 @@ namespace HundunWorld.Game.Inventory
                 TypeName = TypeDisplayName(equipment.Type, slot),
                 Kind = ItemKind.Equipment,
                 EquipSlot = slot,
-                Quality = equipment.Quality < 0 ? 0 : (equipment.Quality > 4 ? 4 : equipment.Quality),
+                Quality = equipment.Quality < 0 ? 0 : (equipment.Quality > 6 ? 6 : equipment.Quality),
                 Description = equipment.Description ?? "",
                 // 孔数规则：品质+1（普通1孔 … 传说5孔），上限与 ItemCatalog.MaxGemSlots 一致。
                 GemSlots = equipment.Type == EquipmentType.Weapon || equipment.Type == EquipmentType.Body ||
@@ -254,6 +334,7 @@ namespace HundunWorld.Game.Inventory
             EquipmentSlot.RightWrist => "腕",
             EquipmentSlot.LeftWrist => "腕",
             EquipmentSlot.Face => "面",
+            EquipmentSlot.Appearance => "装",
             _ => "？",
         };
 
@@ -261,6 +342,7 @@ namespace HundunWorld.Game.Inventory
         {
             EquipmentType.Weapon => "武器",
             EquipmentType.Bag => "背包",
+            EquipmentType.Appearance => "外观",
             EquipmentType.Body => slot == EquipmentSlot.Body || slot == EquipmentSlot.Legs ||
                                   slot == EquipmentSlot.Feet || slot == EquipmentSlot.Head ||
                                   slot == EquipmentSlot.Face ? "防具" : "防具",
@@ -294,6 +376,7 @@ namespace HundunWorld.Game.Inventory
             EquipmentSlot.RightWrist => "右手腕",
             EquipmentSlot.LeftWrist => "左手腕",
             EquipmentSlot.Face => "面部",
+            EquipmentSlot.Appearance => "外观",
             _ => "槽位",
         };
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Horizon.Game.Message.Enums;
@@ -398,7 +398,8 @@ namespace HundunWorld.Game.UI
             Debug.LogWarning("[SceneTransitionEffect] 未找到预置实例，动态创建（建议在 RootScene 上预置）");
             var actor = new EmptyActor { Name = "SceneTransitionEffect" };
             actor.SetStaticFlag(StaticFlags.FullyStatic, true);
-            Level.SpawnActor(actor);
+            // 有意常驻 RootScene（0 号场景）：转场特效是全局共享组件。显式传场景不靠默认落点。
+            Level.SpawnActor(actor, Level.GetScene(0));
             _instance = actor.AddScript<SceneTransitionEffect>();
 
             return _instance;

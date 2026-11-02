@@ -62,6 +62,12 @@ public class ServerGame : GameModule
             // ★ 项目自身构建产物优先——这些才是 Horizon.sln 刚编译出来的最新程序集。
             Path.Combine(projectDir, "Output", "Windows"),
             Path.Combine(projectDir, "Output", "Windows", "Development"),
+            // DS 宿主的原始构建输出：`Output/Windows` 是 Flax 的**游戏输出目录**，
+            // 会被打包/清理流程整个删掉（实测 2026-09-27 就被清空过一次，
+            // 于是编辑器脚本构建连带失败，报的却是"编译脚本失败"）。
+            // 直接把它自己的 bin 输出纳入搜索，构建就不再依赖"记得先跑暂存脚本"这一步。
+            Path.Combine(projectDir, "..", "Horizon.DsHost", "bin", "Debug", "net10.0"),
+            Path.Combine(projectDir, "..", "Horizon.DsHost", "bin", "Release", "net10.0"),
             // 兜底：引擎目录（仅当项目输出缺该 DLL 时才会走到这里）。
             Path.Combine(engineDir, "Tools"),
             engineDir,
@@ -83,6 +89,10 @@ public class ServerGame : GameModule
             "Horizon.DsHost.dll",
             "Horizon.Game.Sim.dll",
             "Horizon.Game.World.dll",
+            // 两个权威程序集拆出的跨端共享契约（公式/步进器/修正包、分块换算）：
+            // 不列入会让 DS 在该 DLL 缺位时到运行期才 FileNotFoundException
+            "Horizon.Game.Sim.Contracts.dll",
+            "Horizon.Game.World.Contracts.dll",
 
             // ── 协议与消息契约 ──
             "Horizon.Game.Core.dll",
@@ -90,6 +100,8 @@ public class ServerGame : GameModule
 
             // ── 基础库 ──
             "Horizon.Core.Abstract.dll",
+            // Core.Abstract 的 AppType/PassportType 已下沉到 Share.Client；Core 的 MachineIdentifier 同源
+            "Horizon.Share.Client.dll",
 
             // ── 序列化 / 压缩（MemoryPack 静态代码生成，无运行时反射）──
             "MemoryPack.Core.dll",
@@ -135,13 +147,29 @@ public class ServerGame : GameModule
 
         if (missing.Count > 0)
         {
-            // BuildException 在 Flax.Build 中为 internal，项目侧 Build.cs 只能用普通 Exception 失败构建；
-            // Flax.Build 会捕获并打印消息后以非零码退出（Program.cs 179-183 行）。
-            throw new Exception(
-                "ServerGame：以下 DS 侧程序集未找到，构建终止（避免运行时才失败）：\n  - "
-                + string.Join("\n  - ", missing)
-                + "\n\n请先执行 `dotnet build Horizon.DsHost/Horizon.DsHost.csproj` 生成它们，"
-                + "并确认其输出落在以下任一目录：\n  " + string.Join("\n  ", searchDirs));
+            // 关键：这条守卫**只对 Server 目标有意义**。Flax.Build 在"收集模块"阶段会为
+            // 每一个目标执行 Setup（包括 -genproject 与编辑器的脚本编译），
+            // 所以无条件抛异常会让一次 DS 侧的缺件，把客户端/编辑器的脚本构建一起打死，
+            // 表现极具误导性："Failed to compile scripts / Cannot load scene without game script modules"，
+            // 而真正的原因只在 Cache/Intermediate/Log.txt 里。
+            bool buildingServerTarget = options.Target is ServerTarget
+                                        || (options.Target != null && options.Target.Name == "ServerTarget");
+
+            string hint = "请先执行 `dotnet build Horizon.DsHost/Horizon.DsHost.csproj` 生成它们，"
+                          + "并确认其输出落在以下任一目录：\n  " + string.Join("\n  ", searchDirs);
+
+            if (buildingServerTarget)
+            {
+                // BuildException 在 Flax.Build 中为 internal，项目侧 Build.cs 只能用普通 Exception 失败构建；
+                // Flax.Build 会捕获并打印消息后以非零码退出（Program.cs 179-183 行）。
+                throw new Exception(
+                    "ServerGame：以下 DS 侧程序集未找到，构建终止（避免运行时才失败）：\n  - "
+                    + string.Join("\n  - ", missing) + "\n\n" + hint);
+            }
+
+            // 非 DS 目标：这些引用只是用不上的可选项，降级成一条警告，绝不阻断构建。
+            Log.Warning($"ServerGame：DS 侧程序集未找到（{string.Join(", ", missing)}），" +
+                        $"当前目标 {options.Target?.Name ?? "unknown"} 不需要它们，已跳过引用。{Environment.NewLine}{hint}");
         }
 
         // ── BCL 系统引用 ──────────────────────────────────────────────────

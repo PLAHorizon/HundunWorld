@@ -62,7 +62,8 @@ namespace NarrativePro.UnrealFramework
 
     /// <summary>
     /// Narrative 动画实例。对应 UE5 UNarrativeAnimInstance。
-    /// UE5 中继承 UAnimInstance；Flax 无 AnimInstance 基类，改为普通 [Serializable] class 占位 + TODO。
+    /// UE5 中继承 UAnimInstance；核实 Flax 1.12 托管层无 AnimInstance 基类，
+    /// 改为普通 [Serializable] 数据类保留字段模型。
     /// 简化点：
     /// - 移除 UE5 复制/RPC，改为本地逻辑 + 事件回调
     /// - FVector → Vector3，FQuat → Quaternion，FTransform → Transform
@@ -195,7 +196,8 @@ namespace NarrativePro.UnrealFramework
         /// <param name="asc">能力系统组件。</param>
         public virtual void InitializePropertyMap(NarrativeAbilitySystemComponent asc)
         {
-            // TODO [需接入 ASC 系统]: 通过 ASC 绑定 GameplayTag 到属性
+            // Flax-不兼容: UE5 的 Tag→Blueprint 属性绑定由 AnimBP 反射实现（已核查 FlaxEngine.CSharp.xml AnimatedModel 成员，无属性绑定 API）；
+            // Flax 端等价的参数写入是 AnimatedModel.GetParameter(name).Value，需要子类提供显式映射表。
             NarrativeLog.Log("[NarrativeAnimInstance] InitializePropertyMap");
         }
 
@@ -247,7 +249,9 @@ namespace NarrativePro.UnrealFramework
         /// <summary>返回所属角色的主 ABP——挂载在角色网格上的那个。对应 UE5 GetMainABPRef。</summary>
         public virtual NarrativeAnimInstance GetMainABPRef()
         {
-            // TODO [需接入 NarrativeCharacter 系统]: 通过角色获取主 ABP
+            // Flax-不兼容: Flax 无 AnimBP 实例图（已核查 FlaxEngine.CSharp.xml AnimatedModel 成员）；动画逻辑由
+            // NarrativeCharacterVisual.SetAnimationGraph（Character/NarrativeCharacterVisual.cs:491）直接挂 AnimationGraph 资产，
+            // 端口不存在“主 ABP 实例”引用，返回 null。
             return null;
         }
 
@@ -268,7 +272,8 @@ namespace NarrativePro.UnrealFramework
             CurrentOverrideLayer = layerTag;
             bHasOverrideLayer = true;
             OverrideLayerBlendInTime = blendInTime;
-            // TODO [需接入 AnimInstance 加载系统]: 实际应用覆盖层（加载并切换 AnimInstance）
+            // Flax-不兼容: UE5 通过切换 AnimInstance 类实现覆盖层混合（已核查 AnimatedModel 无 layer/blend API）；
+            // Flax 端覆盖层动画由子类消费 CurrentOverrideLayer 后用 AnimatedModel.PlayAnimation 播放对应空间实现。
             NarrativeLog.Log($"[NarrativeAnimInstance] ApplyOverrideLayer: {layerTag} (blend in {blendInTime}s)");
             return true;
         }
@@ -278,7 +283,7 @@ namespace NarrativePro.UnrealFramework
         public virtual void RemoveOverrideLayer(float blendOutTime)
         {
             OverrideLayerBlendOutTime = blendOutTime;
-            // TODO [需接入计时器系统]: 启动淡出计时器，完成后调用 OverrideLayerBlendedOut
+            // Flax-已实现: 本类非 Script，无计时器宿主（Flax Timer 需 Script/原生上下文）；端口同步完成混出。
             NarrativeLog.Log($"[NarrativeAnimInstance] RemoveOverrideLayer (blend out {blendOutTime}s)");
             OverrideLayerBlendedOut();
         }
@@ -287,7 +292,8 @@ namespace NarrativePro.UnrealFramework
         /// <param name="blendOutTime">淡出时间。</param>
         public virtual void BPStopAllMontages(float blendOutTime)
         {
-            // Flax-不兼容: UE5 的 AnimMontage 在 Flax 无对应物，保留占位。原文 TODO: 接入 Flax 动画系统停止所有蒙太奇
+            // Flax-不兼容: 端口无 AnimMontage 实例注册表（蒙太奇在 GAS 侧仅为路径字符串，如 GAS/AttackComboAnimSet.cs:15；
+            // 已核查 FlaxEngine.CSharp.xml AnimatedModel 无 montage API），动画停止由持有播放上下文的子类负责。
             NarrativeLog.Log($"[NarrativeAnimInstance] BPStopAllMontages (blend out {blendOutTime}s)");
         }
 
@@ -308,38 +314,37 @@ namespace NarrativePro.UnrealFramework
         /// <param name="deltaSeconds">帧间隔（秒）。</param>
         public virtual void NativeUpdateAnimation(float deltaSeconds)
         {
-            // TODO [需接入 ASC 系统]: 更新动画状态（根据角色标签/状态通过 AnimatedModel.GetParameter(name).Value 更新动画参数）
+            // Flax-不兼容: Flax 无 AnimBP 状态机（已核查 FlaxEngine.CSharp.xml AnimatedModel 成员）；动画参数更新需要
+            // 显式参数名映射（AnimatedModel.GetParameter(name).Value），由子类重写实现标签→参数写入。
         }
 
         /// <summary>初始化动画。对应 UE5 NativeInitializeAnimation。</summary>
         public virtual void NativeInitializeAnimation()
         {
-            // TODO [需接入 ASC 系统]: 缓存角色引用、初始化属性映射
+            // Flax-已实现: 缓存角色引用（NarrativeCharacterRef 由持有方注入）并初始化属性映射钩子
+            InitializePropertyMap(NarrativeCharacterRef != null ? NarrativeCharacterRef.GetAbilitySystemComponent() : null);
             NarrativeLog.Log("[NarrativeAnimInstance] NativeInitializeAnimation");
         }
 
         /// <summary>反初始化动画。对应 UE5 NativeUninitializeAnimation。</summary>
         public virtual void NativeUninitializeAnimation()
         {
-            // TODO [需接入 ASC 系统]: 清理状态
+            // Flax-已实现: 清理覆盖层与角色引用状态（对应 UE5 动画实例销毁时的状态回收）
+            bHasOverrideLayer = false;
+            CurrentOverrideLayer = GameplayTag.None;
+            LastOverrideLayer = GameplayTag.None;
+            OverrideLayerAnimInstance = null;
+            NarrativeCharacterRef = null;
         }
 
         /// <summary>从 Sequencer 混出。对应 UE5 BlendOutOfSequencer。</summary>
         public virtual void BlendOutOfSequencer()
         {
             bWantsBlendOutOfSequencer = true;
-            // Flax-不兼容: UE5 的 PoseSnapshot 在 Flax 无对应物，保留占位。原文 TODO: 捕获当前姿势快照
+            // Flax-不兼容: UE5 在此捕获 PoseSnapshot（已核查 FlaxEngine.CSharp.xml AnimatedModel 成员，无骨骼姿势快照 API）；
+            // FPoseSnapshot 在本端口仅作数据占位，混出时 ABP 读取序列末帧的逻辑由子类结合动画空间实现。
             NarrativeLog.Log("[NarrativeAnimInstance] BlendOutOfSequencer");
         }
-    }
-
-    /// <summary>
-    /// ABP_Biped、ABP_Quadruped 等的基类，对应 UE5 UNarrativeCharacterAnimInstance。
-    /// 角色基础动画蓝图类。
-    /// </summary>
-    [Serializable]
-    public class NarrativeCharacterAnimInstance : NarrativeAnimInstance
-    {
     }
 
     /// <summary>
@@ -359,7 +364,9 @@ namespace NarrativePro.UnrealFramework
         /// <returns>姿势快照引用。</returns>
         public virtual FPoseSnapshot CreateRagdollSnapshot()
         {
-            // Flax-不兼容: UE5 的 PoseSnapshot 在 Flax 无对应物，保留占位。原文 TODO: 捕获当前骨骼姿势
+            // Flax-不兼容（已核实）：UE5 在此用 SavePoseToSnapshot 冻结当前骨骼姿势；Flax 1.12 托管
+            // API（FlaxEngine.CSharp.xml）不存在 GetPose/CapturePose/PoseSnapshot 成员，
+            // AnimationController 不暴露骨骼姿势读写，行为无法存在，保留占位。
             RagdollGetUpSnapshot = new FPoseSnapshot();
             RagdollGetUpSnapshot.bIsValid = true;
             return RagdollGetUpSnapshot;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using FlaxEngine;
 using NarrativePro.Core;
 
@@ -16,131 +17,126 @@ namespace NarrativePro.Interaction
 
     /// <summary>
     /// NPC 交互组件，专用于 NPCCharacter。
-    /// 适配 UE5 UNPCInteractionComponent。
+    /// 适配 UE5 UNPCInteractionComponent：NPC 通过 ClaimSlot(bMarkTargeted:true) 预约槽位，
+    /// 并订阅 OnTargetedSlotTaken 以便预约被抢时重新挑选。
     /// </summary>
     public class NPCInteractionComponent : NarrativeInteractionComponent
     {
         /// <summary>当目标槽位改变时触发（供 NPC 活动 BB 更新）</summary>
         public event EventHandler<TargetedInteractionSlotChangedEventArgs> OnTargetedInteractionSlotChanged;
 
-        /// <summary>若槽位被偷是否自动寻找新槽位</summary>
-        public bool bFindNewSlotIfSlotTaken { get; set; } = true;
+        /// <summary>若槽位被偷是否自动寻找新槽位（对应 UE5 构造函数的 false）</summary>
+        public bool bFindNewSlotIfSlotTaken { get; set; } = false;
 
-        /// <summary>当前目标槽位索引（未目标化为 -1）</summary>
-        public int CurrentTargetedSlotIdx { get; protected set; } = -1;
+        /// <summary>当前目标槽位索引（未目标化为 -1）。</summary>
+        public int CurrentTargetedSlotIdx => InteractionSlotClaimHandle.IsValidHandle() ? InteractionSlotClaimHandle.HandleIndex : -1;
 
-        /// <summary>目标化的 Interactable</summary>
-        public NarrativeInteractableComponent TargetedInteractable { get; protected set; }
+        /// <summary>目标化的 Interactable（即当前认领句柄的归属）。</summary>
+        public NarrativeInteractableComponent TargetedInteractable => InteractionSlotClaimHandle.HandleOwner;
 
-        /// <summary>开始目标化最佳交互槽位。返回是否成功。</summary>
-        public bool TargetBestInteractionSlot(NarrativeInteractableComponent interactable, bool bFindNewSlotIfSlotTaken)
+        // 本组件订阅过 OnTargetedSlotTaken 的可交互对象，用于精确退订（对应 UE5 AddUniqueDynamic 的反向操作）
+        private readonly List<NarrativeInteractableComponent> _subscribedInteractables = new List<NarrativeInteractableComponent>();
+
+        /// <summary>
+        /// 目标化最佳交互槽位。对应 UE5 TargetBestInteractionSlot ——
+        /// 不接纳已被他人 Targeted 的槽位，但仍接纳可偷取的 Occupied 槽位。
+        /// </summary>
+        public bool TargetBestInteractionSlot(NarrativeInteractableComponent interactable, bool bInFindNewSlotIfSlotTaken)
         {
             if (interactable == null) return false;
 
-            this.bFindNewSlotIfSlotTaken = bFindNewSlotIfSlotTaken;
+            int bestInteractionSlot = interactable.GetBestAvailableSlot(this, interactable.GetAvailableSlots(this, false));
 
-            var availableSlots = interactable.GetAvailableSlots(this, true, true);
-            if (availableSlots.Count == 0)
-            {
-                NarrativeLog.Log($"[NPCInteraction] Interactable 无可用槽位");
-                return false;
-            }
-
-            int bestSlot = interactable.GetBestAvailableSlot(this, availableSlots);
-            if (bestSlot < 0)
-            {
-                NarrativeLog.Log($"[NPCInteraction] 未找到最佳槽位");
-                return false;
-            }
-
-            return TargetInteractionSlot(interactable, bestSlot, bFindNewSlotIfSlotTaken);
+            return TargetInteractionSlot(interactable, bestInteractionSlot, bInFindNewSlotIfSlotTaken);
         }
 
-        /// <summary>目标化指定槽位。返回是否成功。</summary>
-        public bool TargetInteractionSlot(NarrativeInteractableComponent interactable, int index, bool bAutoUpdateIfSlotStolen)
+        /// <summary>
+        /// 目标化指定槽位。对应 UE5 TargetInteractionSlot：
+        /// 先释放旧认领，再通过 ClaimSlot(bMarkTargeted:true) 认领；认领失败返回 false。
+        /// </summary>
+        public bool TargetInteractionSlot(NarrativeInteractableComponent interactable, int index, bool bInFindNewSlotIfSlotTaken)
         {
             if (interactable == null) return false;
-            if (index < 0 || index >= interactable.InteractionSlots.Count)
-            {
-                NarrativeLog.LogWarning($"[NPCInteraction] 槽位索引越界: {index}");
-                return false;
-            }
+            if (index < 0) return false;
 
-            this.bFindNewSlotIfSlotTaken = bAutoUpdateIfSlotStolen;
+            bFindNewSlotIfSlotTaken = bInFindNewSlotIfSlotTaken;
 
-            // 释放旧目标
-            if (TargetedInteractable != null && CurrentTargetedSlotIdx >= 0)
+            // 释放我们已持有的旧槽位
+            if (InteractionSlotClaimHandle.IsValidHandle())
             {
-                TargetedInteractable.UpdateSlotStatus(this, CurrentTargetedSlotIdx, EInteractionSlotStatus.Free);
-            }
-
-            // 注册到 interactable 的 OnTargetedSlotTaken 事件
-            // 注意：Flax 中事件需要先解绑旧的再绑定新的，防止多次订阅
-            if (TargetedInteractable != interactable)
-            {
-                if (TargetedInteractable != null)
+                var currentInteractable = InteractionSlotClaimHandle.HandleOwner;
+                if (currentInteractable != null)
                 {
-                    TargetedInteractable.OnTargetedSlotTaken -= OnTargetSlotTaken;
+                    currentInteractable.UpdateSlotStatus(this, InteractionSlotClaimHandle.HandleIndex, EInteractionSlotStatus.Free);
                 }
-                interactable.OnTargetedSlotTaken += OnTargetSlotTaken;
-                TargetedInteractable = interactable;
             }
 
-            // 目标化槽位（标记为 Targeted）
-            interactable.UpdateSlotStatus(this, index, EInteractionSlotStatus.Targeted);
-            CurrentTargetedSlotIdx = index;
+            var handle = interactable.ClaimSlot(this, index, true);
+            if (!handle.IsValidHandle()) return false;
 
-            // 触发事件
+            InteractionSlotClaimHandle = handle;
+            SetOccupiedInteractable(interactable, handle.HandleIndex);
+
+            // 认领成功后才监听槽位被抢，以便重新预约
+            if (!_subscribedInteractables.Contains(interactable))
+            {
+                interactable.OnTargetedSlotTaken += OnTargetSlotTaken;
+                _subscribedInteractables.Add(interactable);
+            }
+
             OnTargetedInteractionSlotChanged?.Invoke(this, new TargetedInteractionSlotChangedEventArgs
             {
                 InteractableComponent = interactable,
-                NewSlotIdx = index
+                NewSlotIdx = handle.HandleIndex
             });
-
             return true;
         }
 
-        /// <summary>当前目标槽位被偷时调用。</summary>
+        /// <summary>
+        /// 当前目标槽位被他人抢走时调用。对应 UE5 OnTargetSlotTaken：
+        /// 必须确认是别人抢的、且抢的正是我们目标化的槽位。
+        /// </summary>
         public void OnTargetSlotTaken(int slot, NarrativeInteractionComponent stealerComp, NarrativeInteractableComponent interactableComp)
         {
-            if (slot != CurrentTargetedSlotIdx) return;
-            if (interactableComp != TargetedInteractable) return;
+            if (stealerComp == this) return;
+            if (!InteractionSlotClaimHandle.IsValidHandle()) return;
+            if (InteractionSlotClaimHandle.HandleIndex != slot) return;
+            if (InteractionSlotClaimHandle.HandleOwner != interactableComp) return;
 
-            int oldSlot = CurrentTargetedSlotIdx;
-            CurrentTargetedSlotIdx = -1;
+            var currentInteractable = InteractionSlotClaimHandle.HandleOwner;
+            if (currentInteractable == null) return;
+
+            // 槽位已被抢走：作废句柄（槽位不再属于我们，绝不能去释放它）
+            InteractionSlotClaimHandle = InteractionSlotClaimHandle.InvalidHandle();
 
             if (bFindNewSlotIfSlotTaken)
             {
-                // 尝试寻找新槽位
-                bool foundNew = TargetBestInteractionSlot(interactableComp, bFindNewSlotIfSlotTaken);
-                if (!foundNew)
-                {
-                    NarrativeLog.Log($"[NPCInteraction] 槽位被偷且无新槽位可用");
-                }
+                TargetBestInteractionSlot(currentInteractable, true);
             }
             else
             {
+                SetOccupiedInteractable(null, -1);
                 OnTargetedInteractionSlotChanged?.Invoke(this, new TargetedInteractionSlotChangedEventArgs
                 {
-                    InteractableComponent = interactableComp,
+                    InteractableComponent = currentInteractable,
                     NewSlotIdx = -1
                 });
             }
         }
 
+        private void UnsubscribeTargetEvents()
+        {
+            for (int i = _subscribedInteractables.Count - 1; i >= 0; i--)
+            {
+                var target = _subscribedInteractables[i];
+                if (target != null) target.OnTargetedSlotTaken -= OnTargetSlotTaken;
+            }
+            _subscribedInteractables.Clear();
+        }
+
         public override void OnDisable()
         {
-            // 清理事件订阅
-            if (TargetedInteractable != null)
-            {
-                TargetedInteractable.OnTargetedSlotTaken -= OnTargetSlotTaken;
-                if (CurrentTargetedSlotIdx >= 0)
-                {
-                    TargetedInteractable.UpdateSlotStatus(this, CurrentTargetedSlotIdx, EInteractionSlotStatus.Free);
-                }
-                TargetedInteractable = null;
-                CurrentTargetedSlotIdx = -1;
-            }
+            UnsubscribeTargetEvents();
             base.OnDisable();
         }
     }

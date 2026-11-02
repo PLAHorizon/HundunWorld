@@ -156,12 +156,17 @@ namespace HundunWorld.Game.Chat
             if (nm == null || string.IsNullOrWhiteSpace(content))
                 return false;
 
+            // 以 / 开头的是脚本指令：交给 WorldScriptClient 上行，不能当聊天正文发出去。
+            var trimmed = content.Trim();
+            if (trimmed.Length > 1 && trimmed[0] == '/')
+                return WorldScriptClient.Instance.TryHandleCommand(trimmed);
+
             var req = new ChatSendMessage
             {
                 SenderId = game.PlayerId,
                 SenderName = ResolveLocalName(),
                 Channel = channel,
-                Content = content.Trim(),
+                Content = trimmed,
                 TargetId = targetId,
                 Timestamp = DateTime.UtcNow.Ticks,
                 ClientMsgId = Guid.NewGuid().ToString("N"),
@@ -199,7 +204,8 @@ namespace HundunWorld.Game.Chat
             {
                 Debug.LogWarning($"[ChatClient] 解析本地昵称失败: {ex.Message}");
             }
-            return "无名侠";
+            // 属性组件还没就绪时不要冒用设计稿名字：自己发的消息显示"我"。
+            return "我";
         }
 
         private void OnChatMessage(ChatMessage m) => Add(new ChatLine

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI;
@@ -85,7 +85,8 @@ namespace HundunWorld.Game.UI.Character
                 }
                 else
                 {
-                    Level.SpawnActor(canvasActor);
+                    // 宿主无场景（异常态）：路由到玩法场景并在其中解析失败时大声报错
+                    HundunWorldGame.SpawnActorToGameplayScene(canvasActor, "CharacterUICanvas");
                 }
                 uiCanvas = canvasActor.AddChild<UICanvas>();
                 uiCanvas.Name = "CharacterUICanvas";
@@ -333,13 +334,8 @@ namespace HundunWorld.Game.UI.Character
             };
             components.FacePresetSelectionUI.HideExternalButton();
 
-            // 步骤3: 精细捏脸
-            components.IntegratedCreationUI = new IntegratedCharacterCreationUI(previewPanel)
-            {
-                Parent = gui,
-                Visible = false
-            };
-            components.IntegratedCreationUI.HideExternalButton();
+            // 步骤3: 精细捏脸 —— 旧 Ink 化前的实现（IntegratedCharacterCreationUI）已随
+            // UseInkCharacterFlow 一起删除；创角第 3 步现在只有 CcFaceSculptPage 一条路径。
 
             // 步骤4: 命名完成
             components.NamingCompleteUI = new NamingCompleteUI
@@ -595,7 +591,6 @@ namespace HundunWorld.Game.UI.Character
     {
         public GenderSelectionUI GenderSelectionUI;
         public FacePresetSelectionUI FacePresetSelectionUI;
-        public IntegratedCharacterCreationUI IntegratedCreationUI;
         public NamingCompleteUI NamingCompleteUI;
     }
 

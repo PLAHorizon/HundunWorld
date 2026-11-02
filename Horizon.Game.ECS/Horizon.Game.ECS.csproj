@@ -26,7 +26,7 @@
        - 仅当目标目录存在时才执行，避免未装 Flax 的 CI 报错；
        - 写入 Program Files 需管理员权限，失败按警告处理（ContinueOnError），不阻断编译。 -->
   <PropertyGroup>
-    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
+    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.13\Binaries\Tools</FlaxToolsDir>
     <CopyToFlax Condition="'$(CopyToFlax)' == ''">true</CopyToFlax>
   </PropertyGroup>
 

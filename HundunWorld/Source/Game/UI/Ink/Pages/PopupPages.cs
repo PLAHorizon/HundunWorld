@@ -1,7 +1,10 @@
-using System;
+﻿using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using HundunWorld.Game.Combat.Skills;
 using HundunWorld.Game.Equipment;
+using HundunWorld.Game.Inventory;
+using HundunWorld.Game.Services;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
 
@@ -131,7 +134,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(PanelWidth - 38f, -10f),
                 Size = new Float2(28f, 28f),
@@ -499,7 +502,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 if (data != null)
                 {
                     name = data.Name ?? "未知物品";
-                    quality = (InkWashTheme.InkQuality)Mathf.Clamp(data.Quality, 0, 4);
+                    quality = (InkWashTheme.InkQuality)Mathf.Clamp(data.Quality, 0, 6);
                 }
             }
             catch (Exception ex)
@@ -662,7 +665,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(PanelWidth - 44f, -12f),
                 Size = new Float2(32f, 32f),
@@ -1431,7 +1434,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopRight,
                 Location = new Float2(PanelWidth - 44f, HeaderY),
                 Size = new Float2(32f, 32f),
@@ -2108,7 +2111,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopRight,
                 Location = new Float2(PanelWidth - 44f, TitleY),
                 Size = new Float2(32f, 32f),
@@ -2465,22 +2468,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
         private const float ComboY = 350f;
 
-        /// <summary>修炼进度区起始 Y（设计稿「修炼进度」section）</summary>
-        private const float CultivationY = 470f;
+        /// <summary>修炼进度区起始 Y（设计稿「修炼进度」section；连招提示占 470..502，故下移）</summary>
+        private const float CultivationY = 506f;
 
         /// <summary>修炼所需材料区起始 Y（设计稿 .materials-section）</summary>
-        private const float MaterialsY = 580f;
+        private const float MaterialsY = 616f;
 
-        private const float ActionY = 810f;
-
-        /// <summary>修炼经验当前值（设计稿 .cult-exp-current）</summary>
-        private const int CultivationExpCurrent = 7500;
-
-        /// <summary>修炼经验上限（设计稿 .cult-exp-total）</summary>
-        private const int CultivationExpTotal = 10000;
-
-        /// <summary>修炼经验进度（设计稿 .cult-progress width: 75%）</summary>
-        private static readonly float CultivationExpRatio = (float)CultivationExpCurrent / CultivationExpTotal;
+        private const float ActionY = 830f;
 
         private InkPanelElevated _panel;
         private InkButton _closeButton;
@@ -2506,6 +2500,17 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private InkTextBlock[] _comboNodeNames;
         private InkTextBlock[] _comboNodeEffects;
         private InkTextBlock[] _comboNodeTags;
+        private InkTextBlock[] _comboArrows;
+        private InkTextBlock _comboHint;
+
+        private InkTextBlock _cultCurrent;
+        private InkTextBlock _cultNext;
+        private InkTextBlock _cultBonus;
+        private InkBar _cultBar;
+        private InkTextBlock _cultExpValue;
+        private InkTextBlock _cultExpPercent;
+
+        private InkPanel[] _materialRows;
 
         private InkButton _practiceButton;
         private InkButton _closeBtnBottom;
@@ -2518,67 +2523,229 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private Float2 _screenSize;
 
         /// <summary>
-        /// 武学详情弹窗的数据契约。由来源页面（如武学心法面板）在触发导航时填充，
-        /// 弹窗创建后通过 <see cref="BindMartial"/> 注入，替换设计稿中的静态示例内容。
+        /// 注入技能目录里的真实招式：名称/描述/阶境/五行/类型/冷却/连招链/材料门槛。
+        /// 数值一律取自 <see cref="SkillConfig"/> 与服务端已学等级；没有下行通道的项（破防、修为经验）
+        /// 保持占位符，不用设计稿里的样例数字充数。
         /// </summary>
-        public struct MartialDetailInfo
+        public void BindSkill(SkillConfig cfg, int learnedLevel)
         {
-            public string Glyph;
-            public string Name;
-            public string Sect;
-            public string Grade;
-            public InkWashTheme.InkQuality Quality;
+            if (cfg == null)
+                return;
+
+            _moveName.Text = string.IsNullOrEmpty(cfg.SkillName) ? "—" : cfg.SkillName;
+            _moveIconChar.Text = ElementGlyph(cfg.Element);
+            _moveFlavor.Text = string.IsNullOrEmpty(cfg.Description) ? "—" : cfg.Description;
+
+            _qualityTag.Text = GradeText(cfg.Grade, cfg.GradeStage);
+            _qualityTag.TagVariant = cfg.Grade >= 4 ? InkTagVariant.Brand : InkTagVariant.Default;
+            _typeTag.Text = $"{ElementName(cfg.Element)} · {TypeName(cfg.Type)}";
+            _levelText.Text = learnedLevel > 0 ? $"修炼等级 Lv. {learnedLevel}" : "未习得";
+
+            float multiplier = learnedLevel > 0
+                ? cfg.GetDamageMultiplierAtLevel(learnedLevel)
+                : cfg.DamageMultiplier;
+            _attrValues[0].Text = $"×{multiplier:0.##}";
+            _attrValues[1].Text = "—";
+            _attrValues[2].Text = $"{cfg.Range:0.#} 米 · {RangeText(cfg.RangeType)}";
+            _attrValues[3].Text = $"{cfg.EnergyCost:0.#}";
+            _attrValues[4].Text = $"{cfg.Cooldown:0.##} 秒";
+            _attrValues[5].Text = $"{cfg.CastTime:0.##} 秒";
+            _attrValues[6].Text = cfg.ComboIndex > 0 ? $"第 {cfg.ComboIndex + 1} 式" : "起手式";
+            _attrValues[7].Text = $"+{cfg.CritRate * 100f:0.#}%";
+
+            BindComboChain(cfg);
+            BindCultivation(cfg, learnedLevel);
+            BindMaterials(cfg);
+        }
+
+        /// <summary>连招链：沿 ComboNextId 走到底，最多在版面上摆三式。</summary>
+        private void BindComboChain(SkillConfig cfg)
+        {
+            var chain = SkillDatabase.GetComboChain(cfg.SkillId);
+            int count = chain?.Count ?? 0;
+            string[] tags = { "起手", "连击", "终结" };
+            for (int i = 0; i < _comboNodes.Length; i++)
+            {
+                bool show = i < count;
+                _comboNodes[i].Visible = show;
+                if (!show)
+                    continue;
+                _comboNodeNames[i].Text = string.IsNullOrEmpty(chain[i].SkillName) ? "—" : chain[i].SkillName;
+                _comboNodeEffects[i].Text = Shorten(chain[i].Description, 22);
+                _comboNodeTags[i].Text = tags[Math.Min(i, tags.Length - 1)];
+            }
+            for (int i = 0; i < _comboArrows.Length; i++)
+                _comboArrows[i].Visible = i + 1 < Math.Min(count, _comboNodes.Length);
+
+            if (count <= 1)
+            {
+                _comboHint.Text = "该招式没有配置连招链（comboNextId = 0）。";
+            }
+            else if (count > _comboNodes.Length)
+            {
+                _comboHint.Text = $"连招窗口 {cfg.ComboWindow:0.##} 秒，链内共 {count} 式，此处显示前三式。";
+            }
+            else
+            {
+                _comboHint.Text = $"连招窗口 {cfg.ComboWindow:0.##} 秒，链内共 {count} 式；超时或换招即中断。";
+            }
+        }
+
+        /// <summary>修炼进度：等级与上限来自目录 + 已学等级；修为经验没有下行通道，保持占位。</summary>
+        private void BindCultivation(SkillConfig cfg, int learnedLevel)
+        {
+            _cultCurrent.Text = learnedLevel > 0 ? $"当前 Lv. {learnedLevel}" : "未习得";
+            _cultNext.Text = $"上限 Lv. {cfg.MaxLevel}";
+            _cultBonus.Text = $"每级伤害倍率 +{cfg.DamagePerLevel:0.##}";
+            _cultBar.Value = 0f;
+            _cultExpValue.Text = "— / —";
+            _cultExpPercent.Text = "—";
+        }
+
+        /// <summary>材料门槛：读 skill 的 learnCost.materials；已有数量只在背包快照就绪时才核对。</summary>
+        private void BindMaterials(SkillConfig cfg)
+        {
+            var needs = cfg.LearnCost?.Materials;
+            var inventory = PlayerInventoryService.Instance;
+            bool hasSnapshot = inventory != null && inventory.HasServerData;
+
+            int shown = 0;
+            bool allEnough = true;
+            for (int i = 0; i < _materialRows.Length; i++)
+            {
+                bool show = needs != null && i < needs.Count;
+                _materialRows[i].Visible = show;
+                if (!show)
+                    continue;
+
+                shown++;
+                var need = needs[i];
+                var def = ItemCatalog.Resolve(need.ItemId);
+                _materialNames[i].Text = def != null && !string.IsNullOrEmpty(def.Name)
+                    ? def.Name
+                    : $"物品 {need.ItemId}";
+
+                int have = -1;
+                if (hasSnapshot)
+                {
+                    have = 0;
+                    foreach (var item in inventory.Items)
+                        if (item.TemplateId == need.ItemId)
+                            have += item.Count;
+                }
+
+                if (have < 0)
+                {
+                    _materialCounts[i].Text = $"需求 {need.Count}";
+                    _materialCounts[i].TextColor = InkWashTheme.PaperFaded;
+                    _materialStatuses[i].Text = "—";
+                    _materialStatuses[i].TextColor = InkWashTheme.PaperFaded;
+                    allEnough = false;
+                }
+                else
+                {
+                    bool enough = have >= need.Count;
+                    allEnough &= enough;
+                    var color = enough ? InkWashTheme.JadeBright : InkWashTheme.VermilionBright;
+                    _materialCounts[i].Text = $"{have} / {need.Count}";
+                    _materialCounts[i].TextColor = color;
+                    _materialStatuses[i].Text = enough ? "充足" : "不足";
+                    _materialStatuses[i].TextColor = color;
+                }
+            }
+
+            if (needs == null || needs.Count == 0)
+            {
+                _materialsSummary.Text = "该招式未配置材料门槛（learnCost 为空）。";
+                _materialsSummary.TextColor = InkWashTheme.PaperFaded;
+            }
+            else if (needs.Count > _materialRows.Length)
+            {
+                _materialsSummary.Text = $"共 {needs.Count} 项材料，此处列出前 {_materialRows.Length} 项。";
+                _materialsSummary.TextColor = InkWashTheme.PaperFaded;
+            }
+            else if (!hasSnapshot)
+            {
+                _materialsSummary.Text = "背包快照未就绪，无法核对已有数量。";
+                _materialsSummary.TextColor = InkWashTheme.PaperFaded;
+            }
+            else if (allEnough)
+            {
+                _materialsSummary.Text = "材料齐备。";
+                _materialsSummary.TextColor = InkWashTheme.JadeBright;
+            }
+            else
+            {
+                _materialsSummary.Text = "材料不足，请先收集。";
+                _materialsSummary.TextColor = InkWashTheme.TextVermilion;
+            }
+
+            // 「演练」不消耗材料也不改状态，只是设计稿里的跳转入口，保持可用。
+            _materialsTitle.Text = shown > 0 ? "修炼所需" : "修炼所需（无材料门槛）";
+            _materialsSummary.Location = new Float2(32f, MaterialsY + 34f + shown * 30f);
+        }
+
+        /// <summary>连招节点只有两行字的空间，超长描述截断，避免溢出压到相邻节点。</summary>
+        private static string Shorten(string text, int maxChars)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxChars)
+                return text ?? "";
+            return text.Substring(0, maxChars) + "…";
+        }
+
+        private static string ElementGlyph(string element) => element switch
+        {
+            "Metal" => "金",
+            "Wood" => "木",
+            "Water" => "水",
+            "Fire" => "火",
+            "Earth" => "土",
+            _ => "武"
+        };
+
+        private static string ElementName(string element) => element switch
+        {
+            "Metal" => "金",
+            "Wood" => "木",
+            "Water" => "水",
+            "Fire" => "火",
+            "Earth" => "土",
+            _ => "无属"
+        };
+
+        private static string TypeName(string type) => type switch
+        {
+            "Control" => "控制",
+            "Dash" => "身法",
+            "Support" => "辅助",
+            "Ultimate" => "绝学",
+            _ => "主动攻击"
+        };
+
+        private static string RangeText(string rangeType) => rangeType switch
+        {
+            "Circle" => "圆形",
+            "Sector" => "扇形",
+            "Rectangle" => "矩形",
+            "Line" => "直线",
+            _ => "单体"
+        };
+
+        private static string GradeText(int grade, int stage)
+        {
+            string[] grades = { "未分阶", "白阶", "黄阶", "玄阶", "地阶", "天阶", "道阶", "混沌" };
+            string[] stages = { "", "初境", "中境", "极境" };
+            if (grade <= 0 || grade >= grades.Length)
+                return "未分阶";
+            return stage >= 1 && stage < stages.Length
+                ? $"{grades[grade]}·{stages[stage]}"
+                : grades[grade];
         }
 
         /// <summary>基于既有主题 token 派生指定透明度的颜色（避免硬编码色值）。</summary>
         private static Color WithAlpha(Color color, float alpha)
         {
             return new Color(color.R, color.G, color.B, alpha);
-        }
-
-        /// <summary>
-        /// 注入真实武学数据（名称/品阶/门派/熟练度/品质色），覆盖设计稿示例占位。
-        /// 空字段保持示例值不动，保证仅覆盖有来源数据的项。
-        /// </summary>
-        public void BindMartial(in MartialDetailInfo info)
-        {
-            if (!string.IsNullOrEmpty(info.Glyph))
-                _moveIconChar.Text = info.Glyph.Substring(0, 1);
-            if (!string.IsNullOrEmpty(info.Name))
-                _moveName.Text = info.Name;
-            if (!string.IsNullOrEmpty(info.Sect))
-                _typeTag.Text = info.Sect;
-            if (!string.IsNullOrEmpty(info.Grade))
-                _levelText.Text = info.Grade;
-            _qualityTag.Text = QualityName(info.Quality);
-            _qualityTag.TagVariant = QualityTagVariant(info.Quality);
-        }
-
-        /// <summary>品质 → 设计稿五阶品名（凡/良/珍/史/传）。</summary>
-        private static string QualityName(InkWashTheme.InkQuality q)
-        {
-            switch (q)
-            {
-                case InkWashTheme.InkQuality.Legendary: return "传世";
-                case InkWashTheme.InkQuality.Epic: return "史传";
-                case InkWashTheme.InkQuality.Rare: return "珍品";
-                case InkWashTheme.InkQuality.Uncommon: return "良品";
-                default: return "凡品";
-            }
-        }
-
-        /// <summary>品质 → 标签变体（珍品及以上鎏金品牌，其余默认弱金）。</summary>
-        private static InkTagVariant QualityTagVariant(InkWashTheme.InkQuality q)
-        {
-            switch (q)
-            {
-                case InkWashTheme.InkQuality.Legendary:
-                case InkWashTheme.InkQuality.Epic:
-                case InkWashTheme.InkQuality.Rare:
-                    return InkTagVariant.Brand;
-                default:
-                    return InkTagVariant.Default;
-            }
         }
 
         public PopupMartialDetail()
@@ -2626,7 +2793,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopRight,
                 Location = new Float2(PanelWidth - 44f, HeaderY),
                 Size = new Float2(32f, 32f),
@@ -2645,7 +2812,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _moveIconChar = new InkTextBlock(InkTextStyle.Display)
             {
-                Text = "剑",
+                Text = "武",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,
                 Size = new Float2(IconSize, IconSize),
@@ -2658,7 +2825,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _moveName = new InkTextBlock(InkTextStyle.Heading)
             {
-                Text = "青莲剑歌·第三式",
+                Text = "暂无招式",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(112f, HeaderY),
                 Size = new Float2(320f, 32f),
@@ -2668,8 +2835,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             InkTag tag1 = new InkTag
             {
-                Text = "传世",
-                // 设计方案§品质色阶：Legendary=#C8A858（鎏金），用Brand变体而非Vermilion
+                Text = "—",
+                // 品阶由上方的 SkillConfig.Grade/GradeStage 映射；无数据时显示占位符而不是设计稿的静态品名。
                 TagVariant = InkTagVariant.Brand,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(112f, HeaderY + 36f),
@@ -2680,7 +2847,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             InkTag tag2 = new InkTag
             {
-                Text = "剑法 · 主动",
+                Text = "—",
                 TagVariant = InkTagVariant.Brand,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(180f, HeaderY + 36f),
@@ -2691,7 +2858,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             InkTextBlock levelText = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = "修炼等级 Lv. 15",
+                Text = "—",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(284f, HeaderY + 38f),
                 Size = new Float2(100f, 20f),
@@ -2702,7 +2869,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _moveFlavor = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = "青莲剑歌第三式，剑出如莲，层层绽裂。以剑意引动天地灵气，化三式连绵不绝之攻势，终式有青莲绽放之威。",
+                Text = "武学数据未就绪：招式名、品阶与属性均由技能目录注入。",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, HeaderY + 72f),
                 Size = new Float2(PanelWidth - 64f, 56f),
@@ -2732,8 +2899,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _panel.AddChild(attrPanel);
 
-            string[] labels = { "伤害", "破防", "范围", "消耗内力", "冷却", "施法时间", "连击数", "暴击率加成" };
-            string[] values = { "3,850", "1,200", "前方5米扇形", "150", "8秒", "0.5秒", "3段", "+15%" };
+            string[] labels = { "伤害倍率", "破防", "范围", "消耗内力", "冷却", "施法时间", "连击段位", "暴击率加成" };
+            // 默认值留空占位：数值一律由 BindSkill 从技能目录注入，页面不再自带样例数字。
+            string[] values = { "—", "—", "—", "—", "—", "—", "—", "—" };
             Color[] valueColors = { InkWashTheme.VermilionBright, InkWashTheme.GoldBright, InkWashTheme.PaperBright, InkWashTheme.GoldBright, InkWashTheme.GoldBright, InkWashTheme.GoldBright, InkWashTheme.GoldBright, InkWashTheme.VermilionBright };
 
             _attrCells = new InkPanel[labels.Length];
@@ -2797,8 +2965,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
             float startX = (PanelWidth - (nodeWidth * 3 + nodeGap * 2)) * 0.5f;
             float startY = ComboY + 32f;
 
-            string[] nodeNames = { "起式·破风", "中式·流光", "终式·青莲" };
-            string[] nodeEffects = { "破敌方护体，降低防御15%", "剑光连绵，三段追击伤害", "青莲绽放，范围爆发终结" };
+            // 连招链由 SkillConfig.ComboNextId 链注入（SkillDatabase.GetComboChain），默认只留占位。
+            string[] nodeNames = { "—", "—", "—" };
+            string[] nodeEffects = { "", "", "" };
             string[] nodeTags = { "起手", "连击", "终结" };
             string[] nodeIndices = { "壹", "贰", "叁" };
 
@@ -2807,6 +2976,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             _comboNodeNames = new InkTextBlock[3];
             _comboNodeEffects = new InkTextBlock[3];
             _comboNodeTags = new InkTextBlock[3];
+            _comboArrows = new InkTextBlock[2];
 
             for (int i = 0; i < 3; i++)
             {
@@ -2878,18 +3048,19 @@ namespace HundunWorld.Game.UI.Ink.Pages
                         TextColor = InkWashTheme.GoldBright,
                     };
                     _panel.AddChild(arrow);
+                    _comboArrows[i] = arrow;
                 }
             }
 
-            InkTextBlock comboHint = new InkTextBlock(InkTextStyle.Caption)
+            _comboHint = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "连招需在8秒内依次释放，中断后需重新起手。终式命中可触发\"青莲剑意\"增益。",
+                Text = "连招窗口与链内式数由技能目录注入。",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, ComboY + 120f),
                 Size = new Float2(PanelWidth - 64f, 32f),
                 TextColor = InkWashTheme.PaperFaded,
             };
-            _panel.AddChild(comboHint);
+            _panel.AddChild(_comboHint);
         }
 
         /// <summary>
@@ -2925,15 +3096,15 @@ namespace HundunWorld.Game.UI.Ink.Pages
             _panel.AddChild(_guideLink);
 
             // 当前 → 下一阶 与提升预览（设计稿 .cultivation-level-row）
-            InkTextBlock currentLevel = new InkTextBlock(InkTextStyle.Body)
+            _cultCurrent = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = "当前 Lv. 15",
+                Text = "当前 Lv. —",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(32f, y + 32f),
                 Size = new Float2(110f, 20f),
                 TextColor = InkWashTheme.PaperBright,
             };
-            _panel.AddChild(currentLevel);
+            _panel.AddChild(_cultCurrent);
 
             InkTextBlock levelArrow = new InkTextBlock(InkTextStyle.Body)
             {
@@ -2946,27 +3117,27 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _panel.AddChild(levelArrow);
 
-            InkTextBlock nextLevel = new InkTextBlock(InkTextStyle.Body)
+            _cultNext = new InkTextBlock(InkTextStyle.Body)
             {
-                Text = "下一阶 Lv. 16",
+                Text = "上限 Lv. —",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(176f, y + 32f),
                 Size = new Float2(120f, 20f),
                 TextColor = InkWashTheme.GoldBright,
             };
-            _panel.AddChild(nextLevel);
+            _panel.AddChild(_cultNext);
 
-            InkTextBlock levelBonus = new InkTextBlock(InkTextStyle.Caption)
+            _cultBonus = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "伤害 +260 · 破防 +80",
+                Text = "—",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(304f, y + 34f),
                 Size = new Float2(220f, 18f),
                 TextColor = InkWashTheme.JadeBright,
             };
-            _panel.AddChild(levelBonus);
+            _panel.AddChild(_cultBonus);
 
-            // 经验进度条（设计稿 .cult-progress：朱红填充 75%）
+            // 经验条：修为经验没有下行通道，先给 0 而不是设计稿的 75%。
             InkBar cultBar = new InkBar
             {
                 FillVariant = InkBarFillVariant.Vermilion,
@@ -2974,8 +3145,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 Location = new Float2(32f, y + 60f),
                 Size = new Float2(PanelWidth - 64f, 8f),
             };
-            cultBar.Value = CultivationExpRatio;
+            cultBar.Value = 0f;
             _panel.AddChild(cultBar);
+            _cultBar = cultBar;
 
             // 经验值行（设计稿 .cult-exp-row）
             InkTextBlock expLabel = new InkTextBlock(InkTextStyle.Body)
@@ -2988,27 +3160,27 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _panel.AddChild(expLabel);
 
-            InkTextBlock expValue = new InkTextBlock(InkTextStyle.Number)
+            _cultExpValue = new InkTextBlock(InkTextStyle.Number)
             {
-                Text = $"{CultivationExpCurrent.ToString("N0")} / {CultivationExpTotal.ToString("N0")}",
+                Text = "— / —",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(92f, y + 78f),
                 Size = new Float2(180f, 18f),
                 HorizontalAlignment = TextAlignment.Near,
                 TextColor = InkWashTheme.GoldBright,
             };
-            _panel.AddChild(expValue);
+            _panel.AddChild(_cultExpValue);
 
-            InkTextBlock expPercent = new InkTextBlock(InkTextStyle.Number)
+            _cultExpPercent = new InkTextBlock(InkTextStyle.Number)
             {
-                Text = "75%",
+                Text = "—",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(PanelWidth - 92f, y + 78f),
                 Size = new Float2(60f, 18f),
                 HorizontalAlignment = TextAlignment.Far,
                 TextColor = InkWashTheme.VermilionBright,
             };
-            _panel.AddChild(expPercent);
+            _panel.AddChild(_cultExpPercent);
         }
 
         /// <summary>
@@ -3029,20 +3201,21 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _panel.AddChild(_materialsTitle);
 
-            string[] names = { "剑意残片", "灵石", "铜钱", "青莲剑谱" };
-            string[] haves = { "15", "85", "12,450", "1" };
-            string[] needs = { "20", "100", "5,000", "1" };
-            bool[] enough = { false, false, true, true };
+            string[] names = { "—", "—", "—", "—" };
+            string[] haves = { "—", "—", "—", "—" };
+            string[] needs = { "—", "—", "—", "—" };
+            bool[] enough = { false, false, false, false };
 
             _materialNames = new InkTextBlock[names.Length];
             _materialCounts = new InkTextBlock[names.Length];
             _materialStatuses = new InkTextBlock[names.Length];
+            _materialRows = new InkPanel[names.Length];
 
             float rowHeight = 30f;
             float startY = y + 30f;
             for (int i = 0; i < names.Length; i++)
             {
-                Color statusColor = enough[i] ? InkWashTheme.JadeBright : InkWashTheme.VermilionBright;
+                Color statusColor = enough[i] ? InkWashTheme.JadeBright : InkWashTheme.PaperFaded;
 
                 InkPanel row = new InkPanel
                 {
@@ -3053,6 +3226,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                     BackgroundColor = WithAlpha(statusColor, 0.08f),
                 };
                 _panel.AddChild(row);
+                _materialRows[i] = row;
 
                 _materialNames[i] = new InkTextBlock(InkTextStyle.Body)
                 {
@@ -3077,7 +3251,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
                 _materialStatuses[i] = new InkTextBlock(InkTextStyle.Caption)
                 {
-                    Text = enough[i] ? "充足" : "不足",
+                    Text = "—",
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(PanelWidth - 64f - 60f, 6f),
                     Size = new Float2(48f, 18f),
@@ -3089,9 +3263,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             _materialsSummary = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "2种材料不足，无法修炼。请先收集所需材料。",
+                Text = "材料门槛由技能目录 learnCost 注入。",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(32f, startY + names.Length * rowHeight + 4f),
+                Location = new Float2(32f, MaterialsY + 34f),
                 Size = new Float2(PanelWidth - 64f, 18f),
                 TextColor = InkWashTheme.TextVermilion,
             };
@@ -3279,7 +3453,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopRight,
                 Location = new Float2(PanelWidth - 44f, HeaderY),
                 Size = new Float2(32f, 32f),
@@ -4202,7 +4376,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✉",
+                Text = "◆",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(PanelWidth - 84f, 12f),
                 Size = new Float2(32f, 32f),
@@ -4214,7 +4388,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(PanelWidth - 44f, 12f),
                 Size = new Float2(32f, 32f),

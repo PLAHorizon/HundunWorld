@@ -35,6 +35,95 @@ namespace NarrativePro.Items
     {
         /// <summary>返回此片段提供的所有使用动作。</summary>
         public virtual List<NarrativeItemUseAction> GetItemUseActions() => new List<NarrativeItemUseAction>();
+
+        /// <summary>
+        /// 把片段实例数据序列化为 JSON 存档串。对应 UE5 <c>FSavedItemFragment.Data</c>
+        /// （NarrativeItem.h:48 的 SaveGame 字节流，配合 <c>UNarrativeItem::SavedFragments</c>
+        /// NarrativeItem.h:501）——UE5 靠 UPROPERTY 反射自动抓字节，这里抓公有可读实例属性，
+        /// 含受保护 setter 的属性（如 <c>PoisonableFragment.AppliedPoison</c>）也会被写出。
+        /// </summary>
+        public virtual string SaveFragmentState()
+        {
+            try
+            {
+                return System.Text.Json.JsonSerializer.Serialize(this, GetType());
+            }
+            catch (Exception ex)
+            {
+                NarrativePro.Core.NarrativeLog.LogWarning($"片段 {GetType().Name} 存档序列化失败：{ex.Message}");
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// 从存档 JSON 恢复片段实例数据。对应 UE5 存档系统对 SavedFragments 的按类回填。
+        /// 逐属性反射赋值（public|nonpublic 实例属性，含 protected setter），
+        /// 片段实例本身保持原引用（不重建），避免外部缓存失效。
+        /// </summary>
+        public virtual void LoadFragmentState(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return;
+
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return;
+
+                foreach (var propEl in doc.RootElement.EnumerateObject())
+                {
+                    var prop = GetType().GetProperty(propEl.Name,
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (prop == null || !prop.CanWrite || prop.GetIndexParameters().Length > 0) continue;
+
+                    var setter = prop.GetSetMethod(nonPublic: true);
+                    if (setter == null) continue;
+
+                    object value = ReadJsonValue(propEl.Value, prop.PropertyType);
+                    if (value != null)
+                    {
+                        setter.Invoke(this, new[] { value });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                NarrativePro.Core.NarrativeLog.LogWarning($"片段 {GetType().Name} 存档反序列化失败：{ex.Message}");
+            }
+        }
+
+        /// <summary>把 JSON 元素转换成目标属性类型（不可转换时返回 null 跳过赋值）。</summary>
+        private static object ReadJsonValue(System.Text.Json.JsonElement el, Type targetType)
+        {
+            Type real = Nullable.GetUnderlyingType(targetType) ?? targetType;
+            try
+            {
+                switch (el.ValueKind)
+                {
+                    case System.Text.Json.JsonValueKind.Null:
+                    case System.Text.Json.JsonValueKind.Undefined:
+                        return null;
+                    case System.Text.Json.JsonValueKind.String:
+                        return el.GetString();
+                    case System.Text.Json.JsonValueKind.True:
+                        return true;
+                    case System.Text.Json.JsonValueKind.False:
+                        return false;
+                    case System.Text.Json.JsonValueKind.Number:
+                        if (real == typeof(float)) return el.GetSingle();
+                        if (real == typeof(double)) return el.GetDouble();
+                        if (real == typeof(int)) return el.GetInt32();
+                        if (real == typeof(long)) return el.GetInt64();
+                        return el.GetRawText();
+                    default:
+                        // 对象/数组/枚举：交给 System.Text.Json 按目标类型反序列化
+                        return System.Text.Json.JsonSerializer.Deserialize(el.GetRawText(), real);
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 
     /// <summary>
@@ -157,6 +246,63 @@ namespace NarrativePro.Items
         /// <summary>片段列表（组合式数据）</summary>
         public List<NarrativeItemFragment> Fragments { get; set; } = new List<NarrativeItemFragment>();
 
+        /// <summary>
+        /// 采集各片段的存档快照。对应 UE5 <c>UNarrativeItem::SavedFragments</c>
+        /// （NarrativeItem.h:501，<c>TArray&lt;FSavedItemFragment&gt;</c>）：
+        /// 类型名用片段 CLR 类型名——与 <c>ItemFactory.RegisterFragmentType</c> 注册的键同名
+        /// （"AmmoFragment"/"PoisonableFragment"），加载时按该键重建实例。
+        /// </summary>
+        public List<SavedItemFragment> CaptureSavedFragments()
+        {
+            var result = new List<SavedItemFragment>();
+            if (Fragments == null) return result;
+
+            foreach (var frag in Fragments)
+            {
+                if (frag == null) continue;
+                result.Add(new SavedItemFragment
+                {
+                    FragmentTypeId = frag.GetType().Name,
+                    Data = frag.SaveFragmentState(),
+                });
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 回填片段存档。对应 UE5 存档系统按 <c>FSavedItemFragment.Fragment</c> 类重建并灌回字节流：
+        /// 已存在同类型片段则就地恢复状态（保留引用）；物品类定义里没有时经 ItemFactory 补挂。
+        /// </summary>
+        public void ApplySavedFragments(List<SavedItemFragment> savedFragments)
+        {
+            if (savedFragments == null || savedFragments.Count == 0) return;
+
+            foreach (var saved in savedFragments)
+            {
+                if (saved == null || string.IsNullOrEmpty(saved.FragmentTypeId)) continue;
+
+                NarrativeItemFragment frag = null;
+                if (Fragments != null)
+                {
+                    foreach (var f in Fragments)
+                    {
+                        if (f != null && string.Equals(f.GetType().Name, saved.FragmentTypeId, StringComparison.Ordinal))
+                        {
+                            frag = f;
+                            break;
+                        }
+                    }
+                }
+
+                if (frag == null)
+                {
+                    frag = ItemFactory.AttachFragment(this, saved.FragmentTypeId);
+                }
+
+                frag?.LoadFragmentState(saved.Data);
+            }
+        }
+
         /// <summary>物品修改事件</summary>
         public event Action<NarrativeItem> OnItemModified;
 
@@ -242,6 +388,11 @@ namespace NarrativePro.Items
 
             float now = Time.GameTime;
             if (UseRechargeDuration > 0f && (now - LastUseTime) < UseRechargeDuration)
+                return false;
+
+            // UE5 InventoryComponent.cpp:161-164：不可移除却标记为「用掉」的物品必须拒绝使用，
+            // 否则会承诺一次永远不会发生的消耗。
+            if (!CanBeRemoved() && bConsumeOnUse)
                 return false;
 
             Use(otherItem);

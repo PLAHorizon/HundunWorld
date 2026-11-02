@@ -1,5 +1,5 @@
-// PCG Plugin - Attribute system
-// Part of the FlaxEngine PCG plugin. See docs/PCG_PLUGIN_DESIGN.md §3.2.
+// PCG 插件 - 属性系统
+// 属于 FlaxEngine PCG 插件。见 docs/PCG_PLUGIN_DESIGN.md §3.2。
 
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using FlaxEngine;
 
 namespace PCG
 {
-    /// <summary>Attribute value types supported by <see cref="PCGAttributeSet"/>.</summary>
+    /// <summary><see cref="PCGAttributeSet"/> 支持的属性取值类型。</summary>
     public enum PCGAttributeType
     {
         Float = 0,
@@ -21,18 +21,18 @@ namespace PCG
     }
 
     /// <summary>
-    /// Describes one attribute: its storage name, value type and whether it is a built-in point channel.
+    /// 描述一个属性：它的存储名、取值类型，以及它是不是一个内建的点通道。
     /// </summary>
     [Serializable]
     public struct PCGAttributeDescriptor
     {
-        /// <summary>Storage name. Built-ins carry a leading '$' (for example <c>$Density</c>).</summary>
+        /// <summary>存储名。内建的名字带一个前导 '$'（例如 <c>$Density</c>）。</summary>
         public string Name;
 
-        /// <summary>Value type.</summary>
+        /// <summary>取值类型。</summary>
         public PCGAttributeType Type;
 
-        /// <summary>True when this attribute is a built-in point channel rather than custom metadata.</summary>
+        /// <summary>这个属性是内建的点通道（而不是自定义元数据）时为 true。</summary>
         public bool IsBuiltIn;
 
         /// <inheritdoc />
@@ -40,55 +40,58 @@ namespace PCG
     }
 
     /// <summary>
-    /// Column-oriented (SoA) attribute storage with copy-on-write sharing.
+    /// 按列存储（SoA）的属性存储，带写时复制式的共享。
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Why this exists.</b> <see cref="PCGPoint"/> is a struct but holds this class by reference, so
-    /// copying a point array copies the <i>reference</i>. Several points (or several data sets produced by
-    /// Merge/Split nodes) can therefore alias one storage instance. Without protection, writing one point's
-    /// attribute would silently change every aliasing point - a bug that is very hard to trace back.
+    /// <b>为什么要有它。</b><see cref="PCGPoint"/> 是结构体，但它按**引用**持有这个类，所以
+    /// 复制一个点数组复制的是那个<i>引用</i>。于是若干个点（或者由 Merge/Split 节点产出的若干份
+    /// 数据集）可能别名到同一份存储。没有保护的话，写一个点的属性
+    /// 会悄悄改掉**所有**别名点——一个极难顺藤摸瓜的缺陷。
     /// </para>
     /// <para>
-    /// <b>The contract.</b> Sharing is allowed; in-place mutation of shared storage is not. Every mutating
-    /// entry point calls <see cref="Detach"/>, which clones the backing columns the first time a shared
-    /// instance is written. After the detach, this instance owns fresh arrays while other holders keep
-    /// reading the original ones. Detach mutates <c>this</c> in place rather than returning a replacement,
-    /// so a mutator cannot accidentally drop the copy - that mistake is impossible by construction here.
+    /// <b>契约。</b>允许共享；不允许就地改共享的存储。每一个会写
+    /// 的入口都调用 <see cref="Detach"/>，它在**第一次**写一份被共享的实例时
+    /// 克隆背后的那些列。脱开之后，这个实例拥有崭新的数组，而其他持有者继续
+    /// 读原来那些。Detach 是就地改 <c>this</c> 而不是返回一个替代品，
+    /// 所以调用方不可能不小心把副本丢掉——在这里那个错误从构造上就不存在。
     /// </para>
     /// <para>
-    /// <b>Consequence.</b> <see cref="GetFloatArray"/> and friends hand out the live column for speed. They
-    /// are for readers only. A node that intends to write rows must use the matching <c>GetWritable*</c>
-    /// accessor, which detaches first; writing through a read-only column would bypass the contract and
-    /// reintroduce the aliasing bug.
+    /// <b>后果。</b><see cref="GetFloatArray"/> 之类的接口为了速度直接把**活列**交出去。它们
+    /// 只给读者用。打算写行的节点必须用配套的 <c>GetWritable*</c>
+    /// 访问器，那个会先脱开；经只读列去写会绕过契约，
+    /// 把别名缺陷重新引回来。
     /// </para>
     /// <para>
-    /// Built-in channels (<c>$Position</c>, <c>$Rotation</c>, <c>$Scale</c>, <c>$Density</c>, <c>$Seed</c>,
-    /// <c>$Bounds</c>, <c>$Slope</c>) are <b>declared</b> here so nodes can query uniformly, but they are not
-    /// stored here: they live in the point array. Attempting to write one raises
-    /// <see cref="PCGAttributeError.BuiltInReadOnly"/>, which makes the separation impossible to violate
-    /// silently.
+    /// 内建通道分成两类。<c>$Position</c>、<c>$Rotation</c>、<c>$Scale</c>、<c>$Density</c>、
+    /// <c>$Seed</c> 与 <c>$Bounds</c> 是**虚**的：它们的值住在点数组里，所以这个集合
+    /// 只知道它们的名字与类型。经访问器去碰它们会抛
+    /// <see cref="PCGAttributeError.BuiltInReadOnly"/>，并把调用者指回点的字段。
+    /// <c>$Slope</c> 是例外——<see cref="PCGPoint"/> 没有坡度字段，所以它是真正
+    /// 由列支撑的通道：采样器声明它并填它，过滤器读它。以后任何没有
+    /// 对应 <see cref="PCGPoint"/> 字段的通道也必须加进 <see cref="IsStoredBuiltInName"/>，
+    /// 否则声明它过不了校验，而写它的采样器会在运行期抛异常。
     /// </para>
     /// </remarks>
     [Serializable]
     public sealed class PCGAttributeSet
     {
-        /// <summary>Leading character that marks a built-in (non-custom) attribute name.</summary>
+        /// <summary>标记内建（非自定义）属性名的前导字符。</summary>
         public const char BuiltInPrefix = '$';
 
-        /// <summary>Built-in: point world position (Vector3).</summary>
+        /// <summary>内建：点的世界位置（Vector3）。</summary>
         public const string PositionName = "$Position";
-        /// <summary>Built-in: point rotation (Quaternion).</summary>
+        /// <summary>内建：点的旋转（Quaternion）。</summary>
         public const string RotationName = "$Rotation";
-        /// <summary>Built-in: point scale (Vector3, widened from Float3).</summary>
+        /// <summary>内建：点的缩放（Vector3，由 Float3 拓宽而来）。</summary>
         public const string ScaleName = "$Scale";
-        /// <summary>Built-in: point density (Float).</summary>
+        /// <summary>内建：点的密度（Float）。</summary>
         public const string DensityName = "$Density";
-        /// <summary>Built-in: point seed (Int).</summary>
+        /// <summary>内建：点的种子（Int）。</summary>
         public const string SeedName = "$Seed";
-        /// <summary>Built-in: point bounds extents (Vector3, widened).</summary>
+        /// <summary>内建：点的包围盒尺寸（Vector3，拓宽过的）。</summary>
         public const string BoundsName = "$Bounds";
-        /// <summary>Built-in: cached surface slope in degrees (Float). Written by terrain/spline samplers.</summary>
+        /// <summary>内建：缓存的表面坡度（度，Float）。由地形/样条采样器写入。</summary>
         public const string SlopeName = "$Slope";
 
         private static readonly PCGAttributeDescriptor[] BuiltInDescriptors =
@@ -115,30 +118,30 @@ namespace PCG
         [NonSerialized] private int _refCount = 1;
         private int _count;
 
-        /// <summary>Creates an empty attribute set sized for <paramref name="count"/> points.</summary>
+        /// <summary>创建一份按 <paramref name="count"/> 个点开好的空属性集。</summary>
         public PCGAttributeSet(int count)
         {
             _count = count < 0 ? 0 : count;
         }
 
-        /// <summary>Parameterless constructor required by the serializer.</summary>
+        /// <summary>序列化器要求的无参构造。</summary>
         public PCGAttributeSet()
         {
         }
 
-        /// <summary>Gets the number of points this set is sized for.</summary>
+        /// <summary>取这份集合是按多少个点开的。</summary>
         public int Count => _count;
 
-        /// <summary>Gets the number of custom (non-built-in) attributes stored.</summary>
+        /// <summary>取存了多少个自定义（非内建）属性。</summary>
         public int AttributeCount => _descriptors?.Count ?? 0;
 
-        /// <summary>Gets the number of live holders. Used by <see cref="Detach"/>.</summary>
+        /// <summary>取当前有几个活跃持有者。供 <see cref="Detach"/> 使用。</summary>
         public int RefCount => _refCount;
 
-        /// <summary>True when more than one holder references this storage and the next write will detach it.</summary>
+        /// <summary>当不止一个持有者引用这份存储、且下一次写会把它脱开时为 true。</summary>
         public bool IsShared => _refCount > 1;
 
-        /// <summary>Enumerates every attribute descriptor, custom first then built-in.</summary>
+        /// <summary>枚举每一个属性描述符，自定义的在前、内建的在后。</summary>
         public IEnumerable<PCGAttributeDescriptor> GetDescriptors()
         {
             if (_descriptors != null)
@@ -151,7 +154,13 @@ namespace PCG
                 yield return BuiltInDescriptors[i];
         }
 
-        /// <summary>Enumerates only the custom (non-built-in) attribute descriptors.</summary>
+        /// <summary>
+        /// <summary>枚举由列支撑的属性，包含被存下来的内建 <c>$Slope</c>。</summary>
+        /// </summary>
+        /// <remarks>
+        /// <c>$Slope</c> 是有意包含进来的：一份合并出来的数据集不能丢掉采样器
+        /// 已经为它付过一次地形查询的坡度，所以这一列必须跟着自定义属性一起走。
+        /// </remarks>
         public IEnumerable<PCGAttributeDescriptor> GetCustomDescriptors()
         {
             if (_descriptors == null)
@@ -161,19 +170,20 @@ namespace PCG
                 yield return kv.Value;
         }
 
-        /// <summary>Returns true when the named attribute exists, including built-in channels.</summary>
+        /// <summary>
+        /// 当这份集合**真的**为 <paramref name="name"/> 持有一列时返回 true，于是调用方可以
+        /// 在这里读它。虚的内建通道（<c>$Density</c> 之类）回答 false：它们的数据在
+        /// 点上，这里给 <c>true</c> 会诱使读者向这份集合要它并不拥有的值。
+        /// </summary>
         public bool Contains(string name)
         {
             if (string.IsNullOrEmpty(name))
                 return false;
 
-            if (IsBuiltInName(name))
-                return GetBuiltInDescriptor(name).HasValue;
-
             return _descriptors != null && _descriptors.ContainsKey(name);
         }
 
-        /// <summary>Gets the descriptor for any attribute, built-in or custom.</summary>
+        /// <summary>取任何属性（内建或自定义）的描述符。</summary>
         public bool TryGetDescriptor(string name, out PCGAttributeDescriptor descriptor)
         {
             descriptor = default;
@@ -193,10 +203,20 @@ namespace PCG
             return _descriptors != null && _descriptors.TryGetValue(name, out descriptor);
         }
 
-        /// <summary>Returns true when <paramref name="name"/> denotes a built-in channel.</summary>
+        /// <summary>当 <paramref name="name"/> 表示一个内建通道时返回 true。</summary>
         public static bool IsBuiltInName(string name)
         {
             return !string.IsNullOrEmpty(name) && name[0] == BuiltInPrefix;
+        }
+
+        /// <summary>
+        /// 对那些**在这里被存成真列**（而不是从点数组镜像过来）的内建通道返回 true。
+        /// 今天只有 <see cref="SlopeName"/> 符合，因为 <see cref="PCGPoint"/>
+        /// 没有坡度字段。
+        /// </summary>
+        public static bool IsStoredBuiltInName(string name)
+        {
+            return string.Equals(name, SlopeName, StringComparison.Ordinal);
         }
 
         private static PCGAttributeDescriptor? GetBuiltInDescriptor(string name)
@@ -210,15 +230,15 @@ namespace PCG
             return null;
         }
 
-        // ---- Copy-on-write ---------------------------------------------------
+        // ---- 写时复制 ---------------------------------------------------
 
         /// <summary>
-        /// Detaches this storage from any other holder by cloning the backing columns.
+        /// 克隆背后的那些列，把这份存储与其他持有者脱开。
         /// </summary>
         /// <remarks>
-        /// This is the single write barrier of the type. It mutates <c>this</c> rather than returning a
-        /// replacement, so it is impossible for a caller to drop the clone. Cheap (a refcount check) and
-        /// idempotent once the instance is solely owned.
+        /// 这是这个类型**唯一**的写屏障。它就地改 <c>this</c> 而不是返回一个
+        /// 替代品，所以调用方不可能把克隆丢掉。很便宜（一次引用计数检查），而且
+        /// 一旦这个实例被独占，再调它是幂等的。
         /// </remarks>
         public void Detach()
         {
@@ -292,8 +312,8 @@ namespace PCG
         }
 
         /// <summary>
-        /// Registers an additional holder. Every call must be paired with <see cref="Release"/>.
-        /// Callers share storage for reads only; the first write detaches.
+        /// 登记一个额外的持有者。每一次调用都必须配一次 <see cref="Release"/>。
+        /// 调用方共享存储只用于**读**；第一次写就会脱开。
         /// </summary>
         public PCGAttributeSet Share()
         {
@@ -301,14 +321,14 @@ namespace PCG
             return this;
         }
 
-        /// <summary>Drops one holder.</summary>
+        /// <summary>丢掉一个持有者。</summary>
         public void Release()
         {
             if (_refCount > 0)
                 _refCount--;
         }
 
-        /// <summary>Creates a deep copy sized for the same number of points, solely owned.</summary>
+        /// <summary>创建一份按同样点数开好的深拷贝，且独占。</summary>
         public PCGAttributeSet Clone()
         {
             var clone = new PCGAttributeSet(_count);
@@ -371,7 +391,7 @@ namespace PCG
         }
 
         /// <summary>
-        /// Declares a custom attribute sized for a different row count, detaching first when shared.
+        /// 声明一个按**不同**行数开的自定义属性；被共享时先脱开。
         /// </summary>
         public void DeclareAttribute(string name, PCGAttributeType type)
         {
@@ -392,14 +412,14 @@ namespace PCG
                 return;
             }
 
-            _descriptors.Add(name, new PCGAttributeDescriptor { Name = name, Type = type, IsBuiltIn = false });
+            _descriptors.Add(name, new PCGAttributeDescriptor { Name = name, Type = type, IsBuiltIn = IsBuiltInName(name) });
             AllocateStorage(name, type, _count);
         }
 
         /// <summary>
-        /// Declares a custom attribute without detaching. For exclusive use during construction of a set
-        /// that is known to be unshared (for example right after <c>new PCGAttributeSet(n)</c>), so a
-        /// sampler can declare many attributes without cloning repeatedly.
+        /// 声明一个自定义属性且**不脱开**。供构造一份已知不共享的集合时
+        /// 独占使用（例如刚 <c>new PCGAttributeSet(n)</c> 之后），于是
+        /// 采样器可以一口气声明许多属性而不必反复克隆。
         /// </summary>
         public void DeclareAttributeUnsafe(string name, PCGAttributeType type)
         {
@@ -410,7 +430,7 @@ namespace PCG
             if (_descriptors.ContainsKey(name))
                 return;
 
-            _descriptors.Add(name, new PCGAttributeDescriptor { Name = name, Type = type, IsBuiltIn = false });
+            _descriptors.Add(name, new PCGAttributeDescriptor { Name = name, Type = type, IsBuiltIn = IsBuiltInName(name) });
             AllocateStorage(name, type, _count);
         }
 
@@ -447,7 +467,7 @@ namespace PCG
             }
         }
 
-        /// <summary>Resizes all columns to <paramref name="count"/>, preserving existing values.</summary>
+        /// <summary>把所有列改到 <paramref name="count"/> 行，保留已有的值。</summary>
         public void Resize(int count)
         {
             if (count < 0)
@@ -460,8 +480,8 @@ namespace PCG
 
             if (_descriptors != null)
             {
-                // Each column is read out, resized, and written back: a dictionary indexer is not a
-                // variable, so it cannot be passed by ref directly.
+                // 每一列都要读出来、改尺寸、再写回去：字典的索引器不是
+                // 变量，所以没法直接按 ref 传进去。
                 foreach (var kv in _descriptors)
                 {
                     var name = kv.Key;
@@ -531,8 +551,8 @@ namespace PCG
         }
 
         /// <summary>
-        /// Copies the rows listed in <paramref name="indices"/> into a new, solely owned and compacted set,
-        /// so that row <c>i</c> of the result corresponds to <c>indices[i]</c> of this set.
+        /// 把 <paramref name="indices"/> 里列出的行复制进一份崭新的、独占且压紧的集合，
+        /// 于是结果里的第 <c>i</c> 行对应这份集合里的 <c>indices[i]</c> 行。
         /// </summary>
         public PCGAttributeSet Gather(int[] indices, int resultCount)
         {
@@ -628,7 +648,9 @@ namespace PCG
             if (string.IsNullOrEmpty(name))
                 throw new PCGAttributeException(PCGAttributeError.InvalidName, "Attribute name cannot be null or empty.");
 
-            if (IsBuiltInName(name))
+            // $Slope 是唯一一个**存在这里**而不是从点镜像过来的内建通道，所以
+            // 声明它并填它是合法的。其他每一个以 $ 开头的名字都属于点结构体。
+            if (IsBuiltInName(name) && !IsStoredBuiltInName(name))
             {
                 throw new PCGAttributeException(
                     PCGAttributeError.BuiltInReadOnly,
@@ -646,8 +668,18 @@ namespace PCG
                     $"Index {index} is out of range for attribute '{name}' (count {_count}).");
             }
 
-            if (!TryGetDescriptor(name, out var descriptor))
-                throw new PCGAttributeException(PCGAttributeError.NotFound, $"Attribute '{name}' does not exist.");
+            // 虚通道的**读侧**守卫：TryGetDescriptor 会按名字把它们解析出来，所以没有
+            // 这道检查的话 GetFloat("$Density", i) 会过掉校验，然后去索引一个根本没有
+            // 这个键的列存储——float 存储为空时是 NullReferenceException，否则是 KeyNotFound。
+            if (IsBuiltInName(name) && !IsStoredBuiltInName(name))
+            {
+                throw new PCGAttributeException(
+                    PCGAttributeError.BuiltInReadOnly,
+                    $"'{name}' is a built-in point channel; read it from the PCGPoint field, not from the attribute set.");
+            }
+
+            if (_descriptors == null || !_descriptors.TryGetValue(name, out var descriptor))
+                throw new PCGAttributeException(PCGAttributeError.NotFound, $"Attribute '{name}' is not stored in this set.");
 
             if (descriptor.Type != type)
             {
@@ -659,15 +691,15 @@ namespace PCG
 
         private void ValidateArrayName(string name, PCGAttributeType type)
         {
-            if (IsBuiltInName(name))
+            if (IsBuiltInName(name) && !IsStoredBuiltInName(name))
             {
                 throw new PCGAttributeException(
                     PCGAttributeError.BuiltInReadOnly,
                     $"'{name}' is a built-in point channel and cannot be accessed through the attribute set.");
             }
 
-            if (!TryGetDescriptor(name, out var descriptor))
-                throw new PCGAttributeException(PCGAttributeError.NotFound, $"Attribute '{name}' does not exist.");
+            if (_descriptors == null || !_descriptors.TryGetValue(name, out var descriptor))
+                throw new PCGAttributeException(PCGAttributeError.NotFound, $"Attribute '{name}' is not stored in this set.");
 
             if (descriptor.Type != type)
             {
@@ -678,14 +710,15 @@ namespace PCG
         }
 
         /// <summary>
-        /// Write-side validation: rejects built-in channels first, then defers to the ordinary checks.
+        /// 写侧校验：先拒内建通道，再交给常规检查。
         /// </summary>
         /// <remarks>
-        /// <c>ValidateIndex</c> alone is not enough on the write path because <c>TryGetDescriptor</c> also
-        /// resolves the built-in channels, so <c>SetFloat("$Density", ...)</c> would pass validation and then
-        /// index the custom float store: a silent no-op when that store happens to exist, and a raw
-        /// NullReferenceException when it does not. Reading built-ins through the getters stays allowed, which
-        /// is why this is a separate validator rather than a change to <c>ValidateIndex</c>.
+        /// 光有 <c>ValidateIndex</c> 在写路径上不够，因为 <c>TryGetDescriptor</c> 也会
+        /// 解析内建通道，于是 <c>SetFloat("$Density", ...)</c> 会过掉校验，然后
+        /// 去索引自定义的 float 存储：那个存储恰好存在时是一次静默的空操作，不存在时是裸的
+        /// NullReferenceException。经 getter 读虚通道会因为同样的理由被
+        /// <c>ValidateIndex</c> 拒掉；<see cref="TryGetDescriptor"/> 仍然解析它们，于是
+        /// 工具能统一地报出这份 schema。
         /// </remarks>
         private void ValidateWritableIndex(string name, int index, PCGAttributeType type)
         {
@@ -693,16 +726,16 @@ namespace PCG
             ValidateIndex(name, index, type);
         }
 
-        // ---- Scalar accessors -------------------------------------------------
+        // ---- 标量访问器 -------------------------------------------------
 
-        /// <summary>Reads a float attribute.</summary>
+        /// <summary>读一个 float 属性。</summary>
         public float GetFloat(string name, int index)
         {
             ValidateIndex(name, index, PCGAttributeType.Float);
             return _floatArrays[name][index];
         }
 
-        /// <summary>Writes a float attribute, detaching first when this storage is shared.</summary>
+        /// <summary>写一个 float 属性；这份存储被共享时先脱开。</summary>
         public void SetFloat(string name, int index, float value)
         {
             ValidateWritableIndex(name, index, PCGAttributeType.Float);
@@ -710,14 +743,14 @@ namespace PCG
             _floatArrays[name][index] = value;
         }
 
-        /// <summary>Reads an int attribute.</summary>
+        /// <summary>读一个 int 属性。</summary>
         public int GetInt(string name, int index)
         {
             ValidateIndex(name, index, PCGAttributeType.Int);
             return _intArrays[name][index];
         }
 
-        /// <summary>Writes an int attribute, detaching first when this storage is shared.</summary>
+        /// <summary>写一个 int 属性；这份存储被共享时先脱开。</summary>
         public void SetInt(string name, int index, int value)
         {
             ValidateWritableIndex(name, index, PCGAttributeType.Int);
@@ -725,14 +758,14 @@ namespace PCG
             _intArrays[name][index] = value;
         }
 
-        /// <summary>Reads a bool attribute.</summary>
+        /// <summary>读一个 bool 属性。</summary>
         public bool GetBool(string name, int index)
         {
             ValidateIndex(name, index, PCGAttributeType.Bool);
             return _boolArrays[name][index];
         }
 
-        /// <summary>Writes a bool attribute, detaching first when this storage is shared.</summary>
+        /// <summary>写一个 bool 属性；这份存储被共享时先脱开。</summary>
         public void SetBool(string name, int index, bool value)
         {
             ValidateWritableIndex(name, index, PCGAttributeType.Bool);
@@ -740,14 +773,14 @@ namespace PCG
             _boolArrays[name][index] = value;
         }
 
-        /// <summary>Reads a Vector2 attribute.</summary>
+        /// <summary>读一个 Vector2 属性。</summary>
         public Vector2 GetVector2(string name, int index)
         {
             ValidateIndex(name, index, PCGAttributeType.Vector2);
             return _vector2Arrays[name][index];
         }
 
-        /// <summary>Writes a Vector2 attribute, detaching first when this storage is shared.</summary>
+        /// <summary>写一个 Vector2 属性；这份存储被共享时先脱开。</summary>
         public void SetVector2(string name, int index, Vector2 value)
         {
             ValidateWritableIndex(name, index, PCGAttributeType.Vector2);
@@ -755,14 +788,14 @@ namespace PCG
             _vector2Arrays[name][index] = value;
         }
 
-        /// <summary>Reads a Vector3 attribute.</summary>
+        /// <summary>读一个 Vector3 属性。</summary>
         public Vector3 GetVector3(string name, int index)
         {
             ValidateIndex(name, index, PCGAttributeType.Vector3);
             return _vector3Arrays[name][index];
         }
 
-        /// <summary>Writes a Vector3 attribute, detaching first when this storage is shared.</summary>
+        /// <summary>写一个 Vector3 属性；这份存储被共享时先脱开。</summary>
         public void SetVector3(string name, int index, Vector3 value)
         {
             ValidateWritableIndex(name, index, PCGAttributeType.Vector3);
@@ -770,14 +803,14 @@ namespace PCG
             _vector3Arrays[name][index] = value;
         }
 
-        /// <summary>Reads a Vector4 attribute.</summary>
+        /// <summary>读一个 Vector4 属性。</summary>
         public Vector4 GetVector4(string name, int index)
         {
             ValidateIndex(name, index, PCGAttributeType.Vector4);
             return _vector4Arrays[name][index];
         }
 
-        /// <summary>Writes a Vector4 attribute, detaching first when this storage is shared.</summary>
+        /// <summary>写一个 Vector4 属性；这份存储被共享时先脱开。</summary>
         public void SetVector4(string name, int index, Vector4 value)
         {
             ValidateWritableIndex(name, index, PCGAttributeType.Vector4);
@@ -785,14 +818,14 @@ namespace PCG
             _vector4Arrays[name][index] = value;
         }
 
-        /// <summary>Reads a Quaternion attribute.</summary>
+        /// <summary>读一个 Quaternion 属性。</summary>
         public Quaternion GetQuaternion(string name, int index)
         {
             ValidateIndex(name, index, PCGAttributeType.Quaternion);
             return _quaternionArrays[name][index];
         }
 
-        /// <summary>Writes a Quaternion attribute, detaching first when this storage is shared.</summary>
+        /// <summary>写一个 Quaternion 属性；这份存储被共享时先脱开。</summary>
         public void SetQuaternion(string name, int index, Quaternion value)
         {
             ValidateWritableIndex(name, index, PCGAttributeType.Quaternion);
@@ -800,14 +833,14 @@ namespace PCG
             _quaternionArrays[name][index] = value;
         }
 
-        /// <summary>Reads a string attribute.</summary>
+        /// <summary>读一个 string 属性。</summary>
         public string GetString(string name, int index)
         {
             ValidateIndex(name, index, PCGAttributeType.String);
             return _stringArrays[name][index];
         }
 
-        /// <summary>Writes a string attribute, detaching first when this storage is shared.</summary>
+        /// <summary>写一个 string 属性；这份存储被共享时先脱开。</summary>
         public void SetString(string name, int index, string value)
         {
             ValidateWritableIndex(name, index, PCGAttributeType.String);
@@ -815,42 +848,44 @@ namespace PCG
             _stringArrays[name][index] = value;
         }
 
-        // ---- Bulk accessors ---------------------------------------------------
-        // Read-only columns are for readers. Writers must take the Writable variant, which detaches once
-        // and then lets a node fill thousands of rows without a refcount check per row.
+        // ---- 批量访问器 ---------------------------------------------------
+        // 只读列是给读者用的。写方必须取 Writable 变体，它脱开一次
+        // 之后就让节点填几千行而不必每行做一次引用计数检查。
 
-        /// <summary>Gets the live float column for reading. Do not write through this array on shared storage.</summary>
+        /// <summary>取活的 float 列用于读。共享存储上不要经这个数组去写。</summary>
         public float[] GetFloatArray(string name)
         {
             ValidateArrayName(name, PCGAttributeType.Float);
             return _floatArrays[name];
         }
 
-        /// <summary>Gets the live float column or null when the attribute is absent. Read-only.</summary>
+        /// <summary>取活的 float 列；属性不存在时为 null。只读。</summary>
         public float[] TryGetFloatArray(string name)
         {
-            if (IsBuiltInName(name) || _descriptors == null ||
-                !_descriptors.TryGetValue(name, out var d) || d.Type != PCGAttributeType.Float)
+            if (_descriptors == null ||
+                !_descriptors.TryGetValue(name, out var d) || d.Type != PCGAttributeType.Float ||
+                _floatArrays == null || !_floatArrays.TryGetValue(name, out var column))
             {
                 return null;
             }
 
-            return _floatArrays[name];
+            return column;
         }
 
-        /// <summary>Gets the live Vector3 column or null when the attribute is absent. Read-only.</summary>
+        /// <summary>取活的 Vector3 列；属性不存在时为 null。只读。</summary>
         public Vector3[] TryGetVector3Array(string name)
         {
-            if (IsBuiltInName(name) || _descriptors == null ||
-                !_descriptors.TryGetValue(name, out var d) || d.Type != PCGAttributeType.Vector3)
+            if (_descriptors == null ||
+                !_descriptors.TryGetValue(name, out var d) || d.Type != PCGAttributeType.Vector3 ||
+                _vector3Arrays == null || !_vector3Arrays.TryGetValue(name, out var column))
             {
                 return null;
             }
 
-            return _vector3Arrays[name];
+            return column;
         }
 
-        /// <summary>Gets an exclusive float column for writing, detaching first when this storage is shared.</summary>
+        /// <summary>取一份独占的 float 列用于写；这份存储被共享时先脱开。</summary>
         public float[] GetWritableFloatArray(string name)
         {
             ValidateArrayName(name, PCGAttributeType.Float);
@@ -858,7 +893,7 @@ namespace PCG
             return _floatArrays[name];
         }
 
-        /// <summary>Gets an exclusive int column for writing, detaching first when this storage is shared.</summary>
+        /// <summary>取一份独占的 int 列用于写；这份存储被共享时先脱开。</summary>
         public int[] GetWritableIntArray(string name)
         {
             ValidateArrayName(name, PCGAttributeType.Int);
@@ -866,7 +901,7 @@ namespace PCG
             return _intArrays[name];
         }
 
-        /// <summary>Gets an exclusive bool column for writing, detaching first when this storage is shared.</summary>
+        /// <summary>取一份独占的 bool 列用于写；这份存储被共享时先脱开。</summary>
         public bool[] GetWritableBoolArray(string name)
         {
             ValidateArrayName(name, PCGAttributeType.Bool);
@@ -874,7 +909,7 @@ namespace PCG
             return _boolArrays[name];
         }
 
-        /// <summary>Gets an exclusive Vector2 column for writing, detaching first when this storage is shared.</summary>
+        /// <summary>取一份独占的 Vector2 列用于写；这份存储被共享时先脱开。</summary>
         public Vector2[] GetWritableVector2Array(string name)
         {
             ValidateArrayName(name, PCGAttributeType.Vector2);
@@ -882,7 +917,7 @@ namespace PCG
             return _vector2Arrays[name];
         }
 
-        /// <summary>Gets an exclusive Vector3 column for writing, detaching first when this storage is shared.</summary>
+        /// <summary>取一份独占的 Vector3 列用于写；这份存储被共享时先脱开。</summary>
         public Vector3[] GetWritableVector3Array(string name)
         {
             ValidateArrayName(name, PCGAttributeType.Vector3);
@@ -890,7 +925,7 @@ namespace PCG
             return _vector3Arrays[name];
         }
 
-        /// <summary>Gets an exclusive Vector4 column for writing, detaching first when this storage is shared.</summary>
+        /// <summary>取一份独占的 Vector4 列用于写；这份存储被共享时先脱开。</summary>
         public Vector4[] GetWritableVector4Array(string name)
         {
             ValidateArrayName(name, PCGAttributeType.Vector4);
@@ -898,7 +933,7 @@ namespace PCG
             return _vector4Arrays[name];
         }
 
-        /// <summary>Gets an exclusive Quaternion column for writing, detaching first when this storage is shared.</summary>
+        /// <summary>取一份独占的 Quaternion 列用于写；这份存储被共享时先脱开。</summary>
         public Quaternion[] GetWritableQuaternionArray(string name)
         {
             ValidateArrayName(name, PCGAttributeType.Quaternion);
@@ -906,7 +941,7 @@ namespace PCG
             return _quaternionArrays[name];
         }
 
-        /// <summary>Gets an exclusive string column for writing, detaching first when this storage is shared.</summary>
+        /// <summary>取一份独占的 string 列用于写；这份存储被共享时先脱开。</summary>
         public string[] GetWritableStringArray(string name)
         {
             ValidateArrayName(name, PCGAttributeType.String);
@@ -921,33 +956,33 @@ namespace PCG
         }
     }
 
-    /// <summary>Failure reasons raised by <see cref="PCGAttributeException"/>.</summary>
+    /// <summary><see cref="PCGAttributeException"/> 会抛出的失败原因。</summary>
     public enum PCGAttributeError
     {
-        /// <summary>Attribute name was null or empty.</summary>
+        /// <summary>属性名是 null 或空。</summary>
         InvalidName,
-        /// <summary>Attribute does not exist in the set.</summary>
+        /// <summary>这份集合里没有这个属性。</summary>
         NotFound,
-        /// <summary>Attribute exists but holds a different type.</summary>
+        /// <summary>属性存在，但装的是另一种类型。</summary>
         TypeMismatch,
-        /// <summary>Attempted to write a built-in channel through the attribute set.</summary>
+        /// <summary>试图经属性集去写一个内建通道。</summary>
         BuiltInReadOnly,
-        /// <summary>Row index was outside the set's range.</summary>
+        /// <summary>行下标超出了这份集合的范围。</summary>
         IndexOutOfRange,
-        /// <summary>Attribute type is not supported by the storage.</summary>
+        /// <summary>存储不支持这种属性类型。</summary>
         UnsupportedType,
     }
 
     /// <summary>
-    /// Raised on attribute misuse. These indicate programming errors rather than data problems, so they are
-    /// raised at the call site instead of being collected as graph compile diagnostics.
+    /// 属性误用时抛出。它们表示的是**编程错误**而不是数据问题，所以在调用点直接
+    /// 抛出，而不是收成图的编译诊断。
     /// </summary>
     public sealed class PCGAttributeException : Exception
     {
-        /// <summary>Gets the failure reason.</summary>
+        /// <summary>取失败原因。</summary>
         public PCGAttributeError Error { get; }
 
-        /// <summary>Creates the exception.</summary>
+        /// <summary>创建异常。</summary>
         public PCGAttributeException(PCGAttributeError error, string message) : base(message)
         {
             Error = error;

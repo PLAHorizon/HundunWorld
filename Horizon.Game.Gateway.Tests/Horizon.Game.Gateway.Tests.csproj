@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Horizon.MonsterCli\Horizon.MonsterCli.csproj" />    <ProjectReference Include="..\Horizon.NpcCli\Horizon.NpcCli.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Microsoft.Orleans.TestingHost" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
@@ -73,6 +74,28 @@
   <!-- 链接客户端 ClientSyncMetrics 源文件（仅依赖 System，无 FlaxEngine 依赖） -->
   <ItemGroup>
     <Compile Include="..\HundunWorld\Source\Game\Network\ClientSyncMetrics.cs" Link="Linked\ClientSyncMetrics.cs" Condition="Exists('..\HundunWorld\Source\Game\Network\ClientSyncMetrics.cs')" />
+    <!-- 头顶任务符号：纯 C#（只依赖消息 DTO），链进来测语义，防止"客户端自己那份"静默漂移。 -->
+    <Compile Include="..\HundunWorld\Source\Game\Selection\NpcQuestMark.cs" Link="Linked\NpcQuestMark.cs" Condition="Exists('..\HundunWorld\Source\Game\Selection\NpcQuestMark.cs')" />
+    <!-- 对话菜单的台词组过滤：纯 C#，离线钉住"通用项 + 活跃组"的口径。 -->
+    <Compile Include="..\HundunWorld\Source\Game\Selection\NpcGossipMenu.cs" Link="Linked\NpcGossipMenu.cs" Condition="Exists('..\HundunWorld\Source\Game\Selection\NpcGossipMenu.cs')" />
+  </ItemGroup>
+
+  <!-- 链接客户端的**怪物动作判据**（MonsterCombatActionRules.cs，仅依赖 System，无 FlaxEngine 依赖）：
+       服务端早就受理打断/嘲讽，客户端却零调用方——玩家根本打不到这两下。
+       判据编进来才能逐点真跑（只看 HUD 按钮显隐的闸门证明不了这条式子）。 -->
+  <ItemGroup>
+    <Compile Include="..\HundunWorld\Source\Game\Combat\MonsterCombatActionRules.cs" Link="Linked\MonsterCombatActionRules.cs" Condition="Exists('..\HundunWorld\Source\Game\Combat\MonsterCombatActionRules.cs')" />
+  </ItemGroup>
+
+  <!-- 链接怪物编辑器的**预览数学镜像**（MonsterPreviewMath.cs，仅依赖 System）。
+       编进来的理由是"闸门要能真的调用它"：以前这条镜像只按文本抠常量，
+       常量相同而式子不同（少一段截断、封顶值不同、钳位方向反了）照样全绿。
+       镜像侧唯一的引擎依赖 ColorOf 已挪进编辑器模块，见该文件头的"不许引用引擎类型"。 -->
+  <ItemGroup>
+    <Compile Include="..\HundunWorld\Plugins\MonsterEditor\Source\MonsterEditor\MonsterPreviewMath.cs" Link="Linked\MonsterPreviewMath.cs" Condition="Exists('..\HundunWorld\Plugins\MonsterEditor\Source\MonsterEditor\MonsterPreviewMath.cs')" />
+    <!-- 台词组的作者侧算术（下一个可用文本号 / 组现状描述），同样"要能真的调用"：
+         只按文本抠常量的话，"拿行数加一当新号"这种错照样全绿，而它会让 set-text 覆盖掉已有一句。 -->
+    <Compile Include="..\HundunWorld\Plugins\MonsterEditor\Source\MonsterEditor\MonsterTextGroupMath.cs" Link="Linked\MonsterTextGroupMath.cs" Condition="Exists('..\HundunWorld\Plugins\MonsterEditor\Source\MonsterEditor\MonsterTextGroupMath.cs')" />
   </ItemGroup>
 
   <!-- 会话客户端同源链接：驱动**真实** GameGatewaySessionClient（原 HandshakeClient）的 HandshakeAsync
@@ -133,6 +156,16 @@
     <Compile Remove="SyncGuardSenderTests.cs" />
     <Compile Remove="ClientSyncMetricsSmoothnessTests.cs" />
     <Compile Remove="ClientSyncMetricsTests.cs" />
+  </ItemGroup>
+
+  <!--
+    插件草稿模型的合并语义（刷点/路线/配方按条合并，不整表替换）要有可执行断言。
+    插件本身是 Flax 插件域工程、测试引用不到，所以把这份**纯 C#** 模型源码链进来编译；
+    它只依赖 System.*，不含 Flax 类型。
+  -->
+  <ItemGroup>
+    <Compile Include="..\HundunWorld\Plugins\NpcEditor\Source\NpcEditor\NpcDraftModel.cs"
+             Link="NpcEditorPlugin\NpcDraftModel.cs" />
   </ItemGroup>
 
 </Project>

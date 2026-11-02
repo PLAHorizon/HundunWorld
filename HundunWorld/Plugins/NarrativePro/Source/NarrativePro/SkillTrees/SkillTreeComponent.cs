@@ -76,7 +76,7 @@ namespace NarrativePro.SkillTrees
     /// UE5 中 Current perks 仅在服务器设置、未支持复制；Flax 中改为本地逻辑 + 事件回调。
     /// 通过 <see cref="PrepareForSave"/> / <see cref="Load"/> 实现存档（映射 INarrativeSavableComponent）。
     /// </summary>
-    public class SkillTreeComponent : Script
+    public class SkillTreeComponent : Script, NarrativePro.SaveSystem.INarrativeSavableComponent
     {
         /// <summary>技能树中的技能及其 Perk。当前 Perk 仅本地设置。</summary>
         public List<TreeSkill> SkillTreeSkills = new List<TreeSkill>();
@@ -99,7 +99,29 @@ namespace NarrativePro.SkillTrees
         public override void OnEnable()
         {
             base.OnEnable();
-            NarrativeLog.Log("[SkillTree] SkillTreeComponent 已启用。");
+
+            // 内容头：UE5 的 SkillTreeSkills 是在玩家状态蓝图里直接作者化赋值
+            // （Content/Pro/Core/Data/SkillTrees/<Tree>/Skill_*.uasset）；Flax 侧这些反射资产换成 JSON，
+            // 组件启用时灌进来。场景里已经作者化过技能的组件保持原样（作者优先）。
+            int applied = SkillTreeLoader.ApplyTo(this);
+
+            BuildPrerequisiteMap();
+            NarrativeLog.Log($"[SkillTree] SkillTreeComponent 已启用：技能 {SkillTreeSkills.Count} 个" +
+                             $"（内容灌入 {applied} 个）。");
+        }
+
+        /// <summary>
+        /// 构建前置 Perk 映射。对应 UE5 BeginPlay 中的 prereq map 构建（SkillTreeComponent.cpp:17-41）：
+        /// 遍历所有技能的 PerkConfig，将每个 Perk 的 LinkedTo 反向登记为“购买 LinkedTo 前需先拥有该 Perk”。
+        /// 规则本体在 <see cref="SkillTreeRules.BuildPrerequisiteMap"/>（无引擎依赖，harness 断的是同一条）。
+        /// </summary>
+        protected virtual void BuildPrerequisiteMap()
+        {
+            PrerequisiteMap.Clear();
+            foreach (KeyValuePair<string, FPerkArray> entry in SkillTreeRules.BuildPrerequisiteMap(SkillTreeSkills))
+            {
+                PrerequisiteMap[entry.Key] = entry.Value;
+            }
         }
 
         public override void OnDisable()
@@ -116,6 +138,17 @@ namespace NarrativePro.SkillTrees
         }
 
         /// <summary>
+        /// 只给 Perk 类路径的购买入口：所属技能由技能树里的引用位置反查
+        /// （<see cref="SkillTreeRules.FindSkillOwningPerk"/>）。
+        /// UE5 侧这条信息由天赋菜单的按钮控件持有（WBP_PerkButton 同时带 Perk 类与 OwningSkill），
+        /// 端口先补出程序入口，避免"只能由 UI 传实例"导致 BuyPerk 在插件里没有可调入口。
+        /// </summary>
+        public virtual bool BuyPerk(string perkClassPath)
+        {
+            return BuyPerk(perkClassPath, SkillTreeRules.FindSkillOwningPerk(SkillTreeSkills, perkClassPath));
+        }
+
+        /// <summary>
         /// 尝试购买一个 Perk。会先校验前置 Perk 是否已购买。
         /// 对应 UE5 BuyPerk(TSubclassOf&lt;UTreePerk&gt;, UTreeSkill*)。
         /// </summary>
@@ -125,6 +158,11 @@ namespace NarrativePro.SkillTrees
         public virtual bool BuyPerk(string perkClassPath, TreeSkill ownerSkill)
         {
             if (string.IsNullOrEmpty(perkClassPath)) return false;
+            if (ownerSkill == null)
+            {
+                NarrativeLog.LogWarning($"[SkillTree] BuyPerk 需要非空 OwnerSkill：{perkClassPath}");
+                return false;
+            }
 
             if (!CanBuyPerk(perkClassPath, out string reason))
             {
@@ -133,8 +171,7 @@ namespace NarrativePro.SkillTrees
             }
 
             TreePerk perk = GetPerk(perkClassPath);
-            bool bNew = perk == null;
-            if (bNew)
+            if (perk == null)
             {
                 perk = InstantiatePerk(perkClassPath, ownerSkill);
                 if (perk == null)
@@ -144,14 +181,15 @@ namespace NarrativePro.SkillTrees
                 }
                 perk.PerkClassPath = perkClassPath;
                 perk.OwningComponent = this;
-                perk.PerkLevel = -1; // 尚未购买
                 PurchasedPerks.Add(perk);
             }
 
-            // 首次购买置为 1 级，否则递增
-            perk.PerkLevel = bNew ? 1 : perk.PerkLevel + 1;
-            perk.SetPerkLevel(perk.PerkLevel);
+            // 与 UE5 一致：PerkLevel 为 0 基，新实例 -1（未购买），首次购买后为 0
+            perk.SetPerkLevel(perk.PerkLevel + 1);
+
+            // 购买消耗 1 点技能点，同时提升所属技能等级（对应 UE5 .cpp:66-67）
             SkillTreePoints--;
+            ownerSkill.SkillLevel++;
 
             return true;
         }
@@ -171,16 +209,17 @@ namespace NarrativePro.SkillTrees
                 return false;
             }
 
-            if (!HasRequiredPerks(perkClassPath))
+            TreePerk perk = GetPerk(perkClassPath);
+            // 与 UE5 一致：PerkLevel 为 0 基，MaxLevels 为设计师填写的 1 基数，故比较 MaxLevels - 1
+            if (perk != null && perk.PerkLevel >= perk.MaxLevels - 1)
             {
-                outCantBuyReason = "未满足前置 Perk 条件";
+                outCantBuyReason = "Perk 已达最高等级";
                 return false;
             }
 
-            TreePerk perk = GetPerk(perkClassPath);
-            if (perk != null && perk.MaxLevels > 0 && perk.PerkLevel >= perk.MaxLevels)
+            if (!HasRequiredPerks(perkClassPath))
             {
-                outCantBuyReason = "Perk 已达最高等级";
+                outCantBuyReason = "未满足前置 Perk 条件";
                 return false;
             }
 
@@ -195,25 +234,13 @@ namespace NarrativePro.SkillTrees
 
         /// <summary>
         /// 返回是否已解锁指定 Perk 的前置 Perk。
+        /// 与 UE5 HasRequiredPerks（SkillTreeComponent.cpp:109-125）一致：前置列表为 ANY 语义，
+        /// 即拥有任一前置即可购买；无前置条目时视为可直接购买。
         /// 注意：本方法不考虑技能点，如需综合判断请使用 <see cref="CanBuyPerk"/>。
         /// </summary>
         public virtual bool HasRequiredPerks(string perkClassPath)
         {
-            if (string.IsNullOrEmpty(perkClassPath)) return false;
-
-            if (!PrerequisiteMap.TryGetValue(perkClassPath, out FPerkArray prereqArray))
-            {
-                return true; // 无前置要求
-            }
-
-            if (prereqArray?.Array == null) return true;
-
-            foreach (string reqPath in prereqArray.Array)
-            {
-                if (!HasPerk(reqPath)) return false;
-            }
-
-            return true;
+            return SkillTreeRules.HasRequiredPerks(PrerequisiteMap, perkClassPath, HasPerk);
         }
 
         /// <summary>查询指定 Perk 的当前等级。未购买返回 -1。</summary>
@@ -284,14 +311,23 @@ namespace NarrativePro.SkillTrees
 
             foreach (FSavedPerk savedPerk in SkillTreeSaveData.SavedPerks)
             {
+                if (string.IsNullOrEmpty(savedPerk.PerkClass)) continue;
+
+                // 避免重复加载同一 Perk（UE5 蓝图中亦强调“不要重复添加属性效果”）
+                TreePerk existing = GetPerk(savedPerk.PerkClass);
+                if (existing != null)
+                {
+                    existing.SetPerkLevel(savedPerk.PerkLevel);
+                    continue;
+                }
+
                 TreePerk perk = InstantiatePerk(savedPerk.PerkClass, null);
                 if (perk != null)
                 {
                     perk.PerkClassPath = savedPerk.PerkClass;
                     perk.OwningComponent = this;
-                    perk.PerkLevel = savedPerk.PerkLevel;
-                    perk.SetPerkLevel(perk.PerkLevel);
                     PurchasedPerks.Add(perk);
+                    perk.SetPerkLevel(savedPerk.PerkLevel);
                 }
                 else
                 {
@@ -303,13 +339,13 @@ namespace NarrativePro.SkillTrees
         }
 
         /// <summary>
-        /// 根据 Perk 类路径与归属技能创建 Perk 实例。
-        /// 由于 TSubclassOf 已映射为字符串路径占位，需要游戏侧通过注册表/反射在此处解析为具体 Perk 类型。
-        /// 默认返回 null（占位），子类应重写以提供实际的 Perk 实例化逻辑。
+        /// 根据 Perk 类路径与归属技能创建 Perk 实例。对应 UE5 NewObject&lt;UTreePerk&gt;(this, PerkClass)。
+        /// 委托 <see cref="TreePerkFactory"/> 的注册表解析具体 Perk 类型（无 UE 反射）；
+        /// 未注册路径回退到 <see cref="TreePerk"/> 基类。子类可重写以提供自定义实例化。
         /// </summary>
         protected virtual TreePerk InstantiatePerk(string perkClassPath, TreeSkill ownerSkill)
         {
-            return null;
+            return TreePerkFactory.Create(perkClassPath, this);
         }
 
         /// <summary>根据技能类路径在 <see cref="SkillTreeSkills"/> 中检索技能实例。</summary>

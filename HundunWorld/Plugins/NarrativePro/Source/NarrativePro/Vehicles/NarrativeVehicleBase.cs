@@ -30,7 +30,7 @@ namespace NarrativePro.Vehicles
     /// - UCurveFloat → string 路径占位
     /// - TSubclassOf&lt;UGameplayEffect&gt; → string 路径占位
     /// - FGameplayTag → GameplayTag，FGameplayTagContainer → GameplayTagContainer
-    /// - Mass 相关逻辑（SetManagedByMass）用 TODO 占位
+    /// - Mass 托管逻辑（SetManagedByMass）改为由交通模拟层调用，见 Vehicles/VehicleTrafficSimulation.cs
     /// </summary>
     public abstract class NarrativeVehicleBase : Script, INarrativeCharacterOwner, INarrativeImpactInterface, INarrativeTeamAgentInterface
     {
@@ -148,11 +148,12 @@ namespace NarrativePro.Vehicles
 
         // ===== 接口实现 =====
 
-        /// <summary>返回与此载具关联的 NarrativeCharacter（通过拥有控制器）。对应 UE5 GetNarrativeCharacter。</summary>
+        /// <summary>返回与此载具关联的 NarrativeCharacter。
+        /// 对应 UE5 <c>Cast&lt;ANarrativeCharacter&gt;(GetController()-&gt;GetPawn())</c>：
+        /// Flax 无 Controller 类，故从拥有者 Actor 上直接解析角色脚本（子类可覆写为「车上乘员」）。</summary>
         public virtual NarrativeCharacter GetNarrativeCharacter()
         {
-            // Flax 无 Controller 概念，简化为返回 null；子类可重写
-            return null;
+            return VehicleController != null ? VehicleController.GetScript<NarrativeCharacter>() : null;
         }
 
         /// <summary>返回能力系统组件。对应 UE5 GetAbilitySystemComponent（IAbilitySystemInterface）。</summary>
@@ -222,12 +223,12 @@ namespace NarrativePro.Vehicles
 
         // ===== 存档（INarrativeSavableActor 等价）=====
 
-        /// <summary>获取 Actor 的 GUID。对应 UE5 GetActorGUID_Implementation。
-        /// Mass 控制的载具不应存盘；当前无控制器时返回 VehicleSaveGUID。</summary>
+        /// <summary>获取 Actor 的 GUID。对应 UE5 GetActorGUID_Implementation：
+        /// 由模拟层（UE5 Mass / Flax 交通模拟）托管的载具不参与存盘，返回空 GUID。</summary>
         public virtual Guid GetActorGUID()
         {
-            // Flax-不兼容: UE5 的 Mass/Controller 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass/Controller 概念，简化为始终返回 VehicleSaveGUID
-            return VehicleSaveGUID;
+            // 对应 UE5「Mass 控制的载具不应存盘」的分支（ANarrativeVehicleBase::GetActorGUID 先查控制器/托管态）
+            return bManagedByMass ? Guid.Empty : VehicleSaveGUID;
         }
 
         /// <summary>设置载具存盘 GUID。对应 UE5 SetVehicleSaveGuid。</summary>
@@ -236,19 +237,26 @@ namespace NarrativePro.Vehicles
             VehicleSaveGUID = newGUID;
         }
 
-        // ===== 拥有（PossessedBy 等价，Flax 无 Controller 概念，简化为占位）=====
+        // ===== 拥有（PossessedBy 等价：Flax 无 Controller 类，用「拥有者 Actor 引用」表达同一概念）=====
 
-        /// <summary>被控制器拥有时调用。对应 UE5 PossessedBy。Flax 无 Controller 概念，简化为占位。</summary>
+        /// <summary>当前拥有此载具的 Actor（玩家角色/AI 控制器）。对应 UE5 的 Controller。</summary>
+        [NonSerialized]
+        protected Actor VehicleController;
+
+        /// <summary>被控制器拥有时调用。对应 UE5 PossessedBy（子类补充移动组件语义）。</summary>
         public virtual void PossessedBy(Actor newController)
         {
-            // Flax-不兼容: UE5 的 Controller 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Controller 概念，启用 ImpactMesh 碰撞等逻辑
+            VehicleController = newController;
         }
 
-        /// <summary>取消拥有时调用。对应 UE5 UnPossessed。Flax 无 Controller 概念，简化为占位。</summary>
+        /// <summary>取消拥有时调用。对应 UE5 UnPossessed。</summary>
         public virtual void UnPossessed()
         {
-            // Flax-不兼容: UE5 的 Controller 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Controller 概念，禁用 ImpactMesh 碰撞
+            VehicleController = null;
         }
+
+        /// <summary>当前拥有者。对应 UE5 GetController。</summary>
+        public Actor GetVehicleController() => VehicleController;
 
         // ===== 生命/属性查询 =====
 
@@ -279,13 +287,23 @@ namespace NarrativePro.Vehicles
 
         // ===== Mass 管理 =====
 
-        /// <summary>设置是否由 Mass 管理。对应 UE5 SetManagedByMass。
-        /// Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现。</summary>
-        public virtual void SetManagedByMass(bool bManagedByMass)
+        /// <summary>是否由群集/交通模拟层托管（对应 UE5 bManagedByMass）。</summary>
+        private bool bManagedByMass;
+
+        /// <summary>设置是否由模拟层（UE5 Mass / Flax 交通模拟）托管。对应 UE5 SetManagedByMass。</summary>
+        public virtual void SetManagedByMass(bool bShouldManageByMass)
         {
-            // Flax-不兼容: UE5 的 Mass Entity System 在 Flax 无对应物，保留占位。原文 TODO: Flax 无 Mass Entity System，需自定义实现
-            NarrativeLog.LogWarning("[NarrativeVehicleBase] SetManagedByMass: Flax 无 Mass Entity System，需自定义实现");
+            bManagedByMass = bShouldManageByMass;
+            // UE5 在此分支里把 Actor 的自主寻路/导航注册让给 Mass；
+            // Flax 侧等价的可见效果是：托管载具不再写存盘 GUID（车流不入存档，读档不会复活一堆车）。
+            if (bShouldManageByMass)
+            {
+                VehicleSaveGUID = Guid.Empty;
+            }
         }
+
+        /// <summary>是否由模拟层托管。对应 UE5 bManagedByMass 读取。</summary>
+        public bool IsManagedByMass() => bManagedByMass;
 
         /// <summary>对某 Actor 造成载具伤害。对应 UE5 DealVehicleDamage。
         /// 伤害通过驾驶员的 ASC 路由，使伤害数字/击杀任务等正确处理。</summary>
@@ -300,59 +318,167 @@ namespace NarrativePro.Vehicles
                 NarrativeAbilitySystemComponent driverNASC = driver.GetNarrativeAbilitySystemComponent();
                 if (driverNASC != null)
                 {
-                    // TODO [需接入 ASC 系统]: 应用 VehicleDamageEffect 并设置 SetByCaller_Damage 标签的幅度
-                    driverNASC.DealDamage(damageAmount);
+                    // 对应 UE5 DealVehicleDamage（NarrativeVehicleBase.cpp:433-455）：
+                    // MakeOutgoingSpec(VehicleDamageEffect) + SetSetByCallerMagnitude(SetByCaller_Damage)
+                    // + ApplyGameplayEffectSpecToTargetData（UE5 由 HitResult 构造 TargetData，
+                    // Flax 侧对应 ApplyGameplayEffectSpecToTargetData 的目标 ASC 列表，见 GAS/NarrativeAbilitySystemComponent.cs:1604）。
+                    Actor hitActor = hit.Collider; // Flax 中 RayCastHit.Collider 即命中脚本 Actor（同 GAS/NarrativeCombatAbility.cs:294 用法）
+                    NarrativeAbilitySystemComponent targetASC = null;
+                    for (Actor a = hitActor; a != null && targetASC == null; a = a.Parent)
+                    {
+                        targetASC = a.GetScript<NarrativeAbilitySystemComponent>();
+                    }
+
+                    GameplayEffect damageEffect = !string.IsNullOrEmpty(VehicleDamageEffectPath)
+                        ? NarrativeGASAssetRegistry.ResolveEffect(VehicleDamageEffectPath)
+                        : null;
+
+                    if (damageEffect != null && targetASC != null)
+                    {
+                        var spec = new GameplayEffectSpec(damageEffect, driverNASC);
+                        spec.SetSetByCallerMagnitude(NarrativePro.Core.NarrativeGameplayTags.SetByCaller_Damage, damageAmount);
+                        driverNASC.ApplyGameplayEffectSpecToTargetData(
+                            new GameplayEffectSpecHandle(spec),
+                            new List<NarrativeAbilitySystemComponent> { targetASC });
+                    }
+                    else if (targetASC != null)
+                    {
+                        // 未配置载具伤害效果资产时回退为直接伤害。
+                        // UE5 的回退同样打在命中目标身上，并以驾驶员为 Instigator、载具为 Causer
+                        // （NarrativeVehicleBase.cpp DealVehicleDamage 用 HitResult 的 Actor 作目标），
+                        // 这样被撞死的 NPC 才会把击杀记到司机头上（掉落/助攻/仇恨归因）。
+                        targetASC.DealDamage(damageAmount, driver?.Actor ?? Actor, Actor);
+                    }
+                    else
+                    {
+                        // 目标没有 ASC（纯环境几何体）：不造成伤害，自伤由 OnVehicleMeshHit 负责。
+                        NarrativeLog.LogWarning($"[Vehicle] 撞击 {hit.Collider?.Name} 未找到目标 ASC，载具伤害未应用。");
+                    }
                 }
             }
         }
 
         // ===== ASC 初始化 =====
 
-        /// <summary>初始化载具 ASC。对应 UE5 InitializeVehicleASC。</summary>
+        /// <summary>初始化载具 ASC。对应 UE5 InitializeVehicleASC（NarrativeVehicleBase.cpp:80-89）。</summary>
         protected virtual void InitializeVehicleASC()
         {
             if (AbilitySystemComponent != null)
             {
-                // TODO [需接入 ASC 系统]: InitAbilityActorInfo（Flax ASC 简化）
+                // UE5 的 InitAbilityActorInfo(Owner, Avatar) 在 Flax 侧无对应概念：
+                // NarrativeAbilitySystemComponent 的拥有者/化身即其挂载的 Actor
+                // （GAS/NarrativeAbilitySystemComponent.cs:300 GetAvatarOwner 直接返回 Actor），无需额外初始化。
+                // 订阅死亡事件，对应 UE5 HandleDeath 绑定的 OnDeath 动态委托（先减后加，OnEnable 重入幂等）。
+                AbilitySystemComponent.OnDied -= HandleDeath;
+                AbilitySystemComponent.OnDied += HandleDeath;
+
                 InitializeAttributes();
                 AddStartupEffects();
             }
         }
 
-        /// <summary>添加默认能力。对应 UE5 AddDefaultAbilities。</summary>
-        protected virtual void AddDefaultAbilities()
-        {
-            // TODO [需接入 ASC 系统]: 通过 ASC 授予默认能力
-        }
-
-        /// <summary>初始化属性。对应 UE5 InitializeAttributes。</summary>
+        /// <summary>初始化属性。对应 UE5 InitializeAttributes（NarrativeVehicleBase.cpp:96-126，
+        /// MakeOutgoingSpec(DefaultAttributes, GetVehicleLevel()) + ApplyGameplayEffectSpecToTarget）。
+        /// Flax 侧由 NarrativeAbilitySystemComponent.InitializeAttributes 统一实现属性效果、
+        /// 启动效果与默认能力授予（GAS/NarrativeAbilitySystemComponent.cs:333，对应 UE5
+        /// InitializeAttributes + InitStartUpEffects，内部 bStartupEffectsApplied 保证幂等），
+        /// 载具只需把 AbilityConfiguration 的路径同步进 ASC。</summary>
         protected virtual void InitializeAttributes()
         {
             if (AbilitySystemComponent == null || AbilityConfiguration == null) return;
-            // TODO [需接入 ASC 系统]: 应用默认属性效果（AbilityConfiguration.DefaultAttributesEffectPath）
+
+            if (string.IsNullOrEmpty(AbilityConfiguration.DefaultAttributesEffectPath))
+            {
+                // 对应 UE5 cpp:105-109 缺失 DefaultAttributes 时的 Error 日志分支
+                NarrativeLog.LogError($"[NarrativeVehicleBase] {Actor?.Name} 缺少 DefaultAttributes 配置，请在载具定义中填充。");
+                return;
+            }
+
+            AbilitySystemComponent.DefaultAttributesEffectPath = AbilityConfiguration.DefaultAttributesEffectPath;
+            AbilitySystemComponent.StartupEffectPaths = AbilityConfiguration.StartupEffectPaths;
+            // 默认能力经 ASC.GrantDefaultAbilities 幂等授予（UE5 cpp:91 AddDefaultAbilities 为空实现、
+            // cpp:87 调用被注释，实际授予走属性初始化管线），此处同步配置路径列表。
+            AbilitySystemComponent.DefaultAbilityPaths = AbilityConfiguration.DefaultAbilityPaths;
+
+            AbilitySystemComponent.InitializeAttributes();
         }
 
-        /// <summary>添加启动效果。对应 UE5 AddStartupEffects。</summary>
+        /// <summary>添加启动效果。对应 UE5 AddStartupEffects（NarrativeVehicleBase.cpp:128-150，
+        /// 遍历 AbilityConfiguration->StartupEffects 逐个 MakeOutgoingSpec+Apply 并置 bStartupEffectsApplied）。
+        /// Flax 侧启动效果已并入 ASC.InitializeAttributes 并在其中做幂等保护，
+        /// 此处作为再入兜底：重复调用只会触发 ASC 内部的短路返回，不会二次应用。</summary>
         protected virtual void AddStartupEffects()
         {
             if (AbilitySystemComponent == null || AbilityConfiguration == null) return;
-            // TODO [需接入 ASC 系统]: 应用启动效果列表（AbilityConfiguration.StartupEffectPaths）
+            AbilitySystemComponent.InitializeAttributes();
         }
 
         // ===== 死亡/碰撞回调（BlueprintNativeEvent 等价）=====
 
-        /// <summary>处理载具死亡。对应 UE5 HandleDeath_Implementation。
+        /// <summary>处理载具死亡。对应 UE5 HandleDeath_Implementation（NarrativeVehicleBase.cpp:153-171）。
         /// 销毁所有附加的角色（调用其 Instakill）。</summary>
         protected virtual void HandleDeath(Actor killedActor, NarrativeAbilitySystemComponent killedActorASC)
         {
-            // TODO [需接入 ASC 系统]: 遍历附加 Actor，对 NarrativeCharacter 调用 Instakill
+            // 对应 UE5 bIsDead 分支：仅在载具自身死亡时处决乘员；
+            // Flax ASC 的 OnDied 也会因附加乘客的死亡回调进来，用 killedActor 甄别来源。
+            if (killedActor == null || killedActor != Actor) return;
+
+            // 对应 UE5 GetAttachedActors(AttachedActors, /*bIncludeAllDescendants=*/true)：
+            // Flax 中附加 Actor 即子 Actor 层级，递归遍历全部后代。
+            InstakillAttachedCharacters(Actor);
         }
 
-        /// <summary>主网格撞击某物时调用。对应 UE5 OnVehicleMeshHit_Implementation。
+        /// <summary>递归遍历附加（子）Actor，对其上的 NarrativeCharacter 的 ASC 调用 Instakill。
+        /// 对应 UE5 HandleDeath_Implementation 内 Cast&lt;ANarrativeCharacter&gt; + Instakill 循环。</summary>
+        private static void InstakillAttachedCharacters(Actor root)
+        {
+            foreach (var child in root.Children)
+            {
+                if (child == null) continue;
+                NarrativeCharacter nchar = child.GetScript<NarrativeCharacter>();
+                if (nchar != null)
+                {
+                    NarrativeAbilitySystemComponent nasc = nchar.GetNarrativeAbilitySystemComponent();
+                    if (nasc != null)
+                    {
+                        nasc.Instakill();
+                    }
+                }
+                InstakillAttachedCharacters(child);
+            }
+        }
+
+        /// <summary>主网格撞击某物时调用。对应 UE5 OnVehicleMeshHit_Implementation（NarrativeVehicleBase.cpp:173-191）。
         /// 撞击静态物体时根据速度和曲线计算载具自伤。</summary>
         public virtual void OnVehicleMeshHit(Collider hitComponent, Actor otherActor, Collider otherComp, Vector3 normalImpulse, RayCastHit hit)
         {
-            // TODO [需接入 ASC 系统]: 根据 VehicleImpactObjectDamageCurve 和速度计算自伤
+            // UE5 以 RootComponent Mobility==Static 判定静态物；Flax 中撞击世界几何体时
+            // 命中的 Actor 为空（Collider 脚本不在任何逻辑 Actor 上），以此对应同一分支。
+            if (otherActor != null || AbilitySystemComponent == null) return;
+
+            // 忽略垂直速度：落地不应伤车（对应 UE5 GetVelocity().Size2D 的注释语义）。
+            float magnitude = normalImpulse.Length;
+            if (magnitude <= 0f) return;
+
+            // UE5 用 VehicleImpactObjectDamageCurve->GetFloatValue(NormalImpulse.Length()) 求伤。
+            // Flax 1.12 无可运行时求值的标量曲线资产（FlaxEngine 仅有骨骼动画用的 AnimationCurve，
+            // 无 UCurveFloat::GetFloatValue 对应物），故采用 UE5 cpp:183 注释保留的同源映射式：
+            // GetMappedRangeValueClamped(VehicleImpactSelfDamage, (MaxHealth/5, MaxHealth), 撞击量级)。
+            float rangeMin = VehicleImpactSelfDamage.X;
+            float rangeMax = VehicleImpactSelfDamage.Y;
+            if (rangeMax <= rangeMin) return;
+
+            float t = Mathf.Clamp((magnitude - rangeMin) / (rangeMax - rangeMin), 0f, 1f);
+            float maxHealth = GetMaxHealth();
+            float desiredDamage = Mathf.Lerp(maxHealth * 0.2f, maxHealth, t);
+
+            if (desiredDamage > 0f)
+            {
+                // UE5 的撞击自伤将驾驶员记为施害者、载具记为伤害源，
+                // 载具因此被"撞死"时击杀归因不会退化成"载具自杀"（无归属 → 不掉不落、不结助攻）。
+                var driverActor = GetNarrativeCharacter()?.Actor;
+                AbilitySystemComponent.DealDamage(desiredDamage, driverActor ?? Actor, Actor);
+            }
         }
 
         /// <summary>碰撞网格重叠某物时调用。对应 UE5 OnCollisionMeshOverlap_Implementation。

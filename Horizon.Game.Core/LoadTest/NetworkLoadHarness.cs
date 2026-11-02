@@ -269,16 +269,25 @@ public sealed class NetworkLoadHarness
         var deltas = new EntityDelta[DeltasPerSnapshot];
         for (int i = 0; i < deltas.Length; i++)
         {
+            var kind = tick == 0 ? EntityDeltaKind.Spawn : EntityDeltaKind.Update;
             deltas[i] = new EntityDelta
             {
                 EntityId = (ulong)((sessionIdx * 1000L) + i + 1),
-                Kind = tick == 0 ? EntityDeltaKind.Spawn : EntityDeltaKind.Update,
-                Identity = new NetworkIdentityAuthComponent
-                {
-                    NetworkId = (ulong)((sessionIdx * 1000L) + i + 1),
-                    EntityType = i % 4,
-                    OwnerId = i == 0 ? (ulong)(sessionIdx + 1) : 0UL,
-                },
+                Kind = kind,
+                // Identity 是 **spawn-only**：生产写方（DsWorldSession）只在补发 Spawn 时给，
+                // 之后每 tick 都留 null（序列化只花一个存在位）。
+                // 以前这里无论 Spawn 还是 Update 都塞满一份 Identity，于是压测把"每只怪一辈子发一次"
+                // 的字段算成了稳态每帧成本——任何往 Identity 追加字段的改动都会让"每玩家带宽"跳一大格，
+                // 而真实链路上稳态一个字节都没多。要量 spawn 成本请看 NetworkPerformanceBaselineReportTests
+                // 里那条"单份 Identity 序列化字节数"的判据，它才是这一栏该守的地方。
+                Identity = kind == EntityDeltaKind.Spawn
+                    ? new NetworkIdentityAuthComponent
+                    {
+                        NetworkId = (ulong)((sessionIdx * 1000L) + i + 1),
+                        EntityType = i % 4,
+                        OwnerId = i == 0 ? (ulong)(sessionIdx + 1) : 0UL,
+                    }
+                    : null,
                 Transform = new AuthTransformComponent
                 {
                     X = (float)(rng.NextDouble() * 1000),

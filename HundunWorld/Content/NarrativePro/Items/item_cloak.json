@@ -1,0 +1,25 @@
+{
+  "$type": "EquippableItem",
+  "itemClassId": "item_cloak",
+  "displayName": "麻布斗篷",
+  "description": "防雨不防刀。山野夜寒，聊胜于无。",
+  "weight": 0.8,
+  "baseValue": 55,
+  "baseScore": 4,
+  "bStackable": false,
+  "maxStackSize": 1,
+  "armorRating": 6,
+  "attackRating": 0,
+  "stealthRating": 5,
+  "thumbnailPath": "",
+  "clothingMeshPath": "",
+  "equipmentEffectId": "",
+  "equipmentEffectValues": {},
+  "stats": [
+    {
+      "statDisplayName": "护甲",
+      "stringVariable": "ArmorRating",
+      "statTooltip": "减免少量劈砍与穿透伤害。"
+    }
+  ]
+}

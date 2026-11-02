@@ -45,6 +45,8 @@ namespace NarrativePro.UnrealFramework
         public override void OnDisable()
         {
             base.OnDisable();
+            // Flax-已实现：与 OnEnable 的 InitGame 对称，走游戏实例的显式关闭链路
+            NarrativeGameInstance.Get()?.Shutdown();
         }
 
         // ===== 初始化 =====
@@ -53,7 +55,12 @@ namespace NarrativePro.UnrealFramework
         public virtual void InitGame()
         {
             NarrativeLog.Log("[NarrativeGameMode] InitGame");
-            // TODO [需接入存档系统]: 初始化子系统、加载存档等
+            // Flax-已实现：本地等价中 GameMode 是场景入口，由它驱动游戏实例生命周期
+            //（UE5 中对应 World 就绪后 GameInstance 的 Init/Start 链路）。
+            // 存档数据恢复由 NarrativeSaveSubsystem（SaveSystem）在其自有入口驱动，此处不重复。
+            var gameInstance = NarrativeGameInstance.Get();
+            gameInstance.Init();
+            gameInstance.OnStart();
         }
 
         // ===== 玩家生成 =====
@@ -69,18 +76,26 @@ namespace NarrativePro.UnrealFramework
                 return null;
             }
 
-            // TODO [需接入 Prefab 实例化系统]: 从 Prefab 路径加载并实例化玩家角色 Actor
-            // 简化版：在场景中查找已有的玩家角色
-            var existing = Level.GetScene(0).GetScript<NarrativePlayerCharacter>();
-            if (existing != null)
+            // Flax-已实现：与 ActorSpawnComponent/NarrativeCharacterSubsystem 相同的 Prefab 生成链路：
+            // Content.Load<Prefab>(路径) + PrefabManager.SpawnPrefab（位置+朝向），再取角色脚本。
+            var prefab = FlaxEngine.Content.Load<Prefab>(DefaultPlayerCharacterPrefabPath);
+            if (prefab == null)
             {
-                existing.Actor.Position = spawnTransform.Translation;
-                existing.Actor.Orientation = spawnTransform.Orientation;
-                return existing;
+                NarrativeLog.LogWarning($"[NarrativeGameMode] 玩家 Prefab 加载失败：{DefaultPlayerCharacterPrefabPath}");
+                return null;
             }
 
-            NarrativeLog.LogWarning("[NarrativeGameMode] 玩家角色生成未实现，需要 Prefab 系统");
-            return null;
+            Actor spawned = PrefabManager.SpawnPrefab(prefab, spawnTransform.Translation, spawnTransform.Orientation);
+            // SpawnPrefab 默认落 Scenes[0]（RootScene），玩家角色属玩法世界对象，搬入玩法场景
+            NarrativePro.CommonUI.NarrativeRuntimeBootstrap.MoveToGameplayScene(spawned, "PlayerCharacter");
+            var character = spawned != null ? spawned.GetScript<NarrativePlayerCharacter>() : null;
+            if (character == null)
+            {
+                NarrativeLog.LogWarning("[NarrativeGameMode] 生成的 Prefab 上未找到 NarrativePlayerCharacter 脚本");
+                return null;
+            }
+
+            return character;
         }
 
         /// <summary>为加入的控制器返回玩家定义。对应 UE5 GetPlayerDefinitionForController。</summary>

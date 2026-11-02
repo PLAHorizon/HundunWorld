@@ -407,6 +407,103 @@ namespace Horizon.Game.Message.Network
         public ServiceType ServiceType { get; set; } = ServiceType.Social;
     }
 
+    /// <summary>
+    /// 好友列表请求（客户端 → 网关）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(243, Enums.ServiceType.Social)]
+    public partial class FriendListRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 请求者角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public MessageType Type { get; set; } = MessageType.FriendList;
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    /// <summary>
+    /// 删除好友请求（客户端 → 网关）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(244, Enums.ServiceType.Social)]
+    public partial class RemoveFriendRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 操作者角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 要删除的好友角色ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong TargetId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.FriendOperation;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    /// <summary>
+    /// 好友操作结果（网关 → 客户端）。Op 与协议里的好友操作码对应：1=添加 2=删除。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(245, Enums.ServiceType.Social)]
+    public partial class FriendOperationResponse : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 是否成功
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// 操作对象角色ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong TargetId { get; set; }
+
+        /// <summary>
+        /// 操作码：1=添加 2=删除
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Op { get; set; }
+
+        /// <summary>
+        /// 结果说明（失败时给出原因，供 UI 直接展示）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.FriendOperation;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
     #endregion
 
     #region 组队系统消息
@@ -534,6 +631,17 @@ namespace Horizon.Game.Message.Network
         public ServiceType ServiceType { get; set; } = ServiceType.Social;
     }
 
+    /// <summary>组队操作（复用 CreateTeamRequest/Response 的 union tag；tag 空间已用尽）。</summary>
+    public enum TeamOperation : byte
+    {
+        Create = 0,
+        Join = 1,
+        Leave = 2,
+        Kick = 3,
+        Transfer = 4,
+        Disband = 5,
+    }
+
     /// <summary>
     /// 创建队伍请求
     /// </summary>
@@ -565,9 +673,21 @@ namespace Horizon.Game.Message.Network
 
         [MemoryPackOrder(3)]
         [Id(3)]
-        public MessageType Type { get; set; } = MessageType.Team;
+        public TeamOperation Operation { get; set; } = TeamOperation.Create;
+
         [MemoryPackOrder(4)]
         [Id(4)]
+        public ulong TeamId { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ulong TargetId { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.Team;
+        [MemoryPackOrder(7)]
+        [Id(7)]
         public ServiceType ServiceType { get; set; } = ServiceType.Social;
     }
 
@@ -602,9 +722,13 @@ namespace Horizon.Game.Message.Network
 
         [MemoryPackOrder(3)]
         [Id(3)]
-        public MessageType Type { get; set; } = MessageType.Team;
+        public TeamOperation Operation { get; set; } = TeamOperation.Create;
+
         [MemoryPackOrder(4)]
         [Id(4)]
+        public MessageType Type { get; set; } = MessageType.Team;
+        [MemoryPackOrder(5)]
+        [Id(5)]
         public ServiceType ServiceType { get; set; } = ServiceType.Social;
     }
 
@@ -1242,6 +1366,15 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(3)]
         [Id(3)]
         public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+
+        /// <summary>
+        /// 发布者实体 id（玩家正在交互的那个 NPC；0 = 没带）。
+        /// <para>服务端用它核对"这个任务是不是这位发布的"——不核对时，直连一条 questId
+        /// 就能在任何地方接走高等级任务，而可接列表是按发布者过滤过的。</para>
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ulong EntityId { get; set; }
     }
 
     /// <summary>
@@ -1309,6 +1442,15 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(3)]
         [Id(3)]
         public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+
+        /// <summary>
+        /// 正在交互的对象实体 id（0 = 未指定）。任务指定了交付者时，服务端用它核对"是不是该在这里交"。
+        /// <para>客户端只报实体 id，类别与模板号由服务端用 DS 上行注册表解析——
+        /// 与接取/交互同一条口径：客户端声明的身份一律不采信。</para>
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ulong EntityId { get; set; }
     }
 
     /// <summary>
@@ -3605,6 +3747,20 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(3)]
         [Id(3)]
         public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+
+        /// <summary>
+        /// 玩家"正对着的那个对象"的<b>运行时实体 id</b>（0 = 不按发布者收窄，只要自己身上的清单/总表）。
+        /// <para>
+        /// 这里刻意<b>不接受客户端声明的模板 id</b>：以前是 `giverKind + giverTemplateId` 两个整数，
+        /// 谁都能填，服务端最多当显示过滤器用（也因此永远没法拿它做严格门禁）。
+        /// 现在实体 id 由 DS 上行的身份注册表解析成权威的 (类别, 模板 id)，
+        /// 并顺带核对"玩家离它够不够近"（<c>QuestInteractionAuthority.ResolveGiver</c>）——
+        /// 于是"走近某个 NPC 才看到它能给的任务"这件事第一次变成服务端可判定的事实。
+        /// </para>
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ulong GiverEntityId { get; set; }
     }
 
     /// <summary>
@@ -3628,6 +3784,104 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(2)]
         [Id(2)]
         public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+
+        /// <summary>
+        /// 该发布者当前能提供的新任务（服务端已按发布状态/等级/前置/是否接过筛过）。
+        /// 只在请求带了发布者时非空。
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public List<QuestOfferInfo> Offers { get; set; } = new();
+
+        /// <summary>任务目录版本号：客户端据此判断"我缓存的任务描述是不是旧的"。</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int CatalogVersion { get; set; }
+
+        /// <summary>
+        /// 本回包对应哪个发布者实体（0 = 全目录 / 请求未指定）。
+        /// <para>为什么必须回带：头顶 <c>!</c>/<c>?</c> 要按 NPC 各自缓存清单。
+        /// 以前客户端只有"最后一个被请求的发布者"这一个槽位，于是只能给"刚交互过的那一个"画符号；
+        /// 并发问两个 NPC 时，晚到的回包还会把先到的清单覆盖掉（符号挂到错的 NPC 头上）。</para>
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ulong GiverEntityId { get; set; }
+
+        /// <summary>
+        /// 这位发布者名下**当前接不了**的任务条数（等级或前置没到）。
+        /// <para>服务端按发布态/等级/前置过滤可接清单，被挡下的那些客户端本来一无所知——
+        /// 于是灰 <c>!</c>（"以后会有"）在客户端不可达。这里只回**条数**、不回名字，
+        /// 既有 WoW 观感又不把未解锁内容泄露给客户端。</para>
+        /// <para>请求未带发布者实体、或发布者未被采信时恒为 0。</para>
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int LockedOfferCount { get; set; }
+    }
+
+    /// <summary>
+    /// 一条可接任务的摘要。与 <see cref="QuestSummary"/> 分列：那边是"我身上的任务"（带进度与状态机），
+    /// 这边是"还没接的任务"（带描述与内容版本），两套字段混在一起会让客户端两种显示各猜一半。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestOfferInfo
+    {
+        /// <summary>任务模板 id（接取时只回传这个，奖励与条件一律服务端读模板）。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int QuestId { get; set; }
+
+        /// <summary>任务名。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string QuestName { get; set; } = "";
+
+        /// <summary>任务描述。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Description { get; set; } = "";
+
+        /// <summary>0=主线 1=支线 2=日常 3=周常。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int QuestType { get; set; }
+
+        /// <summary>内容版本号。</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int ContentVersion { get; set; }
+
+        /// <summary>是否已经接在身上（画"进行中"角标，避免重复发接取请求）。</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool AlreadyAccepted { get; set; }
+
+        /// <summary>是否已交过但可重复（画"可重复"角标）。</summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool AlreadyFinished { get; set; }
+
+        /// <summary>目标列表（未接取，所以 Current 恒为 0）。</summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public List<QuestObjectiveWire> Objectives { get; set; } = new();
+
+        /// <summary>奖励预览。</summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public QuestRewardWire Reward { get; set; } = new();
+
+        /// <summary>接取等级门槛（0=不限）。列表里就带上，玩家能看懂"为什么这条灰着"。</summary>
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public int LevelRequire { get; set; }
+
+        /// <summary>发布者显示名（服务端按模板目录解析）。空串表示未配置或该类别暂无目录可查。</summary>
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public string GiverLabel { get; set; } = "";
     }
 
     /// <summary>
@@ -3678,6 +3932,115 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(5)]
         [Id(5)]
         public int TargetProgress { get; set; }
+
+        /// <summary>任务描述（服务端模板里的原文；界面上的详情栏要用，别让客户端自己编）。</summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string Description { get; set; } = "";
+
+        /// <summary>逐条目标（文本 + 进度）。进度条只画比值，"要做什么"必须能逐条看见。</summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public List<QuestObjectiveWire> Objectives { get; set; } = new();
+
+        /// <summary>奖励（结构化，客户端按物品模板目录把 id 换成名字；服务端不预先拼字符串）。</summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public QuestRewardWire Reward { get; set; } = new();
+
+        /// <summary>
+        /// 本回包对应的发布者实体，是否同时是这条任务的**交付者**（交付者未单独配置时沿用发布者）。
+        /// <para>头顶黄/灰 <c>?</c> 只该画在交付者头上：以前客户端拿"发布者清单里已接"当交付，
+        /// 于是"发布者 ≠ 交付者"的任务会在发布者头上亮黄问号，点进去却被服务端按交付者校验拒掉。</para>
+        /// <para>请求未带发布者实体时恒为 false（任务日志不需要指示器）。</para>
+        /// </summary>
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public bool TurnInHere { get; set; }
+    }
+
+    /// <summary>一条完成条件的线格式：文本来自模板，进度来自服务端状态。</summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestObjectiveWire
+    {
+        /// <summary>给玩家看的目标文本。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string Description { get; set; } = "";
+
+        /// <summary>当前进度。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Current { get; set; }
+
+        /// <summary>需要总数。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Required { get; set; }
+
+        /// <summary>该目标是否已完成。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public bool Completed { get; set; }
+    }
+
+    /// <summary>任务奖励的线格式（与 <c>QuestRewardSpec</c> 同形；id 不预翻译成名字，客户端才有品质/图标可画）。</summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestRewardWire
+    {
+        /// <summary>经验。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Exp { get; set; }
+
+        /// <summary>铜币。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long Gold { get; set; }
+
+        /// <summary>物品奖励。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<QuestRewardItemWire> Items { get; set; } = new();
+
+        /// <summary>五行域好感奖励。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public List<QuestFavorWire> Favor { get; set; } = new();
+    }
+
+    /// <summary>一条物品奖励（<paramref name="TemplateId"/> 可为任何物品：装备/丹药/材料/宝石/任务物品/秘籍）。</summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestRewardItemWire
+    {
+        /// <summary>物品模板 id。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int TemplateId { get; set; }
+
+        /// <summary>数量。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Count { get; set; }
+    }
+
+    /// <summary>一条五行域好感奖励。</summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestFavorWire
+    {
+        /// <summary>五行域 1金 2木 3水 4火 5土。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int Domain { get; set; }
+
+        /// <summary>点数。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Points { get; set; }
     }
 
     /// <summary>
@@ -3735,6 +4098,84 @@ namespace Horizon.Game.Message.Network
         public MessageType Type { get; set; } = MessageType.QuestProgressNotify;
         [MemoryPackOrder(7)]
         [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+    }
+
+    /// <summary>
+    /// 与世界里某个对象交互（对话 / 使用 / 触发）的请求——"与某 NPC 对话"这类完成条件唯一的事件源。
+    /// <para>
+    /// <b>刻意只带运行时实体 id，不带模板 id</b>：模板 id 由服务端从 DS 上行的实体身份注册表解出
+    /// （设计文档 §11 方案 1）。"我和 NPC 3 说过话"客户端说了不算（一个整数就能伪造，且伪造后
+    /// 校验器无从分辨）；"我和眼前这个实体 id 交互过"则可三重核对：
+    /// 该 id 在本 shard 的世界里存在吗 → 它是不是可交互类别 → 它离玩家够近吗。
+    /// 三条全过，推进任务目标的是<b>服务端认定的事实</b>，不是客户端的声明。
+    /// </para>
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(241, Enums.ServiceType.Quest)]
+    public partial class QuestInteractRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>角色ID</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 运行时实体 id（<c>(spawnPointId&lt;&lt;32)|(slot+1)</c>）。
+        /// 玩家自己的实体 id 一定解不出可交互类别，因此自交互不可能成立。
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong EntityId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.QuestInteractRequest;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+    }
+
+    /// <summary>
+    /// 交互裁决回执。<see cref="Reason"/> 用固定短码而非中文文案：客户端要按码分派表现
+    /// （"太远了"要给距离提示、"对象不存在"要静默），文案改了不该拖垮表现分支。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(242, Enums.ServiceType.Quest)]
+    public partial class QuestInteractResultMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>角色ID（原样回填，客户端据此对齐是哪一次交互）。</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>被裁决的实体 id。</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong EntityId { get; set; }
+
+        /// <summary>服务端是否采信这次交互。</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public bool Ok { get; set; }
+
+        /// <summary>不成立时的短码：<c>no_registry</c>/<c>unknown_shard</c>/<c>unknown_entity</c>/<c>not_interactable</c>/<c>no_position</c>/<c>too_far</c>；成立时为空串。</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Reason { get; set; } = string.Empty;
+
+        /// <summary>本次推进的任务目标条数（0 表示这个对象身上没有背着我的任务）。</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int AdvancedCount { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.QuestInteractResult;
+        [MemoryPackOrder(6)]
+        [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Quest;
     }
 

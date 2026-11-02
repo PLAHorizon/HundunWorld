@@ -26,8 +26,20 @@ namespace NarrativePro.Navigation
         /// <summary>注册到所有导航组件。</summary>
         public virtual void RegisterMarker()
         {
-            if (MarkerObject == null) return;
-            MarkerObject.ActorOwner = Actor;
+            if (MarkerObject == null)
+            {
+                // 对齐 UE5：NavigationMarkerComponent::InitializeComponent 会自行 NewObject<UMapMarker>()。
+                // 本组件已在 World.scene 中按类型名放置（Content/Maps/World.scene:265），
+                // 场景脚本只带开关不带 MarkerObject 时，端口此前静默空转 —— 这里补上默认标记对象，
+                // 使「挂组件即出标记」成立。
+                MarkerObject = new MapMarker();
+            }
+
+            if (Actor != null)
+            {
+                MarkerObject.ActorOwner = Actor;
+                MarkerObject.MarkerTransform = Actor.Transform;
+            }
             MarkerObject.RegisterMarker();
         }
 

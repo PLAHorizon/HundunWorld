@@ -1,0 +1,5083 @@
+{
+  "Skills": [
+    {
+      "id": 10101,
+      "name": "金·青锋三式·启锋",
+      "description": "破甲10%",
+      "icon": "Content/Icons/Skills/metal_11.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.1,
+      "energyCost": 30,
+      "cooldown": 4,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 1,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.1,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 1,
+      "seriesId": "Metal_1",
+      "preSkillId": 0,
+      "comprehensionRequire": 4,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 1,
+        "affinityNeed": 4,
+        "proficiencyNeed": 100,
+        "bookItemId": 810101
+      }
+    },
+    {
+      "id": 10102,
+      "name": "金·青锋三式·断缕",
+      "description": "断对方轻身加速2s",
+      "icon": "Content/Icons/Skills/metal_12.flax",
+      "element": "Metal",
+      "type": "Control",
+      "damageMultiplier": 1.2,
+      "energyCost": 48,
+      "cooldown": 10,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 11,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 2,
+      "seriesId": "Metal_1",
+      "preSkillId": 10101,
+      "comprehensionRequire": 6,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 2,
+        "affinityNeed": 6,
+        "proficiencyNeed": 100,
+        "bookItemId": 810102
+      }
+    },
+    {
+      "id": 10103,
+      "name": "金·青锋三式·裂缺",
+      "description": "命中后自身下一式破甲+5%",
+      "icon": "Content/Icons/Skills/metal_13.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.31,
+      "energyCost": 66,
+      "cooldown": 28,
+      "range": 25,
+      "castTime": 0.3,
+      "rangeType": "Sector",
+      "aoeRadius": 4.8,
+      "aoeAngle": 90,
+      "requiredLevel": 21,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.15,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 3,
+      "seriesId": "Metal_1",
+      "preSkillId": 10102,
+      "comprehensionRequire": 8,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 3,
+        "affinityNeed": 8,
+        "proficiencyNeed": 100,
+        "bookItemId": 810103
+      }
+    },
+    {
+      "id": 10201,
+      "name": "金·裂金三式·崩棱",
+      "description": "破甲15%，对护盾目标×1.2",
+      "icon": "Content/Icons/Skills/metal_21.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.42,
+      "energyCost": 84,
+      "cooldown": 6,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 31,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.15,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 1,
+      "seriesId": "Metal_2",
+      "preSkillId": 10103,
+      "comprehensionRequire": 12,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 1,
+        "affinityNeed": 12,
+        "proficiencyNeed": 200,
+        "bookItemId": 810201
+      }
+    },
+    {
+      "id": 10202,
+      "name": "金·裂金三式·削玉",
+      "description": "穿透2目标",
+      "icon": "Content/Icons/Skills/metal_22.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.55,
+      "energyCost": 102,
+      "cooldown": 14,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 46,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 2,
+      "seriesId": "Metal_2",
+      "preSkillId": 10201,
+      "comprehensionRequire": 15,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 2,
+        "affinityNeed": 15,
+        "proficiencyNeed": 200,
+        "bookItemId": 810202
+      }
+    },
+    {
+      "id": 10203,
+      "name": "金·裂金三式·贯岳",
+      "description": "无视20%防御并击碎1层增益",
+      "icon": "Content/Icons/Skills/metal_23.flax",
+      "element": "Metal",
+      "type": "Ultimate",
+      "damageMultiplier": 1.69,
+      "energyCost": 120,
+      "cooldown": 40,
+      "range": 25,
+      "castTime": 1,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 61,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.2,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 3,
+      "seriesId": "Metal_2",
+      "preSkillId": 10202,
+      "comprehensionRequire": 18,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 3,
+        "affinityNeed": 18,
+        "proficiencyNeed": 200,
+        "bookItemId": 810203
+      }
+    },
+    {
+      "id": 10301,
+      "name": "金·太白经天·流霜",
+      "description": "破甲20%",
+      "icon": "Content/Icons/Skills/metal_31.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.84,
+      "energyCost": 138,
+      "cooldown": 8,
+      "range": 10,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 76,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.2,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 1,
+      "seriesId": "Metal_3",
+      "preSkillId": 10203,
+      "comprehensionRequire": 24,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 1,
+        "affinityNeed": 24,
+        "proficiencyNeed": 300,
+        "bookItemId": 810301,
+        "favorNeed": {
+          "domain": 1,
+          "min": 20
+        }
+      }
+    },
+    {
+      "id": 10302,
+      "name": "金·太白经天·割暮",
+      "description": "穿透3目标",
+      "icon": "Content/Icons/Skills/metal_32.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 2.01,
+      "energyCost": 156,
+      "cooldown": 18,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 96,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 2,
+      "seriesId": "Metal_3",
+      "preSkillId": 10301,
+      "comprehensionRequire": 28,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 2,
+        "affinityNeed": 28,
+        "proficiencyNeed": 300,
+        "bookItemId": 810302,
+        "favorNeed": {
+          "domain": 1,
+          "min": 25
+        }
+      }
+    },
+    {
+      "id": 10303,
+      "name": "金·太白经天·倾河",
+      "description": "剑阵4s，每0.5s结算一次",
+      "icon": "Content/Icons/Skills/metal_33.flax",
+      "element": "Metal",
+      "type": "Ultimate",
+      "damageMultiplier": 2.19,
+      "energyCost": 174,
+      "cooldown": 55,
+      "range": 28,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 116,
+      "maxLevel": 7,
+      "critRate": 0.07,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 3,
+      "seriesId": "Metal_3",
+      "preSkillId": 10302,
+      "comprehensionRequire": 32,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 3,
+        "affinityNeed": 32,
+        "proficiencyNeed": 300,
+        "bookItemId": 810303,
+        "favorNeed": {
+          "domain": 1,
+          "min": 30
+        }
+      }
+    },
+    {
+      "id": 10401,
+      "name": "金·庚金绝脉·断岳",
+      "description": "破甲25%，附1层锋意",
+      "icon": "Content/Icons/Skills/metal_41.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 2.39,
+      "energyCost": 192,
+      "cooldown": 11,
+      "range": 10,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 131,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.25,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 1,
+      "seriesId": "Metal_4",
+      "preSkillId": 10303,
+      "comprehensionRequire": 36,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 1,
+        "affinityNeed": 36,
+        "proficiencyNeed": 400,
+        "bookItemId": 810401,
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 10402,
+      "name": "金·庚金绝脉·铁围",
+      "description": "兵牢定身1.2s",
+      "icon": "Content/Icons/Skills/metal_42.flax",
+      "element": "Metal",
+      "type": "Control",
+      "damageMultiplier": 2.6,
+      "energyCost": 210,
+      "cooldown": 24,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 156,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Stun",
+          "duration": 1.2,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 2,
+      "seriesId": "Metal_4",
+      "preSkillId": 10401,
+      "comprehensionRequire": 42,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 2,
+        "affinityNeed": 42,
+        "proficiencyNeed": 400,
+        "bookItemId": 810402,
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 10403,
+      "name": "金·庚金绝脉·万剑朝宗",
+      "description": "3层锋意引爆，每层+0.4倍率",
+      "icon": "Content/Icons/Skills/metal_43.flax",
+      "element": "Metal",
+      "type": "Ultimate",
+      "damageMultiplier": 2.84,
+      "energyCost": 228,
+      "cooldown": 75,
+      "range": 28,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 181,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 3,
+      "seriesId": "Metal_4",
+      "preSkillId": 10402,
+      "comprehensionRequire": 48,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 3,
+        "affinityNeed": 48,
+        "proficiencyNeed": 400,
+        "bookItemId": 810403,
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 10501,
+      "name": "金·金德弥天·敛锋",
+      "description": "破甲30%",
+      "icon": "Content/Icons/Skills/metal_51.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 3.09,
+      "energyCost": 246,
+      "cooldown": 14,
+      "range": 12,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 201,
+      "maxLevel": 10,
+      "critRate": 0.07,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.3,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 1,
+      "seriesId": "Metal_5",
+      "preSkillId": 10403,
+      "comprehensionRequire": 52,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 1,
+        "affinityNeed": 52,
+        "proficiencyNeed": 500,
+        "bookItemId": 810501,
+        "favorNeed": {
+          "domain": 1,
+          "min": 55
+        },
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 7
+          },
+          {
+            "itemId": 910006,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 10502,
+      "name": "金·金德弥天·铸兵",
+      "description": "兵刃金意：后续3式破甲不叠加、耗气-15%",
+      "icon": "Content/Icons/Skills/metal_52.flax",
+      "element": "Metal",
+      "type": "Support",
+      "damageMultiplier": 3.37,
+      "energyCost": 264,
+      "cooldown": 30,
+      "range": 20,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 236,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 2,
+      "seriesId": "Metal_5",
+      "preSkillId": 10501,
+      "comprehensionRequire": 60,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 2,
+        "affinityNeed": 60,
+        "proficiencyNeed": 500,
+        "bookItemId": 810502,
+        "favorNeed": {
+          "domain": 1,
+          "min": 60
+        },
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 8
+          },
+          {
+            "itemId": 910006,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 10503,
+      "name": "金·金德弥天·金方辟易",
+      "description": "域内敌护甲-30%，我方顺生窗口+0.5s",
+      "icon": "Content/Icons/Skills/metal_53.flax",
+      "element": "Metal",
+      "type": "Ultimate",
+      "damageMultiplier": 3.68,
+      "energyCost": 282,
+      "cooldown": 100,
+      "range": 30,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 271,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 3,
+      "seriesId": "Metal_5",
+      "preSkillId": 10502,
+      "comprehensionRequire": 68,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 3,
+        "affinityNeed": 68,
+        "proficiencyNeed": 500,
+        "bookItemId": 810503,
+        "favorNeed": {
+          "domain": 1,
+          "min": 65
+        },
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 10
+          },
+          {
+            "itemId": 910006,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 20101,
+      "name": "木·青藤三式·缠枝",
+      "description": "DOT0.25倍/2s，4s",
+      "icon": "Content/Icons/Skills/wood_11.flax",
+      "element": "Wood",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.1,
+      "energyCost": 30,
+      "cooldown": 4,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 1,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.25,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 1,
+      "seriesId": "Wood_1",
+      "preSkillId": 0,
+      "comprehensionRequire": 4,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 1,
+        "affinityNeed": 4,
+        "proficiencyNeed": 100,
+        "bookItemId": 820101
+      }
+    },
+    {
+      "id": 20102,
+      "name": "木·青藤三式·抽芽",
+      "description": "减速15%2s",
+      "icon": "Content/Icons/Skills/wood_12.flax",
+      "element": "Wood",
+      "type": "Control",
+      "damageMultiplier": 1.2,
+      "energyCost": 48,
+      "cooldown": 10,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 11,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Slow",
+          "duration": 2,
+          "value": 0.15,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 2,
+      "seriesId": "Wood_1",
+      "preSkillId": 20101,
+      "comprehensionRequire": 6,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 2,
+        "affinityNeed": 6,
+        "proficiencyNeed": 100,
+        "bookItemId": 820102
+      }
+    },
+    {
+      "id": 20103,
+      "name": "木·青藤三式·落花",
+      "description": "回复6%气血",
+      "icon": "Content/Icons/Skills/wood_13.flax",
+      "element": "Wood",
+      "type": "Support",
+      "damageMultiplier": 1.31,
+      "energyCost": 66,
+      "cooldown": 28,
+      "range": 25,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 21,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Heal",
+          "duration": 0,
+          "value": 0.06,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 3,
+      "seriesId": "Wood_1",
+      "preSkillId": 20102,
+      "comprehensionRequire": 8,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 3,
+        "affinityNeed": 8,
+        "proficiencyNeed": 100,
+        "bookItemId": 820103
+      }
+    },
+    {
+      "id": 20201,
+      "name": "木·绿绮长林·蔓引",
+      "description": "DOT0.30倍并蔓延1名邻敌",
+      "icon": "Content/Icons/Skills/wood_21.flax",
+      "element": "Wood",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.42,
+      "energyCost": 84,
+      "cooldown": 6,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Sector",
+      "aoeRadius": 4.8,
+      "aoeAngle": 90,
+      "requiredLevel": 31,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.3,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 1,
+      "seriesId": "Wood_2",
+      "preSkillId": 20103,
+      "comprehensionRequire": 12,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 1,
+        "affinityNeed": 12,
+        "proficiencyNeed": 200,
+        "bookItemId": 820201
+      }
+    },
+    {
+      "id": 20202,
+      "name": "木·绿绮长林·荆棘",
+      "description": "束缚1.5s+反伤",
+      "icon": "Content/Icons/Skills/wood_22.flax",
+      "element": "Wood",
+      "type": "Control",
+      "damageMultiplier": 1.55,
+      "energyCost": 102,
+      "cooldown": 14,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 10,
+      "aoeAngle": 0,
+      "requiredLevel": 46,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Root",
+          "duration": 1.5,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 2,
+      "seriesId": "Wood_2",
+      "preSkillId": 20201,
+      "comprehensionRequire": 15,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 2,
+        "affinityNeed": 15,
+        "proficiencyNeed": 200,
+        "bookItemId": 820202
+      }
+    },
+    {
+      "id": 20203,
+      "name": "木·绿绮长林·枯荣",
+      "description": "友方回复、敌方DOT同时生效",
+      "icon": "Content/Icons/Skills/wood_23.flax",
+      "element": "Wood",
+      "type": "Support",
+      "damageMultiplier": 1.69,
+      "energyCost": 120,
+      "cooldown": 40,
+      "range": 25,
+      "castTime": 0.6,
+      "rangeType": "Circle",
+      "aoeRadius": 10,
+      "aoeAngle": 0,
+      "requiredLevel": 61,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.2,
+          "chance": 1
+        },
+        {
+          "type": "Heal",
+          "duration": 0,
+          "value": 0.08,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 3,
+      "seriesId": "Wood_2",
+      "preSkillId": 20202,
+      "comprehensionRequire": 18,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 3,
+        "affinityNeed": 18,
+        "proficiencyNeed": 200,
+        "bookItemId": 820203
+      }
+    },
+    {
+      "id": 20301,
+      "name": "木·春木生息·回春",
+      "description": "治疗+HOT",
+      "icon": "Content/Icons/Skills/wood_31.flax",
+      "element": "Wood",
+      "type": "Support",
+      "damageMultiplier": 1.84,
+      "energyCost": 138,
+      "cooldown": 8,
+      "range": 10,
+      "castTime": 0.6,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 76,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Heal",
+          "duration": 0,
+          "value": 0.12,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 1,
+      "seriesId": "Wood_3",
+      "preSkillId": 20203,
+      "comprehensionRequire": 24,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 1,
+        "affinityNeed": 24,
+        "proficiencyNeed": 300,
+        "bookItemId": 820301,
+        "favorNeed": {
+          "domain": 2,
+          "min": 20
+        }
+      }
+    },
+    {
+      "id": 20302,
+      "name": "木·春木生息·繁荫",
+      "description": "群体缠绕2s",
+      "icon": "Content/Icons/Skills/wood_32.flax",
+      "element": "Wood",
+      "type": "Control",
+      "damageMultiplier": 2.01,
+      "energyCost": 156,
+      "cooldown": 18,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 96,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Root",
+          "duration": 2,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 2,
+      "seriesId": "Wood_3",
+      "preSkillId": 20301,
+      "comprehensionRequire": 28,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 2,
+        "affinityNeed": 28,
+        "proficiencyNeed": 300,
+        "bookItemId": 820302,
+        "favorNeed": {
+          "domain": 2,
+          "min": 25
+        }
+      }
+    },
+    {
+      "id": 20303,
+      "name": "木·春木生息·万叶",
+      "description": "叶域4s，域内DOT结算频率×1.5",
+      "icon": "Content/Icons/Skills/wood_33.flax",
+      "element": "Wood",
+      "type": "Ultimate",
+      "damageMultiplier": 2.19,
+      "energyCost": 174,
+      "cooldown": 55,
+      "range": 28,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 116,
+      "maxLevel": 7,
+      "critRate": 0.07,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 3,
+      "seriesId": "Wood_3",
+      "preSkillId": 20302,
+      "comprehensionRequire": 32,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 3,
+        "affinityNeed": 32,
+        "proficiencyNeed": 300,
+        "bookItemId": 820303,
+        "favorNeed": {
+          "domain": 2,
+          "min": 30
+        }
+      }
+    },
+    {
+      "id": 20401,
+      "name": "木·苍梧生生·盘根",
+      "description": "定身1s，DOT0.5倍",
+      "icon": "Content/Icons/Skills/wood_41.flax",
+      "element": "Wood",
+      "type": "ActiveAttack",
+      "damageMultiplier": 2.39,
+      "energyCost": 192,
+      "cooldown": 11,
+      "range": 10,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 131,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.5,
+          "chance": 1
+        },
+        {
+          "type": "Root",
+          "duration": 1,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 1,
+      "seriesId": "Wood_4",
+      "preSkillId": 20303,
+      "comprehensionRequire": 36,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 1,
+        "affinityNeed": 36,
+        "proficiencyNeed": 400,
+        "bookItemId": 820401,
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 20402,
+      "name": "木·苍梧生生·腾莽",
+      "description": "突进缠绕",
+      "icon": "Content/Icons/Skills/wood_42.flax",
+      "element": "Wood",
+      "type": "Control",
+      "damageMultiplier": 2.6,
+      "energyCost": 210,
+      "cooldown": 24,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Rectangle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 156,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Root",
+          "duration": 1.5,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 2,
+      "seriesId": "Wood_4",
+      "preSkillId": 20401,
+      "comprehensionRequire": 42,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 2,
+        "affinityNeed": 42,
+        "proficiencyNeed": 400,
+        "bookItemId": 820402,
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 20403,
+      "name": "木·苍梧生生·森罗",
+      "description": "领域8s，友方受疗+20%",
+      "icon": "Content/Icons/Skills/wood_43.flax",
+      "element": "Wood",
+      "type": "Ultimate",
+      "damageMultiplier": 2.84,
+      "energyCost": 228,
+      "cooldown": 75,
+      "range": 28,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 181,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 3,
+      "seriesId": "Wood_4",
+      "preSkillId": 20402,
+      "comprehensionRequire": 48,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 3,
+        "affinityNeed": 48,
+        "proficiencyNeed": 400,
+        "bookItemId": 820403,
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 20501,
+      "name": "木·青帝临凡·布泽",
+      "description": "群体回复+驱散流血",
+      "icon": "Content/Icons/Skills/wood_51.flax",
+      "element": "Wood",
+      "type": "Support",
+      "damageMultiplier": 3.09,
+      "energyCost": 246,
+      "cooldown": 14,
+      "range": 12,
+      "castTime": 0.6,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 201,
+      "maxLevel": 10,
+      "critRate": 0.07,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Heal",
+          "duration": 0,
+          "value": 0.15,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 1,
+      "seriesId": "Wood_5",
+      "preSkillId": 20403,
+      "comprehensionRequire": 52,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 1,
+        "affinityNeed": 52,
+        "proficiencyNeed": 500,
+        "bookItemId": 820501,
+        "favorNeed": {
+          "domain": 2,
+          "min": 55
+        },
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 7
+          },
+          {
+            "itemId": 910007,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 20502,
+      "name": "木·青帝临凡·荣枯",
+      "description": "敌DOT、我HOT同半径",
+      "icon": "Content/Icons/Skills/wood_52.flax",
+      "element": "Wood",
+      "type": "ActiveAttack",
+      "damageMultiplier": 3.37,
+      "energyCost": 264,
+      "cooldown": 30,
+      "range": 20,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 236,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.35,
+          "chance": 1
+        },
+        {
+          "type": "Heal",
+          "duration": 0,
+          "value": 0.12,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 2,
+      "seriesId": "Wood_5",
+      "preSkillId": 20501,
+      "comprehensionRequire": 60,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 2,
+        "affinityNeed": 60,
+        "proficiencyNeed": 500,
+        "bookItemId": 820502,
+        "favorNeed": {
+          "domain": 2,
+          "min": 60
+        },
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 8
+          },
+          {
+            "itemId": 910007,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 20503,
+      "name": "木·青帝临凡·建木通天",
+      "description": "9s内每次相生判定额外+1层DOT",
+      "icon": "Content/Icons/Skills/wood_53.flax",
+      "element": "Wood",
+      "type": "Ultimate",
+      "damageMultiplier": 3.68,
+      "energyCost": 282,
+      "cooldown": 100,
+      "range": 30,
+      "castTime": 1,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 271,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 3,
+      "seriesId": "Wood_5",
+      "preSkillId": 20502,
+      "comprehensionRequire": 68,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 3,
+        "affinityNeed": 68,
+        "proficiencyNeed": 500,
+        "bookItemId": 820503,
+        "favorNeed": {
+          "domain": 2,
+          "min": 65
+        },
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 10
+          },
+          {
+            "itemId": 910007,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 30101,
+      "name": "水·玄冰三式·凝霜",
+      "description": "减速20%3s",
+      "icon": "Content/Icons/Skills/water_11.flax",
+      "element": "Water",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.1,
+      "energyCost": 30,
+      "cooldown": 4,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 1,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Slow",
+          "duration": 3,
+          "value": 0.2,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 1,
+      "seriesId": "Water_1",
+      "preSkillId": 0,
+      "comprehensionRequire": 4,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 1,
+        "affinityNeed": 4,
+        "proficiencyNeed": 100,
+        "bookItemId": 830101
+      }
+    },
+    {
+      "id": 30102,
+      "name": "水·玄冰三式·激浪",
+      "description": "击退2m",
+      "icon": "Content/Icons/Skills/water_12.flax",
+      "element": "Water",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.2,
+      "energyCost": 48,
+      "cooldown": 10,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 11,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 2,
+      "grade": 1,
+      "gradeStage": 2,
+      "seriesId": "Water_1",
+      "preSkillId": 30101,
+      "comprehensionRequire": 6,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 2,
+        "affinityNeed": 6,
+        "proficiencyNeed": 100,
+        "bookItemId": 830102
+      }
+    },
+    {
+      "id": 30103,
+      "name": "水·玄冰三式·镜面",
+      "description": "反射下一次控制",
+      "icon": "Content/Icons/Skills/water_13.flax",
+      "element": "Water",
+      "type": "Support",
+      "damageMultiplier": 1.31,
+      "energyCost": 66,
+      "cooldown": 28,
+      "range": 25,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 21,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 3,
+      "seriesId": "Water_1",
+      "preSkillId": 30102,
+      "comprehensionRequire": 8,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 3,
+        "affinityNeed": 8,
+        "proficiencyNeed": 100,
+        "bookItemId": 830103
+      }
+    },
+    {
+      "id": 30201,
+      "name": "水·寒潭印月·刺骨",
+      "description": "减速30%，耗气-10%",
+      "icon": "Content/Icons/Skills/water_21.flax",
+      "element": "Water",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.42,
+      "energyCost": 84,
+      "cooldown": 6,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 31,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Slow",
+          "duration": 3,
+          "value": 0.3,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 1,
+      "seriesId": "Water_2",
+      "preSkillId": 30103,
+      "comprehensionRequire": 12,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 1,
+        "affinityNeed": 12,
+        "proficiencyNeed": 200,
+        "bookItemId": 830201
+      }
+    },
+    {
+      "id": 30202,
+      "name": "水·寒潭印月·凝涛",
+      "description": "冰冻1.2s",
+      "icon": "Content/Icons/Skills/water_22.flax",
+      "element": "Water",
+      "type": "Control",
+      "damageMultiplier": 1.55,
+      "energyCost": 102,
+      "cooldown": 14,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 10,
+      "aoeAngle": 0,
+      "requiredLevel": 46,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Stun",
+          "duration": 1.2,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 2,
+      "seriesId": "Water_2",
+      "preSkillId": 30201,
+      "comprehensionRequire": 15,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 2,
+        "affinityNeed": 15,
+        "proficiencyNeed": 200,
+        "bookItemId": 830202
+      }
+    },
+    {
+      "id": 30203,
+      "name": "水·寒潭印月·沉璧",
+      "description": "净化2个减益",
+      "icon": "Content/Icons/Skills/water_23.flax",
+      "element": "Water",
+      "type": "Support",
+      "damageMultiplier": 1.69,
+      "energyCost": 120,
+      "cooldown": 40,
+      "range": 25,
+      "castTime": 0.6,
+      "rangeType": "Circle",
+      "aoeRadius": 10,
+      "aoeAngle": 0,
+      "requiredLevel": 61,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 3,
+      "seriesId": "Water_2",
+      "preSkillId": 30202,
+      "comprehensionRequire": 18,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 3,
+        "affinityNeed": 18,
+        "proficiencyNeed": 200,
+        "bookItemId": 830203
+      }
+    },
+    {
+      "id": 30301,
+      "name": "水·沧浪之水·濯缨",
+      "description": "解除控制并回复",
+      "icon": "Content/Icons/Skills/water_31.flax",
+      "element": "Water",
+      "type": "Support",
+      "damageMultiplier": 1.84,
+      "energyCost": 138,
+      "cooldown": 8,
+      "range": 10,
+      "castTime": 0.6,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 76,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Heal",
+          "duration": 0,
+          "value": 0.1,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 1,
+      "seriesId": "Water_3",
+      "preSkillId": 30203,
+      "comprehensionRequire": 24,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 1,
+        "affinityNeed": 24,
+        "proficiencyNeed": 300,
+        "bookItemId": 830301,
+        "favorNeed": {
+          "domain": 3,
+          "min": 20
+        }
+      }
+    },
+    {
+      "id": 30302,
+      "name": "水·沧浪之水·回澜",
+      "description": "拉拽聚怪1.5s",
+      "icon": "Content/Icons/Skills/water_32.flax",
+      "element": "Water",
+      "type": "Control",
+      "damageMultiplier": 2.01,
+      "energyCost": 156,
+      "cooldown": 18,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 96,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 2,
+      "seriesId": "Water_3",
+      "preSkillId": 30301,
+      "comprehensionRequire": 28,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 2,
+        "affinityNeed": 28,
+        "proficiencyNeed": 300,
+        "bookItemId": 830302,
+        "favorNeed": {
+          "domain": 3,
+          "min": 25
+        }
+      }
+    },
+    {
+      "id": 30303,
+      "name": "水·沧浪之水·雾锁",
+      "description": "域内敌命中-20%",
+      "icon": "Content/Icons/Skills/water_33.flax",
+      "element": "Water",
+      "type": "Control",
+      "damageMultiplier": 2.19,
+      "energyCost": 174,
+      "cooldown": 55,
+      "range": 28,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 116,
+      "maxLevel": 7,
+      "critRate": 0.07,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 3,
+      "seriesId": "Water_3",
+      "preSkillId": 30302,
+      "comprehensionRequire": 32,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 3,
+        "affinityNeed": 32,
+        "proficiencyNeed": 300,
+        "bookItemId": 830303,
+        "favorNeed": {
+          "domain": 3,
+          "min": 30
+        }
+      }
+    },
+    {
+      "id": 30401,
+      "name": "水·玄武潜渊·冻浦",
+      "description": "群体冰冻1.5s",
+      "icon": "Content/Icons/Skills/water_41.flax",
+      "element": "Water",
+      "type": "ActiveAttack",
+      "damageMultiplier": 2.39,
+      "energyCost": 192,
+      "cooldown": 11,
+      "range": 10,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 131,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Stun",
+          "duration": 1.5,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 1,
+      "seriesId": "Water_4",
+      "preSkillId": 30303,
+      "comprehensionRequire": 36,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 1,
+        "affinityNeed": 36,
+        "proficiencyNeed": 400,
+        "bookItemId": 830401,
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 30402,
+      "name": "水·玄武潜渊·倒河",
+      "description": "穿透并减速叠层",
+      "icon": "Content/Icons/Skills/water_42.flax",
+      "element": "Water",
+      "type": "ActiveAttack",
+      "damageMultiplier": 2.6,
+      "energyCost": 210,
+      "cooldown": 24,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 156,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Slow",
+          "duration": 3,
+          "value": 0.15,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 2,
+      "seriesId": "Water_4",
+      "preSkillId": 30401,
+      "comprehensionRequire": 42,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 2,
+        "affinityNeed": 42,
+        "proficiencyNeed": 400,
+        "bookItemId": 830402,
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 30403,
+      "name": "水·玄武潜渊·深渊",
+      "description": "3s免疫控制，出水时结算",
+      "icon": "Content/Icons/Skills/water_43.flax",
+      "element": "Water",
+      "type": "Ultimate",
+      "damageMultiplier": 2.84,
+      "energyCost": 228,
+      "cooldown": 75,
+      "range": 28,
+      "castTime": 1,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 181,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 3,
+      "seriesId": "Water_4",
+      "preSkillId": 30402,
+      "comprehensionRequire": 48,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 3,
+        "affinityNeed": 48,
+        "proficiencyNeed": 400,
+        "bookItemId": 830403,
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 30501,
+      "name": "水·天河倒泻·冰壶",
+      "description": "冰封2s+破霜（受击+15%）",
+      "icon": "Content/Icons/Skills/water_51.flax",
+      "element": "Water",
+      "type": "Control",
+      "damageMultiplier": 3.09,
+      "energyCost": 246,
+      "cooldown": 14,
+      "range": 12,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 201,
+      "maxLevel": 10,
+      "critRate": 0.07,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Stun",
+          "duration": 2,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 1,
+      "seriesId": "Water_5",
+      "preSkillId": 30403,
+      "comprehensionRequire": 52,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 1,
+        "affinityNeed": 52,
+        "proficiencyNeed": 500,
+        "bookItemId": 830501,
+        "favorNeed": {
+          "domain": 3,
+          "min": 55
+        },
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 7
+          },
+          {
+            "itemId": 910008,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 30502,
+      "name": "水·天河倒泻·悬瀑",
+      "description": "大范围冲击并击退",
+      "icon": "Content/Icons/Skills/water_52.flax",
+      "element": "Water",
+      "type": "Ultimate",
+      "damageMultiplier": 3.37,
+      "energyCost": 264,
+      "cooldown": 30,
+      "range": 20,
+      "castTime": 1,
+      "rangeType": "Rectangle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 236,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 5,
+      "grade": 5,
+      "gradeStage": 2,
+      "seriesId": "Water_5",
+      "preSkillId": 30501,
+      "comprehensionRequire": 60,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 2,
+        "affinityNeed": 60,
+        "proficiencyNeed": 500,
+        "bookItemId": 830502,
+        "favorNeed": {
+          "domain": 3,
+          "min": 60
+        },
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 8
+          },
+          {
+            "itemId": 910008,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 30503,
+      "name": "水·天河倒泻·溟海归墟",
+      "description": "域内每1s抽1层敌增益回我方",
+      "icon": "Content/Icons/Skills/water_53.flax",
+      "element": "Water",
+      "type": "Ultimate",
+      "damageMultiplier": 3.68,
+      "energyCost": 282,
+      "cooldown": 100,
+      "range": 30,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 271,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 3,
+      "seriesId": "Water_5",
+      "preSkillId": 30502,
+      "comprehensionRequire": 68,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 3,
+        "affinityNeed": 68,
+        "proficiencyNeed": 500,
+        "bookItemId": 830503,
+        "favorNeed": {
+          "domain": 3,
+          "min": 65
+        },
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 10
+          },
+          {
+            "itemId": 910008,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 40101,
+      "name": "火·星火三式·燃薪",
+      "description": "灼烧0.3倍每秒4s",
+      "icon": "Content/Icons/Skills/fire_11.flax",
+      "element": "Fire",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.1,
+      "energyCost": 30,
+      "cooldown": 4,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 1,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.3,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 1,
+      "seriesId": "Fire_1",
+      "preSkillId": 0,
+      "comprehensionRequire": 4,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 1,
+        "affinityNeed": 4,
+        "proficiencyNeed": 100,
+        "bookItemId": 840101
+      }
+    },
+    {
+      "id": 40102,
+      "name": "火·星火三式·飞烬",
+      "description": "溅射40%",
+      "icon": "Content/Icons/Skills/fire_12.flax",
+      "element": "Fire",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.2,
+      "energyCost": 48,
+      "cooldown": 10,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 8,
+      "aoeAngle": 0,
+      "requiredLevel": 11,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 2,
+      "seriesId": "Fire_1",
+      "preSkillId": 40101,
+      "comprehensionRequire": 6,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 2,
+        "affinityNeed": 6,
+        "proficiencyNeed": 100,
+        "bookItemId": 840102
+      }
+    },
+    {
+      "id": 40103,
+      "name": "火·星火三式·燎原",
+      "description": "点燃2名邻敌DOT",
+      "icon": "Content/Icons/Skills/fire_13.flax",
+      "element": "Fire",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.31,
+      "energyCost": 66,
+      "cooldown": 28,
+      "range": 25,
+      "castTime": 0.3,
+      "rangeType": "Sector",
+      "aoeRadius": 4.8,
+      "aoeAngle": 90,
+      "requiredLevel": 21,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.25,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 3,
+      "seriesId": "Fire_1",
+      "preSkillId": 40102,
+      "comprehensionRequire": 8,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 3,
+        "affinityNeed": 8,
+        "proficiencyNeed": 100,
+        "bookItemId": 840103
+      }
+    },
+    {
+      "id": 40201,
+      "name": "火·赤霄焚野·贯日",
+      "description": "贯穿灼烧",
+      "icon": "Content/Icons/Skills/fire_21.flax",
+      "element": "Fire",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.42,
+      "energyCost": 84,
+      "cooldown": 6,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 31,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.3,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 1,
+      "seriesId": "Fire_2",
+      "preSkillId": 40103,
+      "comprehensionRequire": 12,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 1,
+        "affinityNeed": 12,
+        "proficiencyNeed": 200,
+        "bookItemId": 840201
+      }
+    },
+    {
+      "id": 40202,
+      "name": "火·赤霄焚野·流火",
+      "description": "落地区域3s持续灼烧",
+      "icon": "Content/Icons/Skills/fire_22.flax",
+      "element": "Fire",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.55,
+      "energyCost": 102,
+      "cooldown": 14,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 10,
+      "aoeAngle": 0,
+      "requiredLevel": 46,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.2,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 2,
+      "seriesId": "Fire_2",
+      "preSkillId": 40201,
+      "comprehensionRequire": 15,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 2,
+        "affinityNeed": 15,
+        "proficiencyNeed": 200,
+        "bookItemId": 840202
+      }
+    },
+    {
+      "id": 40203,
+      "name": "火·赤霄焚野·焚营",
+      "description": "对DOT目标×1.5",
+      "icon": "Content/Icons/Skills/fire_23.flax",
+      "element": "Fire",
+      "type": "Ultimate",
+      "damageMultiplier": 1.69,
+      "energyCost": 120,
+      "cooldown": 40,
+      "range": 25,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 10,
+      "aoeAngle": 0,
+      "requiredLevel": 61,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 3,
+      "seriesId": "Fire_2",
+      "preSkillId": 40202,
+      "comprehensionRequire": 18,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 3,
+        "affinityNeed": 18,
+        "proficiencyNeed": 200,
+        "bookItemId": 840203
+      }
+    },
+    {
+      "id": 40301,
+      "name": "火·离火真形·熔兵",
+      "description": "破甲并缴械3s",
+      "icon": "Content/Icons/Skills/fire_31.flax",
+      "element": "Fire",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.84,
+      "energyCost": 138,
+      "cooldown": 8,
+      "range": 10,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 76,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.2,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 1,
+      "seriesId": "Fire_3",
+      "preSkillId": 40203,
+      "comprehensionRequire": 24,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 1,
+        "affinityNeed": 24,
+        "proficiencyNeed": 300,
+        "bookItemId": 840301,
+        "favorNeed": {
+          "domain": 4,
+          "min": 20
+        }
+      }
+    },
+    {
+      "id": 40302,
+      "name": "火·离火真形·业锁",
+      "description": "定身+DOT，被克目标额外1s",
+      "icon": "Content/Icons/Skills/fire_32.flax",
+      "element": "Fire",
+      "type": "Control",
+      "damageMultiplier": 2.01,
+      "energyCost": 156,
+      "cooldown": 18,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 96,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.3,
+          "chance": 1
+        },
+        {
+          "type": "Stun",
+          "duration": 1.2,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 2,
+      "seriesId": "Fire_3",
+      "preSkillId": 40301,
+      "comprehensionRequire": 28,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 2,
+        "affinityNeed": 28,
+        "proficiencyNeed": 300,
+        "bookItemId": 840302,
+        "favorNeed": {
+          "domain": 4,
+          "min": 25
+        }
+      }
+    },
+    {
+      "id": 40303,
+      "name": "火·离火真形·炎龙",
+      "description": "龙形穿透5目标",
+      "icon": "Content/Icons/Skills/fire_33.flax",
+      "element": "Fire",
+      "type": "Ultimate",
+      "damageMultiplier": 2.19,
+      "energyCost": 174,
+      "cooldown": 55,
+      "range": 28,
+      "castTime": 1,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 116,
+      "maxLevel": 7,
+      "critRate": 0.07,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 3,
+      "seriesId": "Fire_3",
+      "preSkillId": 40302,
+      "comprehensionRequire": 32,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 3,
+        "affinityNeed": 32,
+        "proficiencyNeed": 300,
+        "bookItemId": 840303,
+        "favorNeed": {
+          "domain": 4,
+          "min": 30
+        }
+      }
+    },
+    {
+      "id": 40401,
+      "name": "火·丹雀衔烛·爆烈",
+      "description": "引爆自身DOT立即结算余量",
+      "icon": "Content/Icons/Skills/fire_41.flax",
+      "element": "Fire",
+      "type": "ActiveAttack",
+      "damageMultiplier": 2.39,
+      "energyCost": 192,
+      "cooldown": 11,
+      "range": 10,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 131,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 1,
+      "seriesId": "Fire_4",
+      "preSkillId": 40303,
+      "comprehensionRequire": 36,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 1,
+        "affinityNeed": 36,
+        "proficiencyNeed": 400,
+        "bookItemId": 840401,
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 40402,
+      "name": "火·丹雀衔烛·焚身",
+      "description": "耗10%气血换3s火伤+25%",
+      "icon": "Content/Icons/Skills/fire_42.flax",
+      "element": "Fire",
+      "type": "Support",
+      "damageMultiplier": 2.6,
+      "energyCost": 210,
+      "cooldown": 24,
+      "range": 18,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 156,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 2,
+      "seriesId": "Fire_4",
+      "preSkillId": 40401,
+      "comprehensionRequire": 42,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 2,
+        "affinityNeed": 42,
+        "proficiencyNeed": 400,
+        "bookItemId": 840402,
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 40403,
+      "name": "火·丹雀衔烛·赤城",
+      "description": "火域6s，DOT不可被驱散",
+      "icon": "Content/Icons/Skills/fire_43.flax",
+      "element": "Fire",
+      "type": "Ultimate",
+      "damageMultiplier": 2.84,
+      "energyCost": 228,
+      "cooldown": 75,
+      "range": 28,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 181,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 3,
+      "seriesId": "Fire_4",
+      "preSkillId": 40402,
+      "comprehensionRequire": 48,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 3,
+        "affinityNeed": 48,
+        "proficiencyNeed": 400,
+        "bookItemId": 840403,
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 40501,
+      "name": "火·焚天灭地·劫火",
+      "description": "全体灼烧+减疗30%",
+      "icon": "Content/Icons/Skills/fire_51.flax",
+      "element": "Fire",
+      "type": "Ultimate",
+      "damageMultiplier": 3.09,
+      "energyCost": 246,
+      "cooldown": 14,
+      "range": 12,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 201,
+      "maxLevel": 10,
+      "critRate": 0.07,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.4,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 1,
+      "seriesId": "Fire_5",
+      "preSkillId": 40403,
+      "comprehensionRequire": 52,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 1,
+        "affinityNeed": 52,
+        "proficiencyNeed": 500,
+        "bookItemId": 840501,
+        "favorNeed": {
+          "domain": 4,
+          "min": 55
+        },
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 7
+          },
+          {
+            "itemId": 910009,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 40502,
+      "name": "火·焚天灭地·日陨",
+      "description": "单点巨伤+落地区域",
+      "icon": "Content/Icons/Skills/fire_52.flax",
+      "element": "Fire",
+      "type": "Ultimate",
+      "damageMultiplier": 3.37,
+      "energyCost": 264,
+      "cooldown": 30,
+      "range": 20,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 236,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 2,
+      "seriesId": "Fire_5",
+      "preSkillId": 40501,
+      "comprehensionRequire": 60,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 2,
+        "affinityNeed": 60,
+        "proficiencyNeed": 500,
+        "bookItemId": 840502,
+        "favorNeed": {
+          "domain": 4,
+          "min": 60
+        },
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 8
+          },
+          {
+            "itemId": 910009,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 40503,
+      "name": "火·焚天灭地·凤凰涅槃",
+      "description": "致死免死并回复30%，重灼周围",
+      "icon": "Content/Icons/Skills/fire_53.flax",
+      "element": "Fire",
+      "type": "Support",
+      "damageMultiplier": 3.68,
+      "energyCost": 282,
+      "cooldown": 100,
+      "range": 30,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 271,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Heal",
+          "duration": 0,
+          "value": 0.3,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 3,
+      "seriesId": "Fire_5",
+      "preSkillId": 40502,
+      "comprehensionRequire": 68,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 3,
+        "affinityNeed": 68,
+        "proficiencyNeed": 500,
+        "bookItemId": 840503,
+        "favorNeed": {
+          "domain": 4,
+          "min": 65
+        },
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 10
+          },
+          {
+            "itemId": 910009,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 50101,
+      "name": "土·磐石三式·垒土",
+      "description": "击退1.5m",
+      "icon": "Content/Icons/Skills/earth_11.flax",
+      "element": "Earth",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.1,
+      "energyCost": 30,
+      "cooldown": 4,
+      "range": 8,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 1,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 1.5,
+      "grade": 1,
+      "gradeStage": 1,
+      "seriesId": "Earth_1",
+      "preSkillId": 0,
+      "comprehensionRequire": 4,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 1,
+        "affinityNeed": 4,
+        "proficiencyNeed": 100,
+        "bookItemId": 850101
+      }
+    },
+    {
+      "id": 50102,
+      "name": "土·磐石三式·飞砂",
+      "description": "命中-15%持续3s",
+      "icon": "Content/Icons/Skills/earth_12.flax",
+      "element": "Earth",
+      "type": "Control",
+      "damageMultiplier": 1.2,
+      "energyCost": 48,
+      "cooldown": 10,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 8,
+      "aoeAngle": 0,
+      "requiredLevel": 11,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 2,
+      "seriesId": "Earth_1",
+      "preSkillId": 50101,
+      "comprehensionRequire": 6,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 2,
+        "affinityNeed": 6,
+        "proficiencyNeed": 100,
+        "bookItemId": 850102
+      }
+    },
+    {
+      "id": 50103,
+      "name": "土·磐石三式·地陷",
+      "description": "减速25%2s",
+      "icon": "Content/Icons/Skills/earth_13.flax",
+      "element": "Earth",
+      "type": "Control",
+      "damageMultiplier": 1.31,
+      "energyCost": 66,
+      "cooldown": 28,
+      "range": 25,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 8,
+      "aoeAngle": 0,
+      "requiredLevel": 21,
+      "maxLevel": 3,
+      "critRate": 0.05,
+      "critMultiplier": 1.52,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Slow",
+          "duration": 2,
+          "value": 0.25,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.11,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 1,
+      "gradeStage": 3,
+      "seriesId": "Earth_1",
+      "preSkillId": 50102,
+      "comprehensionRequire": 8,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 1,
+        "gradeStage": 3,
+        "affinityNeed": 8,
+        "proficiencyNeed": 100,
+        "bookItemId": 850103
+      }
+    },
+    {
+      "id": 50201,
+      "name": "土·厚土重帷·岩甲",
+      "description": "护盾吸收0.5倍",
+      "icon": "Content/Icons/Skills/earth_21.flax",
+      "element": "Earth",
+      "type": "Support",
+      "damageMultiplier": 1.42,
+      "energyCost": 84,
+      "cooldown": 6,
+      "range": 8,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 31,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Shield",
+          "duration": 6,
+          "value": 0.5,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 1,
+      "seriesId": "Earth_2",
+      "preSkillId": 50103,
+      "comprehensionRequire": 12,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 1,
+        "affinityNeed": 12,
+        "proficiencyNeed": 200,
+        "bookItemId": 850201
+      }
+    },
+    {
+      "id": 50202,
+      "name": "土·厚土重帷·石刺",
+      "description": "突进并击飞",
+      "icon": "Content/Icons/Skills/earth_22.flax",
+      "element": "Earth",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.55,
+      "energyCost": 102,
+      "cooldown": 14,
+      "range": 15,
+      "castTime": 0.3,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 46,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 2,
+      "grade": 2,
+      "gradeStage": 2,
+      "seriesId": "Earth_2",
+      "preSkillId": 50201,
+      "comprehensionRequire": 15,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 2,
+        "affinityNeed": 15,
+        "proficiencyNeed": 200,
+        "bookItemId": 850202
+      }
+    },
+    {
+      "id": 50203,
+      "name": "土·厚土重帷·尘障",
+      "description": "友方减伤10%5s",
+      "icon": "Content/Icons/Skills/earth_23.flax",
+      "element": "Earth",
+      "type": "Support",
+      "damageMultiplier": 1.69,
+      "energyCost": 120,
+      "cooldown": 40,
+      "range": 25,
+      "castTime": 0.6,
+      "rangeType": "Circle",
+      "aoeRadius": 10,
+      "aoeAngle": 0,
+      "requiredLevel": 61,
+      "maxLevel": 5,
+      "critRate": 0.06,
+      "critMultiplier": 1.54,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.12,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 2,
+      "gradeStage": 3,
+      "seriesId": "Earth_2",
+      "preSkillId": 50202,
+      "comprehensionRequire": 18,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 2,
+        "gradeStage": 3,
+        "affinityNeed": 18,
+        "proficiencyNeed": 200,
+        "bookItemId": 850203
+      }
+    },
+    {
+      "id": 50301,
+      "name": "土·坤岳镇形·踏脉",
+      "description": "眩晕1s",
+      "icon": "Content/Icons/Skills/earth_31.flax",
+      "element": "Earth",
+      "type": "ActiveAttack",
+      "damageMultiplier": 1.84,
+      "energyCost": 138,
+      "cooldown": 8,
+      "range": 10,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 76,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Stun",
+          "duration": 1,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 1,
+      "seriesId": "Earth_3",
+      "preSkillId": 50203,
+      "comprehensionRequire": 24,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 1,
+        "affinityNeed": 24,
+        "proficiencyNeed": 300,
+        "bookItemId": 850301,
+        "favorNeed": {
+          "domain": 5,
+          "min": 20
+        }
+      }
+    },
+    {
+      "id": 50302,
+      "name": "土·坤岳镇形·地刺",
+      "description": "定身1s+DOT",
+      "icon": "Content/Icons/Skills/earth_32.flax",
+      "element": "Earth",
+      "type": "Control",
+      "damageMultiplier": 2.01,
+      "energyCost": 156,
+      "cooldown": 18,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Rectangle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 96,
+      "maxLevel": 7,
+      "critRate": 0.06,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.25,
+          "chance": 1
+        },
+        {
+          "type": "Root",
+          "duration": 1,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 2,
+      "seriesId": "Earth_3",
+      "preSkillId": 50301,
+      "comprehensionRequire": 28,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 2,
+        "affinityNeed": 28,
+        "proficiencyNeed": 300,
+        "bookItemId": 850302,
+        "favorNeed": {
+          "domain": 5,
+          "min": 25
+        }
+      }
+    },
+    {
+      "id": 50303,
+      "name": "土·坤岳镇形·山门",
+      "description": "护盾0.8倍+嘲讽3s",
+      "icon": "Content/Icons/Skills/earth_33.flax",
+      "element": "Earth",
+      "type": "Support",
+      "damageMultiplier": 2.19,
+      "energyCost": 174,
+      "cooldown": 55,
+      "range": 28,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 116,
+      "maxLevel": 7,
+      "critRate": 0.07,
+      "critMultiplier": 1.56,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Shield",
+          "duration": 6,
+          "value": 0.8,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.13,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 3,
+      "gradeStage": 3,
+      "seriesId": "Earth_3",
+      "preSkillId": 50302,
+      "comprehensionRequire": 32,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 3,
+        "gradeStage": 3,
+        "affinityNeed": 32,
+        "proficiencyNeed": 300,
+        "bookItemId": 850303,
+        "favorNeed": {
+          "domain": 5,
+          "min": 30
+        }
+      }
+    },
+    {
+      "id": 50401,
+      "name": "土·五岳真形·压顶",
+      "description": "落石群控1.2s",
+      "icon": "Content/Icons/Skills/earth_41.flax",
+      "element": "Earth",
+      "type": "ActiveAttack",
+      "damageMultiplier": 2.39,
+      "energyCost": 192,
+      "cooldown": 11,
+      "range": 10,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 12,
+      "aoeAngle": 0,
+      "requiredLevel": 131,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Stun",
+          "duration": 1.2,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 1,
+      "seriesId": "Earth_4",
+      "preSkillId": 50303,
+      "comprehensionRequire": 36,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 1,
+        "affinityNeed": 36,
+        "proficiencyNeed": 400,
+        "bookItemId": 850401,
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 50402,
+      "name": "土·五岳真形·地动",
+      "description": "区域失衡，耗气+30%5s",
+      "icon": "Content/Icons/Skills/earth_42.flax",
+      "element": "Earth",
+      "type": "Control",
+      "damageMultiplier": 2.6,
+      "energyCost": 210,
+      "cooldown": 24,
+      "range": 18,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 156,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 2,
+      "seriesId": "Earth_4",
+      "preSkillId": 50401,
+      "comprehensionRequire": 42,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 2,
+        "affinityNeed": 42,
+        "proficiencyNeed": 400,
+        "bookItemId": 850402,
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 50403,
+      "name": "土·五岳真形·山呼",
+      "description": "队友获得1层护盾",
+      "icon": "Content/Icons/Skills/earth_43.flax",
+      "element": "Earth",
+      "type": "Ultimate",
+      "damageMultiplier": 2.84,
+      "energyCost": 228,
+      "cooldown": 75,
+      "range": 28,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 14,
+      "aoeAngle": 0,
+      "requiredLevel": 181,
+      "maxLevel": 9,
+      "critRate": 0.07,
+      "critMultiplier": 1.58,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Shield",
+          "duration": 6,
+          "value": 0.3,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.14,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 4,
+      "gradeStage": 3,
+      "seriesId": "Earth_4",
+      "preSkillId": 50402,
+      "comprehensionRequire": 48,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 4,
+        "gradeStage": 3,
+        "affinityNeed": 48,
+        "proficiencyNeed": 400,
+        "bookItemId": 850403,
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 50501,
+      "name": "土·后土载物·安疆",
+      "description": "镇域护盾，免疫1次破势",
+      "icon": "Content/Icons/Skills/earth_51.flax",
+      "element": "Earth",
+      "type": "Support",
+      "damageMultiplier": 3.09,
+      "energyCost": 246,
+      "cooldown": 14,
+      "range": 12,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 201,
+      "maxLevel": 10,
+      "critRate": 0.07,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Shield",
+          "duration": 6,
+          "value": 1,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 1,
+      "seriesId": "Earth_5",
+      "preSkillId": 50403,
+      "comprehensionRequire": 52,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 1,
+        "affinityNeed": 52,
+        "proficiencyNeed": 500,
+        "bookItemId": 850501,
+        "favorNeed": {
+          "domain": 5,
+          "min": 55
+        },
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 7
+          },
+          {
+            "itemId": 910010,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 50502,
+      "name": "土·后土载物·镇岳",
+      "description": "大范围定身1.8s",
+      "icon": "Content/Icons/Skills/earth_52.flax",
+      "element": "Earth",
+      "type": "Control",
+      "damageMultiplier": 3.37,
+      "energyCost": 264,
+      "cooldown": 30,
+      "range": 20,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 236,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Root",
+          "duration": 1.8,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 2,
+      "seriesId": "Earth_5",
+      "preSkillId": 50501,
+      "comprehensionRequire": 60,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 2,
+        "affinityNeed": 60,
+        "proficiencyNeed": 500,
+        "bookItemId": 850502,
+        "favorNeed": {
+          "domain": 5,
+          "min": 60
+        },
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 8
+          },
+          {
+            "itemId": 910010,
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": 50503,
+      "name": "土·后土载物·坤维载德",
+      "description": "域内我方顺生窗口+3s",
+      "icon": "Content/Icons/Skills/earth_53.flax",
+      "element": "Earth",
+      "type": "Ultimate",
+      "damageMultiplier": 3.68,
+      "energyCost": 282,
+      "cooldown": 100,
+      "range": 30,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 271,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.6,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.15,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 5,
+      "gradeStage": 3,
+      "seriesId": "Earth_5",
+      "preSkillId": 50502,
+      "comprehensionRequire": 68,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 0,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "grade": 5,
+        "gradeStage": 3,
+        "affinityNeed": 68,
+        "proficiencyNeed": 500,
+        "bookItemId": 850503,
+        "favorNeed": {
+          "domain": 5,
+          "min": 65
+        },
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 10
+          },
+          {
+            "itemId": 910010,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 70101,
+      "name": "水·流金化液·金液",
+      "description": "破甲30%+减速叠2层",
+      "icon": "Content/Icons/Skills/water_61.flax",
+      "element": "Water",
+      "type": "ActiveAttack",
+      "damageMultiplier": 4.01,
+      "energyCost": 300,
+      "cooldown": 18,
+      "range": 14,
+      "castTime": 0.3,
+      "rangeType": "Line",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Penetration",
+          "duration": 0,
+          "value": 0.3,
+          "chance": 1
+        },
+        {
+          "type": "Slow",
+          "duration": 3,
+          "value": 0.1,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 1,
+      "seriesId": "Water_6",
+      "preSkillId": 0,
+      "comprehensionRequire": 75,
+      "pair": 1,
+      "evolveFrom": [
+        10501,
+        30501
+      ],
+      "loopNeed": 12,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 1,
+        "consume": [
+          10501,
+          30501
+        ],
+        "loopNeed": 12,
+        "affinityNeed": 75,
+        "bookItemId": 870101,
+        "favorNeed": {
+          "domain": 3,
+          "min": 75
+        },
+        "attrNeed": {
+          "strength": 19,
+          "agility": 19,
+          "health": 29,
+          "intelligence": 38
+        },
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 10
+          },
+          {
+            "itemId": 910008,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 70102,
+      "name": "水·流金化液·霜刃",
+      "description": "每1层循环节使穿透+1目标",
+      "icon": "Content/Icons/Skills/water_62.flax",
+      "element": "Water",
+      "type": "Ultimate",
+      "damageMultiplier": 4.37,
+      "energyCost": 330,
+      "cooldown": 38,
+      "range": 24,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 18,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 2,
+      "seriesId": "Water_6",
+      "preSkillId": 70101,
+      "comprehensionRequire": 85,
+      "pair": 1,
+      "evolveFrom": [
+        10502,
+        30502
+      ],
+      "loopNeed": 20,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 1,
+        "consume": [
+          10502,
+          30502
+        ],
+        "loopNeed": 20,
+        "affinityNeed": 85,
+        "bookItemId": 870102,
+        "favorNeed": {
+          "domain": 3,
+          "min": 80
+        },
+        "attrNeed": {
+          "strength": 24,
+          "agility": 24,
+          "health": 36,
+          "intelligence": 48
+        },
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 12
+          },
+          {
+            "itemId": 910008,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 70103,
+      "name": "水·流金化液·玄冥淬锋",
+      "description": "5s内顺生判定必成、窗口不清零",
+      "icon": "Content/Icons/Skills/water_63.flax",
+      "element": "Water",
+      "type": "Ultimate",
+      "damageMultiplier": 4.76,
+      "energyCost": 360,
+      "cooldown": 130,
+      "range": 35,
+      "castTime": 1,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 3,
+      "seriesId": "Water_6",
+      "preSkillId": 70102,
+      "comprehensionRequire": 95,
+      "pair": 1,
+      "evolveFrom": [
+        10503,
+        30503
+      ],
+      "loopNeed": 28,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 1,
+        "consume": [
+          10503,
+          30503
+        ],
+        "loopNeed": 28,
+        "affinityNeed": 95,
+        "bookItemId": 870103,
+        "favorNeed": {
+          "domain": 3,
+          "min": 85
+        },
+        "attrNeed": {
+          "strength": 29,
+          "agility": 29,
+          "health": 43,
+          "intelligence": 58
+        },
+        "materials": [
+          {
+            "itemId": 910003,
+            "count": 15
+          },
+          {
+            "itemId": 910008,
+            "count": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": 70201,
+      "name": "木·润木成林·沐川",
+      "description": "群体治疗并附湿气DOT",
+      "icon": "Content/Icons/Skills/wood_61.flax",
+      "element": "Wood",
+      "type": "Support",
+      "damageMultiplier": 4.01,
+      "energyCost": 300,
+      "cooldown": 18,
+      "range": 14,
+      "castTime": 0.6,
+      "rangeType": "Circle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "DamageOverTime",
+          "duration": 4,
+          "value": 0.3,
+          "chance": 1
+        },
+        {
+          "type": "Heal",
+          "duration": 0,
+          "value": 0.18,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 1,
+      "seriesId": "Wood_6",
+      "preSkillId": 0,
+      "comprehensionRequire": 75,
+      "pair": 2,
+      "evolveFrom": [
+        30501,
+        20501
+      ],
+      "loopNeed": 12,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 2,
+        "consume": [
+          30501,
+          20501
+        ],
+        "loopNeed": 12,
+        "affinityNeed": 75,
+        "bookItemId": 870201,
+        "favorNeed": {
+          "domain": 2,
+          "min": 75
+        },
+        "attrNeed": {
+          "strength": 19,
+          "agility": 19,
+          "health": 29,
+          "intelligence": 38
+        },
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 10
+          },
+          {
+            "itemId": 910007,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 70202,
+      "name": "木·润木成林·青溟",
+      "description": "过量治疗转范围缠绕2s",
+      "icon": "Content/Icons/Skills/wood_62.flax",
+      "element": "Wood",
+      "type": "Control",
+      "damageMultiplier": 4.37,
+      "energyCost": 330,
+      "cooldown": 38,
+      "range": 24,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 18,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Root",
+          "duration": 2,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 2,
+      "seriesId": "Wood_6",
+      "preSkillId": 70201,
+      "comprehensionRequire": 85,
+      "pair": 2,
+      "evolveFrom": [
+        30502,
+        20502
+      ],
+      "loopNeed": 20,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 2,
+        "consume": [
+          30502,
+          20502
+        ],
+        "loopNeed": 20,
+        "affinityNeed": 85,
+        "bookItemId": 870202,
+        "favorNeed": {
+          "domain": 2,
+          "min": 80
+        },
+        "attrNeed": {
+          "strength": 24,
+          "agility": 24,
+          "health": 36,
+          "intelligence": 48
+        },
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 12
+          },
+          {
+            "itemId": 910007,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 70203,
+      "name": "木·润木成林·万木朝海",
+      "description": "领域内每秒1层DOT，治疗溢出即补层",
+      "icon": "Content/Icons/Skills/wood_63.flax",
+      "element": "Wood",
+      "type": "Ultimate",
+      "damageMultiplier": 4.76,
+      "energyCost": 360,
+      "cooldown": 130,
+      "range": 35,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 18,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 3,
+      "seriesId": "Wood_6",
+      "preSkillId": 70202,
+      "comprehensionRequire": 95,
+      "pair": 2,
+      "evolveFrom": [
+        30503,
+        20503
+      ],
+      "loopNeed": 28,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 2,
+        "consume": [
+          30503,
+          20503
+        ],
+        "loopNeed": 28,
+        "affinityNeed": 95,
+        "bookItemId": 870203,
+        "favorNeed": {
+          "domain": 2,
+          "min": 85
+        },
+        "attrNeed": {
+          "strength": 29,
+          "agility": 29,
+          "health": 43,
+          "intelligence": 58
+        },
+        "materials": [
+          {
+            "itemId": 910002,
+            "count": 15
+          },
+          {
+            "itemId": 910007,
+            "count": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": 70301,
+      "name": "火·燃薪御火·炜木",
+      "description": "引爆DOT并传染1名",
+      "icon": "Content/Icons/Skills/fire_61.flax",
+      "element": "Fire",
+      "type": "ActiveAttack",
+      "damageMultiplier": 4.01,
+      "energyCost": 300,
+      "cooldown": 18,
+      "range": 14,
+      "castTime": 0.3,
+      "rangeType": "Sector",
+      "aoeRadius": 9.6,
+      "aoeAngle": 90,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 1,
+      "seriesId": "Fire_6",
+      "preSkillId": 0,
+      "comprehensionRequire": 75,
+      "pair": 3,
+      "evolveFrom": [
+        20501,
+        40501
+      ],
+      "loopNeed": 12,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 3,
+        "consume": [
+          20501,
+          40501
+        ],
+        "loopNeed": 12,
+        "affinityNeed": 75,
+        "bookItemId": 870301,
+        "favorNeed": {
+          "domain": 4,
+          "min": 75
+        },
+        "attrNeed": {
+          "strength": 19,
+          "agility": 19,
+          "health": 29,
+          "intelligence": 38
+        },
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 10
+          },
+          {
+            "itemId": 910009,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 70302,
+      "name": "火·燃薪御火·焰华",
+      "description": "DOT引爆范围化，8m全传染",
+      "icon": "Content/Icons/Skills/fire_62.flax",
+      "element": "Fire",
+      "type": "Ultimate",
+      "damageMultiplier": 4.37,
+      "energyCost": 330,
+      "cooldown": 38,
+      "range": 24,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 18,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 2,
+      "seriesId": "Fire_6",
+      "preSkillId": 70301,
+      "comprehensionRequire": 85,
+      "pair": 3,
+      "evolveFrom": [
+        20502,
+        40502
+      ],
+      "loopNeed": 20,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 3,
+        "consume": [
+          20502,
+          40502
+        ],
+        "loopNeed": 20,
+        "affinityNeed": 85,
+        "bookItemId": 870302,
+        "favorNeed": {
+          "domain": 4,
+          "min": 80
+        },
+        "attrNeed": {
+          "strength": 24,
+          "agility": 24,
+          "health": 36,
+          "intelligence": 48
+        },
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 12
+          },
+          {
+            "itemId": 910009,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 70303,
+      "name": "火·燃薪御火·燧林焚天",
+      "description": "火海8s，循环节每层+1次结算",
+      "icon": "Content/Icons/Skills/fire_63.flax",
+      "element": "Fire",
+      "type": "Ultimate",
+      "damageMultiplier": 4.76,
+      "energyCost": 360,
+      "cooldown": 130,
+      "range": 35,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 18,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 3,
+      "seriesId": "Fire_6",
+      "preSkillId": 70302,
+      "comprehensionRequire": 95,
+      "pair": 3,
+      "evolveFrom": [
+        20503,
+        40503
+      ],
+      "loopNeed": 28,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 3,
+        "consume": [
+          20503,
+          40503
+        ],
+        "loopNeed": 28,
+        "affinityNeed": 95,
+        "bookItemId": 870303,
+        "favorNeed": {
+          "domain": 4,
+          "min": 85
+        },
+        "attrNeed": {
+          "strength": 29,
+          "agility": 29,
+          "health": 43,
+          "intelligence": 58
+        },
+        "materials": [
+          {
+            "itemId": 910004,
+            "count": 15
+          },
+          {
+            "itemId": 910009,
+            "count": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": 70401,
+      "name": "土·炼土成陶·赤壤",
+      "description": "命中生成0.4倍护盾",
+      "icon": "Content/Icons/Skills/earth_61.flax",
+      "element": "Earth",
+      "type": "ActiveAttack",
+      "damageMultiplier": 4.01,
+      "energyCost": 300,
+      "cooldown": 18,
+      "range": 14,
+      "castTime": 0.3,
+      "rangeType": "Circle",
+      "aoeRadius": 16,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Shield",
+          "duration": 6,
+          "value": 0.4,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 1,
+      "seriesId": "Earth_6",
+      "preSkillId": 0,
+      "comprehensionRequire": 75,
+      "pair": 4,
+      "evolveFrom": [
+        40501,
+        50501
+      ],
+      "loopNeed": 12,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 4,
+        "consume": [
+          40501,
+          50501
+        ],
+        "loopNeed": 12,
+        "affinityNeed": 75,
+        "bookItemId": 870401,
+        "favorNeed": {
+          "domain": 5,
+          "min": 75
+        },
+        "attrNeed": {
+          "strength": 19,
+          "agility": 19,
+          "health": 29,
+          "intelligence": 38
+        },
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 10
+          },
+          {
+            "itemId": 910010,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 70402,
+      "name": "土·炼土成陶·熔岩",
+      "description": "定身并按护盾余量灼烧反伤",
+      "icon": "Content/Icons/Skills/earth_62.flax",
+      "element": "Earth",
+      "type": "Control",
+      "damageMultiplier": 4.37,
+      "energyCost": 330,
+      "cooldown": 38,
+      "range": 24,
+      "castTime": 0.3,
+      "rangeType": "Rectangle",
+      "aoeRadius": 18,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [
+        {
+          "type": "Root",
+          "duration": 1.5,
+          "value": 0,
+          "chance": 1
+        }
+      ],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 2,
+      "seriesId": "Earth_6",
+      "preSkillId": 70401,
+      "comprehensionRequire": 85,
+      "pair": 4,
+      "evolveFrom": [
+        40502,
+        50502
+      ],
+      "loopNeed": 20,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 4,
+        "consume": [
+          40502,
+          50502
+        ],
+        "loopNeed": 20,
+        "affinityNeed": 85,
+        "bookItemId": 870402,
+        "favorNeed": {
+          "domain": 5,
+          "min": 80
+        },
+        "attrNeed": {
+          "strength": 24,
+          "agility": 24,
+          "health": 36,
+          "intelligence": 48
+        },
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 12
+          },
+          {
+            "itemId": 910010,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 70403,
+      "name": "土·炼土成陶·丹火封疆",
+      "description": "封疆域：敌破势失效、我方护盾灼烧来袭者",
+      "icon": "Content/Icons/Skills/earth_63.flax",
+      "element": "Earth",
+      "type": "Ultimate",
+      "damageMultiplier": 4.76,
+      "energyCost": 360,
+      "cooldown": 130,
+      "range": 35,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 18,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 3,
+      "seriesId": "Earth_6",
+      "preSkillId": 70402,
+      "comprehensionRequire": 95,
+      "pair": 4,
+      "evolveFrom": [
+        40503,
+        50503
+      ],
+      "loopNeed": 28,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 4,
+        "consume": [
+          40503,
+          50503
+        ],
+        "loopNeed": 28,
+        "affinityNeed": 95,
+        "bookItemId": 870403,
+        "favorNeed": {
+          "domain": 5,
+          "min": 85
+        },
+        "attrNeed": {
+          "strength": 29,
+          "agility": 29,
+          "health": 43,
+          "intelligence": 58
+        },
+        "materials": [
+          {
+            "itemId": 910005,
+            "count": 15
+          },
+          {
+            "itemId": 910010,
+            "count": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": 70501,
+      "name": "金·藏锋于山·矿脉",
+      "description": "格挡+15%并记1层锋藏",
+      "icon": "Content/Icons/Skills/metal_61.flax",
+      "element": "Metal",
+      "type": "ActiveAttack",
+      "damageMultiplier": 4.01,
+      "energyCost": 300,
+      "cooldown": 18,
+      "range": 14,
+      "castTime": 0.3,
+      "rangeType": "Single",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 1,
+      "seriesId": "Metal_6",
+      "preSkillId": 0,
+      "comprehensionRequire": 75,
+      "pair": 5,
+      "evolveFrom": [
+        50501,
+        10501
+      ],
+      "loopNeed": 12,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 5,
+        "consume": [
+          50501,
+          10501
+        ],
+        "loopNeed": 12,
+        "affinityNeed": 75,
+        "bookItemId": 870501,
+        "favorNeed": {
+          "domain": 1,
+          "min": 75
+        },
+        "attrNeed": {
+          "strength": 19,
+          "agility": 19,
+          "health": 29,
+          "intelligence": 38
+        },
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 10
+          },
+          {
+            "itemId": 910006,
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": 70502,
+      "name": "金·藏锋于山·玉山",
+      "description": "护盾破碎时自动反击",
+      "icon": "Content/Icons/Skills/metal_62.flax",
+      "element": "Metal",
+      "type": "Support",
+      "damageMultiplier": 4.37,
+      "energyCost": 330,
+      "cooldown": 38,
+      "range": 24,
+      "castTime": 0.6,
+      "rangeType": "Self",
+      "aoeRadius": 0,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": true,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 2,
+      "seriesId": "Metal_6",
+      "preSkillId": 70501,
+      "comprehensionRequire": 85,
+      "pair": 5,
+      "evolveFrom": [
+        50502,
+        10502
+      ],
+      "loopNeed": 20,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 5,
+        "consume": [
+          50502,
+          10502
+        ],
+        "loopNeed": 20,
+        "affinityNeed": 85,
+        "bookItemId": 870502,
+        "favorNeed": {
+          "domain": 1,
+          "min": 80
+        },
+        "attrNeed": {
+          "strength": 24,
+          "agility": 24,
+          "health": 36,
+          "intelligence": 48
+        },
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 12
+          },
+          {
+            "itemId": 910006,
+            "count": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": 70503,
+      "name": "金·藏锋于山·坤金镇岳",
+      "description": "群体压制，每次格挡成功追加不计冷却金意",
+      "icon": "Content/Icons/Skills/metal_63.flax",
+      "element": "Metal",
+      "type": "Ultimate",
+      "damageMultiplier": 4.76,
+      "energyCost": 360,
+      "cooldown": 130,
+      "range": 35,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 18,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.08,
+      "critMultiplier": 1.62,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.16,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 6,
+      "gradeStage": 3,
+      "seriesId": "Metal_6",
+      "preSkillId": 70502,
+      "comprehensionRequire": 95,
+      "pair": 5,
+      "evolveFrom": [
+        50503,
+        10503
+      ],
+      "loopNeed": 28,
+      "needPairsCompleted": 0,
+      "learnCost": {
+        "pair": 5,
+        "consume": [
+          50503,
+          10503
+        ],
+        "loopNeed": 28,
+        "affinityNeed": 95,
+        "bookItemId": 870503,
+        "favorNeed": {
+          "domain": 1,
+          "min": 85
+        },
+        "attrNeed": {
+          "strength": 29,
+          "agility": 29,
+          "health": 43,
+          "intelligence": 58
+        },
+        "materials": [
+          {
+            "itemId": 910001,
+            "count": 15
+          },
+          {
+            "itemId": 910006,
+            "count": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": 90001,
+      "name": "混沌一炁",
+      "description": "一炁化五行：按当前循环节数在五行乘算中取最高组合，施放后固化1层循环节",
+      "icon": "Content/Icons/Skills/none_73.flax",
+      "element": "None",
+      "type": "Ultimate",
+      "damageMultiplier": 5.19,
+      "energyCost": 500,
+      "cooldown": 300,
+      "range": 40,
+      "castTime": 1,
+      "rangeType": "Circle",
+      "aoeRadius": 20,
+      "aoeAngle": 0,
+      "requiredLevel": 300,
+      "maxLevel": 10,
+      "critRate": 0.09,
+      "critMultiplier": 1.64,
+      "comboNextId": 0,
+      "comboWindow": 0.8,
+      "comboIndex": 0,
+      "effects": [],
+      "damagePerLevel": 0.17,
+      "canMoveWhileCasting": false,
+      "knockbackForce": 0,
+      "grade": 7,
+      "gradeStage": 3,
+      "seriesId": "None_7",
+      "preSkillId": 0,
+      "comprehensionRequire": 100,
+      "pair": 0,
+      "evolveFrom": [],
+      "loopNeed": 40,
+      "needPairsCompleted": 3,
+      "learnCost": {
+        "needPairsCompleted": 3,
+        "loopNeed": 40,
+        "affinityNeed": 100,
+        "bookItemId": 890001,
+        "favorNeed": {
+          "allDomains": true,
+          "min": 110
+        },
+        "attrNeed": {
+          "strength": 58,
+          "agility": 58,
+          "health": 86,
+          "intelligence": 115
+        },
+        "materials": [
+          {
+            "itemId": 910006,
+            "count": 5
+          },
+          {
+            "itemId": 910007,
+            "count": 5
+          },
+          {
+            "itemId": 910008,
+            "count": 5
+          },
+          {
+            "itemId": 910009,
+            "count": 5
+          },
+          {
+            "itemId": 910010,
+            "count": 5
+          }
+        ]
+      }
+    }
+  ]
+}

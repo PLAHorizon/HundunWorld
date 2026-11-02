@@ -36,48 +36,98 @@ public class AuthenticationController : Script
     public bool ISA { get; set; }
     private LoginPanel _loginPanel { get; set; }
     private RegisterPanel _registerPanel { get; set; }
+
+    /// <summary>场景自带的认证 UI 根（Login.scene 的 CanvasScaler）。</summary>
+    private CanvasScaler _authScaler;
     private bool _isProcessing = false;
     private bool _isSubscribed = false;
-    private bool _autoLoginAttempted = false;
+    private bool _loginPagePrepared = false;
+
+    /// <summary>
+    /// 当前场景自带的认证控制器。运行时还有一套旧的 <see cref="AuthenticationUI"/> 会自己造登录页，
+    /// 两套同时显示会出现叠在一起的双份登录卡（2026-10-29 PIE 实测），由它判断该用哪一套。
+    /// </summary>
+    public static AuthenticationController Current { get; private set; }
+
+    /// <summary>外部（MainUIManager）恢复场景登录页。</summary>
+    public void ShowAuthUI() => ShowSceneAuthUI();
+
+    /// <summary>外部（MainUIManager）收起场景登录页。</summary>
+    public void HideAuthUI() => HideSceneAuthUI();
+
     public override void OnStart()
     {
+        Current = this;
 
         InitializeManagers();
 
         SubscribeEvents();
 
-        if (!_autoLoginAttempted)
+        if (!_loginPagePrepared)
         {
-            _autoLoginAttempted = true;
-            _ = TryAutoLoginAsync();
+            _loginPagePrepared = true;
+            _ = PrepareLoginPageAsync();
         }
     }
 
-    private async Task TryAutoLoginAsync()
+    /// <summary>
+    /// 登录成功后收起 Login.scene **场景自带**的认证 UI。
+    /// <para>
+    /// 为什么要收：Login.scene 在整个会话里常驻（它承载 UICanvas/Camera/玩家出生点），
+    /// 场景自带的登录页不会随切场景自动消失，会一直盖在选角页和世界上。
+    /// 隐藏整根 CanvasScaler 而不是只藏面板，是为了连全屏背景一起收，避免它继续吃鼠标。
+    /// </para>
+    /// </summary>
+    private void HideSceneAuthUI()
+    {
+        if (_authScaler != null)
+        {
+            _authScaler.Visible = false;
+            _authScaler.Enabled = false;
+        }
+        if (_loginPanel != null) _loginPanel.Visible = false;
+        if (_registerPanel != null) _registerPanel.Visible = false;
+    }
+
+    /// <summary>需要重新登录时恢复认证 UI（与 <see cref="HideSceneAuthUI"/> 成对）。</summary>
+    private void ShowSceneAuthUI()
+    {
+        if (_authScaler != null)
+        {
+            _authScaler.Visible = true;
+            _authScaler.Enabled = true;
+        }
+        if (_loginPanel != null)
+        {
+            _loginPanel.Visible = true;
+            _loginPanel.Enabled = true;
+        }
+    }
+
+    private async Task PrepareLoginPageAsync()
     {
         try
         {
-            var result = await AuthenticationManager.Instance.TryAutoLoginAsync();
-            
-            if (result.IsSuccess)
+            var result = await AuthenticationManager.Instance.PrepareLoginPageAsync();
+
+            FlaxEngine.Debug.Log($"[AuthenticationController] 登录页已就绪: {result.ErrorMessage}");
+
+            // 启动即停在登录页：恢复认证根、预填账号、给出提示。
+            FlaxEngine.Scripting.InvokeOnUpdate(() =>
             {
-                FlaxEngine.Debug.Log("[AuthenticationController] 自动登录成功");
-            }
-            else
-            {
-                FlaxEngine.Debug.Log($"[AuthenticationController] 自动登录失败: {result.ErrorMessage}");
-                if (AuthenticationManager.IsLaunchedFromGengDi && _loginPanel != null)
+                ShowSceneAuthUI();
+                if (_loginPanel != null)
                 {
-                    FlaxEngine.Scripting.InvokeOnUpdate(() =>
-                    {
-                        _loginPanel.SetStatus("登录已过期，请重新登录", UIStyleTokens.StatusWarning);
-                    });
+                    var passportId = AuthenticationManager.Instance.Passport?.PassportId;
+                    if (!string.IsNullOrEmpty(passportId))
+                        _loginPanel.UsernameInput.Text = passportId;
+                    _loginPanel.SetStatus("请登录后选择角色", UIStyleTokens.StatusWarning);
                 }
-            }
+            });
         }
         catch (Exception ex)
         {
-            FlaxEngine.Debug.LogError($"[AuthenticationController] 自动登录异常: {ex.Message}");
+            FlaxEngine.Debug.LogError($"[AuthenticationController] 登录页准备异常: {ex.Message}");
         }
     }
 
@@ -86,7 +136,8 @@ public class AuthenticationController : Script
     /// </summary>
     private void InitializeManagers()
     {
-        var cons = (Actor.Parent.Parent.As<UICanvas>().GUI.Children[0] as CanvasScaler).Children;
+        _authScaler = Actor.Parent.Parent.As<UICanvas>().GUI.Children[0] as CanvasScaler;
+        var cons = _authScaler.Children;
         _loginPanel = cons[1] as LoginPanel;
         _registerPanel = cons[2] as RegisterPanel;
         _stateManager = HundunWorld.Game.UI.UIStateManager.Instance;
@@ -131,6 +182,8 @@ public class AuthenticationController : Script
     /// <inheritdoc/>
     public override void OnDestroy()
     {
+        if (Current == this)
+            Current = null;
         UnsubscribeEvents();
     }
 
@@ -200,6 +253,7 @@ public class AuthenticationController : Script
             if (result.IsSuccess)
             {
                 _loginPanel.SetStatus("正在登录...", UIStyleTokens.StatusAlert);
+                FlaxEngine.Scripting.InvokeOnUpdate(HideSceneAuthUI);
             }
             else
             {
@@ -395,6 +449,9 @@ public class AuthenticationController : Script
 
         // 停止动画并彻底重置物理状态
         _animationManager?.StopAnimations(_loginPanel);
+
+        // 退出登录/凭证失效回到登录页：先把被收起的认证根恢复（与 HideSceneAuthUI 成对）。
+        ShowSceneAuthUI();
 
         // 确保登录面板可见
         _loginPanel.Visible = true;

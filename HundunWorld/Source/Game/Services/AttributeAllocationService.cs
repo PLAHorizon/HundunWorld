@@ -114,6 +114,15 @@ namespace HundunWorld.Game.Services
             Changed?.Invoke();
             OperationFinished?.Invoke(response.Success, response.Message ?? "");
 
+            // 加点会同时改变五行三行与通用攻防基值（都写在服务端那份画像里）：
+            // 紧接着重取一次权威画像，面板才不会停在加点前的行值上。
+            if (response.Success)
+            {
+                var characterId = CurrentCharacterId;
+                if (characterId != 0UL)
+                    _ = HundunWorld.Game.Network.MessageHandlers.CharacterAttributeRefreshHandler.RequestAsync(characterId);
+            }
+
             Debug.Log($"[AttributeAllocation] 回执: Success={response.Success}, Msg={response.Message}, " +
                       $"已用 {Spent(Allocation)} / {TotalPoints}");
         }
@@ -133,12 +142,15 @@ namespace HundunWorld.Game.Services
                 var component = actor != null ? actor.GetScript<CharacterAttributesComponent>() : null;
                 if (component == null) return;
 
+                // 协议里的 Intelligence 就是历史上第 4 项"内力"（MemoryPackOrder 仍是 3，字节流兼容）。
+                // 但语义变了：服务端必须同版本重启，否则它仍按"内力每点 +10 内力上限"结算，
+                // 与客户端这边"智力每点 +100 内力上限 + 精神/智慧/神识/幸运"对不上。
                 component.ApplyAllocation(new CharacterAttributesComponent.AttributeAllocation
                 {
                     Strength = Allocation.Strength,
                     Agility = Allocation.Agility,
                     Health = Allocation.Health,
-                    Energy = Allocation.Energy,
+                    Intelligence = Allocation.Intelligence,
                     Metal = Allocation.Metal,
                     Wood = Allocation.Wood,
                     Water = Allocation.Water,
@@ -157,11 +169,11 @@ namespace HundunWorld.Game.Services
 
         private static int Spent(AttributeAllocationData a)
             => a == null ? 0
-                : a.Strength + a.Agility + a.Health + a.Energy
+                : a.Strength + a.Agility + a.Health + a.Intelligence
                   + a.Metal + a.Wood + a.Water + a.Fire + a.Earth;
 
         /// <summary>
-        /// 按行序（力量/敏捷/体质/内力/金/木/水/火/土，与协议字段序一致）构造期望终态 DTO。
+        /// 按行序（力量/敏捷/体质/智力/金/木/水/火/土，与协议字段序一致）构造期望终态 DTO。
         /// 数组不足 9 项时缺位按 0，避免 UI 与协议两边各写一遍映射。
         /// </summary>
         public static AttributeAllocationData FromRowValues(int[] rowValues)
@@ -171,7 +183,7 @@ namespace HundunWorld.Game.Services
             dto.Strength = rowValues[0];
             dto.Agility = rowValues[1];
             dto.Health = rowValues[2];
-            dto.Energy = rowValues[3];
+            dto.Intelligence = rowValues[3];
             dto.Metal = rowValues[4];
             dto.Wood = rowValues[5];
             dto.Water = rowValues[6];

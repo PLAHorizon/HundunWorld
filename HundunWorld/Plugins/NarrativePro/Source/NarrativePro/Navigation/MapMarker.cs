@@ -6,15 +6,6 @@ using NarrativePro.Items;
 namespace NarrativePro.Navigation
 {
     /// <summary>
-    /// 区域绘制数据（多边形顶点）。适配 UE5 FZoneDrawData。
-    /// </summary>
-    [Serializable]
-    public class ZoneDrawData
-    {
-        public List<Vector3> Points { get; set; } = new List<Vector3>();
-    }
-
-    /// <summary>
     /// 导航标记设置。适配 UE5 FNavigationMarkerSettings。
     /// 支持按导航器类型（世界地图/小地图/罗盘/屏幕空间）的覆盖。
     /// </summary>
@@ -51,7 +42,9 @@ namespace NarrativePro.Navigation
 
     /// <summary>
     /// 标记 OnPaint 数据。适配 UE5 FMarkerOnPaintData。
-    /// Flax 中使用 Float2 替代 FVector2D，使用 Rectangle 替代 FGeometry。
+    /// UE5 用三块 FGeometry（父/地图/图标）表达绘制空间；Flax 的控件几何由
+    /// <see cref="FlaxEngine.GUI.Control"/> 提供，因此这里同时保留矩形（几何尺寸）与控件引用
+    /// （控件存在时 <see cref="NarrativePro.Widgets.NarrativeWidgetHelpers"/> 走精确的坐标变换）。
     /// </summary>
     public class MarkerOnPaintData
     {
@@ -61,10 +54,20 @@ namespace NarrativePro.Navigation
         public Rectangle MapGeometry { get; set; }
         /// <summary>图标控件绘制矩形</summary>
         public Rectangle IconGeometry { get; set; }
+
+        /// <summary>父控件（可选；提供时坐标变换按控件层级精确计算）</summary>
+        public FlaxEngine.GUI.Control ParentControl { get; set; }
+        /// <summary>地图控件（可选；提供时坐标变换按控件层级精确计算）</summary>
+        public FlaxEngine.GUI.Control MapControl { get; set; }
+
         /// <summary>地图中心在世界空间的位置（X,Y 平面）</summary>
         public Float2 MapOrigin { get; set; } = new Float2(float.MaxValue, float.MaxValue);
         /// <summary>当前地图平移量（地图空间）</summary>
         public Float2 MapPan { get; set; } = new Float2(float.MaxValue, float.MaxValue);
+        /// <summary>地图在世界空间的总宽度（世界单位），用于把世界距离换算成地图像素</summary>
+        public float MapWorldWidth { get; set; } = 0f;
+        /// <summary>地图贴图/控件在地图空间的像素宽度</summary>
+        public float MapImagePixels { get; set; } = 0f;
         /// <summary>此标记显示的导航器域</summary>
         public GameplayTag Domain { get; set; } = GameplayTag.None;
     }
@@ -74,7 +77,8 @@ namespace NarrativePro.Navigation
     /// UMapMarker 是 UObject（非 UActorComponent），但需要 GetWorld，因此 Flax 中作为普通 C# 类，
     /// 通过 Owner 字段引用 Actor 来获取场景。
     /// 移除复制/RPC，改为本地逻辑 + 事件回调。
-    /// 面包屑路径（Breadcrumb）依赖 NavMesh，Flax 中简化为直线路径或留待后续接入。
+    /// 面包屑路径走 Flax 引擎寻路（<see cref="NavigatorStatics.TryFindPath"/>）并带导航区域代价优化，
+    /// 绘制由 <see cref="DrawBreadcrumb"/> 用 Render2D 虚线完成。
     /// </summary>
     public class MapMarker
     {
@@ -135,6 +139,7 @@ namespace NarrativePro.Navigation
         // 面包屑运行时状态（不序列化）
         private Actor _ownerNavActor;
         private float _pathRefreshTimer;
+        private bool _bPathQueryInFlight;
         private Vector3 _cachedLocation = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
         private readonly List<Vector3> _navPath = new List<Vector3>();
 
@@ -364,17 +369,20 @@ namespace NarrativePro.Navigation
             return new Float2(worldX - mapOrigin.X + mapPan.X, worldZ - mapOrigin.Y + mapPan.Y);
         }
 
-        /// <summary>获取标记在绘制空间左上角的位置。</summary>
+        /// <summary>获取标记在绘制空间左上角的位置。
+        /// 对应 UE5 UMapMarker::GetMarkerTopLeftLocalPosition —— 用控件几何换算，再减去图标半宽。</summary>
         public Float2 GetMarkerTopLeftLocalPosition(MarkerOnPaintData onPaintData)
         {
-            Float2 markerLocal = GetMarkerMapLocalPosition(onPaintData.MapOrigin, onPaintData.MapPan);
-            // 转换到绘制空间（相对于地图控件的位置）
-            Float2 mapTopLeft = onPaintData.MapGeometry.Location;
+            if (onPaintData == null) return Float2.Zero;
+
+            var transform = GetMarkerTransform();
+            Float2 markerLocal = NarrativePro.Widgets.NarrativeWidgetHelpers.WorldLocationToPaint(onPaintData, transform.Translation);
+
             Float2 iconSize = GetMarkerSettings(onPaintData.Domain).IconSize;
-            return new Float2(mapTopLeft.X + markerLocal.X - iconSize.X * 0.5f, mapTopLeft.Y + markerLocal.Y - iconSize.Y * 0.5f);
+            return new Float2(markerLocal.X - iconSize.X * 0.5f, markerLocal.Y - iconSize.Y * 0.5f);
         }
 
-        /// <summary>当 bWantsOnPaint 为 true 时，由 UI 控件调用。对应 UE5 MarkerOnPaint_Implementation。</summary>
+        /// <summary>当 bWantsOnPaint 为 true 时，由地图控件在其 Draw 中调用。对应 UE5 MarkerOnPaint_Implementation。</summary>
         public virtual void MarkerOnPaint(MarkerOnPaintData onPaintData)
         {
             DrawBreadcrumb(onPaintData);
@@ -424,7 +432,8 @@ namespace NarrativePro.Navigation
 
         /// <summary>
         /// 更新面包屑导航路径。对应 UE5 UMapMarker::UpdateBreadcrumbNavPath：
-        /// 使用 <see cref="FlaxEngine.Navigation.FindPath"/> 求路径后按 <see cref="DistanceBetweenPoints"/> 重采样。
+        /// 使用 <see cref="MapMarkerQueryFilter"/>（把搜索节点上限抬到 8192）求路径，
+        /// 再按 <see cref="DistanceBetweenPoints"/> 等弧长重采样为点列。
         /// <para>
         /// Flax 的导航查询是**同步**的（无 FindPathAsync），因此必须依赖 <c>UpdateNavPathRate</c> 限频
         /// 与 <c>UpdateNavDistanceThreshhold</c> 距离门控，避免每帧查询拖慢主线程。
@@ -434,7 +443,9 @@ namespace NarrativePro.Navigation
         {
             if (!bDrawBreadcrumbs) return;
             if (_ownerNavActor == null) return;
-            if (!bWantsOnPaint) return;
+            if (!bWantsOnPaint) return; // 只有会被绘制时才更新路径
+
+            if (_bPathQueryInFlight) return; // 对应 UE5 的 NavRequestID != INVALID_NAVQUERYID 去重
 
             Vector3 actorLocation = _ownerNavActor.Position;
 
@@ -446,11 +457,26 @@ namespace NarrativePro.Navigation
             _cachedLocation = actorLocation;
             Vector3 targetLocation = GetMarkerTransform().Translation;
 
-            if (!NavigatorStatics.TryFindPath(actorLocation, targetLocation, out var corners)) return;
+            // 远距离标记专用过滤器（对应 UE5 GetQueryFilter(..., UMapMarkerQueryFilter::StaticClass())）
+            var filter = MapMarkerQueryFilter.GetQueryFilter(_ownerNavActor);
+            if (filter != null && !filter.IsValidFilter()) filter = null;
+
+            _bPathQueryInFlight = true;
+            bool bFound = NavigatorStatics.TryFindPath(actorLocation, targetLocation, filter, out var corners);
+            _bPathQueryInFlight = false;
+
+            if (!bFound || corners == null || corners.Length == 0)
+            {
+                // 求不到路径时清空，避免继续绘制过期的面包屑
+                _navPath.Clear();
+                RefreshMarker();
+                return;
+            }
 
             if (NavigatorStatics.ResamplePath(corners, DistanceBetweenPoints, out var resampled))
             {
                 GeneratePath(resampled);
+                RefreshMarker();
             }
         }
 
@@ -467,10 +493,104 @@ namespace NarrativePro.Navigation
         /// <summary>取面包屑点列（只读），供 UI 绘制使用。</summary>
         public IReadOnlyList<Vector3> GetBreadcrumbPath() => _navPath;
 
-        /// <summary>绘制面包屑路径。由 UI 控件在 <see cref="MarkerOnPaint"/> 中调用。</summary>
+        /// <summary>
+        /// 取应当绘制的面包屑世界坐标点列。
+        /// 对应 UE5 DrawBreadcrumb 里的 FindNearest 逻辑：
+        /// 起点用观察者当前位置，然后从"观察者前方"的那个采样点开始连线，
+        /// 避免玩家身后的路径段被画出来。
+        /// </summary>
+        public List<Vector3> GetBreadcrumbWorldPathForViewer(Vector3 viewerLocation)
+        {
+            var result = new List<Vector3>();
+            if (_navPath.Count == 0) return result;
+
+            result.Add(viewerLocation);
+
+            float nearestAt = NarrativePro.Widgets.NarrativeWidgetHelpers.FindNearestDistanceAlongPath(_navPath, viewerLocation, out _);
+
+            // 累计弧长参数化：找出最近点，再判断"下一个采样点"是否已在观察者前方
+            float accumulated = 0f;
+            float relevantAt = nearestAt;
+            if (_navPath.Count >= 2)
+            {
+                Vector3 nearestPoint = EvaluatePathAt(nearestAt);
+                Vector3 nextPoint = EvaluatePathAt(nearestAt + DistanceBetweenPoints);
+                Vector3 viewerToNearest = nearestPoint - viewerLocation;
+                if (viewerToNearest.LengthSquared > 0.0001f) viewerToNearest = Vector3.Normalize(viewerToNearest);
+                Vector3 nearestToNext = nearestPoint - nextPoint;
+                if (nearestToNext.LengthSquared > 0.0001f) nearestToNext = Vector3.Normalize(nearestToNext);
+
+                if (Vector3.Dot(viewerToNearest, nearestToNext) < 0f)
+                {
+                    relevantAt = nearestAt + DistanceBetweenPoints;
+                }
+            }
+
+            // 采样点等距分布，因此起点索引 = ceil(relevantAt / DistanceBetweenPoints)
+            float spacing = DistanceBetweenPoints > 0f ? DistanceBetweenPoints : 1f;
+            int startIndex = (int)Math.Ceiling(relevantAt / spacing);
+            if (startIndex < 0) startIndex = 0;
+
+            for (int i = startIndex; i < _navPath.Count; i++)
+            {
+                result.Add(_navPath[i]);
+            }
+
+            // 末尾补上目标标记本身
+            result.Add(GetMarkerTransform().Translation);
+            return result;
+        }
+
+        /// <summary>按弧长参数求路径上的点（对应 UE5 FPathCurve::Eval）。</summary>
+        private Vector3 EvaluatePathAt(float distanceAlong)
+        {
+            if (_navPath.Count == 0) return Vector3.Zero;
+            if (_navPath.Count == 1 || distanceAlong <= 0f) return _navPath[0];
+
+            float accumulated = 0f;
+            for (int i = 1; i < _navPath.Count; i++)
+            {
+                float segmentLength = Vector3.Distance(_navPath[i - 1], _navPath[i]);
+                if (accumulated + segmentLength >= distanceAlong)
+                {
+                    float t = segmentLength <= 0f ? 0f : (distanceAlong - accumulated) / segmentLength;
+                    return Vector3.Lerp(_navPath[i - 1], _navPath[i], t);
+                }
+                accumulated += segmentLength;
+            }
+
+            return _navPath[_navPath.Count - 1];
+        }
+
+        /// <summary>
+        /// 绘制面包屑虚线。对应 UE5 UMapMarker::DrawBreadcrumb + UArsenalStatics::DrawDashedLine。
+        /// 必须在地图控件的 Draw 回调里被调用（Flax 的 Render2D 是即时模式，且只能在主线程）。
+        /// </summary>
         protected virtual void DrawBreadcrumb(MarkerOnPaintData onPaintData)
         {
-            // 默认不绘制：Flax 无 FPaintContext，虚线绘制由地图 UI 控件按 GetBreadcrumbPath() 完成
+            if (!bDrawBreadcrumbs) return;
+            if (onPaintData == null) return;
+            if (_ownerNavActor == null) return;
+            if (_navPath.Count == 0) return;
+
+            var worldPath = GetBreadcrumbWorldPathForViewer(_ownerNavActor.Position);
+
+            var paintPoints = new List<Float2>(worldPath.Count);
+            for (int i = 0; i < worldPath.Count; i++)
+            {
+                paintPoints.Add(NarrativePro.Widgets.NarrativeWidgetHelpers.WorldLocationToPaint(onPaintData, worldPath[i]));
+            }
+
+            var segments = NarrativePro.Widgets.NarrativeWidgetHelpers.BuildDashedLineSegments(paintPoints, BreadcrumbDashLength, BreadcrumbDashLength);
+
+            // 裁剪到地图几何内，防止长路径画到相邻面板上
+            var clip = onPaintData.MapGeometry;
+            Render2D.PushClip(ref clip);
+            for (int i = 0; i < segments.Count; i++)
+            {
+                Render2D.DrawLine(segments[i][0], segments[i][1], BreadcrumbColor, BreadcrumbThickness);
+            }
+            Render2D.PopClip();
         }
     }
 }

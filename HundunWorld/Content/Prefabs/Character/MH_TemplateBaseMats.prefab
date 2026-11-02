@@ -1,0 +1,99 @@
+{
+	"ID": "2d424b564d7ed499ba76548e86aa8456",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+		{
+			"ID": "35346f604efc6d254dc98e9ff839b7c9",
+			"TypeName": "FlaxEngine.AnimatedModel",
+			"ParentID": "00000000000000000000000000000000",
+			"Name": "MH_TemplateSrc",
+			"SkinnedModel": "510c7bce30f84821b19538396cf21276",
+			"ForcedLOD": 0,
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "93dd72a64d5f364355b35389f67b61ab",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "39e1546d4c31c97e091580931024cd7a",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "41a2a9eb4ba28c2b953739b0e73e6645",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "2b8ee38349ba70497989ed8b0be9587b",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "2caf4f324933899357c5b4b2b9966b99",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "231c54624ded67f216bf3e9eab8ac0d4",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "8a17bd4b46b0f5242f14aabe3d8778de",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "43717c204bc0f516b6887bbef64234be",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "8cf297ba431059c764c5bea10cbd3840",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "3e080d094f040badb58991986402951d",
+			"TypeName": "MetaHuman.Runtime.MetaHumanCharacter",
+			"ParentID": "35346f604efc6d254dc98e9ff839b7c9",
+			"V": {
+				"TemplateIds": [
+					"metahuman.face_archetype",
+					"metahuman.body_base"
+				],
+				"LoadDiagnostics": [
+					"模板声明 9 个材质目标（浮点/颜色/贴图），未手配材质 → 已按槽位自动取材质实例",
+					"头部承载量：C:\\Works/GitHubProjects/HundunWorld/HundunWorld/Content/Character/Models/slots_test/Ada_FaceMesh_slotpacked.flax 全可承载 552/598、部分 0、写不出来 37、只挂材质 9、骨架目标经别名对齐 0"
+				],
+				"HeadCoverageReport": "C:\\Works/GitHubProjects/HundunWorld/HundunWorld/Content/Character/Models/slots_test/Ada_FaceMesh_slotpacked.flax 全可承载 552/598、部分 0、写不出来 37、只挂材质 9、骨架目标经别名对齐 0",
+				"ServableHeadParameterCount": 552,
+				"HeadParameterCount": 598
+			}
+		},
+		{
+			"ID": "ddc54e3f4f874632d6efa8be9c1f9256",
+			"TypeName": "MetaHuman.Runtime.MetaHumanFaceAnimator",
+			"ParentID": "35346f604efc6d254dc98e9ff839b7c9",
+			"V": {
+				"Owner": "3e080d094f040badb58991986402951d"
+			}
+		}
+	]
+}

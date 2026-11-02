@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -53,10 +53,14 @@ public class HpSingleAuthorityContractTests
 
         var mockCharacterGrain = new Mock<ICharacterGrain>();
         mockCharacterGrain
-            .Setup(c => c.RequestHpChangeAsync(It.IsAny<int>(), It.IsAny<ulong>(), It.IsAny<Horizon.Orleans.Interface.World.DamageType>()))
+            .Setup(c => c.RequestElementalHpChangeAsync(It.IsAny<int>(), It.IsAny<ulong>(),
+                It.IsAny<Horizon.Orleans.Interface.World.DamageType>(), It.IsAny<int>(),
+                It.IsAny<Horizon.Game.Message.Combat.ElementStatVector>(), It.IsAny<Horizon.Game.Message.Combat.ElementStatVector>()))
             // Phase 2：本地 CombatInfo.Health 以裁决结果 CurrentHp 回写（target 初始 500），
             // 故 mock 返回真实变更后 HP，避免硬编码 0 意外触发 CombatGrain 判死路径。
-            .ReturnsAsync((int delta, ulong src, Horizon.Orleans.Interface.World.DamageType t) =>
+            .ReturnsAsync((int delta, ulong src, Horizon.Orleans.Interface.World.DamageType t, int _,
+                Horizon.Game.Message.Combat.ElementStatVector __,
+                Horizon.Game.Message.Combat.ElementStatVector ___) =>
                 new HpChangeResult(delta, Math.Max(0, 500 + delta), 1000, 500 + delta <= 0, false));
 
         // CombatGrain : Grain<CombatState> 基类默认 ctor 在无 GrainContext 时抛 NRE（Orleans 10），
@@ -88,10 +92,17 @@ public class HpSingleAuthorityContractTests
         });
 
         // 3.1 契约：攻击结算必须回写 CharacterGrain（唯一持久化权威），delta = -实际结算伤害。
-        // 具体值由战斗公式（CalculateBaseDamage + 防御减免）决定——契约重点是回写发生 + 方向正确。
+        // 具体值由战斗公式（CalculateBaseDamage + 五行攻击行 + 克制 + 防御减免）决定——
+        // 契约重点是回写发生 + 方向正确。
         characterGrain.Verify(
-            c => c.RequestHpChangeAsync(It.Is<int>(d => d < 0), 1, Horizon.Orleans.Interface.World.DamageType.Physical),
+            c => c.RequestElementalHpChangeAsync(It.Is<int>(d => d < 0), 1, Horizon.Orleans.Interface.World.DamageType.Physical,
+                It.IsAny<int>(), It.IsAny<Horizon.Game.Message.Combat.ElementStatVector>(), It.IsAny<Horizon.Game.Message.Combat.ElementStatVector>()),
             Times.Once);
+
+        // 单一权威的另一半：非五行入口不得同时被调用（否则一次伤害写两次 HP）。
+        characterGrain.Verify(
+            c => c.RequestHpChangeAsync(It.IsAny<int>(), It.IsAny<ulong>(), It.IsAny<Horizon.Orleans.Interface.World.DamageType>()),
+            Times.Never);
     }
 
     [Fact]
@@ -109,7 +120,8 @@ public class HpSingleAuthorityContractTests
 
         // 技能结算回写 Internal 伤害类型（delta 负值）。
         characterGrain.Verify(
-            c => c.RequestHpChangeAsync(It.Is<int>(d => d < 0), 1, Horizon.Orleans.Interface.World.DamageType.Internal),
+            c => c.RequestElementalHpChangeAsync(It.Is<int>(d => d < 0), 1, Horizon.Orleans.Interface.World.DamageType.Internal,
+                It.IsAny<int>(), It.IsAny<Horizon.Game.Message.Combat.ElementStatVector>(), It.IsAny<Horizon.Game.Message.Combat.ElementStatVector>()),
             Times.Once);
     }
 
@@ -128,7 +140,8 @@ public class HpSingleAuthorityContractTests
 
         // 受击结算回写负伤害（方向契约：伤害必为负增量）。
         characterGrain.Verify(
-            c => c.RequestHpChangeAsync(It.Is<int>(d => d < 0), 1, Horizon.Orleans.Interface.World.DamageType.Physical),
+            c => c.RequestElementalHpChangeAsync(It.Is<int>(d => d < 0), 1, Horizon.Orleans.Interface.World.DamageType.Physical,
+                It.IsAny<int>(), It.IsAny<Horizon.Game.Message.Combat.ElementStatVector>(), It.IsAny<Horizon.Game.Message.Combat.ElementStatVector>()),
             Times.Once);
     }
 

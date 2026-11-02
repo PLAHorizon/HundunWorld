@@ -1,0 +1,86 @@
+{
+  "_comment": [
+    "技能树内容头：对应 UE5 Content/Pro/Core/Data/SkillTrees/Melee（Skill_Melee.uasset + Perks/*.uasset）。",
+    "perk 字段是 TSubclassOf<UTreePerk> 的换形：字符串类路径 + 同文件里的 perks[] 作者数据。",
+    "perkType 选 Perk_AttributeMod 的判据是上游存在同名 GE_*.uasset（属性加成走 GameplayEffect）；",
+    "没有 GE 资产的 Perk 在上游是蓝图逻辑节点，端口先按标记型 TreePerk 承载。",
+    "perkCords（UI 坐标）与 perkDisplayName/perkDescription 在上游写死在蓝图 CDO 里，二进制离线取不出真值：",
+    "这里保留结构、显示名取资产名，坐标给 0，等美术/策划在同一份 JSON 上覆写。"
+  ],
+  "skills": [
+    {
+      "skillClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Skill_Melee",
+      "skillDisplayName": "Melee",
+      "skillDescription": "Close-quarters combat tree.",
+      "skillLevel": 1,
+      "perks": [
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_CriticalChance",
+          "perkCords": { "x": 0, "y": 0 },
+          "linkedTo": [
+            "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_SuperStrength",
+            "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_LongArms"
+          ]
+        },
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_SuperStrength",
+          "perkCords": { "x": -1, "y": 1 },
+          "linkedTo": [
+            "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_WeaponBash"
+          ]
+        },
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_LongArms",
+          "perkCords": { "x": 1, "y": 1 },
+          "linkedTo": [
+            "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_ExampleMeleePerk"
+          ]
+        },
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_WeaponBash",
+          "perkCords": { "x": -2, "y": 2 },
+          "linkedTo": []
+        },
+        {
+          "perk": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_ExampleMeleePerk",
+          "perkCords": { "x": 2, "y": 2 },
+          "linkedTo": []
+        }
+      ]
+    }
+  ],
+  "perks": [
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_CriticalChance",
+      "perkType": "TreePerk",
+      "perkDisplayName": "Critical Chance",
+      "perkDescription": "Melee critical strike chance (authored as blueprint logic upstream)."
+    },
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_SuperStrength",
+      "perkType": "Perk_AttributeMod",
+      "perkDisplayName": "Super Strength",
+      "perkDescription": "Melee damage bonus carried by GE_SuperStrength.",
+      "attributeName": "SetByCaller.SuperStrength",
+      "effectName": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/GE_SuperStrength"
+    },
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_LongArms",
+      "perkType": "TreePerk",
+      "perkDisplayName": "Long Arms",
+      "perkDescription": "Melee reach (authored as blueprint logic upstream)."
+    },
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_WeaponBash",
+      "perkType": "TreePerk",
+      "perkDisplayName": "Weapon Bash",
+      "perkDescription": "Bash unlock (authored as blueprint logic upstream)."
+    },
+    {
+      "perkClassPath": "/NarrativePro/Pro/Core/Data/SkillTrees/Melee/Perks/Perk_ExampleMeleePerk",
+      "perkType": "TreePerk",
+      "perkDisplayName": "Example Melee Perk",
+      "perkDescription": "Upstream sample node."
+    }
+  ]
+}

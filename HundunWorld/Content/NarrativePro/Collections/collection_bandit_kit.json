@@ -1,0 +1,13 @@
+{
+  "collectionId": "collection_bandit_kit",
+  "items": [
+    { "itemClassId": "item_herb", "quantity": 1 },
+    { "itemClassId": "item_ration", "quantity": 2 }
+  ],
+  "_comment": [
+    "物品集合：对应 UE5 UItemCollection : UDataAsset（InventoryComponent.h），",
+    "成员只有 Items: TArray<FItemWithQuantity>。战利品行/奖励里写 collectionId，",
+    "掷表时按 Item.Quantity > 0 逐个授予（InventoryComponent.cpp:247-258 端口）。",
+    "目录约定见 ItemCollection.DefaultDirectory。"
+  ]
+}

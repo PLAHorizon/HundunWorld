@@ -37,6 +37,20 @@ namespace NarrativePro.Items
         }
 
         /// <summary>
+        /// 为物品创建提示框数据源。对应 UE5 中 <c>UInventoryFunctionLibrary</c> 创建 <c>UItemTooltip</c>
+        /// 并调用 <c>SetItem</c> 的用法；UI 侧控件绑定返回对象的字段进行渲染。
+        /// </summary>
+        /// <param name="item">要展示的物品</param>
+        /// <returns>填充好的提示框；item 为空时返回 null</returns>
+        public static ItemTooltip CreateItemTooltip(NarrativeItem item)
+        {
+            if (item == null) return null;
+            var tooltip = new ItemTooltip();
+            tooltip.PopulateFrom(item);
+            return tooltip;
+        }
+
+        /// <summary>
         /// 按显示名 A-Z 排序物品数组。
         /// </summary>
         /// <param name="inItems">待排序物品列表</param>

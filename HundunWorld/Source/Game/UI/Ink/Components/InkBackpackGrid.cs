@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.ECS.Components;
 using HundunWorld.Game.Equipment;
@@ -34,8 +34,11 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// <summary>默认格子间距（像素）</summary>
         private const float DefaultCellGap = 6f;
 
-        /// <summary>默认背包容量（6×6 = 36 格）</summary>
-        private const int DefaultCapacity = 36;
+        /// <summary>
+        /// 默认背包容量：108 格（基础背包）。参考魔兽世界的口径——基础格数固定，
+        /// 顶部扩展背包槽（<see cref="DefaultBagSlotCount"/>）再叠加 ExtraSlots 扩容。
+        /// </summary>
+        private const int DefaultCapacity = 108;
 
         /// <summary>默认背包槽位数量（顶部 4 个扩展背包槽）</summary>
         private const int DefaultBagSlotCount = 4;
@@ -712,7 +715,7 @@ namespace HundunWorld.Game.UI.Ink.Components
             /// <returns>对应的 <see cref="InkWashTheme.InkQuality"/> 枚举值</returns>
             private static InkWashTheme.InkQuality MapQuality(int quality)
             {
-                int clamped = quality < 0 ? 0 : (quality > 4 ? 4 : quality);
+                int clamped = quality < 0 ? 0 : (quality > 6 ? 6 : quality);
                 return (InkWashTheme.InkQuality)clamped;
             }
         }
@@ -983,7 +986,7 @@ namespace HundunWorld.Game.UI.Ink.Components
             /// <returns>对应的 <see cref="InkWashTheme.InkQuality"/> 枚举值</returns>
             private static InkWashTheme.InkQuality MapQuality(int quality)
             {
-                int clamped = quality < 0 ? 0 : (quality > 4 ? 4 : quality);
+                int clamped = quality < 0 ? 0 : (quality > 6 ? 6 : quality);
                 return (InkWashTheme.InkQuality)clamped;
             }
         }

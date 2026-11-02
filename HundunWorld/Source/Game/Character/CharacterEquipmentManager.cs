@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using HundunWorld.Game;
@@ -13,14 +13,27 @@ namespace HundunWorld.Game.Character
     {
         private AnimatedModel _animatedModel;
         private int _currentBodyEquipmentId;
+        private int _currentAppearanceId;
+        private int _gender;
+        private bool _genderResolved;
         private Dictionary<EquipmentSlot, int> _currentWeapons = new Dictionary<EquipmentSlot, int>();
         private Dictionary<EquipmentSlot, int> _currentAccessories = new Dictionary<EquipmentSlot, int>();
         private List<CharacterAttachmentSlot> _attachmentSlots = new List<CharacterAttachmentSlot>();
 
+        /// <summary>整体外形（外观装备）变化后触发，供 3D 预览等 UI 重新读取角色模型。</summary>
+        public static event Action AppearanceChanged;
+
+        /// <summary>当前穿戴的外观装备 ID（0 = 未穿外观）。</summary>
+        public int CurrentAppearanceId => _currentAppearanceId;
+
+        /// <summary>当前角色性别（0 = 男，1 = 女），由进场时的身体模型路径推断。</summary>
+        public int CurrentGender => _gender;
+
         /// <summary>
         /// 初始化角色装备，会先清空当前所有装备再重新挂载。
         /// </summary>
-        public void Initialize(int bodyEquipmentId, List<int> accessoryIds, List<int> weaponIds)
+        public void Initialize(int bodyEquipmentId, List<int> accessoryIds, List<int> weaponIds,
+            int appearanceEquipmentId = 0)
         {
             // 先清空配饰和武器
             var accessorySlots = new List<EquipmentSlot>(_currentAccessories.Keys);
@@ -35,12 +48,32 @@ namespace HundunWorld.Game.Character
                 UnequipWeapon(slot);
             }
 
+            var animatedModel = FindAnimatedModel();
+            // 只在第一具真实身体模型上判定性别：后续 Initialize 时模型可能已经被外观换成
+            // 中性傀儡资产，再按路径推断会把女性角色误判成男性（卸下外观后换回男体）。
+            if (!_genderResolved && animatedModel != null && animatedModel.SkinnedModel != null)
+            {
+                _gender = DetectGender(animatedModel);
+                _genderResolved = true;
+            }
+
+            // 服务端清单里没有身体槽 = 没穿战斗身体装备，视觉上等价于默认身体；
+            // 不能把 0 直接送进 EquipBody（那会报"找不到装备 ID 0"并让整次同步停在旧外观）。
+            if (bodyEquipmentId <= 0)
+                bodyEquipmentId = EquipmentDatabase.DefaultBodyId;
+
+            // 预加载全部外观模型：换装发生在 UI 点击回调里，不应该在那里阻塞等资产。
+            foreach (var appearance in EquipmentDatabase.GetAppearanceEquipments())
+            {
+                if (!string.IsNullOrEmpty(appearance.BodyModelPath))
+                    EquipmentDatabase.RequestBodyModelByPath(appearance.BodyModelPath);
+            }
+
             // 装备身体模型。如果是默认身体装备（ID == DefaultBodyId），
             // 原则上保留 CreateLocalPlayerActor 中已经设置好的 SkinnedModel；
             // 但如果当前 SkinnedModel 未加载（兜底角色或加载失败），仍需要主动加载默认身体。
             if (bodyEquipmentId == EquipmentDatabase.DefaultBodyId)
             {
-                var animatedModel = FindAnimatedModel();
                 if (animatedModel != null && animatedModel.SkinnedModel != null && animatedModel.SkinnedModel.IsLoaded)
                 {
                     _currentBodyEquipmentId = bodyEquipmentId;
@@ -88,6 +121,207 @@ namespace HundunWorld.Game.Character
                     }
                 }
             }
+
+            // 外观最后应用：它以"覆盖层"的身份决定最终整套外形。
+            if (appearanceEquipmentId > 0)
+            {
+                EquipAppearance(appearanceEquipmentId);
+            }
+            else if (_currentAppearanceId != 0)
+            {
+                // 服务端确认"没有外观"而本地还挂着上一件时，必须真的把模型换回来；
+                // 只清 ID 会让角色继续显示旧外观（例如跨设备卸下后重登）。
+                _currentAppearanceId = 0;
+                ApplyVisualBody();
+            }
+        }
+
+        /// <summary>从当前身体模型路径推断性别（Character_2 = 女，其余按男处理）。</summary>
+        private static int DetectGender(AnimatedModel animatedModel)
+        {
+            var path = animatedModel?.SkinnedModel?.Path;
+            return !string.IsNullOrEmpty(path) &&
+                   path.IndexOf("Character_2", StringComparison.OrdinalIgnoreCase) >= 0
+                ? 1
+                : 0;
+        }
+
+        /// <summary>
+        /// 装备外观：把角色整套 SkinnedModel 换成外观配置的模型。外观独立于战斗装备槽位，
+        /// 不占身体/配饰/武器槽，也不提供战斗属性。
+        /// </summary>
+        public void EquipAppearance(int equipmentId)
+        {
+            var data = EquipmentDatabase.GetEquipment(equipmentId);
+            if (data == null)
+            {
+                Debug.LogError($"[CharacterEquipmentManager] EquipAppearance 找不到装备 ID: {equipmentId}");
+                return;
+            }
+
+            if (data.Type != EquipmentType.Appearance)
+            {
+                Debug.LogError($"[CharacterEquipmentManager] EquipAppearance 装备类型错误，期望 Appearance，实际 {data.Type}，ID: {equipmentId}");
+                return;
+            }
+
+            _currentAppearanceId = equipmentId;
+            ApplyVisualBody();
+            Debug.Log($"[CharacterEquipmentManager] 装备外观: {data.Name} (ID: {equipmentId})");
+        }
+
+        /// <summary>卸下外观，恢复当前身体装备（无身体装备则恢复性别默认身体模型）。</summary>
+        public void UnequipAppearance()
+        {
+            if (_currentAppearanceId == 0)
+                return;
+
+            int previous = _currentAppearanceId;
+            _currentAppearanceId = 0;
+            ApplyVisualBody();
+            Debug.Log($"[CharacterEquipmentManager] 卸下外观: ID={previous}，恢复默认身体");
+        }
+
+        /// <summary>
+        /// 按"外观 &gt; 身体装备 &gt; 性别默认身体"的优先级重新计算并应用整套外形。
+        /// </summary>
+        private void ApplyVisualBody()
+        {
+            var animatedModel = FindAnimatedModel();
+            if (animatedModel == null)
+            {
+                Debug.LogError("[CharacterEquipmentManager] ApplyVisualBody 找不到角色 AnimatedModel");
+                return;
+            }
+
+            // MetaHuman 承载身体（Ada）不能被"外观/身体装备"的整模替换换回占位人形：
+            // 占位壳（Character_1）自己的 retarget 条目指向已失效骨架，Anim Graph 求值不出姿态（T-pose），
+            // 画面上就会变成一个白橙人偶（2026-10-25 实测）。身形/五官仍由模板参数驱动，不需要换模型。
+            if (animatedModel.SkinnedModel != null
+                && animatedModel.SkinnedModel.Path.IndexOf("Ada_BodyPreview", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                Debug.Log("[CharacterEquipmentManager] 当前是 MetaHuman 身体（Ada），跳过整模替换");
+                return;
+            }
+
+            SkinnedModel targetModel = null;
+            MaterialBase overrideMaterial = null;
+            Vector3 bodyScale = Vector3.One;
+
+            var appearance = _currentAppearanceId > 0 ? EquipmentDatabase.GetEquipment(_currentAppearanceId) : null;
+            bool hasAppearance = appearance != null;
+            if (hasAppearance)
+            {
+                targetModel = ResolveBodyModel(appearance);
+                overrideMaterial = appearance.OverrideMaterial;
+                bodyScale = appearance.BodyScale;
+            }
+
+            if (targetModel == null)
+            {
+                var body = _currentBodyEquipmentId > 0
+                    ? EquipmentDatabase.GetEquipment(_currentBodyEquipmentId)
+                    : null;
+                if (body != null)
+                {
+                    targetModel = ResolveBodyModel(body);
+                    // 外观层没有独立网格时会回退到身体装备/默认身体模型，但**外形参数仍归外观所有**；
+                    // 这里若无条件写回身体装备的 One/材质，会把外观比例覆盖掉（引擎自检实测 afterScale=1.0）。
+                    if (!hasAppearance)
+                    {
+                        overrideMaterial = body.OverrideMaterial;
+                        bodyScale = body.BodyScale;
+                    }
+                }
+            }
+
+            if (targetModel == null)
+                targetModel = EquipmentDatabase.GetBodyModel(_gender);
+
+            if (targetModel == null)
+            {
+                Debug.LogError($"[CharacterEquipmentManager] 无法解析身体模型（外观={_currentAppearanceId}, 身体={_currentBodyEquipmentId}, 性别={_gender}）");
+                return;
+            }
+
+            if (!targetModel.IsLoaded)
+            {
+                Debug.Log($"[CharacterEquipmentManager] 身体模型尚未加载，等待加载: {targetModel.Path}");
+                if (!targetModel.WaitForLoaded(5000.0) || !targetModel.IsLoaded)
+                {
+                    Debug.LogError($"[CharacterEquipmentManager][PACKAGE] 身体模型加载失败或超时: {targetModel.Path}");
+                    return;
+                }
+            }
+
+            SwitchBodyModel(animatedModel, targetModel, overrideMaterial, bodyScale);
+        }
+
+        /// <summary>解析装备配置的身体模型：优先资产引用，其次延迟加载路径。</summary>
+        private static SkinnedModel ResolveBodyModel(EquipmentData data)
+        {
+            if (data == null) return null;
+            if (data.BodyModel != null) return data.BodyModel;
+            if (!string.IsNullOrEmpty(data.BodyModelPath))
+                return EquipmentDatabase.RequestBodyModelByPath(data.BodyModelPath);
+            return null;
+        }
+
+        /// <summary>
+        /// 竞态安全地切换角色 SkinnedModel（完整保留动画图与激活状态）。
+        /// </summary>
+        private void SwitchBodyModel(AnimatedModel animatedModel, SkinnedModel bodyModel,
+            MaterialBase overrideMaterial, Vector3 bodyScale)
+        {
+            if (animatedModel == null || bodyModel == null || !bodyModel.IsLoaded)
+                return;
+
+            if (ReferenceEquals(animatedModel.SkinnedModel, bodyModel))
+            {
+                // 模型没变（例如两件外观共用同一具身体资产）：只更新材质覆盖与整体比例。
+                if (overrideMaterial != null)
+                    SetMaterial(animatedModel, overrideMaterial);
+                animatedModel.LocalScale = bodyScale;
+                AppearanceChanged?.Invoke();
+                return;
+            }
+
+            // 先设置 UpdateMode = Never 和 IsActive = false，再清空 AnimationGraph，
+            // 使 CanUpdateModel 返回 false，阻止 Job 调用 SetupSkinningData。
+            var originalUpdateMode = animatedModel.UpdateMode;
+            bool wasActive = animatedModel.IsActive;
+            var originalAnimGraph = animatedModel.AnimationGraph;
+
+            animatedModel.UpdateMode = AnimatedModel.AnimationUpdateMode.Never;
+            animatedModel.IsActive = false;
+            animatedModel.AnimationGraph = null;
+
+            animatedModel.SkinnedModel = bodyModel;
+            animatedModel.LocalScale = bodyScale;
+
+            if (overrideMaterial != null)
+                SetMaterial(animatedModel, overrideMaterial);
+
+            animatedModel.AnimationGraph = originalAnimGraph;
+
+            if (animatedModel.SkinnedModel != null && animatedModel.SkinnedModel.IsLoaded)
+            {
+                try
+                {
+                    animatedModel.SetupSkinningData();
+                    animatedModel.ResetAnimation();
+                    animatedModel.UpdateAnimation();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[CharacterEquipmentManager] 刷新身体模型失败: {ex.Message}");
+                }
+            }
+
+            animatedModel.IsActive = wasActive;
+            animatedModel.UpdateMode = originalUpdateMode;
+
+            AppearanceChanged?.Invoke();
         }
 
         /// <summary>
@@ -108,81 +342,9 @@ namespace HundunWorld.Game.Character
                 return;
             }
 
-            var animatedModel = FindAnimatedModel();
-            if (animatedModel == null)
-            {
-                Debug.LogError("[CharacterEquipmentManager] EquipBody 找不到角色 AnimatedModel");
-                return;
-            }
-
-            // 获取要装备的身体模型
-            SkinnedModel bodyModel = data.BodyModel;
-            if (bodyModel == null && data.Id == EquipmentDatabase.DefaultBodyId)
-            {
-                bodyModel = EquipmentDatabase.GetDefaultBodyModel();
-            }
-
-            // 严格等待模型加载完成
-            if (bodyModel != null && !bodyModel.IsLoaded)
-            {
-                Debug.Log($"[CharacterEquipmentManager] 身体模型尚未加载，等待加载: {bodyModel.Path}");
-                if (!bodyModel.WaitForLoaded(30000.0) || !bodyModel.IsLoaded)
-                {
-                    Debug.LogError($"[CharacterEquipmentManager][PACKAGE] 身体模型加载失败或超时: {bodyModel.Path}");
-                    return;
-                }
-            }
-
-            // 只有成功加载后才赋值
-            if (bodyModel != null && bodyModel.IsLoaded)
-            {
-                // ── 竞态安全切换 ──
-                // 先设置 UpdateMode = Never 和 IsActive = false，再清空 AnimationGraph，
-                // 使 CanUpdateModel 返回 false，阻止 Job 调用 SetupSkinningData。
-                var originalUpdateMode = animatedModel.UpdateMode;
-                bool wasActive = animatedModel.IsActive;
-                var originalAnimGraph = animatedModel.AnimationGraph;
-
-                animatedModel.UpdateMode = AnimatedModel.AnimationUpdateMode.Never;
-                animatedModel.IsActive = false;
-                animatedModel.AnimationGraph = null;
-
-                animatedModel.SkinnedModel = bodyModel;
-
-                if (data.OverrideMaterial != null)
-                {
-                    SetMaterial(animatedModel, data.OverrideMaterial);
-                }
-
-                // 恢复 AnimationGraph（保留原始引用）
-                animatedModel.AnimationGraph = originalAnimGraph;
-
-                // 手动刷新（SkinnedModel 已加载，安全）
-                if (animatedModel.SkinnedModel != null && animatedModel.SkinnedModel.IsLoaded)
-                {
-                    try
-                    {
-                        animatedModel.SetupSkinningData();
-                        animatedModel.ResetAnimation();
-                        animatedModel.UpdateAnimation();
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogWarning($"[CharacterEquipmentManager] 刷新身体模型失败: {ex.Message}");
-                    }
-                }
-
-                // 恢复激活状态和更新模式
-                animatedModel.IsActive = wasActive;
-                animatedModel.UpdateMode = originalUpdateMode;
-
-                _currentBodyEquipmentId = equipmentId;
-                Debug.Log($"[CharacterEquipmentManager] 装备身体: {data.Name} (ID: {equipmentId})");
-            }
-            else
-            {
-                Debug.LogError($"[CharacterEquipmentManager][PACKAGE] 无法获取已加载的身体模型，跳过换装: ID={equipmentId}");
-            }
+            _currentBodyEquipmentId = equipmentId;
+            ApplyVisualBody();
+            Debug.Log($"[CharacterEquipmentManager] 装备身体: {data.Name} (ID: {equipmentId})");
         }
 
         /// <summary>
@@ -238,49 +400,8 @@ namespace HundunWorld.Game.Character
         /// </summary>
         public void UnequipBody()
         {
-            var animatedModel = FindAnimatedModel();
-            if (animatedModel != null)
-            {
-                var defaultModel = EquipmentDatabase.GetDefaultBodyModel();
-                if (defaultModel != null && defaultModel.IsLoaded)
-                {
-                    // ── 竞态安全切换 ──
-                    var originalUpdateMode = animatedModel.UpdateMode;
-                    bool wasActive = animatedModel.IsActive;
-                    var originalAnimGraph = animatedModel.AnimationGraph;
-
-                    animatedModel.UpdateMode = AnimatedModel.AnimationUpdateMode.Never;
-                    animatedModel.IsActive = false;
-                    animatedModel.AnimationGraph = null;
-
-                    animatedModel.SkinnedModel = defaultModel;
-
-                    animatedModel.AnimationGraph = originalAnimGraph;
-
-                    if (animatedModel.SkinnedModel != null && animatedModel.SkinnedModel.IsLoaded)
-                    {
-                        try
-                        {
-                            animatedModel.SetupSkinningData();
-                            animatedModel.ResetAnimation();
-                            animatedModel.UpdateAnimation();
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.LogWarning($"[CharacterEquipmentManager] 恢复默认身体模型失败: {ex.Message}");
-                        }
-                    }
-
-                    animatedModel.IsActive = wasActive;
-                    animatedModel.UpdateMode = originalUpdateMode;
-                }
-                else
-                {
-                    Debug.LogError("[CharacterEquipmentManager] 默认身体模型未成功加载，无法恢复默认身体");
-                }
-            }
-
             _currentBodyEquipmentId = 0;
+            ApplyVisualBody();
             Debug.Log("[CharacterEquipmentManager] 卸下身体装备");
         }
 
@@ -398,7 +519,10 @@ namespace HundunWorld.Game.Character
             }
             else
             {
-                Debug.LogWarning($"[CharacterEquipmentManager] 装备 {data.Name} (ID: {data.Id}) 没有 ItemPrefab 也没有 StaticMesh，创建占位");
+                // 不是运行期故障：ItemPrefab / StaticMesh 在装备表里从来没被赋值
+                // （EquipmentDatabase 里 20001/30001 的 StaticMesh = null），属于待补的美术内容缺口。
+                // 报 Warning 会让每次登录都刷一批假故障，降到 Info 并说清"这里什么都不挂"。
+                Debug.Log($"[CharacterEquipmentManager] 装备 {data.Name} (ID: {data.Id}) 未配置 ItemPrefab/StaticMesh，跳过外观挂载（需补美术资产）");
             }
 
             if (spawnedActor != null)

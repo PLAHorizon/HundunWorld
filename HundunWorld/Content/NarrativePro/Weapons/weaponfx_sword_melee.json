@@ -1,0 +1,45 @@
+{
+  "fxId": "weaponfx_sword_melee",
+  "displayName": "环首刀·近战特效集",
+  "weaponItemClassIds": [
+    "item_sword"
+  ],
+  "slots": [
+    {
+      "slot": "Attack",
+      "particleSystemPath": "Content/Weapons/FX/P_SwordSlash.flxp",
+      "audioClipPath": "Content/Audio/Weapons/sword_slash_01.wav",
+      "socketName": "blade_tip",
+      "relativeLocation": [0, 0, 0],
+      "relativeRotationEulerDegrees": [0, 0, 0],
+      "scale": [1, 1, 1],
+      "autoDestroySeconds": 0.6,
+      "loopWhileActive": false,
+      "volume": 0.9,
+      "pitch": 1
+    },
+    {
+      "slot": "Trail",
+      "particleSystemPath": "Content/Weapons/FX/P_SwordTrail.flxp",
+      "socketName": "blade_spine",
+      "relativeLocation": [0, 4, 0],
+      "relativeRotationEulerDegrees": [0, 0, 0],
+      "scale": [1, 1, 1],
+      "loopWhileActive": true,
+      "volume": 0,
+      "pitch": 1
+    },
+    {
+      "slot": "Impact",
+      "particleSystemPath": "Content/Weapons/FX/P_MeleeImpact.flxp",
+      "audioClipPath": "Content/Audio/Weapons/impact_metal_01.wav",
+      "relativeLocation": [0, 0, 0],
+      "relativeRotationEulerDegrees": [0, 0, 0],
+      "scale": [1.2, 1.2, 1.2],
+      "autoDestroySeconds": 0.8,
+      "loopWhileActive": false,
+      "volume": 1,
+      "pitch": 1
+    }
+  ]
+}

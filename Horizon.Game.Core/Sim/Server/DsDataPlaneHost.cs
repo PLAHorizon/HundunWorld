@@ -65,8 +65,67 @@ public sealed class DsDataPlaneHost : IAsyncDisposable
     /// <summary>累计解码失败的帧数。</summary>
     public long DecodeFailureCount { get; private set; }
 
-    /// <summary>累计因连接丢弃而未处理的帧数。</summary>
+    /// <summary>
+    /// 累计因**入站队列溢出**而未处理的帧数（DS 卡顿，内存护栏）。
+    /// <para>与 <see cref="InputWithoutSessionCount"/> **刻意分两个数**：两者在玩家那边的表现一模一样
+    /// （动了没反应），但成因完全不同——一个是"这台机器跑不过来"，另一个是"这台 DS 根本不认识这个会话"
+    /// （典型现场：同一个 shard 上起了两台 DS，网关把会话判给另一台、却把输入帧发给这台）。
+    /// 合成一格之后两种故障同形，只能靠猜（见 [[assert-mechanism-and-effect-separately]] 的反方向：
+    /// 一个计数器装两种成因＝没有成因）。</para>
+    /// </summary>
     public long DroppedFrameCount { get; private set; }
+
+    /// <summary>
+    /// 累计"没有握手记录的上行输入"被丢弃的帧数。
+    /// <para>这条以前挂在 <see cref="DroppedFrameCount"/> 上且**完全静默**（溢出那一路每 100 条还会念一次），
+    /// 实测形状是：客户端有画面、DS 摘要 <c>玩家=0 收帧=1753 丢帧=1753</c>、日志里一条握手行都没有
+    /// ⇒ 排查的人只能猜"是不是内容包没装对"。</para>
+    /// </summary>
+    public long InputWithoutSessionCount { get; private set; }
+
+    /// <summary>
+    /// 同一会话两次战斗上行之间至少要隔这么多 tick（默认 1 秒）：
+    /// 客户端理论上每帧都能发一条，不限流就是把"刷包打怪"敞开。
+    /// <para>刻意放在数据面（不可信输入的边界）而不是 <c>DsWorldSession</c> 里：
+    /// 会话内测试直接提交动作时不该被一层节拍挡住，判据要能单独表达"结算对不对"。</para>
+    /// </summary>
+    public const long MinCombatActionIntervalTicks = 60;
+
+    /// <summary>累计受理的战斗上行包数。</summary>
+    public long CombatActionCount { get; private set; }
+
+    /// <summary>被边界限流挡下的战斗上行数（"我明明在砍"的第一归因）。</summary>
+    public long CombatActionRateLimitedCount { get; private set; }
+
+    /// <summary>会话不存在（未握手/已离开）而被丢弃的战斗上行数。</summary>
+    public long CombatActionRejectedNoSessionCount { get; private set; }
+
+    /// <summary>结算命中（伤害真的落到了目标身上）。</summary>
+    public long CombatActionHitCount { get; private set; }
+
+    /// <summary>结算判成够不着（客户端与权威侧的距离/射程口径不一致的第一归因）。</summary>
+    public long CombatActionOutOfRangeCount { get; private set; }
+
+    /// <summary>结算判成非法（目标号不存在、不可攻击等）。</summary>
+    public long CombatActionInvalidCount { get; private set; }
+
+    /// <summary>结算判成目标正在回位免伤（整段回家路上都打不到）。</summary>
+    public long CombatActionEvadingCount { get; private set; }
+
+    /// <summary>结算返回了未预期的档位。</summary>
+    public long CombatActionOtherOutcomeCount { get; private set; }
+
+    /// <summary>收到的客户端拾取请求数。</summary>
+    public long CorpseLootRequestsSeen { get; private set; }
+
+    /// <summary>当场拒掉的拾取请求数（窗口/距离/会话不过）。</summary>
+    public long CorpseLootRejected { get; private set; }
+
+    /// <summary>收到的翻越请求数（与后续受理/拒绝成对；只有这一格增长说明裁决没跑）。</summary>
+    public long TraversalRequestsSeen { get; private set; }
+
+    /// <summary>每个会话最后一次被受理的战斗上行 tick（由 tick 线程独占访问）。</summary>
+    private readonly Dictionary<long, long> CombatActionLastTick = new();
 
     /// <summary>当前待处理队列长度（背压指标）。</summary>
     public int PendingCount => _inbound.Count;
@@ -196,6 +255,12 @@ public sealed class DsDataPlaneHost : IAsyncDisposable
                     case InputPacket ip:
                         boundCharacterIds.Add((int)ip.CharacterId);
                         break;
+                    case Horizon.Game.Message.Sync.CombatActionPacket cb:
+                        boundCharacterIds.Add((int)cb.AttackerId);
+                        break;
+                    case Horizon.Game.Message.Sync.TraversalRequestPacket tp:
+                        boundCharacterIds.Add((int)tp.CharacterId);
+                        break;
                     case ReconnectResumePacket rp:
                         boundCharacterIds.Add((int)rp.LocalCharacterId);
                         break;
@@ -263,7 +328,8 @@ public sealed class DsDataPlaneHost : IAsyncDisposable
                 var ecsZ = handshake.InitialY;
 
                 if (!_world.AddPlayer(sessionId, characterId, ecsX, ecsY, ecsZ, out var reason,
-                        nickname: handshake.Nickname, level: handshake.Level, title: handshake.Title))
+                        nickname: handshake.Nickname, level: handshake.Level, title: handshake.Title,
+                        faction: handshake.Faction))
                 {
                     _log?.Invoke($"DsDataPlaneHost：握手被拒。CharacterId={characterId} Reason={reason}");
                 }
@@ -277,10 +343,94 @@ public sealed class DsDataPlaneHost : IAsyncDisposable
             case InputPacket input:
             {
                 var sessionId = (long)input.CharacterId;
+                if (!_world.TryGetPlayer(sessionId, out _))
+                {
+                    // 这台 DS 根本没有这个会话：握手从没到过这里。典型现场是**同一个 shard 上起了两台 DS**
+                    // （本地开发期很容易撞）：网关把会话判给另一台，却把该玩家的输入帧也发给这台，
+                    // 于是客户端有画面、这台 DS 恒 `玩家=0`，而现场只看到一个"丢帧"数在涨。
+                    // 判据问的是世界自己那份会话表（`TryGetPlayer`），不在这里另立一条"谁算有会话"的规则。
+                    InputWithoutSessionCount++;
+                    if (InputWithoutSessionCount == 1 || InputWithoutSessionCount % 100 == 1)
+                    {
+                        _log?.Invoke($"[DataPlane] 警告: 收到没有会话的输入, 累计 {InputWithoutSessionCount} 帧, " +
+                                     $"CharacterId={input.CharacterId}, 这台 DS 当前玩家数 {_world.PlayerCount}" +
+                                     "（成因不是卡顿：这台没被握手过——查是不是另一台 DS 也注册了同一个 shard）");
+                    }
+                    return;
+                }
                 if (!_world.SubmitInput(sessionId, input))
                 {
-                    // 未握手的输入：静默丢弃（可能是断线重连竞态），不视为错误刷日志。
+                    // 会话在、这一帧没被接受（重复 clientTick 由世界自己那份计数）。
                     DroppedFrameCount++;
+                }
+                return;
+            }
+
+            case Horizon.Game.Message.Sync.TraversalRequestPacket traversal:
+            {
+                // 翻越：计划合法性/冷却/起点贴合由 SimWorld.TryBeginTraversal 一处裁决；
+                // 结果包由会话直接排进该会话下行事件，客户端据此开始或取消本地预测。
+                var sessionId = (long)traversal.CharacterId;
+                TraversalRequestsSeen++;
+                _world.HandleTraversalRequestFromClient(sessionId, traversal);
+                return;
+            }
+
+            case Horizon.Game.Message.Sync.CorpseLootTakeRequestPacket lootTake:
+            {
+                // 尸体拾取：距离在这里量（DS 才知道权威坐标），窗口/幂等归权威侧。
+                // 本帧不受战斗动作的节流约束：它是"点一下取一件"，不是可连发的攻击。
+                var takeStatus = _world.HandleCorpseLootTakeFromClient(
+                    (long)lootTake.CharacterId, lootTake.CorpseEntityId, lootTake.SlotIndex, out var denial);
+                CorpseLootRequestsSeen++;
+                // 拒绝回执由会话直接排进该会话的下行事件（不必再经上行绕一圈）；
+                // 这里只计数——"当场拒了但玩家没看到提示"时先看这两格。
+                if (denial is not null || takeStatus != CorpseLootTakeStatus.Taken) CorpseLootRejected++;
+                return;
+            }
+
+            case Horizon.Game.Message.Sync.CombatActionPacket combat:
+            {
+                // 战斗上行：在这之前 DS 的数据面**只认移动**（InputPacket/握手/重连恢复），
+                // 而客户端的攻击走的是 Orleans 的 CombatGrain——那只认识 CharacterGrain 的玩家。
+                // 于是住在 DS 世界里的怪物（有 HP、会索敌、会读条、会掉东西的那一份）
+                // 在实机里根本挨不到打：玩家看不到血条掉、怪不会死、掉落与经验全都不发生。
+                // 会话 id 用发起者的 characterId（与 InputPacket 同源）；真正的攻方实体由
+                // 世界按会话自己取（SubmitCombatAction 里用的是 player.EntityId），不采信包里的 AttackerId。
+                var sessionId = (long)combat.AttackerId;
+
+                // 限流对**所有**战斗动作生效（含新加的打断）：按 ActionKind 列白名单的话，
+                // 每加一种动作就是一次"不在表里 = 每帧都能发"的漏口——列清单迟早漏改。
+                {
+                    // "从没见过这个会话"= 不受限（用 TryGetValue 的分支直接放行；
+                    // 拿 long.MinValue 当"很久以前"会在 ServerTick - MinValue 上溢出，
+                    // 结果第一发动作反而被判成"来得太快"——实测过：三条用例全卡在计数 0）。
+                    if (CombatActionLastTick.TryGetValue(sessionId, out var last)
+                        && _world.ServerTick - last < MinCombatActionIntervalTicks)
+                    {
+                        // 限流必须计数：不然"我明明在砍却不动"会被读成服务器的错。
+                        CombatActionRateLimitedCount++;
+                        return;
+                    }
+                    CombatActionLastTick[sessionId] = _world.ServerTick;
+                }
+
+                // 结果分档必须念出来：只数"收到了多少刀"时，"怪不掉血"会被读成客户端或渲染的问题，
+                // 而真相常在这三档里（无效目标 / 够不着 / 命中但零伤害）。
+                var combatResolution = _world.SubmitCombatAction(sessionId, combat);
+                switch (combatResolution.Outcome)
+                {
+                    case Horizon.Game.Sim.CombatOutcome.Hit: CombatActionHitCount++; break;
+                    case Horizon.Game.Sim.CombatOutcome.OutOfRange: CombatActionOutOfRangeCount++; break;
+                    case Horizon.Game.Sim.CombatOutcome.Invalid: CombatActionInvalidCount++; break;
+                    case Horizon.Game.Sim.CombatOutcome.Evading: CombatActionEvadingCount++; break;
+                    default: CombatActionOtherOutcomeCount++; break;
+                }
+                CombatActionCount++;
+                if (!_world.TryGetPlayer(sessionId, out _))
+                {
+                    // 没握手的会话（断线重连竞态）：与 InputPacket 同等待遇——不刷错误日志，但计数可见。
+                    CombatActionRejectedNoSessionCount++;
                 }
                 return;
             }

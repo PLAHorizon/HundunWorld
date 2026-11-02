@@ -295,6 +295,10 @@ namespace Horizon.Orleans.Silo
                         services.AddSingleton<FlowerUserDataSyncService>();
                         services.AddHostedService<FlowerUserSyncStartupService>();
 
+                        // §14.2 产出侧：把物品模板表灌成按五行域的掉落表（初级书/灵材/信物靠刷怪）。
+                        // 装配失败只记日志，不阻断启动。
+                        services.AddHostedService<Startup.WuxingLootTableSeedService>();
+
                         // 注册OpenTelemetry监控（APM + Prometheus指标导出 + OTLP 推送）
                         // 阶段 6.3 P2⑩+：配置 Monitoring:Otlp:Endpoint 时，horizon.sync.corrections / input.lag
                         // 等同步指标经 OTLP/HTTP 推送到 collector，与网关 horizon.sync.gray.window.* 汇入同一
@@ -308,6 +312,19 @@ namespace Horizon.Orleans.Silo
                             otlpExportIntervalSeconds: otlpInterval);
 
                         services.Configure<MqttBrokerOptions>(context.Configuration.GetSection(MqttBrokerOptions.SectionName));
+
+                        // 脚本化世界生成授权：Silo 侧 GmCommandGrain 据此裁决并签发令牌（与网关/DS 同密钥）。
+                        // 工厂注册顺带在启动时打印有效配置与密钥指纹：本进程是唯一的签发方，
+                        // 开关缺失=全部指令被拒，密钥与 DS 不同=全部令牌验签失败，两者都必须在启动日志里自证。
+                        services.AddSingleton(sp =>
+                        {
+                            var scripted = Horizon.Game.Core.Security.ScriptedSpawnConfiguration.Bind(
+                                context.Configuration, out _);
+                            Horizon.Game.Core.Security.ScriptedSpawnDiagnostics.LogStartup(
+                                sp.GetService<ILoggerFactory>()?.CreateLogger("Horizon.ScriptedSpawn"),
+                                "Grain(签发)", scripted);
+                            return scripted;
+                        });
                         services.AddSingleton<MqttConnectionValidator>();
                         services.AddSingleton<MqttTopicAuthorizer>();
                         services.AddHostedService<MqttBrokerService>();
@@ -322,6 +339,10 @@ namespace Horizon.Orleans.Silo
                         // 角色位置归档：Redis 热缓存超过 24h 无新位置更新 → 落库 SQL Server 并清除缓存，
                         // 进场读路径为 Redis 命中优先、未命中回退 SQL（CharacterGrain.GetLastPositionAsync）。
                         services.AddHostedService<Services.CharacterPositionArchiveService>();
+
+                        // 经济周期快照（P1）：每 15 分钟把金币总供给/累计收支/账不平行数落一行，
+                        // 供 EconomyCli 算通胀。首拍延后 1 分钟等存储就绪。
+                        services.AddHostedService<Services.EconomySnapshotService>();
 
                         // 阶段 6.3 P2：修正计数跨进程汇聚（Silo→Redis→网关自动回滚门修正率信号）。
                         // 与 Clustering/存储共用同一 Redis 实例（Redis:ConnectionString）；
@@ -696,6 +717,12 @@ namespace Horizon.Orleans.Silo
                 var logger = provider.GetService<ILogger<RedisCharacterPositionStore>>();
                 return new RedisCharacterPositionStore(redisConnection, logger);
             });
+
+            // ===== 宠物反哺读数门 =====
+            // CharacterGrain 的构造参数是可选的（null = 宠物栏不取数），所以这里漏注册不会编译失败、
+            // 也不会报错，只会让面板那几列静默恒 0 —— 与"玩家没有出战宠"同形。
+            // 因此这一行必须在，且 CharacterGrain 未注入时要把原因写进 PetBonusIssues。
+            services.AddSingleton<Horizon.Orleans.Interface.IPetBonusReader, Horizon.Orleans.Grains.Pets.PetBonusReader>();
 
             // 注册角色指纹服务（Silo 端，复用 RedisConnection 单例）。
             // 修复 BUG：CharacterGrain.GoOfflineAsync 需要清理 character:fingerprint:{id} key（TTL 5min），

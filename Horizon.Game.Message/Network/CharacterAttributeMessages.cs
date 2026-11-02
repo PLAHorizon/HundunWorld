@@ -9,8 +9,13 @@ namespace Horizon.Game.Message.Network
 
     /// <summary>
     /// 角色自由点分配（服务端权威）。字段序与客户端
-    /// <c>CharacterAttributesComponent.AttributeAllocation</c> 一致：力量/敏捷/体质/内力 + 金木水火土。
+    /// <c>CharacterAttributesComponent.AttributeAllocation</c> 一致：力量/敏捷/体质/智力 + 金木水火土。
     /// 纯数据载体（不含计算成员，避免 MemoryPack 序列化歧义），求和由消费方负责。
+    /// <para>
+    /// 第 4 项原为"内力"，2026-09-28 改叫"智力"。这里只改属性名、
+    /// <see cref="MemoryPackOrderAttribute"/> 保持 3 不变 ⇒ 线上字节流兼容，
+    /// 但**两端必须同版本部署**（旧服务端反序列化后该位仍是内力点数，语义已不同）。
+    /// </para>
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
@@ -31,7 +36,7 @@ namespace Horizon.Game.Message.Network
 
         [MemoryPackOrder(3)]
         [Id(3)]
-        public int Energy { get; set; }
+        public int Intelligence { get; set; }
 
         [MemoryPackOrder(4)]
         [Id(4)]

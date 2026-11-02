@@ -1,0 +1,71 @@
+{
+	"ID": "b0171af84459228b587740b7b8bfc220",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 7012,
+	"Data": [
+	{
+		"ID": "539a2cb343b79bb2206fa19720f34926",
+		"TypeName": "FlaxEngine.EmptyActor",
+		"Name": "ROOT"
+	},
+	{
+		"ID": "d768cdcc4bb7707b4c725189441bde49",
+		"TypeName": "FlaxEngine.ModelPrefab",
+		"ParentID": "539a2cb343b79bb2206fa19720f34926",
+		"ImportPath": "../../../../Users/33011/Downloads/fern_02_4k.gltf/fern_02_4k.gltf",
+		"ImportOptions": {
+			"Type": 3,
+			"MergeMeshes": false
+		}
+	},
+	{
+		"ID": "32aae6c44ae9205e01dd4fbaa2c6969b",
+		"TypeName": "FlaxEngine.StaticModel",
+		"ParentID": "539a2cb343b79bb2206fa19720f34926",
+		"Name": "fern_02_b",
+		"Model": "c64a30474b845c1be7b3788fe088fd49"
+	},
+	{
+		"ID": "044d0fad4871b477ff6aabb2dfd122f5",
+		"TypeName": "FlaxEngine.StaticModel",
+		"ParentID": "539a2cb343b79bb2206fa19720f34926",
+		"Name": "fern_02_c",
+		"Transform": {
+			"Translation": {
+				"X": 100.00009155273438,
+				"Y": 0.0,
+				"Z": 0.0
+			}
+		},
+		"Model": "b1c7df264792dbc5fc6d87a5f07ce288"
+	},
+	{
+		"ID": "166e7f724397febfd2ca669653361876",
+		"TypeName": "FlaxEngine.StaticModel",
+		"ParentID": "539a2cb343b79bb2206fa19720f34926",
+		"Name": "fern_02_a",
+		"Transform": {
+			"Translation": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": -100.00001525878906
+			}
+		},
+		"Model": "4d9408b94d2709ffd4ea5da705fb74e0"
+	},
+	{
+		"ID": "c8d94e214c8b97006573a28e779ec25d",
+		"TypeName": "FlaxEngine.StaticModel",
+		"ParentID": "539a2cb343b79bb2206fa19720f34926",
+		"Name": "fern_02_d",
+		"Transform": {
+			"Translation": {
+				"X": 100.0,
+				"Y": 0.0,
+				"Z": -99.99996185302734
+			}
+		},
+		"Model": "38b589d240b69f72aba9ae92784238d9"
+	}
+]
+}

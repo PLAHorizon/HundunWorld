@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 using FlaxEngine;
+using NarrativePro.Core;
 using NarrativePro.Items;
+using NarrativePro.Navigation;
 using NarrativePro.Tales.Tasks;
 
 namespace NarrativePro.Tales
 {
     /// <summary>
-    /// 任务导航标记设置。对应 UE5 FTaskNavigationMarker。
+    /// 任务导航标记设置。对应 UE5 <c>FTaskNavigationMarker</c>（QuestTask.h:12-77）。
     /// 定义任务期间在世界中添加的导航标记/面包屑。
     /// </summary>
     [Serializable]
@@ -20,25 +22,24 @@ namespace NarrativePro.Tales
         public bool bDrawBreadcrumbs = true;
 
         /// <summary>
-        /// 地图标记类路径占位。UE5 中为 TSubclassOf&lt;UMapMarker&gt;，
-        /// Flax 中无蓝图类，用 string 路径占位。
+        /// 地图标记类。UE5 中为 TSubclassOf&lt;UMapMarker&gt;，
+        /// Flax 的 <see cref="MapMarker"/> 是普通对象而非 Actor 预制，故用类型名占位，
+        /// 生成时统一使用 <see cref="MapMarker"/>。
         /// </summary>
         public string MarkerClassPath = "";
 
         /// <summary>
-        /// 导航标记图标路径。UE5 中为 UTexture2D*，
-        /// Flax 中用 string 路径占位。
+        /// 导航标记图标路径。UE5 中为 UTexture2D*，Flax 中用 string 路径占位。
         /// </summary>
         public string NavigationMarkerIconPath = "";
 
-        /// <summary>标记颜色。UE5 中为 FLinearColor::Yellow。</summary>
+        /// <summary>标记颜色。UE5 默认 FLinearColor::Yellow。</summary>
         public Color MarkerColor = Color.Yellow;
 
         /// <summary>
-        /// 标记所属导航器域。UE5 中为 FGameplayTagContainer（meta Categories="Navigator.NavigatorTypes"），
-        /// Flax 中使用 NarrativePro.Items.GameplayTagContainer。
+        /// 标记所属导航器域。UE5 构造函数默认加入 Compass/Minimap/Worldmap/Screenspace 四个域。
         /// </summary>
-        public GameplayTagContainer MarkerDomains = new GameplayTagContainer();
+        public GameplayTagContainer MarkerDomains = CreateDefaultMarkerDomains();
 
         /// <summary>标记显示文本。为空时使用任务描述。</summary>
         public string MarkerDisplayText = "";
@@ -47,65 +48,85 @@ namespace NarrativePro.Tales
         public string MarkerSubtitleText = "";
 
         /// <summary>
-        /// 标记世界位置。若有 AttachActor 则视为相对位置。
-        /// UE5 中为 FVector::ZeroVector。
+        /// 强制把标记附着到该提供者给出的 Actor 上，会覆盖任务自身提供的 Actor。
+        /// 对应 UE5 <c>MarkerAttachActorOverride</c>（TObjectPtr&lt;UNarrativeActorProvider&gt;）。
+        /// </summary>
+        public NarrativeActorProvider MarkerAttachActorOverride;
+
+        /// <summary>
+        /// 当目标 Actor 尚未生成时使用的回退位置。对应 UE5 <c>ActorFallbackLocation</c>。
+        /// </summary>
+        public Vector3 ActorFallbackLocation = Vector3.Zero;
+
+        /// <summary>
+        /// 标记世界位置。若存在 AttachActor 则视为相对位置。UE5 中为 FVector::ZeroVector。
         /// </summary>
         public Vector3 MarkerLocation = Vector3.Zero;
 
         public TaskNavigationMarker() { }
+
+        /// <summary>对应 UE5 UNarrativeTask 构造函数里给 MarkerDomains 填的四个默认域。</summary>
+        private static GameplayTagContainer CreateDefaultMarkerDomains()
+        {
+            var domains = new GameplayTagContainer();
+            domains.AddTag(NavigatorGameplayTags.NavigatorTypes_Compass);
+            domains.AddTag(NavigatorGameplayTags.NavigatorTypes_Minimap);
+            domains.AddTag(NavigatorGameplayTags.NavigatorTypes_Worldmap);
+            domains.AddTag(NavigatorGameplayTags.NavigatorTypes_Screenspace);
+            return domains;
+        }
     }
 
     /// <summary>
-    /// 任务条目辅助工具。对应 UE5 QuestTask.h 中除 UNarrativeTask 基类以外的运行时逻辑。
-    /// UNarrativeTask 基类已移植到 Tasks/NarrativeTask.cs，
-    /// 此处仅保留 UE5 中尚未移植的导航标记相关结构与占位方法。
+    /// 任务条目静态辅助。对应 UE5 QuestTask.h 中除 <c>UNarrativeTask</c> 成员以外的部分。
+    /// <para>
+    /// UE5 里 <c>SpawnDefaultNavigationMarker</c> / <c>SpawnNavigationMarker</c> 都是任务实例方法，
+    /// Flax 端口已把它们实现在 <see cref="NarrativeTask"/> 上，此处保留同名静态入口做转发，
+    /// 供旧的静态调用点使用。
+    /// </para>
     /// </summary>
     public static class QuestTask
     {
-        // Flax-不兼容: UE5 的 MapMarker / NavigationMarkerComponent 在 Flax 无对应物，保留占位。原文 TODO: Flax 中无 UE5 的 MapMarker / NavigationMarkerComponent 系统，
-        // 以下方法为占位，需要项目方自行实现导航标记生成与生命周期管理。
-
         /// <summary>
-        /// 为任务生成默认导航标记。对应 UE5 UNarrativeTask::SpawnDefaultNavigationMarker。
-        /// 使用 GetNavigationMarkerLocation 与 GetNavigationMarkerAttachActor 的返回值生成标记。
+        /// 为任务生成默认导航标记。对应 UE5 <c>UNarrativeTask::SpawnDefaultNavigationMarker</c>。
         /// </summary>
         public static void SpawnDefaultNavigationMarker(NarrativeTask task)
         {
-            // Flax-不兼容: UE5 的 MapMarker 在 Flax 无对应物，保留占位。原文 TODO: Flax 无内置导航标记系统，需自行实现。
-            // UE5 中调用 SpawnNavigationMarker(GetNavigationMarkerLocation(), GetNavigationMarkerAttachActor())
+            task?.SpawnDefaultNavigationMarker();
         }
 
         /// <summary>
-        /// 在指定位置生成导航标记。对应 UE5 UNarrativeTask::SpawnNavigationMarker。
+        /// 在指定位置生成导航标记。对应 UE5 <c>UNarrativeTask::SpawnNavigationMarker</c>。
         /// </summary>
-        /// <param name="task">关联的任务</param>
-        /// <param name="markerLocation">标记位置</param>
-        /// <param name="attachActor">标记附加的 Actor（可为 null）</param>
         public static void SpawnNavigationMarker(NarrativeTask task, Vector3 markerLocation, Actor attachActor = null)
         {
-            // Flax-不兼容: UE5 的 MapMarker 在 Flax 无对应物，保留占位。原文 TODO: Flax 无内置导航标记系统，需自行实现。
-            // UE5 中会 NewObject<UMapMarker> 并设置 MarkerTransform/DefaultDomains/Icon/Tint 等，
-            // 当任务所属任务被追踪时注册标记。
+            task?.SpawnNavigationMarker(markerLocation, attachActor);
         }
 
         /// <summary>
-        /// 获取导航标记位置。对应 UE5 UNarrativeTask::GetNavigationMarkerLocation。
-        /// 默认返回 MarkerSettings.MarkerLocation，子类可重写以提供动态位置。
+        /// 获取导航标记位置。对应 UE5 <c>UNarrativeTask::GetNavigationMarkerLocation</c>。
         /// </summary>
         public static Vector3 GetNavigationMarkerLocation(NarrativeTask task)
         {
-            // TODO [待源码]: 获取 UE5 源 UNarrativeTask.cpp 后补全 GetNavigationMarkerLocation 实现。默认返回零向量，子类可重写以提供动态位置。
-            return Vector3.Zero;
+            return task != null ? task.GetNavigationMarkerLocation() : Vector3.Zero;
         }
 
         /// <summary>
-        /// 获取导航标记应附加的 Actor。对应 UE5 UNarrativeTask::GetNavigationMarkerAttachActor。
-        /// 默认返回 null，子类可重写。
+        /// 获取导航标记应附加的 Actor。对应 UE5 <c>UNarrativeTask::GetNavigationMarkerAttachActor</c>。
         /// </summary>
         public static Actor GetNavigationMarkerAttachActor(NarrativeTask task)
         {
-            // TODO [待源码]: 获取 UE5 源 UNarrativeTask.cpp 后补全 GetNavigationMarkerAttachActor 实现。默认返回 null，子类可重写。
-            return null;
+            return task != null ? task.GetNavigationMarkerAttachActor() : null;
+        }
+
+        /// <summary>
+        /// 任务标记的移除入口。对应 UE5 <c>UNarrativeTask::EndTask</c> 里对 SpawnedMarker 的清理。
+        /// </summary>
+        public static void ClearNavigationMarker(NarrativeTask task)
+        {
+            if (task == null || task.SpawnedMarker == null) return;
+            task.SpawnedMarker.RemoveMarker();
+            task.SpawnedMarker = null;
         }
     }
 }

@@ -278,6 +278,52 @@ namespace NarrativePro.AI
             PerformMove(Path[CurrentTargetIndex]);
         }
 
+        /// <summary>
+        /// 发起一次到目标点的移动。对应 UE5 <c>PerformMove</c>。
+        /// 同时把请求终点登记到路径跟随组件（对应 UE5 SimpleMove 记录 OriginalMoveRequestGoalLocation），
+        /// 供部分路径抵达时 <c>NarrativePathFollowingComp.OnPathFinished</c> 做自救判定。
+        /// </summary>
+        protected virtual void PerformMove(Vector3 goalLocation)
+        {
+            if (!IsRunning || Mover == null) return;
+
+            var pathFollowing = Controller != null ? Controller.GetPathFollowingComponent() : null;
+            pathFollowing?.NotifyMoveRequested(goalLocation, AcceptanceRadius, FailLongMove);
+
+            if (Executor != null)
+            {
+                if (!Executor.RequestMove(Mover, goalLocation, AcceptanceRadius))
+                {
+                    FailLongMove();
+                }
+                return;
+            }
+
+            // 内置执行器无需额外发起点，实际推进在 TickLinearMover 中完成
+            _poiReevaluateTimer = 0f;
+        }
+
+        /// <summary>
+        /// 标记任务失败并结束。对应 UE5 <c>FailLongMove</c>。
+        /// 若失败发生在移动途中（执行器中途停下 = 部分路径抵达），同时把「移动结束」上报控制器，
+        /// 触发 UE5 <c>ANarrativeNPCController::OnMoveComplete</c>（NarrativeNPCController.cpp:308-364）的部分路径自救。
+        /// </summary>
+        public void FailLongMove()
+        {
+            if (bRequestFailed) return;
+
+            bool bWasMoving = IsRunning;
+            bRequestFailed = true;
+            IsRunning = false;
+            OnRequestFailed?.Invoke();
+
+            if (bWasMoving)
+            {
+                // UE5 语义：部分路径抵达以 Success 结果结束请求，由 DidMoveReachGoal 判定是否自救
+                Controller?.OnMoveComplete(EPathFollowingResult.Success);
+            }
+        }
+
         /// <summary>使用 A* 在 POI 图上求解从起点 POI 到终点 POI 的高层路径（含首尾）。</summary>
         /// <param name="startingPOI">起点 POI</param>
         /// <param name="endingPOI">终点 POI</param>
@@ -440,34 +486,6 @@ namespace NarrativePro.AI
             }
         }
 
-        /// <summary>发起一次到目标点的移动。对应 UE5 <c>PerformMove</c>。</summary>
-        protected virtual void PerformMove(Vector3 goalLocation)
-        {
-            if (!IsRunning || Mover == null) return;
-
-            if (Executor != null)
-            {
-                if (!Executor.RequestMove(Mover, goalLocation, AcceptanceRadius))
-                {
-                    FailLongMove();
-                }
-                return;
-            }
-
-            // 内置执行器无需额外发起点，实际推进在 TickLinearMover 中完成
-            _poiReevaluateTimer = 0f;
-        }
-
-        /// <summary>标记任务失败并结束。对应 UE5 <c>FailLongMove</c>。</summary>
-        public void FailLongMove()
-        {
-            if (bRequestFailed) return;
-
-            bRequestFailed = true;
-            IsRunning = false;
-            OnRequestFailed?.Invoke();
-        }
-
         /// <summary>结束任务。对应 UE5 <c>EndTask</c>。</summary>
         public void EndTask()
         {
@@ -492,6 +510,13 @@ namespace NarrativePro.AI
         private void FinishMove(EPathFollowingResult result)
         {
             IsRunning = false;
+
+            // 完整抵达：清空路径跟随组件登记的请求终点，防止后续无关事件误触发自救
+            if (result == EPathFollowingResult.Success)
+            {
+                Controller?.GetPathFollowingComponent()?.NotifyMoveArrived();
+            }
+
             OnMoveFinished?.Invoke(result, Controller);
         }
 

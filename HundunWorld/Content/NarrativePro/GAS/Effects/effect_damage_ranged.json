@@ -1,0 +1,18 @@
+{
+  "effectName": "Damage_Ranged",
+  "durationType": "Instant",
+  "executeCalcTypeId": "Damage",
+  "stackingType": "None",
+  "maxStacks": 1,
+  "assetTags": [
+    "Narrative.Effect.Damage",
+    "Narrative.Ability.DamageType.Ranged"
+  ],
+  "modifiers": [
+    {
+      "attributeName": "Damage",
+      "modifierOp": "Add",
+      "magnitude": 12
+    }
+  ]
+}

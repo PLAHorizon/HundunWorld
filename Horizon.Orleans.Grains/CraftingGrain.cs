@@ -1,4 +1,5 @@
 using Horizon.Game.Message.Network;
+using Horizon.Game.Sim.Npcs;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -54,53 +55,114 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public async Task<bool> LearnRecipeAsync(int recipeId)
+        /// <summary>
+        /// 学习配方。<b>定义由调用方给</b>（来自已装配内容的 <c>NpcContent.Recipe</c>）。
+        /// <para>
+        /// 以前这里会当场捏一个 <c>SuccessRate = 1.0</c> 的空配方——那让"任意 id 都能学会"，
+        /// 而且成功率是编的。现在只做三件事：id 合法？没学过？存一份**调用方给的定义**。
+        /// </para>
+        /// <para>
+        /// <b>SuccessRate 的语义</b>：本工程没有"制作技能点"这一权威输入，内容侧通常给 1.0
+        /// （材料齐即可做）；这不是占位符，是"一期没有失败检定"的明确口径，见设计文档 §11.10。
+        /// </para>
+        /// </summary>
+        public async Task<bool> LearnRecipeAsync(CraftingRecipe definition)
         {
             try
             {
-                var state = _craftingState.State;
-
-                if (state.LearnedRecipes.ContainsKey(recipeId))
+                if (definition == null || definition.RecipeId <= 0)
                 {
-                    _logger.LogWarning("配方已学习: RecipeId={RecipeId}", recipeId);
+                    _logger.LogWarning("配方定义无效，拒绝学习");
                     return false;
                 }
 
-                var newRecipe = new CraftingRecipe
+                var state = _craftingState.State;
+                if (state.LearnedRecipes.ContainsKey(definition.RecipeId))
                 {
-                    RecipeId = recipeId,
-                    SuccessRate = 1.0f,
-                    IsRepeatable = true
+                    _logger.LogWarning("配方已学习: RecipeId={RecipeId}", definition.RecipeId);
+                    return false;
+                }
+
+                // 存副本：调用方之后改自己的对象，不应影响已学配方。
+                state.LearnedRecipes[definition.RecipeId] = new CraftingRecipe
+                {
+                    RecipeId = definition.RecipeId,
+                    Name = definition.Name ?? string.Empty,
+                    Description = definition.Description ?? string.Empty,
+                    RequiredMaterials = definition.RequiredMaterials != null
+                        ? new Dictionary<long, int>(definition.RequiredMaterials)
+                        : new Dictionary<long, int>(),
+                    RequiredGold = definition.RequiredGold,
+                    RequiredLevel = definition.RequiredLevel,
+                    OutputItems = definition.OutputItems != null
+                        ? new Dictionary<long, int>(definition.OutputItems)
+                        : new Dictionary<long, int>(),
+                    SuccessRate = definition.SuccessRate,
+                    IsRepeatable = definition.IsRepeatable,
+                    RecipeType = definition.RecipeType ?? string.Empty,
                 };
 
-                state.LearnedRecipes[recipeId] = newRecipe;
                 await _craftingState.WriteStateAsync();
 
-                _logger.LogInformation("学习配方成功: RecipeId={RecipeId}", recipeId);
+                _logger.LogInformation("学习配方成功: RecipeId={RecipeId}", definition.RecipeId);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "学习配方失败: RecipeId={RecipeId}", recipeId);
+                _logger.LogError(ex, "学习配方失败: RecipeId={RecipeId}", definition?.RecipeId ?? 0);
                 throw;
             }
         }
 
-        public Task<bool> CheckMaterialsAsync(int recipeId)
+        /// <summary>
+        /// 查材料：逐件比对，回"缺哪样、缺几件"。
+        /// <para>
+        /// 判据调用 <see cref="NpcCraftCore.CheckMaterials"/>（纯函数，已有独立暴力参照对拍），
+        /// 本方法只负责把背包快照与已学配方翻译成内核输入。
+        /// <b>不得再出现"配方存在就返回 true"</b>——那是让玩家凭空造物的口子。
+        /// </para>
+        /// </summary>
+        public Task<CraftMaterialCheck> CheckMaterialsAsync(int recipeId, Dictionary<long, int> held)
         {
             try
             {
-                var state = _craftingState.State;
+                var check = new CraftMaterialCheck();
 
-                if (!state.LearnedRecipes.ContainsKey(recipeId))
+                if (!_craftingState.State.LearnedRecipes.TryGetValue(recipeId, out var recipe) || recipe == null)
                 {
                     _logger.LogWarning("未学习该配方: RecipeId={RecipeId}", recipeId);
-                    return Task.FromResult(false);
+                    check.Ok = false;
+                    check.Reject = (int)NpcCraftReject.RecipeNotLearned;
+                    return Task.FromResult(check);
                 }
 
-                // 配方已学习，材料检查需要配合InventoryGrain
-                // 此处返回true表示配方存在
-                return Task.FromResult(true);
+                var needs = new List<NpcMaterialNeed>(recipe.RequiredMaterials.Count);
+                foreach (var pair in recipe.RequiredMaterials)
+                {
+                    needs.Add(new NpcMaterialNeed((int)pair.Key, pair.Value));
+                }
+
+                var heldItems = new List<NpcHeldItem>(held?.Count ?? 0);
+                if (held != null)
+                {
+                    foreach (var pair in held)
+                    {
+                        heldItems.Add(new NpcHeldItem((int)pair.Key, pair.Value));
+                    }
+                }
+
+                var verdict = NpcCraftCore.CheckMaterials(needs, heldItems);
+
+                check.Ok = verdict.IsOk;
+                check.Reject = (int)verdict.Reason;
+                check.MissingKinds = verdict.MissingKinds;
+                check.MissingUnits = verdict.MissingUnits;
+
+                var lines = new List<string>(verdict.Shortfalls.Count);
+                for (var i = 0; i < verdict.Shortfalls.Count; i++) lines.Add(verdict.Shortfalls[i].Describe());
+                check.Lines = lines.ToArray();
+
+                return Task.FromResult(check);
             }
             catch (Exception ex)
             {
@@ -109,7 +171,7 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public async Task<CraftingResult> CraftItemAsync(int recipeId)
+        public async Task<CraftingResult> CraftItemAsync(int recipeId, Dictionary<long, int> held)
         {
             try
             {
@@ -127,12 +189,26 @@ namespace Horizon.Orleans.Grains
                     };
                 }
 
-                // Determine quality based on success rate and randomness
-                int quality = CalculateCraftingQuality(recipe.SuccessRate);
-                bool success = Random.Shared.NextDouble() <= recipe.SuccessRate;
+                // 材料必须先真查一遍：调用方把背包快照传进来，判据走 NpcCraftCore。
+                var materials = await CheckMaterialsAsync(recipeId, held);
+                if (!materials.Ok)
+                {
+                    _logger.LogInformation("合成被拒（材料不齐/配方异常）: RecipeId={RecipeId} reject={Reject}",
+                        recipeId, materials.Reject);
+                    return new CraftingResult
+                    {
+                        Success = false,
+                        RecipeId = recipeId,
+                        Message = "材料不足：" + string.Join("；", materials.Lines),
+                        OutputItemId = 0,
+                    };
+                }
 
-                // Generate a unique output item ID using recipe and history count
-                long outputItemId = success ? recipeId * 1000L + state.CraftingHistory.Count : 0;
+                int quality = CalculateCraftingQuality(recipe.SuccessRate);
+                bool success = recipe.SuccessRate >= 1.0f || Random.Shared.NextDouble() <= recipe.SuccessRate;
+
+                // 实例 id 由背包发放时决定，这里不再伪造（旧实现用 recipeId*1000+历史数 编了一个假 id）。
+                long outputItemId = 0;
 
                 var entry = new CraftingHistoryEntry
                 {

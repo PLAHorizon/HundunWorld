@@ -2,12 +2,13 @@ using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Social
 {
-    public class AchievementPage : ContainerControl, IInkPage
+    public class AchievementPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private const float ScreenEdge = 16f;
         private const float HeaderHeight = 60f;
@@ -37,8 +38,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         private Panel _gridSection;
         private ContainerControl _gridHead;
         private Label _breadcrumb;
-        private InkButton[] _filterChips;
+        private InkFilterBar _filterBar;
         private Panel _gridScroll;
+        private Label _gridEmptyHint;
         private AchievementCard[] _cards;
 
         private Panel _detail;
@@ -143,6 +145,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             header.AddChild(_subtitleLabel);
 
+            // 成就服务未接入：卡片名称/详情是目录样例，进度一律"尚未解锁"，这里在标题行明示
+            var sampleNote = new Label
+            {
+                Text = "成就服务尚未接入 · 卡片与详情为目录示例",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(240f, 32f),
+                Size = new Float2(420f, 16f),
+                BackgroundColor = Color.Transparent,
+            };
+            header.AddChild(sampleNote);
+
             float overallX = 260f;
             _overallLabel = new Label
             {
@@ -160,7 +177,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             _overallCount = new Label
             {
-                Text = "238",
+                Text = "0",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 18f),
                 TextColor = InkWashTheme.TextDefault,
                 HorizontalAlignment = TextAlignment.Near,
@@ -174,7 +191,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             _overallPct = new Label
             {
-                Text = "45%",
+                Text = "0%",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Far,
@@ -192,7 +209,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(overallX, 30f),
                 Size = new Float2(220f, 8f),
-                Value = 0.45f,
+                Value = 0f,
             };
             header.AddChild(_overallBar);
 
@@ -220,7 +237,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             pointsPanel.AddChild(pointsLabel);
             _pointsValue = new Label
             {
-                Text = "2,380",
+                Text = "0",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 15f),
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Far,
@@ -299,16 +316,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _tree.AddChild(_treeHeadHint);
 
             string[] catNames = { "江湖历练", "武学修为", "装备收集", "生活技艺", "门派贡献", "特殊成就" };
-            string[] catCounts = { "45/120", "32/85", "28/90", "56/110", "41/75", "36/40" };
-            float[] catProgs = { 0.38f, 0.38f, 0.31f, 0.51f, 0.55f, 0.90f };
+            // 成就数据未接入服务端：分类进度与计数一律归零（原来写死 45/120、进度条 38% 等）
+            string[] catCounts = { "0/0", "0/0", "0/0", "0/0", "0/0", "0/0" };
+            float[] catProgs = { 0f, 0f, 0f, 0f, 0f, 0f };
             _catItems = new CategoryItem[6];
+            float catY = 40f;
             for (int i = 0; i < 6; i++)
             {
                 bool isFirst = i == 0;
                 var item = new CategoryItem
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(8f, 40f + i * 60f),
+                    Location = new Float2(8f, catY),
                     Size = new Float2(TreeWidth - 16f, 56f),
                     CatName = catNames[i],
                     CatCount = catCounts[i],
@@ -317,13 +336,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 };
                 if (isFirst)
                 {
-                    item.AddSubItem("战斗", "12/24");
-                    item.AddSubItem("探索", "18/40");
-                    item.AddSubItem("社交", "15/56");
+                    item.AddSubItem("战斗", "0/0");
+                    item.AddSubItem("探索", "0/0");
+                    item.AddSubItem("社交", "0/0");
                 }
                 item.Selected += OnCategorySelected;
                 _catItems[i] = item;
                 _tree.AddChild(item);
+                // 展开的分类会多出三行子项（每行 22px），后续分类要整体下移，否则叠在子项上。
+                catY += isFirst ? 60f + 66f : 60f;
             }
 
             _treeFoot = new ContainerControl
@@ -356,7 +377,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             footLeft.AddChild(footLbl1);
             var footVal1 = new Label
             {
-                Text = "+7",
+                // 没有"本月新增"数据源，不摆设计稿的 +7；用 ASCII 占位避开小字号缺"——"字形
+                Text = "--",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 TextColor = InkWashTheme.JadePrimary,
                 HorizontalAlignment = TextAlignment.Near,
@@ -402,7 +424,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             footRight.AddChild(footLbl2);
             var footVal2 = new Label
             {
-                Text = "嗜血修罗",
+                // 没有成就服务：没有"最近解锁"这回事，不摆设计稿里的成就名
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 TextColor = InkWashTheme.TextSecondary,
                 HorizontalAlignment = TextAlignment.Near,
@@ -418,8 +441,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             AddChild(_tree);
         }
 
+        /// <summary>
+        /// 左侧分类点击：成就目录没有按分类的数据（全部卡片都是"江湖历练 · 战斗"），
+        /// 所以这里只把面包屑切到所选分类，不假装过滤。
+        /// </summary>
         private void OnCategorySelected(string name)
         {
+            if (string.IsNullOrEmpty(name) || _breadcrumb == null) return;
+            _breadcrumb.Text = $"江湖历练  ◆  {name}";
         }
 
         private void BuildGridSection()
@@ -442,7 +471,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             _breadcrumb = new Label
             {
-                Text = "江湖历练  ▸  战斗  12/24",
+                Text = "江湖历练  ◆  战斗",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.TextTertiary,
                 HorizontalAlignment = TextAlignment.Near,
@@ -455,30 +484,22 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _gridHead.AddChild(_breadcrumb);
 
             string[] chipLabels = { "全部", "已解锁", "进行中", "未解锁" };
-            _filterChips = new InkButton[4];
-            float chipX = 280f;
-            for (int i = 0; i < 4; i++)
+            _filterBar = new InkFilterBar(chipLabels)
             {
-                var chip = new InkButton
-                {
-                    Variant = InkButtonVariant.Ghost,
-                    ButtonSize = InkButtonSize.Sm,
-                    Text = chipLabels[i],
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(chipX + i * 72f, 8f),
-                    Size = new Float2(64f, 28f),
-                };
-                chip.ButtonClicked += OnChipClicked;
-                _filterChips[i] = chip;
-                _gridHead.AddChild(chip);
-            }
-            _filterChips[0].BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f);
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(280f, 8f),
+                Size = new Float2(280f, 28f),
+            };
+            _filterBar.SelectedChanged += ApplyStateFilter;
+            _gridHead.AddChild(_filterBar);
 
             _gridSection.AddChild(_gridHead);
 
             _gridScroll = new Panel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
+                // 卡片网格必须落在 44 高的筛选条下方；不设 Location 时卡片从 y=0 画起，首行会被筛选条压住。
+                Location = new Float2(0f, 44f),
                 Size = new Float2(600f, 556f),
                 BackgroundColor = Color.Transparent,
                 ClipChildren = false,
@@ -492,20 +513,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             string[] cardDescs = {
                 "完成你的第一场战斗", "累计胜利一百场战斗", "击败十大门派掌门，问鼎武林", "单场战斗击杀五十名敌人",
-                "??????????", "造成十万点单次伤害", "累计格挡一千次攻击", "??????????",
-                "参与五十场帮派战役", "击败五位世界首领", "??????????", "??????????"
+                "暂无描述", "造成十万点单次伤害", "累计格挡一千次攻击", "暂无描述",
+                "参与五十场帮派战役", "击败五位世界首领", "暂无描述", "暂无描述"
             };
             InkWashTheme.InkQuality[] qualities = {
                 InkWashTheme.InkQuality.Common, InkWashTheme.InkQuality.Epic, InkWashTheme.InkQuality.Legendary, InkWashTheme.InkQuality.Rare,
                 InkWashTheme.InkQuality.Common, InkWashTheme.InkQuality.Rare, InkWashTheme.InkQuality.Uncommon, InkWashTheme.InkQuality.Common,
                 InkWashTheme.InkQuality.Uncommon, InkWashTheme.InkQuality.Epic, InkWashTheme.InkQuality.Legendary, InkWashTheme.InkQuality.Legendary,
             };
-            int[] states = { 0, 0, 1, 0, 2, 1, 0, 2, 0, 1, 2, 2 };
-            float[] progs = { 1f, 1f, 0.70f, 1f, 0f, 0.73f, 1f, 0f, 1f, 0.80f, 0f, 0f };
+            int[] states = { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
+            float[] progs = { 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f };
+            // 没有成就进度数据：不再显示假的解锁日期/百分比
             string[] progTexts = {
-                "2025.03.12", "2025.05.08", "7 / 10", "2025.06.21",
-                "剑法等级达到 80 级", "73%", "2025.04.15", "单次连击达到 999",
-                "2025.07.02", "4 / 5", "枪法等级达到 90 级", "隐藏成就 · 条件未知"
+                "尚未解锁", "尚未解锁", "尚未解锁", "尚未解锁",
+                "尚未解锁", "尚未解锁", "尚未解锁", "尚未解锁",
+                "尚未解锁", "尚未解锁", "尚未解锁", "隐藏成就 · 条件未知"
             };
 
             for (int i = 0; i < 12; i++)
@@ -524,30 +546,77 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     CardProgress = progs[i],
                     CardProgressText = progTexts[i],
                     IsHidden = (i == 11),
-                    IsSelected = (i == 2),
+                    IsSelected = false,
                 };
                 card.Clicked += OnCardClicked;
                 _cards[i] = card;
                 _gridScroll.AddChild(card);
             }
 
+            _gridEmptyHint = new Label
+            {
+                Text = "暂无符合条件的成就",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(20f, 40f),
+                Size = new Float2(600f - 40f, 24f),
+                BackgroundColor = Color.Transparent,
+                Visible = false,
+            };
+            _gridScroll.AddChild(_gridEmptyHint);
+
             _gridSection.AddChild(_gridScroll);
             AddChild(_gridSection);
         }
 
-        private void OnChipClicked(Button btn)
+        /// <summary>
+        /// 按状态筛选卡片：0=全部、1=已解锁、2=进行中、3=未解锁（与卡片 <c>CardState</c> 0/1/2 对应）。
+        /// 没有命中时显示一行空态提示，别让网格整片空白。
+        /// </summary>
+        private void ApplyStateFilter(int chipIndex)
         {
-            for (int i = 0; i < _filterChips.Length; i++)
+            if (_cards == null) return;
+
+            int visible = 0;
+            for (int i = 0; i < _cards.Length; i++)
             {
-                bool active = _filterChips[i] == btn;
-                _filterChips[i].BackgroundColor = active
-                    ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f)
-                    : Color.Transparent;
+                var card = _cards[i];
+                if (card == null) continue;
+
+                bool show = chipIndex <= 0 || card.CardState == chipIndex - 1;
+                card.Visible = show;
+                if (show) visible++;
             }
+
+            if (_gridEmptyHint == null) return;
+            _gridEmptyHint.Visible = visible == 0;
         }
 
+        /// <summary>
+        /// 卡片点击：把所选成就的名称/状态/描述写进右侧详情，并切换选中态。
+        /// 成就服务尚未接入，进度一律沿用卡片上的「尚未解锁 / 隐藏成就」文案。
+        /// </summary>
         private void OnCardClicked(string name)
         {
+            if (_cards == null || string.IsNullOrEmpty(name)) return;
+
+            AchievementCard picked = null;
+            foreach (var card in _cards)
+            {
+                if (card == null) continue;
+                bool hit = card.CardName == name;
+                card.IsSelected = hit;
+                if (hit) picked = card;
+            }
+            if (picked == null) return;
+
+            if (_detailName != null) _detailName.Text = picked.CardName;
+            if (_detailStatus != null) _detailStatus.Text = picked.CardProgressText;
+            if (_detailDesc != null)
+                _detailDesc.Text = string.IsNullOrEmpty(picked.CardDesc) ? "暂无描述" : picked.CardDesc;
         }
 
         private void BuildDetail()
@@ -622,7 +691,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             heroMeta.AddChild(_detailName);
             _detailPoints = new Label
             {
-                Text = "成就点 +120",
+                // 成就点没有数据源；选中成就后才由绑定写入，初值留空而不是写死 +120
+                Text = string.Empty,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Near,
@@ -850,7 +920,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         private void OnClaimClicked(Button source)
         {
             EmitGoldAtButton(source);
-            NavigationRequested?.Invoke(InkPageDomIds.NavAchievement);
+            // 成就奖励没有服务端领取接口：原来只是"重新打开本页"，点了等于没反应
+            HundunWorld.Game.UI.UIHelper.ShowToast("成就奖励领取尚未接入服务端",
+                HundunWorld.Game.UI.ToastType.Info);
         }
 
         private void EmitGoldAtButton(Control button)
@@ -907,11 +979,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 _gridScroll.Size = new Float2(listW, gridH - 44f);
 
                 _breadcrumb.Size = new Float2(listW * 0.5f, 44f);
-                float chipStart = listW - 4f * 72f - 20f;
-                if (chipStart < listW * 0.5f) chipStart = listW * 0.5f;
-                for (int i = 0; i < _filterChips.Length; i++)
+                if (_filterBar != null)
                 {
-                    _filterChips[i].Location = new Float2(chipStart + i * 72f, 8f);
+                    float filterW = Mathf.Min(360f, Mathf.Max(240f, listW * 0.45f));
+                    _filterBar.Location = new Float2(Mathf.Max(listW * 0.5f, listW - filterW - 20f), 8f);
+                    _filterBar.Size = new Float2(filterW, 28f);
                 }
             }
         }
@@ -1107,11 +1179,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             public string CardName
             {
+                get => _nameLabel?.Text ?? string.Empty;
                 set { if (_nameLabel != null) _nameLabel.Text = value; }
             }
 
             public string CardDesc
             {
+                get => _descLabel?.Text ?? string.Empty;
                 set { if (_descLabel != null) _descLabel.Text = value; }
             }
 
@@ -1142,6 +1216,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
 
             public string CardProgressText
             {
+                get => _footLabel?.Text ?? string.Empty;
                 set { if (_footLabel != null) _footLabel.Text = value; }
             }
 
@@ -1270,7 +1345,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                         _footLabel.TextColor = InkWashTheme.TextTertiary;
                         _nameLabel.TextColor = InkWashTheme.TextDefault;
                         _descLabel.TextColor = InkWashTheme.TextTertiary;
-                        _statusIcon.Text = "✔";
+                        _statusIcon.Text = "√";
                         _statusIcon.TextColor = InkWashTheme.JadePrimary;
                         _statusIcon.Visible = true;
                         break;
@@ -1286,7 +1361,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                         _footLabel.TextColor = InkWashTheme.TextTertiary;
                         _nameLabel.TextColor = InkWashTheme.TextTertiary;
                         _descLabel.TextColor = InkWashTheme.TextDisabled;
-                        _statusIcon.Text = "🔒";
+                        _statusIcon.Text = "锁";
                         _statusIcon.TextColor = InkWashTheme.TextTertiary;
                         _statusIcon.Visible = true;
                         break;
@@ -1362,7 +1437,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     _done = value;
                     if (_iconLabel != null)
                     {
-                        _iconLabel.Text = value ? "✔" : "○";
+                        _iconLabel.Text = value ? "√" : "○";
                         _iconLabel.TextColor = value ? InkWashTheme.JadePrimary : InkWashTheme.TextTertiary;
                     }
                     if (_textLabel != null)

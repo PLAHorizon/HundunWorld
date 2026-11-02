@@ -35,7 +35,7 @@ namespace Horizon.Entities
                     .AddJsonFile("repository.json")
                     .Build();
 
-                optionsBuilder.UseSqlServer(config.GetConnectionString("GameSqlServer"));
+                optionsBuilder.UseSqlServer(DesignTimeConnection.Expand(config.GetConnectionString("GameSqlServer")));
             }
             // 运行时通过依赖注入接收配置，不调用base.OnConfiguring
         }
@@ -48,7 +48,7 @@ namespace Horizon.Entities
                 .Build();
             var optionsBuilder = new DbContextOptionsBuilder<GameEntityContextDes>();
 
-            optionsBuilder.UseSqlServer(config.GetConnectionString("GameSqlServer")).UseLoggerFactory(_loggerFactory).UseRootApplicationServiceProvider();
+            optionsBuilder.UseSqlServer(DesignTimeConnection.Expand(config.GetConnectionString("GameSqlServer"))).UseLoggerFactory(_loggerFactory).UseRootApplicationServiceProvider();
             return FastActivator.Create<GameEntityContextDes>(isnewInstance: true, args: optionsBuilder.Options);
         }
         #endregion
@@ -73,10 +73,65 @@ namespace Horizon.Entities
         public DbSet<ItemEntity> Items { get; set; }
         public DbSet<ItemAttributeEntity> ItemAttributes { get; set; }
         public DbSet<ItemTemplateEntity> ItemTemplates { get; set; }
+
+        // 物品编辑器（设计文档 docs/ITEM_EDITOR_PLUGIN_DESIGN.md §3）。十张从表同样必须在**两个上下文**里都登记：
+        // GameEntityContextDes 只服务设计期建表，漏一处会让迁移生成不出表而运行期只在读的时候才炸。
+        public DbSet<ItemStatTemplateEntity> ItemStats { get; set; }
+        public DbSet<ItemDamageTemplateEntity> ItemDamages { get; set; }
+        public DbSet<ItemSpellTemplateEntity> ItemSpells { get; set; }
+        public DbSet<ItemSocketTemplateEntity> ItemSockets { get; set; }
+        public DbSet<ItemRandomAffixEntity> ItemAffixes { get; set; }
+        public DbSet<ItemRandomAffixStatEntity> ItemAffixStats { get; set; }
+        public DbSet<ItemSetEntity> ItemSets { get; set; }
+        public DbSet<ItemSetBonusEntity> ItemSetBonuses { get; set; }
+        public DbSet<ItemSetBonusStatEntity> ItemSetBonusStats { get; set; }
+        public DbSet<ItemSourceEntity> ItemSources { get; set; }
+        public DbSet<ItemLocalizationEntity> ItemLocalizations { get; set; }
+        public DbSet<QuestTemplateEntity> QuestTemplates { get; set; }
+
+        // 怪物编辑器（设计文档 §3）。八张表必须在**两个上下文**里都登记：
+        // GameEntityContextDes 只服务设计期建表，漏一处会让迁移生成不出表而运行期只在读的时候才炸。
+        public DbSet<MonsterTemplateEntity> MonsterTemplates { get; set; }
+        public DbSet<MonsterBehaviorEntity> MonsterBehaviors { get; set; }
+        public DbSet<MonsterSkillMountEntity> MonsterSkillMounts { get; set; }
+        public DbSet<MonsterPatrolRouteEntity> MonsterPatrolRoutes { get; set; }
+        public DbSet<MonsterPatrolPointEntity> MonsterPatrolPoints { get; set; }
+        public DbSet<MonsterSpawnPointEntity> MonsterSpawnPoints { get; set; }
+        public DbSet<MonsterLootBindingEntity> MonsterLootBindings { get; set; }
+        public DbSet<MonsterDropEntryEntity> MonsterDropEntries { get; set; }
+
+        // 宠物编辑器（设计文档 docs/PET_EDITOR_PLUGIN_DESIGN.md §4）。十一张表同样必须在**两个上下文**里都登记：
+        // GameEntityContextDes 只服务设计期建表，漏一处会让迁移生成不出表而运行期只在读的时候才炸。
+        public DbSet<PetTemplateEntity> PetTemplates { get; set; }
+        public DbSet<PetStatBandEntity> PetStatBands { get; set; }
+        public DbSet<PetSkillRuleEntity> PetSkillRules { get; set; }
+        public DbSet<PetSkillPoolEntity> PetSkillPools { get; set; }
+        public DbSet<PetBehaviorEntity> PetBehaviors { get; set; }
+        public DbSet<PetEquipRuleEntity> PetEquipRules { get; set; }
+        public DbSet<PetAssistRuleEntity> PetAssistRules { get; set; }
+        public DbSet<PetMergeRuleEntity> PetMergeRules { get; set; }
+        public DbSet<PetMutationRuleEntity> PetMutationRules { get; set; }
+        public DbSet<PetInstanceEntity> PetInstances { get; set; }
+        public DbSet<PetInstanceEventEntity> PetInstanceEvents { get; set; }
+
+        // NPC 编辑器（设计文档 §3）。十二张表同样必须在**两个上下文**里都登记，理由与上面八张一致。
+        public DbSet<NpcTemplateEntity> NpcTemplates { get; set; }
+        public DbSet<NpcSpawnPointEntity> NpcSpawnPoints { get; set; }
+        public DbSet<NpcVendorEntryEntity> NpcVendorEntries { get; set; }
+        public DbSet<NpcTrainerEntryEntity> NpcTrainerEntries { get; set; }
+        public DbSet<NpcCraftRecipeEntity> NpcCraftRecipes { get; set; }
+        public DbSet<NpcRecipeTaughtEntity> NpcRecipeTaught { get; set; }
+        public DbSet<NpcGossipOptionEntity> NpcGossipOptions { get; set; }
+        public DbSet<NpcQuestLinkEntity> NpcQuestLinks { get; set; }
+        public DbSet<NpcWaypointPathEntity> NpcWaypointPaths { get; set; }
+        public DbSet<NpcWaypointNodeEntity> NpcWaypointNodes { get; set; }
+        public DbSet<NpcScheduleSlotEntity> NpcScheduleSlots { get; set; }
         public DbSet<ItemGemEntity> ItemGems { get; set; }
         public DbSet<MaterialEntity> Materials { get; set; }
         public DbSet<MaterialSynthesisLogEntity> MaterialSynthesisLogs { get; set; }
         public DbSet<CurrencyEntity> Currencies { get; set; }
+        public DbSet<EconomyLedgerEntity> EconomyLedgers { get; set; }
+        public DbSet<EconomySnapshotEntity> EconomySnapshots { get; set; }
         public DbSet<SkillTemplateEntity> SkillTemplates { get; set; }
         public DbSet<CharacterSkillEntity> CharacterSkills { get; set; }
         public DbSet<SkillAdvancePathEntity> SkillAdvancePaths { get; set; }
@@ -105,6 +160,8 @@ namespace Horizon.Entities
         // Cross Server System
         public DbSet<Horizon.Model.CrossServer.CrossServerMatch> CrossServerMatches { get; set; }
         public DbSet<Horizon.Model.CrossServer.CrossServerPlayer> CrossServerPlayers { get; set; }
+        // GM 脚本化世界生成授权（设计时间上下文，供 migrations script 生成建表语句）
+        public DbSet<Horizon.Model.GameModel.GmScriptGrantEntity> GmScriptGrants { get; set; }
 
         // World Sync
         public DbSet<ChunkStateEntity> ChunkStates { get; set; }
@@ -144,7 +201,7 @@ namespace Horizon.Entities
                 .Build();
             var optionsBuilder = new DbContextOptionsBuilder<GameEntityContext>();
 
-            optionsBuilder.UseSqlServer(config.GetConnectionString("GameSqlServer")).UseLoggerFactory(_loggerFactory).UseRootApplicationServiceProvider();
+            optionsBuilder.UseSqlServer(DesignTimeConnection.Expand(config.GetConnectionString("GameSqlServer"))).UseLoggerFactory(_loggerFactory).UseRootApplicationServiceProvider();
             return FastActivator.Create<GameEntityContext>(isnewInstance: true, args: optionsBuilder.Options);
         }
         #endregion
@@ -169,10 +226,65 @@ namespace Horizon.Entities
         public DbSet<ItemEntity> Items { get; set; }
         public DbSet<ItemAttributeEntity> ItemAttributes { get; set; }
         public DbSet<ItemTemplateEntity> ItemTemplates { get; set; }
+
+        // 物品编辑器（设计文档 docs/ITEM_EDITOR_PLUGIN_DESIGN.md §3）。十张从表同样必须在**两个上下文**里都登记：
+        // GameEntityContextDes 只服务设计期建表，漏一处会让迁移生成不出表而运行期只在读的时候才炸。
+        public DbSet<ItemStatTemplateEntity> ItemStats { get; set; }
+        public DbSet<ItemDamageTemplateEntity> ItemDamages { get; set; }
+        public DbSet<ItemSpellTemplateEntity> ItemSpells { get; set; }
+        public DbSet<ItemSocketTemplateEntity> ItemSockets { get; set; }
+        public DbSet<ItemRandomAffixEntity> ItemAffixes { get; set; }
+        public DbSet<ItemRandomAffixStatEntity> ItemAffixStats { get; set; }
+        public DbSet<ItemSetEntity> ItemSets { get; set; }
+        public DbSet<ItemSetBonusEntity> ItemSetBonuses { get; set; }
+        public DbSet<ItemSetBonusStatEntity> ItemSetBonusStats { get; set; }
+        public DbSet<ItemSourceEntity> ItemSources { get; set; }
+        public DbSet<ItemLocalizationEntity> ItemLocalizations { get; set; }
+        public DbSet<QuestTemplateEntity> QuestTemplates { get; set; }
+
+        // 怪物编辑器（设计文档 §3）。八张表必须在**两个上下文**里都登记：
+        // GameEntityContextDes 只服务设计期建表，漏一处会让迁移生成不出表而运行期只在读的时候才炸。
+        public DbSet<MonsterTemplateEntity> MonsterTemplates { get; set; }
+        public DbSet<MonsterBehaviorEntity> MonsterBehaviors { get; set; }
+        public DbSet<MonsterSkillMountEntity> MonsterSkillMounts { get; set; }
+        public DbSet<MonsterPatrolRouteEntity> MonsterPatrolRoutes { get; set; }
+        public DbSet<MonsterPatrolPointEntity> MonsterPatrolPoints { get; set; }
+        public DbSet<MonsterSpawnPointEntity> MonsterSpawnPoints { get; set; }
+        public DbSet<MonsterLootBindingEntity> MonsterLootBindings { get; set; }
+        public DbSet<MonsterDropEntryEntity> MonsterDropEntries { get; set; }
+
+        // 宠物编辑器（设计文档 docs/PET_EDITOR_PLUGIN_DESIGN.md §4）。十一张表同样必须在**两个上下文**里都登记：
+        // GameEntityContextDes 只服务设计期建表，漏一处会让迁移生成不出表而运行期只在读的时候才炸。
+        public DbSet<PetTemplateEntity> PetTemplates { get; set; }
+        public DbSet<PetStatBandEntity> PetStatBands { get; set; }
+        public DbSet<PetSkillRuleEntity> PetSkillRules { get; set; }
+        public DbSet<PetSkillPoolEntity> PetSkillPools { get; set; }
+        public DbSet<PetBehaviorEntity> PetBehaviors { get; set; }
+        public DbSet<PetEquipRuleEntity> PetEquipRules { get; set; }
+        public DbSet<PetAssistRuleEntity> PetAssistRules { get; set; }
+        public DbSet<PetMergeRuleEntity> PetMergeRules { get; set; }
+        public DbSet<PetMutationRuleEntity> PetMutationRules { get; set; }
+        public DbSet<PetInstanceEntity> PetInstances { get; set; }
+        public DbSet<PetInstanceEventEntity> PetInstanceEvents { get; set; }
+
+        // NPC 编辑器（设计文档 §3）。十二张表同样必须在**两个上下文**里都登记，理由与上面八张一致。
+        public DbSet<NpcTemplateEntity> NpcTemplates { get; set; }
+        public DbSet<NpcSpawnPointEntity> NpcSpawnPoints { get; set; }
+        public DbSet<NpcVendorEntryEntity> NpcVendorEntries { get; set; }
+        public DbSet<NpcTrainerEntryEntity> NpcTrainerEntries { get; set; }
+        public DbSet<NpcCraftRecipeEntity> NpcCraftRecipes { get; set; }
+        public DbSet<NpcRecipeTaughtEntity> NpcRecipeTaught { get; set; }
+        public DbSet<NpcGossipOptionEntity> NpcGossipOptions { get; set; }
+        public DbSet<NpcQuestLinkEntity> NpcQuestLinks { get; set; }
+        public DbSet<NpcWaypointPathEntity> NpcWaypointPaths { get; set; }
+        public DbSet<NpcWaypointNodeEntity> NpcWaypointNodes { get; set; }
+        public DbSet<NpcScheduleSlotEntity> NpcScheduleSlots { get; set; }
         public DbSet<ItemGemEntity> ItemGems { get; set; }
         public DbSet<MaterialEntity> Materials { get; set; }
         public DbSet<MaterialSynthesisLogEntity> MaterialSynthesisLogs { get; set; }
         public DbSet<CurrencyEntity> Currencies { get; set; }
+        public DbSet<EconomyLedgerEntity> EconomyLedgers { get; set; }
+        public DbSet<EconomySnapshotEntity> EconomySnapshots { get; set; }
         public DbSet<SkillTemplateEntity> SkillTemplates { get; set; }
         public DbSet<CharacterSkillEntity> CharacterSkills { get; set; }
         public DbSet<SkillAdvancePathEntity> SkillAdvancePaths { get; set; }
@@ -201,6 +313,8 @@ namespace Horizon.Entities
         // Cross Server System
         public DbSet<Horizon.Model.CrossServer.CrossServerMatch> CrossServerMatches { get; set; }
         public DbSet<Horizon.Model.CrossServer.CrossServerPlayer> CrossServerPlayers { get; set; }
+        // GM 脚本化世界生成授权（设计方案 §4.4：SQLServer 权威层）
+        public DbSet<Horizon.Model.GameModel.GmScriptGrantEntity> GmScriptGrants { get; set; }
 
         // World Sync
         public DbSet<ChunkStateEntity> ChunkStates { get; set; }

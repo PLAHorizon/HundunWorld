@@ -52,7 +52,13 @@ namespace HundunWorld.Game.Services
         /// <summary>一次穿戴/卸下/使用操作的服务端回执（成功时 Changed 随后也会触发）。</summary>
         public event Action<ItemOperationResult> OperationFinished;
 
-        public int Capacity { get; private set; } = 50;
+        /// <summary>
+        /// 基础背包格数：108 格（参考魔兽世界"基础背包 + 扩展背包"的口径）。
+        /// 服务端快照里的容量会覆盖它（扩展背包/扩容道具由此生效），此处只是未收到快照前的默认值。
+        /// </summary>
+        public const int BaseCapacity = 108;
+
+        public int Capacity { get; private set; } = BaseCapacity;
 
         /// <summary>是否已收到过服务端权威背包（false 时 UI 应保持占位而不是显示"空背包"）。</summary>
         public bool HasServerData { get; private set; }
@@ -124,13 +130,16 @@ namespace HundunWorld.Game.Services
         // 请求发送（UI 按钮入口）
         // ===================================================================
 
-        /// <summary>向服务端重新拉取权威背包 + 装备清单。</summary>
+        /// <summary>向服务端重新拉取权威背包 + 装备清单 + 权威战斗画像。</summary>
         public void RequestFullRefresh()
         {
             var characterId = CurrentCharacterId;
             if (characterId == 0UL) return;
             _ = RoleInventorySyncHandler.RequestAsync(characterId);
             _ = RoleEquipmentSyncHandler.RequestAsync(characterId);
+            // 穿戴会改五行三行与通用攻防基值，画像必须跟着重取，否则面板停在换装前的权威值上。
+            _ = HundunWorld.Game.Network.MessageHandlers.CharacterAttributeRefreshHandler
+                .RequestAsync(characterId, HundunWorld.Game.Network.MessageHandlers.CharacterAttributeRefreshHandler.ReasonEquipment);
         }
 
         /// <summary>使用物品（服务端扣数）。返回请求是否发出。</summary>

@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.Ink.Components;
@@ -27,7 +27,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
     /// （由 <see cref="InkPageShell"/> 全局承载），仅添加 splash 装饰。
     /// 通过 <see cref="NavigationRequested"/> 事件向 <see cref="InkPageRouter"/> 暴露导航请求。
     /// </summary>
-    public class CombatHudPage : ContainerControl, IInkPage
+    public class CombatHudPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===================================================================
         // 布局常量
@@ -1141,7 +1141,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <para>
         /// 第一行（<see cref="_sysNav"/>，760x36）：9 个主导航按钮 + 分隔符 + 传统模式切换按钮，按 4 大子系统分组：
         /// <list type="bullet">
-        ///   <item>角色与背包：角色(nav-character-panel) / 武学(nav-skill-panel) / 背包(nav-inventory)</item>
+        ///   <item>角色与背包：角色(nav-character-panel) / 武学(nav-skill-tree) / 背包(nav-inventory)</item>
         ///   <item>任务与技能：任务(nav-quests) / 地图(nav-world-map) / 罗盘(nav-compass)</item>
         ///   <item>社交与商城：社交(nav-friends) / 商城(nav-shop)</item>
         ///   <item>战斗模式切换：传统模式(toggle-traditional)，金色强调背景</item>
@@ -1170,7 +1170,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 (label: "任务", domId: InkPageDomIds.NavQuests),
                 (label: "闲趣", domId: InkPageDomIds.NavCasualMode),
                 (label: "异闻", domId: InkPageDomIds.PopupBestiarySide),
-                (label: "成就", domId: InkPageDomIds.RewardAchievement),
+                // 「成就」应打开成就列表；RewardAchievement 是"成就解锁"庆祝页，
+                // 里头是设计稿写死的「初心者称号 / 已解锁传送功能」，点进来就是在展示假成就。
+                (label: "成就", domId: InkPageDomIds.NavAchievement),
                 (label: "留影", domId: InkPageDomIds.NavPhotoMode),
                 (label: "设置", domId: InkPageDomIds.NavSettings),
             };

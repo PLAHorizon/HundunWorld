@@ -3,6 +3,7 @@ using FlaxEngine.GUI;
 using Game.Character.Attributes;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
+using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
 {
@@ -12,8 +13,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
     /// （左 260 分类列表 / 中 卡片网格 / 右 300 队伍配置 + 进入按钮）。
     /// 严格遵循水墨主题 Token，禁止硬编码色值。
     /// </summary>
-    public class DungeonEntryPage : ContainerControl, IInkPage
+    public class DungeonEntryPage : ContainerControl, IInkPage, IInkNavigationSource
     {
+        /// <summary>左侧分类条目（互斥选中需要整体复位）。</summary>
+        private readonly List<CatItem> _catItems = new List<CatItem>();
+
         private const float PanelW = 1400f;
         private const float PanelH = 900f;
         private const float HeaderH = 80f;
@@ -46,7 +50,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
             {
                 AnchorPreset = AnchorPresets.StretchAll;
                 Offsets = Margin.Zero;
-                BackgroundColor = InkWashTheme.Scrim;
+                // 全屏铺底由外壳的墨底背景层统一提供（本页为沉浸式全屏页），页面不再自绘。
+                BackgroundColor = Color.Transparent;
                 ClipChildren = false;
                 AutoFocus = false;
 
@@ -83,7 +88,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
             _mainPanel.AddChild(header);
 
             // 标题行
-            header.AddChild(MakeLabel("⛰", 24f, 14f, 26f, 26f, InkWashTheme.GoldPrimary, 20f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+            header.AddChild(MakeLabel("山", 24f, 14f, 26f, 26f, InkWashTheme.GoldPrimary, 20f, InkWashTheme.FontRole.Body, TextAlignment.Center));
             header.AddChild(MakeLabel("江湖秘境", 58f, 14f, 140f, 28f, InkWashTheme.GoldPrimary, 22f, InkWashTheme.FontRole.Display, TextAlignment.Near));
             header.AddChild(MakeLabel("DUNDEON ENTRY", 202f, 22f, 110f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
@@ -97,26 +102,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                 Location = new Float2(PanelW - 24f - 84f, 14f),
                 Size = new Float2(84f, 28f),
             };
-            backBtn.ButtonClicked += (b) => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            backBtn.ButtonClicked += (b) => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
             header.AddChild(backBtn);
-            header.AddChild(MakeLabel("辰时三刻", PanelW - 24f - 84f - 16f - 80f, 17f, 80f, 22f,
+            header.AddChild(MakeLabel("—", PanelW - 24f - 84f - 16f - 80f, 17f, 80f, 22f,
                 InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Number, TextAlignment.Far));
-            header.AddChild(MakeLabel("◷", PanelW - 24f - 84f - 16f - 80f - 20f, 17f, 16f, 22f,
+            header.AddChild(MakeLabel("◆", PanelW - 24f - 84f - 16f - 80f - 20f, 17f, 16f, 22f,
                 InkWashTheme.TextTertiary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Center));
 
             // 副信息栏：总战力 / 通关数 / 秘境积分
             float sy = 50f;
-            header.AddChild(MakeLabel("⚔", 24f, sy + 1f, 16f, 18f, InkWashTheme.GoldPrimary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+            header.AddChild(MakeLabel("◆", 24f, sy + 1f, 16f, 18f, InkWashTheme.GoldPrimary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Center));
             header.AddChild(MakeLabel("总战力", 44f, sy + 2f, 44f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            header.AddChild(MakeLabel("32,450", 92f, sy, 60f, 20f, InkWashTheme.GoldBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+            header.AddChild(MakeLabel("—", 92f, sy, 60f, 20f, InkWashTheme.GoldBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
             header.AddChild(VLine(160f, sy + 3f, 14f, InkWashTheme.BorderGold));
-            header.AddChild(MakeLabel("★", 176f, sy + 1f, 16f, 18f, InkWashTheme.JadePrimary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+            header.AddChild(MakeLabel("◆", 176f, sy + 1f, 16f, 18f, InkWashTheme.JadePrimary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Center));
             header.AddChild(MakeLabel("通关数", 196f, sy + 2f, 44f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            header.AddChild(MakeLabel("47", 244f, sy, 34f, 20f, InkWashTheme.JadeBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+            header.AddChild(MakeLabel("0", 244f, sy, 34f, 20f, InkWashTheme.JadeBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
             header.AddChild(VLine(286f, sy + 3f, 14f, InkWashTheme.BorderGold));
             header.AddChild(MakeLabel("◆", 302f, sy + 1f, 16f, 18f, InkWashTheme.BloodPrimary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Center));
             header.AddChild(MakeLabel("秘境积分", 322f, sy + 2f, 56f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            header.AddChild(MakeLabel("1,280", 382f, sy, 52f, 20f, InkWashTheme.BloodBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+            header.AddChild(MakeLabel("—", 382f, sy, 52f, 20f, InkWashTheme.BloodBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
 
             // 底部金边
             header.AddChild(HLine(0f, HeaderH - 1f, PanelW, InkWashTheme.BorderGold));
@@ -163,14 +168,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
             left.AddChild(MakeLabel("≡", LeftW - 30f, 12f, 14f, 20f, InkWashTheme.TextTertiary, 14f, InkWashTheme.FontRole.Body, TextAlignment.Center));
 
             string[] groupNames = { "单人秘境", "组队秘境", "门派秘境", "限时活动" };
-            string[] groupIcons = { "◉", "◎", "▣", "✦" };
+            string[] groupIcons = { "◎", "◎", "▣", "◆" };
             string[] groupCounts = { "3", "3", "1", "2" };
             string[][] items =
             {
-                new[] { "修行洞府|普通|日 3/3", "试炼塔|困难|日 2/5", "心魔幻境|噩梦|周 1/3" },
-                new[] { "幽冥洞|困难|日 2/5", "天劫阵|噩梦|日 1/3", "龙渊秘境|地狱|周 0/2" },
-                new[] { "太虚阁|噩梦|周 1/2" },
-                new[] { "古墓探秘|双倍|剩2时", "中秋灯会|节日|剩3日" },
+                new[] { "修行洞府|普通|日 —/3", "试炼塔|困难|日 —/5", "心魔幻境|噩梦|周 —/3" },
+                new[] { "幽冥洞|困难|日 —/5", "天劫阵|噩梦|日 —/3", "龙渊秘境|地狱|周 —/2" },
+                new[] { "太虚阁|噩梦|周 —/2" },
+                new[] { "古墓探秘|双倍|—", "中秋灯会|节日|—" },
             };
 
             float gy = 40f;
@@ -197,7 +202,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                         Location = new Float2(8f, iy),
                         Size = new Float2(LeftW - 16f, 48f),
                     };
-                    ci.Clicked += () => EmitGoldAtControl(ci);
+                    // 原来点了只有金色粒子：分类列表看起来可点却毫无反馈。改成互斥选中。
+                    ci.Clicked += () =>
+                    {
+                        EmitGoldAtControl(ci);
+                        foreach (var other in _catItems) if (other != null) other.Active = false;
+                        ci.Active = true;
+                    };
+                    _catItems.Add(ci);
                     left.AddChild(ci);
                     iy += 50f;
                 }
@@ -225,7 +237,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
             _middle.AddChild(MakeLabel("单人秘境", 20f, 12f, 100f, 20f, InkWashTheme.GoldPrimary, 14f, InkWashTheme.FontRole.Display, TextAlignment.Near));
             _middle.AddChild(MakeLabel("共 3 处秘境", 126f, 14f, 90f, 18f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
-            var filterBtn = new SortBtn("▽ 筛选", false)
+            var filterBtn = new SortBtn("▼ 筛选", false)
             {
                 Location = new Float2(MidW - 20f - 64f - 8f - 92f, 7f),
                 Size = new Float2(64f, 26f),
@@ -241,25 +253,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
 
             // 卡片网格（2 列，gap 16，padding 16 20）
             BuildCard(0, 20f, 52f, "修行洞府", "CULTIVATION CAVE", "普通", InkWashTheme.QualityCommon,
-                "12,000", "~8分钟", "隐于深山的修行之地，内有前辈留下的武学残卷，可助修行者参悟心法奥义。",
+                "—", "~8分钟", "隐于深山的修行之地，内有前辈留下的武学残卷，可助修行者参悟心法奥义。",
                 new[] { "石", "蛇", "灵" }, new[] { "石傀儡", "玄蛇长老", "洞府守灵" },
                 new[] { InkWashTheme.QualityCommon, InkWashTheme.QualityRare, InkWashTheme.QualityRare },
                 "普通", InkWashTheme.QualityCommon, "稀有", InkWashTheme.QualityRare,
-                "今日", "3", "/3", false, false);
+                "今日", "—", "/3", false, false);
 
             BuildCard(1, 20f + CardW + 16f, 52f, "试炼塔", "TRIAL PAGODA", "困难", InkWashTheme.QualityRare,
-                "25,000", "~15分钟", "七层试炼之塔，每层皆有不同考验，登顶者可获心法秘籍与上古遗宝。",
+                "—", "~15分钟", "七层试炼之塔，每层皆有不同考验，登顶者可获心法秘籍与上古遗宝。",
                 new[] { "铁", "影", "塔", "书" }, new[] { "铁掌门人", "幻影剑客", "塔灵", "千面书生" },
                 new[] { InkWashTheme.QualityRare, InkWashTheme.QualityRare, InkWashTheme.QualityEpic, InkWashTheme.QualityEpic },
                 "稀有", InkWashTheme.QualityRare, "史诗", InkWashTheme.QualityEpic,
-                "今日", "2", "/5", true, false);
+                "今日", "—", "/5", true, false);
 
             BuildCard(2, 20f, 52f + CardH + 16f, "心魔幻境", "INNER DEMON", "噩梦", InkWashTheme.QualityEpic,
-                "45,000", "~20分钟", "直面内心深处的魔障，唯有心志坚定者方可破幻而出，超脱凡尘。",
+                "—", "~20分钟", "直面内心深处的魔障，唯有心志坚定者方可破幻而出，超脱凡尘。",
                 new[] { "贪", "嗔", "痴", "相" }, new[] { "贪念之魔", "嗔怒之魔", "痴念之魔", "心魔本相" },
                 new[] { InkWashTheme.QualityEpic, InkWashTheme.QualityEpic, InkWashTheme.QualityEpic, InkWashTheme.QualityLegendary },
                 "史诗", InkWashTheme.QualityEpic, "传说", InkWashTheme.QualityLegendary,
-                "本周", "1", "/3", false, true);
+                "本周", "—", "/3", false, false);
         }
 
         private void BuildCard(int idx, float x, float y, string name, string en, string diffText, Color diffColor,
@@ -294,9 +306,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                 card.AddChild(new ClearedBadge { Location = new Float2(CardW - 10f - 70f, 10f), Size = new Float2(70f, 20f) });
 
             // 属性行
-            card.AddChild(new StatItem("⚡", InkWashTheme.GoldPrimary, "推荐战力", power, InkWashTheme.GoldBright)
+            card.AddChild(new StatItem("◆", InkWashTheme.GoldPrimary, "推荐战力", power, InkWashTheme.GoldBright)
             { Location = new Float2(16f, 73f), Size = new Float2(170f, 18f) });
-            card.AddChild(new StatItem("◷", InkWashTheme.JadePrimary, "通关时间", time, InkWashTheme.JadeBright)
+            card.AddChild(new StatItem("◆", InkWashTheme.JadePrimary, "通关时间", time, InkWashTheme.JadeBright)
             { Location = new Float2(196f, 73f), Size = new Float2(170f, 18f) });
 
             // 描述
@@ -372,7 +384,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
             // 头
             right.AddChild(MakeLabel("队伍配置", 16f, 12f, 150f, 20f, InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Display, TextAlignment.Near));
             var invite = new InviteBtn { Location = new Float2(RightW - 16f - 28f, 6f), Size = new Float2(28f, 28f) };
-            invite.Clicked += () => EmitGoldAtControl(invite);
+            // 邀请队友没有服务端链路：只给提示，不然点了完全没反应
+            invite.Clicked += () =>
+            {
+                EmitGoldAtControl(invite);
+                HundunWorld.Game.UI.UIHelper.ShowToast("组队邀请尚未接入服务端", HundunWorld.Game.UI.ToastType.Info);
+            };
             right.AddChild(invite);
             right.AddChild(HLine(0f, 36f, RightW, InkWashTheme.BorderFaint));
 
@@ -386,28 +403,27 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
             right.AddChild(MakeLabel("试炼塔", 28f, 78f, 160f, 22f, InkWashTheme.GoldPrimary, 16f, InkWashTheme.FontRole.Display, TextAlignment.Near));
 
             // 队伍成员
-            right.AddChild(MakeLabel("▸ 队伍成员", 16f, 116f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            right.AddChild(MakeLabel("1/1", 16f + cw - 40f, 116f, 40f, 16f, InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far));
+            right.AddChild(MakeLabel("◆ 队伍成员", 16f, 116f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            right.AddChild(MakeLabel("—", 16f + cw - 40f, 116f, 40f, 16f, InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far));
             right.AddChild(new DBox(InkWashTheme.BaseTertiary, InkWashTheme.BorderFaint, 8f)
             { Location = new Float2(16f, 138f), Size = new Float2(cw, 48f) });
-            right.AddChild(new CircleGlyph(InkWashTheme.GoldPrimary, "游", 32f) { Location = new Float2(26f, 146f) });
-            right.AddChild(MakeLabel("游侠", 66f, 144f, 50f, 18f, InkWashTheme.TextDefault, 13f, InkWashTheme.FontRole.Display, TextAlignment.Near));
-            right.AddChild(new RolePill("队长") { Location = new Float2(118f, 146f), Size = new Float2(34f, 15f) });
-            right.AddChild(MakeLabel("剑客 · 32,450", 66f, 164f, 140f, 16f, InkWashTheme.TextTertiary, 10f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+            // 队伍名单没有服务端来源：空态而不是摆一个虚构的"游侠 / 队长 / 32,450"
+            right.AddChild(MakeLabel("未组队 · 单人挑战", 28f, 154f, cw - 24f, 18f,
+                InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
             // 战力对比
-            right.AddChild(MakeLabel("▸ 战力对比", 16f, 200f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            right.AddChild(MakeLabel("◆ 战力对比", 16f, 200f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
             right.AddChild(new DBox(InkWashTheme.BaseTertiary, InkWashTheme.BorderFaint, 8f)
             { Location = new Float2(16f, 222f), Size = new Float2(cw, 80f) });
             right.AddChild(MakeLabel("队伍战力", 28f, 232f, 80f, 16f, InkWashTheme.TextTertiary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            right.AddChild(MakeLabel("32,450", 16f + cw - 12f - 60f, 230f, 60f, 20f, InkWashTheme.GoldBright, 13f, InkWashTheme.FontRole.Number, TextAlignment.Far));
-            right.AddChild(new PowerBar(1.0f, 0.77f) { Location = new Float2(28f, 252f), Size = new Float2(cw - 24f, 4f) });
+            right.AddChild(MakeLabel("—", 16f + cw - 12f - 60f, 230f, 60f, 20f, InkWashTheme.GoldBright, 13f, InkWashTheme.FontRole.Number, TextAlignment.Far));
+            right.AddChild(new PowerBar(1.0f, 0f) { Location = new Float2(28f, 252f), Size = new Float2(cw - 24f, 4f) });
             right.AddChild(MakeLabel("推荐战力", 28f, 262f, 80f, 16f, InkWashTheme.TextTertiary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            right.AddChild(MakeLabel("25,000", 16f + cw - 12f - 60f, 260f, 60f, 20f, InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Number, TextAlignment.Far));
-            right.AddChild(MakeLabel("✓ 战力达标", 28f, 282f, 120f, 16f, InkWashTheme.JadePrimary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            right.AddChild(MakeLabel("—", 16f + cw - 12f - 60f, 260f, 60f, 20f, InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Number, TextAlignment.Far));
+            right.AddChild(MakeLabel("战力未评估", 28f, 282f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
             // 难度选择
-            right.AddChild(MakeLabel("▸ 难度选择", 16f, 316f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            right.AddChild(MakeLabel("◆ 难度选择", 16f, 316f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
             string[] diffNames = { "普通", "困难", "噩梦", "地狱" };
             Color[] diffColors = { InkWashTheme.QualityCommon, InkWashTheme.QualityRare, InkWashTheme.QualityEpic, InkWashTheme.QualityLegendary };
             float dw = (cw - 6f) * 0.5f;
@@ -425,7 +441,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
             }
 
             // 攻略提示
-            right.AddChild(MakeLabel("▸ 攻略提示", 16f, 418f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            right.AddChild(MakeLabel("◆ 攻略提示", 16f, 418f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
             right.AddChild(new DBox(WithAlpha(InkWashTheme.JadePrimary, 0.06f), InkWashTheme.BorderJade, 8f)
             { Location = new Float2(16f, 440f), Size = new Float2(cw, 78f) });
             right.AddChild(MakeLabel(
@@ -433,10 +449,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                 28f, 448f, cw - 24f, 62f, InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
             // 最近通关
-            right.AddChild(MakeLabel("▸ 最近通关", 16f, 532f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            BuildHistoryRow(right, 554f, "噩", InkWashTheme.QualityEpic, "心魔幻境", "噩梦 · 20分12秒", "07-14", cw);
-            BuildHistoryRow(right, 592f, "普", InkWashTheme.QualityCommon, "修行洞府", "普通 · 7分35秒", "07-14", cw);
-            BuildHistoryRow(right, 630f, "困", InkWashTheme.QualityRare, "试炼塔", "困难 · 14分08秒", "07-13", cw);
+            right.AddChild(MakeLabel("◆ 最近通关", 16f, 532f, 120f, 16f, InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            // 通关记录没有服务端来源：给空态，不摆设计稿的三条历史
+            right.AddChild(MakeLabel("暂无通关记录", 16f, 560f, cw, 18f,
+                InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
             // 底部：进入按钮
             right.AddChild(HLine(0f, BodyH - 90f, RightW, InkWashTheme.BorderGold));
@@ -449,9 +465,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                 AutoFocus = false,
             });
             var enter = new EnterBtn { Location = new Float2(16f, BodyH - 77f), Size = new Float2(cw, 42f) };
-            enter.Clicked += () => { EmitGoldAtControl(enter); NavigationRequested?.Invoke(InkPageDomIds.EnterDungeon); };
+            // 原来「进入秘境」直接回战斗 HUD：玩家以为进本了，实际什么都没发生
+            enter.Clicked += () =>
+            {
+                EmitGoldAtControl(enter);
+                HundunWorld.Game.UI.UIHelper.ShowToast("秘境副本尚未接入服务端，暂不可进入",
+                    HundunWorld.Game.UI.ToastType.Info);
+            };
             right.AddChild(enter);
-            right.AddChild(MakeLabel("ⓘ 进入后将消耗今日次数", 16f, BodyH - 27f, cw, 14f,
+            // 秘境目录（推荐战力/掉落/次数）都是设计稿样例，没有服务端副本数据
+            right.AddChild(MakeLabel("ⓘ 秘境目录为界面样例，副本服务端接入前方可进入", 16f, BodyH - 27f, cw, 14f,
                 InkWashTheme.TextTertiary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Center));
         }
 
@@ -649,8 +672,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
         {
             private readonly string _name, _tag, _remain;
             private readonly Color _tagColor;
-            private readonly bool _active, _eventRemain;
+            private bool _active;
+            private readonly bool _eventRemain;
             private bool _hovered;
+
+            /// <summary>选中态（点左侧分类时互斥切换）。</summary>
+            public bool Active { get => _active; set => _active = value; }
 
             public event Action Clicked;
 
@@ -774,7 +801,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                 InkRenderHelper.DrawRoundedRectangle(r, 10f, InkWashTheme.BorderGold, 1f);
                 var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 10f).GetFont();
                 if (font != null)
-                    Render2D.DrawText(font, "✓ 已通关", r, InkWashTheme.GoldBright,
+                    Render2D.DrawText(font, "√ 已通关", r, InkWashTheme.GoldBright,
                         TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
             }
         }
@@ -898,7 +925,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                     InkRenderHelper.FillRoundedRectangle(r, 4f, _hovered ? InkWashTheme.GoldBright : InkWashTheme.GoldPrimary);
                     var fSel = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 12f).GetFont();
                     if (fSel != null)
-                        Render2D.DrawText(fSel, "✓ 已选", r, InkWashTheme.TextInverse,
+                        Render2D.DrawText(fSel, "√ 已选", r, InkWashTheme.TextInverse,
                             TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
                 }
                 else
@@ -1016,31 +1043,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Dungeon
                 var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, Width * 0.45f).GetFont();
                 if (font != null)
                     Render2D.DrawText(font, _glyph, new Rectangle(Float2.Zero, Size), InkWashTheme.TextInverse,
-                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
-            }
-        }
-
-        /// <summary>职务胶囊（队长）。</summary>
-        private sealed class RolePill : Control
-        {
-            private readonly string _text;
-
-            public RolePill(string text)
-            {
-                _text = text;
-                BackgroundColor = Color.Transparent;
-                AutoFocus = false;
-            }
-
-            public override void Draw()
-            {
-                if (!Visible) return;
-                base.Draw();
-                var r = new Rectangle(Float2.Zero, Size);
-                InkRenderHelper.FillRoundedRectangle(r, 4f, WithAlpha(InkWashTheme.GoldPrimary, 0.16f));
-                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 9f).GetFont();
-                if (font != null)
-                    Render2D.DrawText(font, _text, r, InkWashTheme.GoldBright,
                         TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
             }
         }

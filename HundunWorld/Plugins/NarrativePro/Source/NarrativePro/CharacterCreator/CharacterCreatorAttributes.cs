@@ -78,6 +78,12 @@ namespace NarrativePro.CharacterCreator
         /// <summary>要应用的材质资源路径（Flax Material 引用）。</summary>
         public Material Material;
 
+        /// <summary>
+        /// 材质资产路径（序列化持久化用，对应 UE5 FCreatorMeshMaterial.Material 软引用）。
+        /// 直接引用在存档 JSON 中不可还原时，由此路径经 Content.Load 重新加载。
+        /// </summary>
+        public string MaterialPath = "";
+
         /// <summary>向量参数列表。</summary>
         public List<CreatorMeshMaterialParam_Vector> VectorParams = new List<CreatorMeshMaterialParam_Vector>();
 
@@ -95,6 +101,23 @@ namespace NarrativePro.CharacterCreator
         /// <summary>骨骼网格资源（Flax SkinnedModel 等价）。</summary>
         public SkinnedModel Mesh;
 
+        /// <summary>
+        /// 第一人称（1P）网格资源。对应 UE5 FCharacterCreatorAttribute_Mesh.Mesh1P
+        /// （CharacterCreatorAttributes.h:153）；为空时 1P 使用 3P 网格。仅对手部/躯干网格有意义。
+        /// </summary>
+        public SkinnedModel Mesh1P;
+
+        /// <summary>
+        /// 3P 网格资产路径。对应 UE5 FCharacterCreatorAttribute_Mesh.Mesh（TSoftObjectPtr，天然可按路径序列化）。
+        /// Flax 的 SkinnedModel 引用无法进 JSON 存档，本字段是外观跨会话持久化的真正载体
+        /// （由 CharacterCreatorItem_Mesh.ToMeshAttribute / NarrativeSaveWithCreatorData.SetCreatorDataMesh 写入，
+        /// 读档时由 NarrativeCreatorPersistence 按路径重新解析资产）。
+        /// </summary>
+        public string MeshPath = "";
+
+        /// <summary>1P 网格资产路径（同上，仅对手部/躯干网格有意义）。</summary>
+        public string Mesh1PPath = "";
+
         /// <summary>是否使用 Leader Pose（驱动其他网格）。</summary>
         public bool bUseLeaderPose = true;
 
@@ -110,8 +133,10 @@ namespace NarrativePro.CharacterCreator
         /// <summary>附加偏移变换。</summary>
         public Transform MeshAttachOffset = Transform.Identity;
 
-        /// <summary>动画蓝图路径（Flax 中用 AnimGraph 资源路径占位）。</summary>
-        // TODO [需接入 AnimGraph 加载系统]: Flax 中用 AnimGraph 资源路径占位，需接入实际加载逻辑
+        /// <summary>
+        /// 动画蓝图路径（Flax 中为 AnimationGraph 资产路径）。对应 UE5 MeshAnimBP（TSoftClassPtr&lt;UAnimInstance&gt;）。
+        /// 由 <c>NarrativeCharacterVisual</c> 在不使用 Leader Pose 时通过 Content.Load&lt;AnimationGraph&gt; 加载并应用到网格。
+        /// </summary>
         public string MeshAnimBPPath = "";
 
         /// <summary>材质列表（按材质索引对应）。</summary>
@@ -119,6 +144,14 @@ namespace NarrativePro.CharacterCreator
 
         /// <summary>Morph 列表。</summary>
         public List<CreatorMeshMorph> Morphs = new List<CreatorMeshMorph>();
+
+        /// <summary>
+        /// 装备此网格时需要一并隐藏的 slot 标签列表。对应 UE5
+        /// FCharacterCreatorAttribute_Mesh.HideSlots（CharacterCreatorAttributes.h:190，
+        /// FGameplayTagContainer，meta Categories = "Narrative.Equipment.Slot"）。
+        /// 例如头盔会把 Slot.Groom.Hair 加进来，戴头盔时头发隐藏。
+        /// </summary>
+        public List<GameplayTag> HideSlots = new List<GameplayTag>();
     }
 
     /// <summary>

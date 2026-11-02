@@ -33,8 +33,17 @@ namespace NarrativePro.Character
         /// <summary>攻击优先级（AI EQS 用，越大越受关注）。</summary>
         public float AttackPriority = 1f;
 
-        /// <summary>能力配置路径（GAS Phase 7 实现，字符串占位）。</summary>
-        // TODO [需接入 GAS 系统]: GAS Phase 7 实现后填充能力配置路径加载逻辑
+        /// <summary>
+        /// 能力配置路径（对应 UE5 <c>UCharacterDefinition::AbilityConfiguration</c> 软引用）。
+        /// 配置内容（默认属性效果 / 启动效果 / 默认能力三组路径）由
+        /// <c>NarrativeAbilitySystemComponent</c> 的同名字段 DefaultAttributesEffectPath /
+        /// StartupEffectPaths / DefaultAbilityPaths 承载。
+        /// 消费点：<c>NarrativeCharacter.ApplyDefinitionAbilityConfiguration()</c>，
+        /// 在 <c>EnsureAbilitySystemComponent()</c> 与 <c>OnDefinitionSet()</c> 两处调用，
+        /// 因此玩家（SetPlayerDefinition）与 NPC（SetNPCDefinition）都会按定义路径加载配置，
+        /// 解析走 <c>GAS/NarrativeGASAssetRegistry.LoadAbilityConfiguration</c>
+        /// （接受 <c>ability_config_xxx</c> 这类 ID，也接受工程相对/绝对 .json 路径）。
+        /// </summary>
         public string AbilityConfigurationPath = "";
     }
 }

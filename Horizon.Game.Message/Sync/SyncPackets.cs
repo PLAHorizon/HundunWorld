@@ -70,8 +70,26 @@ public static class SyncProtocolVersion
     ///        AOI 内其他客户端；补一条"仅变化时携带"的增量通道，避免为重发 Spawn 而销毁重建远程角色。
     ///        同时 DS 通道开始填 <see cref="EntityStateAuthComponent.StateBits"/>（死亡位），
     ///        使远程玩家倒下/复活即时可见。
+    ///   v14 = <see cref="NetworkIdentityAuthComponent"/> 追加怪物外观四件套
+    ///        TemplateId / ModelKey / ModelScale / StandState / Rank（order 5..9，spawn-only）：
+    ///        怪物编辑器配出来的 model_key、prefab、体型、待机姿态、档位此前**无处下发**，
+    ///        客户端只能把所有怪都画成占位人形。全部末尾追加，旧字段 0..4 编号不变，
+    ///        旧读取端跳过未知尾部成员；<see cref="MinimumSupported"/> 保持 5 不变。
+    ///   v15 = <see cref="NetworkIdentityAuthComponent"/> 追加"起手时正在吟唱"五件套
+    ///        CastSkillId / CastTotalSeconds / CastElapsedSeconds / CastSchoolMask / CastInterruptible
+    ///        （order 10..14，spawn-only）：施法起手是**瞬时事件**，只发给当时看得见的人，
+    ///        而补发通路只有 Spawn——玩家走进一片正在读条的怪中间时，那些怪的条子对他是空的。
+    ///        全部末尾追加，旧字段 0..9 编号不变；<see cref="MinimumSupported"/> 保持 5 不变。
+    ///   v16 = <see cref="CombatActionPacket"/> 追加 <see cref="CombatActionPacket.StatusId"/> 与
+    ///        <see cref="CombatActionPacket.StatusDurationSeconds"/>（order 8/9）：玩家技能第一次能把
+    ///        控制状态挂到**怪物**身上（在此之前状态只能由怪物挂载挂到玩家身上，怪物侧两个闸口是空转的）。
+    ///        末尾追加、旧字段 0..5 编号不变；<see cref="MinimumSupported"/> 保持 5 不变。
+    ///   v17 = 翻越（Traversal）联机权威：新增 <see cref="TraversalRequestPacket"/>（客户端→服务器，
+    ///        携带起点/终点/时长/弧高）与 <see cref="TraversalResultPacket"/>（服务器→客户端，受理/拒绝原因
+    ///        + 权威终点回显）。服务端 <c>SimWorld</c> 按 <c>Horizon.Game.Sim.TraversalMath</c> 曲线推进
+    ///        权威位置；老客户端不发这类包，行为不变；<see cref="MinimumSupported"/> 保持 5 不变。
     /// </summary>
-    public const int Current = 13;
+    public const int Current = 17;
 
     /// <summary>
     /// 服务器支持的最低协议版本。低于此版本的客户端握手将被拒绝并收到 <see cref="HandshakeRejectPacket"/>，
@@ -114,6 +132,21 @@ public enum SyncPacketKind : byte
     Death = 15,
     /// <summary>客户端→服务器：baseline 缺失重传请求（delta 解码时 baseline 不匹配，请求服务端下发全量快照）。</summary>
     BaselineResyncRequest = 16,
+
+    /// <summary>客户端→服务器：从一具尸体上取走某一槽（2026-10-28 拍板：尸体拾取）。</summary>
+    CorpseLootTakeRequest = 17,
+
+    /// <summary>服务器→客户端：拾取结果（状态 + 取走时的槽内容）。</summary>
+    CorpseLootTakeResult = 18,
+
+    /// <summary>
+    /// 客户端→服务器：翻越（mantle/vault）计划请求。客户端用 Flax 射线检测出边沿后提交起点/终点/时长，
+    /// 服务端按 <c>TraversalMath</c> 同一曲线推进权威位置。
+    /// </summary>
+    TraversalRequest = 19,
+
+    /// <summary>服务器→客户端：翻越计划裁决结果（受理/拒绝原因 + 权威终点回显）。</summary>
+    TraversalResult = 20,
 }
 
 /// <summary>
@@ -152,6 +185,11 @@ public enum SyncPacketKind : byte
 // BaselineResyncRequestPacket：tag 15 对应 SyncPacketKind.BaselineResyncRequest=16（枚举中 Unknown=0 占位导致偏移 1）。
 // 紧跟 DeathPacket 的 tag 14，保持 0..15 连续递增。
 [MemoryPackUnion(15, typeof(BaselineResyncRequestPacket))]
+[MemoryPackUnion(16, typeof(CorpseLootTakeRequestPacket))]
+[MemoryPackUnion(17, typeof(CorpseLootTakeResultPacket))]
+// v17：翻越权威包（tag 18/19 对应 SyncPacketKind.TraversalRequest=19 / TraversalResult=20）。
+[MemoryPackUnion(18, typeof(TraversalRequestPacket))]
+[MemoryPackUnion(19, typeof(TraversalResultPacket))]
 public abstract partial class SyncPacket
 {
     /// <summary>包种类（冗余字段，便于不解码 union 时也能识别）。</summary>
@@ -236,6 +274,15 @@ public sealed partial class HandshakePacket : SyncPacket
     [MemoryPackOrder(11)]
     [Id(9)]
     public string Title { get; set; } = "";
+
+    /// <summary>
+    /// 角色阵营（0 未入 / 1 正派 / 2 邪派；网关权威填充，DS 通道专用）。
+    /// <para>DS 存进 <c>DsPlayer.Faction</c> 后，玩家互殴的合法性只由
+    /// <c>FactionCore.Evaluate</c> 判——客户端自报的阵营不采信。</para>
+    /// </summary>
+    [MemoryPackOrder(12)]
+    [Id(10)]
+    public int Faction { get; set; }
 
     public HandshakePacket() { Kind = SyncPacketKind.Handshake; }
 }
@@ -439,6 +486,52 @@ public enum SyncEventKind : ushort
     /// 并推进 InputSendSystem._lastAckedClientTick，避免冗余重传每帧触发。
     /// </summary>
     InputAck = 11,
+    /// <summary>
+    /// 脚本化生成结果回执：Payload 为序列化的 <c>ScriptedSpawnResultPayload</c>，
+    /// 由服务端在指令生效后**定向**发给操作者会话（不是广播——别人不该看到你的指令回执）。
+    /// <para>尾部追加，旧客户端遇未知 Kind 只记日志不受影响。</para>
+    /// </summary>
+    ScriptedSpawnResult = 12,
+
+    /// <summary>
+    /// 怪物起手（吟唱开始）：<c>SourceEntityId</c>=怪、<c>TargetEntityId</c>=起手锁定的目标、
+    /// <c>IntValue</c>=技能 id、<c>FloatValue</c>=吟唱总秒数，
+    /// <c>Payload</c> 为序列化的 <see cref="MonsterCastPayload"/>（系别/可打断/可否移动）。
+    /// <para>
+    /// <b>为什么只发"起手"而不逐 tick 发进度</b>：吟唱时长已经随事件给了，客户端按本地时钟插值就是
+    /// WoW 的观感（条子在长，施法者不动）；每 tick 一条的话，一条 1.2 秒的吟唱要烧掉 72 帧带宽，
+    /// 而它是**每个在场玩家都要收**的广播。
+    /// </para>
+    /// <para>尾部追加，旧客户端遇未知 Kind 只记日志不受影响（同 <see cref="ScriptedSpawnResult"/> 的纪律）。</para>
+    /// </summary>
+    MonsterCastStart = 13,
+
+    /// <summary>
+    /// 怪物吟唱结束（条子必须收掉）：<c>IntValue</c>=结束原因，取值见 <see cref="MonsterCastEndReason"/>
+    /// （0=完成、1=被打断、2=取消）。施法者死亡/消失**不发**这条——那条走 Despawn 全广播，实体连带条子一起没了。
+    /// <para>每个"读条结束"的出口都要发同一条：漏掉任何一个，客户端那根条子会一直挂在头顶不动——
+    /// 比"没有施法条"更糟，因为它谎报"这只怪还在读条"。</para>
+    /// </summary>
+    MonsterCastStop = 14,
+
+    /// <summary>
+    /// 怪物进战喊话：<c>IntValue</c>=**文本号**（<c>aggro_say_id</c> 指的那一号），<c>SourceEntityId</c>=喊话的怪。
+    /// <para>线上**只有号，没有文案**：文案随客户端内容包发布（与外观表 <c>client_visuals.json</c> 同一口径）。
+    /// 把文案塞进实时包 = 把展示文本当身份用——翻译一次就作废全部旧引用（这条工程里栽过）。</para>
+    /// <para>客户端不认识这一种时会被每个 handler 的 <c>if (kind != …) continue</c> 安静跳过，
+    /// 所以服务端先落地、气泡渲染后到，中间态是"有回执没画面"，不是"报错"。</para>
+    /// </summary>
+    MonsterSay = 15,
+
+    /// <summary>
+    /// 尸体拾取窗口到期时**东西还没拿完**：<c>SourceEntityId</c>=尸体实体、<c>TargetEntityId</c>=收到提示的角色、
+    /// <c>IntValue</c>=没拿走的件数。
+    /// <para>2026-10-29 拍板："窗口到期而东西没拿完，给一条提示"。只发给击杀参与者里**还在线**的人，
+    /// 且每人一条（同一具尸体不重复发）——它是"你错过了"的提示，不是每拍刷新的状态。</para>
+    /// <para>与其它事件一样，客户端不认识这一种时会被安静跳过：服务端先落地、提示 UI 后到，
+    /// 中间态是"有回执没提示"，不是"报错"。</para>
+    /// </summary>
+    CorpseLootExpired = 16,
 }
 
 /// <summary>
@@ -865,6 +958,80 @@ public enum CombatActionKind : byte
     ItemUse = 2,
     /// <summary>格挡/闪避。</summary>
     Defend = 3,
+    /// <summary>
+    /// 打断（脚踢那一类）：目标是"正在读一条可打断的条"的怪。
+    /// <para>尾部追加：老客户端从不发这个值，服务端只是开始受理一种以前会被判 Invalid 的动作，
+    /// 因此不需要升 <see cref="SyncProtocolVersion"/>——与移动/战斗上行同一条纪律。</para>
+    /// <para>它不造成伤害：走的是 <c>DsWorldSession</c> 的施法打断通路，不进 <c>CombatCore</c> 的命中/伤害结算。</para>
+    /// </summary>
+    Interrupt = 4,
+    /// <summary>
+    /// 嘲讽（坦克把人拉走那一类）：目标是一只怪，效果是**换强制目标**，不造成伤害。
+    /// <para>与 <see cref="Interrupt"/> 同一条纪律：尾部追加一个新枚举值，包体一个字段都没动，
+    /// 服务端只是开始受理一种以前会被判 Invalid 的动作，所以不升 <see cref="SyncProtocolVersion"/>。</para>
+    /// <para>走 <c>DsWorldSession.RequestMonsterTaunt</c>：威胁表抬到最高 + 一段锁定窗口，
+    /// 窗口内不因滞回换回去（只抬威胁不锁窗口＝"坦克拉了个寂寞"，别人平 A 一下就盖过去）。</para>
+    /// </summary>
+    Taunt = 5,
+}
+
+/// <summary>
+/// 客户端→服务器：从一具尸体上取走某一个槽。
+/// <para>只带"哪具尸体、第几个槽"：距离与窗口由 DS 量（它才是唯一知道玩家权威位置的地方），
+/// 列表归属在 Orleans（见 <c>ICorpseLootStore</c>）。</para>
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class CorpseLootTakeRequestPacket : SyncPacket
+{
+    /// <summary>发起者角色/会话 ID（与 InputPacket 同源；DS 用它找会话，不采信包里的其它身份）。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong CharacterId { get; set; }
+
+    /// <summary>尸体实体 ID。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public ulong CorpseEntityId { get; set; }
+
+    /// <summary>槽号（0 基；越界由服务端拒绝并回 InvalidSlot）。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public int SlotIndex { get; set; }
+}
+
+/// <summary>
+/// 服务器→客户端：拾取结果。
+/// <para><see cref="Status"/> 取值与 <c>CorpseLootTakeStatus</c> 一致（1=Taken … 7=UnknownCorpse）；
+/// 取走时带槽内容（物品或金币），供客户端弹"获得 X"。</para>
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class CorpseLootTakeResultPacket : SyncPacket
+{
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong CorpseEntityId { get; set; }
+
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public int SlotIndex { get; set; }
+
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public byte Status { get; set; }
+
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public int ItemId { get; set; }
+
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public int Count { get; set; }
+
+    [MemoryPackOrder(7)]
+    [Id(5)]
+    public int Money { get; set; }
 }
 
 /// <summary>
@@ -904,6 +1071,31 @@ public sealed partial class CombatActionPacket : SyncPacket
     [MemoryPackOrder(7)]
     [Id(5)]
     public float AttackerYaw { get; set; }
+
+    /// <summary>
+    /// 这次动作附带的状态号（0 = 不带；1=眩晕 2=沉默 3=定身 4=减速，词表在
+    /// <c>MonsterStatusCore.MonsterStatusKind</c>）。<b>v16 末尾追加</b>。
+    /// <para>为什么挂在**动作**上而不是只挂在怪物技能挂载上：AC 里"这式技能附带什么状态"本来就是
+    /// 技能属性（`Spell::DoSpellHitOnUnit → EffectApplyAura`，`Spell.cpp:2925/:3080`），
+    /// 而玩家技能今天走的是这条动作包；怪物那一侧则用挂载行（`MonsterSkillMount.StatusId`）。</para>
+    /// </summary>
+    [MemoryPackOrder(8)]
+    [Id(6)]
+    public int StatusId { get; set; }
+
+    /// <summary>上面那条状态的持续秒数（<c>&lt;= 0</c> ⇒ 拒收；与 <see cref="StatusId"/> 成对）。v16 末尾追加。</summary>
+    [MemoryPackOrder(9)]
+    [Id(7)]
+    public float StatusDurationSeconds { get; set; }
+
+    /// <summary>
+    /// 状态强度（基点，10000 = 100%）。今天只有减速用它：5000 = 走速打五折；<b>0 = 没填</b>（不生效）。
+    /// <para>与怪物挂载行上那一格（`MonsterSkillMount.StatusMagnitudeBps`）同一个含义，
+    /// 因为玩家与怪物都要能施加同一种状态、并用同一个内核判据。v16 末尾追加。</para>
+    /// </summary>
+    [MemoryPackOrder(10)]
+    [Id(8)]
+    public int StatusMagnitudeBps { get; set; }
 
     public CombatActionPacket() { Kind = SyncPacketKind.CombatAction; }
 }
@@ -1041,4 +1233,130 @@ public sealed partial class BaselineResyncRequestPacket : SyncPacket
     public long ClientLastAppliedTick { get; set; }
 
     public BaselineResyncRequestPacket() { Kind = SyncPacketKind.BaselineResyncRequest; }
+}
+
+// ---------------------------------------------------------------------------
+// v17：翻越（Traversal）联机权威。
+// 客户端用 Flax 射线找到边沿后把整条脚本位移当成"请求"发上来；服务端校验计划本身
+// （高度/距离/时长/起点贴合）后按同一份曲线推进权威位置，并在结束时落点。
+// 逐帧位置不交换——只交换计划参数，避免 1s 量级的位移占用每 tick 带宽。
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// 客户端→服务器：翻越计划请求。坐标一律 ECS（Z-up，米）。
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class TraversalRequestPacket : SyncPacket
+{
+    /// <summary>发起者角色 ID（与 <see cref="InputPacket.CharacterId"/> 同义）。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong CharacterId { get; set; }
+
+    /// <summary>客户端 tick（仅诊断对齐用；权威与否由服务端裁决）。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public long ClientTick { get; set; }
+
+    /// <summary>计划起点 X/Y/Z。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public float StartX { get; set; }
+
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public float StartY { get; set; }
+
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public float StartZ { get; set; }
+
+    /// <summary>计划终点 X/Y/Z（平台顶面落点）。</summary>
+    [MemoryPackOrder(7)]
+    [Id(5)]
+    public float EndX { get; set; }
+
+    [MemoryPackOrder(8)]
+    [Id(6)]
+    public float EndY { get; set; }
+
+    [MemoryPackOrder(9)]
+    [Id(7)]
+    public float EndZ { get; set; }
+
+    /// <summary>总时长（秒）。</summary>
+    [MemoryPackOrder(10)]
+    [Id(8)]
+    public float Duration { get; set; }
+
+    /// <summary>弧顶额外抬升（米）。</summary>
+    [MemoryPackOrder(11)]
+    [Id(9)]
+    public float ArcHeight { get; set; }
+
+    /// <summary>结束朝向（ECS 弧度；服务端只记录不校验，客户端按本地动画播放）。</summary>
+    [MemoryPackOrder(12)]
+    [Id(10)]
+    public float EndYaw { get; set; }
+
+    /// <summary>客户端使用的曲线版本（<c>TraversalMath.Version</c>）；不一致时服务端拒绝，避免两套曲线推进同一计划。</summary>
+    [MemoryPackOrder(13)]
+    [Id(11)]
+    public int CurveVersion { get; set; }
+
+    public TraversalRequestPacket() { Kind = SyncPacketKind.TraversalRequest; }
+}
+
+/// <summary>
+/// 服务器→客户端：翻越裁决结果。
+/// <para>
+/// <see cref="Status"/> 的取值与 <c>Horizon.Game.Sim.TraversalRejectReason</c> 对齐（0 = 受理）；
+/// 包层不直接引用 Sim.Contracts，避免传输层反向依赖仿真层——该数值契约由
+/// <c>TraversalProtocolContractTests</c> 断言。
+/// </para>
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class TraversalResultPacket : SyncPacket
+{
+    /// <summary>请求角色 ID。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong CharacterId { get; set; }
+
+    /// <summary>回显请求的客户端 tick，客户端据此匹配待决请求。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public long ClientTick { get; set; }
+
+    /// <summary>是否受理（true = 服务端会按计划推进权威位置）。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public bool Accepted { get; set; }
+
+    /// <summary>拒绝原因（0 = 受理；其余见 <c>TraversalRejectReason</c>）。</summary>
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public byte Status { get; set; }
+
+    /// <summary>权威终点回显（受理时客户端可直接对齐；拒绝时为服务端当前权威位置，供客户端回正）。</summary>
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public float EndX { get; set; }
+
+    [MemoryPackOrder(7)]
+    [Id(5)]
+    public float EndY { get; set; }
+
+    [MemoryPackOrder(8)]
+    [Id(6)]
+    public float EndZ { get; set; }
+
+    /// <summary>服务端 tick。</summary>
+    [MemoryPackOrder(9)]
+    [Id(7)]
+    public long ServerTick { get; set; }
+
+    public TraversalResultPacket() { Kind = SyncPacketKind.TraversalResult; }
 }

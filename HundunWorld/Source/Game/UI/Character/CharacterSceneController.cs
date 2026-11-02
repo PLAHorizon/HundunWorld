@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FlaxEngine;
@@ -264,9 +264,8 @@ namespace HundunWorld.Game.UI.Character
             };
             _creationUI.FacePresetSelectionUI.OnGoBack += () => _stepNavigationManager.GoBack();
 
-            // 步骤3: 精细捏脸
-            _creationUI.IntegratedCreationUI.OnCompleteStep += () => _stepNavigationManager.GoNext();
-            _creationUI.IntegratedCreationUI.OnCancelled += () => _stepNavigationManager.GoBack();
+            // 步骤3（旧"精细捏脸"面板）已删除：Ink 流程下该步骤由 CcFaceSculptPage 承担，
+            // 这套 legacy 栈在 UseInkCharacterFlow=true 时整体不再构建。
 
             // 步骤4: 命名完成
             _creationUI.NamingCompleteUI.OnGoBack += () => _stepNavigationManager.GoBack();
@@ -307,9 +306,7 @@ namespace HundunWorld.Game.UI.Character
                 case CreationStep.FacePreset:
                     _uiComponentManager.SetFacePresetGender(_stepNavigationManager.StepData.Gender);
                     break;
-                case CreationStep.DetailedCreation:
-                    _uiComponentManager.SetIntegratedCreationStepData(_stepNavigationManager.StepData);
-                    break;
+                // DetailedCreation 步骤没有 legacy 面板可喂数据（IntegratedCharacterCreationUI 已删除）
             }
 
             _uiComponentManager.ShowCurrentStepUI(newStep);
@@ -323,6 +320,8 @@ namespace HundunWorld.Game.UI.Character
         private void OnBackBtnClicked()
         {
             Debug.Log("[CharacterSceneController] 点击: 返回登录");
+            // 与水墨选角页同口径：返回登录要清掉会话与角色列表，否则缓存跨登录存活。
+            UIStateManager.Instance?.ClearUserSession();
             var sceneManager = GameSceneManager.Instance;
             sceneManager?.TransitionTo(SceneType.Login);
         }

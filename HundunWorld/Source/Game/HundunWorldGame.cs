@@ -5,6 +5,7 @@ using HundunWorld.Game.Modules;
 using HundunWorld.Game.Network;
 using HundunWorld.Game.Services;
 using HundunWorld.Game.Character;
+using HundunWorld.Game.Equipment;
 using HundunWorld.Game.Worlds;
 using System;
 using System.Linq;
@@ -49,6 +50,9 @@ namespace HundunWorld.Game
         private HundunWorld.Game.SyncGuard.SendViolationMonitor _violationMonitor;
         private HundunWorld.Game.SyncGuard.OutboundSyncAuthorizer _outboundSyncAuthorizer;
         private HundunWorld.Game.SyncGuard.GuardSyncSender _guardSyncSender;
+
+        /// <summary>本地玩家的翻越驱动（GASP Traversal → 服务端权威）。裁决回执从同步包转发到它。</summary>
+        private HundunWorld.Game.Gasp.GaspTraversalDriver _localTraversalDriver;
 
         // ─── 远程角色观测链路修复（RemoteVisibility，spec 5.6） ───
         private HundunWorld.Game.RemoteVisibility.ReconnectResumeSender _reconnectResumeSender;
@@ -518,7 +522,9 @@ namespace HundunWorld.Game
                 _wasReconnecting = false;
 
                 var gameState = HundunWorld.Game.Core.GameStateManager.Instance;
-                if (gameState != null && gameState.IsInGame)
+                // 暂停态（Esc 系统菜单盖着）也算"还在游戏世界里"：只看 IsInGame 会让断线兜底
+                // 在菜单开着时静默跳过，玩家就被留在一个连不上服务器的菜单里。
+                if (gameState != null && (gameState.IsInGame || gameState.IsPaused))
                 {
                     Debug.Log("[HundunWorldGame] 网关离线超过阈值时间，退出游戏世界，返回角色选择界面");
                     Scripting.InvokeOnUpdate(() =>
@@ -760,6 +766,69 @@ namespace HundunWorld.Game
             Debug.Log($"[HundunWorldGame] 收到 WorldPatchManifest（恢复输入门控）: PatchCutoverDiffSeq={manifest.PatchCutoverDiffSeq}");
         }
 
+        /// <summary>同步事件包日志限频（见 OnEventReceived）。</summary>
+        private float _eventPacketLogTime = -100f;
+
+        /// <summary>
+        /// DS 权威伤害包 → 立刻落到受击 Actor 的血量上（不等下一份快照）。
+        /// <para>为什么必须有：怪物血量只有 DS 那份是权威的，而快照按"变化触发"，
+        /// 连打几刀时血条可能整段不刷新；玩家看到的就是"打中了但血条纹丝不动"。</para>
+        /// </summary>
+        private void OnDsDamageReceived(Horizon.Game.Message.Sync.DamagePacket damage)
+        {
+            var actor = FindWorldActorByEntityId(damage.TargetId);
+            if (actor == null) return;
+
+            var attrs = actor.GetScript<global::Game.Character.Attributes.CharacterAttributesComponent>();
+            if (attrs != null)
+            {
+                if (damage.MaxHp > 0) attrs.MaxHealth = damage.MaxHp;
+                attrs.CurrentHealth = damage.RemainingHp;
+            }
+        }
+
+        /// <summary>
+        /// v17 翻越裁决回执 → 本地翻越驱动。受理时本地预测已经在跑（无需动作）；
+        /// 拒绝时驱动会撤销预测并结束 GASP 动画，位置回正交给随后的权威快照/修正。
+        /// </summary>
+        private void OnTraversalResultReceived(Horizon.Game.Message.Sync.TraversalResultPacket result)
+            => _localTraversalDriver?.OnAuthorityResult(result);
+
+        /// <summary>
+        /// DS 权威死亡包 → 客户端立刻进入"尸体"表现：不可再选中、收掉读条。
+        /// 尸体交互位（<c>CorpseInteractable</c>）仍由快照下发，G 键那条链路不变。
+        /// </summary>
+        private void OnDsDeathReceived(Horizon.Game.Message.Sync.DeathPacket death)
+        {
+            var actor = FindWorldActorByEntityId(death.EntityId);
+            if (actor == null) return;
+
+            var attrs = actor.GetScript<global::Game.Character.Attributes.CharacterAttributesComponent>();
+            if (attrs != null)
+            {
+                attrs.CurrentHealth = 0f;
+                attrs.IsDead = true;
+            }
+            var tag = actor.GetScript<HundunWorld.Game.Selection.SelectableEntityTag>();
+            if (tag != null)
+            {
+                tag.Selectable = false;
+                tag.EndCast();
+            }
+        }
+
+        /// <summary>按服务端实体 id 找客户端 Actor（怪物/NPC 都在选中标记表里；数量级很小，线性扫足够）。</summary>
+        private static Actor FindWorldActorByEntityId(ulong entityId)
+        {
+            if (entityId == 0UL) return null;
+            foreach (var t in HundunWorld.Game.Selection.SelectableEntityTag.Active)
+            {
+                if (t != null && t.EntityId == entityId && t.Actor != null && t.Actor.IsActive)
+                    return t.Actor;
+            }
+            return null;
+        }
+
         /// <summary>
         /// 同步事件包接收处理
         /// 将 EventPacket 放入 EventReceiveBuffer，供 EventApplySystem 消费
@@ -767,8 +836,24 @@ namespace HundunWorld.Game
         private void OnEventReceived(EventPacket eventPacket)
         {
             Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.Instance.Enqueue(eventPacket);
-            if (eventPacket.Events != null && eventPacket.Events.Length > 0)
+            // CORPSE-LOOT-PATCH：拾取窗口关了但还有东西没拿 ⇒ 弹一条提示（服务端每人只发一条，这里只负责显示）。
+            if (eventPacket.Events != null)
             {
+                for (var i = 0; i < eventPacket.Events.Length; i++)
+                {
+                    var e = eventPacket.Events[i];
+                    if (e.Kind == SyncEventKind.CorpseLootExpired && e.IntValue > 0)
+                        HundunWorld.Game.Selection.WorldSelectionService.NotifyCorpseLootExpired(e.IntValue);
+                }
+            }
+            // 这条 Info 原先每个同步包一行，实测每服务器 tick 两行、约 120 行/秒，
+            // 4 分钟就把磁盘日志顶到 2MB 上限并打出 "Trimming log file."——此后 Logs/Log_*.txt 不再记录任何东西，
+            // 地面/相机这类需要跨分钟观察的问题只能靠编辑器面板肉眼读，本次排查被它挡了两次。
+            // 消费逻辑不变，仅把日志降为每 5 秒一条（足够证明事件链在跑）。
+            if (eventPacket.Events != null && eventPacket.Events.Length > 0
+                && Time.UnscaledGameTime - _eventPacketLogTime >= 5f)
+            {
+                _eventPacketLogTime = Time.UnscaledGameTime;
                 Debug.Log($"[HundunWorldGame] 收到同步事件: ServerTick={eventPacket.ServerTick}, Events={eventPacket.Events.Length}");
             }
         }
@@ -876,6 +961,13 @@ namespace HundunWorld.Game
                             var eventPacket = MemoryPack.MemoryPackSerializer.Deserialize<EventPacket>(diff.Payload);
                             if (eventPacket != null)
                             {
+                                // 表现型脚本事件（/event）走 Vfx 分支直接落到世界文字；
+                                // 生成回执走 ScriptedSpawnResult 分支贴回聊天。
+                                // 两者都留在游戏层做：EventApplySystem 属共享 ECS 层、不认 UI。
+                                TryShowScriptedEffect(eventPacket);
+                                TryApplyScriptedSpawnResult(eventPacket);
+                                TryApplyMonsterCast(eventPacket);
+                                TryApplyMonsterSay(eventPacket);
                                 Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.Instance.Enqueue(eventPacket);
                             }
                             break;
@@ -1012,7 +1104,17 @@ namespace HundunWorld.Game
                 syncHandler.InputAckReceived += OnInputAckReceived;
                 syncHandler.HandshakeReceived += OnHandshakeReceived;
                 syncHandler.EventReceived += OnEventReceived;
+                // DS 权威的伤害/死亡包：快照是 1Hz/变化触发，血条与"已死亡"不该等下一份快照；
+                // 这两条事件原先**没有任何订阅者**（CombatEffectSystem 的 Enqueue 也零调用方），
+                // 表现就是"服务端已经打死了，客户端血条一动不动、尸体也出不来"。
+                syncHandler.DamageReceived += OnDsDamageReceived;
+                syncHandler.DeathReceived += OnDsDeathReceived;
+                // CORPSE-LOOT-PATCH：拾取回执与"到期没拿完"都交给选中层在主线程弹提示。
+                syncHandler.CorpseLootResultReceived += p =>
+                    HundunWorld.Game.Selection.WorldSelectionService.NotifyCorpseLootResult(p);
                 syncHandler.ChunkDiffReceived += OnChunkDiffReceived;
+                // v17：翻越裁决回执 → 本地翻越驱动（拒绝时撤销预测并结束动画）。
+                syncHandler.TraversalResultReceived += OnTraversalResultReceived;
                 // 修复（静置断线后输入断流 — "无法移动 + 闪跳回原地"根因之一）：
                 // 重连恢复确认（服务端对 ResumeIncremental/ResendFullChunks 的 HandshakePacket 确认，
                 // 或兼容路径的 WorldPatchManifestPacket）到达时恢复同步握手门控 IsSyncHandshakeComplete。
@@ -1048,6 +1150,12 @@ namespace HundunWorld.Game
             {
                 Debug.LogError($"清除缓存数据失败: {ex.Message}");
             }
+
+            // 物品内容表按需重载：编辑器"保存→导出"后，新开一局/PIE 就能看到新定义。
+            // 静态层自己不跨 PIE 重置，所以每次启动都显式 Reload 一次。
+            HundunWorld.Game.Inventory.ItemCatalogOverlay.Reload();
+            HundunWorld.Game.Inventory.ItemCatalog.InvalidateCache();
+            Debug.Log("[ItemCatalogOverlay] " + HundunWorld.Game.Inventory.ItemCatalogOverlay.Source);
 
             _ecsManager.Start();
             _worldManager.StartSynchronization();
@@ -1158,8 +1266,8 @@ namespace HundunWorld.Game
         /// <summary>
         /// 地面高度采样器：供 <see cref="Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.GroundHeightSampler"/> 使用。
         /// 给定 ECS 水平坐标 (x, y)（Z-up 坐标系，x=左右, y=前后），
-        /// 通过 <see cref="Physics.RayCast"/> 从高空向下射线检测 Terrain/碰撞体，
-        /// 返回该位置的地面 ECS.Z 高度（米）；未命中任何碰撞体时返回 <see cref="float.NaN"/>。
+        /// 通过 <see cref="Physics.RayCast"/> 从角色上方向下射线检测 Terrain/碰撞体，
+        /// 返回该位置的地面 ECS.Z 高度（世界单位，本工程为 cm）；未命中任何碰撞体时返回 <see cref="float.NaN"/>。
         /// <para>
         /// 坐标转换：ECS Z-up ↔ Flax Y-up
         /// <list type="bullet">
@@ -1167,35 +1275,193 @@ namespace HundunWorld.Game
         ///   <item>Flax.Y = ECS.Z（上下，高度）</item>
         ///   <item>Flax.Z = ECS.Y（前后）</item>
         /// </list>
-        /// 因此在 Flax 世界 (x, 1000, y) 处从高空向下射线，命中点的 Flax.Y 即为地面 ECS.Z。
+        /// 因此在 Flax 世界 (x, 角色上方某高度, y) 处向下射线，命中点的 Flax.Y 即为地面 ECS.Z。
         /// </para>
         /// <para>
-        /// 射线起点的 Y=1000 假定游戏世界地形最高点不超过 1000 米；若场景超高可调大。
-        /// 射线长度 2000 覆盖从 +1000 到 -1000 的范围。
+        /// 起点高度取 max(角色高度 + 5m, +2000m)，射到 -2000m：既稳定高于地表（含山地），
+        /// 也能把已经坠到地面以下的角色捞回。注意世界单位是 cm——写死的 1000 只有 10m，
+        /// 山上会从地表以下起射而漏检（历史缺陷）。
         /// 使用 <see cref="LayersMask.Default"/> 与 ThirdPersonCamera.GroundLayers 默认值一致。
         /// </para>
         /// </summary>
-        /// <param name="ecsX">ECS 世界坐标 X（左右，米）</param>
-        /// <param name="ecsY">ECS 世界坐标 Y（前后，米）</param>
-        /// <returns>该位置的地面 ECS.Z 高度（米）；无地面返回 <see cref="float.NaN"/></returns>
+        /// <param name="ecsX">ECS 世界坐标 X（左右，cm）</param>
+        /// <param name="ecsY">ECS 世界坐标 Y（前后，cm）</param>
+        /// <returns>该位置的地面 ECS.Z 高度（cm）；无地面返回 <see cref="float.NaN"/></returns>
+        /// <summary>地面采样诊断节流（临时，可连同 [GroundProbe] 标记一起删除）。</summary>
+        private float _groundProbeLogTime = -100f;
+
         private float SampleGroundHeightEcs(float ecsX, float ecsY)
         {
-            // ECS (x, y) → Flax 世界坐标 (x, 高空起点, y)
-            var rayStart = new Vector3(ecsX, 1000f, ecsY);
+            // 诊断（临时，可整段删除）：ASCII 标记 + 2s 限频。中文关键词在磁盘日志里会因 NUL 填充
+            // 计数为 0，所以标记必须全 ASCII；用来判断采样器是否命中、地面到底在哪。
+            bool bLog = Time.UnscaledGameTime - _groundProbeLogTime >= 2f;
+            if (bLog) _groundProbeLogTime = Time.UnscaledGameTime;
+
+            // 射线起点必须相对**角色当前高度**取，不能写死绝对高度。
+            // 世界单位是 cm（引擎 DefaultGravity=-981、角色 MoveSpeed=500cm/s、场景里 Cube 中心 Y=50
+            // 即 0.5m 坐在 Y=0 地面上）；原实现起点 Y=1000 是"1km 高空"的米制假设，在 cm 世界只有 10m。
+            // 本图有庆云山这类山体，站在高于 10m 的地形上时射线起点落在地表**以下**，RayCastAll 打不到东西
+            // → 返回 NaN → LocalSimulationSystem 据此跳过地面约束 → 保护期(120 帧=2s)一过角色就按重力持续下沉，
+            // 服务端再不断 correction，表现就是"停留几秒后相机跟着沉进地面并反复抖动"。
+            // 起点必须高于**地表**，而不是"角色上方几米"：角色一旦已经坠到地面以下
+            // （本工程曾在无地面区域一路下坠，实测相机到过 -999m），"角色上方 5m"就整段在地面以下，
+            // 射线再也打不到地面 → 永远拉不回来。故取"角色上方 5m"与 +2000m 中的较高者，
+            // 并一直射到 -2000m：既覆盖山地高度，也能把已经坠落的角色捞回地面。
+            const float probeTopY = 200000f;      // +2000m
+            const float probeBottomY = -200000f;  // -2000m
+            var standY = _localPlayerActor != null ? _localPlayerActor.Position.Y : 0f;
+            var rayStart = new Vector3(ecsX, Mathf.Max(standY + 500f, probeTopY), ecsY);
+            float rayLength = rayStart.Y - probeBottomY;
             var rayDir = Vector3.Down;
 
             // hitTriggers=false：必须跳过触发器。POI 的 Discover 球形触发器半径达 700~1200m，
             // 射线起点常落在球体内部，PhysX 会在距离 0 处返回退化命中（Point == 射线起点），
-            // 导致采样"地面"恒等于射线起点高度 1000，把角色钉死在半空（进入游戏后悬于半空的根因）。
-            if (Physics.RayCast(rayStart, rayDir, out RayCastHit hit, 2000f, LayersMask.Default, false))
+            // 导致采样"地面"恒等于射线起点高度，把角色钉死在半空（进入游戏后悬于半空的根因）。
+            // 必须跳过**所有角色身体**的碰撞体（远程角色 + 本机玩家自己）：CharacterRoot.prefab 的
+            // BodyCollider 是给点选用的，不是地形。本工程没有地面碰撞体，若把角色胶囊当成交点，
+            // 本函数会从"无地面→NaN（跳过地面约束）"悄悄变成"地面高度=头顶 1.8 米"，
+            // 且每 tick 重采样一次就再抬一个身位，角色一路悬空到射线起点。
+            if (Physics.RayCastAll(rayStart, rayDir, out RayCastHit[] hits, rayLength, LayersMask.Default, false))
             {
-                // 命中点的 Flax.Y 即对应 ECS.Z（地面高度）
-                return hit.Point.Y;
+                System.Array.Sort(hits, (a, b) => a.Distance.CompareTo(b.Distance));
+
+                for (var i = 0; i < hits.Length; i++)
+                {
+                    var hit = hits[i];
+                    var owner = hit.Collider != null ? hit.Collider.Parent : null;
+                    if (HundunWorld.Game.Selection.WorldSelectionService.IsCharacterBodyCollider(owner, _localPlayerActor))
+                    {
+                        if (bLog)
+                        {
+                            Debug.Log($"[GroundProbe] SKIP-CHAR x={ecsX:F0} z={ecsY:F0} owner={owner?.Name} " +
+                                      $"type={owner?.GetType().Name}");
+                        }
+
+                        continue;
+                    }
+
+                    // 2026-10-23 实机根因：NPC 的 CombatCollider 是个朝上的盒子（nY=1.00），
+                    // 仰角射击时它比角色高 1.8m+，被当成"地面"逐 tick 把角色抬上去
+                    // （GroundProbe HIT owner=NPC_… groundY=4181 standY=4000，Y 直冲 7986）。
+                    // 规则：高于脚下"一步"的面不是地面；只有 Terrain / 运行期地面在角色
+                    // 明显陷到其下方时才作为救援接受（保留原来的"从地下捞回"能力）。
+                    const float MaxStepUp = 80f;
+                    if (hit.Point.Y > standY + MaxStepUp)
+                    {
+                        // 运行期地面的 Collider 是挂在场景根下的独立 Actor，Parent 读出来是 Scene，
+                        // 所以还要看 Collider 自己的名字（实测日志 owner=Scene type=Scene groundY=0）。
+                        string colliderName = hit.Collider != null ? hit.Collider.Name : null;
+                        bool terrainLike = owner is Terrain
+                                           || colliderName == RuntimeGroundName
+                                           || (owner != null && owner.Name == RuntimeGroundName);
+                        bool rescue = terrainLike && standY < hit.Point.Y - 200f;
+                        if (!rescue)
+                        {
+                            if (bLog)
+                            {
+                                Debug.Log($"[GroundProbe] SKIP-OVERHEAD x={ecsX:F0} z={ecsY:F0} owner={owner?.Name} " +
+                                          $"type={owner?.GetType().Name} groundY={hit.Point.Y:F0} standY={standY:F0}");
+                            }
+
+                            continue;
+                        }
+                    }
+
+                    // 只认"朝上的可站立面"：法线朝下的天花板、竖直侧面（墙/柱）都不是地面。
+                    // 这一条与"跳过角色碰撞体"互为兜底：任何被误判为地面的头顶物件法线通常不朝上，
+                    // 而真正的 Terrain/地面盒法线朝上。
+                    if (hit.Normal.Y < 0.5f)
+                    {
+                        if (bLog)
+                        {
+                            Debug.Log($"[GroundProbe] SKIP-NORMAL x={ecsX:F0} z={ecsY:F0} owner={owner?.Name} " +
+                                      $"n=({hit.Normal.X:F2},{hit.Normal.Y:F2},{hit.Normal.Z:F2}) y={hit.Point.Y:F0}");
+                        }
+
+                        continue;
+                    }
+
+                    // 命中点的 Flax.Y 即对应 ECS.Z（地面高度）
+                    _hasSinkRail = false;
+                    if (bLog)
+                    {
+                        Debug.Log($"[GroundProbe] HIT x={ecsX:F0} z={ecsY:F0} hits={hits.Length} " +
+                                  $"groundY={hit.Point.Y:F0} standY={standY:F0} top={rayStart.Y:F0} " +
+                                  $"owner={owner?.Name} type={owner?.GetType().Name} nY={hit.Normal.Y:F2}");
+                    }
+                    return hit.Point.Y;
+                }
             }
 
-            // 未命中任何碰撞体（例如角色走到 Terrain 边界外或场景未配置地面）
-            // 返回 NaN 让 LocalSimulationSystem 跳过地面约束，避免错误地把角色拉到 0 高度
+            // 未命中任何碰撞体。旧实现在这里返回 NaN，让上层"跳过地面约束"，于是角色以 TerminalVelocity
+            // 无界下坠（实测 3 分钟坠到 -91m，相机穿地后每几帧被 correction 拽回，就是"沉入地面后反复抖动"）。
+            // 现在做两件事：补铺运行期地面，并把下坠深度限制在"开始漏采时高度 -5m"以内。
+            // 参照高度取"角色当前高度"与 0 的较高者：让从服务端持久化的深坑高度出生时
+            // （实测曾为 -176m）也能被抬回，而不是在坑底继续数深度。
+            if (!_hasSinkRail)
+            {
+                _sinkRailY = System.Math.Max(standY, 0f);
+                _hasSinkRail = true;
+            }
+
+            // 先补铺地面再判深度：否则一旦越过限深线就会提前 return，永远不再有铺地面的入口。
+            TryLayRuntimeGround();
+
+            var standTooDeep = _sinkRailY - standY > SinkRailDepth;
+            if (standTooDeep)
+            {
+                if (bLog)
+                {
+                    Debug.Log($"[GroundProbe] RAIL x={ecsX:F0} z={ecsY:F0} standY={standY:F0} rail={_sinkRailY:F0}");
+                }
+                return _sinkRailY - SinkRailDepth;
+            }
+
+            if (bLog)
+            {
+                Debug.Log($"[GroundProbe] MISS x={ecsX:F0} z={ecsY:F0} hits={(hits != null ? hits.Length : 0)} " +
+                          $"standY={standY:F0} top={rayStart.Y:F0} len={rayLength:F0}");
+            }
             return float.NaN;
+        }
+
+        /// <summary>运行期补铺的地面碰撞体名称（用于去重，勿改动）。</summary>
+        private const string RuntimeGroundName = "Ground_Runtime";
+
+        /// <summary>无地面时下坠的最大深度（cm）：相对"开始漏采时的高度"，防止相机无限沉入地下。</summary>
+        private const float SinkRailDepth = 500f;
+
+        private float _sinkRailY;
+        private bool _hasSinkRail;
+        private float _nextRuntimeGroundTime = -100f;
+
+        /// <summary>
+        /// 玩法区地面在运行期必须存在。地图文件里的 Ground_PlayArea 只有编辑器**重新从磁盘加载**过
+        /// World.scene 才会带上：编辑器会缓存场景，任何一次保存都会用内存里的旧内容覆盖手写内容，
+        /// 实测同一台编辑器里两次 PIE 一次有地面（角色稳定停在 Y=0 达 4 分钟）、一次全程打不到（坠到 -91m）。
+        /// 所以地面由代码来铺，铺不铺由"这一帧射线打没打到"决定，天然去重且能在场景重载后自愈。
+        /// </summary>
+        private void TryLayRuntimeGround()
+        {
+            if (Time.UnscaledGameTime < _nextRuntimeGroundTime) return;
+            _nextRuntimeGroundTime = Time.UnscaledGameTime + 5f;
+
+            var scene = FindGameWorldScene();
+            if (scene == null) return;
+
+            // 已有地面（地图里的或上一次铺的）就不再重复铺设。
+            // FindActor(type,name) 按名字递归查子树，被销毁的 Actor 不在树里，因此能正确反映"地面又没了"。
+            if (scene.FindActor<Collider>(RuntimeGroundName) != null) return;
+
+            var ground = new BoxCollider
+            {
+                Name = RuntimeGroundName,
+                Position = new Vector3(0f, -50f, 0f),
+                Size = new Vector3(100000f, 100f, 100000f)
+            };
+            // 上表面正好在 Y=0；覆盖 ±500m，真实地形恢复后应按地图高度图重做或撤掉这块板。
+            SpawnActorToGameplayScene(ground, RuntimeGroundName);
+            Debug.LogWarning($"[HundunWorldGame] 玩法区无地面碰撞体，已补铺 {RuntimeGroundName}（顶面 Y=0，覆盖 ±500m）");
         }
 
         /// <summary>
@@ -1560,7 +1826,7 @@ namespace HundunWorld.Game
         /// <summary>
         /// 计算以世界坐标 (worldX, worldY, worldZ) 为中心、半径 radiusChunks 内的所有 chunk 的 MortonKey 集合。
         /// <para>
-        /// 与服务端 <c>WorldCoord.GetChunksInView</c> + <c>MortonCodec.Encode3D</c> 完全等价。
+        /// 与服务端 <c>WorldChunkAoi.GetChunksInView</c> + <c>MortonCodec.Encode3D</c> 完全等价。
         /// 此处内联实现以避免 Flax 客户端引用的预编译 Horizon.Game.Core.dll 可能过时
         /// 导致 <c>WorldCoord</c> 类型不可见（CS0234）。
         /// </para>
@@ -1899,6 +2165,16 @@ namespace HundunWorld.Game
         /// </summary>
         public void OnUpdate()
         {
+            // 外观补传的重试泵：网络在角色生成之后才就绪时，靠这里把挂起的提交补上。
+            try
+            {
+                HundunWorld.Game.Services.MetaHumanAppearanceService.Instance.TickPendingHeals();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[HundunWorldGame] 外观补传重试失败：{ex.Message}");
+            }
+
             // 超时兜底：如果等待场景切换超过 10 秒仍未生成角色，主动触发
             if (_hasPendingLocalPlayerActorRequest && _pendingRequestTime > 0)
             {
@@ -1932,8 +2208,22 @@ namespace HundunWorld.Game
                 }
             }
 
+
+            // 技能效果计时：SkillEffectSystem 自己不驱动，唯一入口是 CombatSystemManager.Update，
+            // 而它此前没有任何调用方（原先的转发者 CombatSystemCoordinator 本身是零引用死链），
+            // 于是 DoT/HoT/增益既不跳伤也不到期。挂在这个每帧点上，效果才会真正走完生命周期。
+            Combat.CombatSystemManager.Instance.Update(Time.DeltaTime);
+
             // POI 发现：玩家进入 POI 的发现半径即标记已发现（内部自行限频）
             Navigation.MapDiscoveryDriver.Tick(Time.DeltaTime, _localPlayerActor);
+
+            // 设置的 5s 自动保存（GameStateManager 内部节流）：此前没有任何调用方，
+            // 自动保存写了却永远不会触发；挂在唯一每帧点上，改完音量不点"保存"也不会丢。
+            HundunWorld.Game.Core.GameStateManager.Instance.Update(Time.DeltaTime);
+
+            // 控制状态倒计时：本地技能效果（3s 眩晕等）与权威状态 TTL 都靠它到期回收，
+            // 此前同样零调用方——状态一旦施加就永远挂着。
+            HundunWorld.Game.Character.ControlStateManager.Instance.Update(Time.DeltaTime);
         }
 
         /// <summary>
@@ -2098,8 +2388,17 @@ namespace HundunWorld.Game
         /// 无扩展名路径异步的顺序尝试，仅当资产 <see cref="Asset.IsLoaded"/> 为 true 时才返回。
         /// 用于修复打包构建中资产未加载就被使用而触发引擎断言的问题。
         /// </summary>
+        /// <summary>按项目内路径加载资产：统一转绝对路径再交给 Content（内容库按绝对路径登记，见 MetaHumanAssetUtil.ResolveProjectPath）。</summary>
+        public static T LoadAssetAt<T>(string path, float timeoutSeconds = 10000.0f) where T : Asset
+        {
+            return Content.Load<T>(MetaHuman.Runtime.MetaHumanAssetUtil.ResolveProjectPath(path), timeoutSeconds);
+        }
+
         public static T LoadAssetFullyLoaded<T>(Guid guid, string path) where T : Asset
         {
+            // 统一成绝对路径：本工程内容库按绝对路径登记，相对写法会另起一条重复条目并触发 ID 改写（#77）。
+            path = MetaHuman.Runtime.MetaHumanAssetUtil.ResolveProjectPath(path);
+
             // 0. 诊断：检查 GUID 对应的资产是否存在但类型不匹配（例如把 Model 当 SkinnedModel 用）
             bool typeMismatch = false;
             if (guid != Guid.Empty)
@@ -2230,7 +2529,10 @@ namespace HundunWorld.Game
             // 关键变更：不再要求预加载成功才生成 Prefab。Prefab 自身已引用这些资产，
             // 打包构建中 Prefab 引用通常比硬编码 GUID/路径更可靠。预加载仅作为降级替补。
             Debug.Log("[HundunWorldGame] 开始预加载角色资产（备用）...");
-            var preloadedSkinnedModel = LoadAssetFullyLoaded<SkinnedModel>(SkinnedModelGuid, "Content/Character/Models/skm_uefn_mannequin.flax");
+            // 世界身体优先用 Ada（完整 MetaHuman 蒙皮 + 已绑好的 ALS 重定向）；
+            // 加载失败再退回 Character_1，保证进世界不因资产问题失败。
+            var preloadedSkinnedModel = LoadAssetFullyLoaded<SkinnedModel>(Guid.Empty, EquipmentDatabase.TemplateSkinnedBodyModelPath)
+                                        ?? LoadAssetFullyLoaded<SkinnedModel>(SkinnedModelGuid, EquipmentDatabase.MaleBodyModelPath);
             var preloadedAnimGraph = LoadAssetFullyLoaded<AnimationGraph>(AnimationGraphGuid, "Content/Character/Models/Animation Graph.flax");
 
             Debug.Log($"[HundunWorldGame] 预加载 SkinnedModel: {(preloadedSkinnedModel != null ? preloadedSkinnedModel.Path : "FAILED")}, IsLoaded={(preloadedSkinnedModel?.IsLoaded.ToString() ?? "N/A")}");
@@ -2288,6 +2590,7 @@ namespace HundunWorld.Game
                 }
                 else
                 {
+                    Debug.LogError("[HundunWorldGame] 未找到玩法场景，本地玩家将落入 RootScene（切场景不卸载，请检查 World 场景是否已加载）");
                     actor = PrefabManager.SpawnPrefab(prefab, position, Quaternion.Identity);
                 }
 
@@ -2301,8 +2604,8 @@ namespace HundunWorld.Game
                     actor.Position = position;
                     actor.Orientation = Quaternion.Identity;
 
-                    // 获取 Prefab 中的 AnimatedModel；如果找不到则新建一个
-                    animatedModel = actor.FindActor<AnimatedModel>() ?? actor.GetChild<AnimatedModel>();
+                    // 获取 Prefab 中的身体 AnimatedModel；如果找不到则新建一个（头部是独立 Actor，不能选它）
+                    animatedModel = FindBodyAnimatedModel(actor);
                     if (animatedModel == null)
                     {
                         Debug.LogWarning($"[HundunWorldGame] Prefab 中缺少 AnimatedModel，新建一个: CharacterId={characterId}");
@@ -2312,6 +2615,18 @@ namespace HundunWorld.Game
 
                     // 安全初始化：优先等待 Prefab 自带引用加载完成，失败时才使用预加载资产替换
                     AssignAnimatedModelResources(animatedModel, actor, preloadedSkinnedModel, preloadedAnimGraph);
+
+                    // 本地玩家与远端统一用 Ada 承载 MetaHuman 身体：占位身体（Character_1）挂同一张图时，
+                    // 它的 retarget 条目指向已失效骨架 ⇒ 图求值不出姿态（T-pose）。这里换成 Ada；
+                    // 内部会先停用旧模型再换，避免运行中直接换 SkinnedModel 的引擎断言（2026-10-25）。
+                    EnsureMetaHumanBody(actor);
+                    animatedModel = FindBodyAnimatedModel(actor) ?? animatedModel;
+
+                    // 程序化待机：空动画图（deps=0）下让身体有呼吸/微摆；检测到真实动画会自己让位。
+                    if (animatedModel.GetScript<HundunWorld.Game.Character.ProceduralIdleDriver>() == null)
+                    {
+                        animatedModel.AddScript<HundunWorld.Game.Character.ProceduralIdleDriver>();
+                    }
                 }
             }
 
@@ -2319,9 +2634,51 @@ namespace HundunWorld.Game
             actor.Position = position;
             _localPlayerActor = actor;
 
+            // 挂上动画控制器：CharacterRoot.prefab 本身没带这个脚本（日志里 AnimationController=False 即此因），
+            // 而两个同步系统都是用 GetScript<CharacterAnimationController>() 去找它来驱动状态的。
+            if (actor.GetScript<CharacterAnimationController>() == null)
+            {
+                var animationController = actor.AddScript<CharacterAnimationController>();
+                if (animationController != null)
+                    animationController.AnimatedModel = animatedModel;
+            }
+
+            // Idle/Walk/Run 混合：按根 Actor 位移速度写两个 α 参数（本地与远端同一套图）。
+            EnsureLocomotionDriver(actor);
+
+            // GASP（Motion Matching）：第一版只挂本地玩家；数据缺失/初始化失败时它自己保持停用，回落到上面的图驱动。
+            EnsureGaspAnimator(actor);
+
+            // 翻越驱动：检测 → 本地预测登记 → 上行计划 → 服务端权威裁决（F 键触发）。
+            _localTraversalDriver = actor.GetScript<HundunWorld.Game.Gasp.GaspTraversalDriver>()
+                ?? actor.AddScript<HundunWorld.Game.Gasp.GaspTraversalDriver>();
+
+            // Foley：本地玩家挂脚步消费者（无音频资产时进入事件模式，仅计数/日志）。
+            if (actor.GetScript<HundunWorld.Game.Gasp.GaspFoley>() == null)
+                actor.AddScript<HundunWorld.Game.Gasp.GaspFoley>();
+            if (HundunWorld.Game.Gasp.GaspDebugDraw.DebugMarkerPresent()
+                && actor.GetScript<HundunWorld.Game.Gasp.GaspDebugDraw>() == null)
+                actor.AddScript<HundunWorld.Game.Gasp.GaspDebugDraw>();
+
+            // 自测夹具：标记存在时自动挂到本地角色上（此前依赖手工挂脚本的测试场景，场景已删）。
+            if (actor.GetScript<HundunWorld.Game.Gasp.GaspTestFixture>() == null)
+            {
+                try
+                {
+                    var marker = System.IO.Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "HundunWorld", "gasp_fixture.on");
+                    if (System.IO.File.Exists(marker))
+                        actor.AddScript<HundunWorld.Game.Gasp.GaspTestFixture>();
+                }
+                catch (Exception)
+                {
+                    // 标记读取失败不影响正常进世界。
+                }
+            }
+
             // 自动添加并初始化 CharacterEquipmentManager，应用已保存的外观数据
-            var equipmentManager = actor.AddScript<CharacterEquipmentManager>();
-            if (equipmentManager != null)
+            var equipmentManager = actor.AddScript<CharacterEquipmentManager>();            if (equipmentManager != null)
             {
                 var appearance = CharacterPersistenceService.Instance.LoadAppearanceAsync(characterId).GetAwaiter().GetResult();
                 if (appearance == null)
@@ -2332,7 +2689,8 @@ namespace HundunWorld.Game
                 equipmentManager.Initialize(
                     appearance.BodyEquipmentId,
                     appearance.AccessoryIds,
-                    appearance.WeaponIds);
+                    appearance.WeaponIds,
+                    appearance.AppearanceEquipmentId);
 
                 // 本地缓存只用于"进场景瞬间有得看"；随后向服务端要权威装备清单，
                 // 回包由 RoleEquipmentSyncHandler 应用（失败则保持本地渲染不动）。
@@ -2341,7 +2699,7 @@ namespace HundunWorld.Game
                 // 背包同理：拉服务端权威清单；若服务端为空且本地有货，处理器会一次性迁移上去。
                 _ = Network.MessageHandlers.RoleInventorySyncHandler.RequestAsync((ulong)characterId);
 
-                Debug.Log($"[HundunWorldGame] 已初始化 CharacterEquipmentManager: CharacterId={characterId}, Body={appearance.BodyEquipmentId}, Accessories=[{string.Join(",", appearance.AccessoryIds)}], Weapons=[{string.Join(",", appearance.WeaponIds)}]");
+                Debug.Log($"[HundunWorldGame] 已初始化 CharacterEquipmentManager: CharacterId={characterId}, Body={appearance.BodyEquipmentId}, Appearance={appearance.AppearanceEquipmentId}, Accessories=[{string.Join(",", appearance.AccessoryIds)}], Weapons=[{string.Join(",", appearance.WeaponIds)}]");
             }
             else
             {
@@ -2351,13 +2709,180 @@ namespace HundunWorld.Game
             // 最终状态校验与兜底：如果 AnimatedModel 仍未获得已加载的 SkinnedModel，禁用它防止断言
             // 注意：不设置 SkinnedModel = null，避免竞态中 Job 调用 SetupSkinningData 触发断言。
             // 只设置 UpdateMode = Never 和 IsActive = false，让 CanUpdateModel 自然返回 false。
-            animatedModel = actor.FindActor<AnimatedModel>();
+            animatedModel = FindBodyAnimatedModel(actor);
             var finalSkinnedModel = animatedModel?.SkinnedModel;
             if (animatedModel != null && (finalSkinnedModel == null || !finalSkinnedModel.IsLoaded))
             {
                 Debug.LogError($"[HundunWorldGame][PACKAGE] 最终校验失败：AnimatedModel 的 SkinnedModel 未加载，禁用 AnimatedModel 防止断言");
                 animatedModel.UpdateMode = AnimatedModel.AnimationUpdateMode.Never;
                 animatedModel.IsActive = false;
+            }
+
+            // Ada 是厘米模型（Character_1 是米、靠 100 缩放）：确认换成 Ada 后把缩放归 1。
+            AnimatedModel worldHead = null;
+            if (animatedModel?.SkinnedModel != null)
+            {
+                bool isAda = animatedModel.SkinnedModel.Path.IndexOf("Ada_BodyPreview", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (isAda)
+                    animatedModel.Scale = Vector3.One;
+
+                try
+                {
+                    var headModel = LoadAssetAt<SkinnedModel>(EquipmentDatabase.HeadModelPath);
+                    if (headModel != null && headModel.IsLoaded)
+                    {
+                        // 头是独立 Actor；WorldHeadMasterPose 在 OnStart 调一次 SetMasterPoseModel，
+                        // 与 Ada 同骨架按骨名跟随（不在运行中换模型，避免动画竞态断言）。
+                        worldHead = actor.AddChild<AnimatedModel>();
+                        worldHead.Name = $"LocalPlayerHead_{characterId}";
+                        worldHead.SkinnedModel = headModel;
+                        worldHead.Scale = Vector3.One;
+                        worldHead.LocalPosition = Vector3.Zero;
+                        // 490 骨头资产同理：关掉逐骨运动模糊，避免首次蒙皮时撞 AnimatedModel.cpp:82（#76）。
+                        worldHead.PerBoneMotionBlur = false;
+                        worldHead.AddScript<HundunWorld.Game.Character.WorldHeadMasterPose>();
+                        Debug.Log($"[HundunWorldGame] 世界头已创建（master pose）: {headModel.Path}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[HundunWorldGame] 世界头部模型未就绪: {EquipmentDatabase.HeadModelPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[HundunWorldGame] 世界头部创建失败（CharacterId={characterId}）：{ex}");
+                }
+            }
+
+            // 世界角色头发：毛发卡片与头资产同空间，挂在头 Actor 下随头移动（静态网格，不参与蒙皮）。
+            if (worldHead != null)
+            {
+                try
+                {
+                    var hairModel = Content.Load<Model>(MetaHuman.Runtime.MetaHumanAssetUtil.ResolveProjectPath(EquipmentDatabase.HairCardsModelPath), 10000.0);
+                    if (hairModel != null && hairModel.IsLoaded)
+                    {
+                        var hair = worldHead.AddChild<StaticModel>();
+                        hair.Name = $"LocalPlayerHair_{characterId}";
+                        hair.Model = hairModel;
+                        hair.LocalPosition = Vector3.Zero;
+                        hair.LocalScale = Vector3.One;
+
+                        // 发色：创角色板写的是离散下标（AppearanceInfo.HairColor），世界侧用同一张调色板还原；
+                        // 写到该 Actor 自己的材质实例上，避免改到共享材质。
+                        // 两个角色缓存并存（服务层与创角 UI 层），任一命中即可；都没有才回落 0。
+                        var characterInfo = CharacterService.Instance?.GetCharacterFromCache(characterId);
+                        if (characterInfo == null)
+                        {
+                            var uiManager = global::Game.UI.Character.CharacterManager.Instance;
+                            characterInfo = uiManager?.CharacterList?.FirstOrDefault(c => c.CharacterId == characterId)
+                                            ?? uiManager?.SelectedCharacter;
+                        }
+                        var appearance = characterInfo?.Appearance;
+                        int hairColorIndex = appearance?.HairColor ?? 0;
+                        var palette = HundunWorld.Game.UI.Ink.Pages.CharacterCreation.CcFacePresets.HairColors;
+                        FlaxEngine.Color hairColor = palette.Length > 0
+                            ? palette[Mathf.Clamp(hairColorIndex, 0, palette.Length - 1)]
+                            : new FlaxEngine.Color(0.10f, 0.06f, 0.035f);
+                        var baseMaterial = hair.GetMaterial(0);
+                        if (baseMaterial != null)
+                        {
+                            if (baseMaterial.CreateVirtualInstance() is MaterialInstance hairInstance)
+                            {
+                                hairInstance.SetParameterValue("HairColor", hairColor);
+                                hair.SetMaterial(0, hairInstance);
+                            }
+                        }
+                        // 发型：模板参数 hair.style → HairStyleCatalog；绑定器在模型层换卡，并保留发色实例。
+                        hair.AddScript<HundunWorld.Game.Character.MetaHumanHairBinder>();
+                        Debug.Log($"[HundunWorldGame] 世界头发已创建: {hairModel.Path} 发色下标={hairColorIndex} RGB=({hairColor.R:F2},{hairColor.G:F2},{hairColor.B:F2})");
+
+                        // 眉毛卡片：与头发同空间、同抠图材质，颜色跟随发色。
+                        HundunWorld.Game.Character.MetaHumanEyebrowBinder.Attach(
+                            worldHead, hairColor, $"LocalPlayerBrows_{characterId}", out _);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[HundunWorldGame] 世界头发模型未就绪: {EquipmentDatabase.HairCardsModelPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[HundunWorldGame] 世界头发创建失败（CharacterId={characterId}）：{ex}");
+                }
+            }
+
+            // 世界角色应用玩家外观：按持久化角色 id 读回已发布外观，写回目标为本角色的 AnimatedModel。
+            // 读不到外观/目标未命中都会留在 MetaHumanCharacter 的诊断里，不静默退化成"看起来没生效"。
+            if (animatedModel != null && animatedModel.SkinnedModel != null)
+            {
+                try
+                {
+                    var mh = actor.GetScript<MetaHuman.Runtime.MetaHumanCharacter>()
+                             ?? actor.AddScript<MetaHuman.Runtime.MetaHumanCharacter>();
+                    if (mh != null)
+                    {
+                        mh.PersistenceCharacterId = characterId.ToString();
+                        // Load() 以 TemplateIds 为准建会话；不给就永远 loaded=false（已实机复现），
+                        // 与创角面板用同一套基础模板，保证发布后的外观能在世界角色上落地。
+                        mh.TemplateIds = new[] { "metahuman.face_archetype", "metahuman.body_base" };
+                        mh.TargetModels = worldHead != null
+                            ? new AnimatedModel[] { animatedModel, worldHead }
+                            : new AnimatedModel[] { animatedModel };
+                        mh.EnableBoneScaleChannel = true;
+                        mh.ApplyOnStart = true;
+                        if (!mh.IsLoaded)
+                        {
+                            mh.Load();
+                        }
+
+                        Debug.Log($"[HundunWorldGame] 已挂 MetaHumanCharacter：CharacterId={characterId}, "
+                                  + $"loaded={mh.IsLoaded}, targets={(worldHead != null ? 2 : 1)}, diag={mh.AppliersDiag()}");
+
+                        // 世界角色也要有面部空闲动画（UE 的 Face Animator 对齐）：默认只眨眼，
+                        // 不跑周期性张嘴 demo（会盖住外观静帧对比）。挂在头 Actor 上，Owner 显式指认。
+                        if (worldHead != null)
+                        {
+                            var face = worldHead.GetScript<MetaHuman.Runtime.MetaHumanFaceAnimator>()
+                                       ?? worldHead.AddScript<MetaHuman.Runtime.MetaHumanFaceAnimator>();
+                            if (face != null)
+                            {
+                                face.Owner = mh;
+                                face.AutoBlink = true;
+                                face.AutoPlayDemo = false;
+                                face.LinkMirrors = true;
+                            }
+
+                            // 外部追踪入口（Live Link 等价）：默认不监听，开发/演出时再打开。
+                            var tracking = worldHead.GetScript<MetaHuman.Runtime.MetaHumanFaceTrackingReceiver>()
+                                           ?? worldHead.AddScript<MetaHuman.Runtime.MetaHumanFaceTrackingReceiver>();
+                            if (tracking != null)
+                            {
+                                tracking.Animator = face;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError($"[HundunWorldGame] 无法为本地玩家添加 MetaHumanCharacter: CharacterId={characterId}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[HundunWorldGame] 挂 MetaHumanCharacter 失败（CharacterId={characterId}）：{ex}");
+                }
+            }
+
+            // 服务端副本自愈：本机有捏脸快照、服务端没有时补传一次（跨设备恢复靠这条）。
+            // Ink 登录流程不走 CharacterStateManager.AdoptFromServer，所以要在这里显式补。
+            try
+            {
+                HundunWorld.Game.Services.MetaHumanAppearanceService.Instance
+                    .HealServerFromLocal((long)characterId);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[HundunWorldGame] 外观服务端自愈调用失败：{ex.Message}");
             }
 
             Debug.Log($"[HundunWorldGame] 已创建本地玩家 Actor: CharacterId={characterId}, Pos=({x},{y},{z}), " +
@@ -2376,6 +2901,19 @@ namespace HundunWorld.Game
                 Debug.Log($"[HundunWorldGame] LocalPlayerActor 缺少 CharacterAttributesComponent，已自动添加");
             }
             Debug.Log($"[HundunWorldGame] 已确保 LocalPlayerActor 挂载 CharacterAttributesComponent: Level={attrComp.Level}, Nickname={attrComp.Nickname}, Stage={attrComp.CurrentStage}");
+
+            // 装备快照可能比这个组件先到（进场景瞬间），那次重算会因组件为 null 而整体落空。
+            // 组件一就位就按已缓存的权威快照补算一次，不必等下一次穿戴回包。
+            HundunWorld.Game.Character.EquipmentAttributeBridge.RefreshFromEquipped();
+
+            // 五行三行的权威值只有服务端读得到（属性表 + 物品模板 + 亲和兜底），
+            // 所以组件一就位就取一次画像；请求排在组件之后发，回包不会落到没有组件的 Actor 上。
+            _ = HundunWorld.Game.Network.MessageHandlers.CharacterAttributeRefreshHandler
+                .RequestAsync((ulong)characterId,
+                    HundunWorld.Game.Network.MessageHandlers.CharacterAttributeRefreshHandler.ReasonLogin);
+
+            // 技能模板表同样以服务端为准（客户端那份硬编码只作下行到达前的兜底）。
+            _ = HundunWorld.Game.Network.MessageHandlers.SkillCatalogSyncHandler.RequestAsync((ulong)characterId);
 
             // 应用缓存的本地玩家属性（来自 EnterGameResponse，由 ApplyLocalPlayerAttributes 在异步路径下缓存）。
             // 同步路径下 ApplyLocalPlayerAttributes 已直接回填，此处仅处理异步路径。
@@ -2435,10 +2973,15 @@ namespace HundunWorld.Game
         }
 
         // 角色资产 GUID（来自 CharacterRoot.prefab）
-        // 重要：SkinnedModelGuid 对应的资产必须是 FlaxEngine.SkinnedModel 类型。
+        // 重要：身体资产必须是 FlaxEngine.SkinnedModel 类型。
         // 如果实际是 FlaxEngine.Model，Content.Load<SkinnedModel> 会失败，导致角色没有骨骼网格体。
         // 出现此类问题时，请在 Flax Editor 中重新导入源 FBX 并选择 Type = SkinnedModel。
-        private static readonly Guid SkinnedModelGuid = new Guid("b0823a8576cb47cb9932f5af61aa1ef7"); // 2026-09-22 修正：资产重新导入后 GUID 由 bb21309c… 变更（更早 c7c70820… 已失效）；加载以路径为准
+        // 2026-09-27：身体资产已由 skm_uefn_mannequin 换成 Character_1/2（提交 5287c6c），路径以 EquipmentDatabase 为准。
+        // 2026-10-16：**这里不再填 GUID 常量**。资产的 GUID 会随重导入变掉（当天实测：Character_1.flax 的头
+        // 从 528b2144-… 变成 216f8857-…，模板 body.flax 从 69b4df20-… 变成 bea3fa49-…），而
+        // LoadAssetFullyLoaded 是"GUID 优先、失败才回退路径"，于是每次重导都要白等一次 30s 超时 +
+        // 满屏 Cannot find asset 报错，严重时角色直接没身体。路径才是这一层唯一可靠的键。
+        private static readonly Guid SkinnedModelGuid = Guid.Empty;
         // 2026-09 修正：原 ceded67f4bb2623f40b4dcb493b0d419 为**错误 GUID**（字节顺序被写乱）。
         // Content/Character/Models/Animation Graph.flax 头部实际 ID = ceded67f623f4bb2b4dcb44019d4b093，
         // 与日志中的 "Invalid or missing asset (ceded67f623f4bb2b4dcb44019d4b093, FlaxEngine.AnimationGraph)" 一致。
@@ -2450,7 +2993,245 @@ namespace HundunWorld.Game
         /// 只有当自带引用无法加载时，才使用预加载资产替换。
         /// 所有资源切换都遵循竞态安全协议：UpdateMode=Never、IsActive=false、先清空 AnimationGraph 再改 SkinnedModel。
         /// </summary>
-        private static void AssignAnimatedModelResources(AnimatedModel animatedModel, Actor rootActor,
+        /// <summary>
+        /// 确保角色 Actor 上有一个带身体网格的 <see cref="AnimatedModel"/>，没有就补挂一个。
+        /// <para>
+        /// 为什么需要：远程玩家用的 <c>Content/Prefabs/Character/CharacterRoot.prefab</c>
+        /// 至今是个占位资产——根节点只有一个连 Model 引用都没有的 <c>StaticModel "Capsule"</c>，
+        /// 所以远程角色在场景里其实**看不见**（日志表现为
+        /// "未找到 AnimatedModel，无法绑定 RootMotionTarget"）。本地玩家走的是同一套兜底
+        /// （见 <c>Prefab 中缺少 AnimatedModel，新建一个</c> 分支），这里把那条路开放给远程复用。
+        /// </para>
+        /// <para>
+        /// 性别：网络同步层的实体里没有 Gender 字段（只有位置/朝向/身份），
+        /// 因此默认男性身体；等同步协议带上性别后由调用方传入即可。
+        /// </para>
+        /// </summary>
+        /// <param name="root">角色根 Actor</param>
+        /// <param name="gender">0 = 男，1 = 女</param>
+        /// <returns>已有或新建的 AnimatedModel；root 为空时返回 null</returns>
+        public static AnimatedModel EnsureBodyModel(Actor root, int gender = 0)
+        {
+            if (root == null)
+                return null;
+
+            var model = FindBodyAnimatedModel(root);
+            if (model == null)
+            {
+                model = root.AddChild<AnimatedModel>();
+                model.Name = "AnimatedModel";
+            }
+
+            AssignAnimatedModelResources(model, root, EquipmentDatabase.GetBodyModel(gender), null);
+            return model;
+        }
+
+        /// <summary>
+        /// 远端玩家身体：与本地玩家同一套 Ada 承载模型 + 重定向动画图，否则头部形状没有脸骨可写。
+        /// 已有非 Ada 的 AnimatedModel 时先停用再加新的（运行中直接换 SkinnedModel 会踩引擎断言）。
+        /// </summary>
+        /// <summary>
+        /// Ada 挂 locomotion 图：剪辑里的 MetaHuman 通道按 UE Z-up 烘、Ada 骨架是 Y-up，
+        /// 直接播会让骨架整体多转 −90°X、网格撕成碎片（2026-10-25 实测：pelvis 局部平移 (0,2.94,−95.74)）。
+        /// 现在由 <see cref="HundunWorld.Game.Character.MetaHumanClipFrameFix"/> 在动画更新后把姿态转正，
+        /// 目视与骨骼读数均已成立（直立、8 根关键骨 0.9s 内 0.9–3.1cm 位移、无碎片）。
+        /// </summary>
+        private const bool AttachLocomotionGraphToAda = true;
+
+        /// <summary>
+        /// 从角色 Actor 下挑「身体」AnimatedModel：头部是独立 Actor（LocalPlayerHead_* / conformhead 资产），
+        /// 用 FindActor&lt;AnimatedModel&gt;() 会按遍历顺序撞到它，把 Ada 身体和动画图挂到头上
+        /// （2026-10-25 实测：日志出现 model=Ada_FaceMesh_conformhead4 + graph，身体仍是 Character_1）。
+        /// 规则：排除名字或模型路径像头的；优先名字就是 "AnimatedModel" 的那个。
+        /// </summary>
+        private static AnimatedModel FindBodyAnimatedModel(Actor root)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+            var all = new List<AnimatedModel>();
+            CollectAnimatedModels(root, all);
+            AnimatedModel named = null;
+            AnimatedModel first = null;
+            string dump = "";
+            for (int i = 0; i < all.Count; i++)
+            {
+                AnimatedModel m = all[i];
+                if (m == null)
+                {
+                    continue;
+                }
+                bool head = IsHeadModel(m);
+                dump += (i > 0 ? " | " : "") + "name=" + m.Name
+                        + ",id=" + m.ID
+                        + ",active=" + m.IsActive
+                        + ",model=" + (m.SkinnedModel != null ? m.SkinnedModel.Path : "null")
+                        + ",head=" + head;
+                if (head)
+                {
+                    continue;
+                }
+                if (first == null)
+                {
+                    first = m;
+                }
+                if (named == null && string.Equals(m.Name, "AnimatedModel", StringComparison.OrdinalIgnoreCase))
+                {
+                    named = m;
+                }
+            }
+            AnimatedModel chosen = named ?? first;
+            Debug.Log("[HundunWorldGame] 身体候选(" + all.Count + "): " + dump
+                      + " ⇒ 选中=" + (chosen != null ? chosen.Name + "/" + chosen.ID : "null"));
+            return chosen;
+        }
+
+        private static bool IsHeadModel(AnimatedModel model)
+        {
+            if (model.Name != null && model.Name.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+            string path = model.SkinnedModel != null ? model.SkinnedModel.Path : null;
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+            return path.IndexOf("conformhead", StringComparison.OrdinalIgnoreCase) >= 0
+                || path.IndexOf("head_mh", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static void CollectAnimatedModels(Actor root, List<AnimatedModel> result)
+        {
+            if (root == null)
+            {
+                return;
+            }
+            if (root is AnimatedModel model)
+            {
+                result.Add(model);
+            }
+            var children = root.Children;
+            if (children == null)
+            {
+                return;
+            }
+            for (int i = 0; i < children.Length; i++)
+            {
+                CollectAnimatedModels(children[i], result);
+            }
+        }
+
+        public static AnimatedModel EnsureMetaHumanBody(Actor root)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            AnimatedModel existing = FindBodyAnimatedModel(root);
+            if (existing != null && existing.SkinnedModel != null
+                && existing.SkinnedModel.Path.IndexOf("Ada_BodyPreview", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                if (!AttachLocomotionGraphToAda && existing.AnimationGraph != null)
+                {
+                    existing.AnimationGraph = null;
+                }
+                if (existing.AnimationGraph != null)
+                {
+                    HundunWorld.Game.Character.MetaHumanClipFrameFix.Attach(existing);
+                }
+                EnsureLocomotionDriver(root);
+                return existing;
+            }
+
+            if (existing != null)
+            {
+                // 只停用不清引用的话，AssignAnimatedModelResources 会继续优先用"自带引用"（占位身体），
+                // Ada 永远换不上来（2026-10-25 实测：本地玩家身体一直是 Character_1）。
+                existing.UpdateMode = AnimatedModel.AnimationUpdateMode.Never;
+                existing.IsActive = false;
+                existing.SkinnedModel = null;
+            }
+
+            var ada = LoadAssetFullyLoaded<SkinnedModel>(Guid.Empty, EquipmentDatabase.TemplateSkinnedBodyModelPath);
+            if (ada == null || !ada.IsLoaded)
+            {
+                Debug.LogWarning("[HundunWorldGame] MetaHuman 身体未就绪，远端回退到人形占位身体：" + EquipmentDatabase.TemplateSkinnedBodyModelPath);
+                return EnsureBodyModel(root);
+            }
+
+            var model = FindBodyAnimatedModel(root);
+            if (model == null)
+            {
+                model = root.AddChild<AnimatedModel>();
+                model.Name = "AnimatedModel";
+            }
+
+            // 图与 Ada 的坐标口径差（剪辑 Z-up / 骨架 Y-up）由 MetaHumanClipFrameFix 在动画更新后转正，
+            // 见 AttachLocomotionGraphToAda 的说明与任务 #94 的实测读数。
+            var graph = AttachLocomotionGraphToAda
+                ? LoadAssetFullyLoaded<AnimationGraph>(Guid.Empty, "Content/Character/Models/Animation Graph.flax")
+                : null;
+            AssignAnimatedModelResources(model, root, ada, graph);
+            if (!AttachLocomotionGraphToAda)
+            {
+                // Assign 在 target 图为 null 时会恢复原图（原图可能是先前设上的同一张），这里再清一次确保真的不挂。
+                model.AnimationGraph = null;
+            }
+            model.IsActive = true;
+            model.UpdateMode = AnimatedModel.AnimationUpdateMode.Auto;
+            if (model.AnimationGraph != null)
+            {
+                HundunWorld.Game.Character.MetaHumanClipFrameFix.Attach(model);
+            }
+            Debug.Log("[HundunWorldGame] MetaHuman 身体已就位: model=" + (model.SkinnedModel != null ? model.SkinnedModel.Path : "null")
+                      + " graph=" + (model.AnimationGraph != null ? model.AnimationGraph.Path : "null"));
+
+            // Ada 是厘米模型；与本地玩家同一口径。
+            model.Scale = Vector3.One;
+            EnsureLocomotionDriver(root);
+            return model;
+        }
+
+        /// <summary>
+        /// 挂 locomotion（Idle/Walk/Run 混合）驱动。本地与远端共用，重复调用无副作用。
+        /// </summary>
+        public static void EnsureLocomotionDriver(Actor actor)
+        {
+            if (actor == null)
+                return;
+            if (actor.GetScript<LocomotionGraphDriver>() == null)
+                actor.AddScript<LocomotionGraphDriver>();
+        }
+
+        /// <summary>
+        /// 挂 GASP Motion Matching 运行时。重复调用无副作用；无数据文件时组件会保持未就绪、不接管骨骼。
+        /// </summary>
+        public static void EnsureGaspAnimator(Actor actor)
+        {
+            EnsureGaspAnimator(actor, false);
+        }
+
+        /// <summary>
+        /// 挂 GASP Motion Matching 运行时。remote=true 时尊重网络 LOD、关闭脚部射线。
+        /// </summary>
+        public static void EnsureGaspAnimator(Actor actor, bool remote)
+        {
+            if (actor == null)
+                return;
+            var gasp = actor.GetScript<HundunWorld.Game.Gasp.GaspAnimator>();
+            if (gasp == null)
+                gasp = actor.AddScript<HundunWorld.Game.Gasp.GaspAnimator>();
+            if (gasp != null && remote)
+            {
+                gasp.RemoteMode = true;
+                gasp.EnableFootPlacement = false;
+            }
+        }
+
+        public static void AssignAnimatedModelResources(AnimatedModel animatedModel, Actor rootActor,
             SkinnedModel preloadedSkinnedModel, AnimationGraph preloadedAnimGraph)
         {
             if (animatedModel == null) return;
@@ -2542,6 +3323,11 @@ namespace HundunWorld.Game
             if (animatedModel.RootMotionTarget == null && rootActor != null)
                 animatedModel.RootMotionTarget = rootActor;
 
+            // 490 骨模型首次蒙皮时，引擎按“骨数×48×(PerBoneMotionBlur?2:1)”申请骨骼缓冲；
+            // 冷缓冲 16KB 只翻倍一次到 32KB，而 490 骨 ×48×2 ≈ 47KB 会触发 AnimatedModel.cpp:82 断言（#76）。
+            // 逐骨运动模糊在这里没有收益，关掉后需求减半（≈23KB），运行时不再撞断言。
+            animatedModel.PerBoneMotionBlur = false;
+
             // 手动刷新
             if (animatedModel.SkinnedModel != null && animatedModel.SkinnedModel.IsLoaded)
             {
@@ -2604,34 +3390,34 @@ namespace HundunWorld.Game
         /// 查找 GameWorld 场景（World.scene），确保 Actor 生成在正确的场景中。
         /// 不依赖场景名称（可能为空或不匹配），改为查找包含 Terrain 或 WorldSceneInitializer 的场景。
         /// </summary>
-        private static FlaxEngine.Scene FindGameWorldScene()
+        public static FlaxEngine.Scene FindGameWorldScene()
         {
-            // 方式1：查找包含 WorldSceneInitializer 脚本的场景
+            // 方式1：按场景资产路径精确匹配 ".../World.scene"。
+            // 必须排在最前：Login.scene 也带 Terrain，旧的「含 Terrain 即玩法场景」会把 Login 当成世界，
+            // 本地玩家因此被生成进登录场景（2026-10-25 实测：LocalPlayer_44 落在 Login，World 里另有相机/地形）。
+            for (int i = 0; i < Level.ScenesCount; i++)
+            {
+                var scene = Level.GetScene(i);
+                if (scene != null && IsWorldScenePath(scene))
+                    return scene;
+            }
+
+            // 方式2：查找包含 WorldSceneInitializer 脚本的场景（排除登录/常驻场景）
             for (int i = 0; i < Level.ScenesCount; i++)
             {
                 var scene = Level.GetScene(i);
                 if (scene == null) continue;
-                if (scene.GetScript<WorldSceneInitializer>() != null)
+                if (scene.GetScript<WorldSceneInitializer>() != null && !IsNonGameplayScenePath(scene))
                     return scene;
             }
 
-            // 方式2：查找包含 Terrain 的场景（World 场景有 Terrain）
+            // 方式3：查找包含 Terrain 的场景（World 场景有 Terrain），同样排除登录/常驻场景
             for (int i = 0; i < Level.ScenesCount; i++)
             {
                 var scene = Level.GetScene(i);
                 if (scene == null) continue;
-                if (scene.FindActor<Terrain>() != null)
+                if (scene.FindActor<Terrain>() != null && !IsNonGameplayScenePath(scene))
                     return scene;
-            }
-
-            // 方式3：按名称查找（兜底）
-            for (int i = 0; i < Level.ScenesCount; i++)
-            {
-                var scene = Level.GetScene(i);
-                if (scene != null && (scene.Name == "World" || scene.Name == "WorldScene"))
-                {
-                    return scene;
-                }
             }
 
             // 调试：打印所有场景信息
@@ -2643,6 +3429,77 @@ namespace HundunWorld.Game
             }
 
             return null;
+        }
+
+        /// <summary>场景资产路径是否命中 "/World.scene"（Scene.Name 是根对象名，不能拿来判）。</summary>
+        private static bool IsWorldScenePath(FlaxEngine.Scene scene)
+        {
+            return SceneAssetPathContains(scene, "/World.scene");
+        }
+
+        /// <summary>登录/常驻/过渡这类非玩法场景：它们的资产路径命中就排除。</summary>
+        private static bool IsNonGameplayScenePath(FlaxEngine.Scene scene)
+        {
+            return SceneAssetPathContains(scene, "/Login.scene")
+                   || SceneAssetPathContains(scene, "/RootScene.scene")
+                   || SceneAssetPathContains(scene, "/TransitionScene.scene");
+        }
+
+        private static bool SceneAssetPathContains(FlaxEngine.Scene scene, string fragment)
+        {
+            if (scene == null || scene.ID == Guid.Empty)
+                return false;
+
+            try
+            {
+                if (FlaxEngine.Content.GetAssetInfo(scene.ID, out var info) && info.Path != null)
+                {
+                    string path = info.Path.Replace('\\', '/');
+                    return path.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+            }
+            catch
+            {
+                // 资产信息解析失败按“不匹配”处理，交给后面的兜底继续找
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 将 Actor 生成到当前玩法（World）场景。
+        /// Flax 无父级版 <see cref="Level.SpawnActor(Actor)"/> 固定落入 Scenes[0]（常驻 RootScene，
+        /// 切场景不卸载），世界对象必须显式指定场景，否则会在 RootScene 里跨会话堆积。
+        /// 解析不到玩法场景时大声报错并仍按默认落点生成（可见性优先）。
+        /// 返回 true 表示生成失败（Flax 约定）。
+        /// </summary>
+        public static bool SpawnActorToGameplayScene(Actor actor, string what = null)
+        {
+            var target = FindGameWorldScene();
+            if (target == null)
+            {
+                Debug.LogError($"[SpawnRouting] 未找到玩法场景，{what ?? actor?.Name ?? "Actor"} 将落入 RootScene（RootScene 只允许全局共享宿主，请检查 World 场景是否已加载）");
+                return Level.SpawnActor(actor);
+            }
+            return Level.SpawnActor(actor, target);
+        }
+
+        /// <summary>
+        /// 把已通过 PrefabManager.SpawnPrefab 生成的 Actor 搬进玩法场景（SpawnPrefab 同样默认落 Scenes[0]）。
+        /// </summary>
+        public static void MoveActorToGameplayScene(Actor actor, string what = null)
+        {
+            if (actor == null) return;
+            var target = FindGameWorldScene();
+            if (target == null)
+            {
+                Debug.LogError($"[SpawnRouting] 未找到玩法场景，{what ?? actor.Name ?? "Actor"} 滞留在 {actor.Scene?.Name ?? "未知场景"}（RootScene 只允许全局共享宿主）");
+                return;
+            }
+            if (actor.Scene != target)
+            {
+                Level.SpawnActor(actor, target);
+            }
         }
 
         /// <summary>
@@ -2659,16 +3516,8 @@ namespace HundunWorld.Game
                 Position = position
             };
 
-            // 查找目标场景并确保 Actor 生成在正确的场景中
-            var targetScene = FindGameWorldScene();
-            if (targetScene != null)
-            {
-                Level.SpawnActor(root, targetScene);
-            }
-            else
-            {
-                Level.SpawnActor(root);
-            }
+            // 生成到玩法场景；解析失败时大声报错并退回默认落点（可见性优先）
+            SpawnActorToGameplayScene(root, "LocalPlayer_Fallback");
 
             // 创建 AnimatedModel 并加载骨骼网格体和动画图
             var animatedModel = root.AddChild<AnimatedModel>();
@@ -2676,7 +3525,7 @@ namespace HundunWorld.Game
             animatedModel.Position = Vector3.Zero;
 
             // 使用预加载资产；若未提供则再次尝试完全加载
-            var skinnedModel = preloadedSkinnedModel ?? LoadAssetFullyLoaded<SkinnedModel>(SkinnedModelGuid, "Content/Character/Models/skm_uefn_mannequin.flax");
+            var skinnedModel = preloadedSkinnedModel ?? LoadAssetFullyLoaded<SkinnedModel>(SkinnedModelGuid, EquipmentDatabase.MaleBodyModelPath);
             var animGraph = preloadedAnimGraph ?? LoadAssetFullyLoaded<AnimationGraph>(AnimationGraphGuid, "Content/Character/Models/Animation Graph.flax");
             AssignAnimatedModelResources(animatedModel, root, skinnedModel, animGraph);
 
@@ -3062,6 +3911,167 @@ namespace HundunWorld.Game
             }
 
             Debug.Log("HundunWorldGame 资源释放完成");
+        }
+
+        /// <summary>
+        /// 把服务端下发的表现型脚本事件（<see cref="SyncEventKind.Vfx"/>）渲染成世界文字。
+        /// <para>
+        /// 坐标系：服务端 Z-up、Flax Y-up，故 (x,y,z) -> (x,z,y)——与远程角色位置同一换轴口径，
+        /// 漏一次就会出现"事件飘在天边"。
+        /// </para>
+        /// </summary>
+        /// <summary>
+        /// 处理 DS 发回的脚本生成回执：把真实实体 ID 贴回聊天，让 <c>/despawn &lt;id&gt;</c> 可用。
+        /// <para>定向包（受众只有操作者），因此不会污染同屏其他人的聊天。</para>
+        /// </summary>
+        private static void TryApplyScriptedSpawnResult(EventPacket packet)
+        {
+            if (packet?.Events == null) return;
+
+            for (var i = 0; i < packet.Events.Length; i++)
+            {
+                var e = packet.Events[i];
+                if (e.Kind != SyncEventKind.ScriptedSpawnResult || e.Payload == null || e.Payload.Length == 0)
+                    continue;
+
+                try
+                {
+                    var result = MemoryPack.MemoryPackSerializer
+                        .Deserialize<Horizon.Game.Message.Sync.ScriptedSpawnResultPayload>(e.Payload);
+                    if (result == null) continue;
+
+                    global::HundunWorld.Game.Chat.WorldScriptClient.Instance
+                        .ApplySpawnResult(result.RequestId, result.EntityIds, result.Removed);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[ScriptedEvent] 生成回执解析失败：{ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 把服务端的怪物起手/收条事件贴到对应 Actor 的选中标记上（头顶名牌据此画施法条）。
+        /// <para>
+        /// <b>只写字段、不创建任何东西</b>：这条通路不保证在主线程上，而"条子晚一帧出现"完全无害；
+        /// 为每个起手排一次主线程队列反而会把延迟固定成一帧以上。真要动 Actor（生成/销毁）就必须排队，
+        /// 这也是 <see cref="TryShowScriptedEffect"/> 与本方法分开放的原因。
+        /// </para>
+        /// <para>找不到 Actor（还没进 AOI / 已经 Despawn）是正常情况，静默丢弃：
+        /// 为看不见的主播条子报错只会淹没日志。</para>
+        /// </summary>
+        private static void TryApplyMonsterCast(EventPacket packet)
+        {
+            if (packet?.Events == null) return;
+            var sync = FlaxActorSyncSystem.Instance;
+            if (sync == null) return;
+
+            for (var i = 0; i < packet.Events.Length; i++)
+            {
+                var e = packet.Events[i];
+                var isStart = e.Kind == SyncEventKind.MonsterCastStart;
+                if (!isStart && e.Kind != SyncEventKind.MonsterCastStop) continue;
+
+                if (!sync.TryGetEntityActor(e.SourceEntityId, out var actor) || actor == null) continue;
+                var tag = actor.GetScript<global::HundunWorld.Game.Selection.SelectableEntityTag>();
+                if (tag == null) continue;
+
+                if (!isStart)
+                {
+                    // 三个出口（完成/打断/取消）在这里待遇相同：客户端的状态位就是"清干净"，
+                    // 区别只体现在表现层要不要闪一下——那由 EndCast 之后的下一帧自然消失。
+                    tag.EndCast();
+                    continue;
+                }
+
+                var schoolMask = 0;
+                var interruptible = true;
+                try
+                {
+                    if (e.Payload != null && e.Payload.Length > 0)
+                    {
+                        var payload = MemoryPack.MemoryPackSerializer
+                            .Deserialize<Horizon.Game.Message.Sync.MonsterCastPayload>(e.Payload);
+                        if (payload != null)
+                        {
+                            schoolMask = payload.SchoolMask;
+                            interruptible = payload.Interruptible;
+                        }
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[MonsterCast] 起手载荷解析失败（技能 {e.IntValue}）：{ex.Message}");
+                }
+
+                tag.BeginCast(e.IntValue, schoolMask, interruptible, e.FloatValue);
+            }
+        }
+
+        /// <summary>
+        /// 进战喊话：服务端只发文本号，文案按 <c>(ModelKey, sayId)</c> 在客户端文本表里查
+        /// （<c>Data/Monsters/client_texts.json</c>，与外观表同一口径）。
+        /// <para>查不到必须念出来：那正是"服务端认得有这一号、客户端查不到文案"的半截状态，
+        /// 而它在屏幕上的表现与"这只怪没配台词"完全同形（都是沉默）。</para>
+        /// </summary>
+        private static void TryApplyMonsterSay(EventPacket packet)
+        {
+            if (packet?.Events == null) return;
+            var sync = FlaxActorSyncSystem.Instance;
+            if (sync == null) return;
+
+            for (var i = 0; i < packet.Events.Length; i++)
+            {
+                var e = packet.Events[i];
+                if (e.Kind != SyncEventKind.MonsterSay) continue;
+
+                if (!sync.TryGetEntityActor(e.SourceEntityId, out var actor) || actor == null) continue;
+                var tag = actor.GetScript<global::HundunWorld.Game.Selection.SelectableEntityTag>();
+                if (tag == null) continue;
+
+                if (!global::Game.Selection.MonsterTextCatalog
+                        .TryResolve(tag.ModelKey, e.IntValue, out var text, out _))
+                {
+                    Debug.LogWarning($"[MonsterSay] 文本号 {e.IntValue} 在客户端文本表里查不到" +
+                                     $"（模型键 {tag.ModelKey}）：跑一次 MonsterCli export-texts");
+                    continue;
+                }
+                tag.ShowShout(text);
+            }
+        }
+
+        private static void TryShowScriptedEffect(EventPacket packet)
+        {
+            if (packet?.Events == null) return;
+
+            for (var i = 0; i < packet.Events.Length; i++)
+            {
+                var e = packet.Events[i];
+                if (e.Kind != SyncEventKind.Vfx || e.Payload == null || e.Payload.Length == 0) continue;
+
+                try
+                {
+                    var effect = MemoryPack.MemoryPackSerializer
+                        .Deserialize<Horizon.Game.Message.Sync.ScriptedEffectPayload>(e.Payload);
+                    if (string.IsNullOrEmpty(effect?.Text)) continue;
+
+                    var position = new Vector3(effect.X, effect.Z, effect.Y);
+                    var duration = effect.DurationSeconds > 0f ? effect.DurationSeconds : 5f;
+
+                    var numbers = global::Game.Combat.Effects.DamageNumberSystem.Instance;
+                    if (numbers != null)
+                    {
+                        numbers.ShowText(effect.Text, position, new Color(1f, 0.85f, 0.35f, 1f), duration);
+                    }
+
+                    // 世界文字只在视锥内可见；聊天里再留一条，保证操作者能确认事件已被服务端受理。
+                    global::HundunWorld.Game.Chat.ChatClient.Instance.AddLocalSystem($"[世界事件] {effect.Text}");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[ScriptedEvent] Vfx 载荷解析失败：{ex.Message}");
+                }
+            }
         }
     }
 }

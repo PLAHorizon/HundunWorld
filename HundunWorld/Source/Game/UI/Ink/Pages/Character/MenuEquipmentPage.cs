@@ -1,10 +1,13 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
 using HundunWorld.Game.Equipment;
+using Horizon.Game.Message.Network;
+using HundunWorld.Game.Inventory;
+using HundunWorld.Game.Services;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Character
 {
@@ -26,7 +29,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
     /// 通过 <see cref="NavigationRequested"/> 事件向路由暴露导航请求。
     /// 全部数据为 mock，通过 <see cref="RefreshLayout"/> 支持屏幕尺寸变化。
     /// </summary>
-    public class MenuEquipmentPage : ContainerControl, IInkPage
+    public class MenuEquipmentPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===================================================================
         // 布局常量
@@ -239,6 +242,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>mock 套装数据（2 套）</summary>
         private MockSet[] _sets;
 
+        /// <summary>真实背包物品（与 <see cref="_backpackData"/> 前段一一对应；已装备的追加在尾部）</summary>
+        private List<ItemInfo> _realItems = new List<ItemInfo>();
+
+        /// <summary>追加段的下标（已装备物品，供槽位取品质，但不在背包列表里显示）</summary>
+        private HashSet<int> _equippedExtraIndices = new HashSet<int>();
+
+        /// <summary>本页数据是否来自服务端权威快照（false = 仍是设计样例）</summary>
+        private bool _realSource;
+
+        /// <summary>实时穿戴品质（快照变化时只刷新这一层，避免列表下标与新数据错位）</summary>
+        private readonly Dictionary<EquipmentSlot, InkWashTheme.InkQuality> _liveEquipped =
+            new Dictionary<EquipmentSlot, InkWashTheme.InkQuality>();
+
         /// <summary>装备槽显示顺序（对应 8 个 InkCell，按左列上到下 + 右列上到下排列）</summary>
         private static readonly EquipmentSlot[] DisplayedSlots =
         {
@@ -314,6 +330,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
                 // 应用初始布局
                 ApplyLayout();
+
+                // 快照变化时只刷新"穿戴态"（槽位品质 / 已装备数），列表下标不动避免错位
+                PlayerInventoryService.Instance.Changed += OnInventoryChanged;
+                RefreshEquippedState();
             }
             catch (Exception ex)
             {
@@ -332,6 +352,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// </summary>
         private void InitMockData()
         {
+            if (TryLoadFromInventory())
+                return;
+
             // mock 背包定义：(id, slot, fallbackName, fallbackQuality, level, type)
             var defs = new (int id, EquipmentSlot slot, string name, InkWashTheme.InkQuality quality, int level, string type)[]
             {
@@ -413,6 +436,169 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <see cref="InkPanelTitle"/> 文本"装备管理"，位置 (0, 0)，宽度铺满，高度 48。
         /// 返回按钮由 <see cref="InkPageShell"/> 自动添加，本页面不自建。
         /// </summary>
+        /// <summary>穿戴快照变化：刷新槽位品质与已装备计数（不重建列表）。</summary>
+        private void OnInventoryChanged()
+        {
+            RefreshEquippedState();
+
+            // 列表按构建期快照渲染：可装备物品数量变了就提示重进本页，避免点旧行穿错物品
+            if (_sampleHint == null || !_realSource || _backpackData == null)
+                return;
+
+            int now = CountEquippable();
+            int built = _realItems.Count + _equippedExtraIndices.Count;
+            if (now == built)
+                return;
+
+            // 数量变了：重载数据并重建行，避免点旧行穿到别的物品
+            TryLoadFromInventory();
+            RebuildBackpackList();
+            _sampleHint.Visible = false;
+        }
+
+        /// <summary>当前快照里可装备的物品数（与构建期数量对账用）。</summary>
+        private static int CountEquippable()
+        {
+            var inventory = PlayerInventoryService.Instance;
+            if (inventory == null || !inventory.HasServerData)
+                return 0;
+
+            int count = 0;
+            foreach (var item in inventory.Items)
+            {
+                var def = ItemCatalog.Resolve(item.TemplateId);
+                if (def != null && def.EquipSlot != null)
+                    count++;
+            }
+            return count;
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            PlayerInventoryService.Instance.Changed -= OnInventoryChanged;
+            base.OnDestroy();
+        }
+
+        /// <summary>从服务端快照读"每个槽当前穿戴什么品质"，并刷新槽位与摘要。</summary>
+        private void RefreshEquippedState()
+        {
+            _liveEquipped.Clear();
+
+            var inventory = PlayerInventoryService.Instance;
+            if (inventory != null && inventory.HasServerData)
+            {
+                foreach (EquipmentSlot slot in System.Enum.GetValues(typeof(EquipmentSlot)))
+                {
+                    if (!inventory.TryGetEquipped(slot, out var entry) || entry == null || entry.TemplateId <= 0)
+                        continue;
+
+                    var def = ItemCatalog.Resolve(entry.TemplateId);
+                    _liveEquipped[slot] = def != null
+                        ? MapEquipmentQuality(def.Quality)
+                        : InkWashTheme.InkQuality.Common;
+                }
+            }
+
+            if (_equipmentCells != null)
+            {
+                for (int i = 0; i < DisplayedSlots.Length && i < _equipmentCells.Length; i++)
+                {
+                    if (_equipmentCells[i] != null)
+                        _equipmentCells[i].Quality = GetSlotQuality(DisplayedSlots[i]);
+                }
+            }
+
+            if (_summaryCountLabel != null)
+                _summaryCountLabel.Text = $"{_liveEquipped.Count}/8";
+        }
+
+        /// <summary>
+        /// 尝试用服务端权威背包/穿戴快照填充本页。
+        /// 顺序：可装备的背包物品在前（与 <see cref="_realItems"/> 同下标），已装备的追加在尾部供槽位取品质。
+        /// 快照还没到（或没有可装备物品）时返回 false，页面继续用设计样例。
+        /// </summary>
+        private bool TryLoadFromInventory()
+        {
+            var inventory = PlayerInventoryService.Instance;
+            if (inventory == null || !inventory.HasServerData)
+                return false;
+
+            var list = new List<MockEquipment>();
+            var items = new List<ItemInfo>();
+
+            foreach (var item in inventory.Items)
+            {
+                var def = ItemCatalog.Resolve(item.TemplateId);
+                if (def == null || def.EquipSlot == null)
+                    continue;
+
+                items.Add(item);
+                list.Add(new MockEquipment
+                {
+                    Id = item.TemplateId,
+                    Slot = def.EquipSlot.Value,
+                    Name = def.Name,
+                    Quality = MapEquipmentQuality(def.Quality),
+                    Level = 0,
+                    Type = def.TypeName,
+                });
+            }
+
+            var equipped = new Dictionary<EquipmentSlot, int>();
+            var extras = new HashSet<int>();
+            foreach (EquipmentSlot slot in System.Enum.GetValues(typeof(EquipmentSlot)))
+            {
+                if (!inventory.TryGetEquipped(slot, out var entry) || entry == null || entry.TemplateId <= 0)
+                    continue;
+
+                var def = ItemCatalog.Resolve(entry.TemplateId);
+                int index = list.Count;
+                list.Add(new MockEquipment
+                {
+                    Id = entry.TemplateId,
+                    Slot = slot,
+                    Name = def != null ? def.Name : ("装备 #" + entry.TemplateId),
+                    Quality = def != null ? MapEquipmentQuality(def.Quality) : InkWashTheme.InkQuality.Common,
+                    Level = 0,
+                    Type = def != null ? def.TypeName : string.Empty,
+                });
+                extras.Add(index);
+                equipped[slot] = index;
+            }
+
+            if (list.Count == 0)
+                return false;
+
+            _backpackData = list.ToArray();
+            _realItems = items;
+            _equippedExtraIndices = extras;
+            _equippedSlots = equipped;
+            _realSource = true;
+
+            // 服务端没给背包容量字段：有真实快照时只报"可装备件数"，别再显示样例的 10/24
+            if (_backpackCountLabel != null)
+                _backpackCountLabel.Text = $"{_realItems.Count} 件";
+
+            // 属性总览 / 套装仍无服务端聚合：一律占位，不摆示例数值
+            // 攻/防取装备桥的权威聚合（与服务端同一套词表）；气血/内力由服务端并入上限，不在这里重复算
+            var bonus = HundunWorld.Game.Character.EquipmentAttributeBridge.Summarize(inventory);
+            int attack = Mathf.RoundToInt(bonus.PhysicalAttack + bonus.MagicAttack);
+            int defense = Mathf.RoundToInt(bonus.PhysicalDefense + bonus.MagicDefense);
+
+            _attrRows = new AttrRow[]
+            {
+                new AttrRow { Name = "攻击", Value = attack > 0 ? "+" + attack.ToString("N0") : "—", Delta = "--", DeltaUp = null },
+                new AttrRow { Name = "防御", Value = defense > 0 ? "+" + defense.ToString("N0") : "—", Delta = "--", DeltaUp = null },
+                new AttrRow { Name = "气血", Value = "—", Delta = "--", DeltaUp = null },
+                new AttrRow { Name = "暴击", Value = "—", Delta = "--", DeltaUp = null },
+                new AttrRow { Name = "命中", Value = "—", Delta = "--", DeltaUp = null },
+                new AttrRow { Name = "闪避", Value = "—", Delta = "--", DeltaUp = null },
+            };
+            _sets = System.Array.Empty<MockSet>();
+            return true;
+        }
+
         private void BuildTitle()
         {
             _title = new InkPanelTitle
@@ -423,7 +609,27 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 Height = TitleHeight,
             };
             AddChild(_title);
+
+            // 本页背包/套装/对比仍是设计样例数据：标题行右侧明示，真实穿戴在「角色」页
+            var sampleHint = new Label
+            {
+                Text = "本页为设计样例：背包 / 套装 / 对比为示例数据，真实穿戴请在「角色」页操作",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(480f, 16f),
+                Size = new Float2(760f, 18f),
+                VerticalAlignment = TextAlignment.Center,
+                HorizontalAlignment = TextAlignment.Near,
+                Parent = this,
+            };
+            // 有服务端快照时这页不再是样例：把提示收掉
+            sampleHint.Visible = !_realSource;
+            _sampleHint = sampleHint;
         }
+
+        /// <summary>标题行右侧的"设计样例"提示（无数据源时明示）。</summary>
+        private Label _sampleHint;
 
         /// <summary>
         /// SubTask 10.2 + 10.3：左列装备背包列表。
@@ -474,7 +680,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             _backpackCountLabel = new Label
             {
-                Text = "10/24",
+                // 真实快照在构造期就先加载（InitMockData → TryLoadFromInventory），那时本标签还没建，
+                // 所以初值就必须按数据源给：服务端没有容量字段，真实数据只报可装备件数。
+                Text = _realSource ? $"{(_realItems?.Count ?? 0)} 件" : "10/24",
                 Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
                 TextColor = InkWashTheme.PaperAged,
                 HorizontalAlignment = TextAlignment.Far,
@@ -484,6 +692,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 Size = new Float2(64f, BackpackTitleHeight),
             };
             titleContainer.AddChild(_backpackCountLabel);
+
+            // 列表只列可装备物品，计数却是整包容量：明确写出来，避免"10/24 只有 3 行"的误读
+            titleContainer.AddChild(new Label
+            {
+                Text = "仅可装备",
+                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
+                TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(LeftColumnWidth - 152f, 0f),
+                Size = new Float2(56f, BackpackTitleHeight),
+            });
         }
 
         /// <summary>
@@ -552,6 +773,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// 每项包含：左侧品质色图标方块 + 装备名（品质色）+ 等级与类型说明。
         /// 点击触发选中与对比更新。
         /// </summary>
+        /// <summary>
+        /// 重新按当前 <see cref="_backpackData"/> 渲染背包行（先 Dispose 旧行再复用构建逻辑）。
+        /// 用于快照数量变化：列表下标必须与新数据对齐，否则点旧行会穿到别的物品。
+        /// </summary>
+        private void RebuildBackpackList()
+        {
+            if (_backpackItems_ui != null)
+            {
+                foreach (var old in _backpackItems_ui)
+                    old?.Dispose();
+                _backpackItems_ui = null;
+            }
+
+            _selectedIndex = -1;
+            BuildBackpackList();
+            ApplyFilter();
+        }
+
         private void BuildBackpackList()
         {
             float listStartY = BackpackTitleHeight + FilterBarHeight * 2f;
@@ -568,6 +807,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     EquipmentIndex = i,
                 };
                 item.Clicked += () => OnItemClicked(i);
+                // 追加段是"已装备"的镜像，只供槽位取品质，不出现在背包列表里
+                if (_equippedExtraIndices.Contains(i))
+                    item.Visible = false;
 
                 // 左侧品质色图标方块
                 var iconBox = new ContainerControl
@@ -752,7 +994,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             _summarySetLabel = new Label
             {
-                Text = "套装 2/4 · 龙纹之力",
+                Text = _realSource ? "套装 —" : "套装 2/4 · 龙纹之力",
                 Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
                 TextColor = InkWashTheme.GoldPrimary,
                 HorizontalAlignment = TextAlignment.Far,
@@ -969,7 +1211,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             _compareCurrentName = new Label
             {
-                Text = "当前·赤焰刀",
+                Text = _realSource ? "当前·（未选择）" : "当前·赤焰刀",
                 Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Near,
@@ -982,7 +1224,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             _compareCurrentAttr = new Label
             {
-                Text = "攻击 +186\n暴击 +8%",
+                Text = _realSource ? "—" : "攻击 +186\n暴击 +8%",
                 Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
                 TextColor = InkWashTheme.PaperBright,
                 HorizontalAlignment = TextAlignment.Near,
@@ -1051,7 +1293,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             // 更换装备按钮
             _swapButton = new InkButton
             {
-                Text = "更换装备",
+                Text = _realSource ? "更换装备" : "更换装备（未接入）",
                 // 设计方案：朱红仅限战斗/危险/扣减场景；更换装备为常规操作，用Primary
                 Variant = InkButtonVariant.Primary,
                 ButtonSize = InkButtonSize.Md,
@@ -1059,7 +1301,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 Location = new Float2(AttrHorizontalPadding, startY),
                 Size = new Float2(RightColumnWidth - AttrHorizontalPadding * 2f, SwapButtonHeight),
             };
-            _swapButton.ButtonClicked += OnSwapClicked;
+            // 有服务端快照时按钮真的发穿戴请求；没有快照（示例数据）时禁用
+            _swapButton.Enabled = false; // 选中一件物品后才允许更换
+            if (_realSource)
+                _swapButton.ButtonClicked += OnSwapClicked;
             _rightPanel.AddChild(_swapButton);
         }
 
@@ -1155,6 +1400,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     _backpackItems_ui[i].Active = (i == index);
             }
 
+            if (_swapButton != null)
+                _swapButton.Enabled = _realSource && _selectedIndex >= 0;
+
             UpdateComparePanel();
         }
 
@@ -1235,7 +1483,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     else if (_typeFilter == 3 && !isAccessory) visible = false;
                 }
 
-                _backpackItems_ui[i].Visible = visible;
+                _backpackItems_ui[i].Visible = visible && !_equippedExtraIndices.Contains(i);
             }
         }
 
@@ -1259,11 +1507,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             if (_compareCandidateName != null)
                 _compareCandidateName.Text = $"候选·{candidate.Name}";
 
+            // 服务端快照只给名称/品质/类型，没有单项属性；真实数据下不能按等级编数值，
+            // 示例数据（页面顶部已明示"设计样例"）才保留设计稿那两行。
             if (_compareCandidateAttr != null)
-                _compareCandidateAttr.Text = $"攻击 +{120 + candidate.Level * 3}\n暴击 +{candidate.Level % 10}%";
+            {
+                _compareCandidateAttr.Text = _realSource
+                    ? "单项属性尚未接入服务端"
+                    : $"攻击 +{120 + candidate.Level * 3}\n暴击 +{candidate.Level % 10}%";
+            }
 
             if (_compareDeltaLabel != null)
-                _compareDeltaLabel.Text = "+24 / -3%";
+                _compareDeltaLabel.Text = _realSource ? "" : "+24 / -3%";
 
             // 同步当前装备名称（取该槽位已装备项）
             if (_compareCurrentName != null)
@@ -1289,6 +1543,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         {
             if (_selectedIndex < 0 || _backpackData == null || _selectedIndex >= _backpackData.Length)
                 return;
+
+            // 真实快照：交给服务端裁决，成功后由 Changed 回包刷新
+            if (_realSource)
+            {
+                if (_selectedIndex < _realItems.Count)
+                    _ = PlayerInventoryService.Instance.RequestEquipAsync(_realItems[_selectedIndex]);
+                return;
+            }
 
             var equip = _backpackData[_selectedIndex];
             var slot = equip.Slot;
@@ -1360,11 +1622,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             if (_equippedSlots == null || _summaryCountLabel == null)
                 return;
 
-            int count = _equippedSlots.Count;
+            // 真实快照以 _liveEquipped 为准（列表快照可能是旧的）
+            int count = _realSource ? _liveEquipped.Count : _equippedSlots.Count;
             _summaryCountLabel.Text = $"{count}/8";
 
             if (_summarySetLabel != null)
-                _summarySetLabel.Text = $"套装 {count}/4 · 龙纹之力";
+                _summarySetLabel.Text = _realSource ? "套装 —" : $"套装 {count}/4 · 龙纹之力";
         }
 
         /// <summary>
@@ -1374,6 +1637,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <returns>已装备装备的品质，未装备返回 Common</returns>
         private InkWashTheme.InkQuality GetSlotQuality(EquipmentSlot slot)
         {
+            if (_liveEquipped.Count > 0 || _realSource)
+                return _liveEquipped.TryGetValue(slot, out var live)
+                    ? live
+                    : InkWashTheme.InkQuality.Common;
+
             if (_equippedSlots != null && _equippedSlots.TryGetValue(slot, out int idx) &&
                 _backpackData != null && idx >= 0 && idx < _backpackData.Length)
             {

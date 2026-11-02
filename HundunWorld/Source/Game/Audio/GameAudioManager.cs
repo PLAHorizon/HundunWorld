@@ -134,7 +134,7 @@ namespace HundunWorld.Game.Audio
                     sourceActor.Clip = audioClip;
                     sourceActor.Volume = finalVolume;
                     sourceActor.IsLooping = false;
-                    Level.SpawnActor(sourceActor);
+                    sourceActor.Parent = AudioHost.Ensure();
                     sourceActor.Play();
                     _activeSounds.Add(new ActiveSound
                     {
@@ -189,7 +189,7 @@ namespace HundunWorld.Game.Audio
                     sourceActor.Volume = finalVolume;
                     sourceActor.IsLooping = false;
                     sourceActor.Position = position;
-                    Level.SpawnActor(sourceActor);
+                    sourceActor.Parent = AudioHost.Ensure();
                     sourceActor.Play();
                     _activeSounds.Add(new ActiveSound
                     {

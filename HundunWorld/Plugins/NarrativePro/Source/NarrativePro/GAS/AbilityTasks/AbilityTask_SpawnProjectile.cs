@@ -88,6 +88,8 @@ namespace NarrativePro.GAS.AbilityTasks
                 Complete();
                 return;
             }
+            // SpawnPrefab 默认落 Scenes[0]（RootScene），投射物属玩法世界对象，搬入玩法场景
+            NarrativePro.CommonUI.NarrativeRuntimeBootstrap.MoveToGameplayScene(SpawnedProjectile, "Projectile");
 
             // 应用初始速度（若投射物带有 RigidBody 则设置线速度）
             if (bUseVelocity && Velocity.LengthSquared > 0f)
@@ -99,12 +101,11 @@ namespace NarrativePro.GAS.AbilityTasks
                 }
             }
 
-            // 设置生命周期：Flax Actor 无 SetLifeSpan API（UE5 移植遗留 TODO）
-            // TODO: 实现延迟销毁逻辑（可用自定义 Script 或 Object.Destroy 延迟调用）
-            // if (bUseLifeSpan && LifeSpan > 0f)
-            // {
-            //     SpawnedProjectile.SetLifeSpan(LifeSpan);
-            // }
+            // 生命周期：UE5 用 SetLifeSpan，Flax 对应 Object.Destroy(obj, delay)
+            if (bUseLifeSpan && LifeSpan > 0f)
+            {
+                FlaxEngine.Object.Destroy(SpawnedProjectile, LifeSpan);
+            }
 
             NarrativePro.Core.NarrativeLog.Log($"[AbilityTask_SpawnProjectile] 已生成投射物 {ProjectilePrefabPath}，位置={location}");
 

@@ -1,0 +1,290 @@
+{
+  "source": "手写的 morph 词干 → UE MetaHuman GUI 控制对照；校验依据 gui_to_raw_map.json（权威 174 GUI / 251 raw / 259 段）",
+  "note": "blendshape 那侧与 raw 控制名不同源（同名命中 1/37），所以必须有这张表；basis=authored 表示按语义指定、可逐条改，declined 表示明知不接就不接。",
+  "entryCount": 33,
+  "entries": [
+    {
+      "morph": "blink_L",
+      "morphFamily": "blink",
+      "side": "L",
+      "gui": "CTRL_L_eye_blink.ty",
+      "basis": "authored",
+      "note": "MetaHuman 的 blink morph 对应眼部眨眼控制"
+    },
+    {
+      "morph": "blink_R",
+      "morphFamily": "blink",
+      "side": "R",
+      "gui": "CTRL_R_eye_blink.ty",
+      "basis": "authored",
+      "note": "MetaHuman 的 blink morph 对应眼部眨眼控制"
+    },
+    {
+      "morph": "browsDown_L",
+      "morphFamily": "browsDown",
+      "side": "L",
+      "gui": "CTRL_L_brow_down.ty",
+      "basis": "authored",
+      "note": "眉下压"
+    },
+    {
+      "morph": "browsDown_R",
+      "morphFamily": "browsDown",
+      "side": "R",
+      "gui": "CTRL_R_brow_down.ty",
+      "basis": "authored",
+      "note": "眉下压"
+    },
+    {
+      "morph": "browsLateral_L",
+      "morphFamily": "browsLateral",
+      "side": "L",
+      "gui": "CTRL_L_brow_lateral.ty",
+      "basis": "authored",
+      "note": "眉外展"
+    },
+    {
+      "morph": "browsLateral_R",
+      "morphFamily": "browsLateral",
+      "side": "R",
+      "gui": "CTRL_R_brow_lateral.ty",
+      "basis": "authored",
+      "note": "眉外展"
+    },
+    {
+      "morph": "browsRaiseInner_L",
+      "morphFamily": "browsRaiseInner",
+      "side": "L",
+      "gui": "CTRL_L_brow_raiseIn.ty",
+      "basis": "authored",
+      "note": "眉内抬"
+    },
+    {
+      "morph": "browsRaiseInner_R",
+      "morphFamily": "browsRaiseInner",
+      "side": "R",
+      "gui": "CTRL_R_brow_raiseIn.ty",
+      "basis": "authored",
+      "note": "眉内抬"
+    },
+    {
+      "morph": "browsRaiseOuter_L",
+      "morphFamily": "browsRaiseOuter",
+      "side": "L",
+      "gui": "CTRL_L_brow_raiseOut.ty",
+      "basis": "authored",
+      "note": "眉外抬"
+    },
+    {
+      "morph": "browsRaiseOuter_R",
+      "morphFamily": "browsRaiseOuter",
+      "side": "R",
+      "gui": "CTRL_R_brow_raiseOut.ty",
+      "basis": "authored",
+      "note": "眉外抬"
+    },
+    {
+      "morph": "cheekRaiseInner_L",
+      "morphFamily": "cheekRaise",
+      "side": "L",
+      "gui": "CTRL_L_eye_cheekRaise.ty",
+      "basis": "authored",
+      "note": "GUI 每侧只有一个 cheekRaise，三个 morph 变体共用它"
+    },
+    {
+      "morph": "cheekRaiseInner_R",
+      "morphFamily": "cheekRaise",
+      "side": "R",
+      "gui": "CTRL_R_eye_cheekRaise.ty",
+      "basis": "authored",
+      "note": "GUI 每侧只有一个 cheekRaise，三个 morph 变体共用它"
+    },
+    {
+      "morph": "cheekRaiseOuter_L",
+      "morphFamily": "cheekRaise",
+      "side": "L",
+      "gui": "CTRL_L_eye_cheekRaise.ty",
+      "basis": "authored",
+      "note": "GUI 每侧只有一个 cheekRaise，三个 morph 变体共用它"
+    },
+    {
+      "morph": "cheekRaiseOuter_R",
+      "morphFamily": "cheekRaise",
+      "side": "R",
+      "gui": "CTRL_R_eye_cheekRaise.ty",
+      "basis": "authored",
+      "note": "GUI 每侧只有一个 cheekRaise，三个 morph 变体共用它"
+    },
+    {
+      "morph": "cheekRaiseUpper_L",
+      "morphFamily": "cheekRaise",
+      "side": "L",
+      "gui": "CTRL_L_eye_cheekRaise.ty",
+      "basis": "authored",
+      "note": "GUI 每侧只有一个 cheekRaise，三个 morph 变体共用它"
+    },
+    {
+      "morph": "cheekRaiseUpper_R",
+      "morphFamily": "cheekRaise",
+      "side": "R",
+      "gui": "CTRL_R_eye_cheekRaise.ty",
+      "basis": "authored",
+      "note": "GUI 每侧只有一个 cheekRaise，三个 morph 变体共用它"
+    },
+    {
+      "morph": "chinRaise_L",
+      "morphFamily": "chinRaise",
+      "side": "L",
+      "gui": "CTRL_L_jaw_ChinRaiseU.ty",
+      "basis": "authored",
+      "note": "GUI 分 U/D 两条，这里取 U（下唇侧的 ChinRaiseD 留给后续核对）"
+    },
+    {
+      "morph": "chinRaise_R",
+      "morphFamily": "chinRaise",
+      "side": "R",
+      "gui": "CTRL_R_jaw_ChinRaiseU.ty",
+      "basis": "authored",
+      "note": "GUI 分 U/D 两条，这里取 U（下唇侧的 ChinRaiseD 留给后续核对）"
+    },
+    {
+      "morph": "jawOpen",
+      "morphFamily": "jawOpen",
+      "side": "C",
+      "gui": "CTRL_C_jaw.ty",
+      "basis": "authored",
+      "note": "GUI 的 jaw 是中央颌控制；另有 jaw_openExtreme 表示极限张口"
+    },
+    {
+      "morph": "mouthStretch_L",
+      "morphFamily": "mouthStretch",
+      "side": "L",
+      "gui": "CTRL_L_mouth_stretch.ty",
+      "basis": "authored",
+      "note": "口角拉伸"
+    },
+    {
+      "morph": "mouthStretch_R",
+      "morphFamily": "mouthStretch",
+      "side": "R",
+      "gui": "CTRL_R_mouth_stretch.ty",
+      "basis": "authored",
+      "note": "口角拉伸"
+    },
+    {
+      "morph": "neckStretch_L",
+      "morphFamily": "neckStretch",
+      "side": "L",
+      "gui": "CTRL_L_neck_stretch.ty",
+      "basis": "authored",
+      "note": "颈拉伸"
+    },
+    {
+      "morph": "neckStretch_R",
+      "morphFamily": "neckStretch",
+      "side": "R",
+      "gui": "CTRL_R_neck_stretch.ty",
+      "basis": "authored",
+      "note": "颈拉伸"
+    },
+    {
+      "morph": "noseWrinkler_L",
+      "morphFamily": "noseWrinkler",
+      "side": "L",
+      "gui": "CTRL_L_nose_wrinkleUpper.ty",
+      "basis": "authored",
+      "note": "鼻梁皱起；GUI 权威默认值里唯一的两个非零项正是这对"
+    },
+    {
+      "morph": "noseWrinkler_R",
+      "morphFamily": "noseWrinkler",
+      "side": "R",
+      "gui": "CTRL_R_nose_wrinkleUpper.ty",
+      "basis": "authored",
+      "note": "鼻梁皱起；GUI 权威默认值里唯一的两个非零项正是这对"
+    },
+    {
+      "morph": "purse_DL",
+      "morphFamily": "purse",
+      "side": "L",
+      "gui": "CTRL_L_mouth_purseD.ty",
+      "basis": "authored",
+      "note": "下唇左侧收撮"
+    },
+    {
+      "morph": "purse_DR",
+      "morphFamily": "purse",
+      "side": "R",
+      "gui": "CTRL_R_mouth_purseD.ty",
+      "basis": "authored",
+      "note": "下唇右侧收撮"
+    },
+    {
+      "morph": "purse_UL",
+      "morphFamily": "purse",
+      "side": "L",
+      "gui": "CTRL_L_mouth_purseU.ty",
+      "basis": "authored",
+      "note": "上唇左侧收撮"
+    },
+    {
+      "morph": "purse_UR",
+      "morphFamily": "purse",
+      "side": "R",
+      "gui": "CTRL_R_mouth_purseU.ty",
+      "basis": "authored",
+      "note": "上唇右侧收撮"
+    },
+    {
+      "morph": "smile_L",
+      "morphFamily": "smile",
+      "side": "L",
+      "gui": "CTRL_L_mouth_cornerPull.ty",
+      "basis": "authored",
+      "note": "GUI 里没有 smile 这个词；按语义取口角上提（备选 dimple / sharpCornerPull）"
+    },
+    {
+      "morph": "smile_R",
+      "morphFamily": "smile",
+      "side": "R",
+      "gui": "CTRL_R_mouth_cornerPull.ty",
+      "basis": "authored",
+      "note": "GUI 里没有 smile 这个词；按语义取口角上提（备选 dimple / sharpCornerPull）"
+    },
+    {
+      "morph": "squintInner_L",
+      "morphFamily": "squintInner",
+      "side": "L",
+      "gui": "CTRL_L_eye_squintInner.ty",
+      "basis": "authored",
+      "note": "内眼轮匝收缩"
+    },
+    {
+      "morph": "squintInner_R",
+      "morphFamily": "squintInner",
+      "side": "R",
+      "gui": "CTRL_R_eye_squintInner.ty",
+      "basis": "authored",
+      "note": "内眼轮匝收缩"
+    }
+  ],
+  "declined": [
+    {
+      "morph": "lips_DL",
+      "reason": "唇部区域形状键（head_wm13_lips_*），没有单一同义 GUI 控制"
+    },
+    {
+      "morph": "lips_DR",
+      "reason": "唇部区域形状键（head_wm13_lips_*），没有单一同义 GUI 控制"
+    },
+    {
+      "morph": "lips_UL",
+      "reason": "唇部区域形状键（head_wm13_lips_*），没有单一同义 GUI 控制"
+    },
+    {
+      "morph": "lips_UR",
+      "reason": "唇部区域形状键（head_wm13_lips_*），没有单一同义 GUI 控制"
+    }
+  ],
+  "unmapped": []
+}

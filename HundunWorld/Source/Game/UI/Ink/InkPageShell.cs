@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
@@ -34,6 +34,30 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>内容层（z-index 2，页面挂载点）</summary>
         private readonly ContainerControl _contentLayer;
 
+        /// <summary>叠加层（z-index 3，模态弹层挂载点，无弹层时整体不可见）</summary>
+        private readonly ContainerControl _overlayLayer;
+
+        /// <summary>设计空间缩放系数与铺满窗口后的设计尺寸（常驻部件复用同一坐标系）。</summary>
+        private float _designScale = 1f;
+        private Float2 _designSize = new Float2(UILayout.RefWidth, UILayout.RefHeight);
+
+        /// <summary>
+        /// 常驻部件挂载层：把控件直接添加为外壳的子节点（排在内容层之后 → 浮在页面之上）。
+        /// 技能栏这类"打开任意菜单时仍要可见可拖"的部件走这里，坐标系与设计空间一致。
+        /// </summary>
+        public Control AddPersistentControl(Control control)
+        {
+            if (control == null) return null;
+            AddChild(control);
+            return control;
+        }
+
+        /// <summary>当前设计空间缩放系数（窗口像素 / 设计像素）。</summary>
+        public float DesignScale => _designScale;
+
+        /// <summary>按"铺满窗口"折算出的设计空间尺寸，与战斗 HUD 内容层同一坐标口径。</summary>
+        public Float2 DesignSize => _designSize;
+
         /// <summary>粒子动效层（z-index 5，全屏覆盖层，不接收鼠标事件）</summary>
         private readonly InkParticleSystem _particleSystem;
 
@@ -50,6 +74,15 @@ namespace HundunWorld.Game.UI.Ink
         /// 内容层引用，供 <see cref="InkPageRouter"/> 挂载页面。
         /// </summary>
         public ContainerControl ContentLayer => _contentLayer;
+
+        /// <summary>
+        /// 叠加层引用：模态弹层的挂载点（位于内容层之上、粒子层之下）。
+        /// 弹层叠在任意页面之上，关闭后底页仍在（不再像"弹窗即页面"那样把底页销毁）。
+        /// </summary>
+        public ContainerControl OverlayLayer => _overlayLayer;
+
+        /// <summary>当前是否有弹层。</summary>
+        public bool HasOverlay => _overlayLayer != null && _overlayLayer.ChildrenCount > 0;
 
         /// <summary>
         /// 内容层是否顶部对齐。
@@ -149,7 +182,21 @@ namespace HundunWorld.Game.UI.Ink
                 };
                 AddChild(_contentLayer);
 
-                // 4. 粒子动效层（z-index 5，全屏覆盖层，不接收鼠标事件）
+                // 4. 叠加层（z-index 3，模态弹层挂载点）
+                //    位于内容层之上、粒子层之下：弹层叠在任意页面之上，关闭后底页仍在。
+                //    空置时整体 Visible=false，不会参与命中测试、不影响下层页面交互。
+                _overlayLayer = new ContainerControl
+                {
+                    Visible = false,
+                    BackgroundColor = Color.Transparent,
+                    ClipChildren = false,
+                    AutoFocus = false,
+                    Size = new Float2(UILayout.RefWidth, UILayout.RefHeight),
+                    Pivot = new Float2(0.5f, 0.5f),
+                };
+                AddChild(_overlayLayer);
+
+                // 5. 粒子动效层（z-index 5，全屏覆盖层，不接收鼠标事件）
                 //    位于内容层之上、返回按钮之下，播放金粉/涟漪/萤光/环境微粒。
                 //    Enabled=false 防止拦截鼠标，Draw 仍会被引擎调用进行自定义渲染。
                 //    Visible 默认 true，由 InkPageRouter 在导航时通过粒子系统自动触发涟漪。
@@ -161,7 +208,7 @@ namespace HundunWorld.Game.UI.Ink
                 };
                 AddChild(_particleSystem);
 
-                // 5. 返回按钮（z-index 10，最顶层，初始隐藏）
+                // 6. 返回按钮（z-index 10，最顶层，初始隐藏）
                 _backButton = new InkBackButton
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -254,6 +301,57 @@ namespace HundunWorld.Game.UI.Ink
         }
 
         /// <summary>
+        /// 把一个弹层控件挂到叠加层（先清空已有弹层）。弹层通常自带遮罩与面板，
+        /// 底页保持挂载不被销毁。
+        /// </summary>
+        /// <param name="overlay">弹层根控件（会被拉伸铺满叠加层）</param>
+        public void ShowOverlay(Control overlay)
+        {
+            try
+            {
+                if (_overlayLayer == null || overlay == null) return;
+
+                HideOverlay();
+
+                _overlayLayer.AddChild(overlay);
+                overlay.AnchorPreset = AnchorPresets.StretchAll;
+                overlay.Offsets = Margin.Zero;
+                _overlayLayer.Visible = true;
+
+                if (overlay is IInkPage inkPage)
+                {
+                    inkPage.RefreshLayout();
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[InkPageShell] ShowOverlay 失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>清空并隐藏叠加层。</summary>
+        public void HideOverlay()
+        {
+            try
+            {
+                if (_overlayLayer == null) return;
+
+                while (_overlayLayer.ChildrenCount > 0)
+                {
+                    var child = _overlayLayer.GetChild(0);
+                    _overlayLayer.RemoveChild(child);
+                    child.Dispose();
+                }
+
+                _overlayLayer.Visible = false;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[InkPageShell] HideOverlay 失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 显示/隐藏左上角返回按钮。
         /// </summary>
         /// <param name="show">true=显示返回按钮；false=隐藏返回按钮</param>
@@ -323,6 +421,40 @@ namespace HundunWorld.Game.UI.Ink
         }
 
         /// <summary>
+        /// 外部强制重排内容层（设计坐标系缩放 + 居中/贴边）。
+        /// <para>
+        /// 内容层缩放只在尺寸变化事件里重算，而"控件树建好时 Canvas 还是 0 尺寸"
+        /// 这一窗口期内 <see cref="UpdateContentLayout"/> 会直接 return；
+        /// 若之后尺寸没有再发生变化（画布已被预置成最终尺寸），就不会有任何事件来补算，
+        /// 表现是界面缺一块/位置不对。场景切换完成时由外部调用本方法兜一次。
+        /// </para>
+        /// </summary>
+        public void RefreshContentLayout()
+        {
+            UpdateContentLayout();
+        }
+
+        /// <summary>
+        /// 常驻部件的挂载方式：直接作为外壳的子控件（与返回按钮同一手法），由外壳提供设计坐标系。
+        /// <para>
+        /// 不能再用一层铺满的容器去兜：那种整屏容器会拦在页面之前吸掉鼠标，
+        /// 菜单页就点不动了。控件自带缩放变换，命中区域就等于它自己的可见区域。
+        /// </para>
+        /// </summary>
+        public void PlaceInDesignSpace(Control target, Float2 designLocation)
+        {
+            if (target == null || _designScale <= 0f) return;
+
+            float s = _designScale;
+            target.AnchorPreset = AnchorPresets.TopLeft;
+            target.Pivot = new Float2(0.5f, 0.5f);
+            target.Scale = new Float2(s, s);
+            target.Location = new Float2(
+                designLocation.X * s - target.Size.X * (1f - s) * 0.5f,
+                designLocation.Y * s - target.Size.Y * (1f - s) * 0.5f);
+        }
+
+        /// <summary>
         /// 依据外壳当前尺寸更新内容层缩放（设计坐标系 1920×1080 等比缩放并居中）。
         /// <para>
         /// 与登录页 <c>LoginPanel.LayoutZones</c> 同一机制：内容层固定设计分辨率、Pivot 居中、
@@ -362,6 +494,16 @@ namespace HundunWorld.Game.UI.Ink
                 _contentLayer.Location = new Float2((w - designW) * 0.5f, (h - designH) * 0.5f);
             }
 
+            // 叠加层与内容层同一坐标系（同一缩放/尺寸/位置）：弹层里的控件用与页面一致的
+            // 设计坐标排版，叠在任意页面上都对齐。
+            if (_overlayLayer != null)
+            {
+                _overlayLayer.Pivot = new Float2(0.5f, 0.5f);
+                _overlayLayer.Scale = new Float2(s, s);
+                _overlayLayer.Size = _contentLayer.Size;
+                _overlayLayer.Location = _contentLayer.Location;
+            }
+
             // 返回按钮留在最顶层（粒子层之上）不参与内容层子树，但位置与尺寸跟随设计坐标系缩放。
             if (_backButton != null)
             {
@@ -374,6 +516,11 @@ namespace HundunWorld.Game.UI.Ink
 
             // 同步全局缩放系数（UILayout.S/Font 供页面按需使用）。
             UILayout.UpdateScale(this);
+
+            // 常驻部件（技能栏）恒按"铺满窗口"的 HUD 设计空间摆放，
+            // 不跟随菜单页那套居中信箱，保证它在任何页面下都贴在窗口底部同一位置。
+            _designScale = s;
+            _designSize = new Float2(w / s, h / s);
         }
 
         /// <summary>

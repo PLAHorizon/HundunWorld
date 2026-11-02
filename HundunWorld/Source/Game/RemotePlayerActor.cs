@@ -1,5 +1,7 @@
 using System;
 using FlaxEngine;
+using MetaHuman;
+using MetaHuman.Runtime;
 
 namespace HundunWorld.Game
 {
@@ -12,6 +14,7 @@ namespace HundunWorld.Game
         private ulong _entityId;
         private string _playerName = "Player";
         private AnimatedModel _animatedModel;
+        private bool _metaHumanApplied;
 
         /// <summary>服务器分配的实体唯一 ID。</summary>
         public ulong EntityId
@@ -48,6 +51,136 @@ namespace HundunWorld.Game
 
         public override void OnEnable()
         {
+        }
+
+        /// <summary>
+        /// 把服务端下发的 MetaHuman 外观套到本 Actor：只认 Ada 身体（头部形状的承载骨在脸骨上），
+        /// 人形占位身体直接跳过并留痕——硬套会让主姿态链跨骨架，引擎会断言。
+        /// </summary>
+        public bool ApplyMetaHumanLook(MetaHumanLook look, ulong characterId, int hairColorIndex = 0)
+        {
+            if (look == null || _metaHumanApplied)
+            {
+                return _metaHumanApplied;
+            }
+
+            AnimatedModel body = _animatedModel ?? Actor.FindActor<AnimatedModel>() ?? Actor.GetChild<AnimatedModel>();
+            if (body?.SkinnedModel == null || !body.SkinnedModel.IsLoaded)
+            {
+                Debug.LogWarning($"[RemotePlayerActor] 远端外观跳过：角色 {characterId} 没有已加载的身体模型");
+                return false;
+            }
+
+            if (body.SkinnedModel.Path.IndexOf("Ada_BodyPreview", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                Debug.LogWarning($"[RemotePlayerActor] 远端外观跳过：角色 {characterId} 的身体不是 MetaHuman 承载模型（{body.SkinnedModel.Path}）");
+                return false;
+            }
+
+            // 远端身体同样吃空动画图：用同一套程序化待机（有真实动画时自动让位）。
+            if (body.GetScript<Character.ProceduralIdleDriver>() == null)
+            {
+                body.AddScript<Character.ProceduralIdleDriver>();
+            }
+
+            AnimatedModel head = null;
+            try
+            {
+                var headModel = Content.Load<SkinnedModel>(MetaHuman.Runtime.MetaHumanAssetUtil.ResolveProjectPath(Equipment.EquipmentDatabase.HeadModelPath), 10000.0);
+                if (headModel != null && headModel.IsLoaded)
+                {
+                    head = Actor.AddChild<AnimatedModel>();
+                    head.Name = $"RemoteHead_{characterId}";
+                    head.SkinnedModel = headModel;
+                    head.LocalPosition = Vector3.Zero;
+                    head.LocalScale = Vector3.One;
+                    // 490 骨头资产同理：关掉逐骨运动模糊，避免首次蒙皮时撞 AnimatedModel.cpp:82（#76）。
+                    head.PerBoneMotionBlur = false;
+                    head.AddScript<Character.WorldHeadMasterPose>();
+                }
+                else
+                {
+                    Debug.LogWarning($"[RemotePlayerActor] 远端头模型未就绪：角色 {characterId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[RemotePlayerActor] 远端头挂载失败（角色 {characterId}）：{ex.Message}");
+            }
+
+            if (head != null)
+            {
+                try
+                {
+                    var hairModel = Content.Load<Model>(MetaHuman.Runtime.MetaHumanAssetUtil.ResolveProjectPath(Equipment.EquipmentDatabase.HairCardsModelPath), 10000.0);
+                    if (hairModel != null && hairModel.IsLoaded)
+                    {
+                        var hair = head.AddChild<StaticModel>();
+                        hair.Name = $"RemoteHair_{characterId}";
+                        hair.Model = hairModel;
+
+                        var palette = UI.Ink.Pages.CharacterCreation.CcFacePresets.HairColors;
+                        var hairColor = palette.Length > 0
+                            ? palette[Mathf.Clamp(hairColorIndex, 0, palette.Length - 1)]
+                            : new Color(0.10f, 0.06f, 0.035f);
+                        var hairBase = hair.GetMaterial(0);
+                        if (hairBase != null && hairBase.CreateVirtualInstance() is MaterialInstance hairInstance)
+                        {
+                            hairInstance.SetParameterValue("HairColor", hairColor);
+                            hair.SetMaterial(0, hairInstance);
+                        }
+
+                        // 发型随 look 值走；Owner 在下方才挂上 MetaHumanCharacter，绑定器会懒解析。
+                        hair.AddScript<Character.MetaHumanHairBinder>();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[RemotePlayerActor] 远端头发挂载失败（角色 {characterId}）：{ex.Message}");
+                }
+            }
+
+            var mh = Actor.GetScript<MetaHumanCharacter>() ?? Actor.AddScript<MetaHumanCharacter>();
+            if (mh == null)
+            {
+                Debug.LogWarning($"[RemotePlayerActor] 无法添加 MetaHumanCharacter：角色 {characterId}");
+                return false;
+            }
+
+            mh.CharacterRole = "remote";
+            mh.ApplyOnStart = false;
+            mh.TemplateIds = new[] { "metahuman.face_archetype", "metahuman.body_base" };
+            mh.TargetModels = head != null ? new[] { body, head } : new[] { body };
+            mh.EnableBoneScaleChannel = false;
+            if (!mh.IsLoaded)
+            {
+                mh.Load();
+            }
+
+            bool applied = mh.LoadLook(look);
+            _metaHumanApplied = applied;
+
+            // 远端也要眨眼（与本地玩家同一套面部空闲动画）；张嘴 demo 关掉，避免隔着距离看到嘴一直动。
+            if (applied && head != null)
+            {
+                var face = head.GetScript<MetaHumanFaceAnimator>() ?? head.AddScript<MetaHumanFaceAnimator>();
+                if (face != null)
+                {
+                    face.Owner = mh;
+                    face.AutoBlink = true;
+                    face.AutoPlayDemo = false;
+                    face.LinkMirrors = true;
+                }
+
+                // 外部追踪入口与本地玩家同款：默认关闭。
+                var tracking = head.GetScript<MetaHumanFaceTrackingReceiver>()
+                               ?? head.AddScript<MetaHumanFaceTrackingReceiver>();
+                if (tracking != null)
+                {
+                    tracking.Animator = face;
+                }
+            }
+            return applied;
         }
 
         public override void OnDisable()

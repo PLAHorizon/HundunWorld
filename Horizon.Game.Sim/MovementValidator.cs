@@ -20,15 +20,15 @@ namespace Horizon.Game.Sim;
 /// </remarks>
 public sealed class MovementValidator
 {
-    /// <summary>默认位置偏差阈值（米）：超过此值下发 correction。</summary>
-    public const float DefaultPositionEpsilon = 0.5f;
+    /// <summary>默认位置偏差阈值（米）：超过此值下发 correction。取值源见 <see cref="SimulationDefaults"/>。</summary>
+    public const float DefaultPositionEpsilon = SimulationDefaults.PositionEpsilon;
 
     /// <summary>
     /// 默认速度硬性上限（米/秒）：客户端 <see cref="InputPacket.MaxSpeed"/> 超此值立即判异常。
     /// v6 协议后 MaxSpeed 是合法字段（携带客户端配置的目标速度），此上限用于反作弊，
-    /// 取值需容纳合理游戏速度（坐骑/轻功/技能加速等），默认 200 m/s（720 km/h）。
+    /// 取值需容纳合理游戏速度（坐骑/轻功/技能加速等），默认 200 m/s（720 km/h）。取值源见 <see cref="SimulationDefaults"/>。
     /// </summary>
-    public const float DefaultHardSpeedCap = 200f;
+    public const float DefaultHardSpeedCap = SimulationDefaults.HardSpeedCap;
 
     /// <summary>配置项。</summary>
     public sealed class Options
@@ -72,6 +72,28 @@ public sealed class MovementValidator
         /// 超速仍由 HardSpeedCap、瞬移由 TeleportDistanceThreshold 独立兜底。
         /// </summary>
         public float MaxDynamicEpsilon { get; set; } = 12.0f;
+    
+        /// <summary>
+        /// 世界底限 Z（与实体 Z 同单位；本工程为 cm）。null = 不启用。
+        /// <para>
+        /// 服务端没有地面高度采样器（<see cref="MovementValidator.GroundHeightSampler"/> 在生产路径上
+        /// 从不注入），权威 Z 只受重力支配：一旦客户端因"脚下没有碰撞体"漏采地面而下坠，服务端会跟着
+        /// 把权威位置一路沉到 -590m 并持续广播 correction，把已经落回地面的客户端再拽下去——
+        /// 客户端贴地与服务端下拉交替生效，表现就是"相机沉入地面后反复抖动"。
+        /// 底限值本身不构成作弊面：低于世界地板的位置没有任何合法用途。
+        /// </para>
+        /// <para>
+        /// 注意这是**兜底**而不是地形碰撞：真实地形高度图资产缺失，恢复碰撞后应改为按高度图采样
+        /// （见 HundunWorld 的 World.scene 里 Terrain 的 heightfield GUID 已指向不存在的文件）。
+        /// </para>
+        /// </summary>
+        public float? WorldFloorZ { get; set; }
+
+        /// <summary>
+        /// 翻越计划限值（与 <see cref="SimulationOptions.Traversal"/> 同一类型、同一默认值）。
+        /// 权威侧拒绝越界计划，客户端生成侧也用它做预检，避免"客户端能摆出的计划服务端一律拒"。
+        /// </summary>
+        public TraversalLimits Traversal { get; set; } = new TraversalLimits();
     }
 
     private readonly Options _options;
@@ -85,6 +107,9 @@ public sealed class MovementValidator
 
     /// <summary>每帧固定步长（秒），等价于 <see cref="Options.TickDtSeconds"/>。</summary>
     public float TickDtSeconds => _options.TickDtSeconds;
+
+    /// <summary>当前生效的配置（只读视图；宿主/SimWorld 需读取翻越限值等共享配置）。</summary>
+    public Options Settings => _options;
 
     /// <summary>
     /// 地面高度采样委托：给定 ECS 世界坐标 (x, y)（Z-up 坐标系，x=左右, y=前后），
@@ -296,6 +321,20 @@ public sealed class MovementValidator
                         }
                     }
                 }
+            }
+
+            // 世界底限兜底：服务端这条链路上没有地面采样器，权威 Z 只受重力支配。
+            // 漏了这一层时，客户端下坠期间服务端跟着沉（实测停在 -590m），之后即便客户端已贴回地面，
+            // 服务端仍会持续广播那个深渊值把客户端拽下去，与客户端的地面吸附来回拉扯=相机反复抖动；
+            // 而 |dzPred| < 10 的信任上限（cm 世界里等于 10cm/帧）又不足以让服务端跟上客户端的回升。
+            var floorZ = _options.WorldFloorZ;
+            if (floorZ.HasValue && nz < floorZ.Value)
+            {
+                nz = floorZ.Value;
+                nvz = 0f;
+                isGrounded = true;
+                jumpCount = 0;
+                jumpCountExceeded = false;
             }
 
             var dx = nx - x; var dy = ny - y;

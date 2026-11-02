@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
@@ -7,34 +7,27 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 {
     /// <summary>
     /// 创角 / 选角流程的配色。
-    /// 参考图（图片/1-7.png，燕云十六声）是**浅底雾白**舞台，与全站深墨主题相反，
-    /// 因此这里单独定义一套浅底常量，深墨只用于文字与键帽。
+    /// <para>
+    /// 舞台背景改为与 <c>_monster_prefab_workbench.scene</c> 同源的暗天 + 地台场景
+    /// （见 <c>CharacterPreview3D.DrawWorkbenchStage</c>），因此这里是**深底浅字**：
+    /// 正文用纸白、未选中用灰白，卡片改成半透明深墨面板（浅色卡片上的白字会读不出来）。
+    /// 金色与朱红保持原值——它们在暗天与浅底下都成立。
+    /// </para>
     /// </summary>
     public static class CcPalette
     {
-        /// <summary>
-        /// 雾白背景上沿。实测参考图顶部 rgb(173,177,205)（偏冷的浅灰蓝）。
-        /// </summary>
-        public static readonly Color MistTop = new Color(173f / 255f, 177f / 255f, 205f / 255f);
+        /// <summary>纸白正文（暗底上的主文字）。</summary>
+        public static readonly Color InkText = new Color(0.92f, 0.93f, 0.95f);
 
-        /// <summary>雾白背景下沿。实测参考图底部 rgb(164,158,161)——**比顶部更暗更中性，不是更亮**。</summary>
-        public static readonly Color MistBottom = new Color(164f / 255f, 158f / 255f, 161f / 255f);
+        /// <summary>次要文字/未选中（暗底上仍保持可读的灰白）。</summary>
+        public static readonly Color InkIdle = new Color(0.64f, 0.67f, 0.72f);
 
-        /// <summary>左上/左下压暗用的墨色</summary>
-        public static readonly Color MistShade = new Color(0.06f, 0.07f, 0.09f);
+        /// <summary>选中角色的行卡片（上沿 / 下沿）：半透明深墨，透出背后的暗天与地台。</summary>
+        public static readonly Color CardTop = new Color(0.14f, 0.15f, 0.18f, 0.62f);
+        public static readonly Color CardBottom = new Color(0.07f, 0.08f, 0.10f, 0.62f);
 
-        /// <summary>卡片纸面（上沿 / 下沿）</summary>
-        public static readonly Color CardTop = new Color(0.92f, 0.92f, 0.93f);
-        public static readonly Color CardBottom = new Color(0.78f, 0.80f, 0.83f);
-
-        /// <summary>正文墨色（浅底上的深字）</summary>
-        public static readonly Color InkText = new Color(0.13f, 0.14f, 0.16f);
-
-        /// <summary>未选中墨字（浅底上的灰字）</summary>
-        public static readonly Color InkIdle = new Color(0.36f, 0.38f, 0.42f);
-
-        /// <summary>未选中笔触（灰白纸色）</summary>
-        public static readonly Color BrushIdle = new Color(0.72f, 0.74f, 0.77f);
+        /// <summary>未选中笔触（暗底上的灰白笔触）。</summary>
+        public static readonly Color BrushIdle = new Color(0.52f, 0.56f, 0.62f);
 
         /// <summary>选中笔触：实测参考图笔触金色 rgb(219,179,114)，比主题鎏金更亮。</summary>
         public static readonly Color BrushGold = new Color(219f / 255f, 179f / 255f, 114f / 255f);
@@ -50,6 +43,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         /// <summary>印章朱红</summary>
         public static readonly Color SealRed = InkWashTheme.VermilionPrimary;
 
+        /// <summary>左侧操作栏的压暗色（暗天色相，不偏紫）。</summary>
+        public static readonly Color StageScrim = new Color(0.02f, 0.025f, 0.03f);
+
         /// <summary>钳制到 0~1（Flax Mathf 无 Clamp01）。</summary>
         public static float Clamp01(float v)
         {
@@ -62,15 +58,31 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
     /// 半透明渐变一律用**整数像素边界、互不重叠**的分带来画：
     /// 多次叠加的画法（如 <see cref="InkRenderHelper.FillRoundedRectangle"/> 的十字带 + 四角圆）
     /// 会把半透明色叠两次，在边缘留下比内部更暗的一圈假边框（罗盘带上踩过这个坑）。
+    /// <para>
+    /// 分带数由本类内部按**每带 ≤2 设备像素**抬上去：调用方给的 bands 只是下限。
+    /// 之前 40/24 带铺满 1080 高（每带 27~45px）直接画成肉眼可见的条纹，
+    /// 所以这里统一兜住，别再指望调用方自己估分辨率。
+    /// 纯 alpha 渐变额外做 ±半步有序抖动，把量化误差摊成高频噪点。
+    /// </para>
     /// </summary>
     internal static class CcDraw
     {
+        /// <summary>把调用方给的带数抬到"每带不超过 2 设备像素"，并设上限防止极端尺寸下爆量。</summary>
+        private static int ResolveBands(int requested, float extent)
+        {
+            int need = (int)((extent + 3f) * 0.5f);   // 向上取整的 extent/2（Mathf 无 Ceiling）
+            int n = requested > need ? requested : need;
+            return n > 1024 ? 1024 : n;
+        }
+
         /// <summary>竖直方向透明渐变（顶 alpha0 → 底 alpha1），分带互不重叠。</summary>
         public static void VerticalAlphaGradient(Float2 origin, float width, float height, Color rgb, float alpha0, float alpha1, int bands)
         {
             if (width <= 0f || height <= 0f || bands <= 0)
                 return;
 
+            bands = ResolveBands(bands, height);
+            float dither = (alpha1 - alpha0) / bands * 0.5f;
             int yPrev = (int)origin.Y;
             for (int i = 1; i <= bands; i++)
             {
@@ -79,7 +91,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
                     continue;
 
                 float t = CcPalette.Clamp01(((yPrev + y) * 0.5f - origin.Y) / height);
-                float a = alpha0 + (alpha1 - alpha0) * t;
+                float a = alpha0 + (alpha1 - alpha0) * t + ((i & 1) == 0 ? -dither : dither);
                 if (a > 0.002f)
                     Render2D.FillRectangle(new Rectangle(origin.X, yPrev, width, y - yPrev), new Color(rgb.R, rgb.G, rgb.B, a));
                 yPrev = y;
@@ -92,6 +104,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
             if (width <= 0f || height <= 0f || slices <= 0)
                 return;
 
+            slices = ResolveBands(slices, width);
+            float dither = (alpha1 - alpha0) / slices * 0.5f;
             int xPrev = (int)origin.X;
             for (int i = 1; i <= slices; i++)
             {
@@ -100,7 +114,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
                     continue;
 
                 float t = CcPalette.Clamp01(((xPrev + x) * 0.5f - origin.X) / width);
-                float a = alpha0 + (alpha1 - alpha0) * t;
+                float a = alpha0 + (alpha1 - alpha0) * t + ((i & 1) == 0 ? -dither : dither);
                 if (a > 0.002f)
                     Render2D.FillRectangle(new Rectangle(xPrev, origin.Y, x - xPrev, height), new Color(rgb.R, rgb.G, rgb.B, a));
                 xPrev = x;
@@ -113,6 +127,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
             if (width <= 0f || height <= 0f || bands <= 0)
                 return;
 
+            bands = ResolveBands(bands, height);
             int yPrev = (int)origin.Y;
             for (int i = 1; i <= bands; i++)
             {
@@ -281,18 +296,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
     }
 
     /// <summary>
-    /// 创角 / 选角舞台的雾白背景：竖直渐变 + 左上、左下墨色压暗。
-    /// 参考图里角色立绘偏右，左侧留白由这块背景承担。
+    /// 创角 / 选角舞台的左侧压暗层：3D 工作台背景铺满整页，角色立绘偏右，
+    /// 这一层只把操作栏一侧压稳，保证左侧的纸白文字在地台与天空渐变上都能读。
     /// </summary>
-    public class CcMistBackdrop : ContainerControl
+    public class CcStageScrim : ContainerControl
     {
         /// <summary>
-        /// 左侧压暗强度。实测参考图左上角 rgb(58,59,71)、左下角 rgb(74,71,72)，
-        /// 以墨色 (15,18,23) 叠到顶部底色 (173,177,205) 上需约 0.72 才能到位。
+        /// 最左侧压暗强度。舞台背景现在是工作台场景的暗天+地台（3D 全屏铺满），
+        /// 这层只负责把操作栏一侧压稳，保证纸白文字在天空渐变与地台上都可读。
         /// </summary>
-        public float ShadeStrength = 0.72f;
+        public float ShadeStrength = 0.55f;
 
-        public CcMistBackdrop()
+        /// <summary>压暗带宽度占控件宽度的比例（左 → 右渐隐到 0）。</summary>
+        public float ScrimWidthFrac = 0.58f;
+
+        public CcStageScrim()
         {
             BackgroundColor = Color.Transparent;
             ClipChildren = false;
@@ -300,18 +318,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
         public override void Draw()
         {
-            if (Width > 0f && Height > 0f)
+            if (Width > 0f && Height > 0f && ShadeStrength > 0.001f)
             {
-                CcDraw.VerticalColorGradient(Float2.Zero, Width, Height, CcPalette.MistTop, CcPalette.MistBottom, 40);
+                // 从左到右单向渐隐；不要再拆成上/下两半分别画——两半在中线 alpha 不同
+                // 会留下一道横向接缝（罗盘带那圈假边框同一类叠加/接缝问题）。
+                CcDraw.HorizontalAlphaGradient(Float2.Zero, Width * ScrimWidthFrac, Height,
+                    CcPalette.StageScrim, ShadeStrength, 0f, 40);
 
-                if (ShadeStrength > 0.001f)
-                {
-                    // 一整条从左压到右的墨色渐变，覆盖左上与左下。
-                    // 不要拆成上下两半分别画：两半在屏幕中线处的 alpha 不同会留下一道横向接缝
-                    // （和罗盘带那圈假边框同一类叠加/接缝问题）。
-                    CcDraw.HorizontalAlphaGradient(Float2.Zero, Width * 0.42f, Height,
-                        CcPalette.MistShade, ShadeStrength, 0f, 36);
-                }
+                // 底边再压一档：确认块/返回提示/ID 水印都落在地台上，亮底会吃掉金色小字。
+                float bandH = Height * 0.24f;
+                CcDraw.VerticalAlphaGradient(new Float2(0f, Height - bandH), Width, bandH,
+                    CcPalette.StageScrim, 0f, 0.5f, 32);
             }
 
             base.Draw();

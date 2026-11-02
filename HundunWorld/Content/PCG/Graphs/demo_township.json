@@ -1,0 +1,2064 @@
+﻿{
+  "Format": 2,
+  "Name": "demo_township",
+  "EditorData": null,
+  "Nodes": [
+    {
+      "TypeId": "Biome",
+      "X": 0,
+      "Y": 0,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "50",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "12",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "200",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1000",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "4",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "25",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "8",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "VolumeSampler",
+      "X": 0,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 forest",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "8",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 forest\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "AreaFilter",
+      "X": 600,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 forest\uFF1A\u53EA\u8981 x[300,3300] z[4000,5200] \u8FD9\u7247",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "300",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "3300",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "4000",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "5200",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SlopeFilter",
+      "X": 900,
+      "Y": 180,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "30",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 1800,
+      "Y": 180,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "1b4a643d67504470a45ee3b263361ee1",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1.2",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "VolumeSampler",
+      "X": 0,
+      "Y": 360,
+      "Comment": "\u6563\u5E03\u5C42 shrubs",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.6",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "8",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 360,
+      "Comment": "\u6563\u5E03\u5C42 shrubs\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 1200,
+      "Y": 360,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "dd86c47234c44bf7b3239d9505aa4fc7",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.6",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "VolumeSampler",
+      "X": 0,
+      "Y": 540,
+      "Comment": "\u6563\u5E03\u5C42 hamlet",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "84",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "2",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 540,
+      "Comment": "\u6563\u5E03\u5C42 hamlet\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "AreaFilter",
+      "X": 600,
+      "Y": 540,
+      "Comment": "\u6563\u5E03\u5C42 hamlet\uFF1A\u53EA\u8981 x[2500,3200] z[5400,6200] \u8FD9\u7247",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "2500",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "3200",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "5400",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "6200",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "AreaFilter",
+      "X": 900,
+      "Y": 540,
+      "Comment": "\u6563\u5E03\u5C42 hamlet\uFF1A\u4ECE\u4E0A\u9762\u9009\u4E2D\u7684\u8303\u56F4\u91CC\u6316\u6389 x[2500,2850] z[5400,6200] \u8FD9\u5757",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "2500",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "2850",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "5400",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "6200",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Geometry",
+      "X": 1200,
+      "Y": 540,
+      "Comment": "\u6563\u5E03\u5C42 hamlet\uFF1Ahouse \u7A0B\u5E8F\u5316\u51E0\u4F55 X:14.00 Y:10.00 Z:12.00",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "5",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "14",
+            "10",
+            "12"
+          ]
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnGeometry",
+      "X": 1500,
+      "Y": 540,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "String",
+          "Value": "hamlet",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "PointList",
+      "X": 0,
+      "Y": 720,
+      "Comment": "\u805A\u5C45\u5730 1 \u7684\u4F4D\u7F6E",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "900",
+            "0",
+            "4700"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "TransformPoints",
+      "X": 300,
+      "Y": 720,
+      "Comment": "village\uFF1A\u6574\u4F53\u7ED5\u79CD\u5B50\u8F6C 30 \u5EA6",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "0",
+            "30",
+            "0"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SplitGrammar",
+      "X": 600,
+      "Y": 720,
+      "Comment": "\u805A\u5C45\u5730 1\uFF1A10 \u4E2A\u5730\u5757\uFF08\u4E0A\u6E38\u70B9\u6570\u51B3\u5B9A\u5B9E\u9645\u4E2A\u6570\uFF09",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "X:0.5,0.5; X:0.5,0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "400",
+            "40",
+            "400"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 900,
+      "Y": 720,
+      "Comment": "\u805A\u5C45\u5730\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 1200,
+      "Y": 720,
+      "Comment": "\u623F\u5C4B 1",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "b43f0f8fa3f34aaba596681593a42ba2",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SplitGrammar",
+      "X": 0,
+      "Y": 900,
+      "Comment": "\u805A\u5C45\u5730 2\uFF1A16 \u4E2A\u5730\u5757\uFF08\u4E0A\u6E38\u70B9\u6570\u51B3\u5B9A\u5B9E\u9645\u4E2A\u6570\uFF09",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "X:0.5,0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "160",
+            "40",
+            "160"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 900,
+      "Comment": "\u805A\u5C45\u5730\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Geometry",
+      "X": 600,
+      "Y": 900,
+      "Comment": "\u623F\u5C4B 2\uFF1A\u7A0B\u5E8F\u5316\u51E0\u4F55 house X:40.00 Y:24.00 Z:34.00",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "5",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "12",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "40",
+            "24",
+            "34"
+          ]
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnGeometry",
+      "X": 900,
+      "Y": 900,
+      "Comment": "\u623F\u5C4B 2",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "String",
+          "Value": "\u623F\u5C4B 2",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Grammar",
+      "X": 0,
+      "Y": 1080,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "District = Block,Block: X:0.5,0.5; Block = House,House: Z:0.5,0.5",
+          "Components": null
+        },
+        {
+          "Kind": "String",
+          "Value": "District",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "2",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "600",
+            "40",
+            "600"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 1080,
+      "Comment": "\u57CE\u5E02\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "AreaFilter",
+      "X": 600,
+      "Y": 1080,
+      "Comment": "\u57CE\u533A 1\uFF1A\u4ECE\u4E0A\u9762\u9009\u4E2D\u7684\u8303\u56F4\u91CC\u6316\u6389 x[1500,1800] z[4900,5500] \u8FD9\u5757",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "1500",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1800",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "4900",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "5500",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 900,
+      "Y": 1080,
+      "Comment": "\u57CE\u533A 1",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "b43f0f8fa3f34aaba596681593a42ba2",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Grammar",
+      "X": 0,
+      "Y": 1260,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "District = Block,Block,Block: X:0.34,0.33,0.33",
+          "Components": null
+        },
+        {
+          "Kind": "String",
+          "Value": "District",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "900",
+            "40",
+            "900"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 1260,
+      "Comment": "\u57CE\u5E02\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 600,
+      "Y": 1260,
+      "Comment": "\u57CE\u533A 2",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "b43f0f8fa3f34aaba596681593a42ba2",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "PointList",
+      "X": 0,
+      "Y": 1440,
+      "Comment": "\u8DEF 1 \u7684\u9014\u7ECF\u70B9\uFF082 \u4E2A\uFF09",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "2",
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "600",
+            "0",
+            "4300"
+          ]
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "1600",
+            "0",
+            "5100"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Path",
+      "X": 300,
+      "Y": 1440,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "40",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "20",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "120",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 600,
+      "Y": 1440,
+      "Comment": "\u8DEF\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "54a1ff4a9f0142afb3f73482b366139b",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "PointList",
+      "X": 0,
+      "Y": 1620,
+      "Comment": "\u8DEF 2 \u7684\u9014\u7ECF\u70B9\uFF082 \u4E2A\uFF09",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "2",
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "1600",
+            "0",
+            "5100"
+          ]
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "2700",
+            "0",
+            "5900"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Path",
+      "X": 300,
+      "Y": 1620,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "40",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "20",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "120",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 600,
+      "Y": 1620,
+      "Comment": "\u8DEF\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "54a1ff4a9f0142afb3f73482b366139b",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "PointList",
+      "X": 0,
+      "Y": 1800,
+      "Comment": "\u8DEF 3 \u7684\u9014\u7ECF\u70B9\uFF082 \u4E2A\uFF09",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "2",
+          "Components": null
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "2100",
+            "0",
+            "4400"
+          ]
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "2900",
+            "0",
+            "6000"
+          ]
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Path",
+      "X": 300,
+      "Y": 1800,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "20",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "45",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 600,
+      "Y": 1800,
+      "Comment": "\u8DEF\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "54a1ff4a9f0142afb3f73482b366139b",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "DistanceToPoints",
+      "X": 1200,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 forest\uFF1A\u5230 road1 \u7684\u6700\u8FD1\u8DDD\u79BB",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "distance",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "400",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "AttributeFilter",
+      "X": 1500,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 forest\uFF1A\u53EA\u7559\u8DDD road1 200 \u4EE5\u5185",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "distance",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "200",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "DistanceToPoints",
+      "X": 600,
+      "Y": 360,
+      "Comment": "\u6563\u5E03\u5C42 shrubs\uFF1A\u5230 road1 \u7684\u8DDD\u79BB\uFF08\u7528\u6765\u7B97\u5BC6\u5EA6\u8870\u51CF\uFF09",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "distance",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "400",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "RemapAttribute",
+      "X": 900,
+      "Y": 360,
+      "Comment": "\u6563\u5E03\u5C42 shrubs\uFF1A\u5BC6\u5EA6\u6309\u5230 road1 \u7684\u8DDD\u79BB\u6E10\u53D8\uFF0C400 \u5904\u4E3A\u96F6",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "distance",
+          "Components": null
+        },
+        {
+          "Kind": "String",
+          "Value": "",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "400",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        }
+      ]
+    }
+  ],
+  "Edges": [
+    {
+      "FromNode": 1,
+      "FromPin": 0,
+      "ToNode": 2,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 2,
+      "FromPin": 0,
+      "ToNode": 3,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 3,
+      "FromPin": 0,
+      "ToNode": 4,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 6,
+      "FromPin": 0,
+      "ToNode": 7,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 9,
+      "FromPin": 0,
+      "ToNode": 10,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 10,
+      "FromPin": 0,
+      "ToNode": 11,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 11,
+      "FromPin": 0,
+      "ToNode": 12,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 12,
+      "FromPin": 0,
+      "ToNode": 13,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 13,
+      "FromPin": 0,
+      "ToNode": 14,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 15,
+      "FromPin": 0,
+      "ToNode": 16,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 16,
+      "FromPin": 0,
+      "ToNode": 17,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 17,
+      "FromPin": 0,
+      "ToNode": 18,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 18,
+      "FromPin": 0,
+      "ToNode": 19,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 20,
+      "FromPin": 0,
+      "ToNode": 21,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 21,
+      "FromPin": 0,
+      "ToNode": 22,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 22,
+      "FromPin": 0,
+      "ToNode": 23,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 24,
+      "FromPin": 0,
+      "ToNode": 25,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 25,
+      "FromPin": 0,
+      "ToNode": 26,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 26,
+      "FromPin": 0,
+      "ToNode": 27,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 28,
+      "FromPin": 0,
+      "ToNode": 29,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 29,
+      "FromPin": 0,
+      "ToNode": 30,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 31,
+      "FromPin": 0,
+      "ToNode": 32,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 32,
+      "FromPin": 0,
+      "ToNode": 33,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 34,
+      "FromPin": 0,
+      "ToNode": 35,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 35,
+      "FromPin": 0,
+      "ToNode": 36,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 37,
+      "FromPin": 0,
+      "ToNode": 38,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 38,
+      "FromPin": 0,
+      "ToNode": 39,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 4,
+      "FromPin": 0,
+      "ToNode": 40,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 32,
+      "FromPin": 0,
+      "ToNode": 40,
+      "ToPin": 1
+    },
+    {
+      "FromNode": 40,
+      "FromPin": 0,
+      "ToNode": 41,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 41,
+      "FromPin": 0,
+      "ToNode": 5,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 7,
+      "FromPin": 0,
+      "ToNode": 42,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 32,
+      "FromPin": 0,
+      "ToNode": 42,
+      "ToPin": 1
+    },
+    {
+      "FromNode": 42,
+      "FromPin": 0,
+      "ToNode": 43,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 43,
+      "FromPin": 0,
+      "ToNode": 8,
+      "ToPin": 0
+    }
+  ],
+  "Exposed": [],
+  "Settings": {
+    "DefaultSeed": 20261010,
+    "EnableDebugDraw": true,
+    "MaxPointBudget": 2000000,
+    "MaxExpandedNodeCount": 4096,
+    "Terrain": {
+      "NoiseAmplitude": 20,
+      "NoiseScale": 800,
+      "Features": [
+        {
+          "Kind": 1,
+          "X": 1800,
+          "Z": 5200,
+          "Radius": 900,
+          "Height": 80,
+          "Falloff": 0.5
+        },
+        {
+          "Kind": 2,
+          "X": 600,
+          "Z": 4500,
+          "Radius": 300,
+          "Height": 55,
+          "Falloff": 0
+        },
+        {
+          "Kind": 2,
+          "X": 3000,
+          "Z": 5900,
+          "Radius": 320,
+          "Height": 60,
+          "Falloff": 0
+        }
+      ],
+      "Holes": []
+    }
+  }
+}

@@ -26,6 +26,22 @@ namespace Horizon.Orleans.Interface
         Task<bool> AcceptQuestAsync(int questId, string questName, string description, int questType, int level, Dictionary<string, int> rewards);
 
         /// <summary>
+        /// 按服务端任务模板接任务：只收 questId，名称/描述/奖励全部读 <c>Game_HunduShijie_QuestTemplate</c>。
+        /// <para>
+        /// 上面那个 <see cref="AcceptQuestAsync"/> 由调用方自带 rewards，只能给服务端内部流程用；
+        /// 任何来自客户端的"接任务"都必须走这一条，否则玩家可以自己声明任务奖励。
+        /// </para>
+        /// </summary>
+        /// <param name="questId">任务模板 ID</param>
+        /// <returns>接到的任务快照；模板缺失或未注册时为 null（不静默当成成功）。</returns>
+        /// <summary>
+        /// 按服务端模板接任务。<paramref name="characterLevel"/> 必须是**网关从角色 Grain 读到的权威等级**
+        /// （不是客户端上报值）：等级门槛以前只在可接列表侧过滤，接取侧不校，等于"列表帮你挡、直连接取就绕过"。
+        /// 读不到等级时传 0 —— 任何有门槛的任务都会因此被拒（fail closed）。
+        /// </summary>
+        Task<QuestData?> AcceptFromTemplateAsync(int questId, int characterLevel);
+
+        /// <summary>
         /// 更新任务目标进度
         /// </summary>
         /// <param name="questId">任务ID</param>

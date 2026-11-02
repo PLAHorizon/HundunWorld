@@ -45,6 +45,20 @@ namespace Game.Character.Attributes
         [Tooltip("当前生命值")]
         public float CurrentHealth = 1000f;
 
+        /// <summary>
+        /// 服务端宣告的"已死亡"（网络状态位 Dead 的镜像；远端怪物的尸体窗口用它判）。
+        /// <para>刻意不是 <c>CurrentHealth &lt;= 0</c> 的推导：血量归零是数值，死亡是状态。
+        /// 由宿主写入，本地不做结算，所以任何"看起来像 0 血"的中间态都不会误判成尸体。</para>
+        /// </summary>
+        public bool IsDead = false;
+
+        /// <summary>
+        /// 服务端宣告的"此刻打不到它"（网络状态位 Evading 的镜像：怪物正在回位）。
+        /// <para>与 <see cref="IsDead"/> 分开写：尸体不能选也不该显示血条，而回位中的怪看得见、选得中，
+        /// 只是这一手打不动。这个字段同时充当"上一次同步读到的值"，让搬运只在真的变化时去取标记组件。</para>
+        /// </summary>
+        public bool Unattackable = false;
+
         // 可变属性一律"基值 + 装备加成"合成分：setter 写基值（服务端同步/默认初始化透明落基值），
         // getter 返回含装备加成的最终值——所有每帧读取方（血条/内力条/名牌/属性面板）零改动即反映穿戴。
         // _equip* 加成字段集中声明于"装备加成"region。
@@ -102,11 +116,11 @@ namespace Game.Character.Attributes
         public float CurrentEnergy = 1000f;
 
         private float _maxEnergyBase = 1000f;
-        [Tooltip("最大能量值 = 基值 + 装备 + 内力×10 + 水×200")]
+        [Tooltip("最大能量值 = 基值 + 装备 + 智力×100 + 水×200")]
         public float MaxEnergy
         {
             get => _maxEnergyBase + _equipMaxEnergy
-                   + _alloc.Energy * EnergyPerPoint
+                   + _alloc.Intelligence * IntelligenceEnergyPerPoint
                    + _alloc.Water * WaterEnergyPerPoint;
             set => _maxEnergyBase = value;
         }
@@ -195,6 +209,49 @@ namespace Game.Character.Attributes
         private int _equipFire;
         private int _equipEarth;
 
+        // 装备的五行三行（攻击/防御/破防）。亲和（_equipMetal…）只喂雷达图，不参与伤害公式；
+        // 这三行才是服务端权威结算里真正进CombatProfile的那一层，两端必须同口径。
+        private WuxingRows _equipElementAttack;
+        private WuxingRows _equipElementDefense;
+        private WuxingRows _equipElementPenetration;
+
+        /// <summary>
+        /// 按元素分行的一组整数（装备的五行三行）。
+        /// 行号语义与 <c>GetElementDamage/GetElementDefense/GetPenetration</c> 的元素入参一致。
+        /// </summary>
+        public struct WuxingRows
+        {
+            public int Metal;
+            public int Wood;
+            public int Water;
+            public int Fire;
+            public int Earth;
+
+            /// <summary>取某一行的值；无属性或越界返回 0。</summary>
+            public int Of(WuxingElement element) => element switch
+            {
+                WuxingElement.Metal => Metal,
+                WuxingElement.Wood => Wood,
+                WuxingElement.Water => Water,
+                WuxingElement.Fire => Fire,
+                WuxingElement.Earth => Earth,
+                _ => 0,
+            };
+
+            /// <summary>把 (元素, 值) 累加进对应行。</summary>
+            public void Add(WuxingElement element, int value)
+            {
+                switch (element)
+                {
+                    case WuxingElement.Metal: Metal += value; break;
+                    case WuxingElement.Wood: Wood += value; break;
+                    case WuxingElement.Water: Water += value; break;
+                    case WuxingElement.Fire: Fire += value; break;
+                    case WuxingElement.Earth: Earth += value; break;
+                }
+            }
+        }
+
         /// <summary>
         /// 装备聚合加成（由 <c>EquipmentAttributeBridge</c> 按服务端权威穿戴快照求和）。
         /// </summary>
@@ -211,6 +268,13 @@ namespace Game.Character.Attributes
             public int WaterAffinity;
             public int FireAffinity;
             public int EarthAffinity;
+
+            /// <summary>装备提供的五行攻击力（按行）。</summary>
+            public WuxingRows ElementAttack;
+            /// <summary>装备提供的五行防御力（按行）。</summary>
+            public WuxingRows ElementDefense;
+            /// <summary>装备提供的五行破防值（按行，存攻方本行）。</summary>
+            public WuxingRows ElementPenetration;
         }
 
         /// <summary>属性变化事件（穿戴/卸下重算后触发；UI 可用于即时刷新）。</summary>
@@ -233,6 +297,9 @@ namespace Game.Character.Attributes
             _equipWater = bonus.WaterAffinity;
             _equipFire = bonus.FireAffinity;
             _equipEarth = bonus.EarthAffinity;
+            _equipElementAttack = bonus.ElementAttack;
+            _equipElementDefense = bonus.ElementDefense;
+            _equipElementPenetration = bonus.ElementPenetration;
 
             CurrentHealth = Mathf.Min(CurrentHealth, MaxHealth);
             CurrentEnergy = Mathf.Min(CurrentEnergy, MaxEnergy);
@@ -248,24 +315,27 @@ namespace Game.Character.Attributes
         /// 自由点分配（第三层属性来源：基值 + 装备 + 加点）。
         /// 点池 = 等级 × <see cref="AllocationPointsPerLevel"/>，随服务端等级同步自动扩容；
         /// 分配存客户端本地（SQLite），装备加成走服务端权威快照，两者互不覆盖。
-        /// 字段序=UI 行序：力量/敏捷/体质/内力 + 金木水火土。
+        /// 字段序=UI 行序：力量/敏捷/体质/智力 + 金木水火土。
+        /// 第 4 项历史上叫"内力"（每点 +10 内力上限），2026-09-28 起改为"智力"
+        /// （每点 +100 内力上限 +10 精神 +1 智慧 +3 神识 +0.2 幸运）；
+        /// 线上协议字段与数据库列沿用旧名以免迁移，语义以这里为准。
         /// </summary>
         public struct AttributeAllocation
         {
             public int Strength;
             public int Agility;
             public int Health;
-            public int Energy;
+            public int Intelligence;
             public int Metal;
             public int Wood;
             public int Water;
             public int Fire;
             public int Earth;
 
-            public readonly int Spent => Strength + Agility + Health + Energy + Metal + Wood + Water + Fire + Earth;
+            public readonly int Spent => Strength + Agility + Health + Intelligence + Metal + Wood + Water + Fire + Earth;
         }
 
-        public enum AllocationKind { Strength, Agility, Health, Energy, Metal, Wood, Water, Fire, Earth }
+        public enum AllocationKind { Strength, Agility, Health, Intelligence, Metal, Wood, Water, Fire, Earth }
 
         // ── 每点换算（UI 描述与属性公式的单一来源） ──────────────────────
         public const int AllocationPointsPerLevel = 5;
@@ -276,9 +346,16 @@ namespace Game.Character.Attributes
         // 敏捷：+20 防御、+3 移动速度
         public const int AgilityDefensePerPoint = 20;
         public const int AgilityMoveSpeedPerPoint = 3;
-        // 体质：+100 生命上限；内力：+10 内力上限
+        // 体质：+100 生命上限
         public const int HealthPerPoint = 100;
-        public const int EnergyPerPoint = 10;
+        // 智力：+100 内力上限、+10 精神、+1 智慧、+3 神识、+0.2 幸运
+        //（2026-09-28 由"内力 +10 内力上限/点"改换；精神/智慧/神识/幸运此前没有任何数据支撑，
+        //  现在统一由智力点派生，属纯派生量，不落库）
+        public const int IntelligenceEnergyPerPoint = 100;
+        public const int IntelligenceSpiritPerPoint = 10;
+        public const int IntelligenceWisdomPerPoint = 1;
+        public const int IntelligencePerceptionPerPoint = 3;
+        public const float IntelligenceLuckPerPoint = 0.2f;
         // 五行共同：+10 对应亲和（雷达图口径）
         public const int WuxingPerPoint = 10;
         // 金：+50 攻击、+30 金伤、+5 金防、+30 破木防、+0.1% 暴击率、+3% 暴击伤害
@@ -321,6 +398,100 @@ namespace Game.Character.Attributes
 
         private AttributeAllocation _alloc;
 
+        // ── 服务端权威画像（CharacterAttributeRefresh 下行）──────────────────
+        //
+        // 三行的权威出处是服务端：属性表 *_attack / *_resistance / *_penetration 三组列、
+        // 物品模板表里的装备数值、以及五行属性值兜底，客户端都读不到。
+        // 本地那套"加点 + 装备硬编码表"只是**镜像**，画像没到时用它兜底，
+        // 一旦画像到达就以它为准——运营改了配表也不会出现面板一套、结算一套。
+        private bool _hasAuthoritativeProfile;
+        private WuxingRows _authElementAttack;
+        private WuxingRows _authElementDefense;
+        private WuxingRows _authElementPenetration;
+        private float _authAttack;
+        private float _authDefense;
+
+        /// <summary>是否已收到服务端权威画像（false 时三行与攻防按本地镜像算）。</summary>
+        public bool HasAuthoritativeProfile => _hasAuthoritativeProfile;
+
+        /// <summary>
+        /// 宠物反哺的归因量（服务端 <c>PetAssistCore.ApplyToOwnerStats</c> 的 FromPets* 四项）。
+        /// <para>按字段名赋值而不是走一长串位置参数：八个整数里换错两位不报错，
+        /// 只会让"宠物给的生命"显示在攻击那一栏。</para>
+        /// </summary>
+        public struct PetBonusInfo
+        {
+            /// <summary>宠物贡献的攻击。</summary>
+            public int Attack;
+
+            /// <summary>宠物贡献的生命上限。</summary>
+            public int Health;
+
+            /// <summary>宠物贡献的防御。</summary>
+            public int Defense;
+
+            /// <summary>宠物贡献的命中。</summary>
+            public int Hit;
+
+            /// <summary>宠物替主人承受会心的概率（bps）。</summary>
+            public int CritTankChanceBps;
+
+            /// <summary>参与反哺的宠物只数。</summary>
+            public int Contributors;
+
+            /// <summary>名册总只数。</summary>
+            public int RosterCount;
+
+            /// <summary>问题描述；空 = 正常。</summary>
+            public string Issues;
+        }
+
+        // 宠物栏与权威画像是**分开**的一份账：服务端的 Attack/Defense 没有含宠物（宠物还没进
+        // CombatProfile 那条权威结算），所以这里绝不做 PetAttack + _authAttack 的合并显示——
+        // 合并了就是"面板说宠物加了 1060 攻，打怪一点没变"。面板要把它作为独立一行念出来。
+        private bool _hasPetBonus;
+        private PetBonusInfo _petBonus;
+
+        /// <summary>是否已收到宠物反哺数据（false 时宠物栏显示占位而不是 0，0 会被读成"没有出战宠"）。</summary>
+        public bool HasPetBonus => _hasPetBonus;
+
+        /// <summary>宠物反哺归因量（未到达时各项为默认值，用 <see cref="HasPetBonus"/> 区分）。</summary>
+        public PetBonusInfo PetBonus => _petBonus;
+
+        /// <summary>写入宠物反哺数据（由权威画像那条下行一起带过来）。</summary>
+        public void ApplyPetBonus(in PetBonusInfo info)
+        {
+            _petBonus = info;
+            _hasPetBonus = true;
+            AttributesChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// 写入服务端权威画像。浮点三行按四舍五入落成整数行（面板与本地口径都是整数）。
+        /// </summary>
+        public void ApplyAuthoritativeProfile(
+            in WuxingRows elementAttack, in WuxingRows elementDefense, in WuxingRows elementPenetration,
+            float attackPower, float defense)
+        {
+            _authElementAttack = elementAttack;
+            _authElementDefense = elementDefense;
+            _authElementPenetration = elementPenetration;
+            _authAttack = attackPower;
+            _authDefense = defense;
+            _hasAuthoritativeProfile = true;
+
+            AttributesChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// 攻击力显示口径：有权威画像时用服务端那份通用攻（已含装备与加点），
+        /// 否则退回本地"物攻 + 法攻"。两者不能相加——服务端的 AttackPower 已经涵盖了加点攻击。
+        /// </summary>
+        public float AttackForDisplay => _hasAuthoritativeProfile ? _authAttack : PhysicalAttack + MagicAttack;
+
+        /// <summary>防御力显示口径，同 <see cref="AttackForDisplay"/>。</summary>
+        public float DefenseForDisplay => _hasAuthoritativeProfile ? _authDefense : PhysicalDefense + MagicDefense;
+
         public AttributeAllocation Allocation => _alloc;
         public int AllocationPointsTotal => Level * AllocationPointsPerLevel;
         public int AllocationPointsAvailable => AllocationPointsTotal - _alloc.Spent;
@@ -350,38 +521,127 @@ namespace Game.Character.Attributes
         /// <summary>移动速度加成 = 敏捷×3 + 火×5。</summary>
         public float MoveSpeedBonus => _alloc.Agility * AgilityMoveSpeedPerPoint + _alloc.Fire * FireMoveSpeedPerPoint;
 
-        /// <summary>属性伤害（按来源五行：金木水火土）。</summary>
-        public int GetElementDamage(WuxingElement element) => element switch
+        /// <summary>精神（智力×10）。</summary>
+        public int Spirit => _alloc.Intelligence * IntelligenceSpiritPerPoint;
+        /// <summary>智慧（智力×1）。</summary>
+        public int Wisdom => _alloc.Intelligence * IntelligenceWisdomPerPoint;
+        /// <summary>神识（智力×3）。</summary>
+        public int Perception => _alloc.Intelligence * IntelligencePerceptionPerPoint;
+        /// <summary>幸运值（智力×0.2）。</summary>
+        public float Luck => _alloc.Intelligence * IntelligenceLuckPerPoint;
+
+        // 三行的合并口径与服务端 ElementalDamageResolver / CombatProfile 逐字对齐：
+        // 攻击力=各来源求和；防御力与破防值="已高者计"，不是相加。
+        // 写成相加会让"同时有加点土防和土防具"的角色面板显示 70、服务端只认 50，
+        // 这类面板与结算不一致是最难查的缺陷，改任何一行都要同时看两端。
+
+        // 五行属性值（亲和）→ 三行兜底。与服务端
+        // Horizon.Game.Core.Combat.AttributeDerivation.DeriveAffinityFallback 是同一规则的两份实现：
+        // 每 10 点亲和算 1 个等效加点（即 WuxingPerPoint），按各自每点换算折成三行后取半额，
+        // 最后与"加点+装备"聚出的那一行<b>取较高者</b>。
+        // 取较高而不是相加是关键：加点已经全额进过三行，再加一遍半额亲和等于凭空多付五成伤害。
+        public const float AffinityPerEquivalentPoint = 10f;
+        public const float AffinityFallbackRatio = 0.5f;
+
+        /// <summary>某行的兜底值：该五行属性值 ÷10 个等效点 × 每点换算 × 50%（向下取整）。</summary>
+        private int AffinityFallbackRow(WuxingElement element, float perPoint)
+            => (int)(GetWuxingAffinity(element) * (AffinityFallbackRatio / AffinityPerEquivalentPoint) * perPoint);
+
+        /// <summary>该行的每点攻击换算（与上面 GetElementDamage 用的同一组常数）。</summary>
+        private static int ElementAttackPerPointOf(WuxingElement element) => element switch
         {
-            WuxingElement.Metal => _alloc.Metal * MetalElementDamagePerPoint,
-            WuxingElement.Wood => _alloc.Wood * WoodElementDamagePerPoint,
-            WuxingElement.Water => _alloc.Water * WaterElementDamagePerPoint,
-            WuxingElement.Fire => _alloc.Fire * FireElementDamagePerPoint,
-            WuxingElement.Earth => _alloc.Earth * EarthElementDamagePerPoint,
+            WuxingElement.Metal => MetalElementDamagePerPoint,
+            WuxingElement.Wood => WoodElementDamagePerPoint,
+            WuxingElement.Water => WaterElementDamagePerPoint,
+            WuxingElement.Fire => FireElementDamagePerPoint,
+            WuxingElement.Earth => EarthElementDamagePerPoint,
             _ => 0,
         };
 
-        /// <summary>五行防御（金/木/水/土各 5/点；规格未给火系防御，保持 0）。</summary>
-        public int GetElementDefense(WuxingElement element) => element switch
+        /// <summary>该行的每点防御换算（火系规格未给，兜底同样不给）。</summary>
+        private static int ElementDefensePerPointOf(WuxingElement element) => element switch
         {
-            WuxingElement.Metal => _alloc.Metal * MetalElementDefensePerPoint,
-            WuxingElement.Wood => _alloc.Wood * WoodElementDefensePerPoint,
-            WuxingElement.Water => _alloc.Water * WaterElementDefensePerPoint,
+            WuxingElement.Metal => MetalElementDefensePerPoint,
+            WuxingElement.Wood => WoodElementDefensePerPoint,
+            WuxingElement.Water => WaterElementDefensePerPoint,
             WuxingElement.Fire => 0,
-            WuxingElement.Earth => _alloc.Earth * EarthElementDefensePerPoint,
+            WuxingElement.Earth => EarthElementDefensePerPoint,
             _ => 0,
         };
 
-        /// <summary>破防（按攻方五行：金破木、木破土、水破火、火破金、土破水，各 30/点）。</summary>
-        public int GetPenetration(WuxingElement attacker) => attacker switch
+        /// <summary>该行的每点破防换算（五行各 30）。</summary>
+        private static int ElementPenetrationPerPointOf(WuxingElement element) => element switch
         {
-            WuxingElement.Metal => _alloc.Metal * MetalPenetrationPerPoint,
-            WuxingElement.Wood => _alloc.Wood * WoodPenetrationPerPoint,
-            WuxingElement.Water => _alloc.Water * WaterPenetrationPerPoint,
-            WuxingElement.Fire => _alloc.Fire * FirePenetrationPerPoint,
-            WuxingElement.Earth => _alloc.Earth * EarthPenetrationPerPoint,
+            WuxingElement.Metal => MetalPenetrationPerPoint,
+            WuxingElement.Wood => WoodPenetrationPerPoint,
+            WuxingElement.Water => WaterPenetrationPerPoint,
+            WuxingElement.Fire => FirePenetrationPerPoint,
+            WuxingElement.Earth => EarthPenetrationPerPoint,
             _ => 0,
         };
+
+        /// <summary>
+        /// 属性伤害（加点本行 + 装备该行五行攻击，攻击侧求和；再与五行属性值兜底行取较高）。
+        /// </summary>
+        public int GetElementDamage(WuxingElement element)
+        {
+            if (_hasAuthoritativeProfile) return _authElementAttack.Of(element);
+
+            int fromSources = element switch
+            {
+                WuxingElement.Metal => _alloc.Metal * MetalElementDamagePerPoint,
+                WuxingElement.Wood => _alloc.Wood * WoodElementDamagePerPoint,
+                WuxingElement.Water => _alloc.Water * WaterElementDamagePerPoint,
+                WuxingElement.Fire => _alloc.Fire * FireElementDamagePerPoint,
+                WuxingElement.Earth => _alloc.Earth * EarthElementDamagePerPoint,
+                _ => 0,
+            } + _equipElementAttack.Of(element);
+
+            return System.Math.Max(fromSources, AffinityFallbackRow(element, ElementAttackPerPointOf(element)));
+        }
+
+        /// <summary>
+        /// 五行防御（加点金/木/水/土各 5/点，火系规格未给；与装备该行防御、五行属性值兜底行取最高者）。
+        /// </summary>
+        public int GetElementDefense(WuxingElement element)
+        {
+            if (_hasAuthoritativeProfile) return _authElementDefense.Of(element);
+
+            int fromAllocation = element switch
+            {
+                WuxingElement.Metal => _alloc.Metal * MetalElementDefensePerPoint,
+                WuxingElement.Wood => _alloc.Wood * WoodElementDefensePerPoint,
+                WuxingElement.Water => _alloc.Water * WaterElementDefensePerPoint,
+                WuxingElement.Fire => 0,
+                WuxingElement.Earth => _alloc.Earth * EarthElementDefensePerPoint,
+                _ => 0,
+            };
+            return System.Math.Max(
+                System.Math.Max(fromAllocation, _equipElementDefense.Of(element)),
+                AffinityFallbackRow(element, ElementDefensePerPointOf(element)));
+        }
+
+        /// <summary>
+        /// 破防（按攻方五行：金破木、木破土、水破火、火破金、土破水，各 30/点；
+        /// 与装备该行破防、五行属性值兜底行取最高者）。
+        /// </summary>
+        public int GetPenetration(WuxingElement attacker)
+        {
+            if (_hasAuthoritativeProfile) return _authElementPenetration.Of(attacker);
+
+            int fromAllocation = attacker switch
+            {
+                WuxingElement.Metal => _alloc.Metal * MetalPenetrationPerPoint,
+                WuxingElement.Wood => _alloc.Wood * WoodPenetrationPerPoint,
+                WuxingElement.Water => _alloc.Water * WaterPenetrationPerPoint,
+                WuxingElement.Fire => _alloc.Fire * FirePenetrationPerPoint,
+                WuxingElement.Earth => _alloc.Earth * EarthPenetrationPerPoint,
+                _ => 0,
+            };
+            return System.Math.Max(
+                System.Math.Max(fromAllocation, _equipElementPenetration.Of(attacker)),
+                AffinityFallbackRow(attacker, ElementPenetrationPerPointOf(attacker)));
+        }
 
         /// <summary>
         /// 回填服务端权威分配；非法（负点/超池）按空分配处理。
@@ -393,7 +653,7 @@ namespace Game.Character.Attributes
             safe.Strength = Mathf.Max(0, safe.Strength);
             safe.Agility = Mathf.Max(0, safe.Agility);
             safe.Health = Mathf.Max(0, safe.Health);
-            safe.Energy = Mathf.Max(0, safe.Energy);
+            safe.Intelligence = Mathf.Max(0, safe.Intelligence);
             safe.Metal = Mathf.Max(0, safe.Metal);
             safe.Wood = Mathf.Max(0, safe.Wood);
             safe.Water = Mathf.Max(0, safe.Water);

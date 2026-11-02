@@ -44,6 +44,20 @@ namespace NarrativePro.Camera
         /// <summary>最大俯仰角（度）</summary>
         public float MaxPitch { get; set; } = 89f;
 
+        /// <summary>
+        /// 是否由本管理器接管相机朝向。默认 false——本游戏运行期是「宿主装配」模式，
+        /// 相机朝向由游戏自己的 PlayerController/ThirdPersonCamera 负责；只有当插件真正拥有相机控制权
+        /// （角色模式且插件相机模式处于激活态）时，控制器才会把本位翻成 true，避免逐帧覆盖第三方相机朝向导致回归。
+        /// </summary>
+        public bool bDrivesCameraOrientation { get; private set; } = false;
+
+        /// <summary>由控制器设定是否接管相机朝向（幂等，值不变时无副作用）。</summary>
+        public void SetDrivesCameraOrientation(bool bDrive, FlaxEngine.Camera cameraToDrive = null)
+        {
+            bDrivesCameraOrientation = bDrive;
+            if (cameraToDrive != null) CameraActor = cameraToDrive;
+        }
+
         public override void OnEnable()
         {
             base.OnEnable();
@@ -68,8 +82,11 @@ namespace NarrativePro.Camera
         {
             if (CameraActor == null) return;
 
-            // 应用视角旋转
-            CameraActor.Orientation = Quaternion.Euler(ViewPitch, ViewYaw, 0);
+            // 朝向仅在插件真正拥有相机控制权时才写，否则会把游戏第三方相机的朝向覆盖掉（回归）。
+            if (bDrivesCameraOrientation)
+            {
+                CameraActor.Orientation = Quaternion.Euler(ViewPitch, ViewYaw, 0);
+            }
 
             // 第一人称模式下的特殊处理
             if (bWantsFirstPersonRender && OwningCharacter != null)
@@ -81,9 +98,15 @@ namespace NarrativePro.Camera
         /// <summary>是否需要第一人称渲染。</summary>
         public virtual bool WantsFirstPersonRender() => bWantsFirstPersonRender;
 
-        /// <summary>初始化。控制器准备好时调用。</summary>
+        /// <summary>
+        /// 初始化。控制器准备好时调用（幂等：同一控制器重复调用不重复处理）。
+        /// 缺陷③的接线点——此前本方法零调用方，常驻 RootScene 的管理器永远 self-disable。
+        /// </summary>
         public virtual void InitializeFor(Actor controller)
         {
+            if (controller == null) return;
+            if (OwningController == controller) return; // 幂等
+
             OwningController = controller;
             NarrativeLog.Log($"[PlayerCameraManager] 初始化完成，控制器: {controller?.Name}");
         }

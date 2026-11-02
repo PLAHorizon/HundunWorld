@@ -42,6 +42,80 @@ public partial struct NetworkIdentityAuthComponent
     [MemoryPackOrder(4)]
     [Id(4)]
     public string Title;
+
+    /// <summary>
+    /// 怪物模板编号（仅怪物/NPC 实体有效，玩家为 0）。spawn-only。
+    /// <para>客户端拿它做"这只怪长什么样"的键。<b>不用显示名当键</b>：名字会被改、会被本地化，
+    /// 而外观一旦按名字匹配，改个名字就会让整只怪换模型。</para>
+    /// </summary>
+    [MemoryPackOrder(5)]
+    [Id(5)]
+    public int TemplateId;
+
+    /// <summary>模型键（编辑器里配的 <c>model_key</c>，客户端外观目录的查表键；空 = 未配置）。</summary>
+    [MemoryPackOrder(6)]
+    [Id(6)]
+    public string ModelKey;
+
+    /// <summary>
+    /// 体型缩放（精英常见 1.0/1.2/1.5）。
+    /// <para><c>0</c> 与负数都表示"服务端未下发"，客户端按 1.0 处理 —— 绝不能拿 0 当默认值，
+    /// 那会把怪压成看不见的一-个点。</para>
+    /// </summary>
+    [MemoryPackOrder(7)]
+    [Id(7)]
+    public float ModelScale;
+
+    /// <summary>
+    /// 待机姿态：0站 1坐 2卧 3潜水；<c>-1 = 服务端未下发</c>（客户端保留自己的默认）。
+    /// <para>必须能表达"未下发"：0 本身就是合法姿态（站立），用 0 当哨兵会让所有存量怪被迫显式配姿态。</para>
+    /// </summary>
+    [MemoryPackOrder(8)]
+    [Id(8)]
+    public int StandState;
+
+    /// <summary>
+    /// 怪物档位 rank：0普通 1精英 2稀有精英 3首领 4世界BOSS（玩家实体为 0）。
+    /// <para>客户端据此把骷髅级显示成 "??" 并给精英加边框——让分色本身由等级差算，
+    /// 但"首领恒为骷髅"这条判据需要 rank（见 <c>MonsterDifficultyCore.Of</c>）。</para>
+    /// </summary>
+    [MemoryPackOrder(9)]
+    [Id(9)]
+    public int Rank;
+
+    /// <summary>
+    /// 起手时就在这只怪身上的吟唱（**给晚进场的人**； Spawn 是补发的唯一通路）。
+    /// <para>为什么要占 spawn-only 的槽位而不是新开一条事件：施法起手事件只在"开始"那个瞬间发给
+    /// 当时看得见的人。玩家走进一片正在施法的怪中间时，那些怪早已读条过半，
+    /// 而它们的起手事件对这个会话从来没有发出过——表现就是"这只怪明明在读条，我看到的却是一根空的血条"，
+    /// 直到它下一次起手才恢复正常。补发路径只有 Spawn，所以这份状态必须随 Spawn 一起给。</para>
+    /// <para>"有没有在读条"的判据是 <see cref="CastTotalSeconds"/> &gt; 0（瞬发本来就没有条，不发），
+    /// 而不是 <see cref="CastSkillId"/> != 0：运行态与内容包对不上时挂载查不出技能 id，
+    /// 那种情况下条子照样该画（时长在运行态里），只是没有技能身份。</para>
+    /// </summary>
+    [MemoryPackOrder(10)]
+    [Id(10)]
+    public int CastSkillId;
+
+    /// <summary>本次吟唱读满需要的总秒数（&lt;=0 = 这只怪此刻没在读条，客户端其余四栏一律不读）。</summary>
+    [MemoryPackOrder(11)]
+    [Id(11)]
+    public float CastTotalSeconds;
+
+    /// <summary>服务端认为已经过去了多少秒（客户端据此把条子画在半程，而不是从 0 重放）。</summary>
+    [MemoryPackOrder(12)]
+    [Id(12)]
+    public float CastElapsedSeconds;
+
+    /// <summary>系别掩码（与 <c>MonsterCastPayload.SchoolMask</c> 同一套位：位号==域号）。</summary>
+    [MemoryPackOrder(13)]
+    [Id(13)]
+    public int CastSchoolMask;
+
+    /// <summary>可否打断（1=可，画金边）。与起手事件同一个判据，晚进场的人看到的描边必须一致。</summary>
+    [MemoryPackOrder(14)]
+    [Id(14)]
+    public int CastInterruptible;
 }
 
 /// <summary>
@@ -107,6 +181,23 @@ public partial struct EntityStateAuthComponent
     /// <summary>累计经验值。</summary>
     [MemoryPackOrder(6)] [Id(6)] public long Exp;
 
+    /// <summary>
+    /// NPC 待机姿态（0站 1坐 2工作 3持械）：<b>每个快照都下发</b>，因为作息会随一天时段变
+    /// （铁匠白天打铁、夜里收摊），而 <c>NetworkIdentityAuthComponent</c> 是 spawn-only。
+    /// <para><c>-1 = 非 NPC / 未下发</c>（客户端保留自己的默认）。0 本身是合法姿态，
+    /// 不能拿 0 当哨兵。</para>
+    /// </summary>
+    [MemoryPackOrder(9)] [Id(9)] public int NpcStandState;
+
+    /// <summary>
+    /// NPC 服务位图（与 <c>NpcServiceCore</c> 同位：Gossip=1 QuestGiver=2 QuestTurnIn=4
+    /// Vendor=8 Trainer=16 CraftTrainer=32 CraftStation=64），随每个快照下发。
+    /// <para><c>-1 = 非 NPC / 未下发</c>；<b>0 = 确知"没有任何服务"</b>。
+    /// 两者必须能分开：山贼头目的服务位确实是 0，若也当成"未下发"，
+    /// 客户端就会退到旧的本地目录去猜，猜错时表现为它头上多出一个点不开的对话按钮。</para>
+    /// </summary>
+    [MemoryPackOrder(10)] [Id(10)] public int NpcServiceFlags;
+
     /// <summary>当前体力值（冲刺/闪避等消耗）。</summary>
     [MemoryPackOrder(7)] [Id(7)] public int Stamina;
 
@@ -123,6 +214,76 @@ public partial struct EntityStateAuthComponent
             else StateBits &= ~EntityStateBits.Dead;
         }
     }
+
+    /// <summary>
+    /// 简化访问：这只怪正在<b>回位</b>，按 AzerothCore 的口径<b>根本打不到</b>
+    /// （<code>Creature::IsEvadingAttacks()</code> 挂在受击方那侧，五处门共用它）。
+    /// <para>为什么要下发：服务端在结算前就把这一手拒了，客户端如果不知道，玩家看见的是
+    /// "我按了技能而什么都没有"——既没有伤害数字也没有解释。有了这一位，客户端能把
+    /// 名牌/目标框描灰并在按下去时给人话原因（服务端仍然是唯一权威）。</para>
+    /// <para>只有 <c>Dead</c> / <c>Evading</c> / <c>Stunned</c> / <c>Rooted</c> 四位真的被服务端写过；
+    /// 其余几位仍然没有载体（`Hidden`/`Frozen` 等来源都还没做）。</para>
+    /// </summary>
+    public bool IsEvading
+    {
+        get => (StateBits & EntityStateBits.Evading) != 0;
+        set
+        {
+            if (value) StateBits |= EntityStateBits.Evading;
+            else StateBits &= ~EntityStateBits.Evading;
+        }
+    }
+
+    /// <summary>
+    /// 尸体可以拾取（还在地上且窗口没关）。与 <see cref="IsDead"/> 配合：死位让名牌收起、动画倒地，
+    /// 这一位才让"拾取"入口可用。窗口一关这一位就收，玩家不会再对着取不了的尸体按 G。
+    /// </summary>
+    public bool IsCorpseInteractable
+    {
+        get => (StateBits & EntityStateBits.CorpseInteractable) != 0;
+        set
+        {
+            if (value) StateBits |= EntityStateBits.CorpseInteractable;
+            else StateBits &= ~EntityStateBits.CorpseInteractable;
+        }
+    }
+
+    /// <summary>
+    /// 被眩晕（控制状态层的 <c>Stun</c>）：动不了、也起不了手；自动近战不受影响
+    /// （AC 的 `AttackerStateUpdate` 只查 `UNIT_FLAG_PACIFIED`）。
+    /// <para>这一个位由 DS 按玩家身上的状态表写（切片 59）、客户端读进 `ControlStateManager`（期 2a）。</para>
+    /// </summary>
+    public bool IsStunned
+    {
+        get => (StateBits & EntityStateBits.Stunned) != 0;
+        set
+        {
+            if (value) StateBits |= EntityStateBits.Stunned;
+            else StateBits &= ~EntityStateBits.Stunned;
+        }
+    }
+
+    /// <summary>被沉默（控制状态层的 <c>Silence</c>）：能走能打，只是放不出技能。</summary>
+    public bool IsSilenced
+    {
+        get => (StateBits & EntityStateBits.Silenced) != 0;
+        set
+        {
+            if (value) StateBits |= EntityStateBits.Silenced;
+            else StateBits &= ~EntityStateBits.Silenced;
+        }
+    }
+
+    /// <summary>被定身（控制状态层的 <c>Root</c>）：只拦移动，不拦施法/出手。</summary>
+    public bool IsRooted
+    {
+        get => (StateBits & EntityStateBits.Rooted) != 0;
+        set
+        {
+            if (value) StateBits |= EntityStateBits.Rooted;
+            else StateBits &= ~EntityStateBits.Rooted;
+        }
+    }
 }
 
 /// <summary>实体状态位定义。</summary>
@@ -133,6 +294,33 @@ public static class EntityStateBits
     public const uint Stunned = 1u << 2;
     public const uint Hidden = 1u << 3;
     public const uint Frozen = 1u << 4;
+
+    /// <summary>怪物正在回位（v1 的 Leash / v2 的 Evade）——这段时间打不到它。</summary>
+    public const uint Evading = 1u << 5;
+
+    /// <summary>
+    /// 被定身（控制状态层的 <c>Root</c>）：这一位今天**有写方**（DS 按玩家身上的状态表写），
+    /// 客户端据此禁掉移动输入的表现（施法仍允许——那是 <see cref="Stunned"/> 与沉默的差别）。
+    /// <para>尾部追加位不升协议版（切片 18 的 <see cref="Evading"/> 就是这么加的）。</para>
+    /// </summary>
+    public const uint Rooted = 1u << 6;
+
+    /// <summary>
+    /// 被沉默（控制状态层的 <c>Silence</c>）：能走能打，只是**放不出技能**（AC 的
+    /// `SPELL_FAILED_SILENCED`，`Spell.cpp:6863-6891`）。
+    /// <para>与 <see cref="Stunned"/> 分开一位是必须的：合成一位就分不清"能不能走"与"能不能放"，
+    /// 客户端只能二选一地犯错。尾部追加，不升协议版。</para>
+    /// </summary>
+    public const uint Silenced = 1u << 7;
+
+    /// <summary>
+    /// 尸体**可以拾取**（还留在世界里、且可拾取窗口没关）。
+    /// <para>客户端只看得见快照，看不见网关那份实体描述符——只把可交互位写进描述符，
+    /// 客户端就永远点不到尸体（"尸体还在但点不了"）。它与 <see cref="Dead"/> 是两位：
+    /// 死了但窗口已关的尸体会带 Dead 不带这一位，客户端据此收起"可拾取"高亮而不是让它继续亮着。</para>
+    /// <para>尾部追加位不升协议版（<see cref="Evading"/> / <see cref="Rooted"/> 同例）。</para>
+    /// </summary>
+    public const uint CorpseInteractable = 1u << 8;
 }
 
 /// <summary>

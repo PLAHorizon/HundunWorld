@@ -68,6 +68,8 @@ namespace NarrativePro.Spawners
                 NarrativeLog.LogError($"ActorSpawnComponent: 生成 Actor 失败：{ActorClass}");
                 return null;
             }
+            // SpawnPrefab 默认落 Scenes[0]（RootScene），生成物属玩法世界对象，搬入玩法场景
+            NarrativePro.CommonUI.NarrativeRuntimeBootstrap.MoveToGameplayScene(spawned, ActorClass);
 
             // 应用缩放
             spawned.Scale = spawnTransform.Scale;
@@ -83,6 +85,12 @@ namespace NarrativePro.Spawners
                 return $"Actor Spawn ({ActorClass})";
             }
             return "Actor Spawn (未配置)";
+        }
+
+        /// <summary>登记存档系统用的 Prefab 来源路径（即要生成的 Actor 类路径）。</summary>
+        public override string GetSpawnedAssetPath()
+        {
+            return ActorClass;
         }
     }
 }

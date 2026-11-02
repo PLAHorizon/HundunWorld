@@ -1,0 +1,68 @@
+{
+  "fxId": "weaponfx_firearm_shot",
+  "displayName": "远程/枪械·开火特效集",
+  "weaponItemClassIds": [
+    "item_bow"
+  ],
+  "slots": [
+    {
+      "slot": "MuzzleFlash",
+      "particleSystemPath": "Content/Weapons/FX/P_MuzzleFlash.flxp",
+      "audioClipPath": "Content/Audio/Weapons/bow_release_01.wav",
+      "socketName": "Socket_Muzzle",
+      "relativeLocation": [0, 0, 6],
+      "relativeRotationEulerDegrees": [0, 0, 0],
+      "scale": [1, 1, 1],
+      "autoDestroySeconds": 0.35,
+      "loopWhileActive": false,
+      "volume": 1,
+      "pitch": 1
+    },
+    {
+      "slot": "Release",
+      "particleSystemPath": "Content/Weapons/FX/P_BowStringRelease.flxp",
+      "socketName": "Socket_Muzzle",
+      "relativeLocation": [0, 0, 2],
+      "relativeRotationEulerDegrees": [0, 0, 0],
+      "scale": [1, 1, 1],
+      "autoDestroySeconds": 0.4,
+      "loopWhileActive": false,
+      "volume": 0.8,
+      "pitch": 1
+    },
+    {
+      "slot": "Trail",
+      "particleSystemPath": "Content/Weapons/FX/P_ProjectileTrail.flxp",
+      "socketName": "Socket_Muzzle",
+      "relativeLocation": [0, 0, 0],
+      "relativeRotationEulerDegrees": [0, 0, 0],
+      "scale": [1, 1, 1],
+      "loopWhileActive": true,
+      "volume": 0,
+      "pitch": 1
+    },
+    {
+      "slot": "Impact",
+      "particleSystemPath": "Content/Weapons/FX/P_ArrowImpact.flxp",
+      "audioClipPath": "Content/Audio/Weapons/impact_wood_01.wav",
+      "relativeLocation": [0, 0, 0],
+      "relativeRotationEulerDegrees": [0, 0, 0],
+      "scale": [1, 1, 1],
+      "autoDestroySeconds": 0.8,
+      "loopWhileActive": false,
+      "volume": 1,
+      "pitch": 1
+    },
+    {
+      "slot": "Draw",
+      "particleSystemPath": "Content/Weapons/FX/P_BowDraw.flxp",
+      "socketName": "Socket_ADS",
+      "relativeLocation": [0, 0, 0],
+      "relativeRotationEulerDegrees": [0, 0, 0],
+      "scale": [1, 1, 1],
+      "loopWhileActive": true,
+      "volume": 0.5,
+      "pitch": 1
+    }
+  ]
+}

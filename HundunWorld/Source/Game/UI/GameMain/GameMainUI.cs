@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FlaxEngine;
@@ -383,7 +383,8 @@ namespace HundunWorld.Game.UI.GameMain
                 }
                 else
                 {
-                    Level.SpawnActor(canvasActor);
+                    // 有意常驻 RootScene（0 号场景）：主界面 Canvas 是全局共享组件。
+                    Level.SpawnActor(canvasActor, Level.GetScene(0));
                 }
 
                 uiCanvas = canvasActor.AddChild<UICanvas>();
@@ -1156,7 +1157,7 @@ namespace HundunWorld.Game.UI.GameMain
             // 关闭按钮
             var closeButton = new Button
             {
-                Text = "✕",
+                Text = "×",
                 Font = UIHelper.SetFont(size: 12),
                 Bounds = new Rectangle(width - 40, 5, 30, 30),
                 BackgroundColor = new Color(0.8f, 0.2f, 0.2f, 0.8f)
@@ -1444,7 +1445,7 @@ namespace HundunWorld.Game.UI.GameMain
                 _characterPreviewPanel = new CharacterPreviewPanel
                 {
                     TargetScene = targetScene,
-                    CharacterPrefabPath = "Content/Character/Models/skm_uefn_mannequin.flax"
+                    CharacterPrefabPath = HundunWorld.Game.Equipment.EquipmentDatabase.MaleBodyModelPath
                 };
                 _characterPreviewPanel.Offsets = Margin.Zero;
                 _characterPreviewPanel.AnchorPreset = AnchorPresets.StretchAll;

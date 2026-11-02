@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -16,7 +16,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
     /// </list>
     /// 点击页面卡片触发 <see cref="NavigationRequested"/> 事件，由路由器执行跳转。
     /// </summary>
-    public class UIGalleryPage : ContainerControl, IInkPage
+    public class UIGalleryPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===================================================================
         // 布局常量
@@ -225,7 +225,7 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 {
                     new GalleryItem("传统战斗 HUD", "combat-hud-traditional", "沉浸式传统布局", InkWashTheme.VermilionDeep),
                     new GalleryItem("角色面板", "nav-character-panel", "战力/装备/武学", InkWashTheme.GoldPrimary),
-                    new GalleryItem("武学技能", "nav-skill-panel", "经脉/心法/招式", InkWashTheme.BronzePrimary),
+                    new GalleryItem("武学技能", "nav-skill-tree", "五行/阶境/演化", InkWashTheme.BronzePrimary),
                     new GalleryItem("背包行囊", "nav-inventory", "物品网格+详情", InkWashTheme.PaperAged),
                     new GalleryItem("装备强化", "nav-equipment-enhance", "强化/镶嵌/精炼", InkWashTheme.GoldBright),
                     new GalleryItem("制造技艺", "nav-crafting", "配方/材料/产出", InkWashTheme.BronzeBright),

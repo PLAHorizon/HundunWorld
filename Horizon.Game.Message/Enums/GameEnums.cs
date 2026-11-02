@@ -42,6 +42,36 @@ namespace Horizon.Game.Message.Enums
         Energy = 43,      // 精力
         Health,
         Mana,
+
+        // 五行三行（50 起，追加不重编号：ItemAttributeEntity.attribute_type 是 int 列，
+        // 既有行按值解释，改动旧值会让已入库的装备属性集体错位）。
+        // 行号约定与 Horizon.Game.Message.Combat.ElementStatVector 一致：1..5 = 金木水火土；
+        // 破防存在攻方本行，抵免被自己克制的那一行防御（金破木防）。
+        MetalAttack = 50,
+        WoodAttack = 51,
+        WaterAttack = 52,
+        FireAttack = 53,
+        EarthAttack = 54,
+
+        MetalDefense = 55,
+        WoodDefense = 56,
+        WaterDefense = 57,
+        FireDefense = 58,
+        EarthDefense = 59,
+
+        MetalPenetration = 60,
+        WoodPenetration = 61,
+        WaterPenetration = 62,
+        FirePenetration = 63,
+        EarthPenetration = 64,
+
+        // 五行属性值（亲和度）。此前"亲和"只活在客户端硬编码表与雷达图上，服务端没有任何列位，
+        // 所以装备亲和对战斗零贡献。65 起追加，供属性兜底规则换算用（值=亲和点数，不是倍率）。
+        MetalAffinity = 65,
+        WoodAffinity = 66,
+        WaterAffinity = 67,
+        FireAffinity = 68,
+        EarthAffinity = 69,
     }
 
     /// <summary>

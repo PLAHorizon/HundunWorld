@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Reflection probe for the Flax editor scripting API.
+
+    Why: the editor installs no FlaxEditor.CSharp.dll and no editor C# sources, and the engine's
+    FlaxEngine.CSharp.xml documents member *names* only - never the field or property types. Writing
+    VisjectSurface-derived code against names alone means guessing whether NodeArchetype.TypeID is a
+    ushort or a string, and each wrong guess costs a full compile cycle. This tool prints the real
+    signatures once, from the same assembly the editor compiles against.
+
+    The load path matters: Assembly.LoadFrom + GetTypes() throws ReflectionTypeLoadException on this
+    assembly layout, and GetType() by name returns null when the dll is loaded that way. Anchoring on a
+    type from a normal assembly reference (typeof(FlaxEngine.Actor).Assembly) is what makes reflection
+    work here.
+
+    Usage (from the repository root):
+        dotnet run project Tools/FlaxApiDump/FlaxApiDump.csproj  -p:BaseOutputPath=bin/FlaxDump/
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>FlaxApiDump</AssemblyName>
+    <RootNamespace>FlaxApiDump</RootNamespace>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.12</EngineRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

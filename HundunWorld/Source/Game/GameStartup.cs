@@ -60,19 +60,23 @@ namespace HundunWorld.Game
 
         private async Task LoadScenes()
         {
-            bool loaded = false;
+            // 引擎语义（FlaxEngine/Source/Engine/Level/Level.cpp: LoadSceneAsync）：
+            // 返回 true 表示**失败**（GUID 无效 / 资产不是场景 / 加载报错），
+            // 返回 false 才表示请求已成功入队。此前把返回值当成功标志用，
+            // 于是每次登录场景正常加载都会打一条"场景加载失败"的伪 Error。
+            bool failed;
 
             if (LoginScene != null && LoginScene.ID != Guid.Empty)
             {
-                loaded = Level.LoadSceneAsync(LoginScene);
+                failed = Level.LoadSceneAsync(LoginScene);
             }
             else
             {
                 Guid sceneId = Guid.Parse("dc72848f4b0f90ee2df186a728f14858");
-                loaded = Level.LoadSceneAsync(sceneId);
+                failed = Level.LoadSceneAsync(sceneId);
             }
 
-            if (!loaded)
+            if (failed)
             {
                 Debug.LogError("场景加载失败！请检查 LoginScene 是否已赋值，或 GUID 是否正确及资源是否存在。");
             }

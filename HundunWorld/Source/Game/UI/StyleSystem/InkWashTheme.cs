@@ -1,4 +1,4 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using System;
 
@@ -225,6 +225,12 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         /// <summary>传说品质（赤金）#C8A858 — 按 ui-design-guidelines.md §1.3 品质色阶，复用鎏金主色并叠加金色辉光</summary>
         public static readonly Color QualityLegendary = new Color(200f / 255f, 168f / 255f, 88f / 255f, 1f);
+
+        /// <summary>神器品质 #E6CC80（编辑器 5 档，同 WoW artifact 色）</summary>
+        public static readonly Color QualityArtifact = new Color(230f / 255f, 204f / 255f, 128f / 255f, 1f);
+
+        /// <summary>神话品质 #C83C3C（编辑器 6 档，顶档朱红）</summary>
+        public static readonly Color QualityMythic = new Color(200f / 255f, 60f / 255f, 60f / 255f, 1f);
 
         #endregion
 
@@ -861,7 +867,13 @@ namespace HundunWorld.Game.UI.StyleSystem
             Epic,
 
             /// <summary>传说（传世）</summary>
-            Legendary
+            Legendary,
+
+            /// <summary>神器（编辑器 5 档）</summary>
+            Artifact,
+
+            /// <summary>神话（编辑器 6 档）</summary>
+            Mythic
         }
 
         /// <summary>
@@ -878,6 +890,8 @@ namespace HundunWorld.Game.UI.StyleSystem
                 InkQuality.Rare => QualityRare,
                 InkQuality.Epic => QualityEpic,
                 InkQuality.Legendary => QualityLegendary,
+                InkQuality.Artifact => QualityArtifact,
+                InkQuality.Mythic => QualityMythic,
                 _ => QualityCommon
             };
         }

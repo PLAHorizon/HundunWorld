@@ -68,8 +68,13 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // Task 1：LocalPlayerOwnerId 的 backing 字段，跨线程读写使用 Volatile 保证可见性。
     private ulong _localPlayerOwnerId;
 
-    /// <summary>实体 Spawn 事件参数。</summary>
-    public readonly record struct EntitySpawnedEventArgs(ulong EntityId, Entity ArchEntity, bool IsLocalPlayer, float X, float Y, float Z);
+    /// <summary>
+    /// 实体 Spawn 事件参数。
+    /// <para><c>EntityType</c>：网络实体类型（取值见 <c>NetworkIdentityComponent.EntityType</c>），决定客户端建哪种外观 Actor。</para>
+    /// <para><c>Nickname</c>：显示名，玩家昵称或怪物模板名，服务端未下发时为空。</para>
+    /// <para><c>Level</c>：等级，0 表示服务端未下发，消费方应隐藏等级而非显示 "Lv.0"。</para>
+    /// </summary>
+    public readonly record struct EntitySpawnedEventArgs(ulong EntityId, Entity ArchEntity, bool IsLocalPlayer, float X, float Y, float Z, int EntityType, string? Nickname, int Level);
 
     /// <summary>实体 Despawn 事件参数。</summary>
     public readonly record struct EntityDespawnedEventArgs(ulong EntityId);
@@ -1120,6 +1125,23 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             IsLocalPlayer = delta.Identity.Value.OwnerId == LocalPlayerOwnerId && LocalPlayerOwnerId != 0,
             Nickname = delta.Identity.Value.Nickname,
             Title = delta.Identity.Value.Title,
+            // 外观五件套（协议 v14）：spawn-only，随 Identity 一次性带下来
+            TemplateId = delta.Identity.Value.TemplateId,
+            ModelKey = delta.Identity.Value.ModelKey,
+            ModelScale = delta.Identity.Value.ModelScale,
+            StandState = delta.Identity.Value.StandState,
+            Rank = delta.Identity.Value.Rank,
+            // 起手时正在吟唱（协议 v15）：给晚进场的人补那一根条子。
+            // 施法起手是瞬时事件、只发给当时看得见的人，补发通路只有 Spawn，所以这份状态只能随 Spawn 给。
+            CastSkillId = delta.Identity.Value.CastSkillId,
+            CastTotalSeconds = delta.Identity.Value.CastTotalSeconds,
+            CastElapsedSeconds = delta.Identity.Value.CastElapsedSeconds,
+            CastSchoolMask = delta.Identity.Value.CastSchoolMask,
+            CastInterruptible = delta.Identity.Value.CastInterruptible,
+            // 类型/等级是"选中信息卡"的数据源：类型决定客户端建哪种 Actor，
+            // 等级随 State 于 Spawn 一并下发（怪物名称走 Nickname 字段）。
+            EntityType = delta.Identity.Value.EntityType,
+            Level = delta.State?.Level ?? 0,
         };
 
         // Spawn 同帧带 Profile 时以 Profile 为准（服务端在 spawn 那一刻档案刚变更）。
@@ -1195,7 +1217,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         }
 
         _entityIdToArchEntity[delta.EntityId] = archEntity;
-        EntitySpawned?.Invoke(new EntitySpawnedEventArgs(delta.EntityId, archEntity, netId.IsLocalPlayer, authTransform.X, authTransform.Y, authTransform.Z));
+        EntitySpawned?.Invoke(new EntitySpawnedEventArgs(delta.EntityId, archEntity, netId.IsLocalPlayer, authTransform.X, authTransform.Y, authTransform.Z,
+            netId.EntityType, netId.Nickname, netId.Level));
     }
 
     /// <summary>
@@ -1403,6 +1426,18 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             else
             {
                 world.Add(archEntity, newState);
+            }
+
+            // 等级镜像到 NetworkIdentityComponent：选中信息卡只读 Identity 一处，
+            // 避免每个消费方都要再查一次 State 组件。Level=0 视为"未下发"，不覆盖已有值。
+            if (newState.Level != 0 && world.Has<NetworkIdentityComponent>(archEntity))
+            {
+                ref var netIdForState = ref world.Get<NetworkIdentityComponent>(archEntity);
+                if (netIdForState.Level != newState.Level)
+                {
+                    netIdForState.Level = newState.Level;
+                    world.Set(archEntity, ref netIdForState);
+                }
             }
         }
 

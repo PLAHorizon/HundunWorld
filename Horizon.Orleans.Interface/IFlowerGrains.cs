@@ -1145,15 +1145,4 @@ namespace Horizon.Orleans.Interface
         [Id(2)] public string Payload { get; set; } = "";
         [Id(3)] public DateTime Timestamp { get; set; }
     }
-
-    [Serializable]
-    [GenerateSerializer]
-    public class DeviceCommandResponse
-    {
-        [Id(0)] public string CommandId { get; set; } = "";
-        [Id(1)] public string Action { get; set; } = "";
-        [Id(2)] public bool Success { get; set; }
-        [Id(3)] public string Result { get; set; } = "";
-        [Id(4)] public DateTime Timestamp { get; set; }
-    }
 }

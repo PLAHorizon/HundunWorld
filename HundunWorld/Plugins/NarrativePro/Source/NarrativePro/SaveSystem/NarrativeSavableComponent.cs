@@ -18,23 +18,4 @@ namespace NarrativePro.SaveSystem
         /// <summary>通知组件已从存档加载完成。</summary>
         void Load();
     }
-
-    /// <summary>
-    /// INarrativeSavableComponent 的默认实现帮助类。
-    /// 对应 UE5 INarrativeSavableComponent::_Implementation 默认空实现。
-    /// </summary>
-    public static class NarrativeSavableComponentDefaults
-    {
-        /// <summary>PrepareForSave 默认空实现。</summary>
-        public static void PrepareForSaveDefault(INarrativeSavableComponent self)
-        {
-            // 默认无操作
-        }
-
-        /// <summary>Load 默认空实现。</summary>
-        public static void LoadDefault(INarrativeSavableComponent self)
-        {
-            // 默认无操作
-        }
-    }
 }

@@ -50,8 +50,24 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>设置页</summary>
         public const string NavSettings = "nav-settings";
 
+        /// <summary>
+        /// 系统菜单（Esc 在战斗 HUD 上打开的模态层：继续游戏 / 设置 / 退出到角色选择）。
+        /// 走 Modal 框架＝外壳叠加层，不进返回栈，因此再按一次 Esc 就是关掉它。
+        /// </summary>
+        public const string SystemMenu = "system-menu";
+
         /// <summary>返回战斗 HUD（特殊 dom-id，由返回按钮触发，调用 <see cref="InkPageRouter.NavigateToHud"/>）</summary>
         public const string BackHud = "back-hud";
+
+        /// <summary>
+        /// 返回上一层：走到来源页，返回栈空时回枢纽。页面自带的返回按钮、弹层关闭都发这个，
+        /// 与外壳左上返回按钮、Esc 完全同一语义（<see cref="InkPageRouter.Back"/>）。
+        /// <para>
+        /// 与 <see cref="BackHud"/> 的区别：后者是"直接跳回枢纽"，会跳过返回栈——从"罗盘→世界地图"这类
+        /// 二级链路里按它就会丢掉上一层，因此除"确实要回枢纽"的入口外都应用本常量。
+        /// </para>
+        /// </summary>
+        public const string BackOneLevel = "back-one-level";
 
         /// <summary>进入世界（从章节过场跳转战斗 HUD，调用 <c>NavigateTo("combat-hud")</c>）</summary>
         public const string CtaEnterWorld = "cta-enter-world";
@@ -160,6 +176,9 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>拍照模式菜单（取景+滤镜）</summary>
         public const string NavPhotoMode = "nav-photo-mode";
 
+        /// <summary>拍照相册页（从拍照页「相册」按钮进入）。</summary>
+        public const string NavPhotoAlbum = "nav-photo-album";
+
         /// <summary>元素视野页面（高亮元素标记）</summary>
         public const string NavElementVision = "nav-element-vision";
 
@@ -180,6 +199,9 @@ namespace HundunWorld.Game.UI.Ink
 
         /// <summary>音频设置子页面</summary>
         public const string NavSettingsAudio = "nav-settings-audio";
+
+        /// <summary>路牌可见性设置子页（设置 → 路牌）</summary>
+        public const string NavSettingsRoadSign = "nav-settings-roadsign";
 
         /// <summary>UI 浏览器（Debug 菜单，用于查看所有 UI）</summary>
         public const string UIGallery = "ui-gallery";
@@ -238,8 +260,8 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>角色面板 — 对应 character-panel.html，nav-character-v2 的别名（功能等价）</summary>
         public const string NavCharacterPanel = "nav-character-panel";
 
-        /// <summary>武学技能面板 — 对应 skill-panel.html，经脉/心法/招式管理</summary>
-        public const string NavSkillPanel = "nav-skill-panel";
+        /// <summary>五行技能树 — 数据驱动的 五行×五阶×三境 阶梯与相生演化视图（docs/SKILL_WUXING_TREE_DESIGN.md）</summary>
+        public const string NavSkillTree = "nav-skill-tree";
 
         /// <summary>背包行囊 — 对应 inventory.html，物品网格 + 分类 + 详情</summary>
         public const string NavInventory = "nav-inventory";
@@ -274,6 +296,9 @@ namespace HundunWorld.Game.UI.Ink
 
         /// <summary>江湖商城 — 对应 shop.html，商品分类 + 商品网格 + 购物车结算</summary>
         public const string NavSocialShop = "nav-social-shop";
+
+        /// <summary>NPC 对话菜单（点 NPC 先选"能做什么"）。</summary>
+        public const string NavNpcGossip = "nav-npc-gossip";
 
         /// <summary>江湖交游（好友列表） — 对应 friends.html</summary>
         public const string NavFriends = "nav-friends";
@@ -331,6 +356,15 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>页面工厂表：dom-id → 创建页面控件的工厂函数</summary>
         private readonly Dictionary<string, Func<Control>> _pageFactories = new();
 
+        /// <summary>
+        /// 页面框架描述符表：dom-id → 该页的呈现类型（铺不铺墨底/暗角、给不给外壳返回）。
+        /// 这是"哪些层给哪些页"的唯一来源——取代了原先按 <c>popup-</c> 前缀猜 + 两张手写白名单。
+        /// </summary>
+        private readonly Dictionary<string, InkPageFrame> _pageFrames = new();
+
+        /// <summary>返回栈：记下"从哪来"，供返回按钮/Esc 回上一层（栈空则回战斗 HUD）。</summary>
+        private readonly Stack<string> _history = new();
+
         /// <summary>页面缓存表：dom-id → 已创建的页面控件（可选缓存，预留扩展）</summary>
         private readonly Dictionary<string, Control> _pageCache = new();
 
@@ -340,40 +374,54 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>当前活动页面 dom-id</summary>
         private string _currentPageDomId;
 
+        /// <summary>当前弹层 dom-id（无弹层时为 null）。弹层叠在页面之上，不占用页面槽位。</summary>
+        private string _currentOverlayDomId;
+
         /// <summary>战斗 HUD 的 dom-id，作为导航枢纽</summary>
         private string _hudDomId;
-
-        /// <summary>
-        /// 隐藏外壳返回按钮的页面集合：这些页面自带返回按钮或左侧栏（logo 位于左上角），
-        /// 外壳返回按钮（左上角 16,16）会与其重叠/遮挡。随"全部走查"逐页确认后增补。
-        /// </summary>
-        private static readonly System.Collections.Generic.HashSet<string> ShellBackSuppressedPages = new System.Collections.Generic.HashSet<string>
-        {
-            InkPageDomIds.NavCasualMode,
-            InkPageDomIds.NavActivities,
-            InkPageDomIds.NavShopRare,
-            InkPageDomIds.NavSettingsAudio,
-            InkPageDomIds.NavTime,
-            InkPageDomIds.NavPersonalInfo,
-        };
-
-        /// <summary>
-        /// 自带舞台的页面：自己铺雾白背景、自己画返回入口（创角 / 选角流程），
-        /// 因此不叠加外壳的墨底背景层与暗角层，也不显示外壳返回按钮。
-        /// </summary>
-        private static readonly System.Collections.Generic.HashSet<string> SelfDressedPages = new System.Collections.Generic.HashSet<string>
-        {
-            InkPageDomIds.CcRoleList,
-            InkPageDomIds.CcGender,
-            InkPageDomIds.CcFacePreset,
-            InkPageDomIds.CcFaceSculpt,
-            InkPageDomIds.CcName,
-        };
 
         /// <summary>
         /// 当前页面 dom-id。
         /// </summary>
         public string CurrentPageDomId => _currentPageDomId;
+
+        /// <summary>返回栈是否非空（Esc/返回按钮会回上一层而非直接回 HUD）。</summary>
+        public bool CanGoBack => _history.Count > 0;
+
+        /// <summary>返回栈深度（诊断用）。</summary>
+        public int HistoryDepth => _history.Count;
+
+        /// <summary>当前是否有模态弹层盖在页面上。</summary>
+        public bool HasOverlay => _shell != null && _shell.HasOverlay;
+
+        /// <summary>当前弹层 dom-id（无弹层时为 null）。</summary>
+        public string CurrentOverlayDomId => _currentOverlayDomId;
+
+        /// <summary>当前生效的枢纽 HUD dom-id（沉浸式/传统式切换后会跟着变）。</summary>
+        public string HudDomId => _hudDomId;
+
+        /// <summary>
+        /// 当前页面是否自带返回入口。自带返回的页面（如创角阶段流）同时自己处理 Esc，
+        /// 中央 Esc 不再改派——否则同一次按键会被页面与路由器各处理一次，多退一层。
+        /// </summary>
+        public bool CurrentPageOwnsBackKey
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_currentPageDomId)) return false;
+                return _pageFrames.TryGetValue(_currentPageDomId, out var frame) && frame.OwnBack;
+            }
+        }
+
+        /// <summary>取某页登记的框架描述符；未登记时按沉浸式全屏页处理（并告警，便于补登记）。</summary>
+        public InkPageFrame GetFrame(string domId)
+        {
+            if (!string.IsNullOrEmpty(domId) && _pageFrames.TryGetValue(domId, out var frame))
+                return frame;
+
+            FlaxEngine.Debug.LogWarning($"[InkPageRouter] 页面 {domId} 未登记 Frame，按沉浸式全屏页处理（请在 RegisterPage 补登记）");
+            return InkPageFrame.Immersive;
+        }
 
         /// <summary>
         /// 构造函数：初始化为透明、不裁剪的路由器控件。
@@ -424,7 +472,8 @@ namespace HundunWorld.Game.UI.Ink
         /// </summary>
         /// <param name="domId">页面 dom-id</param>
         /// <param name="factory">创建页面控件的工厂函数</param>
-        public void RegisterPage(string domId, Func<Control> factory)
+        /// <param name="frame">页面框架描述符（铺不铺墨底/暗角、给不给外壳返回）</param>
+        public void RegisterPage(string domId, Func<Control> factory, InkPageFrame frame)
         {
             try
             {
@@ -440,6 +489,7 @@ namespace HundunWorld.Game.UI.Ink
                 }
 
                 _pageFactories[domId] = factory;
+                _pageFrames[domId] = frame;
             }
             catch (Exception ex)
             {
@@ -461,8 +511,9 @@ namespace HundunWorld.Game.UI.Ink
         /// </para>
         /// </summary>
         /// <param name="domId">目标页面 dom-id</param>
+        /// <param name="pushHistory">是否把当前页压入返回栈（Back() 用 false 弹栈，避免来回震荡）</param>
         /// <returns>导航是否成功</returns>
-        public bool NavigateTo(string domId)
+        public bool NavigateTo(string domId, bool pushHistory = true)
         {
             try
             {
@@ -477,6 +528,12 @@ namespace HundunWorld.Game.UI.Ink
                 if (domId == InkPageDomIds.CombatHud && !string.IsNullOrEmpty(_hudDomId) && domId != _hudDomId)
                 {
                     domId = _hudDomId;
+                }
+                // 枢纽随激活变体走：切到 沉浸式(V2) 之后，别名解析、返回栈根判定、返回枢纽都必须指向 V2，
+                // 否则按 Esc/返回/back-hud 会被静默送回传统式（等于悄悄改回用户的选择）。
+                else if (domId == InkPageDomIds.CombatHudV2 || domId == InkPageDomIds.CombatHudTraditional)
+                {
+                    _hudDomId = domId;
                 }
 
                 if (!_pageFactories.TryGetValue(domId, out var factory))
@@ -509,34 +566,63 @@ namespace HundunWorld.Game.UI.Ink
                     return false;
                 }
 
-                // 根据 dom-id 控制页面外壳视觉层：
-                // - 战斗 HUD：不显示返回按钮、隐藏背景层/暗角层，避免遮挡游戏场景
-                // - 非 HUD 菜单页：显示返回按钮、背景层、暗角层
-                bool isHud = domId == _hudDomId;
+                // 根据页面登记的框架描述符控制外壳视觉层（唯一来源，不再按 dom-id 前缀猜 + 白名单）：
+                // - Hud：不显示返回按钮、隐藏背景层/暗角层，避免遮挡游戏场景
+                // - Immersive：显示返回按钮、背景层、暗角层（自铺浅色舞台者不叠暗角）
+                // - Modal：由叠加层承载（叠在底页之上、底页不销毁），不铺全屏墨底/暗角
+                InkPageFrame frame = GetFrame(domId);
+                bool isHud = frame.Kind == InkPageKind.Hud;
+                bool isModal = frame.Kind == InkPageKind.Modal;
 
-                // 战斗 HUD 内容层顶部对齐：非 16:9 窗口下设计空间默认上下居中会整体下沉，
-                // 顶部对齐后设计坐标 y=0 贴合窗口上边缘（罗盘带/屏幕边缘边距才是真实像素距离）。
-                _shell.TopAnchoredContent = isHud;
+                if (isModal)
+                {
+                    // 弹层不占页面槽位：不改 CurrentPageDomId、不进返回栈、不动外壳的铺底/返回按钮
+                    // （那些属于底页）。关闭走 Back()/CloseOverlay()，底页原样还在。
+                    _shell.ShowOverlay(page);
+                    _currentOverlayDomId = domId;
+                }
+                else
+                {
+                    // 任何非弹层导航都先把弹层收掉：弹层关闭的语义就是回到它下面那一页。
+                    if (_shell.HasOverlay)
+                    {
+                        _shell.HideOverlay();
+                        _currentOverlayDomId = null;
+                    }
 
-                // 通过 Shell 挂载页面（Shell 负责生命周期管理，UnloadPage 时销毁旧页面）
-                _shell.LoadPage(page);
+                    // 战斗 HUD 内容层顶部对齐：非 16:9 窗口下设计空间默认上下居中会整体下沉，
+                    // 顶部对齐后设计坐标 y=0 贴合窗口上边缘（罗盘带/屏幕边缘边距才是真实像素距离）。
+                    _shell.TopAnchoredContent = isHud;
 
-                // 更新当前页面 dom-id
-                _currentPageDomId = domId;
+                    // 通过 Shell 挂载页面（Shell 负责生命周期管理，UnloadPage 时销毁旧页面）
+                    _shell.LoadPage(page);
 
-                // 覆盖层弹窗（popup-*）：叠加在战斗 HUD 之上，不能开启全屏墨背景/暗角——
-                // 否则墨底与底部深墨渐变会叠在游戏场景上形成"阴影区域"，且弹窗关闭不触发导航、残留不消失。
-                bool isOverlayPopup = domId.StartsWith("popup-", StringComparison.Ordinal);
-                // 创角 / 选角页自铺雾白舞台，不叠外壳的墨底背景层与暗角层。
-                bool selfDressed = SelfDressedPages.Contains(domId);
-                // 自带返回/侧栏的页面隐藏外壳返回，避免与页面自身控件重叠遮挡。
-                bool suppressShellBack = selfDressed || ShellBackSuppressedPages.Contains(domId);
-                _shell.ShowBackButton(!isHud && !suppressShellBack);
-                // 外壳背景层**不**为自铺页面关闭：内容层是居中缩放的 1920×1080 且 ClipChildren=true，
-                // 页面自己的雾白底铺不到信箱区；关掉这层会让非 16:9 窗口的上下/左右黑边露出 3D 场景。
-                // 16:9 全屏时该层被页面完全盖住，视觉无差别；暗角层则确实要关（会压在浅色舞台上留黑边）。
-                _shell.ShowBackgroundLayer(!isHud && !isOverlayPopup);
-                _shell.ShowVignette(!isHud && !isOverlayPopup && !selfDressed);
+                    // 记录来源页供 Back() 弹栈：目标页与来源页相同、或目标是枢纽 HUD（回根）时不入栈。
+                    bool isRootHud = domId == _hudDomId;
+                    if (isRootHud || domId == InkPageDomIds.CombatHud)
+                    {
+                        _history.Clear();
+                    }
+                    else if (pushHistory
+                             && !string.IsNullOrEmpty(_currentPageDomId)
+                             && _currentPageDomId != domId
+                             && _currentPageDomId != InkPageDomIds.CombatHud
+                             && _currentPageDomId != _hudDomId)
+                    {
+                        _history.Push(_currentPageDomId);
+                    }
+
+                    // 更新当前页面 dom-id
+                    _currentPageDomId = domId;
+
+                    // 自带返回/侧栏的页面隐藏外壳返回，避免与页面自身控件重叠遮挡。
+                    _shell.ShowBackButton(!isHud && !frame.OwnBack);
+                    // 外壳背景层**不**为自铺页面关闭：内容层是居中缩放的 1920×1080 且 ClipChildren=true，
+                    // 页面自己的雾白底铺不到信箱区；关掉这层会让非 16:9 窗口的上下/左右黑边露出 3D 场景。
+                    // 16:9 全屏时该层被页面完全盖住，视觉无差别；暗角层则确实要关（会压在浅色舞台上留黑边）。
+                    _shell.ShowBackgroundLayer(!frame.IsBare && !frame.NoBackdrop);
+                    _shell.ShowVignette(!frame.IsBare && !frame.SelfLitStage && !frame.NoBackdrop);
+                }
 
                 // 触发 PanelShow 事件：通知粒子系统在屏幕中心绘制墨韵涟漪。
                 // 屏幕中心坐标由粒子系统在事件回调中通过 PointFromScreen 转换为控件局部坐标，
@@ -550,7 +636,7 @@ namespace HundunWorld.Game.UI.Ink
                     FlaxEngine.Debug.LogWarning($"[InkPageRouter] PanelShow 事件订阅者抛出异常 (domId={domId}): {panelEx.Message}");
                 }
 
-                FlaxEngine.Debug.Log($"[InkPageRouter] 导航到页面: {domId}, isHud={isHud}, bg={!isHud}, vignette={!isHud}");
+                FlaxEngine.Debug.Log($"[InkPageRouter] 导航到页面: {domId}, frame={frame}, 叠加层={isModal}, 当前页={_currentPageDomId}");
                 return true;
             }
             catch (Exception ex)
@@ -587,11 +673,67 @@ namespace HundunWorld.Game.UI.Ink
         /// 返回按钮点击事件处理：调用 <see cref="NavigateToHud"/> 返回战斗 HUD。
         /// 此方法由 <see cref="InkPageShell.BackButtonClicked"/> 事件触发。
         /// </summary>
+        /// <summary>
+        /// 返回上一层：弹出返回栈回到来源页；栈空则回战斗 HUD。
+        /// 外壳返回按钮与 Esc 都走这里——星型枢纽仍是总出口，只是子页间跳转后能回上一层。
+        /// </summary>
+        /// <returns>是否发生了导航</returns>
+        public bool Back()
+        {
+            try
+            {
+                // 有弹层时先关弹层（弹层是叠加层，不占返回栈）。
+                if (HasOverlay)
+                {
+                    CloseOverlay();
+                    return true;
+                }
+
+                while (_history.Count > 0)
+                {
+                    string target = _history.Pop();
+                    if (string.IsNullOrEmpty(target) || target == _currentPageDomId) continue;
+                    if (target == InkPageDomIds.CombatHud || target == _hudDomId) break;
+
+                    if (NavigateTo(target, pushHistory: false))
+                    {
+                        return true;
+                    }
+                }
+
+                return NavigateToHud();
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[InkPageRouter] Back 失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>把一个模态弹层挂到外壳叠加层（底页保持挂载，关闭后回来）。</summary>
+        public bool ShowOverlay(Control overlay)
+        {
+            if (_shell == null || overlay == null) return false;
+            _shell.ShowOverlay(overlay);
+            return true;
+        }
+
+        /// <summary>关闭当前弹层（底页保持不变）。</summary>
+        public void CloseOverlay()
+        {
+            _shell?.HideOverlay();
+            _currentOverlayDomId = null;
+        }
+
+        /// <summary>
+        /// 返回按钮点击事件处理：调用 <see cref="Back"/> 回上一层（栈空则回战斗 HUD）。
+        /// 此方法由 <see cref="InkPageShell.BackButtonClicked"/> 事件触发。
+        /// </summary>
         private void OnBackButtonClicked()
         {
             try
             {
-                NavigateToHud();
+                Back();
             }
             catch (Exception ex)
             {
@@ -640,7 +782,7 @@ namespace HundunWorld.Game.UI.Ink
                     InkPageDomIds.ActionFriendsToMail => InkPageDomIds.NavMail,
                     InkPageDomIds.ActionMentorToDungeon => InkPageDomIds.NavDungeonEntry,
                     InkPageDomIds.ActionInventoryToEnhance => InkPageDomIds.NavEquipmentEnhance,
-                    InkPageDomIds.ActionCharToSkill => InkPageDomIds.NavSkillPanel,
+                    InkPageDomIds.ActionCharToSkill => InkPageDomIds.NavSkillTree,
                     InkPageDomIds.ActionHudToWorldMap => InkPageDomIds.NavWorldMap,
                     _ => null
                 };

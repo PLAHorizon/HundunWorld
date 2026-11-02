@@ -31,7 +31,14 @@ namespace NarrativePro.CommonUI
                 return;
             }
 
-            // Flax-不兼容: UE5 的模块系统在 Flax 无对应物，保留占位。原文 TODO: Flax 无模块系统，若需要在模块加载时执行初始化，可在此处添加。
+            // Flax 无模块管理器：这里的启动工作就是 UE5 StartupModule 实际做的那件事 ——
+            // 把 CommonUI 控件依赖的全局主题源准备好（各控件在 RebuildWidget/ApplyTheme 时向它取色）。
+            var settings = NarrativeUIDeveloperSettings.GetMutableDefault();
+            if (settings == null)
+            {
+                NarrativeLog.LogWarning("NarrativeCommonUI：UI 主题设置不可用，控件将使用各自的默认色。");
+            }
+
             _isStarted = true;
             NarrativeLog.Log("NarrativeCommonUI 模块已启动。");
         }
@@ -44,7 +51,8 @@ namespace NarrativePro.CommonUI
         {
             if (!_isStarted) return;
 
-            // Flax-不兼容: UE5 的模块系统在 Flax 无对应物，保留占位。原文 TODO: Flax 无模块系统，若需要在模块卸载时执行清理，可在此处添加。
+            // 关闭时不做全局状态清理：主题设置是进程级单例（等价 UE5 的 config 对象），
+            // 控件实例的回收由各自的宿主（NarrativeCommonHUD / 运行期引导）负责。
             _isStarted = false;
             NarrativeLog.Log("NarrativeCommonUI 模块已关闭。");
         }

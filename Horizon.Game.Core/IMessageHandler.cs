@@ -81,7 +81,7 @@ public abstract class MessageHandlerBase : IMessageHandler
         /// <param name="characterId">角色 ID（消息体携带）。</param>
         /// <param name="itemId">背包实例 ID；客户端不掌握该编号空间，通常留 0。</param>
         /// <param name="templateId">装备定义 ID（客户端编号）；非 0 时优先按它解析。</param>
-        /// <param name="slot">装备槽位（0..14，边界由 grain 侧校验）。</param>
+        /// <param name="slot">装备槽位（0..15，边界由 grain 侧校验；15 = 外观）。</param>
         /// <param name="unequip">true = 卸下该槽位。</param>
         protected async Task<(bool Success, string Message)> ApplyEquipCommandAsync(
             ulong characterId, long itemId, int templateId, int slot, bool unequip)
@@ -101,9 +101,41 @@ public abstract class MessageHandlerBase : IMessageHandler
             else
                 ok = await inventory.EquipItemAsync(itemId, slot);
 
+            if (ok) InvalidateCombatProfile(characterId);
+
             return ok
                 ? (true, unequip ? "卸下成功" : "装备成功")
                 : (false, unequip ? "卸下失败：槽位为空或背包已满" : "装备失败：物品不存在或槽位无效");
+        }
+
+        /// <summary>
+        /// 让角色侧的权威战斗画像失效重算（受击减免读的就是这份画像）。
+        /// <para>
+        /// 穿戴/卸下、镶嵌宝石、加点、技能学习或升级之后都要调一次：这些改动会改变五行三行，
+        /// 而 CharacterGrain 缓存在激活期内不会自己重读。它是角色键的 Grain，所以这一层能被
+        /// 可靠定向失效；攻方侧那份按受击方缓存的画像收不到通知，由 CombatGrain 的 TTL 自行收敛。
+        /// </para>
+        /// </summary>
+        protected void InvalidateCombatProfile(ulong characterId)
+        {
+            if (characterId == 0UL) return;
+
+            // fire-and-forget：画像下一击才会被读到，不值得让一次穿戴请求多等一个 Orleans 往返。
+            _ = InvalidateCombatProfileAsync(characterId);
+        }
+
+        private async Task InvalidateCombatProfileAsync(ulong characterId)
+        {
+            try
+            {
+                await OrleansClient.GetGrain<Horizon.Orleans.Interface.ICharacterGrain>((long)characterId)
+                    .RefreshCombatProfileAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex,
+                    "角色 {CharacterId} 战斗画像失效请求失败（下一击由 CombatGrain 的 TTL 兜底）。", characterId);
+            }
         }
 
         /// <summary>

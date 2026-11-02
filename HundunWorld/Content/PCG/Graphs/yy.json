@@ -1,0 +1,341 @@
+﻿{
+  "Format": 2,
+  "Name": "yy",
+  "EditorData": "VkcJdVgbAAAHAAAAAAAAAAEAAACudu85AgAAAGNf7zkDAAAA6xEPXAUAAAAQMZ0dBAAAAPYHnR0GAAAARWKXQAcAAAClbHA2CgAAAAMAAAAA6AMAAAcAAAAAAAAAPwcAAAAAAAAAAAIAAAAAAQMAAAAAAAAAAAIAAAAAAQcAAAAAAACAPwcAAAAAAAC0QgMAAAAAAAAAAAcAAAAAAAAAAAEAAB7///9/CwAAAB0OCmMdDgoJLDksAQACAAAAAAEAAAALAAAAAAAAAAAAAAAMAAAARA0rRar0DEUAAAAADgAAAAcAAAAAAABIQgcAAAAAAAAAAAcAAAAAAAAAPwcAAAAAAABIQwcAAAAAAAB6RAMAAAAABAAAAAcAAAAAAADIQQcAAAAAAADwQgcAAAAAAAAAQQcAAAAAAACgQQcAAAAAAADwQQcAAAAAAABwQQIAAAAAAQIAAAAAAQIAAB7///9/CwAAAB0OCmMdDgoJLDksAQABAAAAAAEe////fwsAAAAdDgpjHQ4KCSw5LAEABQAAAAABAAAACwAAAAAAAAAAAAAADAAAAJpiNUWq9AxFAAAAAAYAAAAUAAAAAPlScbic8B9BkOuWM03/KdYHAAAAAAAAAAAHAAAAAAAAgD8CAAAAAAEDAAAAAFDDAAAHAAAAAAAAgEMCAAAe////fwsAAAAdDgpjHQ4KCSw5LAEABgAAAAEBHv///38LAAAAHQ4KYx0OCgksOSwAAAEAAAALAAAAAAAAAAAAAAAMAAAAmgJjRar0DEUAAAAABgAAAAoAAAAABQAAAJz/nf\u002Bb/4H/l/8DAAAAAAUAAAAHAAAAAArXIzwDAAAAAAEAAAADAAAAAAAAAAACAAAAAAECAAAe////fwsAAAAdDgpjHQ4KCSw5LAEAAgAAAAEBHv///38LAAAAHQ4KYx0OCgksOSwBAAQAAAAAAQAAAAsAAAAAAAAAAAAAAAwAAABE3T1FqvQMRQAAAAAFAAAAAwAAAAAEAAAABwAAAAAAAMhCBwAAAAAAAAA/BwAAAAAAAMhBAgAAAAABAgAAHv///38LAAAAHQ4KYx0OCgksOSwBAAUAAAABAR7///9/CwAAAB0OCmMdDgoJLDksAQAHAAAAAAEAAAALAAAAAAAAAAAAAAAMAAAAmjJIRar0DEUAAAAAAwAAAAcAAAAAAAAAAAcAAAAAAACAPwIAAAAAAAIAAB7///9/CwAAAB0OCmMdDgoJLDksAQAHAAAAAQEe////fwsAAAAdDgpjHQ4KCSw5LAEAAwAAAAABAAAACwAAAAAAAAAAAAAADAAAAO/XWUWq9AxFAAAAAAYAAAARAAAAAAAAoMEAAAAAAACgwREAAAAAAACgQQAAAAAAAKBBEQAAAAAAAAAAAAA0QwAAAAAHAAAAAAAAgD8HAAAAAAAAgD8DAAAAAAAAAAACAAAe////fwsAAAAdDgpjHQ4KCSw5LAEABAAAAAEBHv///38LAAAAHQ4KYx0OCgksOSwBAAYAAAAAAQAAAAsAAAAAAAAAAAAAAAwAAABFrVBFqvQMRQAAAAABAAAACgAAAAAAAAAAAAAADAAAAKirUEVyfBNF9purPgk=",
+  "Nodes": [
+    {
+      "TypeId": "LandscapeSampler",
+      "X": 2736.829,
+      "Y": 2255.2915,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "1000",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "90",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Biome",
+      "X": 2902.1626,
+      "Y": 2255.2915,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "50",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "200",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1000",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "4",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "25",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "120",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "8",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "20",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "30",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "15",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnFoliage",
+      "X": 3632.1626,
+      "Y": 2255.2915,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "b87152f9f09c411f90eb96334dff29d6",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "50000",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "256",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "NoiseToAttribute",
+      "X": 3037.829,
+      "Y": 2255.2915,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "String",
+          "Value": "noise",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "5",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.01",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "RelaxPoints",
+      "X": 3203.1626,
+      "Y": 2255.2915,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Int",
+          "Value": "4",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "100",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "25",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "DensityFilter",
+      "X": 3485.4958,
+      "Y": 2255.2915,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "RandomOffset",
+      "X": 3338.8293,
+      "Y": 2255.2915,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "-20",
+            "0",
+            "-20"
+          ]
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "20",
+            "0",
+            "20"
+          ]
+        },
+        {
+          "Kind": "Vector",
+          "Value": null,
+          "Components": [
+            "0",
+            "180",
+            "0"
+          ]
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        }
+      ]
+    }
+  ],
+  "Edges": [],
+  "Exposed": [],
+  "Settings": {
+    "DefaultSeed": 0,
+    "EnableDebugDraw": true,
+    "MaxPointBudget": 2000000,
+    "MaxExpandedNodeCount": 4096,
+    "Terrain": null
+  }
+}

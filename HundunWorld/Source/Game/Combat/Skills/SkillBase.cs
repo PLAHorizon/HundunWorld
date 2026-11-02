@@ -1,5 +1,6 @@
 using FlaxEngine;
 using Game.Character.Attributes;
+using HundunWorld.Game.Combat;
 using System;
 using Horizon.Game.Message.Enums;
 
@@ -136,7 +137,12 @@ namespace Game.Combat.Skills
             isCasting = false;
             castTarget = null;
             currentCooldown = Data.Cooldown;
-            
+
+            // 服务端权威结算：把这一击交给 CombatGrain 按技能表五行 + 攻/防/破防三行算伤害。
+            // 本地 ExecuteSkill 只负责表现（特效、飘字、单机怪物），网络角色的血量由服务端裁决
+            // 后经同步下发——两边都改血会让同一击被扣两次。
+            CombatReporter.ReportSkillCast(target, Data.SkillId, Data.EnergyCost);
+
             // 执行技能效果
             ExecuteSkill(target);
             

@@ -1,0 +1,193 @@
+﻿{
+  "questId": "Q004_VocabularyRegression",
+  "questName": "词汇表回归试炼",
+  "questDescription": "把端口从上游 BPT_*/BPC_*/BPE_* 补来的其余动词各用一次：找物/移动/结任务/结束对话/播对话节点/播过场/等标签/白天判断。",
+  "startStateId": "s_begin",
+  "//": "本任务不是主线内容，只为让\"注册得到\"变成\"内容真用得上\"：加载断言在 Tools/NarrativeProHarness 里（任何一处类型名写错都会退化成 GenericTask 并被断言抓住）。",
+  "states": [
+    {
+      "id": "s_begin",
+      "description": "集合并清点行囊",
+      "stateType": 0,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "events": [
+        {
+          "type": "StartQuest",
+          "questClassId": "Q001_HerbRations",
+          "startFromId": "",
+          "eventRuntime": 0
+        }
+      ]
+    },
+    {
+      "id": "s_watch",
+      "description": "白天在空地盯着路口",
+      "stateType": 0,
+      "position": {
+        "x": 400,
+        "y": 0
+      },
+      "conditions": [
+        {
+          "type": "IsDayTime",
+          "bNot": false
+        }
+      ]
+    },
+    {
+      "id": "s_cut",
+      "description": "看过场与一句对白",
+      "stateType": 0,
+      "position": {
+        "x": 800,
+        "y": 0
+      }
+    },
+    {
+      "id": "s_success",
+      "description": "试炼完成",
+      "stateType": 1,
+      "position": {
+        "x": 1200,
+        "y": -120
+      },
+      "events": [
+        {
+          "type": "Teleport",
+          "targetLocationName": "Village.ElderHouse",
+          "x": 1000.0,
+          "y": 0.0,
+          "z": 2000.0
+        }
+      ]
+    },
+    {
+      "id": "s_fail",
+      "description": "试炼中止",
+      "stateType": 2,
+      "position": {
+        "x": 1200,
+        "y": 120
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "b_gear",
+      "description": "确认弓与箭在身上，再走一段路",
+      "fromStateId": "s_begin",
+      "toStateId": "s_watch",
+      "hidden": false,
+      "position": {
+        "x": 200,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "FindItem",
+          "targetId": "find_bow",
+          "itemClassId": "item_bow",
+          "itemDisplayName": "猎弓",
+          "bCheckVisibility": false
+        },
+        {
+          "type": "MoveTask",
+          "targetId": "walk_field",
+          "metersPerProgress": 2.0,
+          "bUse2DDistance": true,
+          "progressTextFractionalDigits": 1
+        },
+        {
+          "type": "WaitGameplayTagAdded",
+          "targetId": "wait_aggressive",
+          "tag": "Narrative.State.NPC.IsAggressive",
+          "targetNpcId": "npc_bandit_lookout",
+          "checkInterval": 0.25
+        }
+      ],
+      "conditions": [
+        {
+          "type": "HasCompletedTask",
+          "taskName": "Task_Gather",
+          "requiredCount": 1,
+          "bNot": false
+        }
+      ]
+    },
+    {
+      "id": "b_cut",
+      "description": "播过场并听一句",
+      "fromStateId": "s_watch",
+      "toStateId": "s_cut",
+      "hidden": false,
+      "position": {
+        "x": 600,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "PlayCutsceneAndWait",
+          "targetId": "cut_departure",
+          "sequencePath": "Content/Cinematics/SQ002_Nightfall_Departure.flax",
+          "bAutoStartSequence": true,
+          "bShowCinematicBars": true,
+          "bCanSkip": true,
+          "bStopDialogue": false
+        },
+        {
+          "type": "PlayDialogueNode",
+          "targetId": "node_greet",
+          "dialogueId": "D001_HerbRationsIntro",
+          "nodeID": "n_greet",
+          "speakerNpcId": "npc_village_smith"
+        }
+      ]
+    },
+    {
+      "id": "b_done",
+      "description": "结束对话并判定完成",
+      "fromStateId": "s_cut",
+      "toStateId": "s_success",
+      "hidden": false,
+      "position": {
+        "x": 1000,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "FinishDialogue",
+          "targetId": "finish_all",
+          "dialogueId": "D001_HerbRationsIntro"
+        },
+        {
+          "type": "CompleteQuest",
+          "targetId": "close_self",
+          "questId": "Q004_VocabularyRegression",
+          "bAcceptFailedToo": false
+        }
+      ],
+      "conditions": [
+        {
+          "type": "QuestState",
+          "questClassId": "Q001_HerbRations",
+          "requiredState": "Succeeded",
+          "bNot": false
+        }
+      ]
+    },
+    {
+      "id": "b_quit",
+      "description": "放弃试炼",
+      "fromStateId": "s_watch",
+      "toStateId": "s_fail",
+      "hidden": false,
+      "position": {
+        "x": 600,
+        "y": 200
+      }
+    }
+  ]
+}

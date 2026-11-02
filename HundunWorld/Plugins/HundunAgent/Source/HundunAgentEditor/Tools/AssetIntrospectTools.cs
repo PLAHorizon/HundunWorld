@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using FlaxEngine;
@@ -31,9 +32,114 @@ namespace HundunAgent.Tools
                                   "\"path\":{\"type\":\"string\",\"description\":\"资产路径，如 Content/Character/Models/skm_uefn_mannequin.flax；也可传 Guid\"}," +
                                   "\"includeBones\":{\"type\":\"boolean\",\"description\":\"是否列出骨骼/节点名，默认 true\"}," +
                                   "\"nameLimit\":{\"type\":\"integer\",\"description\":\"名称条数上限，默认 30\"}," +
-                                  "\"timeoutMs\":{\"type\":\"integer\",\"description\":\"资产加载超时(毫秒)，默认 10000\"}}," +
+                                  "\"timeoutMs\":{\"type\":\"integer\",\"description\":\"资产加载超时(毫秒)，默认 60000（12MB/821 形状的大头冷加载实测要 10s 以上）\"}}," +
                                   "\"required\":[\"path\"]}",
                 Execute = ModelInspectAsync
+            });
+
+            ToolRegistry.Register(new AgentToolDescriptor
+            {
+                Name = "skeleton_retarget_list",
+                Description = "列出 SkinnedModel 上已有的骨架重定向（SkeletonRetarget）条目，并顺带证实托管层能读到重定向 API。" +
+                              "重定向条目是「把别的骨架上的动画剪剪辑接到本骨架」的唯一官方通路：对 Animation 源，引擎要先经 SkeletonAsset 中介再按名匹配。只读。",
+                InputSchemaJson = "{\"type\":\"object\",\"properties\":{" +
+                                  "\"path\":{\"type\":\"string\",\"description\":\"SkinnedModel 资产路径或 Guid，默认 Content/Character/Models/Character_1.flax\"}," +
+                                  "\"maxEntries\":{\"type\":\"integer\",\"description\":\"最多返回条目数，默认 60\"}}}",
+                Execute = SkeletonRetargetListAsync
+            });
+        }
+
+        private static Task<object> SkeletonRetargetListAsync(JsonElement args)
+        {
+            var pathArg = EditorUtils.GetString(args, "path", "Content/Character/Models/Character_1.flax");
+            var maxEntries = Math.Clamp(EditorUtils.GetInt(args, "maxEntries", 60), 1, 500);
+
+            return MainThread.InvokeAsync<object>(() =>
+            {
+                var asset = EditorUtils.LoadAsset(pathArg, 15000);
+                var model = asset as SkinnedModel;
+                if (model == null)
+                    throw new ArgumentException("资产加载失败或不是 SkinnedModel: " + pathArg);
+
+                // 重定向条目在 C++ 侧包在 #if USE_EDITOR 里，托管绑定不一定生成；
+                // 用反射枚举真实可见的成员，避免按头文件猜测 API 存在性。
+                var retargetMembers = typeof(SkinnedModel)
+                    .GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                    .Where(m => m.Name.IndexOf("Retarget", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                m.Name.IndexOf("Mapping", StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Select(m => m.MemberType + " " + m.Name)
+                    .Distinct()
+                    .OrderBy(n => n, StringComparer.Ordinal)
+                    .ToList();
+
+                var retargetTypes = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a =>
+                    {
+                        try { return a.GetTypes(); }
+                        catch { return Type.EmptyTypes; }
+                    })
+                    .Where(t => t.Name.IndexOf("Retarget", StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Select(t => t.FullName + " :: " + string.Join(",", t.GetMembers(BindingFlags.Public | BindingFlags.Instance)
+                                                                                  .Select(x => x.Name)
+                                                                                  .Distinct()
+                                                                                  .Take(8)))
+                    .Distinct()
+                    .Take(maxEntries)
+                    .ToList();
+
+                var entries = new List<object>();
+                // 这里原先只找 `GetSkeletonRetargets()`，而 1.12 托管层没有这个方法——它自己的成员 dump
+                // 就写着 `Property SkeletonRetargets` + `Method get_SkeletonRetargets`。于是 GetMethod
+                // 恒返回 null、条目恒空，把「工具读不到」伪装成「资产里没有」：同一个 Character_1，
+                // metahuman_bind 从对象上读到 1 条，这里却报 0 条。属性访问器在同装配的
+                // MetaHumanTools 里是编译过、也跑过的写法，所以直接拿它兜底。
+                var getRetargets = typeof(SkinnedModel).GetMethod("GetSkeletonRetargets", BindingFlags.Public | BindingFlags.Instance);
+                var array = getRetargets?.Invoke(model, Type.EmptyTypes) as System.Collections.IEnumerable;
+                var viaProperty = false;
+                if (array == null)
+                {
+                    array = model.SkeletonRetargets as System.Collections.IEnumerable;
+                    viaProperty = array != null;
+                }
+                if (array != null)
+                {
+                    foreach (var retarget in array)
+                    {
+                        if (entries.Count >= maxEntries)
+                            break;
+
+                        var type = retarget.GetType();
+                        string ReadText(string name)
+                        {
+                            var value = type.GetProperty(name)?.GetValue(retarget) ?? type.GetField(name)?.GetValue(retarget);
+                            return value?.ToString();
+                        }
+
+                        entries.Add(new
+                        {
+                            sourceAsset = ReadText("SourceAsset"),
+                            skeletonAsset = ReadText("SkeletonAsset"),
+                            nodesMapping = ReadText("NodesMapping")
+                        });
+                    }
+                }
+
+                var nodes = model.Nodes;
+                return new
+                {
+                    path = model.Path ?? pathArg,
+                    assetId = model.ID.ToString(),
+                    loaded = model.IsLoaded,
+                    nodeCount = nodes != null ? nodes.Length : 0,
+                    managedRetargetMembers = retargetMembers,
+                    managedRetargetTypes = retargetTypes,
+                    hasGetSkeletonRetargets = getRetargets != null,
+                    // 这条是这次改动唯一自证的生效判据：旧 DLL 里没有这个键，
+                    // 只读普查一旦回 `retargetsViaProperty:true`，就说明装配套件确实换了新码。
+                    retargetsViaProperty = viaProperty,
+                    retargetCount = entries.Count,
+                    entries
+                };
             });
         }
 
@@ -45,23 +151,39 @@ namespace HundunAgent.Tools
 
             var includeBones = EditorUtils.GetBool(args, "includeBones", true);
             var nameLimit = Math.Clamp(EditorUtils.GetInt(args, "nameLimit", 30), 0, 500);
-            var timeoutMs = Math.Clamp(EditorUtils.GetInt(args, "timeoutMs", 10000), 1000, 120000);
+            var timeoutMs = Math.Clamp(EditorUtils.GetInt(args, "timeoutMs", 60000), 1000, 300000);
 
             return MainThread.InvokeAsync<object>(() =>
             {
                 var warnings = new List<string>();
                 var isGuid = Guid.TryParse(pathArg, out var guid);
+                // 相对路径先转绝对：否则内容库会再登记一份同一个文件并改写 GUID（#77）。
+                if (!isGuid)
+                {
+                    pathArg = EditorUtils.ResolveAssetPath(pathArg);
+                }
 
                 AssetInfo assetInfo = default;
-                var foundInDatabase = isGuid
-                    ? Content.GetAssetInfo(guid, out assetInfo)
-                    : Content.GetAssetInfo(pathArg, out assetInfo);
+                bool foundInDatabase;
+                if (isGuid)
+                {
+                    foundInDatabase = Content.GetAssetInfo(guid, out assetInfo);
+                }
+                else
+                {
+                    // **绝不能**对路径调 Content.GetAssetInfo：注册表按字符串精确比对，
+                    // 拼写不同就会走“打开存储重新登记”的分支，同一 GUID 变成两条记录，
+                    // 引擎随后改名→重打包→文件被占用（0x20）→改名不落盘（实测见 6a2z）。
+                    // 先按内容数据库的条目拿 ID，再问 ID。
+                    var item = EditorUtils.FindAssetItem(pathArg);
+                    foundInDatabase = item != null && Content.GetAssetInfo(item.ID, out assetInfo);
+                }
                 if (!foundInDatabase)
                     warnings.Add("内容数据库中未找到该资产（可能未导入或路径写法不同），仍尝试直接加载");
 
-                var asset = isGuid
-                    ? Content.Load(guid, timeoutMs)
-                    : Content.Load(pathArg, timeoutMs);
+                // 一律走 EditorUtils.LoadAsset：它先按内容数据库的资产 ID 加载，
+                // 不把调用方的路径拼写送进注册表（否则会重复登记同一 GUID，见 6a2z 的复发记录）。
+                var asset = EditorUtils.LoadAsset(isGuid ? guid.ToString() : pathArg, timeoutMs);
 
                 if (asset == null)
                 {
@@ -70,8 +192,9 @@ namespace HundunAgent.Tools
                     var knownToContentDatabase = false;
                     try
                     {
-                        var editor = FlaxEditor.Editor.Instance;
-                        knownToContentDatabase = editor?.ContentDatabase?.Find(pathArg) != null;
+                        // 内容数据库的 Find(string) 也是精确比对，路径拼写不同会误报“不在库里”，
+                        // 因此走分隔符不敏感的条目查找。
+                        knownToContentDatabase = EditorUtils.FindAssetItem(pathArg) != null;
                     }
                     catch
                     {
@@ -166,15 +289,38 @@ namespace HundunAgent.Tools
 
                 var vertexCount = 0;
                 var triangleCount = 0;
+                var meshBrief = new List<object>();
                 if (meshes != null)
                 {
-                    foreach (var mesh in meshes)
+                    for (var m = 0; m < meshes.Length; m++)
                     {
+                        var mesh = meshes[m];
                         if (mesh == null)
                             continue;
                         vertexCount += mesh.VertexCount;
                         triangleCount += mesh.TriangleCount;
+
+                        // 网格侧的名字与材质数组是"哪个槽是哪块皮"的唯一可靠键：
+                        // 真头 Ada_FaceMesh 的槽名是通用的 Material 0..8，靠槽名对不上 head/teeth/eyeLeft…
+                        // 而按索引猜又等于把导入顺序当契约。这里把两边都读出来，映射才有证据。
+                        meshBrief.Add(new
+                        {
+                            index = m,
+                            name = ReadMember(mesh, "Name"),
+                            materialCount = (ReadMember(mesh, "Materials") as MaterialBase[])?.Length,
+                            materials = (ReadMember(mesh, "Materials") as MaterialBase[])?.Select(x => x?.Path).ToArray(),
+                            vertexCount = mesh.VertexCount,
+                            triangleCount = mesh.TriangleCount
+                        });
                     }
+                }
+
+                if (i == 0 && meshes != null && meshes.Length > 0 && meshes[0] != null)
+                {
+                    // 一次性把 MeshBase 的公开成员列出来：以后要按网格侧的哪个键做映射，看这里而不是猜
+                    result["meshMemberDump"] = meshes[0].GetType().GetProperties()
+                        .Select(p => p.Name + ":" + p.PropertyType.Name).ToArray();
+                    result["meshesLod0"] = meshBrief;
                 }
 
                 object bounds = null;
@@ -239,6 +385,36 @@ namespace HundunAgent.Tools
             }
 
             result["materialSlots"] = slots;
+        }
+
+        /// <summary>
+        /// 反射读一个公开成员（属性或字段），不存在就返回 null。
+        /// 网格侧的 Name/Materials 在 Flax 各版本里归属不同（`MeshBase` 还是 `ModelMesh`），
+        /// 这里不写死类型名：读到什么就报什么，读不到也只是少一个键，不会把整次探查带崩。
+        /// </summary>
+        private static object ReadMember(object target, string name)
+        {
+            if (target == null || string.IsNullOrEmpty(name))
+            {
+                return null;
+            }
+
+            try
+            {
+                var type = target.GetType();
+                var prop = type.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+                if (prop != null && prop.CanRead)
+                {
+                    return prop.GetValue(target, null);
+                }
+
+                var field = type.GetField(name, BindingFlags.Public | BindingFlags.Instance);
+                return field != null ? field.GetValue(target) : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static void InspectSkeleton(SkinnedModel skinned, Dictionary<string, object> result, bool includeBones, int nameLimit)

@@ -28,27 +28,53 @@ namespace NarrativePro.UI
 
         public override void OnEnable()
         {
-            if (TalesComponentRef != null)
-            {
-                TalesComponentRef.OnQuestStarted += OnQuestStarted;
-                TalesComponentRef.OnQuestSucceeded += OnQuestSucceeded;
-                TalesComponentRef.OnQuestFailed += OnQuestFailed;
-                TalesComponentRef.OnQuestNewState += OnQuestNewState;
-                TalesComponentRef.OnQuestTaskProgressChanged += OnQuestTaskProgressChanged;
-            }
+            Bind(TalesComponentRef);
         }
 
         public override void OnDisable()
         {
-            if (TalesComponentRef != null)
-            {
-                TalesComponentRef.OnQuestStarted -= OnQuestStarted;
-                TalesComponentRef.OnQuestSucceeded -= OnQuestSucceeded;
-                TalesComponentRef.OnQuestFailed -= OnQuestFailed;
-                TalesComponentRef.OnQuestNewState -= OnQuestNewState;
-                TalesComponentRef.OnQuestTaskProgressChanged -= OnQuestTaskProgressChanged;
-            }
+            Unbind();
         }
+
+        /// <summary>
+        /// 绑定（或切换）叙事组件。运行期由 <c>NarrativeRuntimeBootstrap</c> 在 TalesComponent
+        /// 就绪后调用，幂等；面板因此不再受「启用时组件引用尚未赋值」的时序限制。
+        /// </summary>
+        public void Bind(TalesComponent tales)
+        {
+            if (ReferenceEquals(_boundTales, tales) && tales != null) return;
+
+            Unbind();
+            TalesComponentRef = tales;
+            _boundTales = tales;
+            if (tales == null) return;
+
+            tales.OnQuestStarted += OnQuestStarted;
+            tales.OnQuestSucceeded += OnQuestSucceeded;
+            tales.OnQuestFailed += OnQuestFailed;
+            tales.OnQuestNewState += OnQuestNewState;
+            tales.OnQuestTaskProgressChanged += OnQuestTaskProgressChanged;
+        }
+
+        /// <summary>解除当前叙事组件订阅。</summary>
+        public void Unbind()
+        {
+            var tales = _boundTales;
+            if (tales != null)
+            {
+                tales.OnQuestStarted -= OnQuestStarted;
+                tales.OnQuestSucceeded -= OnQuestSucceeded;
+                tales.OnQuestFailed -= OnQuestFailed;
+                tales.OnQuestNewState -= OnQuestNewState;
+                tales.OnQuestTaskProgressChanged -= OnQuestTaskProgressChanged;
+            }
+            _boundTales = null;
+        }
+
+        private TalesComponent _boundTales;
+
+        /// <summary>当前展示的条目（供视图读取）。</summary>
+        public List<QuestDisplayInfo> GetDisplayedQuests() => _displayedQuests;
 
         public void Show()
         {

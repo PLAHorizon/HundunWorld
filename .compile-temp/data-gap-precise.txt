@@ -1,5 +1,0 @@
-menu-char-attributes         真缺口  5: 12,450 | 328 | 156 | 168 | 642
-menu-char-attributes-v2      真缺口  3: 52,840 | 12,450 | 28.5
-menu-shop                    真缺口  1: 8722
-menu-equipment               真缺口  1: 12,450
-combat-hud                   真缺口  1: 720

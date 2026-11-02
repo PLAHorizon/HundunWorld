@@ -1,4 +1,4 @@
-{
+﻿{
 	"Name": "HundunWorld",
 	"Version": "1.0",
 	"Company": "My Company",
@@ -17,7 +17,25 @@
 			"Name": "$(ProjectPath)/Plugins/HundunAgent/HundunAgent.flaxproj"
 		},
 		{
+			"Name": "$(ProjectPath)/Plugins/QuestEditor/QuestEditor.flaxproj"
+		},
+		{
+			"Name": "$(ProjectPath)/Plugins/MonsterEditor/MonsterEditor.flaxproj"
+		},
+		{
+			"Name": "$(ProjectPath)/Plugins/NpcEditor/NpcEditor.flaxproj"
+		},
+		{
+			"Name": "$(ProjectPath)/Plugins/PetEditor/PetEditor.flaxproj"
+		},
+		{
+			"Name": "$(ProjectPath)/Plugins/ItemEditor/ItemEditor.flaxproj"
+		},
+		{
 			"Name": "$(ProjectPath)/Plugins/PCG/PCG.flaxproj"
+		},
+		{
+			"Name": "$(ProjectPath)/Plugins/MetaHuman/MetaHuman.flaxproj"
 		}
 	],
 	"DefaultScene": "dc72848f4b0f90ee2df186a728f14858",

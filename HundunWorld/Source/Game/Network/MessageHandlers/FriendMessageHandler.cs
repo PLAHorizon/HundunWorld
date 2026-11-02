@@ -16,6 +16,9 @@ namespace ManagedHundunWorld.Network.Handlers
     {
         public override List<MessageType> MessageTypes => new List<MessageType>
         {
+            // Friend(309) 也要收：FriendListUpdateMessage/FriendInfo 这些 DTO 的 Type 字段默认值
+            // 就是 Friend，网关若照默认值发头，只注册 1338/1339 会让整包在分发阶段被丢弃。
+            MessageType.Friend,
             MessageType.FriendList,
             MessageType.FriendOperation,
             MessageType.FriendStatusUpdate,
@@ -33,6 +36,11 @@ namespace ManagedHundunWorld.Network.Handlers
         /// 好友添加响应事件
         /// </summary>
         public event Action<AddFriendResponse> FriendAdded;
+
+        /// <summary>
+        /// 好友操作结果（添加/删除）响应事件
+        /// </summary>
+        public event Action<FriendOperationResponse> FriendOperationResolved;
 
         /// <summary>
         /// 好友状态变更事件
@@ -64,6 +72,11 @@ namespace ManagedHundunWorld.Network.Handlers
 
                 case AddFriendResponse addFriendResponse:
                     HandleAddFriendResponse(addFriendResponse);
+                    break;
+
+                case FriendOperationResponse operationResponse:
+                    Debug.Log($"[FriendMessageHandler] 好友操作回执: Op={operationResponse.Op} 成功={operationResponse.Success} {operationResponse.Message}");
+                    FriendOperationResolved?.Invoke(operationResponse);
                     break;
 
                 case FriendStatusUpdateMessage statusUpdate:

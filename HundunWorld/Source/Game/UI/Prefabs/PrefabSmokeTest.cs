@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -43,7 +43,8 @@ namespace HundunWorld.Game.UI.Prefabs
             if (canvas == null)
             {
                 canvas = new FlaxEngine.UICanvas { Name = "SmokeRuntimeCanvas" };
-                Level.SpawnActor(canvas);
+                // 测试工具画布：显式落 RootScene（0 号场景），不靠无父级默认落点
+                Level.SpawnActor(canvas, Level.GetScene(0));
                 Debug.Log("[PREFAB-SMOKE] INFO: 场景无 GalleryCanvas，使用运行时画布");
             }
             else

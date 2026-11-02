@@ -1,0 +1,35 @@
+{
+  "Kind": "Npc",
+  "NPCID": "npc_bandit_lookout",
+  "NPCName": "匪徒哨探",
+  "MinLevel": 2,
+  "MaxLevel": 4,
+  "bAllowMultipleInstances": true,
+  "UniqueNPCGUID": "",
+  "NPCClassPath": "",
+  "DialoguePath": "",
+  "TaggedDialogueSetPath": "",
+  "bIsVendor": false,
+  "TradingCurrency": 0,
+  "BuyItemPercentage": 0.5,
+  "SellItemPercentage": 1.0,
+  "ShopFriendlyName": "",
+  "ActivityConfigurationPath": "Content/NarrativePro/Activities/DefaultNPCActivityConfiguration.json",
+  "ActivitySchedulePaths": [],
+  "DefaultCurrency": 30,
+  "DefaultItemLoadout": [
+    { "ItemClassId": "item_bow", "Quantity": 1, "NumRolls": 1, "Chance": 1.0 },
+    { "ItemClassId": "item_arrow", "Quantity": 12, "NumRolls": 1, "Chance": 1.0 },
+    { "ItemClassId": "item_herb", "Quantity": 2, "NumRolls": 1, "Chance": 0.5 }
+  ],
+  "DefaultFactions": [
+    "Narrative.Factions.Bandits",
+    "Narrative.Factions.HostileAll"
+  ],
+  "DefaultOwnedTags": [
+    "Narrative.State.NPC.IsAggressive"
+  ],
+  "TriggerSetPaths": [],
+  "AttackPriority": 2.5,
+  "AbilityConfigurationPath": ""
+}

@@ -21,6 +21,17 @@ namespace NarrativePro.AI
         public NPCGoalItem ActiveGoal;
 
         /// <summary>
+        /// 等待目标完成的异步动作（对应 UE5 蓝图节点 AsyncAction_AddGoalAndWait 的 ExposedAsyncProxy）。
+        /// 目标成功/移除时通过它广播，供后续图表逻辑或 await 使用。
+        /// </summary>
+        [NonSerialized]
+        public AsyncAction_AddGoalAndWait ActiveAction;
+
+        /// <summary>目标是否已成功完成（由 ActiveAction.GoalSucceeded 置位）。</summary>
+        [NonSerialized]
+        public bool bGoalSucceeded = false;
+
+        /// <summary>
         /// 执行事件：向目标 NPC 添加目标。
         /// </summary>
         /// <param name="target">目标对象（Actor/Pawn）</param>
@@ -43,8 +54,30 @@ namespace NarrativePro.AI
                 return;
             }
 
-            ActiveGoal = activityComp.AddGoal(GoalToAdd, true);
-            NarrativeLog.Log($"NarrativeEvent_AddGoalToNPC: 已向 NPC 添加目标 {GoalToAdd.GetGoalKey()}");
+            // 走 AsyncAction_AddGoalAndWait：添加目标并在成功/移除时广播（对应 UE5 图表节点语义）
+            ActiveAction = AsyncAction_AddGoalAndWait.AddGoalAndWait(activityComp, GoalToAdd, true, false, out var createdGoal);
+            ActiveGoal = createdGoal;
+            if (ActiveAction != null)
+            {
+                ActiveAction.GoalSucceeded += activity =>
+                {
+                    bGoalSucceeded = true;
+                    NarrativeLog.Log($"NarrativeEvent_AddGoalToNPC: 目标 {GoalToAdd.GetGoalKey()} 已完成");
+                };
+                ActiveAction.GoalRemoved += activity =>
+                {
+                    NarrativeLog.Log($"NarrativeEvent_AddGoalToNPC: 目标 {GoalToAdd.GetGoalKey()} 已被移除");
+                };
+            }
+
+            if (ActiveGoal != null)
+            {
+                NarrativeLog.Log($"NarrativeEvent_AddGoalToNPC: 已向 NPC 添加目标 {GoalToAdd.GetGoalKey()}");
+            }
+            else
+            {
+                NarrativeLog.LogWarning("NarrativeEvent_AddGoalToNPC: AddGoal 失败，目标未加入 NPC");
+            }
         }
 
         /// <summary>事件激活时调用</summary>
@@ -64,6 +97,10 @@ namespace NarrativePro.AI
                 activityComp?.RemoveGoal(ActiveGoal);
                 ActiveGoal = null;
             }
+            // 结束异步动作并解绑事件（对应 UE5 EndTask/SetReadyToDestroy）
+            ActiveAction?.EndTask();
+            ActiveAction = null;
+            bGoalSucceeded = false;
         }
 
         /// <summary>获取图表显示文本</summary>

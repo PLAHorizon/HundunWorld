@@ -1,0 +1,8 @@
+{
+  "bDynamicTimeOfDay": true,
+  "defaultTimeOfDay": { "Time": 800.0 },
+  "dayLengthMinutes": 10.0,
+  "nightLengthMinutes": 10.0,
+  "sunriseTime": { "Time": 600.0 },
+  "sunsetTime": { "Time": 1800.0 }
+}

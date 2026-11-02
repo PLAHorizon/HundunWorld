@@ -141,6 +141,14 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     Task SubmitInputAsync(ulong entityId, InputPacket input, float reportedEndX, float reportedEndY, float reportedEndZ);
 
     /// <summary>
+    /// 翻越（Traversal）请求：按 <c>SimWorld.TryBeginTraversal</c> 的限值/冷却/起点贴合规则裁决，
+    /// 受理后由分片的权威步进按共享曲线推进位置。
+    /// </summary>
+    /// <param name="request">客户端提交的翻越计划（ECS 坐标，米）。</param>
+    /// <returns>裁决结果（含拒绝原因与权威位置回显），由网关原样回给发起客户端。</returns>
+    Task<TraversalResultPacket> SubmitTraversalRequestAsync(TraversalRequestPacket request);
+
+    /// <summary>
     /// 客户端请求 baseline 重传（收到 <see cref="BaselineResyncRequestPacket"/> 时由 Gateway 路由调用）。
     /// 服务端收到后强制下一 tick 下发全量快照。
     /// </summary>

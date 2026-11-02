@@ -288,6 +288,17 @@ namespace HundunWorld.Game
         /// </summary>
         private void FlushInputSendQueue()
         {
+            // 非 GameWorld（登录/选角/创角）场景里没有本地玩家，也就没有输入要发；
+            // 同步握手本来就是进世界时才建立，在这些场景逐帧重试 + 每 5 秒一条
+            // "InputPacket 被丢弃"告警纯属噪音，还会淹掉真正的同步故障。
+            if (!HundunWorld.Game.UI.GameSceneManager.IsInGameWorld)
+            {
+                // 必须排空再丢弃：GetPendingInputs 本身就是出队，
+                // 只 return 不出队会让输入堆积，进世界瞬间被一次性重放。
+                InputSendSystem.Instance?.GetPendingInputs();
+                return;
+            }
+
             var networkManager = HundunWorldGame.Instance?.NetworkManager;
             if (networkManager == null || !networkManager.CanSendMessage())
                 return;

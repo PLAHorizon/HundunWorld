@@ -78,7 +78,6 @@ namespace Game
             
             Debug.Log("=== 相机碰撞系统设置 ===");
             Debug.Log($"启用碰撞检测: {CameraToDebug.EnableCameraCollision}");
-            Debug.Log($"启用智能避障: {CameraToDebug.EnableSmartAvoidance}");
             Debug.Log($"射线数量: {CameraToDebug.CollisionRayCount}");
             Debug.Log($"碰撞半径: {CameraToDebug.CollisionRadius}");
             Debug.Log($"碰撞层级掩码: {CameraToDebug.CollisionLayerMask}");
@@ -86,7 +85,6 @@ namespace Game
             Debug.Log($"最小距离: {CameraToDebug.MinDistance}");
             Debug.Log($"最大距离: {CameraToDebug.MaxDistance}");
             Debug.Log($"当前距离: {CameraToDebug.Distance}");
-            Debug.Log($"智能避障角度: {CameraToDebug.SmartAvoidancePitch}°");
             Debug.Log("========================");
         }
         

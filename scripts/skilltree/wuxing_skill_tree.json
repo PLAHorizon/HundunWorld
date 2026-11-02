@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "doc": "docs/SKILL_WUXING_TREE_DESIGN.md",
+    "decisions": { "D1": "75式独立", "D2": "演化封存源技·不加逆演支系", "D3": "接入倍率+基座0.25", "D4": "保留五行强制兼修" },
+    "generated_by": "scripts/skilltree/generate.mjs",
+    "note": "本文件是五行技能树的唯一数据源：数值一律由 ladder 公式推导，不在行内重复填写。"
+  },
+  "ladder": {
+    "multiplierBase": 1.10,
+    "multiplierGrowth": 1.09,
+    "energyBase": 30,
+    "energyPerK": 18,
+    "energyDao": [300, 330, 360],
+    "energyHundun": 500,
+    "levelByGrade": { "1": [1, 11, 21], "2": [31, 46, 61], "3": [76, 96, 116], "4": [131, 156, 181], "5": [201, 236, 271], "6": [300, 300, 300], "7": [300, 300, 300] },
+    "cooldownByGrade": { "1": [4, 10, 28], "2": [6, 14, 40], "3": [8, 18, 55], "4": [11, 24, 75], "5": [14, 30, 100], "6": [18, 38, 130], "7": [0, 0, 300] },
+    "rangeByGrade": { "1": [8, 15, 25], "2": [8, 15, 25], "3": [10, 18, 28], "4": [10, 18, 28], "5": [12, 20, 30], "6": [14, 24, 35], "7": [40, 40, 40] },
+    "aoeByGrade": { "1": [6, 8, 8], "2": [8, 10, 10], "3": [10, 12, 12], "4": [12, 14, 14], "5": [14, 16, 16], "6": [16, 18, 18], "7": [20, 20, 20] },
+    "proficiencyByGrade": { "1": 100, "2": 200, "3": 300, "4": 400, "5": 500, "6": 800, "7": 1000 },
+    "comprehensionByK": [4, 6, 8, 12, 15, 18, 24, 28, 32, 36, 42, 48, 52, 60, 68, 75, 85, 95, 100],
+    "bookQualityByGrade": { "1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 5 },
+    "bookTypeByStage": { "1": 0, "2": 1, "3": 3 },
+    "learnSuccessByGrade": { "1": 1.0, "2": 0.95, "3": 0.85, "4": 0.7, "5": 0.55, "6": 0.35, "7": 0.25 },
+    "learnDurationMinByGrade": { "1": 0, "2": 1, "3": 3, "4": 8, "5": 20, "6": 60, "7": 120 },
+    "maxSkillLevelByGrade": { "1": 3, "2": 5, "3": 7, "4": 9, "5": 10, "6": 10, "7": 10 },
+    "useLimitByGrade": { "1": 1, "2": 1, "3": 2, "4": 2, "5": 3, "6": 1, "7": 1 },
+    "baseDamageFactor": 0.25
+  },
+  "elements": [
+    { "key": "Metal", "cn": "金", "wuxing": 1, "itemElement": 0, "trait": "锋锐破甲" },
+    { "key": "Wood", "cn": "木", "wuxing": 2, "itemElement": 1, "trait": "生发缠绕" },
+    { "key": "Water", "cn": "水", "wuxing": 3, "itemElement": 2, "trait": "寒凝净化" },
+    { "key": "Fire", "cn": "火", "wuxing": 4, "itemElement": 3, "trait": "爆发灼烧" },
+    { "key": "Earth", "cn": "土", "wuxing": 5, "itemElement": 4, "trait": "镇域护盾" }
+  ],
+  "grades": [
+    { "grade": 1, "cn": "白", "realm": 1 },
+    { "grade": 2, "cn": "黄", "realm": 2 },
+    { "grade": 3, "cn": "玄", "realm": 3 },
+    { "grade": 4, "cn": "地", "realm": 4 },
+    { "grade": 5, "cn": "天", "realm": 5 },
+    { "grade": 6, "cn": "道", "realm": 6 },
+    { "grade": 7, "cn": "混沌", "realm": 6 }
+  ],
+  "stages": [
+    { "stage": 1, "cn": "初", "role": "主输出" },
+    { "stage": 2, "cn": "中", "role": "控制或群体" },
+    { "stage": 3, "cn": "极", "role": "绝学或领域" }
+  ],
+  "skills": [
+    { "el": "Metal", "rows": [
+      [10101, 1, 1, "青锋三式", "启锋", "ActiveAttack", "Single", "破甲10%", { "pen": 0.10 }],
+      [10102, 1, 2, "青锋三式", "断缕", "Control", "Line", "断对方轻身加速2s", { "dispelSec": 2 }],
+      [10103, 1, 3, "青锋三式", "裂缺", "ActiveAttack", "Sector", "命中后自身下一式破甲+5%", { "pen": 0.15 }],
+      [10201, 2, 1, "裂金三式", "崩棱", "ActiveAttack", "Single", "破甲15%，对护盾目标×1.2", { "pen": 0.15, "vsShield": 1.2 }],
+      [10202, 2, 2, "裂金三式", "削玉", "ActiveAttack", "Line", "穿透2目标", { "pierce": 2 }],
+      [10203, 2, 3, "裂金三式", "贯岳", "Ultimate", "Single", "无视20%防御并击碎1层增益", { "pen": 0.20, "stealBuff": 1 }],
+      [10301, 3, 1, "太白经天", "流霜", "ActiveAttack", "Single", "破甲20%", { "pen": 0.20 }],
+      [10302, 3, 2, "太白经天", "割暮", "ActiveAttack", "Line", "穿透3目标", { "pierce": 3 }],
+      [10303, 3, 3, "太白经天", "倾河", "Ultimate", "Circle", "剑阵4s，每0.5s结算一次", { "tickSec": 4, "tickEvery": 0.5 }],
+      [10401, 4, 1, "庚金绝脉", "断岳", "ActiveAttack", "Single", "破甲25%，附1层锋意", { "pen": 0.25, "stack": "锋意" }],
+      [10402, 4, 2, "庚金绝脉", "铁围", "Control", "Circle", "兵牢定身1.2s", { "stunSec": 1.2 }],
+      [10403, 4, 3, "庚金绝脉", "万剑朝宗", "Ultimate", "Circle", "3层锋意引爆，每层+0.4倍率", { "detonate": "锋意", "perStack": 0.4 }],
+      [10501, 5, 1, "金德弥天", "敛锋", "ActiveAttack", "Single", "破甲30%", { "pen": 0.30 }],
+      [10502, 5, 2, "金德弥天", "铸兵", "Support", "Self", "兵刃金意：后续3式破甲不叠加、耗气-15%", { "energySave": 0.15 }],
+      [10503, 5, 3, "金德弥天", "金方辟易", "Ultimate", "Circle", "域内敌护甲-30%，我方顺生窗口+0.5s", { "enemyArmorDown": 0.30, "loopWindowBonus": 0.5 }]
+    ] },
+    { "el": "Wood", "rows": [
+      [20101, 1, 1, "青藤三式", "缠枝", "ActiveAttack", "Single", "DOT0.25倍/2s，4s", { "dotRatio": 0.25, "dotSec": 4 }],
+      [20102, 1, 2, "青藤三式", "抽芽", "Control", "Single", "减速15%2s", { "slowPct": 0.15, "slowSec": 2 }],
+      [20103, 1, 3, "青藤三式", "落花", "Support", "Self", "回复6%气血", { "healPct": 0.06 }],
+      [20201, 2, 1, "绿绮长林", "蔓引", "ActiveAttack", "Sector", "DOT0.30倍并蔓延1名邻敌", { "dotRatio": 0.30, "spread": 1 }],
+      [20202, 2, 2, "绿绮长林", "荆棘", "Control", "Circle", "束缚1.5s+反伤", { "rootSec": 1.5, "reflect": 0.1 }],
+      [20203, 2, 3, "绿绮长林", "枯荣", "Support", "Circle", "友方回复、敌方DOT同时生效", { "healPct": 0.08, "dotRatio": 0.2 }],
+      [20301, 3, 1, "春木生息", "回春", "Support", "Single", "治疗+HOT", { "healPct": 0.12, "dotSec": 6 }],
+      [20302, 3, 2, "春木生息", "繁荫", "Control", "Circle", "群体缠绕2s", { "rootSec": 2 }],
+      [20303, 3, 3, "春木生息", "万叶", "Ultimate", "Circle", "叶域4s，域内DOT结算频率×1.5", { "dotTempo": 1.5 }],
+      [20401, 4, 1, "苍梧生生", "盘根", "ActiveAttack", "Single", "定身1s，DOT0.5倍", { "rootSec": 1, "dotRatio": 0.5 }],
+      [20402, 4, 2, "苍梧生生", "腾莽", "Control", "Rectangle", "突进缠绕", { "dash": true, "rootSec": 1.5 }],
+      [20403, 4, 3, "苍梧生生", "森罗", "Ultimate", "Circle", "领域8s，友方受疗+20%", { "healTakenBonus": 0.2, "durationSec": 8 }],
+      [20501, 5, 1, "青帝临凡", "布泽", "Support", "Circle", "群体回复+驱散流血", { "healPct": 0.15, "dispel": "流血" }],
+      [20502, 5, 2, "青帝临凡", "荣枯", "ActiveAttack", "Circle", "敌DOT、我HOT同半径", { "dotRatio": 0.35, "healPct": 0.12 }],
+      [20503, 5, 3, "青帝临凡", "建木通天", "Ultimate", "Self", "9s内每次相生判定额外+1层DOT", { "durationSec": 9, "onGenerate": "dotStack+1" }]
+    ] },
+    { "el": "Water", "rows": [
+      [30101, 1, 1, "玄冰三式", "凝霜", "ActiveAttack", "Single", "减速20%3s", { "slowPct": 0.20, "slowSec": 3 }],
+      [30102, 1, 2, "玄冰三式", "激浪", "ActiveAttack", "Line", "击退2m", { "knockback": 2 }],
+      [30103, 1, 3, "玄冰三式", "镜面", "Support", "Self", "反射下一次控制", { "reflectControl": 1 }],
+      [30201, 2, 1, "寒潭印月", "刺骨", "ActiveAttack", "Single", "减速30%，耗气-10%", { "slowPct": 0.30, "energySave": 0.10 }],
+      [30202, 2, 2, "寒潭印月", "凝涛", "Control", "Circle", "冰冻1.2s", { "stunSec": 1.2 }],
+      [30203, 2, 3, "寒潭印月", "沉璧", "Support", "Circle", "净化2个减益", { "dispelCount": 2 }],
+      [30301, 3, 1, "沧浪之水", "濯缨", "Support", "Single", "解除控制并回复", { "dispelControl": true, "healPct": 0.10 }],
+      [30302, 3, 2, "沧浪之水", "回澜", "Control", "Circle", "拉拽聚怪1.5s", { "pullSec": 1.5 }],
+      [30303, 3, 3, "沧浪之水", "雾锁", "Control", "Circle", "域内敌命中-20%", { "enemyMiss": 0.20, "durationSec": 6 }],
+      [30401, 4, 1, "玄武潜渊", "冻浦", "ActiveAttack", "Circle", "群体冰冻1.5s", { "stunSec": 1.5 }],
+      [30402, 4, 2, "玄武潜渊", "倒河", "ActiveAttack", "Line", "穿透并减速叠层", { "pierce": 3, "slowPct": 0.15, "stack": "寒" }],
+      [30403, 4, 3, "玄武潜渊", "深渊", "Ultimate", "Self", "3s免疫控制，出水时结算", { "immuneSec": 3, "deferBurst": true }],
+      [30501, 5, 1, "天河倒泻", "冰壶", "Control", "Circle", "冰封2s+破霜（受击+15%）", { "stunSec": 2, "vulnerability": 0.15 }],
+      [30502, 5, 2, "天河倒泻", "悬瀑", "Ultimate", "Rectangle", "大范围冲击并击退", { "knockback": 5 }],
+      [30503, 5, 3, "天河倒泻", "溟海归墟", "Ultimate", "Circle", "域内每1s抽1层敌增益回我方", { "stealPerSec": 1, "durationSec": 8 }]
+    ] },
+    { "el": "Fire", "rows": [
+      [40101, 1, 1, "星火三式", "燃薪", "ActiveAttack", "Single", "灼烧0.3倍每秒4s", { "dotRatio": 0.30, "dotSec": 4 }],
+      [40102, 1, 2, "星火三式", "飞烬", "ActiveAttack", "Circle", "溅射40%", { "splashPct": 0.40 }],
+      [40103, 1, 3, "星火三式", "燎原", "ActiveAttack", "Sector", "点燃2名邻敌DOT", { "spread": 2, "dotRatio": 0.25 }],
+      [40201, 2, 1, "赤霄焚野", "贯日", "ActiveAttack", "Line", "贯穿灼烧", { "pierce": 2, "dotRatio": 0.30 }],
+      [40202, 2, 2, "赤霄焚野", "流火", "ActiveAttack", "Circle", "落地区域3s持续灼烧", { "groundSec": 3, "dotRatio": 0.2 }],
+      [40203, 2, 3, "赤霄焚野", "焚营", "Ultimate", "Circle", "对DOT目标×1.5", { "vsDot": 1.5 }],
+      [40301, 3, 1, "离火真形", "熔兵", "ActiveAttack", "Single", "破甲并缴械3s", { "pen": 0.20, "disarmSec": 3 }],
+      [40302, 3, 2, "离火真形", "业锁", "Control", "Circle", "定身+DOT，被克目标额外1s", { "stunSec": 1.2, "dotRatio": 0.3 }],
+      [40303, 3, 3, "离火真形", "炎龙", "Ultimate", "Line", "龙形穿透5目标", { "pierce": 5 }],
+      [40401, 4, 1, "丹雀衔烛", "爆烈", "ActiveAttack", "Circle", "引爆自身DOT立即结算余量", { "detonate": "自身DOT" }],
+      [40402, 4, 2, "丹雀衔烛", "焚身", "Support", "Self", "耗10%气血换3s火伤+25%", { "hpCost": 0.10, "buffRatio": 0.25, "durationSec": 3 }],
+      [40403, 4, 3, "丹雀衔烛", "赤城", "Ultimate", "Circle", "火域6s，DOT不可被驱散", { "durationSec": 6, "undispellable": true }],
+      [40501, 5, 1, "焚天灭地", "劫火", "Ultimate", "Circle", "全体灼烧+减疗30%", { "dotRatio": 0.4, "healTakenDown": 0.30 }],
+      [40502, 5, 2, "焚天灭地", "日陨", "Ultimate", "Circle", "单点巨伤+落地区域", { "groundSec": 5 }],
+      [40503, 5, 3, "焚天灭地", "凤凰涅槃", "Support", "Self", "致死免死并回复30%，重灼周围", { "cheatDeath": true, "healPct": 0.30 }]
+    ] },
+    { "el": "Earth", "rows": [
+      [50101, 1, 1, "磐石三式", "垒土", "ActiveAttack", "Single", "击退1.5m", { "knockback": 1.5 }],
+      [50102, 1, 2, "磐石三式", "飞砂", "Control", "Circle", "命中-15%持续3s", { "enemyMiss": 0.15, "slowSec": 3 }],
+      [50103, 1, 3, "磐石三式", "地陷", "Control", "Circle", "减速25%2s", { "slowPct": 0.25, "slowSec": 2 }],
+      [50201, 2, 1, "厚土重帷", "岩甲", "Support", "Self", "护盾吸收0.5倍", { "shieldRatio": 0.5 }],
+      [50202, 2, 2, "厚土重帷", "石刺", "ActiveAttack", "Line", "突进并击飞", { "dash": true, "knockback": 2 }],
+      [50203, 2, 3, "厚土重帷", "尘障", "Support", "Circle", "友方减伤10%5s", { "damageTakenDown": 0.10, "durationSec": 5 }],
+      [50301, 3, 1, "坤岳镇形", "踏脉", "ActiveAttack", "Single", "眩晕1s", { "stunSec": 1 }],
+      [50302, 3, 2, "坤岳镇形", "地刺", "Control", "Rectangle", "定身1s+DOT", { "rootSec": 1, "dotRatio": 0.25 }],
+      [50303, 3, 3, "坤岳镇形", "山门", "Support", "Self", "护盾0.8倍+嘲讽3s", { "shieldRatio": 0.8, "tauntSec": 3 }],
+      [50401, 4, 1, "五岳真形", "压顶", "ActiveAttack", "Circle", "落石群控1.2s", { "stunSec": 1.2 }],
+      [50402, 4, 2, "五岳真形", "地动", "Control", "Circle", "区域失衡，耗气+30%5s", { "energyPenalty": 0.30, "durationSec": 5 }],
+      [50403, 4, 3, "五岳真形", "山呼", "Ultimate", "Circle", "队友获得1层护盾", { "shieldRatio": 0.3, "toAllies": true }],
+      [50501, 5, 1, "后土载物", "安疆", "Support", "Self", "镇域护盾，免疫1次破势", { "shieldRatio": 1.0, "immuneBreak": 1 }],
+      [50502, 5, 2, "后土载物", "镇岳", "Control", "Circle", "大范围定身1.8s", { "rootSec": 1.8 }],
+      [50503, 5, 3, "后土载物", "坤维载德", "Ultimate", "Circle", "域内我方顺生窗口+3s", { "loopWindowBonus": 3, "durationSec": 8 }]
+    ] }
+  ],
+  "evolutionPairs": [
+    { "pair": 1, "mother": "Metal", "child": "Water", "series": "流金化液", "loopNeed": [12, 20, 28], "rows": [
+      [70101, 1, "金液", "ActiveAttack", "Line", "破甲30%+减速叠2层", { "pen": 0.30, "slowPct": 0.10, "stack": "缓", "stackMax": 2 }],
+      [70102, 2, "霜刃", "Ultimate", "Circle", "每1层循环节使穿透+1目标", { "loopScale": "pierce" }],
+      [70103, 3, "玄冥淬锋", "Ultimate", "Self", "5s内顺生判定必成、窗口不清零", { "guaranteeGenerateSec": 5 }]
+    ] },
+    { "pair": 2, "mother": "Water", "child": "Wood", "series": "润木成林", "loopNeed": [12, 20, 28], "rows": [
+      [70201, 1, "沐川", "Support", "Circle", "群体治疗并附湿气DOT", { "healPct": 0.18, "dotRatio": 0.3 }],
+      [70202, 2, "青溟", "Control", "Circle", "过量治疗转范围缠绕2s", { "overhealToRoot": true, "rootSec": 2 }],
+      [70203, 3, "万木朝海", "Ultimate", "Circle", "领域内每秒1层DOT，治疗溢出即补层", { "durationSec": 10 }]
+    ] },
+    { "pair": 3, "mother": "Wood", "child": "Fire", "series": "燃薪御火", "loopNeed": [12, 20, 28], "rows": [
+      [70301, 1, "炜木", "ActiveAttack", "Sector", "引爆DOT并传染1名", { "detonate": "DOT", "spread": 1 }],
+      [70302, 2, "焰华", "Ultimate", "Circle", "DOT引爆范围化，8m全传染", { "detonate": "DOT", "detonateRadius": 8 }],
+      [70303, 3, "燧林焚天", "Ultimate", "Circle", "火海8s，循环节每层+1次结算", { "durationSec": 8, "loopScale": "tick" }]
+    ] },
+    { "pair": 4, "mother": "Fire", "child": "Earth", "series": "炼土成陶", "loopNeed": [12, 20, 28], "rows": [
+      [70401, 1, "赤壤", "ActiveAttack", "Circle", "命中生成0.4倍护盾", { "shieldRatio": 0.4 }],
+      [70402, 2, "熔岩", "Control", "Rectangle", "定身并按护盾余量灼烧反伤", { "rootSec": 1.5, "shieldBurnBack": true }],
+      [70403, 3, "丹火封疆", "Ultimate", "Circle", "封疆域：敌破势失效、我方护盾灼烧来袭者", { "immuneBreak": true, "durationSec": 8 }]
+    ] },
+    { "pair": 5, "mother": "Earth", "child": "Metal", "series": "藏锋于山", "loopNeed": [12, 20, 28], "rows": [
+      [70501, 1, "矿脉", "ActiveAttack", "Single", "格挡+15%并记1层锋藏", { "blockBonus": 0.15, "stack": "锋藏" }],
+      [70502, 2, "玉山", "Support", "Self", "护盾破碎时自动反击", { "riposteOnShieldBreak": true }],
+      [70503, 3, "坤金镇岳", "Ultimate", "Circle", "群体压制，每次格挡成功追加不计冷却金意", { "freeRiposte": true }]
+    ] }
+  ],
+  "ultimate": {
+    "id": 90001, "series": "混沌", "name": "混沌一炁", "type": "Ultimate", "rangeType": "Circle",
+    "effect": "一炁化五行：按当前循环节数在五行乘算中取最高组合，施放后固化1层循环节",
+    "needPairsCompleted": 3, "loopNeed": 40, "comprehension": 100, "aoeRadius": 20, "range": 40,
+    "element": "None", "wuxing": 0
+  },
+  "legacyMap": [
+    [1001, 10101, "裂金斩→青锋·启锋"], [1002, 10401, "断岳击→庚金·断岳"], [1003, 50201, "金钟罩→厚土·岩甲"],
+    [1004, 10403, "万剑归宗→庚金·万剑朝宗"], [2001, 20101, "青木藤缠→青藤·缠枝"], [2002, 20301, "春回大地→春木·回春"],
+    [2003, 20403, "万木森罗→苍梧·森罗"], [2004, 70201, "生生不息→道阶P2·沐川"], [3001, 30101, "寒冰掌→玄冰·凝霜"],
+    [3002, 30301, "水愈术→沧浪·濯缨"], [3003, 30401, "冰封千里→玄武·冻浦"], [3004, 30502, "滔天巨浪→天河·悬瀑"],
+    [3005, 30103, "水月镜花→玄冰·镜面"], [4001, 40101, "烈焰掌→星火·燃薪"], [4002, 40102, "火球术→星火·飞烬"],
+    [4003, 40303, "炎龙出海→离火·炎龙"], [4004, 40501, "焚天灭地→焚天·劫火"], [4005, 40503, "凤凰涅槃→焚天·凤凰涅槃"],
+    [5001, 50201, "岩甲术→厚土·岩甲"], [5002, 50302, "地刺术→坤岳·地刺"], [5003, 50303, "山岳护盾→坤岳·山门"],
+    [5004, 50402, "地动山摇→五岳·地动"], [5005, 50401, "泰山压顶→五岳·压顶"], [5006, 50501, "厚土载物→后土·安疆"],
+    [6001, 0, "凌波微步：保留60xxx身法段，不参与阶梯"], [6002, 0, "风驰电掣：保留60xxx身法段，不参与阶梯"]
+  ]
+}

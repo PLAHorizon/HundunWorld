@@ -82,9 +82,6 @@ namespace PCG.Nodes
         /// <summary>True when the most recent run stopped at <see cref="MaxActors"/>.</summary>
         public bool LastRunWasCapped { get; private set; }
 
-        /// <summary>Reported when the node could not spawn, for surfacing in the editor.</summary>
-        public string LastError { get; private set; }
-
         /// <summary>Creates the node from serialized parameters.</summary>
         public PCGSpawnStaticModelNode(PCGNodeRegistry.PCGNodeSerializationData data)
         {
@@ -140,18 +137,12 @@ namespace PCG.Nodes
             if (ModelId == Guid.Empty)
             {
                 LastError = "No model is assigned.";
-                Debug.LogWarning($"[PCG] {Id}: {LastError}");
-                return input;
-            }
 
-            // Content.GetAsset is synchronous and returns null when the asset is not loaded. LoadAsync would
-            // be better for streaming, but spawning must complete within the graph run, and an unloaded model
-            // is a configuration error worth reporting rather than silently deferring.
-            var model = Content.GetAsset(ModelId) as Model;
-            if (model == null)
-            {
-                LastError = $"Model asset {ModelId} is not loaded or is not a Model.";
-                Debug.LogWarning($"[PCG] {Id}: {LastError}");
+                // 干跑连日志都不打：`Debug.LogWarning` 也是引擎调用，离屏预览会因此崩掉。诊断不会丢——LastError
+                // 由执行器收进本次运行的警告里，那本来就是"该由执行器报出来"的正主。
+                if (!context.DryRun)
+                    Debug.LogWarning($"[PCG] {Id}: {LastError}");
+
                 return input;
             }
 
@@ -161,9 +152,43 @@ namespace PCG.Nodes
                 return input;
             }
 
+            // Preview and decider runs hand the layer on untouched: no models are placed, and - this is the point
+            // of putting it before the lookup below - **no asset is resolved either**. A dry run that still needed
+            // the asset database would make "preview" depend on whether the model happens to be loaded, and would
+            // make it impossible to dry-run a graph headlessly at all.
+            if (context.DryRun)
+                return input;
+
+            // 生成必须在一次图运行里做完，所以这里同步等；但"还没被加载"不等于"不存在"——
+            // `Content.GetAsset` 只翻已经载入的资产池，冷启动那一次会把一个好模型判成配置错误。
+            var model = PCGAssetLoading.Resolve<Model>(ModelId);
+            if (model == null)
+            {
+                LastError = $"Model asset {ModelId} is not loaded or is not a Model.";
+                Debug.LogWarning($"[PCG] {Id}: {LastError}");
+                return input;
+            }
+
             var parent = ResolveParent(context);
             var points = input.Points;
             var spawned = new List<int>(Mathf.Min(points.Length, MaxActors));
+
+            // 名字要从资产路径里取：Flax 资产只暴露 Path 与 TypeName，没有短 Name，而叫
+            // "asset-<guid>" 的场景对象在大纲里几乎没法用。共享前缀是 PCGVolume 认领本节点
+            // 产出所依据的记号。`model` 在一趟循环里是不变的，所以这里算一次：
+            // 放进循环就是每个点两次字符串分配。
+            var modelLabel = string.IsNullOrEmpty(model.Path)
+                ? "Model"
+                : System.IO.Path.GetFileNameWithoutExtension(model.Path);
+
+            // 三道筛子各数一遍：最后的读数要说清"是谁把点吃光的"，只说"摆了 0 件"等于没说。
+            int skippedOutsideClip = 0;
+            int skippedByDensity = 0;
+
+            // 落进裁切区那些点的**密度之和**。抽签是 `Density >= rng.NextFloat()`，
+            // 所以这一个数就是"这一层期望摆出几件"——它比"实际摆了几件"更早说话：
+            // 期望不足一件时这一层多半就是空的，而屏幕上看不出来是"没长"还是"长稀"。
+            float expectedPlacementSum = 0.0f;
 
             for (int i = 0; i < points.Length; i++)
             {
@@ -177,25 +202,34 @@ namespace PCG.Nodes
 
                 var point = points[i];
 
+                // A partitioned run executes over a padded region so crowding can be decided across the
+                // border; spawning the padding's points as well would drop duplicates into the neighbouring
+                // cell, which will spawn its own.
+                if (!context.IsInsideClip(point.Position))
+                {
+                    skippedOutsideClip++;
+                    continue;
+                }
+
+                expectedPlacementSum += point.Density;
+
                 if (DensityThreshold > 0.0f)
                 {
                     // Deterministic per-point draw so re-running the graph reproduces the same selection.
                     var rng = context.GetRng(i);
                     if (point.Density < rng.NextFloat())
+                    {
+                        skippedByDensity++;
                         continue;
+                    }
                 }
-
-                // Derive a readable name from the asset path: Flax assets expose Path and TypeName but no
-                // short Name, and scene objects named "asset-<guid>" are hard to work with in the outliner.
-                // The shared prefix is what a PCGVolume uses to recognise and adopt this node's output.
-                var modelLabel = string.IsNullOrEmpty(model.Path)
-                    ? "Model"
-                    : System.IO.Path.GetFileNameWithoutExtension(model.Path);
 
                 var actor = new StaticModel
                 {
                     Model = model,
-                    Name = PCGSpawnNaming.GeneratedPrefix + modelLabel + "_" + i,
+                    Name = PCGSpawnNaming.ActorName(modelLabel, i, context.LayerIndex,
+                          context.ClipCell.HasValue ? context.ClipCell.Value.IndexX : 0,
+                          context.ClipCell.HasValue ? context.ClipCell.Value.IndexZ : 0),
                 };
 
                 // Match the engine's own scale type rather than widening to Vector3, so the assignment is
@@ -207,18 +241,20 @@ namespace PCG.Nodes
 
                 if (RandomYaw)
                 {
-                    // Yaw about the point's own up axis, keeping the surface alignment intact.
+                    // Composed in the point's own frame, so a prop on a slope spins about its surface normal
+                    // instead of being tipped off it.
                     var yawRng = context.GetRng(i + 7919);
-                    var axis = new Float3(0.0f, 1.0f, 0.0f);
-                    var yaw = Quaternion.RotationAxis(axis, yawRng.NextRange(0.0f, Mathf.TwoPi));
-                    actor.Transform = new Transform(point.Position, Quaternion.Multiply(yaw, point.Rotation), scale);
+                    actor.Transform = new Transform(
+                        point.Position,
+                        PCGPointTransform.YawAboutLocalUp(point.Rotation, yawRng.NextRange(0.0f, Mathf.TwoPi)),
+                        scale);
                 }
                 else
                 {
                     actor.Transform = new Transform(point.Position, point.Rotation, scale);
                 }
 
-                if (!Level.SpawnActor(actor, parent))
+                if (!PCGActors.TrySpawn(actor, parent))
                 {
                     // SpawnActor reports failure by return value rather than throwing; ignoring it would
                     // silently drop objects.
@@ -235,6 +271,32 @@ namespace PCG.Nodes
                 Debug.LogWarning(
                     $"[PCG] {Id}: stopped at MaxActors={MaxActors} of {points.Length} point(s). " +
                     "Raise MaxActors deliberately, or use a foliage spawner for dense placement.");
+            }
+
+            // **非空的输入摆出 0 件**是这一层最难查的失败：图上看不出区别，日志也看不出区别，
+            // 设计者只会看到一片空场景（实测某张图 909 个点、0 件、0 条警告）。
+            // 生成失败的逐点警告上面已经一条条打过，所以这里要补的是"被筛子吃掉"这一类——它此前完全无声。
+            if (spawned.Count == 0 && points.Length > 0 && !LastRunWasCapped)
+            {
+                LastError = $"Spawned nothing from {points.Length} point(s): {skippedOutsideClip} fell outside " +
+                            $"the region being generated, {skippedByDensity} were dropped by the density draw " +
+                            $"(threshold {DensityThreshold:0.###}); the whole layer expected only " +
+                            $"{expectedPlacementSum:0.###} prop(s). A layer that yields no props usually means the " +
+                            "density column is zero, the sampler put the points elsewhere, or the clip region " +
+                            "does not cover them; if both counts are zero, look for the per-point spawn failures " +
+                            "above.";
+                Debug.LogWarning($"[PCG] {Id}: {LastError}");
+            }
+            else if (spawned.Count > 0 && DensityThreshold > 0.0f && expectedPlacementSum < 1.0f &&
+                     !LastRunWasCapped)
+            {
+                // 摆出了东西**不等于这一层长出来了**：期望不足一件时这一次抽签站到了作者这边，
+                // 换一个种子、挪一下体积就整层消失——而屏幕上只是"稀"，没人会去查。
+                // 演示里那两条"路肩灌木/林带"就是这个形状：22 个点、期望 0.61 件、引擎里 0 件。
+                LastError = $"Placed {spawned.Count} prop(s) from {points.Length} point(s), but this layer " +
+                            $"expected only {expectedPlacementSum:0.###} prop(s) in total, so whether it shows up " +
+                            "at all is one coin flip. Raise points / per-block, or raise density.";
+                Debug.LogWarning($"[PCG] {Id}: {LastError}");
             }
 
             if (spawned.Count == 0)

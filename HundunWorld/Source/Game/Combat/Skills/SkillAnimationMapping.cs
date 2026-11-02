@@ -191,11 +191,11 @@ namespace Game.Combat.Skills
             SkillAnimations.Clear();
 
             // ==================== 金系技能 ====================
-            // 金刚掌 - 单掌攻击
+            // 裂金斩（权威名；类实现为 JinGangZhang）- 单掌攻击
             SkillAnimations.Add(new SkillAnimConfig
             {
                 SkillId = 1001,
-                SkillName = "金刚掌",
+                SkillName = "裂金斩",
                 AnimationName = "Standing 1H Magic Attack 01",
                 StartupTime = 0.25f,
                 ActiveTime = 0.15f,
@@ -205,11 +205,11 @@ namespace Game.Combat.Skills
                 PlaybackSpeed = 1.2f
             });
 
-            // 金蛇剑法 - 三连斩
+            // 断岳击（权威名；类实现为 JinSheSwordArt）- 三连斩
             SkillAnimations.Add(new SkillAnimConfig
             {
                 SkillId = 1002,
-                SkillName = "金蛇剑法",
+                SkillName = "断岳击",
                 AnimationName = "Standing 2H Magic Attack 01",
                 StartupTime = 0.2f,
                 ActiveTime = 0.1f,
@@ -231,6 +231,20 @@ namespace Game.Combat.Skills
                 Element = WuxingElement.Metal,
                 AnimationType = SkillAnimationType.Defense,
                 Loop = false
+            });
+
+            // 万剑归宗 - 剑气横扫（连招终结技，运行时暂无实现类）
+            SkillAnimations.Add(new SkillAnimConfig
+            {
+                SkillId = 1004,
+                SkillName = "万剑归宗",
+                AnimationName = "Standing 2H Magic Area Attack 01",
+                StartupTime = 0.4f,
+                ActiveTime = 0.35f,
+                RecoveryTime = 0.35f,
+                Element = WuxingElement.Metal,
+                AnimationType = SkillAnimationType.MeleeAttack,
+                PlaybackSpeed = 1.0f
             });
 
             // ==================== 木系技能 ====================

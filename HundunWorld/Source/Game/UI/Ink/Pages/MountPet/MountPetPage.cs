@@ -12,7 +12,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
     /// + 中栏（预览舞台+名称+属性网格+技能槽+典故）+ 右栏（出战/驯养/研习/幻化/移速）。
     /// 严格遵循水墨主题 Token，禁止硬编码色值。
     /// </summary>
-    public class MountPetPage : ContainerControl, IInkPage
+    public class MountPetPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private static readonly Float2 MainPanelSize = new Float2(1400f, 900f);
         private const float HeaderHeight = 56f;
@@ -58,7 +58,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
             {
                 AnchorPreset = AnchorPresets.StretchAll;
                 Offsets = Margin.Zero;
-                BackgroundColor = InkWashTheme.Scrim;
+                // 全屏铺底由外壳的墨底背景层统一提供（本页为沉浸式全屏页），页面不再自绘。
+                BackgroundColor = Color.Transparent;
                 ClipChildren = false;
                 AutoFocus = false;
 
@@ -147,12 +148,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 BackgroundColor = InkWashTheme.BorderGold,
             });
 
+            // 名录 / 培养 / 技能 / 幻化全是设计稿目录数据（没有坐骑服务端），在标题右侧如实标注
+            float noteX = titleX + titleW + 32f;
+            float noteW = Mathf.Max(120f, MainPanelSize.X - 76f - noteX);
+            header.AddChild(MakeLabel("名录为界面样例 · 坐骑系统尚未接入服务端", noteX, 0f, noteW, HeaderHeight,
+                InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Far));
+
             // 右侧返回按钮（36x36 ghost）
             _backBtn = new InkButton
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Md,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(MainPanelSize.X - 20f - 36f, (HeaderHeight - 36f) * 0.5f),
                 Size = new Float2(36f, 36f),
@@ -216,15 +223,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
             };
             _leftCol.AddChild(_mountList);
 
+            // 坐骑数据没有服务端来源：等级/出战状态归零，名录与品质保留（2026-10-29）
             var mounts = new (string glyph, string name, string badge, int lvl, int speed,
                               InkWashTheme.InkQuality quality, bool deployed)[]
             {
-                ("麟", "墨麒麟",   "出战", 85, 320, InkWashTheme.InkQuality.Legendary, true),
-                ("骓", "踏雪乌骓", "史诗", 72, 280, InkWashTheme.InkQuality.Epic,      false),
-                ("鹤", "雪羽鹤",   "飞禽", 68, 265, InkWashTheme.InkQuality.Epic,      false),
-                ("骢", "青骢追风", "稀有", 60, 250, InkWashTheme.InkQuality.Rare,      false),
-                ("马", "黄骠马",   "良好", 45, 210, InkWashTheme.InkQuality.Uncommon,  false),
-                ("鹿", "雪原驯鹿", "普通", 30, 180, InkWashTheme.InkQuality.Common,    false),
+                ("麟", "墨麒麟",   "传说", 0, 320, InkWashTheme.InkQuality.Legendary, false),
+                ("骓", "踏雪乌骓", "史诗", 0, 280, InkWashTheme.InkQuality.Epic,      false),
+                ("鹤", "雪羽鹤",   "飞禽", 0, 265, InkWashTheme.InkQuality.Epic,      false),
+                ("骢", "青骢追风", "稀有", 0, 250, InkWashTheme.InkQuality.Rare,      false),
+                ("马", "黄骠马",   "良好", 0, 210, InkWashTheme.InkQuality.Uncommon,  false),
+                ("鹿", "雪原驯鹿", "普通", 0, 180, InkWashTheme.InkQuality.Common,    false),
             };
 
             _mountItems = new MountListItem[mounts.Length];
@@ -314,11 +322,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
             float attrW = (innerW - attrGap * 2f) / 3f;
             float attrH = 84f;
             BuildAttrCard(_midCol, MidPadX, cy, attrW, attrH,
-                "速度", "320", "尺/息", InkWashTheme.GoldPrimary, InkWashTheme.GoldBright, -1f);
+                "速度", "—", "尺/息", InkWashTheme.GoldPrimary, InkWashTheme.GoldBright, -1f);
             BuildAttrCard(_midCol, MidPadX + attrW + attrGap, cy, attrW, attrH,
-                "耐力", "4500", "/4500", InkWashTheme.JadeBright, InkWashTheme.TextDefault, 1.0f);
+                "耐力", "—", "—", InkWashTheme.JadeBright, InkWashTheme.TextDefault, 0f);
             BuildAttrCard(_midCol, MidPadX + (attrW + attrGap) * 2f, cy, attrW, attrH,
-                "跳跃力", "8.5", "丈", InkWashTheme.BloodBright, InkWashTheme.TextDefault, -1f);
+                "跳跃力", "—", "丈", InkWashTheme.BloodBright, InkWashTheme.TextDefault, -1f);
             cy += attrH + 16f;
 
             // ── 技能槽（3）──
@@ -374,7 +382,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
             detail.AddChild(new MpBox(InkWashTheme.BaseTertiary, InkWashTheme.BorderFaint, 4f));
             detail.AddChild(MakeLabel("踏火穿云", 10f, 6f, 140f, 18f,
                 InkWashTheme.GoldBright, 12f, InkWashTheme.FontRole.Display, TextAlignment.Near));
-            detail.AddChild(MakeLabel("Lv.3", detailW - 60f, 6f, 50f, 18f,
+            detail.AddChild(MakeLabel("未修习", detailW - 60f, 6f, 50f, 18f,
                 InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far));
             detail.AddChild(MakeLabel("奔腾时蹄生烈焰，无视减速地形，持续 8 息。", 10f, 28f, detailW - 20f, 30f,
                 InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
@@ -498,8 +506,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 Size = new Float2(8f, 8f),
                 BackgroundColor = InkWashTheme.GoldBright,
             });
-            deploy.AddChild(MakeLabel("出战中", 26f, 12f, 100f, 20f,
-                InkWashTheme.GoldBright, 13f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+            // 坐骑出战状态没有服务端来源：默认「未出战」，不假装已骑乘
+            deploy.AddChild(MakeLabel("未出战", 26f, 12f, 100f, 20f,
+                InkWashTheme.TextTertiary, 13f, InkWashTheme.FontRole.Display, TextAlignment.Near));
 
             var restBtn = new DeployToggle("休息")
             {
@@ -507,9 +516,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 Location = new Float2(innerW - 12f - 72f, 10f),
                 Size = new Float2(72f, 28f),
             };
+            restBtn.Visible = false; // 坐骑出战没有服务端通道，休息按钮不做假动作
             deploy.AddChild(restBtn);
 
-            deploy.AddChild(MakeLabel("出战期间持续消耗耐力，归厩后自动恢复。", 12f, 44f, innerW - 24f, 32f,
+            deploy.AddChild(MakeLabel("坐骑出战功能尚未开放；出战期间消耗耐力的规则以服务端为准。", 12f, 44f, innerW - 24f, 32f,
                 InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
             cy += 86f + 14f;
 
@@ -524,6 +534,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 Variant = InkButtonVariant.Secondary,
                 ButtonSize = InkButtonSize.Md,
                 Text = "喂养",
+                Enabled = false, // 驯养/喂养没有服务端通道
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(RightPad, cy),
                 Size = new Float2(halfW, 34f),
@@ -534,6 +545,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 Variant = InkButtonVariant.Primary,
                 ButtonSize = InkButtonSize.Md,
                 Text = "驯养",
+                Enabled = false,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(RightPad + halfW + 8f, cy),
                 Size = new Float2(halfW, 34f),
@@ -553,9 +565,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
             costRow.AddChild(new MpBox(InkWashTheme.BaseTertiary, InkWashTheme.BorderFaint, 4f));
             costRow.AddChild(MakeLabel("消耗材料", 10f, 0f, 80f, 32f,
                 InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            costRow.AddChild(MakeLabel("灵草 ×3", innerW - 170f, 0f, 70f, 32f,
+            // 喂养消耗没有服务端库存来源：占位而不摆具体材料数
+            costRow.AddChild(MakeLabel("—", innerW - 170f, 0f, 70f, 32f,
                 InkWashTheme.JadeBright, 11f, InkWashTheme.FontRole.Number, TextAlignment.Near));
-            costRow.AddChild(MakeLabel("驯兽丹 ×1", innerW - 90f, 0f, 80f, 32f,
+            costRow.AddChild(MakeLabel("—", innerW - 90f, 0f, 80f, 32f,
                 InkWashTheme.GoldPrimary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Near));
             cy += 32f + 14f;
 
@@ -592,7 +605,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
 
             skillRow.AddChild(MakeLabel("踏火穿云", 56f, 8f, 120f, 18f,
                 InkWashTheme.TextDefault, 12f, InkWashTheme.FontRole.Display, TextAlignment.Near));
-            skillRow.AddChild(MakeLabel("Lv.3 → 4", innerW - 56f - 90f, 8f, 80f, 18f,
+            skillRow.AddChild(MakeLabel("—", innerW - 56f - 90f, 8f, 80f, 18f,
                 InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far));
 
             float progW = innerW - 56f - 8f - 90f;
@@ -604,7 +617,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 BackgroundColor = AbyssTrack(),
             };
             skillRow.AddChild(progTrack);
-            progTrack.AddChild(new HGradientBar(0.72f, InkWashTheme.GoldDeep, InkWashTheme.GoldBright)
+            progTrack.AddChild(new HGradientBar(0f, InkWashTheme.GoldDeep, InkWashTheme.GoldBright)
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,
@@ -616,6 +629,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 Variant = InkButtonVariant.Secondary,
                 ButtonSize = InkButtonSize.Sm,
                 Text = "升级",
+                Enabled = false,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(innerW - 8f - 60f, 13f),
                 Size = new Float2(60f, 30f),
@@ -628,6 +642,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 Variant = InkButtonVariant.Secondary,
                 ButtonSize = InkButtonSize.Md,
                 Text = "+ 学习新技能",
+                Enabled = false,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(RightPad, cy),
                 Size = new Float2(innerW, 34f),
@@ -691,9 +706,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
 
             speed.AddChild(MakeLabel("骑乘移速", 136f, 38f, 100f, 14f,
                 InkWashTheme.TextTertiary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            speed.AddChild(MakeLabel("160", 136f, 52f, 60f, 22f,
+            speed.AddChild(MakeLabel("—", 136f, 52f, 60f, 22f,
                 InkWashTheme.GoldBright, 20f, InkWashTheme.FontRole.Number, TextAlignment.Near));
-            speed.AddChild(MakeLabel("+60%", 136f + 60f, 56f, 60f, 18f,
+            speed.AddChild(MakeLabel("—", 136f + 60f, 56f, 60f, 18f,
                 InkWashTheme.JadeBright, 12f, InkWashTheme.FontRole.Number, TextAlignment.Near));
 
             float speedBarW = innerW - 24f;
@@ -705,7 +720,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MountPet
                 BackgroundColor = AbyssTrack(),
             };
             speed.AddChild(speedTrack);
-            speedTrack.AddChild(new HGradientBar(0.80f, InkWashTheme.GoldDeep, InkWashTheme.GoldBright)
+            speedTrack.AddChild(new HGradientBar(0f, InkWashTheme.GoldDeep, InkWashTheme.GoldBright)
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,

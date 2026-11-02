@@ -27,19 +27,32 @@ namespace NarrativePro.Tales
             if (Cinecam == null)
             {
                 NarrativeLog.LogWarning("NarrativeDefaultCinecam: 挂载的 Actor 上未找到 Camera 组件");
+                return;
             }
-            else if (bSetAsMainCameraOnEnable)
+
+            if (bSetAsMainCameraOnEnable)
             {
-                // Flax-不兼容: UE5 的 Camera.MainCamera 写入在 Flax 无对应物，保留占位。原文 TODO: Flax 中 Camera.MainCamera 是只读属性，切换主相机需通过其他方式（如禁用其他 Camera）
-                NarrativeLog.Log("NarrativeDefaultCinecam: bSetAsMainCameraOnEnable 已设置但 Flax 暂不支持直接切换主相机");
+                // Flax 的对等物是 Camera.OverrideMainCamera（Source/Engine/Level/Actors/Camera.cpp:26-33：
+                // GetMainCamera 先取它，再取 CutSceneCamera，最后才是相机表第一个）。
+                _previousOverride = FlaxEngine.Camera.OverrideMainCamera;
+                FlaxEngine.Camera.OverrideMainCamera = Cinecam;
             }
             NarrativeLog.Log("NarrativeDefaultCinecam enabled");
         }
 
         public override void OnDisable()
         {
+            // 只在「自己确实是当前覆盖相机」时还原，避免把别人后来设的相机一起清掉
+            if (bSetAsMainCameraOnEnable && Cinecam != null
+                && ReferenceEquals(FlaxEngine.Camera.OverrideMainCamera, Cinecam))
+            {
+                FlaxEngine.Camera.OverrideMainCamera = _previousOverride;
+            }
+            _previousOverride = null;
             NarrativeLog.Log("NarrativeDefaultCinecam disabled");
             base.OnDisable();
         }
+
+        private FlaxEngine.Camera _previousOverride;
     }
 }

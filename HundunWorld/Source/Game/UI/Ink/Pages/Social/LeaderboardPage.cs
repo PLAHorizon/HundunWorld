@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Social
 {
-    public class LeaderboardPage : ContainerControl, IInkPage
+    public class LeaderboardPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         private const float TopHeaderHeight = 52f;
         private const float ContentPadding = 12f;
@@ -101,11 +101,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             public int Power;
         }
 
+        // 排行榜没有服务端数据（RankingQueryRequest 只有消息类型），不再放假榜单：
+        // 三甲与"我的排名"都显示占位，列表为空（2026-10-29）
         private readonly PodiumInfo[] _podiums =
         {
-            new PodiumInfo { Rank = 2, AvatarChar = "沈", Name = "沈青鸾", Sect = "峨眉派", Level = 76, Power = 121830 },
-            new PodiumInfo { Rank = 1, AvatarChar = "剑", Name = "剑无痕", Sect = "华山派", Level = 78, Power = 128450 },
-            new PodiumInfo { Rank = 3, AvatarChar = "萧", Name = "萧别离", Sect = "丐帮", Level = 75, Power = 118920 },
+            new PodiumInfo { Rank = 2, AvatarChar = "?", Name = "—", Sect = "", Level = 0, Power = 0 },
+            new PodiumInfo { Rank = 1, AvatarChar = "?", Name = "—", Sect = "", Level = 0, Power = 0 },
+            new PodiumInfo { Rank = 3, AvatarChar = "?", Name = "—", Sect = "", Level = 0, Power = 0 },
         };
 
         private struct RankRowInfo
@@ -120,33 +122,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             public bool IsMe;
         }
 
-        private readonly RankRowInfo[] _rankRows =
-        {
-            new RankRowInfo { Rank = 4, AvatarChar = "楚", Name = "楚留香", Sect = "武当派", Level = 74, Power = 112340, Trend = 2, IsMe = false },
-            new RankRowInfo { Rank = 5, AvatarChar = "叶", Name = "叶孤城", Sect = "昆仑派", Level = 73, Power = 109580, Trend = -1, IsMe = false },
-            new RankRowInfo { Rank = 6, AvatarChar = "陆", Name = "陆小凤", Sect = "唐门", Level = 72, Power = 105420, Trend = 0, IsMe = false },
-            new RankRowInfo { Rank = 7, AvatarChar = "西", Name = "西门吹雪", Sect = "华山派", Level = 71, Power = 101870, Trend = 3, IsMe = false },
-            new RankRowInfo { Rank = 8, AvatarChar = "花", Name = "花满楼", Sect = "慕容世家", Level = 70, Power = 98650, Trend = -2, IsMe = false },
-            new RankRowInfo { Rank = 9, AvatarChar = "司", Name = "司空摘星", Sect = "丐帮", Level = 69, Power = 95320, Trend = 0, IsMe = false },
-            new RankRowInfo { Rank = 10, AvatarChar = "傅", Name = "傅红雪", Sect = "明教", Level = 68, Power = 92180, Trend = 1, IsMe = false },
-            new RankRowInfo { Rank = 11, AvatarChar = "柳", Name = "柳随风", Sect = "峨眉派", Level = 67, Power = 89450, Trend = -3, IsMe = false },
-            new RankRowInfo { Rank = 12, AvatarChar = "燕", Name = "燕十三", Sect = "华山派", Level = 66, Power = 86720, Trend = 2, IsMe = false },
-            new RankRowInfo { Rank = 13, AvatarChar = "谢", Name = "谢晓峰", Sect = "武当派", Level = 65, Power = 84180, Trend = 0, IsMe = false },
-            new RankRowInfo { Rank = 14, AvatarChar = "独", Name = "独孤求败", Sect = "昆仑派", Level = 64, Power = 81560, Trend = -1, IsMe = false },
-            new RankRowInfo { Rank = 15, AvatarChar = "李", Name = "李寻欢", Sect = "唐门", Level = 63, Power = 78930, Trend = 4, IsMe = false },
-        };
+        private readonly RankRowInfo[] _rankRows = System.Array.Empty<RankRowInfo>();
 
         private readonly PodiumInfo _myInfo = new PodiumInfo
         {
-            Rank = 47, AvatarChar = "侠", Name = "逍遥客", Sect = "武当派", Level = 60, Power = 85420,
+            Rank = 0, AvatarChar = "?", Name = "—", Sect = "", Level = 0, Power = 0,
         };
 
         private readonly PodiumInfo _prevRank = new PodiumInfo
         {
-            Rank = 46, AvatarChar = "风", Name = "风清扬", Sect = "华山派", Level = 60, Power = 86650,
+            Rank = 0, AvatarChar = "?", Name = "—", Sect = "", Level = 0, Power = 0,
         };
 
-        private readonly int[] _weeklyRanks = { 55, 53, 54, 51, 50, 48, 47 };
+        private readonly int[] _weeklyRanks = { 0, 0, 0, 0, 0, 0, 0 };
         private readonly string[] _weekdayLabels = { "一", "二", "三", "四", "五", "六", "日" };
 
         private struct RewardInfo
@@ -207,7 +195,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(24f, 15f),
                 Size = new Float2(20f, 22f),
-                Text = "♛",
+                Text = "冠",
                 TextColor = InkWashTheme.GoldPrimary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -246,7 +234,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(560f, 16f),
                 Size = new Float2(16f, 20f),
-                Text = "◷",
+                Text = "◆",
                 TextColor = InkWashTheme.TextTertiary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -259,7 +247,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(580f, 18f),
                 Size = new Float2(60f, 16f),
-                Text = "第3赛季",
+                Text = "赛季 —",
                 TextColor = InkWashTheme.TextSecondary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -272,7 +260,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(644f, 18f),
                 Size = new Float2(70f, 16f),
-                Text = "剩余12天",
+                Text = "剩余 —",
                 TextColor = InkWashTheme.GoldPrimary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -292,7 +280,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _closeButton = new InkButton
             {
                 Variant = InkButtonVariant.Default,
-                Text = "✕",
+                Text = "×",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(740f, 10f),
                 Size = new Float2(32f, 32f),
@@ -337,7 +325,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(LeftColumnWidth - ScreenEdge * 2f - 28f, 8f),
                 Size = new Float2(16f, 22f),
-                Text = "☰",
+                Text = "≡",
                 TextColor = InkWashTheme.TextTertiary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -372,7 +360,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(10f, 14f),
                     Size = new Float2(20f, 22f),
-                    Text = cat.Active ? "⚡" : "◈",
+                    Text = "◆",
                     TextColor = cat.Active ? InkWashTheme.GoldBright : InkWashTheme.TextTertiary,
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
                     HorizontalAlignment = TextAlignment.Center,
@@ -453,7 +441,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(LeftColumnWidth - ScreenEdge * 2f - 28f, 8f),
                 Size = new Float2(16f, 22f),
-                Text = "◷",
+                Text = "◆",
                 TextColor = InkWashTheme.TextTertiary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -570,7 +558,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(cardWidth * 0.5f - 12f, -14f),
                     Size = new Float2(24f, 24f),
-                    Text = "👑",
+                    Text = "冠",
                     TextColor = InkWashTheme.GoldBright,
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                     HorizontalAlignment = TextAlignment.Center,
@@ -653,7 +641,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, nameY + 38f),
                 Size = new Float2(cardWidth, 18f),
-                Text = "Lv." + info.Level,
+                Text = info.Level > 0 ? "Lv." + info.Level : "—",
                 TextColor = InkWashTheme.TextSecondary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -666,7 +654,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, nameY + 58f),
                 Size = new Float2(cardWidth, 22f),
-                Text = "⚡ " + info.Power.ToString("N0"),
+                Text = info.Power > 0 ? "◆ " + info.Power.ToString("N0") : "—",
                 TextColor = tierBright,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, tier == "Gold" ? 15f : 13f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -835,7 +823,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(levelX, 0f),
                 Size = new Float2(56f, TableRowHeight),
-                Text = "Lv." + info.Level,
+                Text = info.Level > 0 ? "Lv." + info.Level : "—",
                 TextColor = InkWashTheme.TextSecondary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 HorizontalAlignment = TextAlignment.Far,
@@ -900,7 +888,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, TableHeaderHeight + 1f + 12 * TableRowHeight + 8f),
                 Size = new Float2(_tablePanel.Width, 24f),
-                Text = "• • •  滚动加载更多",
+                Text = _rankRows.Length == 0 ? "暂无排行数据 · 接入服务端后显示" : "• • •  滚动加载更多",
                 TextColor = InkWashTheme.TextTertiary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -947,7 +935,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cardWidth - 30f, 10f),
                 Size = new Float2(16f, 20f),
-                Text = "🏅",
+                Text = "奖",
                 TextColor = InkWashTheme.GoldPrimary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -1015,7 +1003,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(14f, 102f),
                 Size = new Float2(cardWidth * 0.5f - 14f, 34f),
-                Text = "第 " + _myInfo.Rank + " 名",
+                Text = _myInfo.Rank > 0 ? $"第 {_myInfo.Rank} 名" : "未上榜",
                 TextColor = InkWashTheme.GoldBright,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 22f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -1028,7 +1016,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cardWidth * 0.5f, 104f),
                 Size = new Float2(cardWidth * 0.5f - 14f, 28f),
-                Text = "⚡ " + _myInfo.Power.ToString("N0"),
+                Text = _myInfo.Power > 0 ? "◆ " + _myInfo.Power.ToString("N0") : "◆ —",
                 TextColor = InkWashTheme.GoldPrimary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 16f),
                 HorizontalAlignment = TextAlignment.Far,
@@ -1077,7 +1065,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(14f, 36f),
                 Size = new Float2(120f, 18f),
-                Text = "第" + _prevRank.Rank + "名战力",
+                Text = _prevRank.Rank > 0 ? $"第{_prevRank.Rank}名战力" : "上一名战力",
                 TextColor = InkWashTheme.TextTertiary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -1090,7 +1078,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(14f, 54f),
                 Size = new Float2(120f, 22f),
-                Text = _prevRank.Power.ToString("N0"),
+                Text = _prevRank.Power > 0 ? _prevRank.Power.ToString("N0") : "—",
                 TextColor = InkWashTheme.TextSecondary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 16f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -1122,7 +1110,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, 18f),
                 Size = new Float2(86f, 22f),
-                Text = (_prevRank.Power - _myInfo.Power).ToString("N0"),
+                Text = _prevRank.Power > 0 ? (_prevRank.Power - _myInfo.Power).ToString("N0") : "—",
                 TextColor = InkWashTheme.GoldPrimary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 15f),
                 HorizontalAlignment = TextAlignment.Center,
@@ -1136,7 +1124,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(14f, 100f),
                 Size = new Float2(cardWidth - 28f, 8f),
-                Value = (float)_myInfo.Power / _prevRank.Power,
+                Value = _prevRank.Power > 0 ? (float)_myInfo.Power / _prevRank.Power : 0f,
                 FillVariant = InkBarFillVariant.Gold,
             };
             _gapCard.AddChild(_gapProgressBar);
@@ -1169,7 +1157,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cardWidth - 80f, 10f),
                 Size = new Float2(68f, 20f),
-                Text = "↑ +5",
+                Text = "—",
                 TextColor = InkWashTheme.GoldBright,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                 HorizontalAlignment = TextAlignment.Far,
@@ -1192,7 +1180,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 120f),
                 Size = new Float2(cardWidth - 24f, 20f),
-                Text = "本周起始：第55名",
+                Text = "本周起始：未上榜",
                 TextColor = InkWashTheme.TextTertiary,
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 HorizontalAlignment = TextAlignment.Near,
@@ -1356,13 +1344,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 switch (reward.Quality)
                 {
                     case "Legendary":
-                        qualitySymbol = "★";
+                        qualitySymbol = "◆";
                         break;
                     case "Rare":
                         qualitySymbol = "◆";
                         break;
                     default:
-                        qualitySymbol = "✦";
+                        qualitySymbol = "◆";
                         break;
                 }
 

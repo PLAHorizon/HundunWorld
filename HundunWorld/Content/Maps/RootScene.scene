@@ -1,7 +1,7 @@
 {
 	"ID": "b3a1f0d24e5c6a8790d1e2f3a4b5c6d7",
 	"TypeName": "FlaxEngine.SceneAsset",
-	"EngineBuild": 6913,
+	"EngineBuild": 7012,
 	"Data": [
 		{
 			"ID": "b3a1f0d24e5c6a8790d1e2f3a4b5c6d7",
@@ -83,6 +83,12 @@
 		{
 			"ID": "1085150a44f8b885e318edb47fe24abb",
 			"TypeName": "NarrativePro.Camera.NarrativePlayerCameraManager",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "85516dc741cf485bb951fe812ee4d29d",
+			"TypeName": "HundunWorld.Game.Character.CharacterAnimationController",
 			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
 			"V": {}
 		},

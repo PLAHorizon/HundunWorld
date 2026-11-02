@@ -29,8 +29,6 @@
 		"TypeName": "HundunWorld.Game.Rendering.Materials.HairMaterialController",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
 		"V": {
-	"HairMaterialInstance": "56d25eac493c4e27b185e082ee35c688",
-	"DiffuseMap": "23e3274f459006a779b42a8618ce75a6",
 	"RootColor": {
 		"R": 0.009998289,
 		"G": 0.05,
@@ -42,12 +40,6 @@
 	{
 		"ID": "82a0c3ae4686a03a5c32cea920117d5c",
 		"TypeName": "HundunWorld.Game.Rendering.Materials.SkinMaterialController",
-		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
-		"V": {}
-	},
-	{
-		"ID": "555b055648bc9f3ae3df1c8622a7ac8e",
-		"TypeName": "HundunWorld.Game.Rendering.CharacterAppearancePreviewController",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
 		"V": {}
 	},
@@ -154,42 +146,12 @@
 		"TypeName": "FlaxEngine.AnimatedModel",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
 		"Name": "Running",
-		"SkinnedModel": "b0823a8576cb47cb9932f5af61aa1ef7",
-		"AnimationGraph": "ceded67f623f4bb2b4dcb44019d4b093",
+		"SkinnedModel": "cd903411b6f14e55a210a5f6036851d5",
+		"AnimationGraph": "0cf5b1bb4406db2430b78d93c7d1fc02",
 		"ShadowsMode": 1,
 		"RootMotionTarget": "dd0db16a49ae6f0c671a95ace472df12",
 		"Buffer": {
 			"Entries": [
-				{
-					"Material": "00000000000000000000000000000000",
-					"ShadowsMode": 3,
-					"Visible": true,
-					"ReceiveDecals": true
-				},
-				{
-					"Material": "00000000000000000000000000000000",
-					"ShadowsMode": 3,
-					"Visible": true,
-					"ReceiveDecals": true
-				},
-				{
-					"Material": "00000000000000000000000000000000",
-					"ShadowsMode": 3,
-					"Visible": true,
-					"ReceiveDecals": true
-				},
-				{
-					"Material": "00000000000000000000000000000000",
-					"ShadowsMode": 3,
-					"Visible": true,
-					"ReceiveDecals": true
-				},
-				{
-					"Material": "00000000000000000000000000000000",
-					"ShadowsMode": 3,
-					"Visible": true,
-					"ReceiveDecals": true
-				},
 				{
 					"Material": "00000000000000000000000000000000",
 					"ShadowsMode": 3,

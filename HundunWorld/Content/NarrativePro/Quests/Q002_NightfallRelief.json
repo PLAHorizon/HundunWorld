@@ -1,0 +1,300 @@
+﻿{
+  "questId": "Q002_NightfallRelief",
+  "questName": "夜路送粮",
+  "questDescription": "申时末村口敲钟，入夜后才许送粮出村；赶在日出前把口粮送到铁匠铺即成。",
+  "questDialogueClass": "D002_NightfallSendOff",
+  "startStateId": "s_begin",
+  "//req": "任务要求：UE5 是 quest 资产内联的 Instanced UQuestRequirement；端口改用 questRequirements 按名构造（Tales/Quest/QuestRequirementFactory.cs）",
+  "questRequirements": [
+    {
+      "type": "StayNearActorRequirement",
+      "targetNpcId": "npc_village_smith",
+      "maxUnits": 1800.0,
+      "secondsLeeway": 10,
+      "checkIntervalSeconds": 1.0,
+      "warningMessage": "铁匠要出发了，跟紧他",
+      "failedMessage": "你走得太远，没能守住这次接班"
+    }
+  ],
+  "//": "本任务专门用真实参数打通三条时辰等待任务（WaitTimeOfDayTask / WaitTimeRangeStartTask / WaitSunsetOrSunriseTask）",
+  "//2": "与 TaskNavigationMarker 的 provider 注册表通路（NarrativeLogicFactory.ProviderRegistry）：",
+  "//3": "此前这些类型只有代码、没有任何资产用到（见 Tools/NarrativeProHarness Check 15 的加载断言）。",
+  "//4": "三个 marker 各带一种 Actor 提供者，全部指向真实存在的对象：",
+  "//5": "  · NarrativeActorProvider_NPC → 内联定义取 Content/NarrativePro/NPCs/npc_village_smith.json 的 NPCID/NPCName；",
+  "//6": "  · NarrativeActorProvider_LevelReference → Content/Maps/World.scene 里真实存在的 Actor 名 'POI_Kaifeng'；",
+  "//7": "  · NarrativeActorProvider_GUIDLookup → npc_village_smith.json 的 UniqueNPCGUID。",
+  "//8": "注：TaskNavigationMarker.MarkerAttachActorOverride 在 UE5 与端口都是 UNarrativeActorProvider（QuestTask.h:64），",
+  "//9": "    因此 NarrativeTransformProvider_POI 这类纯 Transform 提供者在本端口没有任何 JSON 落点（只能由代码构造），",
+  "//10": "    Check 15 仍按注册表名解析它一次，以证明该提供者类型没被注册表漏掉。",
+  "//11": "actorFallbackLocation 与 GoToLocation 的 locationName 都取 World.scene 实测值：",
+  "//12": "    Kaifeng (-118, 50, -104)、Qinghe (200, 30, 500) 与 POIActor 标签 'Navigator.PointOfInterest.Qinghe'。",
+  "states": [
+    {
+      "id": "s_begin",
+      "description": "在村口等申时末的钟声",
+      "stateType": 0,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "events": [
+        {
+          "type": "SetTag",
+          "tag": "Quest.NightfallRelief.Active",
+          "bAdd": true,
+          "eventRuntime": 0,
+          "bRefireOnLoad": true
+        }
+      ]
+    },
+    {
+      "id": "s_night",
+      "description": "夜色已落，可以出村",
+      "stateType": 0,
+      "position": {
+        "x": 400,
+        "y": 0
+      },
+      "conditions": [
+        {
+          "type": "HasTag",
+          "tag": "Quest.NightfallRelief.Active",
+          "bTagShouldBePresent": true,
+          "bNot": false
+        }
+      ]
+    },
+    {
+      "id": "s_dawn",
+      "description": "天亮前把粮送到",
+      "stateType": 0,
+      "position": {
+        "x": 800,
+        "y": 0
+      }
+    },
+    {
+      "id": "s_success",
+      "description": "铁匠铺收到口粮",
+      "stateType": 1,
+      "position": {
+        "x": 1200,
+        "y": -120
+      },
+      "events": [
+        {
+          "type": "SetTag",
+          "tag": "Quest.NightfallRelief.Active",
+          "bAdd": false
+        }
+      ]
+    },
+    {
+      "id": "s_fail",
+      "description": "天亮才到，押粮的差事误了",
+      "stateType": 2,
+      "position": {
+        "x": 1200,
+        "y": 120
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "b_wait_dusk",
+      "description": "等申时末钟声与日落",
+      "fromStateId": "s_begin",
+      "toStateId": "s_night",
+      "hidden": false,
+      "position": {
+        "x": 200,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "WaitTimeOfDayTask",
+          "targetId": "dusk_bell",
+          "targetTime": 1700,
+          "requiredQuantity": 1,
+          "bOptional": false,
+          "tickInterval": 0,
+          "description": "等到 17:00 报时钟声（按时辰值计）",
+          "markerSettings": {
+            "bAddNavigationMarker": true,
+            "bDrawBreadcrumbs": true,
+            "markerDisplayText": "村口钟楼",
+            "markerSubtitleText": "等申时末钟声",
+            "markerColor": {
+              "R": 1.0,
+              "G": 0.84,
+              "B": 0.0,
+              "A": 1.0
+            },
+            "actorFallbackLocation": {
+              "x": -118,
+              "y": 50,
+              "z": -104
+            },
+            "markerLocation": {
+              "x": 0,
+              "y": 120,
+              "z": 0
+            },
+            "markerAttachActorOverride": {
+              "type": "NarrativeActorProvider_NPC",
+              "NPCDefinition": {
+                "NPCID": "npc_village_smith",
+                "NPCName": "铁匠·鲁石"
+              }
+            }
+          }
+        },
+        {
+          "type": "WaitTimeRangeStartTask",
+          "targetId": "night_shift",
+          "timeStart": 1900,
+          "timeEnd": 600,
+          "requiredQuantity": 1,
+          "bOptional": false,
+          "description": "等待 19:00-06:00 夜间时段开始（跨午夜）"
+        },
+        {
+          "type": "WaitSunsetOrSunriseTask",
+          "targetId": "watch_dusk",
+          "bWaitForSunrise": false,
+          "requiredQuantity": 1,
+          "bOptional": true,
+          "description": "等日落：日落后方可出村",
+          "markerSettings": {
+            "bAddNavigationMarker": true,
+            "bDrawBreadcrumbs": false,
+            "markerDisplayText": "日落前的村口",
+            "markerSubtitleText": "NPC·铁匠鲁石",
+            "markerColor": {
+              "R": 0.9,
+              "G": 0.35,
+              "B": 0.2,
+              "A": 1.0
+            },
+            "actorFallbackLocation": {
+              "x": 200,
+              "y": 30,
+              "z": 500
+            },
+            "markerAttachActorOverride": {
+              "type": "NarrativeActorProvider_LevelReference",
+              "softActorReference": "POI_Kaifeng"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "b_run_dawn",
+      "description": "日出前送到铁匠铺",
+      "fromStateId": "s_night",
+      "toStateId": "s_dawn",
+      "hidden": false,
+      "position": {
+        "x": 600,
+        "y": 0
+      },
+      "tasks": [
+        {
+          "type": "WaitSunsetOrSunriseTask",
+          "targetId": "watch_dawn",
+          "bWaitForSunrise": true,
+          "requiredQuantity": 1,
+          "description": "等日出：天亮即止",
+          "markerSettings": {
+            "bAddNavigationMarker": true,
+            "bDrawBreadcrumbs": true,
+            "markerDisplayText": "青河渡口",
+            "markerSubtitleText": "日出集合点",
+            "markerColor": {
+              "R": 0.3,
+              "G": 0.7,
+              "B": 1.0,
+              "A": 1.0
+            },
+            "actorFallbackLocation": {
+              "x": 200,
+              "y": 30,
+              "z": 500
+            },
+            "markerAttachActorOverride": {
+              "type": "NarrativeActorProvider_GUIDLookup",
+              "GUIDToLookup": "8f1c4d2a-0b3e-4f6a-9c7d-1e2f3a4b5c6d"
+            }
+          }
+        },
+        {
+          "type": "GoToLocation",
+          "targetId": "qinghe_ferry",
+          "locationName": "Navigator.PointOfInterest.Qinghe",
+          "acceptanceRadius": 320,
+          "description": "日出前赶到青河渡口"
+        }
+      ],
+      "conditions": [
+        {
+          "type": "HasTag",
+          "tag": "Quest.NightfallRelief.Active",
+          "bTagShouldBePresent": true,
+          "bNot": false
+        }
+      ]
+    },
+    {
+      "id": "b_success",
+      "description": "交付口粮",
+      "fromStateId": "s_dawn",
+      "toStateId": "s_success",
+      "hidden": false,
+      "position": {
+        "x": 1000,
+        "y": -120
+      },
+      "events": [
+        {
+          "type": "GiveItem",
+          "itemId": "item_ration",
+          "quantity": 1
+        },
+        {
+          "type": "CompleteQuest",
+          "questClassId": "Q002_NightfallRelief",
+          "bSucceed": true,
+          "message": "铁匠收下了口粮。"
+        }
+      ]
+    },
+    {
+      "id": "b_fail_late",
+      "description": "日出后才到",
+      "fromStateId": "s_dawn",
+      "toStateId": "s_fail",
+      "hidden": true,
+      "position": {
+        "x": 1000,
+        "y": 120
+      },
+      "conditions": [
+        {
+          "type": "HasItem",
+          "itemId": "item_ration",
+          "requiredCount": 1,
+          "bItemShouldBePresent": false
+        }
+      ],
+      "events": [
+        {
+          "type": "CompleteQuest",
+          "questClassId": "Q002_NightfallRelief",
+          "bSucceed": false,
+          "message": "天亮透了才到，押粮的差事误了。"
+        }
+      ]
+    }
+  ]
+}

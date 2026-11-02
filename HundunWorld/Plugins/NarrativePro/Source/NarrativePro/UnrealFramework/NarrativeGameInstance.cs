@@ -1,6 +1,7 @@
 using System;
 using FlaxEngine;
 using NarrativePro.Core;
+using NarrativePro.Settings;
 
 namespace NarrativePro.UnrealFramework
 {
@@ -37,24 +38,39 @@ namespace NarrativePro.UnrealFramework
 
         // ===== 生命周期 =====
 
+        /// <summary>是否已完成 Init（防止 GameMode 反复启停导致重复初始化）。</summary>
+        private bool bInitialized = false;
+
         /// <summary>初始化游戏实例。对应 UE5 Init。</summary>
         public virtual void Init()
         {
+            if (bInitialized) return;
+            bInitialized = true;
             NarrativeLog.Log("[NarrativeGameInstance] Init");
-            // TODO [需接入子系统初始化系统]: 初始化子系统、加载核心配置
+            // Flax-已实现：核心配置在此预热——首次访问触发各 DeveloperSettings 单例的
+            // LoadDefault（从 Content/NarrativePro/Settings/*.json 读取），等价 UE5 启动时加载 ini 配置。
+            _ = ArsenalSettings.Instance;
+            _ = NarrativeCombatDeveloperSettings.Instance;
+            _ = NarrativeTimeOfDaySettings.Instance;
+            _ = NarrativeInputSettings.Instance;
         }
 
         /// <summary>关闭游戏实例。对应 UE5 Shutdown。</summary>
         public virtual void Shutdown()
         {
+            if (!bInitialized) return;
+            bInitialized = false;
             NarrativeLog.Log("[NarrativeGameInstance] Shutdown");
-            // TODO [需接入子系统释放系统]: 释放子系统资源
+            // 子系统（CharacterSubsystem/SaveSubsystem 等）在 Flax 中随场景生命周期自动释放，
+            // 这里仅复位实例生命周期标记。
         }
 
         /// <summary>开始会话。对应 UE5 OnStart。</summary>
         public virtual void OnStart()
         {
-            // TODO [需接入玩家进入系统]: 玩家进入游戏时的初始化
+            // Flax-已实现：由 NarrativeGameMode.InitGame 驱动（本地单人等价 UE5 的 GameInstance::Start），
+            // 到达此处时配置已预热完毕；跨地图持久状态直接挂在本单例上。
+            NarrativeLog.Log("[NarrativeGameInstance] OnStart");
         }
 
         /// <summary>预加载地图。对应 UE5 PreLoadMap。</summary>

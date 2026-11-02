@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MetaHuman 编辑器模块的离屏编译门：把 Core + Runtime + Editor 三个源目录
+    一起对着 FlaxEngine.CSharp.dll 与 FlaxEditor.CSharp.dll 编一遍。
+
+    编辑器 API 与运行时 API 同在一个 FlaxEngine.CSharp.dll 内，这道门额外把 Editor 源目录一起编，
+    覆盖 Tools/MetaHumanCompileCheck 看不到的那一层。
+    产物不部署、也不等于编辑器真能加载插件；只证明 API 用法正确。
+
+    用法：在仓库根执行 dotnet build Tools/MetaHumanEditorCompileCheck
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyName>MetaHumanEditorCompileCheck</AssemblyName>
+    <RootNamespace>MetaHumanEditorCompileCheck</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <NoWarn>1591</NoWarn>
+    <EngineRoot>C:\Program Files (x86)\Flax\Flax_1.13</EngineRoot>
+    <SourceRoot>$(MSBuildThisFileDirectory)..\..\HundunWorld\Plugins\MetaHuman\Source</SourceRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>$(EngineRoot)\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <!--
+      编辑器脚本 API（FlaxEditor.EditorWindow / EditorPlugin / Editor.Import）就在
+      FlaxEngine.CSharp.dll 里：安装目录没有独立的 FlaxEditor.CSharp.dll（全盘 find 为空），
+      单列那条引用只会产生 MSB3245 警告。
+    -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SourceRoot)\MetaHuman\Core\*.cs" />
+    <Compile Include="$(SourceRoot)\MetaHuman\Runtime\*.cs" Exclude="$(SourceRoot)\MetaHuman\*.Build.cs" />
+    <Compile Include="$(SourceRoot)\MetaHuman\Tests\*.cs" />
+    <Compile Include="$(SourceRoot)\MetaHumanEditor\*.cs" Exclude="$(SourceRoot)\MetaHumanEditor\*.Build.cs" />
+  </ItemGroup>
+
+</Project>

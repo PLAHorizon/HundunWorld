@@ -111,13 +111,12 @@ namespace NarrativePro.UnrealFramework
         /// <summary>应用声音设置。对应 UE5 ApplySoundSettings。</summary>
         public virtual void ApplySoundSettings()
         {
-            // Flax-不兼容: UE5 的 Audio.SetVolumeCategory API 在 Flax 无对应物，保留占位。原文 TODO: 实现 Flax 音量分类控制（可用 AudioSettings 或自定义音量管理器）
-            // Audio.SetVolumeCategory("Master", OverallAudioVolume, false);
-            // Audio.SetVolumeCategory("Dialogue", DialogueAudioVolume, false);
-            // Audio.SetVolumeCategory("UI", UIAudioVolume, false);
-            // Audio.SetVolumeCategory("SFX", SFXAudioVolume, false);
-            // Audio.SetVolumeCategory("Music", MusicAudioVolume, false);
-            NarrativeLog.Log($"[NarrativeGameUserSettings] ApplySoundSettings (Overall={OverallAudioVolume}, Music={MusicAudioVolume}) [Flax 无 Audio.SetVolumeCategory]");
+            // Flax-已实现: 总音量映射到 Flax 主音量（FlaxEngine.Audio.MasterVolume，已核查 FlaxEngine.CSharp.xml Audio 成员表）。
+            FlaxEngine.Audio.MasterVolume = OverallAudioVolume;
+            // Flax-不兼容: Flax 1.12 托管 API 无 UE5 的音量分类组（Audio.SetVolumeCategory 等价物不存在，
+            // 已核查 FlaxEngine.CSharp.xml：FlaxEngine.Audio 仅有 Devices/Volume/MasterVolume/HRTF/Doppler 成员）。
+            // 分类音量由消费方按 getter 应用：MusicSubsystem 用 AudioSource.Volume；对话/UI/SFX 各播放点同例。
+            NarrativeLog.Log($"[NarrativeGameUserSettings] ApplySoundSettings (Overall={OverallAudioVolume}, Music={MusicAudioVolume}) → Audio.MasterVolume");
         }
 
         /// <summary>应用显示器选择。对应 UE5 ApplyMonitorSelection。</summary>

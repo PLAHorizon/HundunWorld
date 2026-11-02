@@ -1,0 +1,48 @@
+{
+  "tableId": "loot_bandit_drop",
+  "rows": [
+    {
+      "rowName": "arrow_pack",
+      "itemsToGrant": [
+        { "itemClassId": "item_arrow", "quantity": 8 }
+      ],
+      "itemCollectionsToGrant": ["collection_bandit_kit"],
+      "subTablesToRoll": [],
+      "chance": 0.6
+    },
+    {
+      "rowName": "ration",
+      "itemsToGrant": [
+        { "itemClassId": "item_ration", "quantity": 1 }
+      ],
+      "itemCollectionsToGrant": [],
+      "subTablesToRoll": [],
+      "chance": 0.35
+    },
+    {
+      "rowName": "herb_bunch",
+      "itemsToGrant": [
+        { "itemClassId": "item_herb", "quantity": 2 }
+      ],
+      "itemCollectionsToGrant": [],
+      "subTablesToRoll": [],
+      "chance": 0.2
+    },
+    {
+      "rowName": "stolen_cloak",
+      "itemsToGrant": [
+        { "itemClassId": "item_cloak", "quantity": 1 }
+      ],
+      "itemCollectionsToGrant": [],
+      "subTablesToRoll": [],
+      "chance": 0.08
+    },
+    {
+      "rowName": "empty",
+      "itemsToGrant": [],
+      "itemCollectionsToGrant": [],
+      "subTablesToRoll": [],
+      "chance": 0.1
+    }
+  ]
+}

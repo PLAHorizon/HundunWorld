@@ -1,0 +1,978 @@
+{
+ "source": {
+  "arkit_names": "Apple ARFaceAnchor 公开 blend shape 名录（行业约定，UE 安装目录里没有这张表）",
+  "raw_and_gui": "C:/Works/GitHubProjects/HundunWorld/docs/metahuman/gui_to_raw_map.json",
+  "generator": "Tools/MetaHumanBuildArkitMap.py",
+  "basis_meaning": "exact=与 UE raw 名去掉前缀后逐字相同；authored=按语义人为指定，逐条可查"
+ },
+ "channel_count": 47,
+ "declined": {
+  "eyeLookInLeft": "MetaHuman 的 eyeLookLeft/Right 是按观看者方向命名，ARKit 的 in/out 是按本人鼻侧，参照系不同，需人工确认",
+  "eyeLookInRight": "同上",
+  "eyeLookOutLeft": "同上",
+  "eyeLookOutRight": "同上"
+ },
+ "entry_count": 60,
+ "entries": [
+  {
+   "arkit": "browDownLeft",
+   "basis": "exact",
+   "raw": "CTRL_expressions_browDownL",
+   "guiControl": "CTRL_L_brow_down.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "browDownRight",
+   "basis": "exact",
+   "raw": "CTRL_expressions_browDownR",
+   "guiControl": "CTRL_R_brow_down.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "browInnerUp",
+   "basis": "authored",
+   "raw": "CTRL_expressions_browRaiseInL",
+   "guiControl": "CTRL_L_brow_raiseIn.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "browInnerUp",
+   "basis": "authored",
+   "raw": "CTRL_expressions_browRaiseInR",
+   "guiControl": "CTRL_R_brow_raiseIn.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "browOuterUpLeft",
+   "basis": "exact",
+   "raw": "CTRL_expressions_browRaiseOuterL",
+   "guiControl": "CTRL_L_brow_raiseOut.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "browOuterUpRight",
+   "basis": "exact",
+   "raw": "CTRL_expressions_browRaiseOuterR",
+   "guiControl": "CTRL_R_brow_raiseOut.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "cheekPuff",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthCheekBlowL",
+   "guiControl": "CTRL_L_mouth_suckBlow.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "cheekPuff",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthCheekBlowR",
+   "guiControl": "CTRL_R_mouth_suckBlow.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "cheekSquirtLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_eyeCheekRaiseL",
+   "guiControl": "CTRL_L_eye_cheekRaise.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "cheekSquirtRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_eyeCheekRaiseR",
+   "guiControl": "CTRL_R_eye_cheekRaise.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeBlinkLeft",
+   "basis": "exact",
+   "raw": "CTRL_expressions_eyeBlinkL",
+   "guiControl": "CTRL_L_eye_blink.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeBlinkRight",
+   "basis": "exact",
+   "raw": "CTRL_expressions_eyeBlinkR",
+   "guiControl": "CTRL_R_eye_blink.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeLookDownLeft",
+   "basis": "exact",
+   "raw": "CTRL_expressions_eyeLookDownL",
+   "guiControl": "CTRL_L_eye.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    -1.0,
+    0.0,
+    -1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeLookDownRight",
+   "basis": "exact",
+   "raw": "CTRL_expressions_eyeLookDownR",
+   "guiControl": "CTRL_R_eye.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    -1.0,
+    0.0,
+    -1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeLookUpLeft",
+   "basis": "exact",
+   "raw": "CTRL_expressions_eyeLookUpL",
+   "guiControl": "CTRL_L_eye.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeLookUpRight",
+   "basis": "exact",
+   "raw": "CTRL_expressions_eyeLookUpR",
+   "guiControl": "CTRL_R_eye.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeSquintLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_eyeSquintInnerL",
+   "guiControl": "CTRL_L_eye_squintInner.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeSquintRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_eyeSquintInnerR",
+   "guiControl": "CTRL_R_eye_squintInner.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeWideLeft",
+   "basis": "exact",
+   "raw": "CTRL_expressions_eyeWidenL",
+   "guiControl": "CTRL_L_eye_blink.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    -1.0,
+    0.0,
+    -1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "eyeWideRight",
+   "basis": "exact",
+   "raw": "CTRL_expressions_eyeWidenR",
+   "guiControl": "CTRL_R_eye_blink.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    -1.0,
+    0.0,
+    -1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "jawForward",
+   "basis": "authored",
+   "raw": "CTRL_expressions_jawFwd",
+   "guiControl": "CTRL_C_jaw_fwdBack.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    -1.0,
+    0.0,
+    -1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "jawLeft",
+   "basis": "exact",
+   "raw": "CTRL_expressions_jawLeft",
+   "guiControl": "CTRL_C_jaw.tx",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    -1.0,
+    0.0,
+    -1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "jawOpen",
+   "basis": "exact",
+   "raw": "CTRL_expressions_jawOpen",
+   "guiControl": "CTRL_C_jaw.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "jawRight",
+   "basis": "exact",
+   "raw": "CTRL_expressions_jawRight",
+   "guiControl": "CTRL_C_jaw.tx",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthClose",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLipsPressL",
+   "guiControl": "CTRL_L_mouth_lipsPressU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthClose",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLipsPressR",
+   "guiControl": "CTRL_R_mouth_lipsPressU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthDimpleLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthDimpleL",
+   "guiControl": "CTRL_L_mouth_dimple.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthDimpleRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthDimpleR",
+   "guiControl": "CTRL_R_mouth_dimple.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthFrownLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthCornerDepressL",
+   "guiControl": "CTRL_L_mouth_cornerDepress.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthFrownRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthCornerDepressR",
+   "guiControl": "CTRL_R_mouth_cornerDepress.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthFunnel",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthFunnelUL",
+   "guiControl": "CTRL_L_mouth_funnelU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthFunnel",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthFunnelUR",
+   "guiControl": "CTRL_R_mouth_funnelU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthFunnel",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthFunnelDL",
+   "guiControl": "CTRL_L_mouth_funnelD.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthFunnel",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthFunnelDR",
+   "guiControl": "CTRL_R_mouth_funnelD.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthLeft",
+   "basis": "exact",
+   "raw": "CTRL_expressions_mouthLeft",
+   "guiControl": "CTRL_C_mouth.tx",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthLowerDownLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLowerLipDepressL",
+   "guiControl": "CTRL_L_mouth_lowerLipDepress.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthLowerDownRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLowerLipDepressR",
+   "guiControl": "CTRL_R_mouth_lowerLipDepress.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthPressLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLipsPressL",
+   "guiControl": "CTRL_L_mouth_lipsPressU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthPressRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLipsPressR",
+   "guiControl": "CTRL_R_mouth_lipsPressU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthPucker",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLipsPurseUL",
+   "guiControl": "CTRL_L_mouth_purseU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthPucker",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLipsPurseUR",
+   "guiControl": "CTRL_R_mouth_purseU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthPucker",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLipsPurseDL",
+   "guiControl": "CTRL_L_mouth_purseD.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthPucker",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLipsPurseDR",
+   "guiControl": "CTRL_R_mouth_purseD.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthRight",
+   "basis": "exact",
+   "raw": "CTRL_expressions_mouthRight",
+   "guiControl": "CTRL_C_mouth.tx",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    -1.0,
+    0.0,
+    -1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthRollLower",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLowerLipRollInL",
+   "guiControl": "CTRL_L_mouth_lipsRollD.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthRollLower",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLowerLipRollInR",
+   "guiControl": "CTRL_R_mouth_lipsRollD.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthRollUpper",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthUpperLipRollInL",
+   "guiControl": "CTRL_L_mouth_lipsRollU.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthRollUpper",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthUpperLipRollInR",
+   "guiControl": "CTRL_R_mouth_lipsRollU.ty",
+   "guiRange": [
+    -1.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthShrugLower",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLowerLipTowardsTeethL",
+   "guiControl": "CTRL_L_mouth_lipsTowardsTeethD.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthShrugLower",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthLowerLipTowardsTeethR",
+   "guiControl": "CTRL_R_mouth_lipsTowardsTeethD.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthShrugUpper",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthUpperLipTowardsTeethL",
+   "guiControl": "CTRL_L_mouth_lipsTowardsTeethU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthShrugUpper",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthUpperLipTowardsTeethR",
+   "guiControl": "CTRL_R_mouth_lipsTowardsTeethU.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthSmileLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthCornerPullL",
+   "guiControl": "CTRL_L_mouth_cornerPull.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthSmileRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthCornerPullR",
+   "guiControl": "CTRL_R_mouth_cornerPull.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthStretchLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthStretchL",
+   "guiControl": "CTRL_L_mouth_stretch.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthStretchRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthStretchR",
+   "guiControl": "CTRL_R_mouth_stretch.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthUpperUpLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthUpperLipRaiseL",
+   "guiControl": "CTRL_L_mouth_upperLipRaise.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "mouthUpperUpRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_mouthUpperLipRaiseR",
+   "guiControl": "CTRL_R_mouth_upperLipRaise.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "noseSneerLeft",
+   "basis": "authored",
+   "raw": "CTRL_expressions_noseWrinkleUpperL",
+   "guiControl": "CTRL_L_nose_wrinkleUpper.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "arkit": "noseSneerRight",
+   "basis": "authored",
+   "raw": "CTRL_expressions_noseWrinkleUpperR",
+   "guiControl": "CTRL_R_nose_wrinkleUpper.ty",
+   "guiRange": [
+    0.0,
+    1.0
+   ],
+   "segment": [
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ]
+  }
+ ]
+}

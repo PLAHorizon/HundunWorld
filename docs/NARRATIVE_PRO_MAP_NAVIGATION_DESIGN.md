@@ -562,3 +562,107 @@ public static bool FindTeleportSpot(Actor actor, ref Vector3 location, ref Quate
    （`HundunWorld/Output/Windows/` 也会被 `Game.csproj` 的 HintPath 引用，可一并同步。）
 2. **改动了 Orleans Grain 接口**（`IZoneShardGrain`），必须**停止并重启网关与 Silo** 后新协议才生效；
    在旧进程仍运行时编译会被文件占用阻塞（`MSB3027/MSB3021`，非编译错误）。
+
+## 12. 增量五：世界地图点地寻路 + 小地图开图
+
+### 12.1 内容
+
+| 文件 | 改动 |
+|---|---|
+| `Source/Game/World/PluginNavigationBridge.cs` | 新增 `TryUnprojectWorldMapNormalized`（归一化 → 世界 XZ，高度由调用方给）与 `TryGetLocalPlayerController`（取本地玩家脚本） |
+| `Source/Game/PlayerController.cs` | 新增 `TryStartClickToMove(Vector3)`：把地图来的 XZ 设为玩家当前高度、导航网格可用时吸附最近多边形，再走既有 `BeginMoveTo`（与 Alt+左键完全同一条寻路/面包屑管线） |
+| `Source/Game/UI/Ink/Pages/Map/WorldMapPage.cs` | `MapCanvas.OnMouseUp`：界碑仍优先触发快速旅行；其余地图范围内点击换算为归一化坐标 → 反投影 → `TryStartClickToMove`。底部新增操作提示「左键点击地图：寻路前往 · 界碑：快速旅行」 |
+| `Source/Game/UI/Ink/Components/InkMinimap.cs` | 新增 `Clicked` 事件：左键落在圆盘内触发（外圈装饰不算） |
+| `CombatHudTraditionalPage` / `CombatHudV2Page` | 小地图点击 → `NavigateTo(nav-world-map)`，与「图」入口同一出口 |
+
+### 12.2 为什么高度不在地图侧解算
+
+地图投影只含 XZ（`NavigatorStatics.WorldToNormalizedMapPosition` 不含 Y）。地图侧若自己按地形猜高度，
+会与角色实际跟随用的导航网格产生第二个高度来源。这里只把 XZ 交给 `PlayerController`：
+导航就绪时用 `Navigation.FindClosestPoint` 吸附，未就绪时沿用玩家当前高度（等价于既有直线兜底），
+保证"地图上点的位置"与"角色会停的位置"只有一个决策点。
+
+### 12.3 任务追踪的点击（同轮补齐）
+
+`CombatHudTraditionalPage` 的任务追踪行原先只有一句 `TODO` 日志。协议 `QuestSummary` 只带
+名称/描述/进度，**没有目标坐标**，客户端无法诚实地"导航到任务地点"；本轮改为打开任务日志并定位到该条
+（`MenuQuestsPage.PendingFocusQuestId`，构造期消费一次后清零，跨标签页时自动切到该任务所属类型页）。
+真正的任务点寻路要等服务端下发目标位置后再接 `TryStartClickToMove`。
+
+### 12.4 验证
+
+- 客户端编译：复用 `Game.CSharp.response`（补齐 `Source` 下新增 `.cs`，排除编辑期插件 `HundunAgentEditor` 与 `*.Build.cs`）
+  独立 `csc` 编译，**0 error / exit 0**；改动文件无新增警告。
+- 未做运行时目视：需要 World 场景 + 已烘焙 NavMesh + 在线角色，留待下次 PIE 验收。
+
+### 12.5 筛选面板落地（界碑/蹊跷/宝箱/江湖故人）
+
+`WorldMapPage` 左侧四个筛选勾选框此前只改自己的勾选样式，地图一张都不少。本轮接通：
+
+| 位置 | 改动 |
+|---|---|
+| `FilterCheck` | 新增 `Clicked` 事件（切换后触发）；页面在 `BuildFltr` 里统一订阅 |
+| `WorldMapPage.OnMarkerFilterChanged` | 四个勾选框的**当前状态一起**交给画布；构造期也走同一条同步，避免面板与画布各写一份默认值 |
+| `MapCanvas` | 保留 `_rawMarkers/_rawPlaces`（未过滤）与可见副本；`SetMarkerFilter` 立即重算，不必等 0.35s 导航刷新 |
+| 过滤范围 | 界碑→`Mk.Teleport`、蹊跷→`Mk.Oddity`、宝箱→`Mk.Chest`、江湖故人→`Mk.Npc`；妖魔/玩家/目的地/地名**恒显示**（设计面板没有对应开关，凭空加开关等于改设计） |
+| 地名标签 | 上限 6 条改到过滤之后再生效，否则先被隐藏的界碑地名会占掉名额，勾选后仍缺标签 |
+
+**已知数据缺口**：底部「采集标记」分组与快捷标签（草药/树木/走兽/飞禽/矿物）仍只是视觉态——
+导航 POI 视图（`MapMarkerView`）没有采集物类型字段，没有可过滤的数据源；要接需先让 POI/插件侧带出采集类别。
+
+### 12.6 小地图 +/− 缩放
+
+传统 HUD 小地图周围只保留两个圆钮，但它们的 `domId` 是 `null`——点了完全没反应。本轮接成缩放：
+
+| 位置 | 改动 |
+|---|---|
+| `InkMinimap` | 新增 `MinNavigationRange=200` / `MaxNavigationRange=8000` 与 `ZoomBy(factor)`：改 `NavigationRange` 后**立即** `RefreshFromNavigation()`，不等 0.5s 节流 |
+| `CombatHudTraditionalPage` | 「+」→ `ZoomBy(0.7)`（看得更近）、「−」→ `ZoomBy(1.5)`（看得更远）；圆钮仍是独立控件，点它们不会触发"点圆盘打开大地图" |
+
+范围单位是世界单位（厘米）：默认 1200 = 12 米。缩放在到达边界时静默停住（不循环、不报错）。
+
+### 12.7 采集类别两组控件同源
+
+左栏「采集标记」（草药/树木/走兽/飞禽/矿物）与底部快捷标签是同一设置的两种呈现，此前各自维护状态，
+会出现"左边勾着、右边关着"。本轮：
+
+- 初始状态以左栏复选框为准（`BuildSrch` 读 `_gchecks[i].IsChecked`），不再两处各写一份默认值；
+- 任一侧切换都同步另一侧：复选框点击 → `SyncGatherTags()`；快捷标签点击 → `SetChecked()`。
+
+它们仍**不参与地图过滤**——`MapMarkerView` 没有采集物类别字段。等导航 POI 带出类别后，
+只需把同一份状态喂给 `MapCanvas`，两组控件无需再改。
+
+## 13. 增量六：世界地图缩放与平移（设计稿 108% 控件真正可用）
+
+设计稿的缩放是 `scale 0.6~2.0 / step 0.08 / 初始 1.08` + 一个静态 `translate`；实现侧此前只画了"108%"三个字，
+`+`/`−` 点了没有反应，之前还把该区域从"点地寻路"里排掉（避免误走）。
+
+| 项 | 实现 |
+|---|---|
+| 变换 | 单一入口 `ToView` / `FromView`：`view = 0.5 + (normalized-0.5)*zoom + pan`。绘制标记/地名/路径、传送点命中、点地反投影全部走这一对函数，不各算一套 |
+| 缩放 | `+`/`−` 改变 `zoom`（0.6~2.0），百分比显示实际值；到上下限时按钮压暗 |
+| 平移 | 右键在地图区拖动；`zoom > 1` 时平移夹在 `±(zoom-1)/2`（窗口不越出地图内容）；`zoom <= 1` 强制居中 |
+| 裁剪 | 视窗外（`view` 超出 0~1）的标记/地名不画也不可点；路径仍由 `InkNavPathPainter.DrawInRect` 按地图矩形裁剪；缩小后四周空白边不响应寻路 |
+| 优先级 | 右下缩放区 > 界碑快速旅行 > 点地寻路；底部提示同步为「左键寻路 · 右键拖动平移 · 右下 +/− 缩放 · 界碑快速旅行」 |
+
+反投影恒等式（绘制/命中同源）：`FromView(ToView(n)) ≡ n`；平移夹紧后 `view(n=0)=0`、`view(n=1)=1`，窗口边缘与地图边缘对齐。
+
+### 12.9 底栏搜索真正可输入
+
+底栏搜索框此前是纯自绘控件（图标 + 写死的"搜索NPC/玩法/采集..."），从来收不到键盘输入。本轮：
+
+- 保留 `SearchInput` 的自绘底与左右图标，在上层叠一个透明 `TextBox`（水印"搜索地点 / 标记"，`TextChanged` 即过滤）；
+- `MapCanvas.SetSearchQuery` 与勾选筛选共用 `ApplyMarkerFilter`：
+  - 标记按 **POI 标题** 匹配（大小写不敏感）；
+  - 地名按 **文本** 匹配；
+  - **玩家 / 目的地始终保留**（搜索时"我在哪/导航终点"不能消失）；
+  - 设计稿示例标记没有标题，搜索时被过滤是预期行为；清空搜索即恢复。
+- 0.35s 的导航刷新不会丢搜索词（query 存在画布上，重建时重新套用）。
+
+### 12.10 区域 / 单人多人 / 搜索空结果的诚实反馈
+
+| 控件 | 原行为 | 现在 |
+|---|---|---|
+| 顶部区域 Tab（清河/开封/凉州/江南/燕北） | 只改右侧区域名，地图与点位不变 | 只有本地世界一张图（POI/投影来自 `MapTileBounds`）；点其它区域 → toast「该区域地图尚未接入」，**不切高亮** |
+| 单人/多人 | 只切换按钮高亮 | 多人地图没有数据/交互；点「多人」→ toast「多人地图尚未接入，请从『多人』入口进入」，保持单人 |
+| 搜索 | 无结果时地图空白 | 搜索词非空且无匹配标记/地名时，画布中央显示「未找到匹配「关键词」的标记」（玩家与目的地不算匹配） |

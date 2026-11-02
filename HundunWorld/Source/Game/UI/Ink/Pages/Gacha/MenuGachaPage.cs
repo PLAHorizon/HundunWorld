@@ -17,7 +17,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
     ///      + 右下角链接（活动 / 祈愿记录 / 概率公示 / 详情规则）+ 左下角 UP 名侠预览。
     /// 颜色与字体全部取自 <see cref="InkWashTheme"/> token，禁止硬编码色值。
     /// </summary>
-    public class MenuGachaPage : ContainerControl, IInkPage
+    public class MenuGachaPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ================= 布局常量（对齐设计稿 CSS 像素） =================
 
@@ -37,8 +37,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         /// <summary>展示框底部信息条高度</summary>
         private const float ShowcaseFooterHeight = 84f;
 
-        /// <summary>底部抽卡区高度</summary>
-        private const float DrawAreaHeight = 120f;
+        /// <summary>底部抽卡区高度（按钮 52 + 下方价格行 16，再加底边留白）</summary>
+        private const float DrawAreaHeight = 136f;
 
         /// <summary>保底计数面板宽度（.pity-counter-panel width: 200px）</summary>
         private const float PityPanelWidth = 200f;
@@ -66,10 +66,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         // 构造时直接写入各子控件；接入真实数据源后由本类「数据绑定 API」区的 Bind* 方法覆盖。
 
         /// <summary>已祈愿次数（设计稿 47）</summary>
-        private int _drawCount = 47;
+        // 祈愿没有服务端数据：次数/保底/余额全部按 0 呈现（2026-10-29）
+        private int _drawCount = 0;
+        /// <summary>是否已拿到服务端祈愿数据（BindPity 置位）；false 时保底/记录一律显示占位。</summary>
+        private bool _hasServerData;
 
         /// <summary>小保底累计次数（设计稿 47/90）</summary>
-        private int _smallPity = 47;
+        private int _smallPity = 0;
 
         /// <summary>大保底累计次数（设计稿 0/90）</summary>
         private int _greatPity;
@@ -82,7 +85,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         /// 注：设计稿此值与其「小保底 47/90」并不自洽（90-47=43）；此处按设计稿示例数据落地，
         /// 接入真实数据源后由 <see cref="BindPity"/> 覆盖。
         /// </summary>
-        private int _pityRemaining = 3;
+        private int _pityRemaining = 90;
 
         /// <summary>UP 单抽价格（元宝，设计稿 160）</summary>
         private int _singleDrawPrice = 160;
@@ -91,24 +94,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         private int _tenDrawPrice = 1600;
 
         /// <summary>元宝余额（设计稿 328）</summary>
-        private int _ingot = 328;
+        private int _ingot = -1;
 
-        /// <summary>命星余额（设计稿 5）</summary>
-        private int _fateStar = 5;
+        /// <summary>命星余额：没有服务端快照，-1 表示未知（显示「—」）</summary>
+        private int _fateStar = -1;
 
-        /// <summary>卡池剩余倒计时天数（设计稿 12 天）</summary>
-        private int _countdownDay = 12;
-
-        /// <summary>卡池剩余倒计时小时数（设计稿 07 时）</summary>
-        private int _countdownHour = 7;
-
-        /// <summary>卡池剩余倒计时分钟数（设计稿 23 分）</summary>
-        private int _countdownMinute = 23;
+        // 卡池结束时间是服务端排期，客户端没有数据源；-1 表示未知，
+        // 不摆设计稿的「12 天 07 时 23 分」——那会被当成真实的限时倒计时。
+        private int _countdownDay = -1;
+        private int _countdownHour = -1;
+        private int _countdownMinute = -1;
 
         // ================= 背景装饰层 =================
 
-        private InkBackgroundLayer _bgLayer;
-        private InkVignette _vignette;
         private InkSplash _splashGold;
         private InkSplash _splashVermilion;
         private InkSplash _splashCenter;
@@ -255,20 +253,22 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             }
         }
 
-        /// <summary>概率概览四行（对齐设计稿 .pool-overview-list）。</summary>
+        /// <summary>
+        /// 概率概览四行（对齐设计稿 .pool-overview-list）。
+        /// 概率是服务端公示数据，客户端没有来源：一律显示「—」，不摆设计稿的 1.20%/8.80%/30%/60%。
+        /// </summary>
         private static readonly GachaRateRow[] RateRows =
         {
-            new GachaRateRow("传说名侠", "1.20%", InkWashTheme.VermilionPrimary),
-            new GachaRateRow("史诗名侠", "8.80%", InkWashTheme.QualityEpic),
-            new GachaRateRow("稀有名侠", "30.00%", InkWashTheme.QualityRare),
-            new GachaRateRow("精良名侠", "60.00%", InkWashTheme.QualityUncommon)
+            new GachaRateRow("传说名侠", "—", InkWashTheme.VermilionPrimary),
+            new GachaRateRow("史诗名侠", "—", InkWashTheme.QualityEpic),
+            new GachaRateRow("稀有名侠", "—", InkWashTheme.QualityRare),
+            new GachaRateRow("精良名侠", "—", InkWashTheme.QualityUncommon)
         };
 
-        /// <summary>概率概览面板底部的保底说明（对齐设计稿 .guarantee-item）。</summary>
+        /// <summary>概率概览面板底部说明：保底规则同样没有服务端来源，只留一句如实提示。</summary>
         private static readonly string[] GuaranteeTexts =
         {
-            "90抽必得传说名侠",
-            "10抽必得精良以上"
+            "概率与保底规则尚未接入服务端"
         };
 
         /// <summary>卡池剩余倒计时单位（天 / 时 / 分）。</summary>
@@ -280,12 +280,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         /// </summary>
         private string[] CountdownNumberTexts()
         {
+            // 未绑定（_countdownDay < 0）时只有一个「—」，不给出任何假的剩余时间
+            if (_countdownDay < 0)
+                return new[] { "—", string.Empty, string.Empty };
+
             return new[]
             {
                 _countdownDay.ToString("D2"),
                 _countdownHour.ToString("D2"),
                 _countdownMinute.ToString("D2")
             };
+        }
+
+        /// <summary>未绑定卡池排期时时辰单位不显示（否则会出现「— 天 — 时 — 分」）。</summary>
+        private string[] CountdownUnitTexts()
+        {
+            return _countdownDay < 0
+                ? new[] { string.Empty, string.Empty, string.Empty }
+                : CountdownUnits;
         }
 
         /// <summary>UP 名侠预览数据（对齐设计稿 .up-preview-list）。</summary>
@@ -356,12 +368,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         /// </summary>
         private void BuildAtmosphere()
         {
-            _bgLayer = new InkBackgroundLayer
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Parent = this
-            };
-
+            // 水墨背景层与暗角由外壳统一提供（本页为沉浸式全屏页），页面只保留专属晕染。
             _splashGold = new InkSplash
             {
                 Variant = InkSplashVariant.Normal,
@@ -383,12 +390,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
                 Variant = InkSplashVariant.Vermilion,
                 Opacity = 0.20f,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Parent = this
-            };
-
-            _vignette = new InkVignette
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
                 Parent = this
             };
         }
@@ -461,7 +462,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             _yuanbaoLabel = MakeLabel(_yuanbaoDisplay, "元宝", InkWashTheme.FontRole.Body, 11f,
                 InkWashTheme.PaperFaded, 0f, 0f, 70f, 14f);
 
-            _yuanbaoValue = MakeLabel(_yuanbaoDisplay, _ingot.ToString(), InkWashTheme.FontRole.Number, 18f,
+            _yuanbaoValue = MakeLabel(_yuanbaoDisplay, _ingot >= 0 ? _ingot.ToString() : "—", InkWashTheme.FontRole.Number, 18f,
                 InkWashTheme.TextDefault, 0f, 0f, 70f, 20f);
 
             _rechargeButton = new InkButton
@@ -504,7 +505,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             _mingxingLabel = MakeLabel(_mingxingDisplay, "命星", InkWashTheme.FontRole.Body, 11f,
                 InkWashTheme.PaperFaded, 0f, 0f, 70f, 14f);
 
-            _mingxingValue = MakeLabel(_mingxingDisplay, _fateStar.ToString(), InkWashTheme.FontRole.Number, 18f,
+            _mingxingValue = MakeLabel(_mingxingDisplay, _fateStar >= 0 ? _fateStar.ToString() : "—", InkWashTheme.FontRole.Number, 18f,
                 InkWashTheme.TextDefault, 0f, 0f, 70f, 20f);
         }
 
@@ -602,6 +603,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             _countdownNumbers.Clear();
             _countdownUnits.Clear();
             string[] countdownTexts = CountdownNumberTexts();
+            string[] countdownUnitTexts = CountdownUnitTexts();
             for (int i = 0; i < CountdownUnits.Length; i++)
             {
                 Label num = MakeLabel(_countdownPanel, countdownTexts[i], InkWashTheme.FontRole.Number, 18f,
@@ -609,7 +611,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
                 num.HorizontalAlignment = TextAlignment.Center;
                 _countdownNumbers.Add(num);
 
-                Label unit = MakeLabel(_countdownPanel, CountdownUnits[i], InkWashTheme.FontRole.Body, 11f,
+                Label unit = MakeLabel(_countdownPanel, countdownUnitTexts[i], InkWashTheme.FontRole.Body, 11f,
                     InkWashTheme.PaperFaded, 0f, 0f, 16f, 18f);
                 unit.HorizontalAlignment = TextAlignment.Center;
                 _countdownUnits.Add(unit);
@@ -761,7 +763,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
                 Parent = _centerStage
             };
 
-            _overviewTitle = MakeLabel(_overviewPanel, "概率概览", InkWashTheme.FontRole.Heading, 13f,
+            _overviewTitle = MakeLabel(_overviewPanel, "概率概览（未接入）", InkWashTheme.FontRole.Heading, 13f,
                 InkWashTheme.PaperFaded, 0f, 0f, OverviewPanelWidth - 32f, 18f);
 
             _overviewRows.Clear();
@@ -832,7 +834,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             };
             _singleDrawButton.Clicked += () => OnDrawRequested(1);
 
-            _singleDrawCost = MakeLabel(_drawArea, $"元宝 × {_singleDrawPrice}", InkWashTheme.FontRole.Body, 11f,
+            // 未绑定价格前不摆设计稿的 160（BindDrawCost 才会写入真实价格）
+            _singleDrawCost = MakeLabel(_drawArea, "元宝 × —", InkWashTheme.FontRole.Body, 11f,
                 InkWashTheme.GoldBright, 0f, 0f, 140f, 16f);
             _singleDrawCost.Enabled = false;
 
@@ -848,16 +851,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             };
             _multiDrawButton.Clicked += () => OnDrawRequested(10);
 
-            _multiDrawCost = MakeLabel(_drawArea, $"元宝 × {_tenDrawPrice}", InkWashTheme.FontRole.Body, 11f,
+            // 未绑定价格前不摆设计稿的 1600
+            _multiDrawCost = MakeLabel(_drawArea, "元宝 × —", InkWashTheme.FontRole.Body, 11f,
                 InkWashTheme.PaperBright, 0f, 0f, 160f, 16f);
             _multiDrawCost.Enabled = false;
 
+            // 「节省 160 元宝」是设计稿的定价文案；祈愿未接服务端、价格也没有数据源，
+            // 直接不显示，免得在"未接入"的页面上摆一个具体折扣。
             _multiDrawSaveBadge = new InkTag
             {
                 TagVariant = InkTagVariant.Vermilion,
                 Text = "节省160元宝",
                 Size = new Float2(86f, 20f),
                 Enabled = false,
+                Visible = false,
                 Parent = _drawArea
             };
 
@@ -990,12 +997,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             float stageWidth = Mathf.Max(320f, sw - PoolSelectorWidth);
             float stageHeight = Mathf.Max(320f, sh - TopbarHeight);
 
-            // ---- 背景 ----
-            if (_bgLayer != null) _bgLayer.Size = new Float2(sw, sh);
+            // ---- 背景（墨底/暗角由外壳提供，这里只摆本页专属晕染） ----
             if (_splashGold != null) _splashGold.Location = new Float2(sw * 0.15f, sh * 0.10f);
             if (_splashCenter != null) _splashCenter.Location = new Float2(sw * 0.5f - 300f, sh * 0.30f);
             if (_splashVermilion != null) _splashVermilion.Location = new Float2(sw * 0.80f, sh * 0.62f);
-            if (_vignette != null) _vignette.Size = new Float2(sw, sh);
 
             // ---- 顶部栏 ----
             if (_topbar != null)
@@ -1171,12 +1176,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             float buttonTop = (DrawAreaHeight - DrawButtonHeight) * 0.5f - 4f;
 
             if (_singleDrawButton != null) _singleDrawButton.Location = new Float2(rowLeft, buttonTop);
-            if (_singleDrawCost != null) _singleDrawCost.Location = new Float2(rowLeft + 68f, buttonTop + 28f);
+            // 价格放到按钮下方：按钮内文字是垂直居中的，落在 +28 会与"祈愿一次"重叠。
+            if (_singleDrawCost != null)
+                _singleDrawCost.Location = new Float2(rowLeft + (DrawButtonWidth - 140f) * 0.5f, buttonTop + DrawButtonHeight + 2f);
 
             float multiX = rowLeft + DrawButtonWidth + 16f;
             if (_multiDrawButton != null) _multiDrawButton.Location = new Float2(multiX, buttonTop);
-            if (_multiDrawCost != null) _multiDrawCost.Location = new Float2(multiX + 68f, buttonTop + 28f);
-            if (_multiDrawSaveBadge != null) _multiDrawSaveBadge.Location = new Float2(multiX + DrawButtonWidth - 86f, buttonTop - 12f);
+            if (_multiDrawCost != null)
+                _multiDrawCost.Location = new Float2(multiX + (DrawButtonWidth - 160f) * 0.5f, buttonTop + DrawButtonHeight + 2f);
+            // 角标抬到按钮上方：buttonTop-12 会压住按钮上沿。
+            if (_multiDrawSaveBadge != null) _multiDrawSaveBadge.Location = new Float2(multiX + DrawButtonWidth - 86f, buttonTop - 24f);
 
             float progressX = rowLeft + DrawButtonWidth * 2f + 16f + 32f;
             if (_drawCountLabel != null) _drawCountLabel.Location = new Float2(progressX, buttonTop + 2f);
@@ -1319,6 +1328,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         /// <summary>刷新大/小保底计数文本与进度条。</summary>
         private void RefreshPity()
         {
+            // 未绑定服务端数据前，别把设计稿的「47 / 90」摆成玩家自己的保底进度
+            if (!_hasServerData)
+            {
+                if (_greatPityCurrent != null) _greatPityCurrent.Text = "—";
+                if (_greatPityTotal != null) _greatPityTotal.Text = "—";
+                if (_greatPityBar != null) _greatPityBar.Value = 0f;
+                if (_smallPityCurrent != null) _smallPityCurrent.Text = "—";
+                if (_smallPityTotal != null) _smallPityTotal.Text = "—";
+                if (_smallPityBar != null) _smallPityBar.Value = 0f;
+                return;
+            }
+
             if (_greatPityCurrent != null) _greatPityCurrent.Text = _greatPity.ToString();
             if (_greatPityTotal != null) _greatPityTotal.Text = _pityTotal.ToString();
             if (_greatPityBar != null) _greatPityBar.Value = _pityTotal > 0 ? (float)_greatPity / _pityTotal : 0f;
@@ -1334,6 +1355,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         /// </summary>
         private void RefreshDrawProgress()
         {
+            if (!_hasServerData)
+            {
+                if (_drawCountLabel != null) _drawCountLabel.Text = "祈愿记录尚未接入";
+                if (_drawPityLabel != null) _drawPityLabel.Text = "保底次数尚未接入";
+                if (_drawProgressBar != null) _drawProgressBar.Value = 0f;
+                return;
+            }
+
             if (_drawCountLabel != null) _drawCountLabel.Text = $"已祈愿 {_drawCount} 次";
             if (_drawPityLabel != null) _drawPityLabel.Text = $"距离保底还有 {Mathf.Max(0, _pityRemaining)} 次";
             if (_drawProgressBar != null) _drawProgressBar.Value = _pityTotal > 0 ? (float)_smallPity / _pityTotal : 0f;
@@ -1343,10 +1372,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         private void RefreshCountdown()
         {
             string[] texts = CountdownNumberTexts();
+            string[] unitTexts = CountdownUnitTexts();
             for (int i = 0; i < _countdownNumbers.Count && i < texts.Length; i++)
             {
                 if (_countdownNumbers[i] != null)
                     _countdownNumbers[i].Text = texts[i];
+                if (i < _countdownUnits.Count && _countdownUnits[i] != null)
+                    _countdownUnits[i].Text = unitTexts[i];
             }
         }
 
@@ -1362,8 +1394,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         {
             _ingot = ingot;
             _fateStar = fateStar;
-            if (_yuanbaoValue != null) _yuanbaoValue.Text = _ingot.ToString();
-            if (_mingxingValue != null) _mingxingValue.Text = _fateStar.ToString();
+            if (_yuanbaoValue != null) _yuanbaoValue.Text = _ingot >= 0 ? _ingot.ToString() : "—";
+            if (_mingxingValue != null) _mingxingValue.Text = _fateStar >= 0 ? _fateStar.ToString() : "—";
         }
 
         /// <summary>
@@ -1379,6 +1411,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             _drawCount = drawnCount;
             _smallPity = smallPity;
             _greatPity = greatPity;
+            _hasServerData = true;
             if (pityTotal > 0)
                 _pityTotal = pityTotal;
             _pityRemaining = pityRemaining >= 0 ? pityRemaining : Mathf.Max(0, _pityTotal - _smallPity);
@@ -1422,7 +1455,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
         {
             try
             {
-                NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+                NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
             }
             catch (Exception ex)
             {
@@ -1430,27 +1463,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Gacha
             }
         }
 
-        /// <summary>祈愿按钮：累加已祈愿次数与保底计数（大保底满 90 后重置）。</summary>
+        /// <summary>
+        /// 祈愿按钮：祈愿没有服务端链路（没有卡池、没有概率、没有发放），
+        /// 点了只提示不可用——绝不能像以前那样在本地自增次数与保底，那会让玩家以为真抽了。
+        /// </summary>
         private void OnDrawRequested(int count)
         {
-            _drawCount += count;
-            _smallPity += count;
-            _greatPity += count;
-
-            while (_smallPity >= _pityTotal)
-            {
-                _smallPity -= _pityTotal;
-            }
-
-            if (_greatPity >= _pityTotal)
-            {
-                _greatPity = 0;
-            }
-
-            _pityRemaining = Mathf.Max(0, _pityTotal - _smallPity);
-
-            RefreshPity();
-            RefreshDrawProgress();
+            HundunWorld.Game.UI.UIHelper.ShowToast("祈愿系统尚未接入服务端，暂不可祈愿", HundunWorld.Game.UI.ToastType.Info);
         }
 
         // ================= 布局刷新 =================

@@ -293,6 +293,140 @@ public class OrleansGameplayWiringTests
         Assert.Equal(0, sink.ItemsGranted);
     }
 
+    private sealed class FakeCurrency : Horizon.Game.Core.Sim.Server.ICurrencyWriter
+    {
+        public List<(ulong CharacterId, long Amount, string Source)> Calls { get; } = new();
+        public bool Result { get; set; } = true;
+
+        public Task<bool> AddGoldAsync(ulong characterId, long amount, string source, CancellationToken cancellationToken = default)
+        {
+            Calls.Add((characterId, amount, source));
+            return Task.FromResult(Result);
+        }
+    }
+
+    [Fact]
+    public async Task KillMoney_CreditsTheKillerWalletOnce()
+    {
+        // 金币以前只进 DS 的计票（掷得出来、没人给）。这条钉的是"到账那一跳真的存在，
+        // 且给的是**掷出来那个人**、金额一字不差、一次就够"。
+        var wallet = new FakeCurrency();
+        await using var sink = new OrleansGameplayEventSink(null, null, currency: wallet);
+
+        sink.Publish(new DsGameplayEvent
+        {
+            Kind = DsGameplayEventKind.KillMoney,
+            ActorCharacterId = 2001,
+            MonsterTemplateId = 100,
+            Money = 250,
+        });
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        var call = Assert.Single(wallet.Calls);
+        Assert.Equal(2001UL, call.CharacterId);
+        Assert.Equal(250L, call.Amount);
+        Assert.Equal("monster_loot:100", call.Source);
+        Assert.Equal(250L, sink.GoldCredited);
+        Assert.Equal(0L, sink.GoldSkippedNoWriter);
+    }
+
+    [Fact]
+    public async Task KillMoney_UnwiredIsCountedAndLogged_NotSilent()
+    {
+        // 没接钱包时"钱不会到账"必须看得见：只数事件不数金额的话，运维读不出"少了多少钱"。
+        var messages = new List<string>();
+        await using var sink = new OrleansGameplayEventSink(null, null, m => messages.Add(m));
+
+        sink.Publish(new DsGameplayEvent { Kind = DsGameplayEventKind.KillMoney, ActorCharacterId = 2001, Money = 900 });
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        Assert.Equal(900L, sink.GoldSkippedNoWriter);
+        Assert.Equal(0L, sink.GoldCredited);
+        Assert.Contains(messages, m => m.Contains("KillMoney"));
+    }
+
+    [Fact]
+    public async Task KillMoney_WalletRejection_CountedAsFailure()
+    {
+        // 钱包在越界时是"一分不入地拒绝"（返回 Ok=false），不是抛异常 ⇒ "没抛异常"不能当成功判据。
+        var wallet = new FakeCurrency { Result = false };
+        await using var sink = new OrleansGameplayEventSink(null, null, currency: wallet);
+
+        sink.Publish(new DsGameplayEvent { Kind = DsGameplayEventKind.KillMoney, ActorCharacterId = 2001, Money = 50 });
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        Assert.Equal(1, wallet.Calls.Count);
+        Assert.Equal(0L, sink.GoldCredited);
+        Assert.Equal(1, sink.FailedCount);
+    }
+
+    [Fact]
+    public async Task KillMoney_ZeroAmount_CallsNobody()
+    {
+        // DS 只在掷出金额 >0 时才发事件；消费端也要挡住"金额为 0 的空事件"，
+        // 否则一次没掉钱的击杀会在钱包里留下一条 0 金额流水。
+        var wallet = new FakeCurrency();
+        await using var sink = new OrleansGameplayEventSink(null, null, currency: wallet);
+
+        sink.Publish(new DsGameplayEvent { Kind = DsGameplayEventKind.KillMoney, ActorCharacterId = 2001, Money = 0 });
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        Assert.Empty(wallet.Calls);
+        Assert.Equal(1, sink.ProcessedCount);
+    }
+
+    [Fact]
+    public void KillMoney_EventsDifferingOnlyInAmount_HaveDifferentIdempotencyKeys()
+    {
+        // 幂等键漏一个字段的表现是"第二笔被安静吞掉"，而且日志干净。
+        // 这里构造"同 shard/同 tick/同人/同类型、只有金额不同"的两条，键必须不同。
+        var first = new DsGameplayEvent
+        {
+            Kind = DsGameplayEventKind.KillMoney, ShardId = 0, ServerTick = 42,
+            ActorCharacterId = 2001, MonsterTemplateId = 100, Money = 100,
+        };
+        var second = first;
+        second.Money = 250;
+
+        Assert.NotEqual(first.BuildIdempotencyKey(), second.BuildIdempotencyKey());
+    }
+
+    [Fact]
+    public async Task KillMoney_SurvivesTheUplinkWire_AndStillCredits()
+    {
+        // DS 上送给网关走的是线上 DTO，不是内核结构体：DTO 少一格时金额在跨过这道转换时归零，
+        // 再被本文件上面那条「金额 ≤0 就算处理过」的分支安静吞掉——上一轮的缺陷正是这个形状，
+        // 而只喂内核事件的单测全绿。所以这条按生产顺序走完整趟：DS 造事件 → 编码 → 解码 → 投递。
+        var wallet = new FakeCurrency();
+        await using var sink = new OrleansGameplayEventSink(null, null, currency: wallet);
+
+        var produced = new DsGameplayEvent
+        {
+            Kind = DsGameplayEventKind.KillMoney,
+            ShardId = 0,
+            ServerTick = 60,
+            ActorCharacterId = 2001,
+            MonsterTemplateId = 100,
+            Money = 320,
+        };
+        var batch = new DsGameplayEventBatch
+        {
+            Events = new[] { DsGameplayEventDto.FromCoreEvent(in produced) },
+        };
+        var payload = DsUplinkCodec.EncodePayload(DsUplinkMessageKind.GameplayEvent, batch);
+        Assert.True(DsUplinkCodec.TryDecode<DsGameplayEventBatch>(payload, out _, out var decoded));
+        var received = Assert.Single(decoded!.Events).ToCoreEvent();
+
+        sink.Publish(in received);
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        var call = Assert.Single(wallet.Calls);
+        Assert.Equal(320L, call.Amount);
+        Assert.Equal(2001UL, call.CharacterId);
+        Assert.Equal(320L, sink.GoldCredited);
+        Assert.Equal(0L, sink.GoldSkippedNoWriter);
+    }
+
     [Fact]
     public async Task NullDependencies_DoNotThrow_AndAreCounted()
     {
@@ -380,5 +514,118 @@ public class OrleansGameplayWiringTests
     public void KillObjectiveMatcher_ZeroTemplate_IsRejected()
     {
         Assert.False(new KillObjectiveTypeMatcher().ShouldAdvance("kill", "击杀", 0));
+    }
+
+    // ---------------- 条件掉落（怪物编辑器里配的"要持有某任务才给"） ----------------
+
+    private sealed class FakeQuestStateReader : IQuestStateReader
+    {
+        public QuestHoldState Answer { get; set; } = QuestHoldState.Held;
+        public List<(ulong CharacterId, int QuestId)> Calls { get; } = new();
+
+        public Task<QuestHoldState> QueryHoldAsync(ulong characterId, int questId, CancellationToken cancellationToken = default)
+        {
+            Calls.Add((characterId, questId));
+            return Task.FromResult(Answer);
+        }
+    }
+
+    private static DsGameplayEvent ConditionalLoot(int questId = 90001) => new DsGameplayEvent
+    {
+        Kind = DsGameplayEventKind.LootConditional,
+        ActorCharacterId = 2001,
+        ItemId = 5001,
+        ItemCount = 2,
+        QuestId = questId,
+    };
+
+    [Fact]
+    public async Task LootConditional_Held_GrantsThroughInventory()
+    {
+        var inv = new FakeInventory();
+        var reader = new FakeQuestStateReader { Answer = QuestHoldState.Held };
+        await using var sink = new OrleansGameplayEventSink(inv, null, questStates: reader);
+
+        sink.Publish(ConditionalLoot());
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        // 查的是**这个人 + 这个任务**：键错位会让条件永远判不过（或永远判过）。
+        var call = Assert.Single(reader.Calls);
+        Assert.Equal(2001UL, call.CharacterId);
+        Assert.Equal(90001, call.QuestId);
+        var granted = Assert.Single(inv.Calls);
+        Assert.Equal(5001, granted.TemplateId);
+        Assert.Equal(2, granted.Quantity);
+        Assert.Equal(2, sink.ConditionalLootGranted);
+        Assert.Equal(0, sink.ConditionalLootDeniedNotHeld);
+        Assert.Equal(0, sink.ConditionalLootUnknown);
+    }
+
+    [Fact]
+    public async Task LootConditional_NotHeld_DeniedAndCounted()
+    {
+        var inv = new FakeInventory();
+        var reader = new FakeQuestStateReader { Answer = QuestHoldState.NotHeld };
+        await using var sink = new OrleansGameplayEventSink(inv, null, questStates: reader);
+
+        sink.Publish(ConditionalLoot());
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        Assert.Empty(inv.Calls);                       // 没持有就一件都不能给
+        Assert.Equal(1, sink.ConditionalLootDeniedNotHeld);
+        Assert.Equal(0, sink.ConditionalLootGranted);
+        Assert.Equal(0, sink.ConditionalLootUnknown);  // "不满足条件"与"问不出来"必须是两个计数
+    }
+
+    [Fact]
+    public async Task LootConditional_UnknownCountedSeparatelyFromNotHeld()
+    {
+        var inv = new FakeInventory();
+        var reader = new FakeQuestStateReader { Answer = QuestHoldState.Unknown };
+        await using var sink = new OrleansGameplayEventSink(inv, null, questStates: reader);
+
+        sink.Publish(ConditionalLoot());
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        Assert.Empty(inv.Calls);
+        Assert.Equal(1, sink.ConditionalLootUnknown);
+        Assert.Equal(0, sink.ConditionalLootDeniedNotHeld);
+    }
+
+    [Fact]
+    public async Task LootConditional_NoReader_SkipsAndSaysSo()
+    {
+        // 装配缺失必须自己喊出来：静默丢弃的表现为"配了条件掉落但从来没人掉过"，查不到源头。
+        var inv = new FakeInventory();
+        await using var sink = new OrleansGameplayEventSink(inv, null);
+
+        sink.Publish(ConditionalLoot());
+        await sink.DrainAsync(TimeSpan.FromSeconds(3));
+
+        Assert.Empty(inv.Calls);
+        Assert.Equal(1, sink.ConditionalLootSkippedNoReader);
+    }
+
+    [Fact]
+    public void GameplayEvent_IdempotencyKey_DistinguishesIdenticalLookingDrops()
+    {
+        // 这条钉的是幂等键本身：两件"同物品同数量"的掉落（两张表各掉一件）如果键相同，
+        // 去重会安静吞掉第二件，而库里/编辑器里都显示配了 2 件。
+        var a = new DsGameplayEvent
+        {
+            Kind = DsGameplayEventKind.Loot, ShardId = 1, ServerTick = 42,
+            ActorCharacterId = 2001, ItemId = 5001, ItemCount = 1, QuestId = 0,
+        };
+        var b = a;
+        b.QuestId = 7;
+        Assert.NotEqual(a.BuildIdempotencyKey(), b.BuildIdempotencyKey());
+
+        var c = a;
+        c.ItemCount = 2;
+        Assert.NotEqual(a.BuildIdempotencyKey(), c.BuildIdempotencyKey());
+
+        var d = a;
+        d.Kind = DsGameplayEventKind.LootConditional;
+        Assert.NotEqual(a.BuildIdempotencyKey(), d.BuildIdempotencyKey());
     }
 }

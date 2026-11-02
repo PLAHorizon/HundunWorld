@@ -1,0 +1,36 @@
+{
+  "Kind": "Npc",
+  "NPCID": "npc_village_smith",
+  "NPCName": "村中铁匠·鲁石",
+  "MinLevel": 3,
+  "MaxLevel": 5,
+  "bAllowMultipleInstances": false,
+  "UniqueNPCGUID": "8f1c4d2a-0b3e-4f6a-9c7d-1e2f3a4b5c6d",
+  "NPCClassPath": "",
+  "DialoguePath": "",
+  "TaggedDialogueSetPath": "",
+  "bIsVendor": true,
+  "TradingCurrency": 500,
+  "BuyItemPercentage": 0.5,
+  "SellItemPercentage": 1.0,
+  "ShopFriendlyName": "铁匠铺",
+  "ActivityConfigurationPath": "Content/NarrativePro/Activities/DefaultNPCActivityConfiguration.json",
+  "ActivitySchedulePaths": [
+    "Content/NarrativePro/Activities/WorkShiftDaySchedule.json"
+  ],
+  "DefaultCurrency": 120,
+  "DefaultItemLoadout": [
+    { "ItemClassId": "item_sword", "Quantity": 1, "NumRolls": 1, "Chance": 1.0 },
+    { "ItemClassId": "item_ration", "Quantity": 3, "NumRolls": 1, "Chance": 1.0 }
+  ],
+  "DefaultFactions": [
+    "Narrative.Factions.Heroes",
+    "Narrative.Factions.FriendlyAll"
+  ],
+  "DefaultOwnedTags": [
+    "Narrative.State.NPC.DisableAggro"
+  ],
+  "TriggerSetPaths": [],
+  "AttackPriority": 1.0,
+  "AbilityConfigurationPath": ""
+}

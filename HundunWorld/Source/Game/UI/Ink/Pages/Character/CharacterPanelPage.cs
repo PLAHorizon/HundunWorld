@@ -1,8 +1,10 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
+using HundunWorld.Game.Character;
 using HundunWorld.Game.Inventory;
 using HundunWorld.Game.Services;
+using HundunWorld.Game.UI.Ink.ActionBar;
 using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
@@ -16,7 +18,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
     /// 顶部标题栏 + 左侧 3D 模型展示区（13 个浮动装备槽）+ 右侧可滚动属性面板（8 个卡片）。
     /// 严格遵循水墨主题 Token，禁止硬编码色值。
     /// </summary>
-    public class CharacterPanelPage : ContainerControl, IInkPage
+    public class CharacterPanelPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ===== 布局常量（对应设计方案像素值，1920x1080 参考） =====
         private const float TopBarHeight = 52f;
@@ -78,6 +80,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private ContainerControl _invGridBox;
         private InvCell[] _invCells;
         private CellData[] _invCellData;
+
+        // 背包分页：每页 8×5=40 格，容量由服务端快照决定（基础 108 格，扩展背包会加容量）
+        private const int InvCols = 8;
+        private const int InvRows = 5;
+        private const int InvPageSize = InvCols * InvRows;
+        private int _invPage;
+        private int _invPageCount = 1;
+        private Label _invPageLabel;
+        private Label _bagCapLabel;
         private int _invSelected = -1;
         private int _invFilterIndex;              // 0=全部 1=武器 2=防具 3=丹药 4=材料 5=任务
         private InvFilterChip[] _invFilterChips;
@@ -118,7 +129,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private InkItemTooltip _slotTooltip;
 
         // ===== 属性卡绑定（组件值 = 基值 + 装备加成） =====
-        private Label[] _baseStatValueLabels;      // 攻/防/暴击率/暴伤/命中/闪避
+        private Label[] _baseStatValueLabels;      // 按 BaseStat 枚举下标寻址，见 BaseStatDefs
         private Label _combatPowerLabel;
         private Label[] _combatValueLabels;        // 境界/门派/阵营/侠义/恶名/经验
         private float[] _wuxingRadarValues;        // 五行雷达（0..100 归一，InkRadarChart 每帧读数组）
@@ -160,7 +171,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         {
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
-            BackgroundColor = InkWashTheme.Scrim;
+            // 全屏铺底由外壳的墨底背景层统一提供（本页为沉浸式全屏页），页面不再自绘。
+            BackgroundColor = Color.Transparent;
             ClipChildren = false;
             AutoFocus = false;
 
@@ -174,6 +186,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             // 权威背包/装备快照驱动 UI：页面由路由器缓存、进程内单实例，构造期订阅一次即可。
             PlayerInventoryService.Instance.Changed += RefreshInventoryView;
             PlayerInventoryService.Instance.OperationFinished += OnItemOperationFinished;
+            CharacterEquipmentManager.AppearanceChanged += OnAppearanceChanged;
             if (!PlayerInventoryService.Instance.HasServerData)
                 PlayerInventoryService.Instance.RequestFullRefresh();
 
@@ -185,6 +198,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         {
             PlayerInventoryService.Instance.Changed -= RefreshInventoryView;
             PlayerInventoryService.Instance.OperationFinished -= OnItemOperationFinished;
+            CharacterEquipmentManager.AppearanceChanged -= OnAppearanceChanged;
             Services.AttributeAllocationService.Instance.OperationFinished -= OnAllocationOperationFinished;
             if (_boundCharacter != null) _boundCharacter.AttributesChanged -= OnAttributesChanged;
             base.OnDestroy();
@@ -218,6 +232,22 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             RefreshAttributeCards();
         }
 
+        /// <summary>
+        /// 外观装备换整套模型后，让左侧 3D 预览重新读取本地玩家 Actor 的当前 SkinnedModel。
+        /// 预览控件自己不消费装备快照，只认 Actor 上的真实模型。
+        /// </summary>
+        private void OnAppearanceChanged()
+        {
+            try
+            {
+                _preview3D?.SetCharacter(_boundCharacter);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[CharacterPanelPage] 刷新外观预览失败: {ex.Message}");
+            }
+        }
+
         /// <summary>把基础属性卡、战斗属性卡的攻/防与五行雷达刷新为组件真值（基值+装备加成）。</summary>
         private void RefreshAttributeCards()
         {
@@ -226,14 +256,39 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 var c = _boundCharacter;
                 if (c == null) return;
 
-                // 基础属性卡：攻击力=物攻+法攻，防御力=物防+法防；暴击率/暴伤接加点衍生真值；
-                // 命中/闪避无数据来源，保持"-"。
-                if (_baseStatValueLabels != null && _baseStatValueLabels.Length >= 4)
+                // 基础属性卡：攻/防=物法合计；五行三项按"金/木/水/火/土"逐行列出（见 ElementRows）；
+                // 命中/闪避至今没有任何数据来源，保持"-"。
+                if (_baseStatValueLabels != null && _baseStatValueLabels.Length == BaseStatDefs.Length)
                 {
-                    _baseStatValueLabels[0].Text = FormatStat(c.PhysicalAttack + c.MagicAttack);
-                    _baseStatValueLabels[1].Text = FormatStat(c.PhysicalDefense + c.MagicDefense);
-                    _baseStatValueLabels[2].Text = $"{c.CritRatePercent:0.##}%";
-                    _baseStatValueLabels[3].Text = $"+{c.CritDamageBonusPercent:0.##}%";
+                    var attackRows = new int[WuxingOrder.Length];
+                    var defenseRows = new int[WuxingOrder.Length];
+                    var penetrationRows = new int[WuxingOrder.Length];
+                    for (int e = 0; e < WuxingOrder.Length; e++)
+                    {
+                        attackRows[e] = c.GetElementDamage(WuxingOrder[e]);
+                        defenseRows[e] = c.GetElementDefense(WuxingOrder[e]);
+                        penetrationRows[e] = c.GetPenetration(WuxingOrder[e]);
+                    }
+
+                    // 攻/防用组件的显示口径：画像到了就用服务端那份通用攻防，没到才用本地镜像。
+                    // 不要在这里手写 PhysicalAttack + MagicAttack——服务端的 AttackPower 已含加点攻击，
+                    // 相加会把同一层算两遍。
+                    SetStat(BaseStat.Attack, FormatStat(c.AttackForDisplay));
+                    SetStat(BaseStat.Defense, FormatStat(c.DefenseForDisplay));
+                    SetStat(BaseStat.CritRate, $"{c.CritRatePercent:0.##}%");
+                    SetStat(BaseStat.CritDamage, $"+{c.CritDamageBonusPercent:0.##}%");
+                    SetStat(BaseStat.Health, FormatStat(c.MaxHealth));
+                    SetStat(BaseStat.Energy, FormatStat(c.MaxEnergy));
+                    SetStat(BaseStat.ElementAttack, ElementRows(attackRows));
+                    SetStat(BaseStat.ElementDefense, ElementRows(defenseRows));
+                    SetStat(BaseStat.Penetration, ElementRows(penetrationRows));
+                    SetStat(BaseStat.MoveSpeed, $"+{c.MoveSpeedBonus:0.#}");
+                    SetStat(BaseStat.AttackSpeed, $"+{c.AttackSpeedBonus:0.#}");
+                    SetStat(BaseStat.Recovery, $"{c.HpRegenPerSecond:0.#}/秒");
+                    SetStat(BaseStat.Luck, $"{c.Luck:0.##}");
+                    // 宠物那一栏是"归因"，不是合算后的攻防：服务端权威画像没把宠物并进 Attack/Defense
+                    // （并进战斗结算是另一条链），所以这里单独成行，界面不会把 1060 说成"你的攻击力"。
+                    SetStat(BaseStat.PetBonus, PetBonusText(c));
                 }
 
                 // 战斗属性卡：境界=成长阶段真值，修炼经验=Exp/MaxExp（其余项暂无数据源，保持"-"）。
@@ -267,8 +322,30 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
+        private void SetStat(BaseStat key, string text)
+        {
+            if (_baseStatValueLabels == null) return;
+            int i = (int)key;
+            if (i >= 0 && i < _baseStatValueLabels.Length)
+                _baseStatValueLabels[i].Text = text;
+        }
+
         private static string FormatStat(float v)
             => v >= 1000f ? v.ToString("N0") : v.ToString("0.#");
+
+        /// <summary>
+        /// 宠物加成那一栏的文案。四种状态必须长得不一样，否则玩家与运营都分不清"没数据"和"没宠"：
+        /// <c>-</c> 权威画像还没带宠物栏、<c>无宠</c> 名册是空的、<c>未出战</c> 有宠但没有出战/附体的、
+        /// 其余是 <c>攻/血/防/命中</c> 四项摊开（与下方行序图例配对）。
+        /// </summary>
+        private static string PetBonusText(CharacterAttributesComponent c)
+        {
+            if (!c.HasPetBonus) return "-";
+            var p = c.PetBonus;
+            if (p.RosterCount == 0) return "无宠";
+            if (p.Contributors == 0) return "未出战";
+            return $"{p.Attack}/{p.Health}/{p.Defense}/{p.Hit}";
+        }
 
         // 战斗属性卡行索引（与 BuildCombatCard 的 names 数组一致）。
         private const int CombatIdxStage = 0;
@@ -334,13 +411,68 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             ("力量", CharacterAttributesComponent.AllocationKind.Strength, "每点：气血上限+20\n每点：攻击力+10"),
             ("敏捷", CharacterAttributesComponent.AllocationKind.Agility, "每点：防御+20\n每点：速度+3"),
             ("体质", CharacterAttributesComponent.AllocationKind.Health, "每点：气血上限+100"),
-            ("内力", CharacterAttributesComponent.AllocationKind.Energy, "每点：内力上限+10"),
+            ("智力", CharacterAttributesComponent.AllocationKind.Intelligence, "每点：内力上限+100\n精神+10、智慧+1、神识+3、幸运+0.2"),
             ("金",   CharacterAttributesComponent.AllocationKind.Metal, "每点：攻击+50、金伤+30、金防+5\n破木防+30、暴击率+0.1%、暴伤+3%\n另：金亲和+10"),
             ("木",   CharacterAttributesComponent.AllocationKind.Wood, "每点：气血+300、木伤+20、木防+5\n破土防+30、回血+15/秒\n毒伤几率+0.1%、治疗量+0.2%\n另：木亲和+10"),
             ("水",   CharacterAttributesComponent.AllocationKind.Water, "每点：内力+200、水伤+30、水防+5\n破火防+30、冰冻几率+0.1%\n减速+0.2%（上限70%）\n另：水亲和+10"),
             ("火",   CharacterAttributesComponent.AllocationKind.Fire, "每点：攻速+2、火伤+30、破金防+30\n移速+5、极速攻击几率+0.1%\n（触发时3倍攻速）\n另：火亲和+10"),
             ("土",   CharacterAttributesComponent.AllocationKind.Earth, "每点：防御+50、土伤+30、土防+5\n破水防+30、反伤几率+0.1%\n（反弹目标实际攻击的10%）\n另：土亲和+10"),
         };
+
+        /// <summary>
+        /// 基础属性行。<b>枚举顺序必须与 <see cref="BaseStatDefs"/> 一致</b>：
+        /// 值标签数组按下标寻址，刷新时用语义名而不是魔法下标。
+        /// </summary>
+        private enum BaseStat
+        {
+            Attack, Defense, CritRate, CritDamage, Accuracy, Evasion,
+            Health, Energy, ElementAttack, ElementDefense, Penetration,
+            MoveSpeed, AttackSpeed, Recovery, Luck, PetBonus,
+        }
+
+        private static readonly (BaseStat Key, string Name, bool Gold)[] BaseStatDefs =
+        {
+            (BaseStat.Attack,        "攻击力",     false),
+            (BaseStat.Defense,       "防御力",     false),
+            (BaseStat.CritRate,      "暴击率",     true),
+            (BaseStat.CritDamage,    "暴击伤害",   true),
+            (BaseStat.Accuracy,      "命中率",     false),
+            (BaseStat.Evasion,       "闪避率",     false),
+            (BaseStat.Health,        "血量",       false),
+            (BaseStat.Energy,        "内力值",     false),
+            (BaseStat.ElementAttack, "五行攻击",   false),
+            (BaseStat.ElementDefense,"五行防御",   false),
+            (BaseStat.Penetration,   "五行破防",   false),
+            (BaseStat.MoveSpeed,     "移动速度",   false),
+            (BaseStat.AttackSpeed,   "攻击速度",   false),
+            (BaseStat.Recovery,      "恢复速度",   false),
+            (BaseStat.Luck,          "幸运值",     true),
+            (BaseStat.PetBonus,      "宠物加成",   true),
+        };
+
+        private static readonly WuxingElement[] WuxingOrder =
+        {
+            WuxingElement.Metal, WuxingElement.Wood, WuxingElement.Water, WuxingElement.Fire, WuxingElement.Earth,
+        };
+
+        private static readonly string[] ElementNames = { "金", "木", "水", "火", "土" };
+
+        /// <summary>
+        /// 把五行某一行三项指标摊成定序五列："金/木/水/火/土" 各占一格。
+        /// <para>
+        /// 早期版本只显示"最高行"，穿戴后看不出变化——一件 20 点土防护甲会被加点的土防整行盖住
+        /// （防御/破防是"已高者计"，不是相加），一件武器的攻击加成也可能落在非最高行上。
+        /// 逐行列出后每一行的每一次变化都是可见的，而结算侧仍按 <c>ElementalDamageResolver</c>
+        /// 的单行口径取值，这里不参与任何跨行求和。
+        /// </para>
+        /// </summary>
+        private static string ElementRows(int[] rows)
+        {
+            if (rows == null || rows.Length == 0) return "-";
+            return string.Join("/", rows);
+        }
+
+        private static string ElementRowLegend() => string.Join("/", ElementNames);
 
         private static int AllocationSpentOf(in CharacterAttributesComponent.AttributeAllocation a,
             CharacterAttributesComponent.AllocationKind kind)
@@ -350,7 +482,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 case CharacterAttributesComponent.AllocationKind.Strength: return a.Strength;
                 case CharacterAttributesComponent.AllocationKind.Agility: return a.Agility;
                 case CharacterAttributesComponent.AllocationKind.Health: return a.Health;
-                case CharacterAttributesComponent.AllocationKind.Energy: return a.Energy;
+                case CharacterAttributesComponent.AllocationKind.Intelligence: return a.Intelligence;
                 case CharacterAttributesComponent.AllocationKind.Metal: return a.Metal;
                 case CharacterAttributesComponent.AllocationKind.Wood: return a.Wood;
                 case CharacterAttributesComponent.AllocationKind.Water: return a.Water;
@@ -1052,9 +1184,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             _slotTooltip.Location = new Float2(x, y);
         }
 
-        /// <summary>把 0..4 品质值映射到 InkQuality 序数（越界夹取）。</summary>
+        /// <summary>把 0..6 品质值映射到 InkQuality 序数（越界夹取；5=神器、6=神话）。</summary>
         private static InkWashTheme.InkQuality ToInkQuality(int quality)
-            => (InkWashTheme.InkQuality)Mathf.Clamp(quality, 0, 4);
+            => (InkWashTheme.InkQuality)Mathf.Clamp(quality, 0, 6);
 
         /// <summary>
         /// 依据服务端装备快照构建第 <paramref name="index"/> 个浮动槽的 Tooltip 数据。
@@ -1150,24 +1282,35 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         // ===================================================================
 
         /// <summary>
-        /// 从服务端权威背包快照构建 8x5 格子数据（超过 40 件先截断展示；筛选按物品大类）。
+        /// 按当前页构建 8x5 格子数据。容量取服务端快照（未收到时用 <see cref="PlayerInventoryService.BaseCapacity"/> 108），
+        /// 物品按页切片、不再截断；扩展背包增加的容量同样体现在页数里。
         /// </summary>
-        private void InitInvCellData()
+        private void InitInvCellData(int page = 0)
         {
-            const int cols = 8, rows = 5;
-            _invCellData = new CellData[cols * rows];
+            var service = PlayerInventoryService.Instance;
+            int capacity = EffectiveCapacity();
+
+            _invPageCount = Mathf.Max(1, Mathf.CeilToInt((float)capacity / InvPageSize));
+            _invPage = Mathf.Clamp(page, 0, _invPageCount - 1);
+
+            _invCellData = new CellData[InvPageSize];
             for (int i = 0; i < _invCellData.Length; i++)
                 _invCellData[i] = new CellData { Quality = InkWashTheme.InkQuality.Common, HasItem = false };
 
-            var service = PlayerInventoryService.Instance;
-            int placed = 0;
+            // 先收集所有通过筛选的物品（不截断），再取当前页的切片
+            var filtered = new List<(Horizon.Game.Message.Network.ItemInfo item, ItemDefinition def)>();
             foreach (var item in service.Items)
             {
-                if (placed >= _invCellData.Length) break;
                 if (item.TemplateId <= 0 || item.Count <= 0) continue;
                 if (!PassesFilter(item.TemplateId)) continue;
+                filtered.Add((item, ItemCatalog.Resolve(item.TemplateId)));
+            }
 
-                var def = ItemCatalog.Resolve(item.TemplateId);
+            int start = _invPage * InvPageSize;
+            int placed = 0;
+            for (int idx = start; idx < filtered.Count && placed < InvPageSize; idx++)
+            {
+                var (item, def) = filtered[idx];
                 string name = !string.IsNullOrEmpty(item.Name) ? item.Name : def.Name;
                 // 可堆叠类（丹药/材料）始终显示数量角标——包括 1：否则 2→1 时角标消失，
                 // 看起来像"使用没扣数"。装备单件不显示。
@@ -1187,6 +1330,53 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     Kind = def.Kind,
                 };
             }
+
+            UpdateBagCapacityLabel(capacity);
+            UpdateInvPageLabel();
+
+            if (!_invPagingLogged)
+            {
+                _invPagingLogged = true;
+                Debug.Log($"[InvPaging] capacity={capacity} pages={_invPageCount} page={_invPage + 1} " +
+                          $"filtered={filtered.Count} shown={placed}");
+            }
+        }
+
+        private bool _invPagingLogged;
+
+        /// <summary>扩展背包槽右侧的容量说明：容量高于基础 108 时显示扩容格数。</summary>
+        private void UpdateBagCapacityLabel(int capacity)
+        {
+            if (_bagCapLabel == null)
+                return;
+            int extra = Mathf.Max(0, capacity - PlayerInventoryService.BaseCapacity);
+            _bagCapLabel.Text = extra > 0 ? $"扩容 +{extra} 格" : "未扩展";
+            _bagCapLabel.TextColor = extra > 0 ? InkWashTheme.GoldBright : InkWashTheme.TextTertiary;
+        }
+
+        private void UpdateInvPageLabel()
+        {
+            if (_invPageLabel != null)
+                _invPageLabel.Text = $"{_invPage + 1}/{_invPageCount}";
+        }
+
+        /// <summary>切页：重建数据并推给现有格子控件（不重建控件，避免布局抖动）。</summary>
+        private void SetInvPage(int page)
+        {
+            int target = Mathf.Clamp(page, 0, _invPageCount - 1);
+            if (target == _invPage || _invCells == null)
+                return;
+
+            _invPage = target;
+            InitInvCellData(_invPage);
+            for (int i = 0; i < _invCells.Length && i < _invCellData.Length; i++)
+            {
+                _invCells[i].IsSelected = false;
+                _invCells[i].SetData(_invCellData[i]);
+            }
+            _invSelected = -1;
+            UpdateDetailButtons(null);
+            UpdateInvPageLabel();
         }
 
         /// <summary>当前筛选片是否放行该模板物品（索引对应 BuildInventoryCard 的 filters 数组）。</summary>
@@ -1212,18 +1402,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         {
             const float cellSize = 64f;
             const float cellGap = 12f;
-            const int cols = 8;
-            const int rows = 5;
+            const int cols = InvCols;
+            const int rows = InvRows;
             float gridW = cellSize * cols + cellGap * (cols - 1);   // 596
             float gridH = cellSize * rows + cellGap * (rows - 1);   // 368
             const float footerH = 44f;
             const float currencyH = 40f;
+            const float bagRowH = 34f;                               // 4 个扩展背包槽 + 容量说明
 
-            InitInvCellData();
+            InitInvCellData(0);
 
             float rowY = CardPad + 26f;
+            float bagRowY = rowY + 30f + 12f;
+            float gridBoxY = bagRowY + bagRowH;
             float gridBoxH = gridH + 12f + footerH;
-            float currencyY = rowY + 30f + 12f + gridBoxH + 12f;
+            float currencyY = gridBoxY + gridBoxH + 12f;
             float cardH = currencyY + currencyH + CardPad;
             var card = MakeCard(cardH);
             AddCardHeader(card, "行囊", "INVENTORY", CardPad);
@@ -1248,7 +1441,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             };
             filterRow.AddChild(searchBox);
             searchBox.AddChild(new InvRoundedBox(InkWashTheme.BaseTertiary, InkWashTheme.BorderNeutralL2, 4f));
-            searchBox.AddChild(MakeLabel("🔍 搜索物品...", 10f, 0f, 200f, 28f,
+            searchBox.AddChild(MakeLabel("寻 搜索物品...", 10f, 0f, 200f, 28f,
                 InkWashTheme.TextTertiary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
             string[] filters = { "全部", "武器", "防具", "丹药", "材料", "任务" };
@@ -1269,11 +1462,43 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 chipX += 52f + 8f;
             }
 
+            // 扩展背包槽行（魔兽世界式 4 槽）：槽位内容要等服务端下发背包数据，
+            // 这里先把槽位与"容量是否已扩展"接上——扩容格数直接来自服务端容量。
+            var bagRow = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(CardPad, bagRowY),
+                Size = new Float2(gridW, bagRowH),
+                BackgroundColor = Color.Transparent,
+            };
+            _centeredControls.Add(bagRow);
+            card.AddChild(bagRow);
+            bagRow.AddChild(MakeLabel("扩展背包", 0f, 0f, 64f, bagRowH,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            for (int i = 0; i < 4; i++)
+            {
+                var slot = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(70f + i * 32f, (bagRowH - 26f) * 0.5f),
+                    Size = new Float2(26f, 26f),
+                    BackgroundColor = InkWashTheme.BaseTertiary,
+                };
+                slot.AddChild(new InvRoundedBox(InkWashTheme.BaseTertiary, InkWashTheme.BorderFaint, 3f));
+                slot.AddChild(MakeLabel("空", 0f, 0f, 26f, 26f,
+                    InkWashTheme.TextDisabled, 10f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+                bagRow.AddChild(slot);
+            }
+            _bagCapLabel = MakeLabel("未扩展", 70f + 4 * 32f + 8f, 0f, 200f, bagRowH,
+                InkWashTheme.TextTertiary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near);
+            bagRow.AddChild(_bagCapLabel);
+            UpdateBagCapacityLabel(EffectiveCapacity());
+
             // 网格容器（596 宽，水平居中）：8x5 格子 + 容量页脚
             _invGridBox = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(CardPad, rowY + 30f + 12f),
+                Location = new Float2(CardPad, gridBoxY),
                 Size = new Float2(gridW, gridBoxH),
                 BackgroundColor = Color.Transparent,
             };
@@ -1293,6 +1518,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 };
                 int captured = i;
                 cell.Clicked += () => OnInvCellClicked(captured);
+                cell.DragRequested += screenPos => BeginInvCellDrag(captured, screenPos);
                 _invCells[i] = cell;
                 _invGridBox.AddChild(cell);
             }
@@ -1316,14 +1542,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             });
             footer.AddChild(MakeLabel("格子", 12f, 0f, 40f, footerH,
                 InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-            _invCountLabel = MakeLabel("0/50", 56f, 0f, 60f, footerH,
+            _invCountLabel = MakeLabel("0/" + PlayerInventoryService.BaseCapacity, 56f, 0f, 72f, footerH,
                 InkWashTheme.PaperBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near);
             footer.AddChild(_invCountLabel);
+            const float pageW = 132f;
+            float barW = gridW - 126f - 12f - pageW - 8f;
             var capTrack = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(126f, (footerH - 4f) * 0.5f),
-                Size = new Float2(gridW - 126f - 12f, 4f),
+                Size = new Float2(barW, 4f),
                 BackgroundColor = InkWashTheme.BorderFaint,
             };
             footer.AddChild(capTrack);
@@ -1331,10 +1559,40 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,
-                Size = new Float2((gridW - 138f) * 0.1875f, 4f),
+                Size = new Float2(barW * 0.1875f, 4f),
                 BackgroundColor = InkWashTheme.GoldPrimary,
             };
             capTrack.AddChild(_invCapFill);
+
+            // 分页控件：‹ 页码 ›（108 格 → 3 页，不再截断物品）
+            var prevPageButton = new InkButton
+            {
+                Text = "<",
+                Width = 28f,
+                Height = 26f,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(gridW - pageW, 4f),
+                Size = new Float2(28f, 26f),
+            };
+            prevPageButton.Clicked += () => SetInvPage(_invPage - 1);
+            footer.AddChild(prevPageButton);
+
+            _invPageLabel = MakeLabel("1/1", gridW - pageW + 32f, 0f, 68f, footerH,
+                InkWashTheme.PaperAged, 12f, InkWashTheme.FontRole.Number, TextAlignment.Center);
+            footer.AddChild(_invPageLabel);
+
+            var nextPageButton = new InkButton
+            {
+                Text = ">",
+                Width = 28f,
+                Height = 26f,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(gridW - 32f, 4f),
+                Size = new Float2(28f, 26f),
+            };
+            nextPageButton.Clicked += () => SetInvPage(_invPage + 1);
+            footer.AddChild(nextPageButton);
+            UpdateInvPageLabel();
 
             // 货币栏：铜币 / 银两 / 金锭 / 元宝（与网格等宽、居中）
             var currencyRow = new ContainerControl
@@ -1355,10 +1613,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             });
             var currDefs = new (string glyph, string label, string val, Color iconColor)[]
             {
-                ("铜", "铜币", "12,450", InkWashTheme.Alert),
-                ("银", "银两", "3,200",  InkWashTheme.TextSecondary),
-                ("金", "金锭", "85",     InkWashTheme.GoldPrimary),
-                ("宝", "元宝", "12",     InkWashTheme.GoldBright),
+                ("铜", "铜币", "—", InkWashTheme.Alert),
+                ("银", "银两", "—", InkWashTheme.TextSecondary),
+                ("金", "金锭", "—", InkWashTheme.GoldPrimary),
+                ("宝", "元宝", "—", InkWashTheme.GoldBright),
             };
             float itemW = (gridW - 3f) / 4f;
             float currX = 0f;
@@ -1514,16 +1772,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             dy += 1f + 12f;
             float halfW = innerW * 0.5f - 10f;
             AddInvMetaRow(detail, cx, dy, halfW, "强化", out _invMetaEnhance);
-            _invMetaEnhance.Text = "+12";
-            _invMetaEnhance.TextColor = InkWashTheme.GoldPrimary;
+            // 这四格是构造期一次性赋值、从不随选中物品更新：原来写死「+12 / 金 / 拾取绑定 / 850/1000」，
+            // 换哪件装备都是同一组值。装备实例数据还没有这些字段，先显示「—」。
+            _invMetaEnhance.Text = "—";
+            _invMetaEnhance.TextColor = InkWashTheme.TextSecondary;
             AddInvMetaRow(detail, cx + halfW + 20f, dy, halfW, "五行", out _invMetaElement);
-            _invMetaElement.Text = "金";
-            _invMetaElement.TextColor = InkWashTheme.ElementMetal;
+            _invMetaElement.Text = "—";
+            _invMetaElement.TextColor = InkWashTheme.TextSecondary;
             dy += 22f + 8f;
             AddInvMetaRow(detail, cx, dy, halfW, "绑定", out _invMetaBind);
-            _invMetaBind.Text = "拾取绑定";
+            _invMetaBind.Text = "—";
             AddInvMetaRow(detail, cx + halfW + 20f, dy, halfW, "耐久", out _invMetaDura);
-            _invMetaDura.Text = "850/1000";
+            _invMetaDura.Text = "—";
             dy += 22f + 12f;
             detail.AddChild(MakeFaintHairline(cx, dy, innerW));
             dy += 1f + 10f;
@@ -1649,8 +1909,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 Size = new Float2(btnW, 36f),
                 Enabled = false,
             };
-            // 丢弃需要网关新增 ItemDiscard 路由（服务端消息已定义但未接入），暂不开放。
-            _invDropBtn.ButtonClicked += (b) => SetInvStatus("丢弃功能暂未开放", true);
+            // 丢弃需要网关新增 ItemDiscard 路由（服务端消息已定义但未接入）：按钮保持禁用。
+            // 这里不再挂点击回调——禁用态永远收不到点击，那段提示是不可达代码。
             detail.AddChild(_invDropBtn);
 
             // 操作状态行（使用/装备/卸下的服务端回执显示在这里）
@@ -1763,6 +2023,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 SelectInvCell(index);
         }
 
+        /// <summary>
+        /// 背包格子按下即进入全局拖拽会话。技能栏挂在外壳的常驻覆盖层上，
+        /// 面板开着也能把物品往栏里拖；是否允许落由技能栏按可用性裁决。
+        /// </summary>
+        private void BeginInvCellDrag(int index, Float2 screenPos)
+        {
+            if (_invCellData == null || index < 0 || index >= _invCellData.Length) return;
+            var data = _invCellData[index];
+            if (!data.HasItem) return;
+
+            ActionBarDrag.Begin(ActionBarSlotContent.OfItem(data.TemplateId), -1, screenPos);
+        }
+
         private void SelectInvCell(int index)
         {
             ApplyInvSelection(index);
@@ -1794,18 +2067,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             PlayerInventoryService.Instance.TryGetItemByServerId(data.ServerItemId, out var info);
 
             bool isQuest = data.Kind == ItemKind.Quest;
+            // 详情一律以**目录定义**为准（编辑器导出的覆盖层是最新的）；只有当目录回退成
+            // "神秘物品"时才用背包行里缓存的名称，避免"服务器早先下发的名字盖掉编辑器改动"。
             string qualityName = isQuest ? "任务" : def.Quality switch
             {
+                6 => "神话",
+                5 => "神器",
                 4 => "传说",
                 3 => "史诗",
-                2 => "稀有",
-                1 => "良好",
+                2 => "精良",
+                1 => "优秀",
                 _ => "普通",
             };
-            Color qColor = isQuest ? InkWashTheme.Warning : InkWashTheme.QualityColor(data.Quality);
+            Color qColor = isQuest
+                ? InkWashTheme.Warning
+                : InkWashTheme.QualityColor((InkWashTheme.InkQuality)(def.Quality < 0 ? 0 : (def.Quality > 6 ? 6 : def.Quality)));
             if (_invDetailName != null)
             {
-                _invDetailName.Text = data.Name;
+                _invDetailName.Text = string.IsNullOrEmpty(def.Name) ? data.Name : def.Name;
                 _invDetailName.TextColor = qColor;
             }
             if (_invTagQuality != null)
@@ -1813,9 +2092,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 _invTagQuality.SetText(qualityName);
                 _invTagQuality.SetColors(WithAlpha(qColor, 0.12f), qColor, WithAlpha(qColor, 0.25f));
             }
-            if (_invTagType != null) _invTagType.SetText(data.Type);
+            if (_invTagType != null) _invTagType.SetText(string.IsNullOrEmpty(def.TypeName) ? data.Type : def.TypeName);
             if (_invTagQty != null) _invTagQty.SetText("数量 " + (info != null ? info.Count : 1));
-            if (_invDetailIcon != null) _invDetailIcon.SetGlyph(data.Glyph, qColor);
+            if (_invDetailIcon != null)
+                _invDetailIcon.SetGlyph(string.IsNullOrEmpty(def.Glyph) ? data.Glyph : def.Glyph, qColor);
             if (_invMetaEnhance != null)
             {
                 _invMetaEnhance.Text = data.Enhance ?? "-";
@@ -1829,7 +2109,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             if (_invMetaBind != null) _invMetaBind.Text = "未绑定";
             if (_invMetaDura != null) _invMetaDura.Text = "-/-";
             if (_invDuraFill != null) _invDuraFill.Size = new Float2(0f, 4f);
-            if (_invSetLabel != null) _invSetLabel.Text = "暂无套装";
+            if (_invSetLabel != null)
+                _invSetLabel.Text = def.SetId > 0
+                    ? (string.IsNullOrEmpty(def.SetName) ? "套装 #" + def.SetId : "套装：" + def.SetName)
+                    : "暂无套装";
             if (_invSetDescLabel != null) _invSetDescLabel.Text = "";
 
             PopulateInvAttrRows(def);
@@ -2158,7 +2441,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 long previousSelectedId = _invSelected >= 0 && _invSelected < _invCellData.Length
                     ? _invCellData[_invSelected].ServerItemId : 0;
 
-                InitInvCellData();
+                InitInvCellData(_invPage);
                 for (int i = 0; i < _invCells.Length; i++)
                     _invCells[i].SetData(_invCellData[i]);
                 UpdateCapacityFooter();
@@ -2195,15 +2478,24 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
+        /// <summary>基础背包固定 108 格起；服务端下发更大容量（扩展背包/扩容）时按服务端走。</summary>
+        private static int EffectiveCapacity()
+        {
+            var service = PlayerInventoryService.Instance;
+            return Mathf.Max(PlayerInventoryService.BaseCapacity,
+                service.HasServerData ? service.Capacity : 0);
+        }
+
         private void UpdateCapacityFooter()
         {
             var service = PlayerInventoryService.Instance;
             int count = service.Items.Count;
+            int capacity = EffectiveCapacity();
             if (_invCountLabel != null)
-                _invCountLabel.Text = $"{count}/{service.Capacity}";
+                _invCountLabel.Text = $"{count}/{capacity}";
             if (_invCapFill != null && _invCapFill.Parent != null)
             {
-                float frac = service.Capacity > 0 ? Mathf.Clamp((float)count / service.Capacity, 0f, 1f) : 0f;
+                float frac = capacity > 0 ? Mathf.Clamp((float)count / capacity, 0f, 1f) : 0f;
                 _invCapFill.Size = new Float2(_invCapFill.Parent.Width * frac, 4f);
             }
         }
@@ -2339,7 +2631,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             const float leftRowH = 24f;
             float secY = CardPad + 26f;
 
-            float leftH = 26f + leftRowH * 6f;
+            // 基础属性两列排布：单列会顶高整张卡、把下面的战斗属性/行囊挤出设计高度
+            int baseRows = (BaseStatDefs.Length + 1) / 2;
+            // 末行下面留两行图例各 16px：五行三项的"金/木/水/火/土"行序、宠物四项的"攻/血/防/命中"行序。
+            // 总高仍比右栏（250）矮或相等，卡片高度不变——加这一行不会把下面的卡推下去。
+            float leftH = 26f + leftRowH * baseRows + 32f;
             // 右栏两列：标题26 + 汇总24 + 发丝线 + 5行×30 + 操作区38
             float rightH = 26f + 30f + 30f * 5 + 10f + 28f + 6f;
             var card = MakeCard(secY + Mathf.Max(leftH, rightH) + CardPad);
@@ -2356,19 +2652,29 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             card.AddChild(_attrLeftCol);
             _attrLeftCol.AddChild(MakeInvSectionTitle("基础属性", 0f, 0f, 290f));
 
-            string[] names = { "攻击力", "防御力", "暴击率", "暴击伤害", "命中率", "闪避率" };
-            bool[] goldVal = { false, false, true, true, false, false };
-            _baseStatValueLabels = new Label[names.Length];
-            for (int i = 0; i < names.Length; i++)
+            _baseStatValueLabels = new Label[BaseStatDefs.Length];
+            for (int i = 0; i < BaseStatDefs.Length; i++)
             {
-                float y = 26f + i * leftRowH;
-                _attrLeftCol.AddChild(MakeLabel(names[i], 0f, y, 74f, leftRowH,
-                    InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
-                _baseStatValueLabels[i] = MakeLabel("-", 78f, y, 210f, leftRowH,
-                    goldVal[i] ? InkWashTheme.GoldBright : InkWashTheme.TextDefault,
-                    13f, InkWashTheme.FontRole.Number, TextAlignment.Near);
-                _attrLeftCol.AddChild(_baseStatValueLabels[i]);
+                int col = i / baseRows;
+                int row = i % baseRows;
+                float x = col * 150f;
+                float y = 26f + row * leftRowH;
+                _attrLeftCol.AddChild(MakeLabel(BaseStatDefs[i].Name, x, y, 66f, leftRowH,
+                    InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+                _baseStatValueLabels[(int)BaseStatDefs[i].Key] = MakeLabel("-", x + 68f, y, 80f, leftRowH,
+                    BaseStatDefs[i].Gold ? InkWashTheme.GoldBright : InkWashTheme.TextDefault,
+                    12f, InkWashTheme.FontRole.Number, TextAlignment.Near);
+                _attrLeftCol.AddChild(_baseStatValueLabels[(int)BaseStatDefs[i].Key]);
             }
+
+            // 三项五行值都是"金/木/水/火/土"五格定序，斜杠分隔——没有图例就无法把数字和元素对上。
+            _attrLeftCol.AddChild(MakeLabel("五行三项行序：" + ElementRowLegend(),
+                0f, 26f + leftRowH * baseRows, 290f, 16f,
+                InkWashTheme.TextSecondary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            // 宠物栏同样是斜杠摊开，行序必须写出来：4 个数字里没有图例就是"1060/1920/530/72"这种天书。
+            _attrLeftCol.AddChild(MakeLabel("宠物四项行序：攻/血/防/命中",
+                0f, 26f + leftRowH * baseRows + 16f, 290f, 16f,
+                InkWashTheme.TextSecondary, 10f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
             // ── 右栏：属性加点（两列排布；每点说明收进"？"悬停 Tooltip） ──
             // 全部子控件 TopLeft 锚；位置由 LayoutCards 在父尺寸已知后显式重排。
@@ -2391,7 +2697,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             const float rowsY = 56f;
             const float rowPitch = 30f;
-            const int leftRows = 5;   // 左列：力量/敏捷/体质/内力/金；右列：木/水/火/土
+            const int leftRows = 5;   // 左列：力量/敏捷/体质/智力/金；右列：木/水/火/土
 
             _allocSpentLabels = new Label[AllocationRowDefs.Length];
             _allocPendingLabels = new Label[AllocationRowDefs.Length];
@@ -3006,22 +3312,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         // 嵌套控件：模型舞台（渐变背景 + 金色角饰 + 边框）
         // ===================================================================
 
-        /// <summary>3D 模型展示舞台：水墨青带紫三段渐变（青墨→青紫过渡→深紫）+ 1px 金边 + 四角 L 形金饰。</summary>
+        /// <summary>3D 模型展示舞台：暗天渐变 + 1px 金边 + 四角 L 形金饰（色阶与 CharacterPreview3D 的工作台舞台同锚点：上=近黑天空、下=地平线雾灰）。</summary>
         internal class ModelStage : ContainerControl
         {
-            // ── 水墨青带紫背景色板（水墨风：青为主、紫为衬，低饱和深色调） ──
+            // ── 暗天背景色板（与 CharacterPreview3D.DrawWorkbenchStage 的 天空顶 / 地平线 同值） ──
 
-            /// <summary>顶部青墨</summary>
-            private static readonly Color InkCyanTop = new Color(0.11f, 0.22f, 0.30f, 1f);
+            /// <summary>顶部暗天</summary>
+            private static readonly Color StageTop = new Color(0.0008f, 0.0009f, 0.0010f, 1f);
 
-            /// <summary>中部深青</summary>
-            private static readonly Color InkCyanMid = new Color(0.07f, 0.15f, 0.24f, 1f);
-
-            /// <summary>中部紫墨</summary>
-            private static readonly Color InkPurpleMid = new Color(0.14f, 0.11f, 0.26f, 1f);
-
-            /// <summary>底部深紫</summary>
-            private static readonly Color InkPurpleBottom = new Color(0.08f, 0.06f, 0.16f, 1f);
+            /// <summary>底部地平线雾灰</summary>
+            private static readonly Color StageBottom = new Color(0.034f, 0.040f, 0.048f, 1f);
 
             public ModelStage()
             {
@@ -3040,22 +3340,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             private void DrawGradientBg()
             {
-                const int steps = 40;
+                // 每带 ≤2 设备像素：固定 40 带铺满一千多像素高时，每带 27px，直接画成横条纹。
+                // 末带也不再 +1f 重叠（重叠的半透明带会在接缝处叠出更深的边）。
+                int steps = (int)((Height + 3f) * 0.5f);
+                if (steps < 2) return;
+                if (steps > 1024) steps = 1024;
+
                 for (int i = 0; i < steps; i++)
                 {
-                    float t0 = i / (float)steps;
-                    float t1 = (i + 1) / (float)steps;
-                    Color c = SampleGradient((t0 + t1) * 0.5f);
-                    Render2D.FillRectangle(new Rectangle(0f, Height * t0, Width, Height * (t1 - t0) + 1f), c);
+                    float y0 = Height * i / steps;
+                    float y1 = Height * (i + 1) / steps;
+                    Color c = SampleGradient((y0 + y1) * 0.5f / Height);
+                    Render2D.FillRectangle(new Rectangle(0f, y0, Width, y1 - y0), c);
                 }
             }
 
             private static Color SampleGradient(float t)
             {
-                // 青→紫三段渐变：顶部青墨(0~0.35) → 青紫过渡(0.35~0.7) → 底部深紫(0.7~1)
-                if (t < 0.35f) return Color.Lerp(InkCyanTop, InkCyanMid, t / 0.35f);
-                if (t < 0.7f) return Color.Lerp(InkCyanMid, InkPurpleMid, (t - 0.35f) / 0.35f);
-                return Color.Lerp(InkPurpleMid, InkPurpleBottom, (t - 0.7f) / 0.3f);
+                // 单条余弦曲线：三段线性插值会在拼接点留下导数不连续，那条折点会被直接看成一条硬边
+                float s = 0.5f - 0.5f * Mathf.Cos(t * Mathf.Pi);
+                return Color.Lerp(StageTop, StageBottom, s);
             }
 
             private void DrawGoldCorners()
@@ -3486,6 +3790,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             public event Action Clicked;
 
+            /// <summary>左键在格子上按下（尚未抬起）：参数为按下点的屏幕坐标，用于发起跨面板拖拽。</summary>
+            public event Action<Float2> DragRequested;
+
             public bool IsSelected { get => _isSelected; set => _isSelected = value; }
 
             public InvCell(CellData data)
@@ -3580,6 +3887,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             public override void OnMouseEnter(Float2 location) { _isHovered = true; base.OnMouseEnter(location); }
             public override void OnMouseLeave() { _isHovered = false; base.OnMouseLeave(); }
+
+            /// <summary>按下即发起拖拽会话：把背包物品拖到常驻技能栏上（跨页面）。</summary>
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _data.HasItem && ContainsPoint(ref location))
+                    DragRequested?.Invoke(PointToScreen(location));
+                return base.OnMouseDown(location, button);
+            }
 
             public override bool OnMouseUp(Float2 location, MouseButton button)
             {
@@ -4015,10 +4330,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             private static string QualityName(InkWashTheme.InkQuality q) => q switch
             {
+                InkWashTheme.InkQuality.Mythic => "神话",
+                InkWashTheme.InkQuality.Artifact => "神器",
                 InkWashTheme.InkQuality.Legendary => "传说",
                 InkWashTheme.InkQuality.Epic => "史诗",
-                InkWashTheme.InkQuality.Rare => "稀有",
-                InkWashTheme.InkQuality.Uncommon => "良好",
+                InkWashTheme.InkQuality.Rare => "精良",
+                InkWashTheme.InkQuality.Uncommon => "优秀",
                 _ => "普通",
             };
         }

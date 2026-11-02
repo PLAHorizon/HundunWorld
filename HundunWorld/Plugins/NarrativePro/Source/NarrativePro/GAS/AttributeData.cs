@@ -73,7 +73,23 @@ namespace NarrativePro.GAS
         /// <summary>修饰操作类型。</summary>
         public EGameplayModOp ModifierOp = EGameplayModOp.Add;
 
-        /// <summary>修饰量级（加法/乘法因子/覆盖值）。</summary>
+        /// <summary>修饰量级（加法/乘法因子/覆盖值）。配置了 <see cref="SetByCallerTag"/> 时作为回退值。</summary>
         public float Magnitude = 0f;
+
+        /// <summary>
+        /// SetByCaller 标签。非空时优先从 <see cref="GameplayEffectSpec"/> 上的 SetByCaller 值表取量级，
+        /// 对应 UE5 的 ScopedModifier MagnitudeCalculation = SetByCaller。
+        /// </summary>
+        public NarrativePro.Items.GameplayTag SetByCallerTag = NarrativePro.Items.GameplayTag.None;
+
+        /// <summary>取本修饰器在给定 Spec 下生效的量级（SetByCaller 优先，未设置时回退到 Magnitude）。</summary>
+        public float ResolveMagnitude(GameplayEffectSpec spec)
+        {
+            if (SetByCallerTag.IsValid() && spec != null && spec.TryGetSetByCallerMagnitude(SetByCallerTag, out float byCaller))
+            {
+                return byCaller;
+            }
+            return Magnitude;
+        }
     }
 }

@@ -19,6 +19,9 @@ namespace ManagedHundunWorld.Network.Handlers
         public event Action<SnapshotPacket> SnapshotReceived;
         public event Action<InputAckPacket> InputAckReceived;
         public event Action<EventPacket> EventReceived;
+
+        /// <summary>尸体拾取回执（CORPSE-LOOT-PATCH）：取到与没取到都走这条，理由在 Status 里。</summary>
+        public event Action<CorpseLootTakeResultPacket> CorpseLootResultReceived;
         public event Action<WorldChunkDiffPacket> ChunkDiffReceived;
 
         /// <summary>P1.3：服务器拒绝握手（协议版本过低），客户端应触发强制更新流程。</summary>
@@ -29,6 +32,9 @@ namespace ManagedHundunWorld.Network.Handlers
 
         /// <summary>P1.4：收到死亡通知。</summary>
         public event Action<DeathPacket> DeathReceived;
+
+        /// <summary>v17：翻越计划裁决结果（受理继续本地预测；拒绝则取消并回正）。</summary>
+        public event Action<TraversalResultPacket> TraversalResultReceived;
 
         // 修复（静置断线后输入断流 — "无法移动 + 闪跳回原地"根因之一）：
         // 服务端 HandleReconnectAsync 对可恢复决策（ResumeIncremental/ResendFullChunks）返回 HandshakePacket
@@ -117,6 +123,9 @@ namespace ManagedHundunWorld.Network.Handlers
                 case EventPacket eventPacket:
                     EventReceived?.Invoke(eventPacket);
                     break;
+                case CorpseLootTakeResultPacket lootResult:   // CORPSE-LOOT-PATCH
+                    CorpseLootResultReceived?.Invoke(lootResult);
+                    break;
                 case WorldChunkDiffPacket chunkDiff:
                     ChunkDiffReceived?.Invoke(chunkDiff);
                     break;
@@ -166,6 +175,10 @@ namespace ManagedHundunWorld.Network.Handlers
                 case DeathPacket death:
                     // P1.4：死亡通知，转发给 CombatEffectSystem。
                     DeathReceived?.Invoke(death);
+                    break;
+                case TraversalResultPacket traversalResult:
+                    // v17：翻越裁决。受理时本地预测已经在跑；拒绝时由订阅方取消并结束动画。
+                    TraversalResultReceived?.Invoke(traversalResult);
                     break;
                 default:
                     // [Phase C2] 记录未知 Kind 包计数

@@ -1,0 +1,12 @@
+{
+  "abilityName": "火焰投射",
+  "abilityClass": "NarrativeFireBoltAbility",
+  "inputTag": "Narrative.Input.Ability1",
+  "isMelee": false,
+  "isHeavyAttack": false,
+  "requiresAmmo": false,
+  "damageEffectPath": "effect_damage_fire",
+  "defaultAttackDamage": 22,
+  "botAttackFrequency": 0.6,
+  "botAttackRange": 1500
+}

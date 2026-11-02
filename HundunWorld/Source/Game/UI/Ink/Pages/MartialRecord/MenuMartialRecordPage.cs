@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
@@ -15,7 +16,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
     ///   区域详情：区域名与探索度、区域成就列表、总探索度）+ 32px 底栏（服务器 / 延迟 / 版本）。
     /// 颜色与字体一律取自 <see cref="InkWashTheme"/> 设计 Token，禁止硬编码色值。
     /// </summary>
-    public class MenuMartialRecordPage : ContainerControl, IInkPage
+    public class MenuMartialRecordPage : ContainerControl, IInkPage, IInkNavigationSource
     {
         // ═════════════════════════ 数据模型 ═════════════════════════
 
@@ -548,9 +549,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
         private Float2 _screenSize;
 
-        // 背景层
-        private InkBackgroundLayer _bgLayer;
-        private InkVignette _vignette;
+        // 背景层（背景/暗角由外壳提供，页面不再持有）
 
         // 侧边导航
         private Panel _sidebar;
@@ -726,6 +725,31 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
         // ═════════════════════════ 构造 ═════════════════════════
 
+        /// <summary>
+        /// 探索度与区域成就没有服务端来源：地标全部未探索、成就全部「未开始」、已探索计 0，
+        /// 只保留地标名/描述/成就名这类内容（2026-10-29）。
+        /// </summary>
+        private void ResetExploration()
+        {
+            _exploredRegions = 0;
+
+            foreach (RegionData region in Regions)
+            {
+                region.Percent = 0;
+                region.State = MarkerState.Unexplored;
+
+                if (region.Achievements == null)
+                    continue;
+
+                foreach (AchievementData ach in region.Achievements)
+                {
+                    ach.State = AchState.Todo;
+                    ach.StateText = "未开始";
+                    ach.Current = 0;
+                }
+            }
+        }
+
         public MenuMartialRecordPage()
         {
             _screenSize = FlaxEngine.Screen.Size;
@@ -741,6 +765,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
             Location = Float2.Zero;
             Size = _screenSize;
 
+            // 武林录探索/成就没有服务端数据：全部归零（2026-10-29）
+            ResetExploration();
+
             try
             {
                 BuildBackground();
@@ -751,6 +778,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
                 BuildFooter();
 
                 SelectRegion(DefaultRegionIndex);
+
+                // 顶栏身份/铜钱接真实数据
+                InkPlayerHeaderBinder.Bind(_playerName, _levelTag, _coinValue);
+                InkPlayerHeaderBinder.BindSect(_sectLabel);
             }
             catch (Exception ex)
             {
@@ -762,15 +793,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
         private void BuildBackground()
         {
-            _bgLayer = new InkBackgroundLayer
-            {
-                Parent = this
-            };
-
-            _vignette = new InkVignette
-            {
-                Parent = this
-            };
+            // 背景层/暗角由外壳统一提供（本页为沉浸式全屏页），页面不再自绘。
         }
 
         // ═════════════════════════ 构建：侧边导航 ═════════════════════════
@@ -785,7 +808,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _sidebarBrand = new Label
             {
-                Text = "燕云十六声",
+                Text = "混沌世界",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                 TextColor = InkWashTheme.TextBrand,
                 VerticalAlignment = TextAlignment.Center,
@@ -894,7 +917,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _playerName = new Label
             {
-                Text = "无名侠",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
                 TextColor = InkWashTheme.TextDefault,
                 VerticalAlignment = TextAlignment.Center,
@@ -903,14 +926,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _levelTag = new InkTag
             {
-                Text = "Lv.42",
+                Text = "—",
                 TagVariant = InkTagVariant.Vermilion,
                 Parent = _topBar
             };
 
             _sectLabel = new Label
             {
-                Text = "逍遥派",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
                 TextColor = InkWashTheme.Info,
                 VerticalAlignment = TextAlignment.Center,
@@ -926,7 +949,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _coinValue = new Label
             {
-                Text = "12,450",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
                 TextColor = InkWashTheme.TextDefault,
                 HorizontalAlignment = TextAlignment.Far,
@@ -943,7 +966,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _gemValue = new Label
             {
-                Text = "328",
+                Text = "—",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
                 TextColor = InkWashTheme.TextBrand,
                 HorizontalAlignment = TextAlignment.Far,
@@ -959,7 +982,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
                 Variant = InkButtonVariant.Ghost,
                 Parent = _topBar
             };
-            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.BackOneLevel);
         }
 
         // ═════════════════════════ 构建：地图区 ═════════════════════════
@@ -988,7 +1011,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _mapTitleIcon = new Label
             {
-                Text = "▤",
+                Text = "◆",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
                 TextColor = InkWashTheme.TextBrand,
                 HorizontalAlignment = TextAlignment.Center,
@@ -1248,7 +1271,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _serverLabel = new Label
             {
-                Text = "服务器：乾坤一柱",
+                Text = "服务器：未连接",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 VerticalAlignment = TextAlignment.Center,
@@ -1257,7 +1280,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _pingLabel = new Label
             {
-                Text = "延迟 32ms",
+                Text = "延迟 未测得",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 VerticalAlignment = TextAlignment.Center,
@@ -1266,7 +1289,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
 
             _versionLabel = new Label
             {
-                Text = "燕云十六声 v1.0.0",
+                Text = "混沌世界 v1.2.0",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 TextColor = InkWashTheme.TextTertiary,
                 HorizontalAlignment = TextAlignment.Far,
@@ -1297,6 +1320,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
         /// <summary>按当前选中区域刷新详情面板与总探索度。</summary>
         private void RefreshAllData()
         {
+            InkPlayerHeaderBinder.GetGatewayText(out string gatewayRegion, out string latency);
+            if (_serverLabel != null) _serverLabel.Text = "服务器：" + gatewayRegion;
+            if (_pingLabel != null) _pingLabel.Text = "延迟 " + latency;
+
             RegionData region = Regions[_selectedRegion];
 
             if (_regionName != null) _regionName.Text = region.Name;
@@ -1491,11 +1518,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.MartialRecord
             float sh = Height > 0f ? Height : _screenSize.Y;
             if (sw <= 0f || sh <= 0f)
                 return;
-
-            _bgLayer.Location = Float2.Zero;
-            _bgLayer.Size = new Float2(sw, sh);
-            _vignette.Location = Float2.Zero;
-            _vignette.Size = new Float2(sw, sh);
 
             // ── 侧边导航 ──
             _sidebar.Location = Float2.Zero;

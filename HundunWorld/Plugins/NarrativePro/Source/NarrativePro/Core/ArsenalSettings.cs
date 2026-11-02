@@ -78,13 +78,77 @@ namespace NarrativePro.Core
         /// <summary>编辑器：项目设置不匹配时是否弹窗。</summary>
         public bool bDisplayProjectSettingsNotification = true;
 
+        /// <summary>
+        /// 配置文件默认路径。对应 UE5 config=Engine 的落盘位置；
+        /// 文件不存在时按构造默认值运行。
+        /// </summary>
+        public const string DefaultConfigPath = "Content/NarrativePro/Settings/ArsenalSettings.json";
+
         /// <summary>单例实例。</summary>
         public static ArsenalSettings Instance { get; set; } = LoadDefault();
 
+        /// <summary>读取默认配置：优先 JSON 配置文件，缺失或损坏时回退到构造默认值。</summary>
         private static ArsenalSettings LoadDefault()
         {
-            // TODO [需接入设置加载系统]: 从 Flax Content/Settings 或 JSON 加载。暂时返回默认实例。
-            return new ArsenalSettings();
+            return LoadFromFile(DefaultConfigPath) ?? new ArsenalSettings();
+        }
+
+        /// <summary>
+        /// 从 JSON 文件加载设置。文件不存在返回 null（调用方按默认值处理），
+        /// 解析失败写警告后返回 null，不拖垮启动。
+        /// </summary>
+        public static ArsenalSettings LoadFromFile(string jsonFilePath)
+        {
+            if (string.IsNullOrEmpty(jsonFilePath)) return null;
+
+            try
+            {
+                if (!System.IO.File.Exists(jsonFilePath)) return null;
+
+                string json = System.IO.File.ReadAllText(jsonFilePath);
+                if (string.IsNullOrWhiteSpace(json)) return null;
+
+                var loaded = System.Text.Json.JsonSerializer.Deserialize<ArsenalSettings>(json, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true,
+                    IncludeFields = true
+                });
+                if (loaded != null)
+                {
+                    NarrativeLog.Log($"ArsenalSettings 已从 {jsonFilePath} 加载。");
+                }
+                return loaded;
+            }
+            catch (System.Exception ex)
+            {
+                NarrativeLog.LogWarning($"加载 Arsenal 设置 '{jsonFilePath}' 失败，改用默认值: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>把当前实例写回 JSON 文件（编辑器/调试面板改完设置后持久化）。</summary>
+        public void SaveToFile(string jsonFilePath = DefaultConfigPath)
+        {
+            if (string.IsNullOrEmpty(jsonFilePath)) return;
+
+            try
+            {
+                var directory = System.IO.Path.GetDirectoryName(jsonFilePath);
+                if (!string.IsNullOrEmpty(directory)) System.IO.Directory.CreateDirectory(directory);
+
+                string json = System.Text.Json.JsonSerializer.Serialize(this, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    IncludeFields = true
+                });
+                System.IO.File.WriteAllText(jsonFilePath, json);
+            }
+            catch (System.Exception ex)
+            {
+                NarrativeLog.LogWarning($"保存 Arsenal 设置 '{jsonFilePath}' 失败: {ex.Message}");
+            }
         }
 
         /// <summary>获取标签的友好显示名。</summary>

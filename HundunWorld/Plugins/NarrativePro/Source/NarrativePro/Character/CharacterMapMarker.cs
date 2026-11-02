@@ -13,8 +13,7 @@ namespace NarrativePro.Character
     {
         /// <summary>
         /// 获取标记颜色：根据 Owner 与 selector 的关系返回 NavigationDeveloperSettings 中配置的颜色。
-        /// 简化版：若 Owner == selector 的 Actor 则视为 Player，否则 Neutral。
-        /// 待接入：完整阵营系统（Factions 标签容器）以判定 Friendly/Hostile。
+        /// 阵营关系走 <see cref="NarrativePro.Core.ArsenalStatics.GetAttitude"/>（Factions 标签容器口径）。
         /// </summary>
         public override Color GetMarkerColor(NarrativeNavigationComponent selector, GameplayTag navigatorType)
         {
@@ -25,21 +24,31 @@ namespace NarrativePro.Character
             var selectorActor = selector?.Actor;
             if (selectorActor == null) return base.GetMarkerColor(selector, navigatorType);
 
-            // TODO [需接入阵营系统]: 当前简化为 Player/Neutral 判定，需通过 Factions 标签容器以判定 Friendly/Hostile
             ENavigationAttitude attitude = GetAttitude(selectorActor, owner);
             return NavigatorStatics.GetColorForAttitude(attitude);
         }
 
         /// <summary>
         /// 获取 selector 拥有者对 target 的敌对态度。
-        /// 简化版：相同 Actor 视为 Player，否则 Neutral。
-        /// 待接入：Factions/GameplayTag 容器查询以返回 Friendly/Hostile。
+        /// 对应 UE5 <c>UCharacterMapMarker::GetAttitude</c>（走 ATeamAgentInterface 的阵营容器）：
+        /// Flax 无 TeamAgentInterface，此处使用 <see cref="NarrativePro.Core.ArsenalStatics"/> 的阵营查询与态度映射。
         /// </summary>
         protected virtual ENavigationAttitude GetAttitude(Actor selectorActor, Actor targetActor)
         {
-            if (selectorActor == targetActor) return ENavigationAttitude.Player;
-            // TODO [需接入阵营系统]: 通过 Factions/GameplayTag 容器查询以返回 Friendly/Hostile，当前简化为 Neutral
-            return ENavigationAttitude.Neutral;
+            if (selectorActor == null || targetActor == null) return ENavigationAttitude.Neutral;
+
+            // 本地玩家：与导航组件登记的本地玩家 Actor 相同
+            if (ReferenceEquals(selectorActor, targetActor)) return ENavigationAttitude.Player;
+            var localPlayer = selectorActor.GetScript<NarrativeNavigationComponent>()?.ResolveLocalPlayerActor();
+            if (localPlayer != null && localPlayer == targetActor) return ENavigationAttitude.Player;
+
+            var attitude = NarrativePro.Core.ArsenalStatics.GetAttitude(selectorActor, targetActor);
+            switch (attitude)
+            {
+                case NarrativePro.Core.ArsenalStatics.ETeamAttitude.Friendly: return ENavigationAttitude.Friendly;
+                case NarrativePro.Core.ArsenalStatics.ETeamAttitude.Hostile: return ENavigationAttitude.Hostile;
+                default: return ENavigationAttitude.Neutral;
+            }
         }
 
         public override void OnMarkerAdded(NarrativeNavigationComponent ownerNavComp)

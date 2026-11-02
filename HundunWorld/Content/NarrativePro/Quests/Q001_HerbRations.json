@@ -1,0 +1,116 @@
+{
+  "questId": "Q001_HerbRations",
+  "questName": "药草与口粮",
+  "questDescription": "长者需要三七份药草换取随行口粮",
+  "questDialogueClass": "D001_HerbRationsIntro",
+  "states": [
+    {
+      "id": "s_begin",
+      "description": "在村口接受长者的委托",
+      "stateType": 0,
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "s_gather",
+      "description": "在山道采集药草",
+      "stateType": 0,
+      "position": {
+        "x": 320.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "s_deliver",
+      "description": "把药草送回长者村舍",
+      "stateType": 0,
+      "position": {
+        "x": 640.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "s_success",
+      "description": "任务完成",
+      "stateType": 1,
+      "position": {
+        "x": 960.0,
+        "y": -140.0
+      }
+    },
+    {
+      "id": "s_fail",
+      "description": "药草被雨水泡坏，委托告吹",
+      "stateType": 2,
+      "position": {
+        "x": 960.0,
+        "y": 140.0
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "b_accept",
+      "description": "采集 3 株三七药草",
+      "fromStateId": "s_begin",
+      "toStateId": "s_gather",
+      "tasks": [
+        {
+          "type": "CollectItem",
+          "requiredQuantity": 3
+        },
+        {
+          "type": "WaitTask"
+        }
+      ],
+      "hidden": false,
+      "position": {
+        "x": 160.0,
+        "y": 96.0
+      }
+    },
+    {
+      "id": "b_deliver",
+      "description": "药草齐了，送去村舍",
+      "fromStateId": "s_gather",
+      "toStateId": "s_deliver",
+      "tasks": [
+        {
+          "type": "GoToLocation"
+        }
+      ],
+      "hidden": false,
+      "position": {
+        "x": 480.0,
+        "y": 96.0
+      }
+    },
+    {
+      "id": "b_success",
+      "description": "",
+      "fromStateId": "s_deliver",
+      "toStateId": "s_success",
+      "tasks": [],
+      "hidden": false,
+      "position": {
+        "x": 800.0,
+        "y": -70.0
+      }
+    },
+    {
+      "id": "b_fail_soaked",
+      "description": "",
+      "fromStateId": "s_deliver",
+      "toStateId": "s_fail",
+      "tasks": [],
+      "hidden": true,
+      "position": {
+        "x": 800.0,
+        "y": 70.0
+      }
+    }
+  ],
+  "startStateId": "s_begin"
+}

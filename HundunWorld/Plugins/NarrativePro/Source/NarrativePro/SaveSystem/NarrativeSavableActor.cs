@@ -32,36 +32,4 @@ namespace NarrativePro.SaveSystem
         /// </summary>
         void SetActorGUID(Guid savedGUID);
     }
-
-    /// <summary>
-    /// INarrativeSavableActor 的默认实现基类（可选继承）。
-    /// 对应 UE5 INarrativeSavableActor::_Implementation 默认实现。
-    /// 不强制继承；实现接口的类可直接复用这些静态默认方法。
-    /// </summary>
-    public static class NarrativeSavableActorDefaults
-    {
-        /// <summary>PrepareForSave 默认空实现。</summary>
-        public static void PrepareForSaveDefault(INarrativeSavableActor self)
-        {
-            // 默认无操作
-        }
-
-        /// <summary>Load 默认空实现。</summary>
-        public static void LoadDefault(INarrativeSavableActor self)
-        {
-            // 默认无操作
-        }
-
-        /// <summary>ShouldRespawn 默认返回 true。</summary>
-        public static bool ShouldRespawnDefault(INarrativeSavableActor self)
-        {
-            return true;
-        }
-
-        /// <summary>SetActorGUID 默认空实现（子类应覆盖以真正接收 GUID）。</summary>
-        public static void SetActorGUIDDefault(INarrativeSavableActor self, Guid savedGUID)
-        {
-            // 默认无操作；UE5 中此处会 checkf(false) 提示未实现
-        }
-    }
 }

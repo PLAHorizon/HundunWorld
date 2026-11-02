@@ -1,0 +1,368 @@
+﻿{
+  "Format": 2,
+  "Name": "demo_cave",
+  "EditorData": null,
+  "Nodes": [
+    {
+      "TypeId": "Biome",
+      "X": 0,
+      "Y": 0,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "50",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "8",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "200",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "600",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "4",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "25",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "8",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "VolumeSampler",
+      "X": 0,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 rocks",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "0",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1.5",
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "ProjectPoints",
+      "X": 300,
+      "Y": 180,
+      "Comment": "\u6563\u5E03\u5C42 rocks\uFF1A\u843D\u5230\u5730\u5F62\u8868\u9762",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Bool",
+          "Value": "1",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SlopeFilter",
+      "X": 600,
+      "Y": 180,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Float",
+          "Value": "20",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "90",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnStaticModel",
+      "X": 900,
+      "Y": 180,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Asset",
+          "Value": "dd86c47234c44bf7b3239d9505aa4fc7",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.5",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "1.5",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "Cave",
+      "X": 0,
+      "Y": 360,
+      "Comment": null,
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "0.3",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "32",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "500",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "28",
+          "Components": null
+        },
+        {
+          "Kind": "Float",
+          "Value": "70",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "12",
+          "Components": null
+        },
+        {
+          "Kind": "Int",
+          "Value": "14",
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    },
+    {
+      "TypeId": "SpawnGeometry",
+      "X": 300,
+      "Y": 360,
+      "Comment": "\u6D1E\u58C1",
+      "Disabled": false,
+      "Values": [
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        },
+        {
+          "Kind": "Empty",
+          "Value": null,
+          "Components": null
+        }
+      ]
+    }
+  ],
+  "Edges": [
+    {
+      "FromNode": 1,
+      "FromPin": 0,
+      "ToNode": 2,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 2,
+      "FromPin": 0,
+      "ToNode": 3,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 3,
+      "FromPin": 0,
+      "ToNode": 4,
+      "ToPin": 0
+    },
+    {
+      "FromNode": 5,
+      "FromPin": 0,
+      "ToNode": 6,
+      "ToPin": 0
+    }
+  ],
+  "Exposed": [],
+  "Settings": {
+    "DefaultSeed": 20261010,
+    "EnableDebugDraw": true,
+    "MaxPointBudget": 2000000,
+    "MaxExpandedNodeCount": 4096,
+    "Terrain": {
+      "NoiseAmplitude": 25,
+      "NoiseScale": 500,
+      "Features": [
+        {
+          "Kind": 0,
+          "X": 5000,
+          "Z": 5000,
+          "Radius": 600,
+          "Height": 220,
+          "Falloff": 0.2
+        }
+      ],
+      "Holes": []
+    }
+  }
+}

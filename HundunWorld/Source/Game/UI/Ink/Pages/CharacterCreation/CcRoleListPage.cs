@@ -1,6 +1,7 @@
-using FlaxEngine;
+﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.UI.Character;
+using HundunWorld.Game.Services;
 using HundunWorld.Game.UI.StyleSystem;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
@@ -301,6 +302,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
 
             _keepSelected = _selected;
 
+            // 首次进页 / 删除后回列表：立绘要对上"当前选中的那一个"，而不是默认身体
+            if (_selected != null)
+            {
+                ApplyPreviewGender(_selected.Gender);
+                ApplyPreviewLook(_selected);
+            }
+
             UpdateIdWatermark();
 
             if (_emptyLabel != null)
@@ -362,6 +370,37 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         {
             base.Update(dt);
 
+            // 选角预览的外观是异步回的：拿到缓存就套一次。
+            if (_pendingLookId != 0UL
+                && MetaHumanAppearanceService.Instance.TryGetCachedLook(_pendingLookId, out MetaHuman.MetaHumanLook look))
+            {
+                _pendingLookId = 0UL;
+                ApplyPreviewLook(look);
+            }
+
+            // 头/身模型是异步加载的：就绪前每 0.5s 重试绑定，超时后明确告警（不静默停在半个预览上）。
+            if (_pendingApplyLook != null)
+            {
+                _applyRetryTimer -= dt;
+                if (_applyRetryTimer <= 0f)
+                {
+                    _applyAttempts++;
+                    if (TryBindPreviewMetaHuman(_pendingApplyLook))
+                    {
+                        _pendingApplyLook = null;
+                    }
+                    else if (_applyAttempts >= 20)
+                    {
+                        FlaxEngine.Debug.LogWarning("[CcRoleListPage] 选角预览绑定外观超时（10s）：头或身体模型未就绪，保留当前显示");
+                        _pendingApplyLook = null;
+                    }
+                    else
+                    {
+                        _applyRetryTimer = 0.5f;
+                    }
+                }
+            }
+
             if (!_deleteArmed)
                 return;
 
@@ -374,11 +413,109 @@ namespace HundunWorld.Game.UI.Ink.Pages.CharacterCreation
         {
             _selected = info;
             _keepSelected = info;
+            // 选角页的立绘跟着选中角色走：男女是两具身体，不重绑就一直是默认那一具
+            ApplyPreviewGender(info.Gender);
+            // 有已保存外观时换成该角色的 MetaHuman 脸+身（缺 look 时保持占位人形，行为与旧版一致）。
+            ApplyPreviewLook(info);
             UpdateIdWatermark();
             // 换了删除目标就把确认清掉，避免"对着 A 上膛、删掉 B"。
             DisarmDelete();
             foreach (var other in _rows)
                 other.Selected = ReferenceEquals(other, row);
+        }
+
+        private ulong _pendingLookId;
+
+        /// <summary>
+        /// 选角页预览用该角色已保存的 MetaHuman look 渲染（6a14）。
+        /// 列表回执不一定带外观 blob：没有就先向网关要一份，Update 里轮询缓存后再套。
+        /// </summary>
+        private void ApplyPreviewLook(CharacterInfo info)
+        {
+            if (Preview == null || info == null)
+                return;
+
+            _pendingLookId = 0UL;
+            byte[] blob = info.MetaHumanLook != null ? info.MetaHumanLook.Blob : null;
+            if (blob != null && blob.Length > 0)
+            {
+                try
+                {
+                    ApplyPreviewLook(MetaHuman.MetaHumanLook.FromBytes(blob));
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogWarning("[CcRoleListPage] 角色外观解码失败，保留占位人形: " + ex.Message);
+                }
+                return;
+            }
+
+            if (info.CharacterId <= 0)
+                return;
+
+            _pendingLookId = (ulong)info.CharacterId;
+            MetaHumanAppearanceService.Instance.RequestRemoteAppearance(_pendingLookId);
+        }
+
+        /// <summary>把一份外观套到预览的头/身体上；头/身模型还没就绪时转成"待重试"，不静默放弃。</summary>
+        private void ApplyPreviewLook(MetaHuman.MetaHumanLook look)
+        {
+            if (look == null || Preview == null)
+                return;
+
+            // 先切显示（幂等）：蒙皮身体 + Ada 头同屏（头用 master pose 跟随身体姿态），藏掉占位人形/模板身体。
+            Preview.SetTemplateBodyVisible(false);
+            Preview.SetAnimatedBodyVisible(false);
+            Preview.SetMetaHumanLookMode(true);
+
+            _pendingApplyLook = null;
+            if (TryBindPreviewMetaHuman(look))
+                return;
+
+            _pendingApplyLook = look;
+            _applyRetryTimer = 0.4f;
+            _applyAttempts = 0;
+        }
+
+        private MetaHuman.MetaHumanLook _pendingApplyLook;
+        private float _applyRetryTimer;
+        private int _applyAttempts;
+
+        /// <summary>绑定成功返回 true；头/身模型尚未加载完返回 false（由 Update 重试）。</summary>
+        private bool TryBindPreviewMetaHuman(MetaHuman.MetaHumanLook look)
+        {
+            AnimatedModel head = Preview.HeadModel;
+            if (head == null || head.SkinnedModel == null || !head.SkinnedModel.IsLoaded)
+                return false;
+
+            var models = new List<AnimatedModel>();
+            Preview.CollectSkinnedModels(models);
+            if (models.Count < 2)
+                return false;
+
+            var character = head.GetScript<MetaHuman.Runtime.MetaHumanCharacter>();
+            if (character == null)
+                character = head.AddScript<MetaHuman.Runtime.MetaHumanCharacter>();
+            if (character == null)
+                return false;
+
+            character.TemplateIds = new[] { "metahuman.face_archetype", "metahuman.body_base" };
+            // "preview" 在引擎 LOD 政策的 AlwaysShapeRoles 里：舞台离主相机很远，别的身份档会被判"超出形状档"。
+            character.CharacterRole = "preview";
+            character.ApplyOnStart = false;
+            character.TargetModels = models.ToArray();
+            if (!character.IsLoaded)
+                character.Load();
+
+            if (!character.LoadLook(look))
+                return false;
+
+            Preview.SetHairStyle(character.HairStyle);
+            // 完整外观是全身像：按可见模型重新取景（外观模式下取景高度用到头冠，见 TryAutoFrame）。
+            Preview.Reframe();
+            FlaxEngine.Debug.Log("[CcRoleListPage] 选角预览已应用外观: targets=" + models.Count
+                                 + " head=" + (head.Name ?? "<null>"));
+            return true;
         }
 
         /// <summary>

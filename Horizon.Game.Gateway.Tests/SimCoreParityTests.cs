@@ -175,6 +175,29 @@ public class SimCoreParityTests
     }
 
     [Fact]
+    public void WorldFloorZ_Clamp_HoldsWhere_GroundSampler_Cannot()
+    {
+        // 现场复现：生产路径的 ZoneShardGrain 从不注入 GroundHeightSampler，服务端权威 Z 只受重力支配。
+        // 客户端脚下没有碰撞体时会一路下坠（实测 -590m），此后服务端仍持续广播那个深渊值，
+        // 把已经贴回地面的客户端再拽下去——客户端贴地与服务端下拉来回拉扯=相机穿地后反复抖动。
+        // 底限 clamp 是这条链路上唯一可行的地面约束（服务端没有 Flax 物理），故必须有独立守卫。
+        const float sunkZ = -59000f;               // cm，实测过的深渊值
+        var belowFloor = new WorldPosition(0f, 0f, sunkZ);
+        var inputs = new[] { MoveInput(1, 0f, 0f) };
+
+        // 对照（证明 clamp 分支真的在执行，而不是夹具恒真）：不设底限时同一批输入会继续下坠。
+        var noFloor = new MovementValidator()
+            .Validate(1, belowFloor, 0f, inputs, new WorldPosition(0f, 0f, 0f), 100);
+        Assert.True(noFloor.AuthoritativeEnd.Z < sunkZ,
+            $"无底限时应当继续下坠，实际 Z={noFloor.AuthoritativeEnd.Z}");
+
+        var floored = new MovementValidator(new MovementValidator.Options { WorldFloorZ = 0f })
+            .Validate(1, belowFloor, 0f, inputs, new WorldPosition(0f, 0f, 0f), 100);
+        AssertBitwiseEqual(0f, floored.AuthoritativeEnd.Z, "End.Z", 0);
+        Assert.True(floored.IsGrounded);
+    }
+
+    [Fact]
     public void CheckAcceleration_Verdicts_AreStable()
     {
         var validator = new MovementValidator();

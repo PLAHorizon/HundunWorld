@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- 客户端可见的共享件（无算法）：机器指纹读取与协议级枚举。
+       刻意保持最小：客户端当前只用到 MachineIdentifier.GetMachineGuid()、AppType、PassportType，
+       把这几件从 Horizon.Core / Horizon.Core.Abstract 里搬出来，客户端就不必再拉那两个服务端程序集
+       （其中 PlayerId 生成、token 签发、密码哈希、敏感词过滤、Cache/Redis 推送、GrainState 基类
+        等约 3-4k 行服务端代码不应下发）。 -->
+  <ItemGroup>
+    <!-- 枚举带 [GenerateSerializer]，保留 Orleans 源生成器以保证服务端侧 codec 照旧生成 -->
+    <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" />
+    <PackageReference Include="Microsoft.Orleans.Sdk" />
+  </ItemGroup>
+
+</Project>

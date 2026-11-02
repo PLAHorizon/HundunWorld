@@ -26,6 +26,8 @@ namespace NarrativePro.Network
             _handlers[EUpdateType.QuestNewState] = HandleQuestNewState;
             _handlers[EUpdateType.CompleteTask] = HandleCompleteTask;
             _handlers[EUpdateType.TaskProgressMade] = HandleTaskProgressMade;
+            _handlers[EUpdateType.DialogueExit] = HandleDialogueExit;
+            _handlers[EUpdateType.DialogueSkip] = HandleDialogueSkip;
         }
 
         public void HandleMessage(string jsonPayload)
@@ -72,6 +74,16 @@ namespace NarrativePro.Network
         }
 
         private void HandleTaskProgressMade(NarrativeUpdate update)
+        {
+            SyncManager.ProcessNarrativeUpdate(update);
+        }
+
+        private void HandleDialogueExit(NarrativeUpdate update)
+        {
+            SyncManager.ProcessNarrativeUpdate(update);
+        }
+
+        private void HandleDialogueSkip(NarrativeUpdate update)
         {
             SyncManager.ProcessNarrativeUpdate(update);
         }

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- 确定性库：与 Horizon.Game.Sim 同配置，保证跨端按位一致 -->
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MemoryPack.Core" />
+    <PackageReference Include="MemoryPack.Generator" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- 客户端可见的共享仿真契约：确定性移动公式 / 步进器 / 跳跃状态机 / 位置修正包 / 仿真配置。
+       刻意不引用 Horizon.Game.Sim（权威校验、战斗、AI、刷怪、金轨迹等算法留在服务端），
+       也不依赖 Orleans —— MMORPG 客户端只拿这一份无算法的共享代码。 -->
+
+  <!-- 与 Horizon.Game.Sim.csproj 同款分发：把本程序集复制到 Flax 引擎托管工具目录，
+       供 MMORPG 客户端（Game.csproj 的 <Reference> 与 Game.Build.cs 的 dlls[]）编译期/运行期解析。 -->
+  <PropertyGroup>
+    <FlaxToolsDir Condition="'$(FlaxToolsDir)' == ''">C:\Program Files (x86)\Flax\Flax_1.13\Binaries\Tools</FlaxToolsDir>
+    <CopyToFlax Condition="'$(CopyToFlax)' == ''">true</CopyToFlax>
+  </PropertyGroup>
+
+  <Target Name="CopyToFlax" AfterTargets="Build"
+          Condition="'$(CopyToFlax)' == 'true' And Exists('$(FlaxToolsDir)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+          Condition="Exists('$(TargetDir)$(TargetName).pdb')"
+          DestinationFolder="$(FlaxToolsDir)"
+          SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Message Importance="high" Text="[CopyToFlax] $(TargetFileName) -&gt; $(FlaxToolsDir)" />
+  </Target>
+
+</Project>

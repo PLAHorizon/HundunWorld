@@ -71,6 +71,15 @@ public class DSRegistryMaintenanceHostedServiceTests
             Interlocked.Increment(ref SaveCount);
             return Task.CompletedTask;
         }
+
+        /// <summary>
+        /// 最新一份快照里有几条端点；一份都还没有时返回 -1
+        /// （返回 0 会让"等到有 3 条"这种条件在空表上误判成没满足但也不报错）。
+        /// </summary>
+        public int LatestCount()
+        {
+            lock (SavedSnapshots) return SavedSnapshots.Count == 0 ? -1 : SavedSnapshots[^1].Count;
+        }
     }
 
     private static (DSRegistry Registry, Clock Clock) CreateRegistry()
@@ -284,8 +293,10 @@ public class DSRegistryMaintenanceHostedServiceTests
 
             // 新注册 → 下一轮快照跟随。
             registry.RegisterOrUpdate("ds-c", new long[] { 2 }, "127.0.0.1", 5003);
-            var before = store.SaveCount;
-            await WaitUntilAsync(() => store.SaveCount > before);
+            // 等的是"最新那份快照里真的有 3 条"，不是"存储又被调用过一次"。
+            // 后者会随机红：注册 ds-c 之前那一轮可能已经读过注册表了，它落盘的那份只有 2 条，
+            // 可 SaveCount 照样 +1 —— 于是断言读到的是"上一轮的产物"（实测并行跑 Expected 3 / Actual 2，单跑永远绿）。
+            await WaitUntilAsync(() => store.LatestCount() >= 3);
             lock (store.SavedSnapshots)
             {
                 Assert.Equal(3, store.SavedSnapshots[^1].Count);
