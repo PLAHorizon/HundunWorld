@@ -173,29 +173,15 @@ public sealed class PlanetPatchPump : IDisposable
         bool ok = true;
         try
         {
-            long regionId = frame.Key.ToId();
-            if (_cache is not null && _cache.TryRead(regionId, key.X, key.Z, buffer, out _))
-            {
-                source = PatchFillSource.CacheHit;
-            }
-            else
-            {
-                // 每次生成都用自己的一份窗口缓存：HeightSampler 内部有 5×5 可变模板，多个 worker 共用会互相踩
-                HeightSampler? sampler = _samplerTemplate is null
-                    ? null
-                    : new HeightSampler(_samplerTemplate.Grid, _samplerTemplate.Hybrid);
-                // 泵本身就是并发源：多 worker 时每块只用自己的那一个线程算，
-                // 否则每块再按行分片就变成 workers × ProcessorCount 的嵌套超额订阅（实测 179 ms/块 涨到 570 ms/块）
-                PlanetPatchSampler.FillPatchHeights(frame, _terrain, key.OriginXCm, key.OriginZCm, buffer, sampler,
-                                                    parallel: _maxWorkers <= 1);
-
-                if (_cache is not null)
-                {
-                    try { _cache.Write(regionId, key.X, key.Z, buffer); }
-                    catch (IOException) { Interlocked.Increment(ref _writeFailures); }
-                    catch (UnauthorizedAccessException) { Interlocked.Increment(ref _writeFailures); }
-                }
-            }
+            // 每次生成都用自己的一份窗口缓存：HeightSampler 内部有 5×5 可变模板，多个 worker 共用会互相踩
+            HeightSampler? sampler = _samplerTemplate is null
+                ? null
+                : new HeightSampler(_samplerTemplate.Grid, _samplerTemplate.Hybrid);
+            // 泵本身就是并发源：多 worker 时每块只用自己的那一个线程算，
+            // 否则每块再按行分片就变成 workers × ProcessorCount 的嵌套超额订阅（实测 179 ms/块 涨到 570 ms/块）
+            source = PlanetPatchFill.Fill(frame, _terrain, _cache, sampler, key, buffer,
+                                          parallel: _maxWorkers <= 1, out bool writeFailed);
+            if (writeFailed) Interlocked.Increment(ref _writeFailures);
         }
         catch (Exception)
         {

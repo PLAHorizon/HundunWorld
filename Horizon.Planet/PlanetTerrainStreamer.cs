@@ -39,6 +39,37 @@ public enum PatchFillSource
 }
 
 /// <summary>
+/// "先读磁盘缓存，未命中就重算并回填"这条规则的<b>唯一</b>实现。
+/// <para>近景有两条通路会算同一块：流送的同步路径（主线程直接取）和后台泵（线程池算完送回来）。
+/// 两边各抄一遍的话，抄错的那条会往缓存里写另一种字节布局，于是"命中与重算逐位相同"只在其中一条成立——
+/// 而两条都测过、各自都绿，看不出分叉。键的推导（regionId / px / pz）也因此只有一处能写错。</para>
+/// </summary>
+internal static class PlanetPatchFill
+{
+    /// <summary>把一块 patch 填进 <paramref name="buffer"/>；返回来源，缓存写失败单独报，由调用方计数。</summary>
+    internal static PatchFillSource Fill(RegionFrame frame, PlanetTerrain terrain, PlanetPatchCache? cache,
+                                         HeightSampler? sampler, PatchKey key, float[] buffer, bool parallel,
+                                         out bool cacheWriteFailed)
+    {
+        cacheWriteFailed = false;
+        long regionId = frame.Key.ToId();
+        if (cache is not null && cache.TryRead(regionId, key.X, key.Z, buffer, out _))
+            return PatchFillSource.CacheHit;
+
+        PlanetPatchSampler.FillPatchHeights(frame, terrain, key.OriginXCm, key.OriginZCm, buffer, sampler, parallel);
+
+        if (cache is not null)
+        {
+            // "要么落盘、要么 IOException"是缓存的写契约：存不上只影响下一次的速度，不能改掉这次的数值
+            try { cache.Write(regionId, key.X, key.Z, buffer); }
+            catch (IOException) { cacheWriteFailed = true; }
+            catch (UnauthorizedAccessException) { cacheWriteFailed = true; }
+        }
+        return PatchFillSource.Generated;
+    }
+}
+
+/// <summary>
 /// 一次流送计划：窗口该有哪 25 块、这次该加载哪几块（不超预算）、该卸载哪几块。
 /// <para>计划是纯信息，不含引擎调用；客户端按计划去 AddPatch/RemovePatch，再回标 <c>MarkReady</c>。</para>
 /// </summary>
@@ -199,9 +230,15 @@ public sealed class PlanetTerrainStreamer
     /// <summary>
     /// 算一次计划。会移动窗口中心（带滞后）并把出窗的 patch 从驻留集里摘掉——
     /// 所以同一个位置连调两次，第二次不会再报同一批卸载。
+    /// <para>缓存预算闸门也在这里，不在 <see cref="Tick"/>：近景有两条入口——主线程直接取（Tick）
+    /// 和后台泵生成后自己排帧（只调 BuildPlan 问计划）。闸门装在 Tick 上，走泵的那条就完全不设防，
+    /// §7.1 那个 2 GB 上限会变成"没人执行的声明"（引擎侧驱动实测 900 帧涨到 231 MB 还在涨）。
+    /// 没超预算时 <c>TrimToBudget</c> 只比一个数就返回，所以每帧调得起。</para>
     /// </summary>
     public PatchWindowPlan BuildPlan(double localXCm, double localZCm)
     {
+        _cache?.TrimToBudget(_cacheBudgetBytes);
+
         PatchKey foot = PatchOf(localXCm, localZCm);
         int previousX = CenterPatchX, previousZ = CenterPatchZ;
         CenterPatchX = Advance(CenterPatchX, foot.X, localXCm);
@@ -276,7 +313,8 @@ public sealed class PlanetTerrainStreamer
     /// <summary>
     /// 取一块 patch 的高度：先查磁盘缓存，未命中就重算并回填。
     /// <para>两条出口给的是同一个 <see cref="float"/> 数组，所以命中与否不会改变任何一个数；
-    /// 缓存写失败只影响下一次的速度，不影响这次的结果。</para>
+    /// 缓存写失败只影响下一次的速度，不影响这次的结果。规则本体在 <see cref="PlanetPatchFill"/>，
+    /// 与后台泵共用同一份，这里只负责把命中/未命中/写失败记到本实例的账上。</para>
     /// </summary>
     public PatchFillSource FillPatch(PatchKey key, float[] heights, bool parallel = true)
     {
@@ -284,27 +322,15 @@ public sealed class PlanetTerrainStreamer
         if (heights.Length != PlanetPatchSampler.HeightmapLength)
             throw new ArgumentException($"必须是 {PlanetPatchSampler.HeightmapLength} 个高度值", nameof(heights));
 
-        long regionId = Frame.Key.ToId();
-        if (_cache is not null && _cache.TryRead(regionId, key.X, key.Z, heights, out _))
-        {
-            CacheHits++;
-            return PatchFillSource.CacheHit;
-        }
-        if (_cache is not null) CacheMisses++;
-
-        PlanetPatchSampler.FillPatchHeights(Frame, _terrain, key.OriginXCm, key.OriginZCm,
-                                            heights, _sampler, parallel);
-
+        var source = PlanetPatchFill.Fill(Frame, _terrain, _cache, _sampler, key, heights, parallel,
+                                          out bool writeFailed);
         if (_cache is not null)
         {
-            try
-            {
-                _cache.Write(regionId, key.X, key.Z, heights);
-            }
-            catch (IOException) { CacheWriteFailures++; }
-            catch (UnauthorizedAccessException) { CacheWriteFailures++; }
+            if (source == PatchFillSource.CacheHit) CacheHits++;
+            else CacheMisses++;
         }
-        return PatchFillSource.Generated;
+        if (writeFailed) CacheWriteFailures++;
+        return source;
     }
 
     /// <summary>
@@ -319,9 +345,7 @@ public sealed class PlanetTerrainStreamer
             FillPatch(key, scratch);
             MarkReady(key);
         }
-        // 预算闸门：没超预算时 TrimToBudget 只比一个数就返回，所以每帧调得起；
-        // 真超了才逐块淘汰，不然 §7.1 那个 2 GB 上限就是个没人执行的声明
-        _cache?.TrimToBudget(_cacheBudgetBytes);
+        // 预算闸门在 BuildPlan 里（两条入口都要守），这里不再重复调
         return plan;
     }
 

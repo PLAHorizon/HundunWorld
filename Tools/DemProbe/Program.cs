@@ -52,6 +52,7 @@ internal static class Program
             case "stream": return Stream(manifest, args);
             case "mesh": return Mesh(manifest, args);
             case "pump": return Pump(manifest, args);
+            case "span": return Span(manifest, args);
             default:
                 Console.Error.WriteLine("未知模式 " + mode);
                 return 2;
@@ -452,6 +453,67 @@ internal static class Program
     /// 后台生成泵的实机前哨测量：真实 DEM 上跑一个 5×5 窗口，比较串行与 1/2/4 个工作线程的墙钟时间、
     /// 主线程单帧最长被占用的时间、缓冲区复用省下的分配，并抽样核对后台结果与串行结果逐位相同。
     /// </summary>
+    /// <summary>
+    /// 引擎量化风险普查：Flax 把每块 patch 的高度按<b>该块自己的跨度</b>存成约 16 位
+    /// （实机 spike 量到 step ≈ span/65536，见 docs §13.15）。跨度越大的块，垂直分辨率越粗，
+    /// 而 §9 的判据写的是"相邻区域边缘高度差 ≤ 1 cm"。这里在真实 DEM 上把 5×5 窗口每块的跨度量出来，
+    /// 看那条闸门会不会被引擎的存储精度本身顶穿——而不是靠"应该没问题"。
+    /// </summary>
+    private static int Span(DemManifest manifest, string[] args)
+    {
+        if (args.Length < 4)
+        {
+            Console.Error.WriteLine("用法: span <manifest目录> <latDeg> <lonDeg> [更多经纬度对...]");
+            return 2;
+        }
+        using var grid = new DemGrid(manifest);
+        var profile = new TerrainProfile(PlanetConstants.PlanetRadiusCm, manifest.ArcSecond / 3600.0);
+        var hybrid = new HybridHeightSource(grid, profile, manifest.ContentSeed, manifest.Format);
+        var terrain = new PlanetTerrain(PlanetConstants.PlanetRadiusCm, hybrid);
+
+        var buffer = new float[PlanetPatchSampler.HeightmapLength];
+        for (int i = 2; i + 1 < args.Length; i += 2)
+        {
+            double lat = double.Parse(args[i], CultureInfo.InvariantCulture);
+            double lon = double.Parse(args[i + 1], CultureInfo.InvariantCulture);
+            var frame = RegionFrame.Build(RegionKey.FromDirection(
+                Geodetic.DirectionFromLatLon(lat * Math.PI / 180.0, lon * Math.PI / 180.0),
+                PlanetConstants.DefaultRegionLevel));
+
+            double worstSpan = 0, worstStep = 0, sumSpan = 0;
+            int over1cm = 0, n = 0;
+            foreach (var key in WindowKeys())
+            {
+                PlanetPatchSampler.FillPatchHeights(frame, terrain, key.OriginXCm, key.OriginZCm, buffer,
+                                                    new HeightSampler(grid, hybrid));
+                float lo = float.MaxValue, hi = float.MinValue;
+                for (int k = 0; k < buffer.Length; k++)
+                {
+                    if (buffer[k] < lo) lo = buffer[k];
+                    if (buffer[k] > hi) hi = buffer[k];
+                }
+                double span = hi - lo, step = span / 65536.0;
+                sumSpan += span;
+                n++;
+                if (span > worstSpan) worstSpan = span;
+                if (step > worstStep) worstStep = step;
+                if (step > 1.0) over1cm++;                       // 单是存储精度就吃不掉 1 cm 判据
+            }
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "lat={0:0.###} lon={1:0.###} region={2} patches={3} avg_span_cm={4:0.#} worst_span_cm={5:0.#} " +
+                "worst_step_cm={6:0.####} patches_over_1cm_step={7}/{8}",
+                lat, lon, frame.Key, n, sumSpan / n, worstSpan, worstStep, over1cm, n));
+        }
+        return 0;
+    }
+
+    private static IEnumerable<PatchKey> WindowKeys()
+    {
+        for (int dz = -2; dz <= 2; dz++)
+            for (int dx = -2; dx <= 2; dx++)
+                yield return new PatchKey(dx, dz);
+    }
+
     private static int Pump(DemManifest manifest, string[] args)
     {
         if (args.Length < 4)
@@ -519,7 +581,7 @@ internal static class Program
             double longestFrameMs = 0;
             long dequeued = 0;
             uint centreCrc = 0;
-            float[]? held = null;
+            float[] held = null;
             foreach (var key in keys) pump.Request(key);
             while (true)
             {

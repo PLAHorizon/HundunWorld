@@ -494,6 +494,55 @@ public class PlanetTerrainStreamerTests
     }
 
     [Fact]
+    public void BuildPlan_EnforcesCacheBudget_WithoutEverCallingTick()
+    {
+        // 走后台泵的那条入口只会调 BuildPlan 问计划，取件后自己排帧——一次 Tick 都不发。
+        // 闸门原先只装在 Tick 上，于是那条路径写多少都不淘汰：引擎侧驱动实测 900 帧涨到 231 MB 还在涨。
+        // 这条判据钉的就是"只走 BuildPlan 也必须收敛到预算内"，正向对照同样只走 BuildPlan。
+        using var roomyDir = new TempCacheDir();
+        using var tightDir = new TempCacheDir();
+        var frame = RegionFrame.Build(KeyA);
+        var terrain = RampTerrain(frame);
+        var scratch = new float[PlanetPatchSampler.HeightmapLength];
+
+        var roomyCache = new PlanetPatchCache(roomyDir.Root, Seed, TerrainVersion);
+        var roomy = new PlanetTerrainStreamer(frame, terrain, roomyCache);
+        Assert.Equal(25, FillWindowByBuildPlanOnly(roomy, 0, 0, scratch));
+        Assert.Equal(25, roomyCache.EntryCount);
+        Assert.Equal(0, roomyCache.Evictions);                    // 默认 2 GB：25 块一块都不该动
+
+        var tightCache = new PlanetPatchCache(tightDir.Root, Seed, TerrainVersion);
+        var tight = new PlanetTerrainStreamer(frame, terrain, tightCache,
+                                             cacheBudgetBytes: 10L * PlanetPatchCache.EntryBytes);
+        Assert.Equal(25, FillWindowByBuildPlanOnly(tight, 0, 0, scratch));
+        Assert.Equal(10, tightCache.EntryCount);
+        Assert.Equal(10L * PlanetPatchCache.EntryBytes, tightCache.BytesUsed);
+        Assert.Equal(15, tightCache.Evictions);
+        Assert.Equal(10, Directory.EnumerateFiles(tightCache.RootDirectory, "*.hgt",
+                                                  SearchOption.AllDirectories).Count());
+        Assert.Equal(25, tight.ResidentCount);                    // 内存驻留不动，淘汰的只是盘上那份
+    }
+
+    /// <summary>和 <see cref="MarkWindowReady"/> 一样的收敛循环，但全程只调 BuildPlan + FillPatch。</summary>
+    private static int FillWindowByBuildPlanOnly(PlanetTerrainStreamer streamer, int cx, int cz, float[] scratch)
+    {
+        double x = cx * (double)Patch + Patch / 2, z = cz * (double)Patch + Patch / 2;
+        int loaded = 0;
+        for (int guard = 0; guard < 100; guard++)
+        {
+            var plan = streamer.BuildPlan(x, z);
+            foreach (var key in plan.ToLoad)
+            {
+                streamer.FillPatch(key, scratch);
+                streamer.MarkReady(key);
+                loaded++;
+            }
+            if (plan.IsSatisfied) return loaded;
+        }
+        throw new InvalidOperationException("只走 BuildPlan 的窗口在 100 轮内没收敛");
+    }
+
+    [Fact]
     public void FillPatch_RejectsWrongBuffer()
     {
         var frame = RegionFrame.Build(KeyA);

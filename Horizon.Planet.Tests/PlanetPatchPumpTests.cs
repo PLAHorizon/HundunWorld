@@ -133,6 +133,54 @@ public class PlanetPatchPumpTests
     }
 
     [Fact]
+    public void StreamerAndPump_ShareOneCacheNamespace_EachConsumesTheOthersWrites()
+    {
+        // 同一条"读盘→算→回填"现在只有一份实现，但两个调用者各自传的键推导仍可能分叉：
+        // 泵用的是投递时抓到的 frame，流送用的是 Frame 属性。谁写的那一块，另一边必须认得出是同一块——
+        // 认不出就会各写一份（缓存翻倍）或算出两份不同的数（玩家看到的地形取决于走哪条线程）。
+        using var dir = new TempCacheDir();
+        var cache = new PlanetPatchCache(dir.Root, Seed, TerrainVersion);
+        var frame = RegionFrame.Build(KeyA);
+        var terrain = Ramp(frame);
+        var streamer = new PlanetTerrainStreamer(frame, terrain, cache);
+
+        var written = new float[PlanetPatchSampler.HeightmapLength];
+        var k1 = new PatchKey(2, -3);
+        Assert.Equal(PatchFillSource.Generated, streamer.FillPatch(k1, written, parallel: false));
+
+        using (var pump = new PlanetPatchPump(frame, terrain, cache, maxWorkers: 2))
+        {
+            Assert.True(pump.Request(k1));
+            WaitQuiesced(pump);
+            Assert.True(pump.TryDequeueCompleted(out var fromStreamed));
+            Assert.Equal(k1, fromStreamed.Key);
+            Assert.Equal(PatchFillSource.CacheHit, fromStreamed.Source);
+            AssertBitsEqual(written, fromStreamed.Heights, "泵读流送写的那一块");
+
+            var k2 = new PatchKey(-5, 1);
+            Assert.True(pump.Request(k2));
+            WaitQuiesced(pump);
+            Assert.True(pump.TryDequeueCompleted(out var fromPump));
+            Assert.Equal(PatchFillSource.Generated, fromPump.Source);
+            Assert.Equal(2, cache.Writes);                    // 流送写 k1、泵写 k2；泵读 k1 命中不该再写
+
+            pump.Release(fromStreamed.Heights);
+
+            var readBack = new float[PlanetPatchSampler.HeightmapLength];
+            Assert.Equal(PatchFillSource.CacheHit, streamer.FillPatch(k2, readBack, parallel: false));
+            AssertBitsEqual(fromPump.Heights, readBack, "流送读泵写的那一块");
+
+            pump.Release(fromPump.Heights);
+        }
+
+        Assert.Equal(2, cache.Hits);                          // 两个方向各真命中过一次
+        Assert.Equal(2, cache.Misses);
+        Assert.Equal(0, cache.CorruptRejects);                // 跨路径不能把对方写的判成坏数据
+        Assert.Equal(1, streamer.CacheMisses);                // 流送自己：k1 冷、k2 命中
+        Assert.Equal(1, streamer.CacheHits);
+    }
+
+    [Fact]
     public void SameKeyWhileInFlight_IsNotGeneratedTwice()
     {
         var frame = RegionFrame.Build(KeyA);

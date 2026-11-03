@@ -277,7 +277,10 @@ public class HybridHeightFieldTests
     [Fact]
     public void Hybrid_RejectsCoarseBaseField_ButAcceptsFinest()
     {
-        var manifest = TempDem.Create(45.0, (0, Constant(100)), (1, Constant(100, 2, 4))).Load();
+        // 夹具要绑到 using：Load() 只交出清单，临时目录的清理责任还在 TempDem 身上。
+        // 之前写成链式一次性调用，这个目录每次跑都留在 TEMP 里（全量跑恒为 1 个残留就是这么来的）。
+        using var dem = TempDem.Create(45.0, (0, Constant(100)), (1, Constant(100, 2, 4)));
+        var manifest = dem.Load();
 
         using var coarse = new DemGrid(manifest, preferredLevel: 1);
         Assert.False(coarse.IsFinestLevel);

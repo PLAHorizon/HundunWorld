@@ -39,6 +39,9 @@ public class Game : GameModule
              "Horizon.Game.Message.dll",
                 "Horizon.Game.ECS.dll",
                 "Horizon.Game.ECS.Arch.dll",
+                // 星球坐标/区域/高程契约（Horizon.Planet，零外部依赖）：近景流送 spike 与后面的
+                // 区域迁移都要用它。它没有任何 Flax/Orleans 引用，所以客户端与服务端共用同一份装配。
+                "Horizon.Planet.dll",
                 // 握手 FormulaVersion 单点来源（协议 v9 硬校验）：NetworkManager.SendSyncHandshakeAsync 引用。
                 // 客户端只装 Contracts（公式/步进器/跳跃状态机/修正包/配置），不装 Horizon.Game.Sim
                 // ——后者是服务端权威核（MovementValidator 反作弊、CombatCore、MonsterAiCore、

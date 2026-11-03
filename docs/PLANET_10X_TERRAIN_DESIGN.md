@@ -695,8 +695,8 @@ python Tools/gebco_verify.py                     # §12.7 全部判据，非 0 �
 
 ### 13.4 P0 剩余（按优先级）
 
-1. **5×5 Flax Terrain 流送 spike**（任务 3）：在 PIE 里实测 `AddPatch` / `SetupPatchHeightMap` / 碰撞烹饪耗时与内存，并验证 `heights[z*509+x]` 布局在引擎里真的对得上——现在只有源码级推断 + 单测定向检验（`EastFacingRamp_RisesAlongLocalX_NotAlongZ` / `SouthFacingRamp_RisesAlongLocalZ_NotAlongX`）。
-   阻塞点：本机 `FlaxEditor.exe`（PID 29908）已在跑，属并行会话所有；再起第二个实例会损坏 AssetsCache，所以这一步要等编辑器空出来或经确认走现有编辑器的脚本桥。
+1. ~~**5×5 Flax Terrain 流送 spike**（任务 3）~~ **已跑**（§13.15）：布局 `index = z*509 + x` 与 50800 cm 契约在引擎里证实；`SetupPatchHeightMap` 返回 true=失败证实；耗时/碰撞三角形数/`CollisionLOD` 档位都量了。**剩下两件**：① 上传能否离开主线程**仍未证**（发行版没带 `Terrain.cpp`，做线程实验有触发引擎断言模态框的风险）；② 每帧加载数与 `CollisionLOD` 的取舍要拍板（§13.15 E 段：现行 4 块/帧在任何 LOD 下都超一帧，只有"1 块/帧 + LOD≥3"进得了 16.7 ms）。
+   ~~阻塞点：本机 `FlaxEditor.exe` 已在跑，属并行会话所有~~ 2026-11-03 07:37 该进程已退出，本轮起的单实例编辑器已按 WM_CLOSE 关掉，`World.scene` 的 mtime 全程未变。
 2. ~~**细节层与近景插值**（任务 6）~~ 已完成，见 §13.5：`TerrainProfile` + `DeterministicValueNoise` + `HybridHeightSource` + `HeightSampler`、Catmull-Rom 与一致性用例、"基场必须最细级"的构造期拒绝、`--mutants` 反证协议。
 3. **区域协议骨架**（P1 头一口）：编解码与判据已在 `Horizon.Planet/Wire` 落地（§13.6）；剩下的接法是把它注册进 `Horizon.Game.Message`（`MessageType` + `MessageUnion`）并在 `SyncHandshakeHandler` 里比对 `DescribeMismatch`——等该目录的并行改动落定再做。
 4. **COG 产物**：只为 QGIS/人工核图，不进运行时。
@@ -964,39 +964,6 @@ A 会引入新产物文件、让 `DemGrid` 认第二种网格、给 manifest 增
 
 **结论**：路线 A 对游戏玩法不需要，任务 11 改为"条件性"——只有当真的要做**整颗星球视角**（入轨、过场、全球地图）时才值得做，而那时正确的原语也更可能是影像金字塔（贴图 + min/max 瓦片），不是给网格再加一种基场。这是先算账再动手省下来的一整个数据格式工程。
 
-### 13.12 后台生成泵：三个竞态与一次计时漂移（同日第七轮）
-
-落在 [Horizon.Planet/PlanetPatchPump.cs](../Horizon.Planet/PlanetPatchPump.cs)：主线程只做 `Request` 投递与 `TryDequeueCompleted` 取件，采样、落盘、缓冲区回收都在线程池上。配 10 条判据（含一次真数据测量模式 `dotnet run --project Tools/DemProbe -- pump Data/GEBCO_2026/derived <lat> <lon>`）。测试 **184/184 绿**。
-
-**并发改出来的四个真问题**（都不是"看着不爽"，是会算错或算账对不上）：
-
-1. **缓存账本会在并发下漂**。`_bytesUsed += /-=` 与 `Dictionary` 都不是原子的；更阴的是 `File.Move` 与 `Track` 之间被隔壁的 `TrimToBudget` 插进来，会出现"账上有条目、盘上没文件"或反之——预算闸门于是数错占用。改法：账本用一把锁，且**落位与记账在同一个锁段里**（1 MB 的写和 fsync 留在锁外，不串行化磁盘）；临时文件名带实例内递增序号，同键并发写不会互相踩。判据 `ConcurrentWritesAndTrim_KeepTheLedgerExact` 只守能守的关系：`BytesUsed == EntryCount × 单块`、盘上文件数 ≥ 条目数（删除失败留孤儿是设计内，下次启动再清）、没有 `.tmp` 残留、且并发中读到的每一块都逐位相同。
-2. **Windows 上"目标正被别人读"时覆盖式 `Move` 会抛拒绝访问**——这不是坏文件，是缓存的正常交错。之前它会作为 `UnauthorizedAccessException` 一路抛穿到调用方。改法：有界重试 3 次（只跨那个短暂的读窗口），最终仍失败就清临时文件并统一包成 `IOException`，`Write` 从此只有一个契约"要么落盘、要么 IOException"，泵按"这次没存上"处理并计数。
-3. **读不动 ≠ 读坏了**。淘汰与读交错时 `ReadAllBytes` 可能拿共享冲突；原来的写法会把它记成 `BadLength` 并**把好好的一片高度删掉**（还顺手把预算出账）。改成：文件不存在 → 未命中并出账；只是被占用 → 未命中、不出账、不删文件。`CorruptRejects` 于是只统计真正的损坏（判据里那条 `reject_badlength=0` 就是这件事的哨兵）。
-4. **嵌套超额订阅**：泵给了一份并发，`FillPatchHeights` 内部又按 `ProcessorCount` 分片一次，两层相乘就是 `workers × 核数` 个线程抢 `核数` 个核。改成 `parallel: _maxWorkers <= 1`：要全速就 1 个 worker 让内部去分片，要限核就多 worker 各自单线程。同一次运行内的对照是 workers=1 wall 13.0 s、workers=2 31.5 s（此时每块只用一个核）——这条只能在同一次运行里比，跨运行的绝对数会漂，见下面那条教训。
-
-**判据自己也是一个捕手**：写 `Dispose` 那条判据时我先断言 `Completed == 0`，红了——因为"完成"和"成品没被取走就被丢"被我算进同一个 `StaleDropped`，等式 `Requested = Completed + Stale + Duplicate` 会把同一件计两次，账面看着平其实错了。于是拆出 `ReadyDiscarded`（`Completed` 的子口径）并把这条等式直接写进判据；`GenerationFailures` 同理标成 `StaleDropped` 的子口径，不参与相加。
-
-**真数据上的量**（这台机器今天很吵，见下）：
-
-```
-lat=30 lon=120 region=Region(f2 L14 3462,2730) patches=25
-主线程同步 25 块：wall=8287 ms 单块最长=949.7 ms
-workers  wall_ms  相对串行  max_inflight  主线程单帧最长ms  中心crc一致  省下的分配MB
-      1    13043      0.64x             1            13.62          OK          3.0
-      2    31456      0.26x             2             0.40          OK          4.0
-      4    21846      0.38x             4             0.37          OK          5.9
-PUMP PASS 后台结果与串行逐位相同
-```
-
-读法只有一条成立的结论：**泵不是速度收益，是"主线程不被占"的收益**——单块同步生成最长 950 ms 压在帧上就是 15 fps 的卡顿，而取件路径是亚毫秒；wall 时间反而更差（0.26–0.64×），因为它不再一次性占满全部核。缓冲区池一个窗口省下 3–6.9 MB 的 1 MB 级分配（LOH 抖动的来源）。三档并发的中心块 crc 与同步路径**完全相同**，这是"换线程不换数"的实机证据（判据里有同一条，夹具侧另有一条逐位比较）。
-
-**计时漂移必须写进规矩**：同一份二进制、同一份数据，"搬 1 MB 做一次校验"在今天早上是 5.4 ms，下午变成 8.8 / 34.2 / 46.9 ms——机器在降频或被人抢核，倍率是 6–9×。所以：任何绝对毫秒阈值（我一度写过"单帧 > 1 ms 就算失败"）都会随机红，探针里那条已经撤成观察值，真正的断言搬进单元测试 `DequeuePath_IsFarCheaperThanCheckingOneMegabyte`，用**同进程内一次 1 MB 校验的耗时当尺子**（取件必须比它的 1/4 还便宜）。PIE 阶段的所有耗时判据都要照这个写法，不能记绝对数。
-
-**四条反证，各红一条、不多不少**：去掉 `_scheduled.TryAdd` 的去重 → 红 `SameKeyWhileInFlight_IsNotGeneratedTwice`；去掉 `Work` 里的代次比较 → 红 `RegionChange_InFlightResultsNeverLandInTheNewRegion`；把 1 MB 校验塞进取件路径 → 红 `DequeuePath_IsFarCheaperThanCheckingOneMegabyte`；把位子在工作开跑之前就 `Release` → 红 `WorkerLimit_IsBothRespectedAndActuallyReached`（`MaxInFlight` 掉到 1，"两头都断言"这里就显出用处了）。
-
-**接线状态**：泵目前只有单元测试与 `DemProbe pump` 两个调用者。PIE 驱动层要用的顺序已经定好：每帧 `streamer.BuildPlan` → 新块 `pump.Request` → `TryDequeueCompleted` 交给引擎 `AddPatch/SetupPatchHeightMap` → `pump.Release` → 换区时 `pump.BeginRegion` + `streamer.AttachRegion`（`Dispose` 只在退出时调，它会等在飞的收尾）。任务 3 还等 `Game.Build.cs`/`HundunWorldGame.cs`/`World.scene` 腾出来。
-
 ### 13.12 后台生成泵：一次偶发红追出"把读不动当成读坏了"（同日第七轮）
 
 落在 [Horizon.Planet/PlanetPatchPump.cs](../Horizon.Planet/PlanetPatchPump.cs)：主线程只做 `Request` 投递与 `TryDequeueCompleted` 取件，采样、落盘、缓冲区回收都在线程池上；配套 `dotnet run --project Tools/DemProbe -- pump Data/GEBCO_2026/derived <lat> <lon>` 在真实 DEM 上量同一件事。测试 **185/185 绿**（本轮 +11：泵 10 条、缓存分类 1 条）。
@@ -1020,15 +987,17 @@ PUMP PASS 后台结果与串行逐位相同
 
 **顺带查出的测试卫生问题**：临时目录里攒了 25 个 `hundun_dem_*`——`TempDem.Dispose` 把删除失败整个咽掉了。真实原因是最后一个 `FileStream` 关掉后 Windows 还会短暂占着目录（进程一退出就能删 ⇒ 时机问题不是永久锁），另外有一条判据里 `new DemGrid(...)` 没 `using`，句柄一直开着。改法：重试窗口拉长到 8×50 ms，仍失败就把路径打到 stderr（静默吞掉才是这批残留的来源），并把那条漏掉的 `using` 补上。清完连跑 12 次残留为 0。
 
+**这条"0 残留"后来被推翻了**（同日第八轮，见 §13.13）：全量跑稳定留 1 个 `hundun_dem_*`，而只跑 `DemGridTests` 是 0——上一轮把残留归因成"句柄时机 + 一条漏掉的 `using`"，判据却只在**它自己筛过的那一组**里数残留，于是漏掉了另一个文件里的调用点。真正的机制是 `TempDem.Create(...).Load()` 这种**链式一次性调用**：`Load()` 交出清单，清理目录的责任还挂在没被任何变量绑住的 `TempDem` 上，它永远不会 `Dispose`。这不是时机、重试也不救，是恒定的 1 个。改法是把夹具绑进 `using var dem`，并把"数残留"从按组筛改成**全量跑完之后**数（分组跑各自 0 不能合成总体 0）。
+
 **真数据量到的（这台机器今天很吵）**：
 
 ```
 lat=30 lon=120 region=Region(f2 L14 3462,2730) patches=25
 主线程同步 25 块：wall=8287 ms  单块最长=949.7 ms
-workers  wall_ms  相对同步  max_inflight  中心crc一致  一个窗口省下的分配
-      1    13043      0.64x             1        OK          3.0 MB
-      2    31456      0.26x             2        OK          4.0 MB
-      4    21846      0.38x             4        OK          5.9 MB
+workers  wall_ms  相对同步  max_inflight  主线程单帧最长ms  中心crc一致  一个窗口省下的分配
+      1    13043      0.64x             1              13.62        OK          3.0 MB
+      2    31456      0.26x             2               0.40        OK          4.0 MB
+      4    21846      0.38x             4               0.37        OK          5.9 MB
 ```
 
 结论只有一条站得住：**泵不是速度收益，是"主线程不被占"的收益**——同步路径单块最长 950 ms 压在帧上就是几帧的白屏，而取件路径是亚毫秒；wall 反而更差（不再一次性占满全部核）。缓冲区池一个窗口省下 3–6 MB 的 1 MB 级分配（LOH 抖动来源）。
@@ -1038,3 +1007,201 @@ workers  wall_ms  相对同步  max_inflight  中心crc一致  一个窗口省�
 **四条反证，各红一条、不连带**：去掉 `_scheduled.TryAdd` 去重 → 红 `SameKeyWhileInFlight_IsNotGeneratedTwice`；去掉 `Work` 的代次比较 → 红 `RegionChange_InFlightResultsNeverLandInTheNewRegion`；把 1 MB 校验塞进取件路径 → 红 `DequeuePath_...`；位子在工作开跑前就 `Release` → 红 `WorkerLimit_IsBothRespectedAndActuallyReached`（`max_inflight` 掉到 1，"两头断言"在这里显出用处）。
 
 **接线状态**：泵目前只有单元测试与 `DemProbe pump` 两个调用者。PIE 驱动层的调用顺序已经定死：每帧 `streamer.BuildPlan` → 新块 `pump.Request` → `TryDequeueCompleted` 交给引擎 `AddPatch/SetupPatchHeightMap` → `pump.Release`；换区 `pump.BeginRegion` + `streamer.AttachRegion`；`Dispose` 只在退出时调（它会等在飞的收尾）。任务 3 仍等 `Game.Build.cs`/`HundunWorldGame.cs`/`World.scene` 腾出来。
+
+### 13.13 跨面相邻与服务端迁移校验：两条被我当成先验的规则（同日第八轮）
+
+落在 [Horizon.Planet/PlanetRegions.cs](../Horizon.Planet/PlanetRegions.cs) 与 [Horizon.Planet.Tests/PlanetRegionsTests.cs](../Horizon.Planet.Tests/PlanetRegionsTests.cs)（+16 条，全量 **201/201 绿**，`-p:CopyToFlax=false --no-incremental`）。
+
+**这块补的是哪个洞**：§13.9 的端到端走查里跨区迁移的 `to` 是客户端自己报的，服务端没有"这个 `to` 成不成立"的判定——任何 `to` 都会被接受。`PlanetRegions` 给出共边邻居表与迁移判定：`TryNeighbour` / `EdgeNeighbours`（恒 4 个，闭合面上不存在"少一个邻居"）/ `TrySharedEdge`（**唯一**回程边：0 条或 ≥2 条都判邻接关系不干净，因为自指的邻居表会直接放走错误传送）/ `AreEdgeAdjacent` / `ValidateTransfer`。判定不信客户端报的 `to`：先用全局点反查真正所在的区域，再要求它与 `from` 共边；`TransferDecision.ToString()` 把 `RegionOfClaimedPoint`、离面厘米、半径一并念出，日志能直接答"为什么拒"。七种拒绝各有枚举（`MalformedRegion`/`MalformedPoint`/`LevelMismatch`/`PointNotInTarget`/`SameRegion`/`NotAdjacent`/`TooFarFromSurface`），每个都在同一个夹具上带正向对照；`regionId` 解不开只算坏包，异常不穿过服务端逻辑。
+
+**邻居为什么要推出半格**：`TryNeighbour` 把采样点沿边**推出半格**，因为 u=±1 那条棱同时属于两个面，正好落在棱上的方向有两个并列的最大分量，`FaceOf` 只能按先后规则硬选一面——邻居就成了实现细节而不是几何。
+
+**两条我当成先验、其实错的规则**（都是判据自己红出来才发现的）：
+
+1. **"每条边的中点都踩在立方体棱上"——错。** level 1 的 256 条边里只有 128 条落在面边界（并列差为 0），另外 128 条在面内部（并列差 0.447，三个分量本来就分得出大小）。原来那条判据对所有边都断言并列差为 0，所以恒红。改成两类各守自己的分支，并把"两类都不为空"当结构判据：任何一类归零就说明轴表变了，这条证据要重写。
+2. **"回程边就是对边"——错。** level 0 的 24 次跨边实测 **12 次落在对边、12 次落在别的边**（这两个数是临时把判据改成恒假、从失败消息里读出来的，不是推的）。所以 `ValidateTransfer` 与走查都不许拿 `Opposite(edge)` 当回程，只认 `TrySharedEdge` 报出来的那条；`SameFaceNeighbour…` 那条现在守的是真正的不变量——沿回程边再走一次必须落回原块。
+
+**四条反证，各红一处、不连带**：去掉共边检查 → 红 `EachRejectionHasItsOwnReason…`（远处的 `to` 被放行）；去掉离面闸门 → 同一条红（天外坐标被放行）；去掉"点必须在声称的 `to` 里" → 同一条红（抄一个别的同级区域就能骗）；把半格改回按边采样 → 红 `EveryTile_HasFourDistinctEdgeNeighbours`（level 0/2/3/4 全红，邻居直接算破）。每次只翻一处，跑完按字节还原并与备份 `diff` 为空；`if (false &&` 字样已从源码清出。
+
+**顺带推翻了上一轮"残留为 0"的结论**：全量跑稳定留 1 个 `hundun_dem_*`，而按组筛（`--filter ~DemGridTests`）是 0——上一轮的清理结论只在它筛过的那一组里成立。逐文件跑定位到 `HybridHeightFieldTests`：`TempDem.Create(...).Load()` 是链式一次性调用，`Load()` 交出清单后没有任何变量绑住那个 `TempDem`，于是目录永远不 `Dispose`，**恒定漏 1 个**；这与句柄时机无关，重试窗口再长也不救。改成 `using var dem = TempDem.Create(...)` 后连跑两次全量残留为 0。规矩两条：**残留计数要在完整跑之后做，分组各自 0 合成不了总体 0**；验收命令 `dotnet test Horizon.Planet.Tests/... --no-build` 之后 `ls -d $TEMP/hundun_dem_* | wc -l` 必须为 0。
+
+**接线状态**：`PlanetRegions` 目前只有单元测试两个调用者，网关/DS 的迁移入口还没接——`RegionTransferRequest` 注册进 `Horizon.Game.Message` 仍等该目录的并行改动落定（同 §13.6 的口径）。也就是说"服务端拒绝乱报的 `to`"这条能力现在**在库里、不在链路上**，真正闭环要在迁移处理里调到它之后另记。
+
+### 13.14 近景只留一条填块路径：流送与泵共用同一份"读盘→算→回填"（同日第八轮之二）
+
+`PlanetTerrainStreamer.FillPatch` 与 `PlanetPatchPump.Work` 原先各抄了一遍同一条规则（查缓存 → 未命中就 `FillPatchHeights` → 回填写盘）。抄两份的代价不是难看：**抄错的那条会往缓存里写另一种命名空间或另一种字节布局，于是"命中与重算逐位相同"只在一条路径上成立，而两条路径各自都有测试、各自都绿**，分叉要等到 PIE 里两条路同时跑才暴露。现在规则本体收进 [Horizon.Planet/PlanetTerrainStreamer.cs](../Horizon.Planet/PlanetTerrainStreamer.cs) 里的 `internal static PlanetPatchFill.Fill(frame, terrain, cache, sampler, key, buffer, parallel, out cacheWriteFailed)`，两个调用者只保留自己的账（`CacheHits/Misses/WriteFailures` 与 `CacheWriteFailures/GenerationFailures`），计数口径与收拢前逐条对齐，改完 **202/202 绿**（+1 条跨路径判据）。
+
+**新增的那条判据** `StreamerAndPump_ShareOneCacheNamespace_EachConsumesTheOthersWrites`：流送冷写的块，泵再取必须是 `CacheHit` 且逐位相同；泵冷写的块，流送再取同样必须命中。它钉的是"两个调用者对同一块用的是同一个键"（regionId 来自投递时抓到的 frame、px/pz 来自 `PatchKey`），而不是数值本身——数值相同由既有的 `PumpResults_MatchTheSynchronousPathBitForBit` 守。
+
+**三条反证，第三条给出了一个我没料到的答案**：写盘对调 px/pz → 红 `Expected: CacheHit`；只算不读盘 → 同样红；把 `regionId` 混进 `key.X`（跨区命名空间污染）→ **单跑这条新判据是绿的**。新判据只有一个区域，同键同区怎么混都还是自己命中自己，所以它证明不了"不同区域不得共用一块盘"。于是把同一个变异体放进**全量**跑：红在 `PlanetTerrainStreamerTests.CacheHit_IsBitIdenticalToRecompute`。结论两条：闸门可以是分布式的（一条判据没咬住不等于整体没咬住，要先问"这套判据合起来能不能看见"再决定补哪一条）；以及这条污染的归属是**流送层那组**，不是新加的跨路径判据。变异体跑完按字节还原，`2654435761` 已从源码清出。
+
+**顺带把上一轮"残留为 0"的判据补全**：`TempCacheDir` 与 `TempDem` 是同一种夹具，残留要两个前缀一起数——现在的验收命令是 `dotnet test ... --no-build` 之后 `ls -d $TEMP/hundun_dem_* $TEMP/hundun_patchcache_*` 两个计数都为 0（本轮实测 0/0）。
+
+**接线状态**：`PlanetPatchFill` 是 internal，调用者仍只有流送与泵两处 + 单元测试；PIE 驱动层照 §13.12 末尾的调用顺序接，不需要也不应该再自己写一遍填块。
+
+### 13.15 引擎侧实机 spike：布局对上了，帧预算只够"每帧一块"（同日第九轮）
+
+任务 3 跑起来了。载体是 [HundunWorld/Source/Game/Planet/PlanetTerrainSpike.cs](../HundunWorld/Source/Game/Planet/PlanetTerrainSpike.cs)（客户端脚本，标记文件触发，回执写 `HundunWorld/Saved/planet_terrain_spike.result.txt`），在**新建的空白场景**里由脚本自己 `new Terrain()`（桥的 `actor_create` 不认原生 actor 类型），全程不碰 `World.scene`。装配侧只需把 `Horizon.Planet.dll` 加进 [Game.Build.cs](../HundunWorld/Source/Game/Game.Build.cs) 的 `dlls[]`——解析器优先取仓库 `bin/Debug/net10.0` 那份，引擎 Tools 目录不需要动。
+
+**复现顺序**（编辑器单实例，已确认当时没人占用；跑完按 WM_CLOSE 优雅退出）：
+
+```
+dotnet build HundunWorld/Source/Game.csproj                    # 从仓库根跑：HundunWorld/global.json 钉了 10.0.300
+FlaxEditor.exe -project <abs>/HundunWorld/HundunWorld.flaxproj   # 然后走 21901 的桥
+  code_write Game/Planet/PlanetTerrainSpike.cs → code_build_wait（PIE 停着才能信 compilations 推进了）
+  scene_new / scene_load 只认**绝对路径**（相对路径报"未找到场景资产"）
+  actor_create EmptyActor → ui_script_add 用**简名** PlanetTerrainSpike（全限定名反而找不到类型）
+  printf '30 120 14' > Saved/planet_terrain_spike.on → sim_play → 读回执
+判据自证：回执首行 build_tag=planet_spike_b4；查装配里有没有这个串要按 **UTF-16** 找，按 ASCII 找会得到假的"没装进去"
+```
+
+**A. 引擎契约与离线假设逐条对上**（这条以前只有源码级推断）：`ChunkSize=127`、`HeightmapSize=509`、`PatchSize=50800 cm`、`509²=HeightmapLength` 全部 `contract_ok=1`；`SetupPatchHeightMap` **返回 true 才是失败**（探针 `setup_returns_true_on_failure_probe=0`，整窗 `setup_failures=0`）；另有一条新事实——**每块的第 509 行/列是与邻居共享的末顶点**，单块在场时打不到它（`layout_shared_edge_probes=1 hits=0`），所以相邻块必须交出同一套末顶点数据，否则接缝会各画一半。
+
+**B. `index = z*509 + x`（x=东、z=南）在引擎里成立**：往一块里写 i:j = 100:1 的不对称场（跨度 513 m），按 25 个内部格向下打射线——按"我写的口径"解释最大偏差 **2.06 cm**，按"转置"解释最大偏差 **50194 cm**，差四个数量级，不存在歧义。同一次运行里另一条对照：把同一套高度按生产字段（每块几十米起伏）写入，偏差 **0.16 cm**。
+
+**C. 耗时结构（热态，默认 CollisionLOD，单位 ms/块）**
+
+| 阶段 | avg | max | 能不能离开主线程 |
+|---|---|---|---|
+| 算高度（`FillPatch`，含细节层噪声） | 6.6 | — | **能**（泵已在线程池上量过，逐位相同） |
+| `AddPatch` | 0.08 | 0.19 | 未证 |
+| `SetupPatchHeightMap`（上传+建资源） | **23.8** | 30.9 | 未证（引擎发行版不带 `Terrain.cpp`，我没做线程实验：怕触发断言弹模态框钉住主线程） |
+| `RemovePatch` | 0.04 | — | 未证 |
+| `ExtractCollisionGeometry`（我为了数三角形才调，不在游戏路径里） | 17.1 | — | — |
+
+冷启动那一轮 `per_patch_avg=50.9`、热态 `32.9`——**同一个 PIE 会话里第一轮整场都在付建资源的钱**，把两轮混成一个平均会把结论算错 1.5 倍（b1/b2 就被这个骗过一次）。默认 CollisionLOD 下每块的碰撞三角形是 **516 128**（= 508²×2，全分辨率），25 块就是 1290 万个三角形压在物理上。
+
+**D. `CollisionLOD` 是唯一的旋钮，而它是"上传耗时 vs 物理与视觉一致性"的同一根轴**（每个 LOD 连测两轮，只报第二轮；b2 曾按轮次顺序取数，把 LOD=1 读成 14.7 ms，b4 复测是 34.7/70.1 ms——顺序污染，这条已在下面"我读错的"里记账）：
+
+| CollisionLOD | setup_avg | setup_max | 三角形/块 | 射线偏差 |
+|---|---|---|---|---|
+| -1（默认=全分辨率） | 23.2 | 28.7 | 516 128 | **0.16 cm** |
+| 1 | 34.7 | 70.1 | 127 008 | 5.2 cm |
+| 2 | 15.0 | 55.1 | 30 752 | 15.8 cm |
+| 3 | 11.0 | 13.3 | 7 200 | **36.9 cm** |
+| 4 | 11.3 | 13.5 | 1 568 | 79.1 cm |
+
+**E. 帧预算：§9 那条"5×5 增删不超帧预算"只在"每帧一块 + CollisionLOD≥3"下成立。** 帧步进（每帧只上传一块，LOD=3，25 帧铺完）实测 `upload_avg=11.7 / median=10.9 / max=14.4`，`frames_over_16_7ms=0`，`patches_count_after_stepping=25`。反过来两条都不成立：默认 LOD 下 23.8 ms/块 → 连每帧一块都超；而现行 `PatchLoadsPerPlan=4`（§13.7 为了压窗口切换时间定的）按 LOD=3 算要 4×11 ≈ 45 ms/帧。**所以这里要拍板，不是我能顺手改的**：要么把每帧加载数降到 1（窗口铺开要多花 24 帧≈0.4 s，玩家跨区走动的观感可接受但边缘 patch 晚到），要么接受物理面与视觉面差 5–37 cm（LOD1–3）来换更快的铺窗，要么把近景做成不依赖 Flax Terrain 的自定义网格层（远景/中景本来就走 `PlanetRegionMesh` 那条路）。同一次运行里引擎报的最大帧时长是 100 ms，但我的单帧上传从不超过 14.4 ms，这条不能算在我头上（编辑器失焦时的节流，归因未做）。
+
+**F. 顺带把"引擎垂直精度会不会顶穿 ≤1 cm 判据"量清楚了**：Flax 按**每块自己的跨度**存高度，实机看跨度 513 m 时偏差 2.06 cm、跨度几十米时 0.16 cm。离线普查（新增 `DemProbe span`，七处真实点位）：陆地上每块跨度 avg 36–48 m / worst 62–74 m（**来自我这套细节噪声的振幅，不是 GEBCO**——海面点位只有 1.9–2.2 m），按 `span/65536` 折算的隐含栅格 worst **0.113 cm**，`patches_over_1cm_step=0/25` 七处全过。**结论：量化不是风险，CollisionLOD 才是。**
+
+**我读错的三处（都记下来，免得下次再当真）**：① b2 的 LOD 扫描按"跑一遍取一次"读数，被轮次顺序污染，LOD=1/2 的均值和 b4 差 2–4 倍；② b1/b2 把探针打在 `edge-1` 那一列上，得到"25 发 16 中"，我一度以为引擎边界行为可疑——其实是我的夹具撞上了共享末顶点；③ 判据字符串 `per_patch_avg=` 长度多数了一位，b2 跑到最后 `FormatException` 崩在**我自己的解析**上，verdict 因此是假的 FAIL（从那以后数值一律在生成处直接带出，不再回读自己格式化的字符串）。
+
+**接线状态**：spike 是 `HundunWorld/Source/Game/Planet/` 下唯一的新文件，`verdict=PASS` 的那次跑的是 `planet_spike_b4`；之后我只改了两处**不影响测量**的东西（区域定位改调权威 `Geodetic.DirectionFromLatLon`——原先手抄的那份与它轴序不同，同一个 lat/lon 会落到别的地皮上；标记吃掉那条补了帧步进出口），tag 升到 `b5`、未重跑，重跑时以新回执为准。现场：空白场景文件与临时 actor 已清、标记 0、编辑器已退出、`World.scene` 的 mtime 与开工前一致（并行会话的文件没被碰）、离线 **202/202 绿**、三个 TEMP 前缀残留 0。
+
+**真数据复跑**（收拢后同一台机器）：`dotnet run --project Tools/DemProbe --no-build -- pump Data/GEBCO_2026/derived 30 120` → 中心块 `crc=6311574D`，workers=1/2/4 三档与主线程同步基线**全部一致**，`PUMP PASS`；主线程单帧最长 0.062–0.072 ms（同步路径单块最长 1149.5 ms）。夹具临时目录按前缀数（`hundun_dem_*` / `hundun_patchcache_*` / `hundun_pump_probe_*`）本轮全为 0。
+
+### 13.16 上传能不能离开主线程：单线程可以，并发会把地形静默写坏（同日第九轮之二）
+
+§13.15 留了一条没证的口子：`SetupPatchHeightMap` 约 24 ms/块，如果它只能在主线程上跑，流送就只能"每帧一块"；如果能挪到后台线程，主线程可以完全不付这笔钱。发行版不带 `Terrain.cpp`，读不到线程守卫，只能实测。载体还是同一个 spike（[PlanetTerrainSpike.cs](../HundunWorld/Source/Game/Planet/PlanetTerrainSpike.cs)），标记文件多认三个 token：`thread` / `concurrent` / `live`。
+
+**b6 单块 off-thread**：主线程先把同一份高度成功上传一次作**正对照**（`err 0.1357 cm`），再把同一份数据、同一套坐标交给一个工作线程——无异常、返回 false(成功)、`HasPatch=1`、事后射线偏差同为 `0.1357 cm`。
+
+**b7/b8 workers 剂量曲线**（同一批 81 块 = 9×9，每遍之后逐块回验；判据看**数值**而不是看有没有抛异常，因为坏掉的正是数值）：
+
+| workers | 高程偏差 ≥1 cm 的块数 | 最大偏差 | setup 报失败 | 抛异常 | 缺块 |
+|---|---|---|---|---|---|
+| 1 | **0/81** | 0.164 cm | 0 | 0 | 0 |
+| 2 | 5/81 | 3 549 cm | 0 | 0 | 0 |
+| 4 | 41/81 | 6 066 cm | 0 | 0 | 0 |
+| 8 | 54/81 | 6 645 cm | 0 | 0 | 0 |
+| 16 | 75/81 | 6 932 cm | 0 | 0 | 0 |
+| 16（复查） | 66/81 | 6 938 cm | 0 | 0 | 0 |
+
+单调变坏、可复现。**最要命的是失败的形式**：`setup_failures`、`throws`、`missing` 全程为 0，`patches_count` 也对——引擎既不断言也不报错，只是**把高度写成别的块的数值**（最大 69 m 级偏差）。任何只看"调用成功与否"的接线都会把它读成正常。所以这条不是"性能不够"，是**正确性**：并发上传地形这条路封死。
+
+**b10 主线程照常跑帧时**（设计真正要的形态；b9 版把结论写空了，见下）：一条工作线程传 81 块（1 935.6 ms），主线程不 Join、照常 `OnUpdate`——期间主线程出帧 **33 次**，81 块全部事后验对（`bad_err=0/81`、`worst 0.164 cm`、零失败零缺块）。回执里 `live_verdict=SINGLE_WORKER_UPLOADS_CORRECTLY_WHILE_MAIN_THREAD_TICKS`。
+
+**两条必须跟着这句的限定**：① 帧时长本身**不能报数**（samples min 6.4 / avg 26.3 / max 100 ms）——后台未聚焦的编辑器本身就在这个区间跑，我没有"同场景不上传"的对照，所以这组 ms 归因不了，只有"出帧次数"和"数据对不对"是有效读数；② 这是**实测没坏**，不是**引擎契约允许**——没有任何文档或断言说工作线程可以碰地形，b10 只覆盖了一种场景（无材质、单线程、81 块、编辑器 Development 装配）。要把它当成设计地基，需要一份引擎侧的正式约定，或者把上传仍然留在主线程、按 §13.15 E 的"每帧一块 + `CollisionLOD≥3`"来排。
+
+**b9 那条假 PASS（记账）**：同一支探针的第一版报 `passed=1`，但 `frames=1`——上传窗口里主线程一次都没 tick，"帧时长 max=0"是**零样本上的最大值**，判据在空转。修法不是放宽阈值，而是**要求样本数**：`ticks_while_uploading` 必须 ≥8 才允许报结论，否则 `INCONCLUSIVE_main_thread_did_not_tick_enough_while_uploading`；同时把窗口从 25 块拉到 81 块。这条与"自检全绿可能只是那行从没执行"是同一个坑，只是这次样本数为 1 而不是 0，比空转更难看出来。
+
+**现场**：临时场景 `Content/Maps/TmpTerrainSpike.scene` 与标记文件已删、编辑器已退出、`World.scene` 全程 mtime 未变（并行会话的文件没被碰）；编辑器顺手重写的 11 个插件 `.csproj`（Flax 重新生成工程文件时的 GUID 抖动）已 `git checkout` 还原，只保留 `HundunWorld/Source/Game.csproj` 里 Flax 自己写入的 `Horizon.Planet` 引用与 spike 的 `Compile Include`。
+
+**桥的三条使用口径（踩过的坑，省下一轮试错）**：`scene_new`/`scene_load` **只认绝对路径**（相对路径报"未找到场景资产"，尽管工具描述写的是项目相对）；`ui_script_add` 认**类型简名**，全限定名反而找不到；**编辑器未聚焦时不会起脚本编译**，此时 `code_build_wait` 会 40 ms 返回假的 `success`（正解：看 `isSourceDirty=true` 而 `compilations` 不推进，或直接重启编辑器让它开机编译）；验证装配里有没有新代码要按 **UTF-16** 找字符串常量。
+
+### 13.17 真实 GEBCO 第一次整链进引擎：上传保真 0.3 cm，磁盘缓存在 PIE 里省掉 209 倍
+
+spike 多了一个 `dem` 模式（标记写 `30 120 dem <derived 绝对路径>`），走的是生产同一条链：`DemManifest.TryLoad` → `DemGrid` → `TerrainProfile` → `HybridHeightSource` → `HeightSampler` → `PlanetTerrainStreamer.FillPatch`（**接磁盘 patch 缓存**，落在 `Saved/planet_patch_cache`）→ `SetupPatchHeightMap`。这是"真实地球高程变成可玩地形"第一次真的发生在引擎里，此前所有引擎侧测量喂的都是解析斜面。
+
+**点位对上了**：`dem_region=Region(f2 L14 3462,2730)`，与离线 `DemProbe` 同经纬度**同一个区域**——这条要靠 §13.15 之后那次"把经纬度→方向统一到 `Geodetic.DirectionFromLatLon`"才成立（在此之前 spike 手抄的那份是另一套轴序，同一个 lat/lon 会落到别的地皮上，两边数字看着都"自洽"却对不上）。
+
+**量到的（30°N 120°E，东海—浙 coast 一带，5×5 窗口）**
+
+| 项 | 值 |
+|---|---|
+| 每块高程（离线 CLI 同点位可比） | `min −41.788 m … max +100.992 m`（海域块 −41…−10 m，靠岸块 +25…+86 m） |
+| 上传保真度（写进去的数组 vs 引擎里射线读回） | **worst 0.2959 cm**，25/25 块，零 setup 失败、零缺块 |
+| 冷跑（盘上无缓存） | `fill_total=32 778.8 ms`（≈1.3 s/块，被 DEM 分片首次读盘主导）+ `upload_total=566.9 ms` |
+| 热跑（同一批块再走一遍） | `fill_total=156.3 ms`，`cache_hits=25 misses=0` → **冷/热 ≈ 209×** |
+| 跨 PIE 会话 | 第二次启动的"冷跑" `fill_total=159.9 ms`——**缓存活过一次进程**，写次数 25、字节 25 909 700（=25×1 036 388 精确对上 `EntryBytes`） |
+
+**出图**：`game_screenshot` 拿到的画面有实体地表与一条地平线（约在画面 45% 处，上半均值亮度 51、下半 112）。看起来"平"是设计使然而非 bug：这块地皮的起伏是 ±40–100 m 摊在 5 km 上，而切平面内 2.5 km 的曲率下垂只有 ~0.5 cm；材质用的是项目里那张通用 `Content/Materials/Material.flax`（没有任何地形纹理）。数值与画面不矛盾——射线已经证明高度确实写进引擎了。
+**第一次截图是全黑的**，原因不在内容：相机 `actor_create` 后我按直觉朝 +Z 摆，而这个 target 的 `DefineConstants` 里有 `REVERSE_Z`，等于背对地形。掉转（`yaw=180`）后就有画面了。**"全黑先查身份与朝向，别急着判内容坏了"**——这条与"零像素差先证资产身份"是同一类。
+
+**§13.16 缺的那条对照补上了，但它把结论改了一半**：同一次编辑器会话、同一场景，`control` 模式（不起任何上传线程）测到帧时长 `min 6.775 / avg 16.917 / max 53.457 ms`；而 b10 那条"单 worker 上传 81 块期间"是 `min 6.386 / avg 26.277 / max 100 ms`。**所以"后台上传对主线程零成本"不成立**：主线程平均多付约 9.4 ms/帧（+55%）。但这条对照**没有对齐场景内容**——上传过程中场景里的 patch 从 0 涨到 81，渲染本身就在变重，所以这 9.4 ms 不能整笔算成锁竞争。要分清得再做一个"场景里先放好 81 块、只测不再上传的那几十帧"的匹配对照（已记进任务 14）。
+
+**这一轮我自己的两个缺陷（都改了，也都记账）**：① spike 有个 `static bool _ranOnce`，于是**同一次编辑器会话里的第二次 PIE 永远不跑**——表现是"没有回执"，与"标记没放"完全同形；`OnStart` 每次 PIE 本来就只发一次，这个守卫是纯负债，删掉，触发只看标记文件。② `control` 探针报完结果不收手，每个后续帧再写一条，实测跑到 `ticks=133`（数字仍可用，但窗口不是我说的 40 帧）——改成报一次即停。
+
+**现场**：临时场景与标记已删、编辑器已退出、`World.scene` mtime 全程未变（07:17:57）、插件 `.csproj` 的重新生成抖动已还原；`Saved/planet_patch_cache` 留了 25 MB 引擎侧 patch 缓存（`/HundunWorld/Saved` 在 `.gitignore` 里），下次跑可省掉那 33 s 冷读盘。
+
+### 13.18 近景驱动层第一次真跑：预算闸门原来只装在主线程那条入口上
+
+新增 [HundunWorld/Source/Game/Planet/PlanetNearFieldDriver.cs](../HundunWorld/Source/Game/Planet/PlanetNearFieldDriver.cs)：把 §13.12 定死的顺序在 PIE 里真跑——每帧 `BuildPlan` → 缺的块投给泵（线程池生成）→ `TryDequeueCompleted` → 每帧最多 `LoadsPerFrame` 块在主线程 `AddPatch`+`SetupPatchHeightMap` → `Release` 回池；出窗 `RemovePatch`+`MarkUnloaded`；跨区时按全局点重算局部坐标并 `pump.BeginRegion`+`streamer.AttachRegion`。策略参数全是公开字段，脚本桥能改，不用重编。标记 `Saved/planet_near_field.on`，内容 `"<lat> <lon> [loadsPerFrame] [collisionLod] [stepFrames] [maxFrames] [dem目录]"`。
+
+**它第一件事就抓到一条产品级缺陷：缓存预算闸门只装在 `Tick` 上。** 驱动走的是异步路径（只调 `BuildPlan` 问计划、自己排帧上传），于是 900 帧里盘上攒了 **231 MB 且还在涨**——§7.1 那个 2 GB 上限对这条路径完全不设防。修法是把 `TrimToBudget` 从 `Tick` 挪进 `BuildPlan`（两条入口都经过它，没超预算时只比一个数就返回，每帧调得起），[PlanetTerrainStreamer.cs:234](../Horizon.Planet/PlanetTerrainStreamer.cs#L234)。配套判据 `BuildPlan_EnforcesCacheBudget_WithoutEverCallingTick`（正向对照同样只走 BuildPlan：默认预算内一块不逐；预算只够 10 块时 25 块必须收敛到 10 且盘上文件数同步落下，驻留集仍是 25——磁盘淘汰不动引擎侧）。**反证**：把闸门挪回 `Tick` 单独跑一次，红的恰好只有这条新判据（202 通过 / 1 失败），原有 `Tick_EnforcesCacheBudget…` 照绿——说明两条入口各自都有判据、没有互相顶包；还原后 **203/203 绿**。
+
+**v1 那趟暴露的四件事**（都是"看起来在跑"才会露出来的）：① 上面那条预算；② 换区按 `TryNeighbour(UPlus)` 取邻居是**错的**——局部 +X 是这一面的"东"，而六个面的 uv 轴向各不相同，于是换区后玩家的局部坐标凭空多出一整个区域宽（`local_now` 每次 +8.1 km）；③ 验收撞在 `maxFrames` 那一帧，而那一帧正好刚换完区、整窗被摘光 → `desired=25 checked=0 missing=25`，看着像"地形没了"其实是取错了时刻；④ 对账等式在非静置时刻当然不平（`requested=237` vs `233`，差的是当时还在飞的 2 件）。
+
+**v2 的改法与结果**：换区改成"拿全局点反查真正所在区域"（与 §13.9 走查同一口径）并用 `PlanetRegions.AreEdgeAdjacent` 校验它确实是邻家；收尾前先进入 `settling` 相，等泵排空、取件口空、计划满足再验。结果：
+
+```
+frames=935 steps=31 crossings=1 uploaded=190 unloaded=140 upload_failures=0 queue_overflow=0
+final_window: desired=25 checked=25 missing=0 worst_ray_err_cm=0.1641
+pump_equation requested=190 completed=190 stale=0 duplicate=0 pending_or_inflight=0 balanced=1
+cache_bytes_used=196913720 budget=2147483648 over_budget=0
+crossings_accepted=1 crossings_rejected=3
+upload_ms avg=58.624 max=192.22 | driver_work_ms avg=12.036 | engine_frame_ms avg=34.354 max=100
+plan_lag_frames avg=7.16 max=25 samples=190 | unsatisfied_frames=418/935 worst_ready_in_window=25
+```
+
+最后一窗 25/25 全部验到、偏差 0.164 cm，等式平了，缓存 197 MB 在预算内——**驱动骨架是成立的**。但两条没关掉：`crossings_rejected=3`（例 `from=Region(f2 L14 3461,2730) → to=Region(f2 L14 3459,2729)`，跨 2 格还带 1 格纵向偏移，而玩家每 6 步只走 3.05 km、L14 一格实测 3.666–7.777 km，物理上不可能跨 2 格——共边校验把它拦下来了，根因待查，任务 15）；上传耗时从 v1 的 23.6/49.8 ms 跳到 58.6/192 ms，可能是与后台生成的争用，也可能是这台机器的漂移（任务 16 要用重复测量 + 同进程尺子来分）。
+
+**又一个自己的缺陷（v3 已改）**：`driver_verdict=DRIVER_PROBLEM` 而 `fail_reason=` 是**空的**——`ok` 里有八个合取分支，我只给五个写了名字。现在每个分支各自带数值报名（`crossings_rejected=3`、`uploaded_lt_desired=…`、`pump_equation_unbalanced` 等），verdict 为假而理由为空这种形状从此不可能出现。
+
+**现场**：临时场景与标记已删、编辑器已退出、`RootScene.scene` 被 Flax 重新序列化过一次（只有行尾差异，内容逐字节相同，已 `git checkout` 还原）、`World.scene` mtime 全程 07:17:57 未变；离线 **203/203 绿**，客户端脚本 0 错误。驱动 v3 只改了回执报名，未重跑。
+
+
+### 13.19 换区"非法跳格"的根因与标题相反：是我把服务端的不变量用在了客户端
+
+§13.18 留下的 `crossings_rejected=3` 查清了，**坐标链没有错**。纯 C# 复现（新增 [Horizon.Planet.Tests/PlanetRegionWalkGeometryTests.cs](../Horizon.Planet.Tests/PlanetRegionWalkGeometryTests.cs)）给出的走查序列是：
+
+```
+start region=Region(f2 L14 3462,2730) width=5.258 km
+check 1: local=(3.048 km) found=Region(f2 L14 3461,2730) delta=(-1,0)  edge_adjacent=True   -> 换基后 local=(-2.003,-1.458) km
+check 3: local=(4.093 km) found=Region(f2 L14 3460,2729) delta=(-1,-1) edge_adjacent=False  <- 对角，但这是正确落点
+check 5: local=(5.138 km) found=Region(f2 L14 3459,2729) delta=(-1,0)  edge_adjacent=True
+```
+
+根因一句话：**立方投影的 uv 格网与局部东西线不平行**，所以沿局部 +X 走会合法地同时对角换格（`y` 从 2730 漂到 2729 就是这件事）。`AreEdgeAdjacent` 是**服务端**的不变量（一次输入只能跨一格，§13.13），把它当成客户端换基的闸门，就会拒绝一个正确结果；而拒绝之后驱动留在旧基里继续走，才把"跨一格"累积成回执里那个"跨两格"——**假形状是真拒绝的下游产物**。v1 的 `local_now` 每次 +8.1 km 同源。
+
+顺带量清了一个此前含糊的数：`DefaultRegionLevel=14` 的区域实测宽 **4.226–7.723 km**（中心到角 ≤5.471 km），而 5×5 patch 窗口只有 2.54 km——窗口确实落在一个区域之内，§13.7 的设计前提成立。
+
+**驱动 v4 的改法**：换基改成无条件跟到 `RegionKey.FromDirection` 反查出的区域；该守的不变量换成"**一次检查最多跨一格**"（`reach>1` 才计错），并把形状分开计数。引擎侧实测：
+
+```
+crossings_total=3 edge=2 diagonal=1 multi_tile_rejected=0
+local_now 全部落在 ±2.1 km 内（v1 是 +8.1 km）
+final_window: desired=25 checked=25 missing=0 worst_ray_err_cm=0.1719
+pump_equation requested=220 completed=220 pending_or_inflight=0 balanced=1
+upload_ms avg=23.015 max=40.415 | plan_lag_frames avg=5.06 max=13
+driver_verdict=NEAR_FIELD_DRIVER_RUNS_IN_ENGINE
+```
+
+**两条新判据各自被变异验过**：把走查里的纵向漂移抹掉（`localZ` 不再带走）→ `diagonal > 0` 红；把检查间隔从 6 步放大到 20 步（10.2 km > 最窄区域宽）→ `multiTile == 0` 红。两次都只红该红的那条。
+
+**我自己的两处**：① 这条判据的第一版**也是错的**——它只带走 `localX`、丢掉 `localZ`，等于每换一次基就把玩家拽回新基的东西线，于是"对角换区"凭空消失、两条判据一起红；修的是夹具而不是断言。② v4 回执在 `verdict=PASS` 时仍印了一行 `fail_reason=(none_but_verdict_false)`（把报名从 `if (!ok)` 里挪出来时没管住），v5 改成"只在判据为假时报名"——PASS 也印 fail_reason 会让读回执的人以为"哪里不对但没说"。
+
+**#16 的嫌疑排序因此变了**：v2 那趟 58.6/192 ms 的上传耗时，发生在"换区被误拒、玩家越走越远"的状态下；修好后同一策略回到 23.0/40.4 ms。所以那 2.5 倍更像**被误用的换区逻辑带来的额外流送压力**，而不是机器漂移或后台生成争用。仍需重复测量与匹配对照才能定论（任务 16）。
+
+**现场**：离线 **205/205 绿**，编辑器已退出、临时场景与标记删除、`World.scene` mtime 未变。驱动 v5 只改了回执报名，未重跑。

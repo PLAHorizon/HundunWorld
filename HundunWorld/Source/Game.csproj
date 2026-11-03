@@ -533,6 +533,9 @@
     <Reference Include="Horizon.Game.ECS.Arch">
       <HintPath>..\..\Horizon.Game.ECS.Arch\bin\Debug\net10.0\Horizon.Game.ECS.Arch.dll</HintPath>
     </Reference>
+    <Reference Include="Horizon.Planet">
+      <HintPath>..\..\Horizon.Planet\bin\Debug\net10.0\Horizon.Planet.dll</HintPath>
+    </Reference>
     <Reference Include="Horizon.Game.Sim.Contracts">
       <HintPath>..\..\Horizon.Game.Sim.Contracts\bin\Debug\net10.0\Horizon.Game.Sim.Contracts.dll</HintPath>
     </Reference>
@@ -606,11 +609,11 @@
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
     </Reference>
     <ProjectReference Include="..\Plugins\NarrativePro\Source\NarrativePro.csproj">
-      <Project>{01A4D4DF-CF04-4A60-82BA-E1E183443A26}</Project>
+      <Project>{51BF243F-C304-4571-B911-565BB893CE71}</Project>
       <Name>NarrativePro</Name>
     </ProjectReference>
     <ProjectReference Include="..\Plugins\MetaHuman\Source\MetaHuman.csproj">
-      <Project>{8D33C89A-4EA2-4EBD-8867-97FA8098CEE4}</Project>
+      <Project>{5F837E3F-473F-419A-B181-57E9BA2E2228}</Project>
       <Name>MetaHuman</Name>
     </ProjectReference>
   </ItemGroup>
@@ -844,6 +847,7 @@
     <Compile Include="Game\Pets\PetFollowComponent.cs" />
     <Compile Include="Game\Pets\PetVisualCatalog.cs" />
     <Compile Include="Game\PhotoMode.cs" />
+    <Compile Include="Game\Planet\PlanetTerrainSpike.cs" />
     <Compile Include="Game\PlayerController.cs" />
     <Compile Include="Game\RemotePlayerActor.cs" />
     <Compile Include="Game\RemoteVisibility\Contracts\IReconnectResumeSender.cs" />
