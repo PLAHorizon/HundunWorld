@@ -1,5 +1,5 @@
-// PCG Plugin - mesh surface sampling (pure geometry)
-// Part of the FlaxEngine PCG plugin. See docs/PCG_PLUGIN_DESIGN.md §5.1.1.
+// PCG 插件 - 网格表面采样（纯几何）
+// 属于 FlaxEngine PCG 插件。见 docs/PCG_PLUGIN_DESIGN.md §5.1.1。
 
 using System;
 using FlaxEngine;
@@ -7,27 +7,27 @@ using FlaxEngine;
 namespace PCG.Data
 {
     /// <summary>
-    /// Triangular surface sampling, kept free of engine objects so it can be measured and asserted headless.
+    /// 三角面表面采样：不碰任何引擎对象，所以它能离屏测量、离屏断言。
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The node that uses this (<c>PCGMeshSamplerNode</c>) has to reach through a loaded asset to get its
-    /// geometry, and an asset-dependent test can only ever say "it ran". Splitting the arithmetic out means the
-    /// properties that actually matter - points land inside their triangle, triangles are chosen in proportion
-    /// to their area, degenerate triangles are never chosen, and a re-run reproduces the layout - are checked
-    /// against hand-built geometry with known answers.
+    /// 用它的节点（<c>PCGMeshSamplerNode</c>）要穿过一个已加载的资产才拿得到自己的
+    /// 几何，而依赖资产的测试只能说"它跑过了"。把算术拆出来，是为了让真正要紧的那几条
+    /// 性质——点落在自己那个三角形里、被选中的概率与面积成正比、
+    /// 退化三角形永不被选中、重跑复现同一套布局——都能对着
+    /// 手工搭出来的、答案已知的几何逐条核过。
     /// </para>
     /// </remarks>
     public static class PCGMeshSurfaceSampling
     {
-        /// <summary>Below this area a triangle is treated as degenerate.</summary>
+        /// <summary>面积小于这个值的三角形按退化处理。</summary>
         /// <remarks>
-        /// Exported meshes are full of zero-area triangles (collapsed seams, split UV shells). A weight of zero
-        /// keeps them out of the selection instead of concentrating samples on a line.
+        /// 导出的网格里满是零面积三角形（压扁的接缝、拆成多块后的 UV 壳）。权重给 0 把它们挡在选取之外，
+        /// 而不是让采样点堆到一条线上去。
         /// </remarks>
         public const float MinTriangleArea = 1e-8f;
 
-        /// <summary>Area of the triangle through the origin-relative vectors.</summary>
+        /// <summary>用相对原点的向量算这个三角形的面积。</summary>
         public static float TriangleArea(in Vector3 a, in Vector3 b, in Vector3 c)
         {
             var ab = b - a;
@@ -36,13 +36,13 @@ namespace PCG.Data
         }
 
         /// <summary>
-        /// Cumulative area weights per triangle, in the order the triangles appear.
+        /// 每个三角形的面积累加权重，按三角形出现的顺序排。
         /// </summary>
-        /// <param name="positions">Vertex positions.</param>
-        /// <param name="triangles">Triangle indices, three per triangle.</param>
-        /// <param name="lodIndex">Reserved for parity with the node's LOD handling; unused.</param>
-        /// <param name="totalArea">Sum of the usable triangle areas; zero when nothing is sampleable.</param>
-        /// <returns>Cumulative areas, or null when the input cannot describe triangles.</returns>
+        /// <param name="positions">顶点位置。</param>
+        /// <param name="triangles">三角索引，每个三角形三个。</param>
+        /// <param name="lodIndex">为与节点的 LOD 处理对齐而预留，暂未使用。</param>
+        /// <param name="totalArea">可用三角形面积之和；没有可采的东西时是 0。</param>
+        /// <returns>面积累加表；输入描述不出三角形时给 null。</returns>
         public static float[] BuildCumulativeAreas(Vector3[] positions, uint[] triangles, out float totalArea)
         {
             totalArea = 0.0f;
@@ -80,15 +80,15 @@ namespace PCG.Data
         }
 
         /// <summary>
-        /// Index of the triangle whose cumulative area band contains <paramref name="roll"/>.
+        /// 面积累加表中包含 <paramref name="roll"/> 的那一段所属三角形的下标。
         /// </summary>
-        /// <param name="cumulative">From <see cref="BuildCumulativeAreas"/>.</param>
-        /// <param name="totalArea">Its total.</param>
-        /// <param name="roll">A value in [0, totalArea).</param>
+        /// <param name="cumulative">来自 <see cref="BuildCumulativeAreas"/>。</param>
+        /// <param name="totalArea">它的总面积。</param>
+        /// <param name="roll">取值落在 [0, totalArea) 里。</param>
         /// <remarks>
-        /// Degenerate triangles carry no band of their own (their cumulative entry repeats the previous one),
-        /// so a binary search that returns the first band reaching the roll cannot land on one - which is why
-        /// the search looks for the strictly-greater bound rather than greater-or-equal.
+        /// 退化三角形自己没有那一段（它们的累加项重复前一个值），所以二分查找只要返回
+        /// "第一个够到 roll 的段"就绝不会落在退化三角形上——这也是为什么查找找的是
+        /// 严格大于的边界，而不是大于等于。
         /// </remarks>
         public static int PickTriangle(float[] cumulative, float totalArea, float roll)
         {
@@ -113,22 +113,22 @@ namespace PCG.Data
         }
 
         /// <summary>
-        /// A point inside the triangle at barycentric coordinates (1-u-v, u, v).
+        /// 重心坐标 (1-u-v, u, v) 落在三角形内部的那个点。
         /// </summary>
         /// <remarks>
-        /// The square-root on one coordinate is what makes the mapping uniform over the triangle: picking u and
-        /// v as independent uniforms concentrates samples toward the vertex where the two edges meet.
+        /// 其中一个坐标取平方根，才让这套映射在整个三角形上是均匀的：把 u 和 v 各自
+        /// 当独立均匀数来取，会把采样点堆到那两条边相交的那个顶点上。
         /// </remarks>
-        /// <param name="a">First corner.</param>
-        /// <param name="b">Second corner.</param>
-        /// <param name="c">Third corner.</param>
-        /// <param name="u">Uniform in [0,1).</param>
-        /// <param name="v">Uniform in [0,1).</param>
-        /// <param name="normalU">First corner normal.</param>
-        /// <param name="normalV">Second corner normal.</param>
-        /// <param name="normalW">Third corner normal.</param>
-        /// <param name="position">Sampled position.</param>
-        /// <param name="normal">Interpolated normal, normalised when it has a direction of its own.</param>
+        /// <param name="a">第一个角。</param>
+        /// <param name="b">第二个角。</param>
+        /// <param name="c">第三个角。</param>
+        /// <param name="u">[0,1) 上的均匀数。</param>
+        /// <param name="v">[0,1) 上的均匀数。</param>
+        /// <param name="normalU">第一个角的法线。</param>
+        /// <param name="normalV">第二个角的法线。</param>
+        /// <param name="normalW">第三个角的法线。</param>
+        /// <param name="position">采到的位置。</param>
+        /// <param name="normal">插值出来的法线；它自己有方向时会被归一化。</param>
         public static void SampleTriangle(
             in Vector3 a, in Vector3 b, in Vector3 c, float u, float v,
             in Vector3 normalU, in Vector3 normalV, in Vector3 normalW,
@@ -147,17 +147,17 @@ namespace PCG.Data
         }
 
         /// <summary>
-        /// Builds a point set spread over the given mesh surface, in world space.
+        /// 在给定网格表面上铺出一套点集，结果是世界空间里的。
         /// </summary>
-        /// <param name="positions">Vertex positions in the mesh's own space.</param>
-        /// <param name="normals">Per-vertex normals, or null to use each triangle's face normal.</param>
-        /// <param name="triangles">Triangle indices, three per triangle.</param>
-        /// <param name="toWorld">Transform taking a mesh-space point into the scene.</param>
-        /// <param name="count">Points to produce.</param>
-        /// <param name="seed">Run seed.</param>
-        /// <param name="nodeId">Node index, so two mesh samplers in one graph disagree.</param>
-        /// <param name="density">Density written to every point.</param>
-        /// <param name="error">Why nothing could be produced, when the result is empty.</param>
+        /// <param name="positions">顶点位置（在网格自己的空间里）。</param>
+        /// <param name="normals">逐顶点法线；给 null 就用每个三角形自己的面法线。</param>
+        /// <param name="triangles">三角索引，每个三角形三个。</param>
+        /// <param name="toWorld">把网格空间的点送进场景的那个变换。</param>
+        /// <param name="count">要产出多少个点。</param>
+        /// <param name="seed">这一轮的种子。</param>
+        /// <param name="nodeId">节点下标，让同一张图里的两个网格采样器给出不同的点。</param>
+        /// <param name="density">写到每个点上的密度。</param>
+        /// <param name="error">结果为空时，说明为什么产不出东西。</param>
         public static PCGData Generate(
             Vector3[] positions, Vector3[] normals, uint[] triangles, Transform toWorld,
             int count, int seed, int nodeId, float density, out string error)
@@ -179,20 +179,20 @@ namespace PCG.Data
 
             var points = new PCGPoint[count];
 
-            // Every element depends on its index alone - the random stream is keyed on (seed, node id, index),
-            // and each worker writes only its own slot - which is what lets the same loop run either inline or
-            // across workers and still produce the same points in the same order.
+            // 每个元素只依赖自己的下标——随机流按 (seed, 节点下标, 下标) 取键，
+            // 而每个 worker 只写自己那一格——正因如此，同一个循环无论是
+            // 就地跑还是摊到多个 worker 上跑，都能给出同样顺序的同样一批点。
             Execution.PCGParallel.For(count, i =>
             {
-                // One stream per point index, keyed the same way every other node keys its randomness, so a
-                // re-run reproduces the layout and a subset recompute agrees with the full one.
+                // 每个点下标一条流，取键的方式与别的节点一致，所以
+                // 重跑复现同一套布局，只重算一部分也和全量算的一致。
                 var rng = new PCGDeterministicRng(seed, nodeId, i);
                 float roll = rng.NextFloat() * totalArea;
 
-                // A cumulative table that BuildCumulativeAreas accepted always contains the roll, so there is
-                // no per-point failure left to report - and reporting one from here would have been a race on
-                // the shared error slot. Clamped rather than trusted, so an unreachable path cannot corrupt
-                // the point set.
+                // 只要 BuildCumulativeAreas 收下了这张累加表，roll 就一定落在某一段里，
+                // 于是这里没有"逐点失败"要报——从这儿报反而会跟共享的错误槽位抢。
+                // 取值是钳住而不是轻信，所以哪怕这条路上本该没有越界，
+                // 它也没法把整套点弄坏。
                 int triangle = Math.Max(0, Math.Min(PickTriangle(cumulative, totalArea, roll), cumulative.Length - 1));
 
                 int ia = (int)triangles[triangle * 3];
@@ -209,7 +209,7 @@ namespace PCG.Data
 
                 var orientation = toWorld.Orientation;
 
-                // Normals are directions, so the position's translation must not leak into them.
+                // 法线是方向，所以位置的平移分量不许渗进去。
                 var worldNormal = Vector3.Transform(localNormal, orientation);
 
                 if (normals == null || localNormal.Length <= 1e-6f)
@@ -222,9 +222,9 @@ namespace PCG.Data
 
                 var world = Vector3.Transform(scaled, orientation) + toWorld.Translation;
 
-                // The point's frame carries the surface direction, so a downstream spawner or align-to-normal
-                // consumer reads the mesh's own shading rather than the world up axis. Same construction the
-                // landscape sampler uses, so both samplers hand the next node the same convention.
+                // 点的坐标系带上表面朝向，下游的生成器或"贴法线"的消费者读到的
+                // 就是网格自己的明暗，而不是世界的上轴。构造方式与地形采样器相同，
+                // 两个采样器交给下一个节点的约定因此也相同。
                 var up = worldNormal;
                 var forward = Vector3.Normalize(Cross(up, Vector3.Right));
                 if (forward.LengthSquared < 1e-6f)
@@ -234,8 +234,8 @@ namespace PCG.Data
                 point.Rotation = Quaternion.LookRotation(
                     new Float3(forward.X, forward.Y, forward.Z), new Float3(up.X, up.Y, up.Z));
 
-                // Averaged scale: a mesh sampler has no per-point scale of its own, and the actor's scale is the
-                // only one worth passing on.
+                // 尺度取平均：网格采样器自己没有逐点尺度，而 Actor 的尺度是
+                // 唯一值得往下传的那个。
                 point.Scale = new Float3(
                     (toWorld.Scale.X + toWorld.Scale.Y + toWorld.Scale.Z) / 3.0f);
 
@@ -245,7 +245,7 @@ namespace PCG.Data
             return new PCGData(points);
         }
 
-        /// <summary>Face normal of a triangle, turned into world directions.</summary>
+        /// <summary>三角形的面法线，换成世界空间的朝向。</summary>
         private static Vector3 FaceNormal(in Vector3 a, in Vector3 b, in Vector3 c, Quaternion orientation)
         {
             var n = Cross(b - a, c - a);
