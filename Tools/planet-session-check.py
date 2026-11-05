@@ -58,6 +58,11 @@ def kv(line):
 
 def check_receipt(text, silo_log_text, want_tag):
     """返回 [(状态, 键, 说明)]。每条都要能被 --self-test 里的一次变异证伪。"""
+    # 服务端日志是 JSON 行，中文被转义成 \uXXXX（实测：`\u53E3\u5F84\u95F8\u95E8=on(...)`），
+    # 不还原的话中文正则永远匹配不到——而"匹配不到"和"闸门关着"在判据里长得一样。
+    if silo_log_text is not None:
+        silo_log_text = re.sub(r"\\u([0-9a-fA-F]{4})",
+                               lambda m: chr(int(m.group(1), 16)), silo_log_text)
     lines = text.splitlines()
     rows = []
     add = rows.append

@@ -106,8 +106,17 @@ public class PlanetRegionGrain : Grain, IPlanetRegionGrain
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         int restored = RestoreFromState();
-        _logger.LogInformation("星球区域 grain 主键={Planet} 恢复={Restored} {Describe} 口径闸门={Caliber} 地面闸门={Ground}",
-            this.GetPrimaryKeyLong(), restored, EnsureAuthority().Describe(), CaliberGateStatus, GroundGateStatus);
+        string caliber = CaliberGateStatus, ground = GroundGateStatus;
+        // 闸门关着时必须过 Warning：Silo 默认 LogLevel=Warning，Info 那条会被过滤掉，
+        // 于是"闸门没开"在默认部署里等于没有记录——而它正是 §13.59 要防的那种静默失效。
+        // 开着时用 Info（并在 appsettings 里给本 grain 单独开 Information，别为此抬高全局级别）。
+        const string template = "星球区域 grain 主键={Planet} 恢复={Restored} {Describe} 口径闸门={Caliber} 地面闸门={Ground}";
+        bool bothOn = caliber.StartsWith("on(", StringComparison.Ordinal)
+                      && ground.StartsWith("on(", StringComparison.Ordinal);
+        if (bothOn)
+            _logger.LogInformation(template, this.GetPrimaryKeyLong(), restored, EnsureAuthority().Describe(), caliber, ground);
+        else
+            _logger.LogWarning(template, this.GetPrimaryKeyLong(), restored, EnsureAuthority().Describe(), caliber, ground);
         await base.OnActivateAsync(cancellationToken);
     }
 

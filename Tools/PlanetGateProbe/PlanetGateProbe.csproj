@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>PlanetGateProbe</AssemblyName>
+    <RootNamespace>PlanetGateProbe</RootNamespace>
+    <CopyToFlax>false</CopyToFlax>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Client" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
+    <ProjectReference Include="..\..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\..\Horizon.Planet\Horizon.Planet.csproj" />
+  </ItemGroup>
+
+</Project>

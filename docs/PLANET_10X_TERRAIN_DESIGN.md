@@ -3617,6 +3617,50 @@ Debug 那份没被占用，所以没有 Development 那 5 条 xcopy 失败）。
 而"磁盘上编译成功"与"进程里跑的是它"是两件事——这次两件事同时成立还是没用，
 因为进程里的那份是更早的。
 
+### 13.73 服务端换成当前代码 + 真产物的那一次：两条闸门在真 Silo 上都是 on，且同一个 terrainVersion
+
+按 #30 的验收要求把服务端换掉了：`dotnet build` Silo 与 Gateway（各 0 错误），
+Silo 带 `PLANET_DEM_ROOT=<产物目录>` 启动（监听 11111/30000），Gateway 9 秒起来（7789/8890 在听）。
+但"起来了"不等于"闸门开着"——那两条是<em>可选注入</em>，漏注册不报错、只静默失效，
+所以补了一个真客户端探针 `Tools/PlanetGateProbe`：用真产物算出 35 字节口径 → `BindAsync` →
+对共边邻区的中心发 `TransferAsync` → `SnapshotAsync`，并把回执的 ack 还原回全局点比对。
+
+**实测（这一轮真跑）**：
+
+```
+caliber terrainVersion=149d8baf radius=6371000000 level=14
+bind=1 character=781514 tick=1000014 home_region=Region(f2 L14 3462,2730)
+transfer accepted=True applied=True code=None new_region=828662796232166058 server_tick=1000015
+ack local=(0,99999,0) origin=(-2758156223,4778432014,3185718560) err_cm=1 ack_ok=1
+snapshot accepted=True code=None owner=828662796232166058 subs=5 visible=1 boundary_cells=3304
+GATE_PROBE bind=1 accepted=1 applied=1 ack_ok=1 snapshot=1
+verdict=PASS
+```
+
+Silo 的激活行（解码后）：`口径闸门=on(terrainVersion=149d8baf basefield=1) 地面闸门=on(terrainVersion=149d8baf)`
+—— 两条都 on、<b>同一个 terrainVersion</b>，且与客户端算出来的那个数一致。这就是 §6.2/§6.1 在线上真的开着。
+
+**为了让这行真的可读，修了两处（都是"静默"的形状）**：
+
+1. **闸门关着时改走 Warning**：Silo 默认 `LogLevel.Default=Warning`，原来那句是 Info，
+   于是"闸门没开"在默认部署里等于<em>没有记录</em>——正是 §13.59 要防的静默失效。
+   现在两条都 on 走 Info、否则走 Warning；`appsettings.json` 只给
+   `Horizon.Orleans.Grains.PlanetRegionGrain` 开 `Information`（不为它抬高全局级别）。
+2. **服务端日志是 JSON 行、中文被转义成 `\uXXXX`**：判据器的中文正则永远匹配不到，
+   而"匹配不到"和"闸门关着"在判据里同形。`planet-session-check.py` 现在先还原转义再匹配，
+   实测输出 `ok silo_gates 两闸门同 on 且 terrainVersion=149d8baf`。
+
+**探针第一版有两个错，都记下来**（它们都是"夹具/判据写错"而不是产品错）：
+① ack 判的是 `LocalX/LocalZ 非 0`——目标取的是邻区<em>中心</em>，局部水平两格本来就≈0、
+高度那格≈+1 km（实测 99 999 cm），于是一份正确的回执被自己判成错。改成"用回执的局部厘米
+经区域帧还原全局点，与发出去的点差 ≤1 cm"（实测 **1 cm**，即量化误差）。
+② 固定角色号 7 + tick 100 撞上<em>持久化</em>状态：grain 里上一轮的归属与时钟（101）还在，
+于是 `bind=false`、迁移报 `OwnerMismatch`。改成本轮唯一角色号 + 高于已持久化时钟的 tick。
+
+**还没验的**：这条只证了服务端 + 协议 + 口径/地面闸门。客户端的换区上行仍是 v12 装配
+（PIE 要重启编辑器才换），所以 #25 还差"客户端那一侧真发一次、服务端真受理、ack 被客户端解开"。
+
+
 
 
 
