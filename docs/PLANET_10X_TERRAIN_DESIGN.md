@@ -3699,6 +3699,14 @@ NullReferenceException
 两条都记在 #25 里。探针这轮还补了 `bind-only` 模式（只落位不迁移）与"tick 必须高于已持久化时钟"
 ——固定角色号 + 固定 tick 会撞上上一轮的归属与时钟（第一版就撞出 `bind=false` + `OwnerMismatch`）。
 
+**一条环境教训（不是产品缺陷）**：用工具的"后台任务"起的服务端**活不过一次对话回合**——
+回合结束时进程被回收，日志停在中途，下一回合看到的是"任务已完成（exit 0）"，
+很容易被误读成"Silo 自己退了"。要让它常驻得脱离会话启动：
+`powershell Start-Process -FilePath <silo.exe> -WorkingDirectory <bin 目录> -RedirectStandardOutput <日志> -WindowStyle Hidden`，
+环境变量在同一句 PowerShell 里先 `$env:PLANET_DEM_ROOT=...` 设好再启动（Start-Process 继承当前环境）。
+照此重启后 Silo/Gateway 跨回合仍在（11111/30000/7789 都在听），探针再跑一次仍
+`bind=1 accepted=1 applied=1 ack_ok=1 snapshot=1 verdict=PASS`。
+
 
 
 
