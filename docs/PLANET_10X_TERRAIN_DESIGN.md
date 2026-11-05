@@ -3494,6 +3494,35 @@ R5（一个键既被判读又登记成诊断）证明"两句话互相抵消"那�
 而它要先把"角色位姿按哪种轴序落进星球帧"量出来（§13.67 的 `actor_pose` 探针等着那次实机读数）。
 在那之前给它写适配器就是猜——所以这一轮只交库+判据，`PlanetSurfaceMotionRules` 文件头里写明了这件事。
 
+### 13.71 干净检出闸门：本地全绿也能提交出一棵编不过的树
+
+这一轮真发生过一次：ec42509 那笔提交漏了 4 个**属于星球线**的消息注册文件
+（`MessageType` 的 4 个枚举、`MessageUnion` 的 4 条 union、生成器的 tag 上界、特性注释）。
+当时工作区里那几份改动还在（未提交），所以本地一切绿；而**提交出去的树是编不过的**——
+`PlanetRegionMessages.cs` 引用的四个枚举在 HEAD 里根本不存在（CS0117 ×4）。
+下一次构建把它顶出来的时候，距离那次提交已经过了两轮。
+
+所以补一条**在干净检出上**跑的闸门：`scripts/verify-planet-clean-checkout.sh [commit]`。
+
+- 做法：`git worktree add --detach <仓库外的临时目录> <commit>`，在新树里跑
+  planet 库判据（≥300）、网关星球全家（≥148）、Silo 编译；无论成败都 `worktree remove --force`，
+  退出码按结果给。仓库外的临时目录是为了不污染工作区，也不让 `git status` 多出一条未跟踪目录。
+- **两向证据**（这一轮的真跑）：
+  - `HEAD`（d0149ef）→ `ok planet 库判据（passed=344）`、`ok 网关星球判据（passed=148）`、`ok Silo 编译`，
+    `failed=0 verdict=PASS`；
+  - `ec42509`（那笔漏文件的提交）→ `FAIL`（`failed=2`），报的正是
+    `PlanetRegionMessages.cs(86,32): error CS0117: 'MessageType' does not contain a definition for 'PlanetRegionTransfer'`
+    等四条。**也就是说这条闸门能从历史里把那次的缺陷原样复现出来**，不是一条只会念 PASS 的装饰。
+- **它不覆盖什么，要说清楚**：客户端脚本装配那一段依赖 `Cache/Intermediate/…/Game.CSharp.response`
+  （引擎生成物、不入库），真产物两段依赖 `Data/GEBCO_2026`（大体量二进制、不入库）——
+  干净检出里这两样都不存在，所以那三段仍由主闸门在工作区上跑。两条闸门分工是：
+  **主闸门证明"这盘上的东西是对的"，干净检出闸门证明"仓库里提交的东西是能自己站起来的"。**
+- 代价：两次 restore+build 约 3 分钟，所以不进主闸门；规则写死在这里——
+  **任何新增/移动文件、改 csproj、改消息注册的提交，提交前后各跑一次**。
+  它比"提交前再看一眼 git status"强的地方在于：前者只能看见"我有东西没提交"，
+  看不见"我提交的东西不够"。
+
+
 
 
 

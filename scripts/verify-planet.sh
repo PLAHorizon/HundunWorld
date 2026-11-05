@@ -9,6 +9,8 @@
 #
 # 用法：bash scripts/verify-planet.sh            # 全跑（含真实产物那两段，数据不在盘上会念 SKIP）
 #      SKIP_DATA=1 bash scripts/verify-planet.sh  # 连真实产物两段也不跑（只要快）
+#      bash scripts/verify-planet-clean-checkout.sh [commit]  # 另一件事：在干净检出上编一次
+#          （本脚本证明"这盘上的东西是对的"，那条证明"仓库里提交的东西能自己站起来"；见 §13.71）
 # 依赖：dotnet 10 SDK（仓库根有 global.json，从根跑）、bash、真产物在 Data/GEBCO_2026/derived（可选）
 set -u
 cd "C:/Works/GitHubProjects/HundunWorld" || exit 9
