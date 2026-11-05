@@ -1182,6 +1182,37 @@ namespace Horizon.Game.Message.Enums
         GetCharacterAppearanceResult = 1663,
 
         #endregion
+
+        #region 星球区域权限
+
+        /// <summary>
+        /// 星球区域迁移请求。<b>服务端不信客户端报的 to</b>：先用全局点反查真正所在的区域，
+        /// 再要求它与 from 共边；两条任一不成立都要带原因拒绝（§9 的 P1 协议）。
+        /// 全局坐标用 int64 厘米：这颗星球半径 6.371e9 cm，float/double 在客户端局部切平面里都够用，
+        /// 但跨端要逐位对得上，所以线上是整数厘米。
+        /// </summary>
+        [Description("星球区域迁移请求")]
+        PlanetRegionTransfer = 1664,
+
+        /// <summary>
+        /// 星球区域迁移回执。被拒时 <see cref="Horizon.Game.Message.Network.PlanetRegionTransferResult.Reason"/>
+        /// 必须非空——"拒了但没说为什么"在服务端等于丢包，客户端无法区分被拒与超时。
+        /// </summary>
+        [Description("星球区域迁移回执")]
+        PlanetRegionTransferResult = 1665,
+
+        /// <summary>
+        /// 请求区域层快照（§6.4 的 AOI 入口）。<b>只读</b>：客户端拿它决定加载哪些邻区与边界 cell，
+        /// 服务端权威位置仍归平面世界的 ZoneShard（并轨策略见 PLANET_10X_TERRAIN_DESIGN §13.55）。
+        /// </summary>
+        [Description("星球区域快照请求")]
+        PlanetRegionSnapshot = 1666,
+
+        /// <summary>星球区域快照回执。被拒时 Reason 必须非空，理由与迁移回执同一条规矩。</summary>
+        [Description("星球区域快照回执")]
+        PlanetRegionSnapshotResult = 1667,
+
+        #endregion
     }
 }
 

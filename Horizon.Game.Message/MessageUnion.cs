@@ -270,6 +270,10 @@ namespace Horizon.Game.Message
     [MemoryPackUnion(253, typeof(Horizon.Game.Message.Network.ShopBuyResultMessage))]
     [MemoryPackUnion(254, typeof(Horizon.Game.Message.Network.ShopSellRequestMessage))]
     [MemoryPackUnion(255, typeof(Horizon.Game.Message.Network.ShopSellResultMessage))]
+    [MemoryPackUnion(256, typeof(Horizon.Game.Message.Network.PlanetRegionTransferRequest))]
+    [MemoryPackUnion(257, typeof(Horizon.Game.Message.Network.PlanetRegionTransferResult))]
+    [MemoryPackUnion(258, typeof(Horizon.Game.Message.Network.PlanetRegionSnapshotRequest))]
+    [MemoryPackUnion(259, typeof(Horizon.Game.Message.Network.PlanetRegionSnapshotResponse))]
     // </generated-union-block>
     public abstract partial class MessageUnion : INetworkMessage
     {

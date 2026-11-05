@@ -35,8 +35,15 @@ public sealed class NetworkMessageUnionGenerator : IIncrementalGenerator
     private const string UnionMarker = "// <generated-union-block>";
     private const string UnionMarkerEnd = "// </generated-union-block>";
 
-    /// <summary>tag 合法上界（MemoryPack union tag 为 0..255）。</summary>
-    private const int MaxTag = 255;
+    /// <summary>
+    /// tag 合法上界。<b>MemoryPack 的 union header 是压缩过的 ushort，不是 byte</b>：
+    /// 1.21.4 实测 tag 0 写 1 字节、tag 255/300/65000 都写 2 字节且都能原样读回，
+    /// 0xffff 被留作 null 标记，所以上界是 65534。
+    /// <para>这里原来写死 255（注释说"MemoryPack union tag 为 0..255"），而全解决方案已经用到 255——
+    /// 于是注册表事实上满了：任何新功能加第二条消息都会撞 HZN002。上限本身不是协议约束，
+    /// 抬高它也不改任何现存 tag 的字节（小 tag 仍是 1 字节），所以是纯增量的修法。</para>
+    /// </summary>
+    private const int MaxTag = 65534;
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {

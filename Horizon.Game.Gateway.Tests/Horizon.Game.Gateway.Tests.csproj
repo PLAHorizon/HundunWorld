@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -148,6 +148,8 @@
     <!-- 角色位姿 → 星球局部帧的口径判定（同样纯 C#）。这一份链进来编译的理由和上面三条一样：
          轴序这东西错的形状是"角色站在地底下"，只在编辑器里看着对不算验过。 -->
     <Compile Include="..\HundunWorld\Source\Game\Planet\PlanetActorPoseRules.cs" Link="Linked\PlanetActorPoseRules.cs" Condition="Exists('..\HundunWorld\Source\Game\Planet\PlanetActorPoseRules.cs')" />
+    <!-- 球面步行的决策层（P3 离线那一半）：走一步保半径、跳落对账 1g、落地落在地面上。 -->
+    <Compile Include="..\HundunWorld\Source\Game\Planet\PlanetSurfaceMotionRules.cs" Link="Linked\PlanetSurfaceMotionRules.cs" Condition="Exists('..\HundunWorld\Source\Game\Planet\PlanetSurfaceMotionRules.cs')" />
   </ItemGroup>
 
 

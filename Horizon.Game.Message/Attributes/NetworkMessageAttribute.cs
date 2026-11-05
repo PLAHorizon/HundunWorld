@@ -18,7 +18,7 @@ namespace Horizon.Game.Message;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 public sealed class NetworkMessageAttribute : Attribute
 {
-    /// <param name="tag">MemoryPack union tag（全解决方案唯一，0..255）。</param>
+    /// <param name="tag">MemoryPack union tag（全解决方案唯一，0..65534——header 是压缩 ushort，0xffff 留作 null）。</param>
     /// <param name="service">消息所属服务域（用于生成常量表与文档）。</param>
     public NetworkMessageAttribute(int tag, ServiceType service)
     {

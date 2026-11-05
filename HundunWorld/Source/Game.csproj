@@ -784,6 +784,7 @@
     <Compile Include="Game\Planet\PlanetRegionWatches.cs" />
     <Compile Include="Game\Planet\PlanetRegionWatchRules.cs" />
     <Compile Include="Game\Planet\PlanetShellDriver.cs" />
+    <Compile Include="Game\Planet\PlanetSurfaceMotionRules.cs" />
     <Compile Include="Game\Planet\PlanetTerrainSpike.cs" />
     <Compile Include="Game\PlayerController.cs" />
     <Compile Include="Game\RemotePlayerActor.cs" />

@@ -60,12 +60,29 @@ echo "=== 1 库判据（Horizon.Planet.Tests 全量）==="
 stage "planet 库全量" "^Passed!" 300 test_proj Horizon.Planet.Tests
 
 echo "=== 2 区域链 + 消息契约（网关测试工程）==="
-# filter 里的名字族要自己核对一遍：PlanetActorPoseRulesTests / PlanetReceiptMirrorTests 都不含
-# "PlanetRegion"，上一版它们被这个 filter 静默排除在外（合闸照样念 passed=120、verdict=PASS）。
-# 对策不是"更小心"：新增测试类时先按新类的名字单独跑一次，再看这里的总数有没有加上它。
-stage "PlanetRegion + 契约" "^Passed!" 135 dotnet test Horizon.Game.Gateway.Tests/Horizon.Game.Gateway.Tests.csproj \
+# 这条 filter 已经两次静默漏掉新测试类（PlanetActorPoseRulesTests、PlanetReceiptMirrorTests、
+# PlanetSurfaceMotionRulesTests 都不含 "PlanetRegion"）：合闸照样念 PASS，而那些判据一次都没跑。
+# 所以先自检：测试工程里每个 Planet*Tests.cs 的类名必须命中下面某个"名字族"。
+PLANET_FAMILIES="PlanetRegion PlanetActorPose PlanetReceipt PlanetSurfaceMotion PlanetWire"
+uncovered=""
+for f in Horizon.Game.Gateway.Tests/Planet*Tests.cs; do
+  [ -e "$f" ] || continue
+  cls=$(basename "$f" .cs)
+  hit=0
+  for fam in $PLANET_FAMILIES; do
+    case "$cls" in *"$fam"*) hit=1 ;; esac
+  done
+  [ "$hit" = 1 ] || uncovered="$uncovered $cls"
+done
+if [ -n "$uncovered" ]; then
+  note "FAIL  filter 没覆盖这些测试类：$uncovered"
+  FAILED=$((FAILED + 1))
+else
+  note "ok    filter 覆盖了所有 Planet*Tests.cs"
+fi
+stage "PlanetRegion + 契约" "^Passed!" 148 dotnet test Horizon.Game.Gateway.Tests/Horizon.Game.Gateway.Tests.csproj \
   -p:BaseOutputPath=bin/Verify/ -v:q --nologo \
-  --filter "FullyQualifiedName~PlanetRegion|FullyQualifiedName~PlanetActorPose|FullyQualifiedName~PlanetReceipt|FullyQualifiedName~UnionRegistrationParity|FullyQualifiedName~PlanetWire"
+  --filter "FullyQualifiedName~PlanetRegion|FullyQualifiedName~PlanetActorPose|FullyQualifiedName~PlanetReceipt|FullyQualifiedName~PlanetSurfaceMotion|FullyQualifiedName~UnionRegistrationParity|FullyQualifiedName~PlanetWire"
 
 echo "=== 3 Silo 编译 ==="
 stage "Silo 编译" "Build succeeded" 0 dotnet build Horizon.Orleans.Silo/Horizon.Orleans.Silo.csproj \
