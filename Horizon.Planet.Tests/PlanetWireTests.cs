@@ -442,7 +442,13 @@ public class PlanetWireTests
             new RegionKey(0, 14, 8192, 8192), new RegionKey(1, 14, 0, 16383),
             new RegionKey(2, 10, 512, 512), new RegionKey(3, 15, 32767, 32767),
             new RegionKey(4, 0, 0, 0), new RegionKey(5, 12, 4095, 4095),
+            // 下面三个是"姿态不落在坐标轴上"的一般块。上面那批全是面心/角点/粗级，
+            // 它们的四元数要么 w=0、要么有两个分量为 0——那种姿态下 q 与 −q、q 与共轭都表示
+            // 同一个旋转，消费侧的任何模长错误都会<em>恰好抵消</em>。实测：只用上面那批时，
+            // "解回来不归一"这个 480 倍的角度误差一条判据都没抓到（§13.54）。
+            new RegionKey(0, 14, 3, 100), new RegionKey(4, 14, 500, 500), new RegionKey(2, 14, 7000, 6001),
         })
+
         {
             var frame = RegionFrame.Build(key);
             var q = Basis(frame.East, frame.Up, frame.South);
@@ -457,6 +463,32 @@ public class PlanetWireTests
 
         // 上界从量化步长推出来，不是挑一个刚好过得去的数：四个分量各 ≤ 半格
         Assert.True(worst < 8 * step, $"姿态量化后基向量最大偏差 {worst:E3}，超过 8×Q15 步长 {8 * step:E3}");
+    }
+
+
+    [Fact]
+    public void Rotate必须保长度_归一那一步的存在理由()
+    {
+        // 旋转的定义之一就是保长度。这条判据盯的就是那一句：解出来的 |q| 不是正好 1
+        // （Q15 的必然结果），而闭式假设它是 1，于是长度会被带偏 ~1.5e-5。
+        // 换成厘米：离地 50 km 就是 0.75 m，区域边上也有几厘米——都不会报错。
+        foreach (var key in new[]
+        {
+            new RegionKey(0, 14, 3, 100), new RegionKey(4, 14, 500, 500),
+            new RegionKey(2, 14, 7000, 6001), new RegionKey(1, 13, 4096, 4096),
+        })
+        {
+            var frame = RegionFrame.Build(key);
+            var q = Basis(frame.East, frame.Up, frame.South);
+            foreach (var axis in new[] { PlanetVector3.AxisX, PlanetVector3.AxisY, PlanetVector3.AxisZ,
+                                         (PlanetVector3.AxisX + PlanetVector3.AxisY).Normalized() })
+            {
+                PlanetVector3 turned = q.Rotate(axis);
+                Assert.True(Math.Abs(turned.LengthSquared - axis.LengthSquared) < 1e-12,
+                            $"{key} 沿 {axis}：|v| 从 {axis.Length} 变成 {turned.Length}，"
+                            + "那条闭式已经不再表示旋转了");
+            }
+        }
     }
 
     [Fact]

@@ -30,7 +30,7 @@ namespace HundunWorld.Game.Planet
     public class PlanetTerrainSpike : Script
     {
         /// <summary>装载自证：回执里出现这个串，才说明跑的是这一版装配。</summary>
-        private const string BuildTag = "planet_spike_b12";
+        private const string BuildTag = "planet_spike_b13";
 
         private const string MarkerName = "planet_terrain_spike.on";
         private const string ResultName = "planet_terrain_spike.result.txt";
@@ -240,7 +240,7 @@ namespace HundunWorld.Game.Planet
             }
             if (controlOnly)
             {
-                StartControlProbe();
+                StartControlProbe(terrain, level);
                 return false;
             }
             if (demMode)
@@ -859,6 +859,7 @@ namespace HundunWorld.Game.Planet
             Say(string.Format(Inv,
                 "live_main_thread_frame_ms_while_uploading: samples={0} min={1:0.###} avg={2:0.###} max={3:0.###} over_50ms={4}",
                 _liveSamples, _liveMinMainMs, _liveSamples == 0 ? 0 : _liveSumMainMs / _liveSamples, _liveMaxMainMs, _liveBigFrameTicks));
+            Say(string.Format(Inv, "yardstick_crc32_of_1mb_ms={0:0.###}", MeasureYardstick()));
 
             // 样本不够时这条判据什么都没观察到：报 INCONCLUSIVE，不许报绿
             bool observed = _liveSamples >= 8;
@@ -1019,36 +1020,88 @@ namespace HundunWorld.Game.Planet
         /// §13.16 缺的那条对照：同一次 PIE、同样出帧，但<em>不起任何上传线程</em>，
         /// 量同样的帧数与帧时长分布。没有它，"上传期间帧时长 6.4–100 ms"没法归因。
         /// </summary>
-        private void StartControlProbe()
+        private void StartControlProbe(Terrain terrain, int level)
         {
+            // 与 live 同一份场景内容：81 块先在主线程传完，再量 40 帧。
+            // 这样 control 与 live 之间只剩"上传是不是在后台跑"这一个变量，
+            // 而不是"有没有 81 块地形"——后者会把 GPU 负载差算到上传头上。
+            const int lodCount = 6, chunkSize = 127;
+            terrain.Setup(lodCount, chunkSize);
+            int edge = terrain.HeightmapSize;
+            _edge = edge;
+
+            var frame = RegionFrame.Build(RegionKey.FromDirection(
+                Geodetic.DirectionFromLatLon(30.0 * Math.PI / 180.0, 120.0 * Math.PI / 180.0), level),
+                PlanetConstants.PlanetRadiusCm);
+            var source = new EastSouthRamp(frame.East, frame.South);
+            var planetTerrain = new PlanetTerrain(PlanetConstants.PlanetRadiusCm, source);
+            var streamer = new PlanetTerrainStreamer(frame, planetTerrain);
+
+            var keys = new List<PatchKey>();
+            for (int dz = -4; dz <= 4; dz++)
+                for (int dx = -4; dx <= 4; dx++) keys.Add(new PatchKey(dx, dz));
+
+            // 填值与上传分开计时：live 侧的 worker_ms 也只含 AddPatch/SetupPatchHeightMap
+            var buffers = new float[keys.Count][];
+            var scratch = new float[PlanetPatchSampler.HeightmapLength];
+            for (int i = 0; i < keys.Count; i++)
+            {
+                streamer.FillPatch(keys[i], scratch, parallel: false);
+                var copy = new float[PlanetPatchSampler.HeightmapLength];
+                System.Array.Copy(scratch, copy, copy.Length);
+                buffers[i] = copy;
+            }
+
+            int failed = 0;
+            var swUpload = Stopwatch.StartNew();
+            for (int i = 0; i < keys.Count; i++)
+            {
+                var c = new Int2(keys[i].X, keys[i].Z);
+                terrain.AddPatch(ref c);
+                if (terrain.SetupPatchHeightMap(ref c, buffers[i], (byte[])null, true)) failed++;
+            }
+            swUpload.Stop();
+            Say(string.Format(Inv,
+                "control_setup: patches={0} edge={1} main_thread_upload_ms={2:0.#} per_patch_ms={3:0.###} upload_failures={4}",
+                keys.Count, edge, swUpload.Elapsed.TotalMilliseconds,
+                swUpload.Elapsed.TotalMilliseconds / keys.Count, failed));
+
             _controlStarted = true;
             _controlStartFrame = Engine.FrameCount;
             _controlTicks = 0;
+            _controlMeasured = 0;
             _controlMin = double.MaxValue;
-            Say("control_probe: mode=no_uploads_frames=40");
+            Say("control_probe: mode=no_uploads_after_full_window_frames=40");
             WriteReceipt();
         }
 
         private bool _controlStarted;
         private ulong _controlStartFrame;
         private int _controlTicks;
+        private int _controlMeasured;
         private double _controlMin, _controlSum, _controlMax;
         private int _controlOver50;
 
         private void ControlTick()
         {
             _controlTicks++;
+            // 头 20 帧不算：那正是主线程刚传完 81 块、引擎还在补碰撞/几何的余波，
+            // 把它算进"没有上传时的帧长"会把上传的账记到空白帧上。
+            if (_controlTicks <= 20) return;
             double ms = Time.DeltaTime * 1000.0;
+            _controlMeasured++;
             _controlMin = Math.Min(_controlMin, ms);
             _controlMax = Math.Max(_controlMax, ms);
             _controlSum += ms;
             if (ms > 50.0) _controlOver50++;
-            if (_controlTicks < 40) return;
+            if (_controlMeasured < 40) return;
             _controlStarted = false;            // 报一次就收手：否则每个后续帧都在追加同一条结果（实测跑到 133 帧）
 
             Say(string.Format(Inv,
-                "control_result: ticks={0} engine_frames={1} frame_ms min={2:0.###} avg={3:0.###} max={4:0.###} over_50ms={5}",
-                _controlTicks, Engine.FrameCount - _controlStartFrame, _controlMin, _controlSum / _controlTicks, _controlMax, _controlOver50));
+                "control_result: ticks={0} settled_samples={1} engine_frames={2} frame_ms min={3:0.###} avg={4:0.###} max={5:0.###} over_50ms={6}",
+                _controlTicks, _controlMeasured, Engine.FrameCount - _controlStartFrame,
+                _controlMin, _controlSum / _controlMeasured, _controlMax, _controlOver50));
+            Say(string.Format(Inv, "yardstick_crc32_of_1mb_ms={0:0.###}", MeasureYardstick()));
             Finish(null, true);
         }
 

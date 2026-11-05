@@ -1,0 +1,52 @@
+{
+	"ID": "4f1187b1a442472caa9ceb77a3cb3a03",
+	"TypeName": "FlaxEngine.SceneAsset",
+	"EngineBuild": 7012,
+	"Data": [
+		{
+			"ID": "4f1187b1a442472caa9ceb77a3cb3a03",
+			"TypeName": "FlaxEngine.Scene",
+			"LightmapSettings": {
+				"IndirectLightingIntensity": 1.0,
+				"GlobalObjectsScale": 1.0,
+				"ChartsPadding": 3,
+				"AtlasSize": 1024,
+				"BounceCount": 1,
+				"CompressLightmaps": true,
+				"UseGeometryWithNoMaterials": true,
+				"Quality": 10
+			}
+		},
+		{
+			"ID": "336136e4381c4b48b290d45b62aec064",
+			"TypeName": "FlaxEngine.DirectionalLight",
+			"ParentID": "4f1187b1a442472caa9ceb77a3cb3a03",
+			"Name": "Sun",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 400.0,
+					"Z": -400.0
+				},
+				"Orientation": {
+					"X": 0.30000001192092896,
+					"Y": 0.0,
+					"Z": 0.0,
+					"W": 0.949999988079071
+				}
+			}
+		},
+		{
+			"ID": "8b17699ccbec4bc386db1333af428d25",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "4f1187b1a442472caa9ceb77a3cb3a03",
+			"Name": "ProbeHost"
+		},
+		{
+			"ID": "9cbe641288344c4da61aad0a1d8462ea",
+			"TypeName": "HundunWorld.Game.Planet.PlanetMeshProbe",
+			"ParentID": "8b17699ccbec4bc386db1333af428d25",
+			"V": {}
+		}
+	]
+}

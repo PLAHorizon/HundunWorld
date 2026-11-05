@@ -31,17 +31,21 @@ param(
         # Measured 2026-10-06: Tools copies of Sim / ECS.Arch / World were already stale while
         # Message and Core matched, and those three are exactly what QuestObjectiveCodec and the
         # ECS sync systems compile against.
-        # 2026-10-07：客户端改指 Contracts（Sim/World 已拆出权威算法），且 Horizon.Game.Core
-        # 不再进客户端清单——这里必须同步，否则编辑器会继续吃旧的 Sim/World 副本。
+        # 2026-10-07: the client now points at Contracts (authoritative Sim/World algorithms were
+        # split out) and Horizon.Game.Core no longer belongs to the client list.
         'Horizon.Game.ECS',
         'Horizon.Game.ECS.Arch',
-        'Horizon.Game.Sim',
         'Horizon.Game.Sim.Contracts',
-        'Horizon.Game.World',
         'Horizon.Game.World.Contracts',
+        # The 2026-10-07 note above was never carried out: the client only references Contracts,
+        # the authoritative Sim / World algorithms stayed on the server. Keeping those two names
+        # here does not break the client build, but the editor keeps compiling against stale
         'Horizon.Core.Abstract',
-        # 客户端只用到 AppType / PassportType → 改由 Share.Client 提供；DS 侧仍需要 Core.Abstract
-        'Horizon.Share.Client'
+        # The client only needs AppType / PassportType, served by Share.Client; DS still needs Core.Abstract
+        'Horizon.Share.Client',
+        # Horizon.Planet: planet coordinate / region / elevation contracts. Referenced by the
+        # client Game.Build.cs since 2026-11-03, so it must be refreshed here too.
+        'Horizon.Planet'
     )
 )
 
@@ -53,7 +57,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($EngineToolsDir)) {
-    # 引擎换版本（1.12 → 1.13 …）后不要再改脚本：自动挑已安装的最高版本。
+    # Do not edit this script when the engine version moves (1.12 -> 1.13 ...): pick the highest install.
     $engine = Get-ChildItem 'C:\Program Files (x86)\Flax' -Directory -Filter 'Flax_*' -ErrorAction SilentlyContinue |
         Sort-Object { [version]($_.Name -replace '^Flax_', '') } -Descending |
         Select-Object -First 1

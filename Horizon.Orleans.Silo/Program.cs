@@ -724,6 +724,26 @@ namespace Horizon.Orleans.Silo
             // 因此这一行必须在，且 CharacterGrain 未注入时要把原因写进 PetBonusIssues。
             services.AddSingleton<Horizon.Orleans.Interface.IPetBonusReader, Horizon.Orleans.Grains.Pets.PetBonusReader>();
 
+            // ===== 星球口径闸门（§6.2：terrainSeed/terrainVersion 不匹配就拒绝进入世界）=====
+            // 与上面宠物读数同一类风险：PlanetRegionGrain 的这个构造参数是可选的，漏注册不会编译失败、
+            // 也不会报错，只会让那条闸门静默不生效——而"静默不生效"正是它当初存在的形式（库里有判定、
+            // 服务端没人调用）。所以这里<em>无条件注册</em>：目录没配时来源自己回"取不出口径"，
+            // grain 在激活日志里把"闸门开着还是关着"写出来，而不是让它成为一个看不见的差别。
+            // 目录的取法只有这一处：口径来源与地面来源各读一遍键，就会有一个"环境变量只覆盖了一半"的
+            // 中间态——那等于两边挂的是不同的数据，而握手照过（口径来自 A）地面判定却来自 B。
+            Func<IServiceProvider, string?> demRootOf = sp =>
+                Environment.GetEnvironmentVariable("PLANET_DEM_ROOT")
+                ?? sp.GetRequiredService<IConfiguration>()["Planet:DemRoot"];
+            services.AddSingleton<Horizon.Planet.IPlanetCaliberSource>(sp =>
+                new Horizon.Planet.DemPlanetCaliberSource(demRootOf(sp)));
+
+            // ===== 星球地面约束（§6.1：服务端高度调用共享采样，与客户端同一 terrainVersion）=====
+            // 同一份"可选注入 ⇒ 漏注册就静默不判"的风险，所以同样无条件注册；
+            // 装配顺序（manifest → grid → profile → hybrid → sampler）收在 PlanetHeightField 里，
+            // 客户端近景驱动走的是同一个入口——两边各拼一遍迟早差一步，而那表现为玩家站在地面下面。
+            services.AddSingleton<Horizon.Planet.IPlanetGroundSource>(sp =>
+                new Horizon.Planet.DemPlanetGroundSource(demRootOf(sp)));
+
             // 注册角色指纹服务（Silo 端，复用 RedisConnection 单例）。
             // 修复 BUG：CharacterGrain.GoOfflineAsync 需要清理 character:fingerprint:{id} key（TTL 5min），
             // 否则角色离线后 Redis 中仍残留 fingerprint key，外部观察"角色在线信息未及时更新"。

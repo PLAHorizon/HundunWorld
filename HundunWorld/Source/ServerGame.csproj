@@ -62,6 +62,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
+    <Reference Include="Horizon.Planet">
+      <HintPath>..\..\Horizon.Planet\bin\Debug\net10.0\Horizon.Planet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
     <Reference Include="Horizon.Game.Sim.Contracts">
       <HintPath>..\..\Horizon.Game.Sim.Contracts\bin\Debug\net10.0\Horizon.Game.Sim.Contracts.dll</HintPath>
     </Reference>
@@ -211,6 +216,11 @@
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
     <Reference Include="Horizon.Game.ECS.Arch">
       <HintPath>..\..\Horizon.Game.ECS.Arch\bin\Debug\net10.0\Horizon.Game.ECS.Arch.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
+    <Reference Include="Horizon.Planet">
+      <HintPath>..\..\Horizon.Planet\bin\Debug\net10.0\Horizon.Planet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
@@ -366,6 +376,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
+    <Reference Include="Horizon.Planet">
+      <HintPath>..\..\Horizon.Planet\bin\Debug\net10.0\Horizon.Planet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
     <Reference Include="Horizon.Game.Sim.Contracts">
       <HintPath>..\..\Horizon.Game.Sim.Contracts\bin\Debug\net10.0\Horizon.Game.Sim.Contracts.dll</HintPath>
     </Reference>
@@ -515,6 +530,11 @@
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
     <Reference Include="Horizon.Game.ECS.Arch">
       <HintPath>..\..\Horizon.Game.ECS.Arch\bin\Debug\net10.0\Horizon.Game.ECS.Arch.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
+    <Reference Include="Horizon.Planet">
+      <HintPath>..\..\Horizon.Planet\bin\Debug\net10.0\Horizon.Planet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
@@ -670,6 +690,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
+    <Reference Include="Horizon.Planet">
+      <HintPath>..\..\Horizon.Planet\bin\Debug\net10.0\Horizon.Planet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
     <Reference Include="Horizon.Game.Sim.Contracts">
       <HintPath>..\..\Horizon.Game.Sim.Contracts\bin\Debug\net10.0\Horizon.Game.Sim.Contracts.dll</HintPath>
     </Reference>
@@ -819,6 +844,11 @@
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
     <Reference Include="Horizon.Game.ECS.Arch">
       <HintPath>..\..\Horizon.Game.ECS.Arch\bin\Debug\net10.0\Horizon.Game.ECS.Arch.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
+    <Reference Include="Horizon.Planet">
+      <HintPath>..\..\Horizon.Planet\bin\Debug\net10.0\Horizon.Planet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">

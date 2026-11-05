@@ -344,9 +344,47 @@ public class DemGridTests
             }
         }
 
+        // 块缓存现在只有 ReadCell 这一条路会填（插值改走片读之后），所以这半条用例直接驱动 ReadCell：
+        // 改成用 SampleElevationCmAt 去驱动的话，CachedBlockCount 恒为 0，"≤2" 就成了永远成立的空断言。
+        for (int i = 0; i < 300; i++)
+        {
+            grid.ReadCell(0, i * 137 % size, i * 211 % size);
+        }
+        Assert.True(grid.CachedBlockCount > 0, "ReadCell 一个块都没装进来：这条用例的缓存那半是空转");
         Assert.True(grid.CachedBlockCount <= 2, $"块缓存没被限住：{grid.CachedBlockCount}");
         for (int i = 0; i < 300; i++)
             Assert.Equal(sampled[i], sampled[i + 300], 9);
+    }
+
+    [Fact]
+    public void 点取样走片读不再填块缓存()
+    {
+        // 这条钉的是 §13.60 那次提速<em>本身</em>：真实 15″ 产物上一次点取样 6.94 ms，
+        // 几乎全是 256×256=131 KB 的取块开销。插值改走片读之后，块缓存只剩 ReadCell 一条路会填。
+        // 有人把抽头改回 ReadCell 时这条会红——那正是把 6.9 ms 请回来的动作。
+        const int size = 600;
+        var g = new short?[size, size];
+        for (int r = 0; r < size; r++)
+            for (int c = 0; c < size; c++)
+                g[r, c] = (short)(r + c);
+
+        using var dem = TempDem.Create(0.05, (0, g));
+        using var grid = new DemGrid(dem.Load());
+
+        for (int i = 0; i < 200; i++)
+        {
+            int r = i * 137 % size;
+            int c = i * 211 % size;
+            grid.SampleElevationCmAt(0, (90.0 - (r + 0.5) * 0.05) * Math.PI / 180.0,
+                                        (-180.0 + (c + 0.5) * 0.05) * Math.PI / 180.0);
+            grid.SampleBicubicCmAt(0, (90.0 - (r + 0.7) * 0.05) * Math.PI / 180.0,
+                                      (-180.0 + (c + 0.3) * 0.05) * Math.PI / 180.0);
+        }
+        Assert.Equal(0, grid.CachedBlockCount);
+
+        // 反向对照（同夹具）：ReadCell 确实会往缓存里装块，所以上面那个 0 不是计数器坏了
+        grid.ReadCell(0, 10, 10);
+        Assert.Equal(1, grid.CachedBlockCount);
     }
 
     [Fact]

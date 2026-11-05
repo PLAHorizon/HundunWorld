@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Configurations>Editor.Windows.Debug;Editor.Windows.Development;Editor.Windows.Release;Game.Windows.Debug;Game.Windows.Development;Game.Windows.Release</Configurations>
@@ -179,21 +179,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
-    <Reference Include="Horizon.DsHost">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.DsHost.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
-    <Reference Include="Horizon.Game.Sim">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.Sim.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
-    <Reference Include="Horizon.Game.World">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.World.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
     <Reference Include="Horizon.Game.Sim.Contracts">
       <HintPath>..\Output\Windows\Horizon.Game.Sim.Contracts.dll</HintPath>
     </Reference>
@@ -204,18 +189,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
-    <Reference Include="Horizon.Game.Core">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
     <Reference Include="Horizon.Game.Message">
       <HintPath>..\Output\Windows\Horizon.Game.Message.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
-    <Reference Include="Horizon.Core.Abstract">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Core.Abstract.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
@@ -301,21 +276,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
-    <Reference Include="Horizon.DsHost">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.DsHost.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
-    <Reference Include="Horizon.Game.Sim">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.Sim.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
-    <Reference Include="Horizon.Game.World">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.World.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
     <Reference Include="Horizon.Game.Sim.Contracts">
       <HintPath>..\Output\Windows\Horizon.Game.Sim.Contracts.dll</HintPath>
     </Reference>
@@ -326,18 +286,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
-    <Reference Include="Horizon.Game.Core">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
     <Reference Include="Horizon.Game.Message">
       <HintPath>..\Output\Windows\Horizon.Game.Message.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
-    <Reference Include="Horizon.Core.Abstract">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Core.Abstract.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
@@ -423,21 +373,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
-    <Reference Include="Horizon.DsHost">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.DsHost.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
-    <Reference Include="Horizon.Game.Sim">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.Sim.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
-    <Reference Include="Horizon.Game.World">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.World.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
     <Reference Include="Horizon.Game.Sim.Contracts">
       <HintPath>..\Output\Windows\Horizon.Game.Sim.Contracts.dll</HintPath>
     </Reference>
@@ -448,18 +383,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
-    <Reference Include="Horizon.Game.Core">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Game.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
     <Reference Include="Horizon.Game.Message">
       <HintPath>..\Output\Windows\Horizon.Game.Message.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
-    <Reference Include="Horizon.Core.Abstract">
-      <HintPath>..\..\Horizon.DsHost\bin\Debug\net10.0\Horizon.Core.Abstract.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
@@ -609,11 +534,11 @@
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.13\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
     </Reference>
     <ProjectReference Include="..\Plugins\NarrativePro\Source\NarrativePro.csproj">
-      <Project>{51BF243F-C304-4571-B911-565BB893CE71}</Project>
+      <Project>{56FFFECC-43EA-4D40-B94D-73D1037B3BE8}</Project>
       <Name>NarrativePro</Name>
     </ProjectReference>
     <ProjectReference Include="..\Plugins\MetaHuman\Source\MetaHuman.csproj">
-      <Project>{5F837E3F-473F-419A-B181-57E9BA2E2228}</Project>
+      <Project>{C3B5F116-68A6-41D7-907D-178C61BC0F5F}</Project>
       <Name>MetaHuman</Name>
     </ProjectReference>
   </ItemGroup>
@@ -806,6 +731,8 @@
     <Compile Include="Game\Network\MessageHandlers\LoginResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\MailMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\MessageProcessor.cs" />
+    <Compile Include="Game\Network\MessageHandlers\PlanetRegionSnapshotResponseHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\PlanetRegionTransferResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\QuestMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\RankingMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\RegisterResponseHandler.cs" />
@@ -847,6 +774,16 @@
     <Compile Include="Game\Pets\PetFollowComponent.cs" />
     <Compile Include="Game\Pets\PetVisualCatalog.cs" />
     <Compile Include="Game\PhotoMode.cs" />
+    <Compile Include="Game\Planet\PlanetActorPoseRules.cs" />
+    <Compile Include="Game\Planet\PlanetGlobeProbe.cs" />
+    <Compile Include="Game\Planet\PlanetMeshProbe.cs" />
+    <Compile Include="Game\Planet\PlanetNearFieldDriver.cs" />
+    <Compile Include="Game\Planet\PlanetRegionAckFrame.cs" />
+    <Compile Include="Game\Planet\PlanetRegionTransferRules.cs" />
+    <Compile Include="Game\Planet\PlanetRegionTransfers.cs" />
+    <Compile Include="Game\Planet\PlanetRegionWatches.cs" />
+    <Compile Include="Game\Planet\PlanetRegionWatchRules.cs" />
+    <Compile Include="Game\Planet\PlanetShellDriver.cs" />
     <Compile Include="Game\Planet\PlanetTerrainSpike.cs" />
     <Compile Include="Game\PlayerController.cs" />
     <Compile Include="Game\RemotePlayerActor.cs" />

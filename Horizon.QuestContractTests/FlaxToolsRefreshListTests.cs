@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -81,10 +83,13 @@ public class FlaxToolsRefreshListTests
         var referenced = ClientReferencedAssemblies();
         var refreshed = RefreshListAssemblies();
 
-        // 允许一个已知例外：Orleans.Interface 不在客户端引用里，但它带着 Grain 契约，
-        // 拷过去只是为了排查方便。例外必须写在这里而不是"断言放宽"。
+        // 已知例外必须写在这里、带理由，而不是把断言放宽：
+        //   Orleans.Interface —— 带 Grain 契约，客户端不引用，拷过去只为排查方便；
+        //   Core.Abstract —— 客户端只用到 AppType/PassportType（已改由 Share.Client 提供），
+        //                    但 DS 侧仍需要它，所以刷新清单继续带上它。
+        var allowedExtras = new[] { "Horizon.Orleans.Interface", "Horizon.Core.Abstract" };
         var extra = refreshed.Where(name => !referenced.Contains(name))
-                             .Where(name => name != "Horizon.Orleans.Interface")
+                             .Where(name => !allowedExtras.Contains(name))
                              .ToArray();
         Assert.Empty(extra);
     }
@@ -104,13 +109,39 @@ public class FlaxToolsRefreshListTests
     }
 
     [Fact]
-    public void 引用解析必须认得出本轮补进去的三个库()
+    public void 引用解析必须认得出客户端真正依赖的那几个库()
     {
-        // 突变验证用的正向锚：这三个是 2026-10-06 实测"Tools 陈旧"的那三个，
-        // 如果哪天有人把清单缩回三个，前两条会红，而这条保证前两条不是因为解析空了才绿。
+        // 这条是前两条的正向对照：万一解析哪天空了，两边都空就会让前两条一起绿。
+        // 2026-10-06 它钉的是当时实测陈旧的 Sim / ECS.Arch / World；2026-10-07 客户端瘦身成
+        // 只装 Contracts（Sim、World 的权威算法留在服务端）。锚点若还钉着那两个全量名字，
+        // 就等于要求客户端去引用它故意不引用的库——那不是"同步清单"，是把瘦身改回去。
+        // 所以名字跟着瘦身改口径，作用不变：必须解析出现在客户端清单里的具体名字。
         var referenced = ClientReferencedAssemblies();
-        Assert.Contains("Horizon.Game.Sim", referenced);
+        Assert.Contains("Horizon.Game.Sim.Contracts", referenced);
         Assert.Contains("Horizon.Game.ECS.Arch", referenced);
-        Assert.Contains("Horizon.Game.World", referenced);
+        Assert.Contains("Horizon.Game.World.Contracts", referenced);
+        Assert.Contains("Horizon.Planet", referenced);        // 2026-11-03 起：星球契约进客户端
+    }
+
+    /// <summary>
+    /// 前三条都是拿正则读这个 <c>.ps1</c> 的，所以"脚本本身跑不跑得起来"完全不在覆盖范围内。
+    /// 2026-11-04 实测到两层：我往清单里加 <c>Horizon.Planet</c> 时写了中文注释，Windows PowerShell 5.1
+    /// 按 ANSI(GBK) 读无 BOM 的 <c>.ps1</c>，某些 UTF-8 中文字节序列会被解成它当作定界符的字符——
+    /// 先是整段解析失败（"逗号后面缺少表达式"），改成 ASCII 之后又发现**仓库里原有的中文注释
+    /// 会把紧跟其后的赋值行吞进注释**（那行以 mojibake 反引号结尾），于是自动探测引擎目录那段
+    /// 从来没执行过，报的是 <c>$engine 未定义</c>。四种读法里只有"文件必须纯 ASCII"能同时挡住这两类，
+    /// 而且不需要在测试里起 PowerShell 进程（第一版那么做，结果撞上 stdout/stderr 互相阻塞，一次跑十分钟）。
+    /// </summary>
+    [Fact]
+    public void 刷新清单脚本必须只含ASCII字符()
+    {
+        var script = Path.Combine(RepoRoot(), ScriptFile);
+        var text = File.ReadAllText(script);
+        var bad = text.Select((c, i) => (c, i)).Where(x => x.c > 127).Take(5).ToList();
+        Assert.True(bad.Count == 0,
+            "PowerShell 5.1 按 ANSI 读无 BOM 的 .ps1，非 ASCII 注释可能被解成引号或反引号，" +
+            "轻则整段解析失败、重则把下一行代码吞进注释。第一个越界字符在偏移 " +
+            string.Join(",", bad.Select(b => b.i.ToString())) +
+            "：" + string.Join(",", bad.Select(b => "U+" + ((int)b.c).ToString("X4"))));
     }
 }

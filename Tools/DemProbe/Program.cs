@@ -53,6 +53,8 @@ internal static class Program
             case "mesh": return Mesh(manifest, args);
             case "pump": return Pump(manifest, args);
             case "span": return Span(manifest, args);
+            case "manifest": return ManifestGate(manifest);
+            case "ground": return Ground(manifest, args);
             default:
                 Console.Error.WriteLine("未知模式 " + mode);
                 return 2;
@@ -638,6 +640,282 @@ internal static class Program
         Console.WriteLine(failures == 0 ? "PUMP PASS 后台结果与串行逐位相同，主线程没被生成占住"
                                        : $"PUMP FAIL 共 {failures} 处异常");
         return failures == 0 ? 0 : 5;
+    }
+
+    /// <summary>
+    /// <b>只读 manifest.json</b> 的产品自检（不碰那几个大文件，所以几秒钟跑完、可以每次构建前跑）。
+    /// <para>为什么要这么一条：单元测试用的是合成小格子，它<em>结构上</em>证明不了"这份产物是不是
+    /// 全球严丝合缝"。§13.60 刚为此栽过一次——夹具把 256 列配 1.0° 像元，于是"接缝那一侧的经度"
+    /// 被折回网格中间，那条用例以为在测环绕、其实在读另一个格。同一类形状落到真产物上就是
+    /// 海岸线附近错开半个像元，而运行期一声不响。</para>
+    /// <para>这里全部按<em>声明</em>反算：360°/arcSecond 必须正好等于列数、每一级必须是上一级的
+    /// 一半且是偶数、<c>Bytes</c> 必须等于 cols×rows×2 且与磁盘上的真实长度一致。
+    /// <c>format</c> 只报不判——它是数据换代时要动的号，钉死它只会在合法重建时误报。</para>
+    /// </summary>
+    private static int ManifestGate(DemManifest manifest)
+    {
+        int failures = 0;
+        void Check(bool ok, string what)
+        {
+            Console.WriteLine((ok ? "ok    " : "FAIL  ") + what);
+            if (!ok) failures++;
+        }
+
+        Check(manifest.Levels.Count > 0, $"manifest 里有 {manifest.Levels.Count} 级");
+        Check(manifest.ArcSecond > 0 && double.IsFinite(manifest.ArcSecond),
+              $"arcSecond={manifest.ArcSecond:0.####} 必须是正的有限值");
+
+        // 全球覆盖：像元角秒必须整除 360° 与 180°，否则"接缝"和"极点"处会留一条窄带没人读
+        double colsExact = 360.0 * 3600.0 / manifest.ArcSecond;
+        double rowsExact = 180.0 * 3600.0 / manifest.ArcSecond;
+        Check(Math.Abs(colsExact - Math.Round(colsExact)) < 1e-9 &&
+              Math.Abs(rowsExact - Math.Round(rowsExact)) < 1e-9,
+              $"arcSecond 整除 360°/180°（列 {colsExact:R}、行 {rowsExact:R}）");
+        Check(manifest.GridCols == (int)Math.Round(colsExact) && manifest.GridRows == (int)Math.Round(rowsExact),
+              $"声明的栅格 {manifest.GridCols}×{manifest.GridRows} 与全球覆盖反算的 " +
+              $"{(int)Math.Round(colsExact)}×{(int)Math.Round(rowsExact)} 一致");
+        Check(Math.Abs(manifest.StepDeg - 360.0 / manifest.GridCols) < 1e-12,
+              $"stepDeg={manifest.StepDeg:R} 与 360/列数 一致");
+
+        if (manifest.Levels.Count > 0)
+        {
+            var ordered = new List<DemLevel>(manifest.Levels);
+            ordered.Sort((a, b) => a.Level.CompareTo(b.Level));
+            Check(ordered[0].Cols == manifest.GridCols && ordered[0].Rows == manifest.GridRows,
+                  $"最细一级 L{ordered[0].Level} 就是全分辨率栅格");
+            for (int i = 1; i < ordered.Count; i++)
+            {
+                var prev = ordered[i - 1];
+                var cur = ordered[i];
+                Check(cur.Level == prev.Level + 1 && prev.Cols % 2 == 0 && prev.Rows % 2 == 0 &&
+                      cur.Cols == prev.Cols / 2 && cur.Rows == prev.Rows / 2,
+                      $"L{cur.Level} 是 L{prev.Level} 的 2:1（{cur.Cols}×{cur.Rows} vs {prev.Cols / 2}×{prev.Rows / 2}）");
+            }
+            foreach (var level in ordered)
+            {
+                string path = Path.Combine(manifest.RootDirectory, level.File);
+                long actual = File.Exists(path) ? new FileInfo(path).Length : -1;
+                Check(level.Bytes == (long)level.Cols * level.Rows * 2 && actual == level.Bytes,
+                      $"L{level.Level} 声明 {level.Bytes:N0} B = cols×rows×2，磁盘上 {(actual < 0 ? "没有这个文件" : actual.ToString("N0") + " B")}（{level.File}）");
+            }
+        }
+
+        Check(manifest.ContentSeed != 0, $"数据身份 ContentSeed={manifest.ContentSeed:x16}（来自 source.sha256）");
+        bool caliberOk = PlanetCaliber.TryFromDem(manifest, out var caliber, out string caliberWhy);
+        Check(caliberOk, "口径推得出来：" + (caliberOk
+              ? string.Format(CultureInfo.InvariantCulture, "terrainVersion={0:x8} seed={1:x16} basefield={2}",
+                              caliber.TerrainVersion, caliber.TerrainSeed, caliber.BasefieldVersion)
+              : caliberWhy));
+        if (caliberOk)
+        {
+            Check(caliber.WireProtocol == Horizon.Planet.Wire.PlanetHandshake.ProtocolVersion,
+                  $"wireProtocol={caliber.WireProtocol}");
+            Check(caliber.PlanetRadiusCm == PlanetConstants.PlanetRadiusCm,
+                  $"半径 {caliber.PlanetRadiusCm:N0} cm == 全局口径 {PlanetConstants.PlanetRadiusCm:N0} cm");
+            Check(caliber.RegionLevel == (byte)PlanetConstants.DefaultRegionLevel,
+                  $"区域层级 {caliber.RegionLevel} == 全局默认 {PlanetConstants.DefaultRegionLevel}");
+            Check(caliber.BasefieldVersion == unchecked((uint)manifest.Format),
+                  $"basefieldVersion={caliber.BasefieldVersion} 取自 manifest.format={manifest.Format}");
+            Check(caliber.BasefieldHashHi == manifest.ContentSeed, "basefieldHashHi 就是 ContentSeed");
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "caliber terrainVersion={0:x8} terrainSeed={1:x16} nodata={2}",
+                caliber.TerrainVersion, caliber.TerrainSeed, manifest.Nodata));
+        }
+
+        Console.WriteLine("MANIFEST_RESULT " + (failures == 0 ? "PASS" : $"FAIL 共 {failures} 处异常"));
+        return failures == 0 ? 0 : 5;
+    }
+
+    /// <summary>
+    /// 服务端地面通路（<see cref="PlanetHeightField"/> → <see cref="IPlanetGroundSource"/>）
+    /// 在<em>真实 15″ 产物</em>上的自检。§13.59 那批判据跑的是合成小像元夹具，
+    /// 它们证明"装配顺序与算术对"，但证明不了"这份 7.4 GB 的产物接得上"——
+    /// 而后者的症状是线上第一次有人换区时，服务端那条地面判定取不到海拔。
+    /// </summary>
+    private static int Ground(DemManifest manifest, string[] args)
+    {
+        const long radius = PlanetConstants.PlanetRadiusCm;
+        var buildSw = Stopwatch.StartNew();
+        if (!PlanetHeightField.TryCreateFromDirectory(manifest.RootDirectory, out var field, out string why))
+        {
+            Console.Error.WriteLine("GROUND_RESULT FAIL 装配失败：" + why);
+            return 5;
+        }
+        using (field)
+        {
+            buildSw.Stop();
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "assembled seconds={0:F2} terrainVersion={1:x8} seed={2:x16} basefield={3} levels={4} arcSecond={5:0.####}",
+                buildSw.Elapsed.TotalSeconds, field.Caliber.TerrainVersion, field.Caliber.TerrainSeed,
+                field.Caliber.BasefieldVersion, manifest.Levels.Count, manifest.ArcSecond));
+
+            int failures = 0;
+
+            // ① 口径的两个"必须同位"：装配内部（hybrid 与握手）与装配之间（地面来源与握手）。
+            //    不同位就是"握手信 A 套地形、地面判 B 套地形"，而两条判定各自都自洽。
+            if (field.Sampler.Hybrid is null) { Console.WriteLine("FAIL 没有细节层：hybrid 为空"); failures++; }
+            else if (field.Sampler.Hybrid.TerrainVersion != field.Caliber.TerrainVersion)
+            {
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "FAIL hybrid={0:x8} 与握手={1:x8} 不同位", field.Sampler.Hybrid.TerrainVersion, field.Caliber.TerrainVersion));
+                failures++;
+            }
+            using var ground = new DemPlanetGroundSource(manifest.RootDirectory);
+            if (ground.TerrainVersion != field.Caliber.TerrainVersion)
+            {
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "FAIL 地面来源={0} 与握手={1:x8} 不同位", ground.TerrainVersion?.ToString("x8") ?? "<null>",
+                    field.Caliber.TerrainVersion));
+                failures++;
+            }
+
+            // ② 地理锚点走的是<em>地面通路</em>：期望区间来自公开事实（与上面 anchor 模式同一张表），
+            //    不从本产物反推。这里要看到的是"新接口给出的数与老接口一样地理正确"。
+            Console.WriteLine("# ground anchors（经 IPlanetGroundSource 的真实调用形状）");
+            foreach (var (name, latDeg, lonDeg, lo, hi) in Anchors)
+            {
+                var dir = Geodetic.DirectionFromLatLon(latDeg * Math.PI / 180.0, lonDeg * Math.PI / 180.0);
+                if (!ground.TryGetGroundElevationCm(dir * radius, out double elevCm))
+                {
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "anchor {0,-14} 取不出海拔 FAIL", name));
+                    failures++;
+                    continue;
+                }
+                int metres = (int)Math.Round(elevCm / 100.0);
+                bool ok = lo <= metres && metres <= hi;
+                if (!ok) failures++;
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "anchor {0,-14} {1,7} m 期望 [{2,6},{3,6}] {4}", name, metres, lo, hi, ok ? "OK" : "FAIL"));
+
+                // ③ 地面约束的算术在真实数字上两侧都要成立：脚下 5 m 不许判穿模，地下 500 m 必须判。
+                double above = PlanetGround.BelowGroundCm(elevCm, elevCm + 500.0);
+                double deep = PlanetGround.BelowGroundCm(elevCm, elevCm - 50_000.0);
+                if (above > PlanetGround.BelowToleranceCm || deep <= PlanetGround.BelowToleranceCm)
+                {
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "anchor {0,-14} 判定两侧不对：地上 {1:F1} cm 埋深 / 地下 {2:F1} cm 埋深", name, above, deep));
+                    failures++;
+                }
+            }
+
+            // ④ 面积口径的陆地占比与 Python 侧独立算的那一遍对照
+            //    （Tools/gebco-area-fraction.py，同一张 2° 格、同样按 cos 纬度加权）。
+            const int strideCells = 480;                    // 2°
+            double sumW = 0, sumLand = 0;
+            int rows = manifest.GridRows, cols = manifest.GridCols;
+            for (int r = 0; r < rows; r += strideCells)
+            {
+                double latDeg = 90.0 - (r + 0.5) * 15.0 / 3600.0;
+                double w = Math.Cos(latDeg * Math.PI / 180.0);
+                for (int c = 0; c < cols; c += strideCells)
+                {
+                    double lonDeg = -180.0 + (c + 0.5) * 15.0 / 3600.0;
+                    var dir = Geodetic.DirectionFromLatLon(latDeg * Math.PI / 180.0, lonDeg * Math.PI / 180.0);
+                    double e = field.Sampler.BaseElevationCm(dir);      // 基场口径，与读栅格的 Python 同一条路
+                    sumW += w;
+                    if (e > 0 && e > -32767 * 100.0) sumLand += w;
+                }
+            }
+            double frac = sumLand / sumW;
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "area_weighted_land_fraction={0:F6} 样本={1:F0}（Python 独立同格口径 0.288564）", frac, sumW));
+            if (Math.Abs(frac - 0.288564) > 0.01)
+            {
+                Console.WriteLine("FAIL 陆地占比与独立参照差超 0.01：整条读取通路（含像元中心约定）有偏移");
+                failures++;
+            }
+
+            // ⑤ 单次取样的时延：这条判定挂在 grain 的请求路径上（落位/传送/迁移各一次），
+            //    一个 grain 同时只处理一条请求，所以"每次几十微秒"与"每次几十毫秒"是两种东西。
+            var pts = new List<PlanetVector3>();
+            for (int i = 0; i < 200; i++)
+            {
+                double latDeg = -89.0 + (i * 7.3) % 179.0;
+                double lonDeg = -180.0 + (i * 41.9) % 360.0;
+                pts.Add(Geodetic.DirectionFromLatLon(latDeg * Math.PI / 180.0, lonDeg * Math.PI / 180.0) * radius);
+            }
+            var cold = new List<double>();
+            foreach (var p in pts)
+            {
+                var sw = Stopwatch.StartNew();
+                ground.TryGetGroundElevationCm(p, out _);
+                sw.Stop();
+                cold.Add(sw.Elapsed.TotalMilliseconds);
+            }
+            var warm = new List<double>();
+            foreach (var p in pts)
+            {
+                var sw = Stopwatch.StartNew();
+                ground.TryGetGroundElevationCm(p, out _);
+                sw.Stop();
+                warm.Add(sw.Elapsed.TotalMilliseconds);
+            }
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "ground_sample_ms cold n={0} min={1:F4} median={2:F4} p95={3:F4} max={4:F4}",
+                cold.Count, Percent(cold, 0), Percent(cold, 0.5), Percent(cold, 0.95), Percent(cold, 1)));
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "ground_sample_ms warm min={0:F4} median={1:F4} p95={2:F4} max={3:F4}",
+                Percent(warm, 0), Percent(warm, 0.5), Percent(warm, 0.95), Percent(warm, 1)));
+
+            // ⑥ 把上面那个数拆开：一条地面取样其实是三件事叠起来的——
+            //    基场读块（DemGrid 的 256×256 块缓存）、Catmull-Rom 的 5×5 模板、细节层的噪声场。
+            //    不知道钱花在哪儿就没法决定是"改读法"还是"改缓存"，所以逐层量。
+            var tRead = new List<double>();
+            var tBase = new List<double>();
+            var tDetail = new List<double>();
+            foreach (var p in pts)
+            {
+                var dir = p / radius;
+                Geodetic.LatLonFromDirection(dir, out double latRad, out double lonRad);
+                int fine = manifest.Finest.Level;
+                int row = Math.Max(0, Math.Min(manifest.Finest.Rows - 1,
+                        (int)Math.Round((90.0 - latRad * 180.0 / Math.PI) * 3600.0 / manifest.ArcSecond - 0.5)));
+                int col = Math.Max(0, Math.Min(manifest.Finest.Cols - 1,
+                        (int)Math.Round((lonRad * 180.0 / Math.PI + 180.0) * 3600.0 / manifest.ArcSecond - 0.5)));
+                var s1 = Stopwatch.StartNew();
+                field.Sampler.Grid.ReadCell(fine, row, col);
+                s1.Stop();
+                tRead.Add(s1.Elapsed.TotalMilliseconds);
+
+                var s2 = Stopwatch.StartNew();
+                field.Sampler.BaseElevationCm(dir);
+                s2.Stop();
+                tBase.Add(s2.Elapsed.TotalMilliseconds);
+
+                var s3 = Stopwatch.StartNew();
+                field.Sampler.SampleElevationCm(dir);
+                s3.Stop();
+                tDetail.Add(s3.Elapsed.TotalMilliseconds);
+            }
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "split_ms ReadCell(单格，含块载入) median={0:F4} p95={1:F4}", Percent(tRead, 0.5), Percent(tRead, 0.95)));
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "split_ms BaseElevationCm(基场插值) median={0:F4} p95={1:F4}", Percent(tBase, 0.5), Percent(tBase, 0.95)));
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "split_ms SampleElevationCm(基场+细节) median={0:F4} p95={1:F4}", Percent(tDetail, 0.5), Percent(tDetail, 0.95)));
+
+            if (Percent(cold, 0.95) > 20.0)
+            {
+                Console.WriteLine("FAIL 冷路径 p95 超过 20 ms：这条判定会拖住 grain 的请求序列");
+                failures++;
+            }
+
+            Console.WriteLine("GROUND_RESULT " + (failures == 0 ? "PASS" : $"FAIL 共 {failures} 处异常"));
+            return failures == 0 ? 0 : 5;
+        }
+    }
+
+    /// <summary>分位数（q=0 最小、1 最大）：样本先排序再按位置取，不引第三方统计库。</summary>
+    private static double Percent(List<double> samples, double q)
+    {
+        if (samples.Count == 0) return double.NaN;
+        var sorted = new List<double>(samples);
+        sorted.Sort();
+        int index = (int)Math.Round(q * (sorted.Count - 1));
+        if (index < 0) index = 0;
+        if (index >= sorted.Count) index = sorted.Count - 1;
+        return sorted[index];
     }
 
     /// <summary>探针专用的临时目录：每次一个独立路径，不覆盖任何人的缓存。</summary>

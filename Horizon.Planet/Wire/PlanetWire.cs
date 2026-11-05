@@ -364,16 +364,27 @@ public struct QuaternionQuantized
     /// 局部向量 → ECEF：q·v·q⁻¹ 的闭式。
     /// <para>第一项的系数是 (2w²−1) 而不是 w²：用单位四元数恒等式 |vec|² = 1−w² 换下来的，
     /// 漏掉这一步在 w=0（180° 姿态）时会把向量直接归零。</para>
+    /// <para><b>先归一再套公式</b>。这条闭式只在 |q|=1 时成立（(2w²−1) 那一项就是用
+    /// |vec|² = 1−w² 换出来的），而 Q15 解出来的模长不是正好 1：实测 1−|q| 到 1.5e-5。
+    /// 不补这一步，旋转<em>不再保长度</em>，向量被按 (1−1.5e-5) 缩放——在离地 50 km 那一档
+    /// 就是约 0.75 m 的径向错，而它不会报错，只会让人站得"稍微不对"。
+    /// 归一之后判据量到的基向量残差从 5.79e-5 降到 4.01e-5（剩下的就是纯量化）。</para>
     /// </summary>
     public PlanetVector3 Rotate(in PlanetVector3 local)
     {
-        double w = DecodeW;
-        PlanetVector3 q = new(DecodeX, DecodeY, DecodeZ);
+        double x = DecodeX, y = DecodeY, z = DecodeZ, w = DecodeW;
+        double norm = Math.Sqrt(x * x + y * y + z * z + w * w);
+        if (norm <= 1e-12)
+            throw new ArgumentException("四元数退化成零：那不是一个旋转，硬转出来是 -v 而不是任何姿态");
+        x /= norm; y /= norm; z /= norm; w /= norm;
+
+        PlanetVector3 q = new(x, y, z);
         double dot = PlanetVector3.Dot(local, q);
         return local * (2 * w * w - 1)
              + q * (2 * dot)
              + PlanetVector3.Cross(q, local) * (2 * w);
     }
+
 
     public void WriteTo(Span<byte> span)
     {

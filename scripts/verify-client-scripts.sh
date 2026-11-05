@@ -7,13 +7,21 @@
 # 新 dll 当第一顺位引用，把"代码本身对不对"和"Tools 副本新旧"这两个问题分开答。
 #
 # 用法：bash scripts/verify-client-scripts.sh [id]
-#   判据：末行 errors=0；非 0 时列出的才是真代码错。
+#   判据：末行 verdict=PASS（等价于 errors=0 **且** 真编出了 out.dll）。
+#   只看 errors=0 会受骗：csc 路径不存在时 dotnet exec 直接失败，日志里一个 "error CS"
+#   都没有，闸门照样念 0——那条绿色从没编译过任何东西。
 set -u
 ID="${1:-main}"
 ROOT="C:/Works/GitHubProjects/HundunWorld"
 CLIENT="$ROOT/HundunWorld"
 RESP="$CLIENT/Cache/Intermediate/GameEditorTarget/Windows/x64/Development/Game.CSharp.response"
-CSC="C:/Program Files/dotnet/sdk/10.0.401/Roslyn/bincore/csc.dll"
+# csc 不能钉死某个 SDK 版本号：装了什么会变（10.0.401 被 10.0.402 顶掉后这条自检就空转过）。
+# 取当前机器上版本最高的那一份；一份都没有就大声 FAIL，不许退化成一个假的 0。
+CSC=$(ls -1 "C:/Program Files/dotnet/sdk"/*/Roslyn/bincore/csc.dll 2>/dev/null | sort -V | tail -1)
+if [ -z "$CSC" ]; then
+  echo "verdict=FAIL reason=no-csc-found"
+  exit 8
+fi
 OUT="$CLIENT/Cache/_verify_client_$ID"
 mkdir -p "$OUT"
 
@@ -62,7 +70,17 @@ done
 dotnet exec "$CSC" "@$RSP" > "$OUT/csc.log" 2>&1
 code=$?
 errors=$(grep -c "error CS" "$OUT/csc.log")
-echo "exit=$code errors=$errors sources=$(grep -cE '^\".*\.cs\"$' "$RSP")"
-if [ "$errors" -gt 0 ]; then
+sources=$(grep -cE '^".*\.cs"$' "$RSP")
+if [ "$errors" -gt 0 ] || [ ! -f "$OUT/out.dll" ]; then
+  echo "exit=$code errors=$errors sources=$sources compiler=$CSC"
   grep "error CS" "$OUT/csc.log" | sed "s|$CLIENT/||" | sort -u | head -30
+  # 编不出产物却一个错误都没有 = 编译器根本没跑（响应文件/路径/权限问题），不是"代码是绿的"。
+  if [ "$errors" -eq 0 ]; then
+    echo "compiler-did-not-run 末三行日志："
+    tail -3 "$OUT/csc.log"
+  fi
+  echo "verdict=FAIL"
+  exit 1
 fi
+echo "exit=$code errors=$errors sources=$sources compiler=$CSC out_dll=yes"
+echo "verdict=PASS"

@@ -45,6 +45,8 @@
     <ProjectReference Include="..\Horizon.Mapper\Horizon.Mapper.csproj" />
     <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
+    <!-- 星球坐标/区域/权限的纯 C# 库：服务端与客户端共用同一份，逐位一致才谈得上权威判定 -->
+    <ProjectReference Include="..\Horizon.Planet\Horizon.Planet.csproj" />
     <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
     <ProjectReference Include="..\Horizon.Strategy.Storage.Redis\Horizon.Strategy.Storage.Redis.csproj" />
     <ProjectReference Include="..\Horizon.AI.Kernel\Horizon.AI.Kernel.csproj" />

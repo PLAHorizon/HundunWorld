@@ -44,18 +44,35 @@ public readonly struct RegionFrame
     }
 
     /// <summary>
-    /// 地理东 = 极轴 × 上；极点处该叉积退化为零，退回本面 u 轴的切向分量。
-    /// 极点本来就没有唯一东向，取所在面的连续极限即可。
+    /// 区域的局部东轴。两种口径，按<em>这个面本身</em>选，而不是按点选：
+    /// <list type="number">
+    /// <item><description><b>法线不平行极轴的面（0..3）</b>：地理东 = 极轴 × 上。
+    /// 在这一族面里 up 与极轴至少差 45°，叉积不会退化，整个面内连续。</description></item>
+    /// <item><description><b>法线就是极轴的面（±Z 那两个面）</b>：改用本面 u 轴在切平面上的投影。
+    /// 地理东在这两个面的中心附近是<em>奇异</em>的——|极轴 × 上| = sinθ 可以小到 5e-4，
+    /// "东"于是改由经度单独决定，一块 6 km 见方的区域里经度能变化好几弧度，
+    /// 实测相邻区域的东轴差 <b>90°</b>（§13.47）。按点判退化（原来那条 1e-12 的阈值）救不了：
+    /// 它只在恰好压在极点上才触发，而奇异的是整整一片邻域；按点切换还会把不连续挪到一个圈上。</description></item>
+    /// </list>
+    /// <para>选"按面"而不是"按点"的理由是这条判据要的东西：<em>同面内</em>相邻区域的帧必须连续。
+    /// 跨面本来就要换帧（立方体在那里折 90°），跨面邻居由全局点反查重算（§13.15），不靠帧之间的连续性。</para>
     /// </summary>
     public static PlanetVector3 ComputeEast(in PlanetVector3 up, int face)
     {
+        double polarAlignment = Math.Abs(PlanetVector3.Dot(CubeSphere.FaceNormal(face), PlanetVector3.AxisZ));
+        if (polarAlignment > 0.9)
+            return ProjectFaceU(up, face);
+
         PlanetVector3 east = PlanetVector3.Cross(PlanetVector3.AxisZ, up).Normalized();
-        if (east.LengthSquared < 1e-12)
-        {
-            PlanetVector3 fallback = CubeSphere.FaceUAxis(face);
-            east = (fallback - up * PlanetVector3.Dot(fallback, up)).Normalized();
-        }
+        if (east.LengthSquared < 1e-12) return ProjectFaceU(up, face);   // 恰好压在极点上：本来就没有唯一东向
         return east;
+    }
+
+    /// <summary>本面 u 轴投影到该点的切平面：面内处处连续，且与 uv 网格 / RegionEdge 的语义天然一致。</summary>
+    private static PlanetVector3 ProjectFaceU(in PlanetVector3 up, int face)
+    {
+        PlanetVector3 u = CubeSphere.FaceUAxis(face);
+        return (u - up * PlanetVector3.Dot(u, up)).Normalized();
     }
 
     /// <summary>ECEF 厘米（double）→ 局部厘米。</summary>
