@@ -3600,6 +3600,24 @@ PIE（scenes 模式）载入的是 **Debug** 那一份，所以今天任何 PIE 
 （读块 / 插值 / 组网格 / 上传四段），再决定加 worker 还是降采样密度——本轮的 1.36 s/块
 只是端到端，拆不出是哪一段。
 
+**最后又做了一个实验：重编 Debug 目标，再跑一次 PIE。结论是"重编救不了它"。**
+Debug 目标编译成功（`Flax.Build -build -configuration=Debug`，53 秒、`Done!`、无 error，
+`Binaries/GameEditorTarget/Windows/x64/Debug/Game.CSharp.dll` 从 v12 变成 **v14**，依赖也拷进去了——
+Debug 那份没被占用，所以没有 Development 那 5 条 xcopy 失败）。可 PIE 的回执**仍然是 v12**，
+而且 v14 才有的键（`session_reset` / `planet_caliber` / `ground_probe` / `actor_pose` / `transfers` / `watches`）
+<em>一个都没有</em>。也就是说 PIE 用的既不是 Debug、也不是磁盘上那份 v14 Development，
+而是**编辑器进程启动时载入的那份程序集**（11-04 那一版）。要让它换，只有两条路：
+
+1. 一次**成功的脚本热重载**——但编辑器自己的构建现在卡在 5 个被占用的依赖 DLL 的 xcopy 上
+   （`code_build_status.lastCompilationFailed=true`、`isReady=false`），热重载因此从未生效；
+2. **重启编辑器**——重启时它会载入磁盘上的 v14，并重新拷贝那几份依赖。
+
+所以重编 Debug 这一步本身是<em>白做</em>的（留下的收益只是：下次重启后 Debug/Development 两份都是 v14）。
+这条也补强了 §13.59 那句：判"宿主换没换"要看<em>运行产物里的独有标记</em>，
+而"磁盘上编译成功"与"进程里跑的是它"是两件事——这次两件事同时成立还是没用，
+因为进程里的那份是更早的。
+
+
 
 
 
