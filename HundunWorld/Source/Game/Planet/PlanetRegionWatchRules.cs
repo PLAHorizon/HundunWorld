@@ -37,20 +37,28 @@ namespace HundunWorld.Game.Planet
 
         /// <summary>订阅集的差集。<b>数组按内容比，不按引用比</b>：每次 new 一个数组就"变了"，
         /// 那会让每一帧都产生卸载/重载。</summary>
+        /// <para><b>取数一律走属性、属性自己兜住 null</b>：这个类型是结构体，<c>default(Diff)</c>
+        /// 会<em>绕过</em>构造器，于是四个数组都是 null。第一版把归一只写在构造器里，
+        /// 结果 <c>PlanetRegionWatches.LastPlan</c>（初值 default）在 <see cref="ToString"/> 里抛 NRE——
+        /// 驱动每帧都抛、回执写不出结尾块，而屏幕上只看到"日志被裁剪"。判据见
+        /// <c>PlanetRegionWatchRulesTests.default的Diff就是空差集</c>。</para>
         public readonly struct Diff
         {
+            private readonly long[] _addRegions, _dropRegions;
+            private readonly PlanetCellKey[] _addCells, _dropCells;
+
             public Diff(long[] addRegions, long[] dropRegions, PlanetCellKey[] addCells, PlanetCellKey[] dropCells)
             {
-                AddRegions = addRegions ?? Array.Empty<long>();
-                DropRegions = dropRegions ?? Array.Empty<long>();
-                AddCells = addCells ?? Array.Empty<PlanetCellKey>();
-                DropCells = dropCells ?? Array.Empty<PlanetCellKey>();
+                _addRegions = addRegions;
+                _dropRegions = dropRegions;
+                _addCells = addCells;
+                _dropCells = dropCells;
             }
 
-            public long[] AddRegions { get; }
-            public long[] DropRegions { get; }
-            public PlanetCellKey[] AddCells { get; }
-            public PlanetCellKey[] DropCells { get; }
+            public long[] AddRegions => _addRegions ?? Array.Empty<long>();
+            public long[] DropRegions => _dropRegions ?? Array.Empty<long>();
+            public PlanetCellKey[] AddCells => _addCells ?? Array.Empty<PlanetCellKey>();
+            public PlanetCellKey[] DropCells => _dropCells ?? Array.Empty<PlanetCellKey>();
 
             public bool IsEmpty => AddRegions.Length == 0 && DropRegions.Length == 0
                                    && AddCells.Length == 0 && DropCells.Length == 0;

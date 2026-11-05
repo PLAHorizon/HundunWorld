@@ -60,8 +60,13 @@ namespace PlanetGateProbe
             // 角色号与 tick 每轮都换：grain 的状态是持久化的，用固定号会撞上上一轮的归属与时钟
             // （第一版就撞了 tick 倒退，bind=false 而回执 owner 还是上一轮那个区）。
             const int Level = PlanetConstants.DefaultRegionLevel;
-            ulong characterId = 700_000UL + (ulong)(DateTime.UtcNow.Ticks % 100_000);
-            long tick = 1_000_000L + DateTime.UtcNow.Second;
+            // 第二个参数可以给一个固定角色号：PIE 那边用 marker 的 char= 指定同一个号，
+            // 于是"客户端真发的那条"能对着一个已知的绑定被受理（无登录验收的唯一办法）。
+            ulong characterId = args.Length > 1
+                ? ulong.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture)
+                : 700_000UL + (ulong)(DateTime.UtcNow.Ticks % 100_000);
+            // tick 要高于 grain 里已持久化的时钟（上一轮跑到 1000035），否则 bind 会被判倒退。
+            long tick = 10_000_000L + DateTime.UtcNow.Ticks % 100_000L;
             var up = Geodetic.DirectionFromLatLon(30.0 * Math.PI / 180.0, 120.0 * Math.PI / 180.0);
             var homePoint = up * (PlanetConstants.PlanetRadiusCm + 100_000);
             var homeEcef = EcefCentimeters.FromVector(homePoint);
@@ -69,6 +74,16 @@ namespace PlanetGateProbe
 
             bool bound = await grain.BindAsync(characterId, homeEcef.X, homeEcef.Y, homeEcef.Z, tick, caliberBytes);
             Console.WriteLine("bind=" + (bound ? 1 : 0) + " character=" + characterId + " tick=" + tick + " home_region=" + homeKey);
+
+            // bind-only：只落位、不迁移。给"客户端真发一条"准备一个停在 home 的受控绑定
+            // （迁移过再跑，服务端的归属已经在邻区，客户端那条 from=home 会撞 OwnerMismatch）。
+            if (args.Length > 2 && string.Equals(args[2], "bind-only", StringComparison.Ordinal))
+            {
+                Console.WriteLine("bind_only=1 home_region=" + homeKey);
+                await host.StopAsync();
+                Console.WriteLine("verdict=" + (bound ? "PASS" : "FAIL"));
+                return bound ? 0 : 1;
+            }
 
             // 4) 迁移到共边邻区的中心（邻区由库算，点也在邻区里；不手抄区域号）
             long applied = 0, accepted = 0, ackOk = 0;

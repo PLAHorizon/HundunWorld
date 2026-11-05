@@ -37,7 +37,7 @@ namespace HundunWorld.Game.Planet
     /// </summary>
     public class PlanetNearFieldDriver : Script
     {
-        private const string BuildTag = "near_field_driver_v14";
+        private const string BuildTag = "near_field_driver_v15";
         private const string MarkerName = "planet_near_field.on";
         private const string ResultName = "planet_near_field.result.txt";
 
@@ -762,6 +762,10 @@ namespace HundunWorld.Game.Planet
                     // 位姿口径的开关。默认不写＝probe：只对照打印，不改取样（见 PoseMode 的理由）。
                     if (part.StartsWith("pose=", StringComparison.OrdinalIgnoreCase))
                         PoseMode = part.Substring(5).Trim().ToLowerInvariant();
+                    // 显式角色号也认 marker：无登录的验收要一个受控绑定（探针在服务端先 Bind 同一个号），
+                    // 否则 TransferCharacterId 只能靠场景序列化字段，改场景就把手写的东西带进资产里。
+                    if (part.StartsWith("char=", StringComparison.OrdinalIgnoreCase))
+                        TransferCharacterId = ulong.Parse(part.Substring(5), Inv);
                 }
             }
             catch (Exception e) { Say("marker_parse_error=" + e.GetType().Name); }

@@ -3660,6 +3660,46 @@ Silo 的激活行（解码后）：`口径闸门=on(terrainVersion=149d8baf base
 **还没验的**：这条只证了服务端 + 协议 + 口径/地面闸门。客户端的换区上行仍是 v12 装配
 （PIE 要重启编辑器才换），所以 #25 还差"客户端那一侧真发一次、服务端真受理、ack 被客户端解开"。
 
+### 13.74 重启编辑器之后：PIE 换到了 v15，并且抓到一个每帧抛的真缺陷；#25 卡在"没有会话"
+
+重启编辑器（优雅关闭 10 秒、无保存对话框），启动脚本构建**成功**（`isReady=true`、`lastCompilationFailed=false`）——
+之前卡住的 5 个依赖 DLL 随进程释放。随后 PIE 的回执头一行是 `build_tag=near_field_driver_v14`，
+再改代码 + `code_build_wait`（`status=success`、"热重载已生效"）之后变成 **v15**：
+**只要编辑器自己的构建成功，热重载就会把 PIE 换到新装配，不必每次重启。**
+
+**这一轮在引擎里抓到一个每帧抛的真缺陷**（也是上一轮回执没有结尾块的原因）：
+
+```
+NullReferenceException
+ at PlanetRegionWatchRules.Diff.ToString() line 58
+ at PlanetRegionWatches.Describe() line 152
+ at PlanetNearFieldDriver.VerifyAndReport() line 596
+ at PlanetNearFieldDriver.OnUpdate() line 168
+```
+
+`Diff` 是结构体，构造器把 null 归一成空数组——但 `default(Diff)` **绕过构造器**，四个数组都是 null。
+`PlanetRegionWatches.LastPlan` 的初值正是 `default`，于是 `Describe()` 每帧抛：回执写不出结尾块、
+日志被刷到"Trimming log file"、编辑器被拖住（那一阵两个 MCP 调用直接超时）。
+修法是把归一下沉到**属性**（`=> _x ?? Array.Empty<T>()`），并加判据
+`default的Diff就是空差集_不抛异常`（含"非空时念的必须是真数"的反向孪生），
+`PlanetRegionWatchRulesTests` 8/8。
+
+**#25 的客户端那一半这次没成，原因是"没有会话"，不是星球代码的问题**：
+
+- 回执：`transfers sent=4 receipts=0 expired=4 … character=424251 session=live`，`watches … why=会话不可用`；
+- Silo 日志里这段时间**没有任何 grain 调用**（只有探针那几次）；
+- 所以这 4 条根本没出门：`CanSendMessage()` 为假 → 走的是
+  "会话不可用 → 按超时清账"那条分支（`expired++`）。
+- 注意 `session=live` 只表示 `HundunWorldGame.Instance?.NetworkManager` 非空，**不表示已连接**——
+  这一格的字面值容易把人引到"发了没回"，实际是"压根没发"。
+
+要让客户端真发一条，需要一个**已连接**的会话（登录/进世界）；而星球驱动脚本只挂在
+`PlanetAB_S0`/`PlanetSeam`/`PlanetShell` 三个探针场景里，游戏世界场景没有它。
+两条路：① 把驱动挂进游戏世界场景（产品改动，进世界即跑）；② 等一次真实登录会话再验。
+两条都记在 #25 里。探针这轮还补了 `bind-only` 模式（只落位不迁移）与"tick 必须高于已持久化时钟"
+——固定角色号 + 固定 tick 会撞上上一轮的归属与时钟（第一版就撞出 `bind=false` + `OwnerMismatch`）。
+
+
 
 
 

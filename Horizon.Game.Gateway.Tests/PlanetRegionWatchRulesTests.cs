@@ -225,6 +225,28 @@ public class PlanetRegionWatchRulesTests
         Assert.NotEmpty(diff.DropCells);
     }
 
+    // ==================== 结构体默认值 ====================
+
+    [Fact]
+    public void default的Diff就是空差集_不抛异常()
+    {
+        // 结构体的 default 绕过构造器：第一版只在构造器里归 null，于是 LastPlan=default 时
+        // ToString() 抛 NRE，驱动每帧抛、回执写不出结尾块（§13.73 实机抓到的）。
+        PlanetRegionWatchRules.Diff empty = default;
+        Assert.True(empty.IsEmpty);
+        Assert.Empty(empty.AddRegions);
+        Assert.Empty(empty.DropRegions);
+        Assert.Empty(empty.AddCells);
+        Assert.Empty(empty.DropCells);
+        Assert.Contains("+regions=0", empty.ToString(), StringComparison.Ordinal);   // 能念出来，才算能进日志
+
+        // 反向孪生：非空的时候念的必须是那个数，不是恒 0
+        var nonEmpty = new PlanetRegionWatchRules.Diff(new[] { 1L }, null, null, null);
+        Assert.False(nonEmpty.IsEmpty);
+        Assert.Contains("+regions=1", nonEmpty.ToString(), StringComparison.Ordinal);
+        Assert.Empty(nonEmpty.DropRegions);      // 只给一个维度时，其余仍是空集而不是 null
+    }
+
     private static RegionKey Neighbour(RegionKey key, RegionEdge edge) =>
         PlanetRegions.TryNeighbour(key, edge, out var n)
             ? n
