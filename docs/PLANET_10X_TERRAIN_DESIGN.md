@@ -3742,6 +3742,37 @@ v16 里落位用了挂钟毫秒（≈6.4e14）、迁移还是帧号（≈361）�
 这与记忆里"选角列表随机空白"同源，同一个编辑器实例第二次 PIE 起更容易复现；
 ② `actor_pose` 仍是 `Neither`——世界坐标与星球帧的**锚点**还没定义，两种轴序都落不进站立带。
 
+### 13.76 球形超大地形第一次落进真实世界场景：25/25 块装齐、射线误差 0.22 cm、前后截图 99.6% 像素不同
+
+要验的是"它能不能在 `World.scene` 里跑"，而不是"换一个探针场景跑"：
+`World.scene` 里已经挂着 `PlanetNearFieldDriver`（§13.75，marker 门控，没 marker 时完全惰性），
+所以写 marker + `sim_play(scenes)` 就是一次真实场景里的实跑。
+
+**实测（`Tools/_gate_world.txt` 同一轮之后跑的）**：
+
+- 回执：`build_tag=near_field_driver_v17`、`request_lat_lon=30/120 height_source=real_gebco`、
+  `final_window: desired=25 checked=25 missing=0 worst_ray_err_cm=0.2158`、
+  `driver_verdict=NEAR_FIELD_DRIVER_RUNS_IN_ENGINE`、`passed=1`。
+  `worst_ray_err_cm` 是驱动**从引擎里打射线**量回来的——它证明 25 块的高程真的进了引擎的 patch 表，
+  不是"我们以为写进去了"。
+- 画面：基线（无 marker）是世界里那块白色平地形 + 一个方块；同一机位再跑一次后，
+  整个地表被换成 DEM 采样出来的**海平面**（蓝灰、带 509 格的网格线），
+  前后截图 **99.6% 像素**变化（`Tools/_world_before.png` vs `Tools/_world_planet_terrain.png`）。
+  lat30/lon120 是东海，所以"平"是对的——这片水面的高程本来就没有起伏。
+- 顺带给驱动加了 `terrain_at=x,y,z`（v18）：世界里已经有产品地形时，自测**自建**一块
+  `PlanetNearFieldTerrain` 到指定位置，不去 `FindActor<Terrain>()` 抢产品地形。
+  v18 已过离线客户端编译与合闸（十一段全 ok）。
+
+**没做成/没说清的两件**（不许当结论）：
+
+1. `lat=27.99 lon=86.92`（珠峰）那一跑：冷缓存下 `final_window checked=0 missing=25`
+   （和 §13.72 量到的生成吞吐 ≈1.4 块/s 一致）；热缓存的第二次 PIE 在四分钟内**自行退出了播放模式**
+   且没留下回执。日志里那一批 NRE 来自 `NarrativePro.CharacterVisual.OnEnable`（世界场景的 NPC，
+   与星球无关），没有引擎 `Check failed`。**原因未查明**，所以"珠峰起伏能在世界里看见"这句先不写。
+2. 相机是我在 PIE 里用 `actor_set_transform` 抬到 10 km 的（基线/对照都用同一机位），
+   这只说明"换个机位能看见"，不是产品相机接线。
+
+
 
 
 

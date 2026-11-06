@@ -37,7 +37,7 @@ namespace HundunWorld.Game.Planet
     /// </summary>
     public class PlanetNearFieldDriver : Script
     {
-        private const string BuildTag = "near_field_driver_v17";
+        private const string BuildTag = "near_field_driver_v18";
         private const string MarkerName = "planet_near_field.on";
         private const string ResultName = "planet_near_field.result.txt";
 
@@ -87,12 +87,18 @@ namespace HundunWorld.Game.Planet
         /// 无登录验收只能靠它把"客户端真发一条"接上；失败不阻断自测，但一定要进回执。</summary>
         private bool _bindOnStart;
 
+        /// <summary>marker 写 <c>terrain_at=x,y,z</c> 时，<b>自己新建</b>一块 Terrain 并放到这个 Flax 世界坐标，
+        /// 不去复用场景里已有的 Terrain——世界场景里那块是产品地形，自测不许改写它。</summary>
+        private bool _hasTerrainAt;
+        private Vector3 _terrainAt;
+
         // ---- 运行态 ----
         private readonly List<string> _log = new List<string>();
         private readonly Dictionary<PatchKey, int> _requestFrame = new Dictionary<PatchKey, int>();
         private readonly List<Int2> _engineResident = new List<Int2>();
 
         private Terrain _terrain;
+        private bool _engineTerrainOwned;
         private PlanetTerrainUploader _uploader;
         private PlanetTerrainStreamer _streamer;
         private PlanetPatchPump _pump;
@@ -208,6 +214,17 @@ namespace HundunWorld.Game.Planet
             Say("gravity " + PlanetGravity.DescribeAgainstPhysics(PlanetConstants.PlanetRadiusCm));
 
 
+            if (_hasTerrainAt)
+            {
+                // 自建并归位：世界场景里 Actor.FindActor<Terrain> 会拿到产品地形，改写它等于破坏场景
+                _terrain = new Terrain { Name = "PlanetNearFieldTerrain" };
+                _terrain.Parent = Actor;
+                _terrain.Position = _terrainAt;
+                Say(string.Format(Inv, "terrain_created_by_script=1 terrain_at={0:0.#},{1:0.#},{2:0.#}",
+                                  _terrainAt.X, _terrainAt.Y, _terrainAt.Z));
+                _engineTerrainOwned = true;
+            }
+            else
             _terrain = Actor.FindActor<Terrain>(false);
             if (_terrain == null)
             {
@@ -785,6 +802,15 @@ namespace HundunWorld.Game.Planet
                         TransferCharacterId = ulong.Parse(part.Substring(5), Inv);
                     if (part.StartsWith("bind=", StringComparison.OrdinalIgnoreCase))
                         _bindOnStart = int.Parse(part.Substring(5), Inv) != 0;
+                    if (part.StartsWith("terrain_at=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var xyz = part.Substring(11).Split(',');
+                        if (xyz.Length == 3)
+                        {
+                            _terrainAt = new Vector3(float.Parse(xyz[0], Inv), float.Parse(xyz[1], Inv), float.Parse(xyz[2], Inv));
+                            _hasTerrainAt = true;
+                        }
+                    }
                 }
             }
             catch (Exception e) { Say("marker_parse_error=" + e.GetType().Name); }
