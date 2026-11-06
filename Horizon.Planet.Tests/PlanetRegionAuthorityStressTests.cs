@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -19,6 +19,7 @@ namespace Horizon.Planet.Tests;
 /// <para>耗时阈值故意放得很松（实测值打在输出里看）：这条判据要抓的是
 /// "复杂度变了"这种量级错误，不是"这台机器今天忙"。§13.41 那条飘红的帧预算判据就是前车之鉴。</para>
 /// </summary>
+[Collection("perf-serial")]
 public class PlanetRegionAuthorityStressTests
 {
     private const long Radius = PlanetConstants.PlanetRadiusCm;

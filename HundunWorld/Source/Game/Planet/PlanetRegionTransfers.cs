@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using FlaxEngine;
 using Horizon.Game.Message.Network;
@@ -32,6 +32,13 @@ namespace HundunWorld.Game.Planet
 
         /// <summary>同一个钟的对外名字。</summary>
         public static long NowMs() => Now();
+
+        /// <summary>
+        /// 给服务端 tick 用的挂钟毫秒（自公元 1 年起）。<b>不能拿帧号当 tick</b>：
+        /// 帧号每次会话从 0 重来，而 grain 对同一角色判 tick 倒退——落位用挂钟、迁移用帧号，
+        /// 那条迁移必被 TickRegression 拒（实测 §13.75）。
+        /// </summary>
+        public static long NowMsClockTick() => DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
 
         /// <summary>
         /// 把口径编成 §6.2 那 35 字节。<b>迁移上行与快照请求共用这一份</b>：
@@ -281,6 +288,89 @@ namespace HundunWorld.Game.Planet
                 LastAckCheck, LastAckAxisDeg,
                 GroundElevationCm is null ? "off" : "on", GroundLifts, LastGroundLiftCm);
 
+        // ==================== 落位（进世界 / 重连的第一步） ====================
+        //
+        // 这条上行此前根本不存在：客户端只会发迁移与快照，服务端权威表里永远没有这个实体，
+        // 于是每次迁移都被 UnknownEntity 拒、客户端按"重新落位"处置，而重新落位又没有上行——
+        // 屏幕上看到的就是"一直在重连"。
+
+        /// <summary>发过没有、回执怎么说的。三项都进回执文件：只写"发了"等于没写。</summary>
+        public static bool BindSent;
+        public static bool? BindAccepted;
+        public static string BindReason = "not sent";
+        public static long BindAtMs = -1;
+
+        /// <summary>发一条落位请求。失败原因写进 <see cref="BindReason"/>（与"发了被拒"分开）。</summary>
+        public static async Task<bool> SendBindAsync(PlanetVector3 globalCm, long tick)
+        {
+            BindSent = false;
+            BindAccepted = null;
+            if (!TryBuildCaliberBytes(out var caliberBytes, out string caliberWhy))
+            {
+                BindReason = "口径编不出来：" + caliberWhy;
+                return false;
+            }
+            var session = SessionProvider?.Invoke();
+            ulong characterId = CharacterIdProvider();
+            if (session == null || !session.CanSendMessage() || characterId == 0UL)
+            {
+                BindReason = session == null || !session.CanSendMessage()
+                    ? "会话不可用（没连上网关）"
+                    : "角色号还是 0（没进世界）";
+                return false;
+            }
+
+            var ecef = EcefCentimeters.FromVector(globalCm);
+            var message = new PlanetRegionBindRequest
+            {
+                CharacterId = characterId,
+                GlobalXcm = ecef.X,
+                GlobalYcm = ecef.Y,
+                GlobalZcm = ecef.Z,
+                Tick = tick,
+                PlanetCaliber = caliberBytes,
+            };
+            BindSent = true;
+            BindAtMs = NowMs();
+            BindReason = "已发出";
+            bool sent;
+            try
+            {
+                sent = await session.SendAsync(message);
+            }
+            catch (Exception e)
+            {
+                sent = false;
+                BindReason = "发送抛异常：" + e.GetType().Name;
+            }
+            if (!sent) BindReason = "会话没收下这条请求";
+            Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "planet_bind_request character={0} tick={1} sent={2} reason={3}", characterId, tick, sent, BindReason));
+            return sent;
+        }
+
+        /// <summary>落位回执入口（网络处理器调这里）。</summary>
+        public static void OnBindReceipt(PlanetRegionBindResult result)
+        {
+            if (result is null)
+            {
+                Debug.LogWarning("[planet] 收到空的落位回执");
+                return;
+            }
+            BindAccepted = result.Accepted;
+            BindReason = string.IsNullOrEmpty(result.Reason) ? (result.Accepted ? "已受理" : "(无理由)") : result.Reason;
+            Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "planet_bind_receipt accepted={0} code={1} reason={2}", result.Accepted, result.Code, BindReason));
+        }
+
+        /// <summary>对账用的一行。</summary>
+        public static string DescribeBind() =>
+            string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "sent={0} accepted={1} reason={2} at_ms={3}",
+                BindSent ? 1 : 0,
+                BindAccepted is null ? "pending" : (BindAccepted.Value ? "1" : "0"),
+                BindReason, BindAtMs);
+
         /// <summary>
         /// 一次会话开始时把账倒回干净状态。<b>装配那一侧（<c>PlanetNearFieldDriver.Start</c>）第一件事就是它</b>：
         /// 这一层的状态全挂在静态上，而 Flax 的脚本装配跨 PIE 会话存活，于是上一轮留下的账会直接变成
@@ -308,6 +398,10 @@ namespace HundunWorld.Game.Planet
             LastAppliedAck = null;
             LastAckCheck = "not run";
             LastAckAxisDeg = -1;
+            BindSent = false;
+            BindAccepted = null;
+            BindReason = "not sent";
+            BindAtMs = -1;
             PlanetRegionWatches.Reset();
         }
     }

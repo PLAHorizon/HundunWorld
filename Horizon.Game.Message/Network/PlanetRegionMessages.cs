@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using MemoryPack;
 using Orleans;
 using Horizon.Game.Message.Enums;
@@ -446,5 +446,84 @@ namespace Horizon.Game.Message.Network
             ServerTick = snapshot.ServerTick,
             SubscribedBoundaryCells = snapshot.SubscribedBoundaryCells,
         };
+    }
+    /// <summary>
+    /// 客户端请求把角色落位到某个全局点（进世界 / 重连时的第一步）。
+    /// <para>为什么必须有这条：服务端的 <c>IPlanetRegionGrain.BindAsync</c> 此前只有测试与探针在调，
+    /// 客户端到网关根本没有"落位"这个上行——于是换区迁移永远撞 <c>UnknownEntity</c>，
+    /// 而屏幕上只会看到"反复重新落位"。</para>
+    /// <para>口径与迁移请求同一份 35 字节、同一条编解码：落位是"进入世界"那一步，
+    /// 口径不符就不该在权威表里留下任何东西。</para>
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(260, ServiceType.Game)]
+    public partial class PlanetRegionBindRequest : MessageUnion, INetworkMessage
+    {
+        public PlanetRegionBindRequest()
+        {
+            Type = MessageType.PlanetRegionBind;
+            ServiceType = ServiceType.Game;
+        }
+
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long GlobalXcm { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long GlobalYcm { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long GlobalZcm { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long Tick { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public byte[] PlanetCaliber { get; set; } = Array.Empty<byte>();
+    }
+
+    /// <summary>
+    /// 落位回执。<b>被拒时 Reason 必须非空</b>（与迁移/快照回执同一条规矩）：
+    /// "拒了但没说为什么"在服务端等于丢包，客户端无法区分被拒与超时。
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    [NetworkMessage(261, ServiceType.Game)]
+    public partial class PlanetRegionBindResult : MessageUnion, INetworkMessage
+    {
+        public PlanetRegionBindResult()
+        {
+            Type = MessageType.PlanetRegionBindResult;
+            ServiceType = ServiceType.Game;
+        }
+
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Accepted { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Code { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Reason { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long OwnerRegionId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long ServerTick { get; set; }
     }
 }

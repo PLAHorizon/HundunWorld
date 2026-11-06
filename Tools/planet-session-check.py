@@ -161,6 +161,19 @@ def check_receipt(text, silo_log_text, want_tag):
         else:
             add(("FAIL", "actor_pose", "verdict=%r 不认识（UnusableInput 也算：输入退化就是没量成）" % verdict))
 
+    # 6.8 落位：进世界那一步。没落位时后面的迁移会全被 UnknownEntity 拒（屏幕上表现为"一直重连"）。
+    bind_line = find(lines, "bind ")
+    if bind_line is not None:
+        b = kv(bind_line)
+        if b.get("sent") == "1" and b.get("accepted") == "1":
+            add(("ok", "bind", "sent=1 accepted=1 reason=%s" % b.get("reason")))
+        else:
+            add(("FAIL", "bind", "sent=%s accepted=%s reason=%s（落位没成，迁移必被 UnknownEntity 拒）"
+                 % (b.get("sent"), b.get("accepted"), b.get("reason"))))
+    else:
+        # marker 没写 bind=1 的那一轮本来就没有这行——不许当失败，但要看得见
+        add(("SKIP", "bind", "回执里没有 bind 行（marker 未写 bind=1？）"))
+
     # 7. 换区上行真的往返过
     transfers = find(lines, "transfers ")
     t = kv(transfers)

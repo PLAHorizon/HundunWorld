@@ -3707,6 +3707,42 @@ NullReferenceException
 照此重启后 Silo/Gateway 跨回合仍在（11111/30000/7789 都在听），探针再跑一次仍
 `bind=1 accepted=1 applied=1 ack_ok=1 snapshot=1 verdict=PASS`。
 
+### 13.75 客户端原来根本没有"落位"这条上行：补上之后，真登录把整条链跑通了
+
+把驱动挂进 `World.scene`（marker 门控，没 marker 时完全惰性）、真登录进世界之后，实测暴露了一个
+**协议缺口**：客户端只有迁移与快照两条上行，`BindAsync` 此前只有测试与探针在调。于是客户端第一次
+迁移必然撞 `UnknownEntity`，按"重新落位"处置，而重新落位<em>没有上行</em>——屏幕上就是一直重连。
+
+补的东西（`PlanetRegionBind = 1668` / `PlanetRegionBindResult = 1669`，union 260/261，两条序列化通路都登记）：
+
+- 服务端 `PlanetRegionHandler` 加一支 `RouteBindAsync`（会话绑定照旧先判）；
+- 客户端 `PlanetRegionTransfers.SendBindAsync/OnBindReceipt/DescribeBind` + `PlanetRegionBindResponseHandler`；
+- 驱动 marker 写 `bind=1` 时在 Start 末尾发一条落位，回执文件多一行 `bind sent=… accepted=… reason=…`。
+
+**实机证据链（同一套真登录流程，v15 → v16 → v17）**：
+
+| 版本 | 回执读数 | 结论 |
+| --- | --- | --- |
+| v15（无落位上行） | `transfers sent=4 receipts=4 last_action=Rebind character=39 session=live` | 上线通了，但全被 `UnknownEntity` 拒 |
+| v16（加落位） | **`bind sent=1 accepted=1 reason=已落位`**、`watches action=Apply subs=5 cells=3304 owner=…`、`transfers sent=1 receipts=1 last_action=WaitClock clock_refused=3` | 落位与订阅都通了；迁移被判 **TickRegression** |
+| v17（tick 统一） | 代码 + 离线编译已过、合闸绿（第 2 段 150 条）；引擎那一跑被选角页 UI 挡住 | 见下 |
+
+**tick 的教训**（两次都是"拿错了时钟"）：① 帧号不能当服务端 tick——它每次会话从 0 重来，
+而 grain 对同一角色判 tick 倒退，于是同一角色第二次进世界会被永远拒；② **落位与迁移必须同一时钟**：
+v16 里落位用了挂钟毫秒（≈6.4e14）、迁移还是帧号（≈361），第一条迁移必然被判倒退。
+现在两处都走 `PlanetRegionTransfers.NowMsClockTick()`（挂钟毫秒）。
+
+**顺带修掉的测试缺陷**：`PlanetRegionAuthorityStressTests` 里有两处<em>墙钟</em>断言
+（每帧 < 5 ms、全表投影 < 20 ms）。xunit 默认并行跑不同集合，整包跑时被别的用例占满 CPU 就假红
+（实测：单跑 3/3 绿、整包偶发红）。加 `[CollectionDefinition("perf-serial", DisableParallelization = true)]`
+把带墙钟断言的用例单独串起来——注意光有 `[Collection("名")]` 而没有这里的定义，只串行化集合<em>内部</em>。
+
+**仍然挡住复跑的两件事**（都不是星球代码）：① 选角页 UI 在实际窗口里整体偏出可视区
+（`CcRoleRow` 在树里、bounds 也在，但命中测试够不到，`ui_click_control` 报"树里没有"），
+这与记忆里"选角列表随机空白"同源，同一个编辑器实例第二次 PIE 起更容易复现；
+② `actor_pose` 仍是 `Neither`——世界坐标与星球帧的**锚点**还没定义，两种轴序都落不进站立带。
+
+
 
 
 

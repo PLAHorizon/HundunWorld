@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -37,7 +37,7 @@ namespace HundunWorld.Game.Planet
     /// </summary>
     public class PlanetNearFieldDriver : Script
     {
-        private const string BuildTag = "near_field_driver_v15";
+        private const string BuildTag = "near_field_driver_v17";
         private const string MarkerName = "planet_near_field.on";
         private const string ResultName = "planet_near_field.result.txt";
 
@@ -82,6 +82,10 @@ namespace HundunWorld.Game.Planet
         /// （判据 <c>PlanetActorPoseRulesTests.驱动按这条探针取样_且不许在引擎那一侧再手写一份置换</c>）。</para>
         /// </summary>
         public string PoseMode = "probe";
+
+        /// <summary>marker 写 <c>bind=1</c> 时，Start 末尾向服务端发一条落位请求。
+        /// 无登录验收只能靠它把"客户端真发一条"接上；失败不阻断自测，但一定要进回执。</summary>
+        private bool _bindOnStart;
 
         // ---- 运行态 ----
         private readonly List<string> _log = new List<string>();
@@ -281,6 +285,15 @@ namespace HundunWorld.Game.Planet
 
             _localX = 0; _localZ = 0;
             ProbeActorPose("start");
+            if (_bindOnStart)
+            {
+                var bindPoint = _frame.GlobalFromLocalCm(PlanetVector3.Zero);
+                // 落位的 tick 用挂钟毫秒：帧号每次会话从 0 重来，而 grain 对同一角色判 tick 倒退，
+                // 于是同一角色第二次进世界会被永远拒（"一直在重连"的另一个来源）。
+                long bindTick = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
+                _ = PlanetRegionTransfers.SendBindAsync(bindPoint, bindTick);
+                Say("bind_request " + PlanetRegionTransfers.DescribeBind());
+            }
             Prime();
             _started = true;
         }
@@ -497,7 +510,10 @@ namespace HundunWorld.Game.Planet
             // 让换区的完成等一趟网络往返，等于把 §13.26 那条"每帧预算"交给网络延迟决定。
             // 取点走 PoseSendPoint：默认（probe）还是这个合成点，只有 marker 明说口径才换成角色位置。
             ProbeActorPose("crossing");
-            _ = PlanetRegionTransfers.TrySendAsync(fromKey, PoseSendPoint(crossedGlobalCm, "crossing"), _frameNo + 1L);
+            // tick 用挂钟毫秒、与落位同一时钟：帧号每次会话从 0 重来，而 grain 对同一角色判 tick 倒退，
+            // 于是"先落位（tick≈6.4e14）再发帧号（tick≈361）"必然被判 TickRegression（实测：1 条被拒 + 3 次自挡）。
+            _ = PlanetRegionTransfers.TrySendAsync(fromKey, PoseSendPoint(crossedGlobalCm, "crossing"),
+                                                   PlanetRegionTransfers.NowMsClockTick());
 
             // 换区之后订阅集作废了（旧区变成邻区、新区的另一侧进了视野），立刻再问一趟。
             // 这一条绕过节流：规则层把"刚跨过区"与"边界附近重复问"分开处理，正是为了这里。
@@ -593,6 +609,7 @@ namespace HundunWorld.Game.Planet
             // 换区那条链的账（在飞/确认/待重新落位/最近一次 ack）。它不是这条验收的判定项——
             // 没有会话与角色号时这里如实写着"没发出去"，而不是让整条近景验收跟着变红。
             Say("transfers " + PlanetRegionTransfers.Describe());
+            Say("bind " + PlanetRegionTransfers.DescribeBind());
             Say("watches " + PlanetRegionWatches.Describe());
 
             long inflightish = _pump.PendingCount + _pump.InFlightCount;
@@ -766,6 +783,8 @@ namespace HundunWorld.Game.Planet
                     // 否则 TransferCharacterId 只能靠场景序列化字段，改场景就把手写的东西带进资产里。
                     if (part.StartsWith("char=", StringComparison.OrdinalIgnoreCase))
                         TransferCharacterId = ulong.Parse(part.Substring(5), Inv);
+                    if (part.StartsWith("bind=", StringComparison.OrdinalIgnoreCase))
+                        _bindOnStart = int.Parse(part.Substring(5), Inv) != 0;
                 }
             }
             catch (Exception e) { Say("marker_parse_error=" + e.GetType().Name); }

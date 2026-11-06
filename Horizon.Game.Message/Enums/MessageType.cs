@@ -1212,6 +1212,14 @@ namespace Horizon.Game.Message.Enums
         [Description("星球区域快照回执")]
         PlanetRegionSnapshotResult = 1667,
 
+        /// <summary>客户端请求落位（进世界 / 重连的第一步）：此前这条上行完全不存在，客户端只能迁移、永远撞 UnknownEntity。</summary>
+        [Description("星球区域落位请求")]
+        PlanetRegionBind = 1668,
+
+        /// <summary>落位回执。被拒时 Reason 必须非空。</summary>
+        [Description("星球区域落位回执")]
+        PlanetRegionBindResult = 1669,
+
         #endregion
     }
 }

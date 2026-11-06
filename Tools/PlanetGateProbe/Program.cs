@@ -65,8 +65,9 @@ namespace PlanetGateProbe
             ulong characterId = args.Length > 1
                 ? ulong.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture)
                 : 700_000UL + (ulong)(DateTime.UtcNow.Ticks % 100_000);
-            // tick 要高于 grain 里已持久化的时钟（上一轮跑到 1000035），否则 bind 会被判倒退。
-            long tick = 10_000_000L + DateTime.UtcNow.Ticks % 100_000L;
+            // tick 必须高于 grain 里已持久化的时钟，否则 bind 会被判倒退。用挂钟毫秒
+            // （自公元 1 年起的毫秒 ≈ 6.4e14）而不是帧号：帧号每次会话从 0 重来，跨会话必然倒退。
+            long tick = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
             var up = Geodetic.DirectionFromLatLon(30.0 * Math.PI / 180.0, 120.0 * Math.PI / 180.0);
             var homePoint = up * (PlanetConstants.PlanetRadiusCm + 100_000);
             var homeEcef = EcefCentimeters.FromVector(homePoint);

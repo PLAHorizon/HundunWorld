@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -274,6 +274,33 @@ public class PlanetRegionCaliberGateTests
         Assert.StartsWith("on(", on.Grain.CaliberGateStatus, StringComparison.Ordinal);
         Assert.Contains(ServerCaliber().TerrainVersion.ToString("x8"),
             on.Grain.CaliberGateStatus, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void 落位请求也把口径装在同样两条通路上()
+    {
+        // 落位是"进世界"那一步：它带的口径必须和迁移请求同一份编码、同样两条通路都登记，
+        // 否则客户端落位这条上行会在服务端解成"没握手"，而客户端只会看到"落位被拒"。
+        var property = typeof(PlanetRegionBindRequest).GetProperty("PlanetCaliber")!;
+        Assert.NotNull(property.GetCustomAttribute<MemoryPackOrderAttribute>());
+        Assert.NotNull(property.GetCustomAttribute<global::Orleans.IdAttribute>());
+
+        var request = new PlanetRegionBindRequest
+        {
+            CharacterId = 9,
+            GlobalXcm = 1, GlobalYcm = 2, GlobalZcm = 3,
+            Tick = 77,
+            PlanetCaliber = CaliberBytes(ServerCaliber()),
+        };
+        var back = MemoryPackSerializer.Deserialize<PlanetRegionBindRequest>(
+            MemoryPackSerializer.Serialize(request))!;
+        Assert.Equal(PlanetHandshake.Size, back.PlanetCaliber.Length);
+        Assert.True(PlanetHandshake.TryRead(back.PlanetCaliber, out var decoded, out _, out _));
+        Assert.True(PlanetHandshakePolicy.Evaluate(ServerCaliber(), decoded).Accepted);
+
+        // 空数组表示"没声明"：必须解不出来，不能与任何服务端口径"相等"
+        Assert.False(PlanetHandshake.TryRead(Array.Empty<byte>(), out _, out var status, out _));
+        Assert.Equal(PlanetHandshakeReject.WireRead, PlanetHandshakePolicy.EvaluateRead(status, false, ServerCaliber(), default).Field);
     }
 
     [Fact]

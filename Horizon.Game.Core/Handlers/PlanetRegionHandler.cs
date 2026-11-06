@@ -42,6 +42,7 @@ public class PlanetRegionHandler : MessageHandlerBase
 
     public override List<MessageType> MessageTypes { get; } = new List<MessageType>
     {
+        MessageType.PlanetRegionBind,
         MessageType.PlanetRegionTransfer,
         MessageType.PlanetRegionSnapshot,
     };
@@ -63,6 +64,8 @@ public class PlanetRegionHandler : MessageHandlerBase
         // 分成两个处理器会把会话绑定这条安全判据写两遍，而写两遍的那份迟早漏一个分支。
         if (message.Body is PlanetRegionSnapshotRequest snapshotRequest)
             return await RouteSnapshotAsync(message, snapshotRequest);
+        if (message.Body is PlanetRegionBindRequest bindRequest)
+            return await RouteBindAsync(message, bindRequest);
         if (message.Body is not PlanetRegionTransferRequest request)
         {
             Logger.LogWarning("星球上行包体类型不匹配，已拒绝：{Type}", message.Body?.GetType().Name ?? "null");
@@ -93,6 +96,57 @@ public class PlanetRegionHandler : MessageHandlerBase
             {
                 ErrorCode = 500,
                 Message = "区域迁移处理失败",
+                RelatedMessageId = message.Header.MessageId,
+            }));
+        }
+    }
+
+    /// <summary>
+    /// 落位那一支（进世界 / 重连）。<b>这条上行此前不存在</b>：客户端只会发迁移与快照，
+    /// 于是权威表里永远没有它这个实体，每次迁移都被 <c>UnknownEntity</c> 拒、客户端按
+    /// "重新落位"处置，而重新落位本身没有上行——屏幕上看到的就是"一直在重连"。
+    /// <para>会话绑定照旧先判：伪造角色号落位等于把别人的归属改走。</para>
+    /// </summary>
+    private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> RouteBindAsync(
+        HorizonMessagePacket message, PlanetRegionBindRequest request)
+    {
+        if (!IsSessionBound(request.CharacterId))
+        {
+            Logger.LogWarning("星球落位被拒（会话绑定）：角色号={CharacterId}", request.CharacterId);
+            return (false, CreateHorizonMessage(new PlanetRegionBindResult
+            {
+                Accepted = false,
+                Code = (int)PlanetRegionRejectCode.SessionMismatch,
+                Reason = "会话与角色号不匹配",
+            }));
+        }
+
+        try
+        {
+            var grain = _clusterClient.GetGrain<IPlanetRegionGrain>(DefaultPlanetId);
+            bool ok = await grain.BindAsync(request.CharacterId, request.GlobalXcm, request.GlobalYcm,
+                                            request.GlobalZcm, request.Tick,
+                                            request.PlanetCaliber ?? Array.Empty<byte>());
+            var result = new PlanetRegionBindResult
+            {
+                Accepted = ok,
+                // BindAsync 只回 bool：具体是口径/地面/时钟哪一条拒的，写在 grain 的日志里。
+                // 这里不回一个猜出来的码——凭 bool 编一个码，等于让客户端按错的理由重试。
+                Code = ok ? (int)PlanetRegionRejectCode.None : (int)PlanetRegionRejectCode.MalformedMessage,
+                Reason = ok ? "已落位" : "落位被拒（口径/地面/时钟，详见服务端日志）",
+                ServerTick = request.Tick,
+            };
+            if (!ok)
+                Logger.LogWarning("星球落位被拒：角色号={CharacterId} tick={Tick}", request.CharacterId, request.Tick);
+            return (ok, CreateHorizonMessage(result));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "星球落位处理失败。角色号={CharacterId}", request.CharacterId);
+            return (false, CreateHorizonMessage(new ErrorMessage
+            {
+                ErrorCode = 500,
+                Message = "星球落位处理失败",
                 RelatedMessageId = message.Header.MessageId,
             }));
         }

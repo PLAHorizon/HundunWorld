@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -64,7 +64,7 @@ public class PlanetReceiptMirrorTests
     /// </summary>
     private static readonly HashSet<string> KnownDiagnostics = new(StringComparer.Ordinal)
     {
-        "actor_pose_send", "cache", "cache_bytes_used", "crash_message", "crash_stack", "crash_type",
+        "actor_pose_send", "bind_request", "cache", "cache_bytes_used", "crash_message", "crash_stack", "crash_type",
         "crossing", "crossing_multi_tile", "crossings_total", "engine", "engine_residency", "final_window",
         "frames", "gravity", "height_field_error", "marker_parse_error", "plan_lag_frames", "policy",
         "prime", "pump", "pump_equation", "region", "settle_timeout", "settling", "swap_begin", "swap_repair",

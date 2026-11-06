@@ -274,6 +274,8 @@ namespace Horizon.Game.Message
     [MemoryPackUnion(257, typeof(Horizon.Game.Message.Network.PlanetRegionTransferResult))]
     [MemoryPackUnion(258, typeof(Horizon.Game.Message.Network.PlanetRegionSnapshotRequest))]
     [MemoryPackUnion(259, typeof(Horizon.Game.Message.Network.PlanetRegionSnapshotResponse))]
+    [MemoryPackUnion(260, typeof(Horizon.Game.Message.Network.PlanetRegionBindRequest))]
+    [MemoryPackUnion(261, typeof(Horizon.Game.Message.Network.PlanetRegionBindResult))]
     // </generated-union-block>
     public abstract partial class MessageUnion : INetworkMessage
     {
