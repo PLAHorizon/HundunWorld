@@ -3780,6 +3780,21 @@ v16 里落位用了挂钟毫秒（≈6.4e14）、迁移还是帧号（≈361）�
 要拍"山"得控制游戏相机（或把角色传送到山上），这属于相机/角色侧接线，不是地形没落地——
 高程是否真的进了引擎由 `worst_ray_err_cm` 回答（0.27 cm），那条不依赖画面。
 
+**往"常驻"走了一步（v19，代码与离线编译通过，引擎验证未完成）**：
+驱动新增 `RunWithoutMarker`（序列化字段）+ `OwnTerrainAt`，没有 marker 时也能跑：自建 Terrain、
+每帧读 `LocalPlayerActor` 相对地形的 `(x,z)` 当成星球局部坐标（世界放置约定：Flax +X=该帧的东、
++Z=南、+Y=上），换区判定抽成 `MaybeCross` 与合成走查**共用一段**（取样顺序只许有一份），
+常驻形态不写回执、不 settle/finish。`World.scene` 的驱动节点已配上
+`RunWithoutMarker=true / OwnTerrainAt=(0,2000,0) / LatDeg=30 / LonDeg=110`。
+
+**引擎验证没做成，原因不是代码**：`code_build_wait` 报失败（仍是被占的依赖 DLL 的 xcopy 挡住了热重载），
+于是重编后的 v19 没被 PIE 载入——试着重启编辑器时又出事了：**上一次的 CloseMainWindow 没把旧实例关掉，
+于是启动了第二个编辑器**，两个实例抢 21901，关掉旧的之后该端口变成 HTTP.sys 的僵尸监听（`PID 4`），
+**MCP 桥从此不再应答**（`sim_status` 一律 `did not complete`）。
+教训写在这里：**重启编辑器前必须确认 FlaxEditor 进程数已归零再启动**；两个实例不只是抢端口，
+记忆里还记着它会写坏 AssetsCache。下一步：单实例干净启动 → `code_build_status` 就绪 →
+`Python 探针`/`actor_set_property` 确认 `RunWithoutMarker` 真的绑上 → PIE 里看 `planet_world` 那几行日志。
+
 
 
 

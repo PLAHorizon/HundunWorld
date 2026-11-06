@@ -37,7 +37,7 @@ namespace HundunWorld.Game.Planet
     /// </summary>
     public class PlanetNearFieldDriver : Script
     {
-        private const string BuildTag = "near_field_driver_v18";
+        private const string BuildTag = "near_field_driver_v19";
         private const string MarkerName = "planet_near_field.on";
         private const string ResultName = "planet_near_field.result.txt";
 
@@ -71,6 +71,15 @@ namespace HundunWorld.Game.Planet
         public ulong TransferCharacterId = 0UL;
 
         /// <summary>
+        /// 没有 marker 时也跑——<b>世界场景里的常驻形态</b>。开着它，这个脚本就不再是自测夹具：
+        /// 它按序列化字段自建 Terrain、跟着本地玩家流送近景窗口，且不写回执文件。
+        /// </summary>
+        public bool RunWithoutMarker = false;
+
+        /// <summary>世界模式下 Terrain 相对本 Actor 的偏移（世界里已有产品地形时不要重叠）。</summary>
+        public Vector3 OwnTerrainAt = Vector3.Zero;
+
+        /// <summary>
         /// 换区上行取"角色在哪"的口径：<c>probe</c>（默认）= 只用角色的真实位置做一次<em>对照打印</em>，
         /// 取样仍走这条自测自己的合成走查；<c>flax</c> / <c>ecs</c> = 明说按哪一种轴序口径把角色位置喂给上行。
         /// <para>为什么默认不改行为：仓里"换 Y/Z"这件事已经有六处各写一遍，而星球这套局部帧
@@ -90,6 +99,7 @@ namespace HundunWorld.Game.Planet
         /// <summary>marker 写 <c>terrain_at=x,y,z</c> 时，<b>自己新建</b>一块 Terrain 并放到这个 Flax 世界坐标，
         /// 不去复用场景里已有的 Terrain——世界场景里那块是产品地形，自测不许改写它。</summary>
         private bool _hasTerrainAt;
+        private bool _worldMode;
         private Vector3 _terrainAt;
 
         // ---- 运行态 ----
@@ -129,10 +139,17 @@ namespace HundunWorld.Game.Planet
         public override void OnStart()
         {
             _markerPath = MarkerPath();
-            if (_markerPath == null) return;
+            if (_markerPath == null)
+            {
+                if (!RunWithoutMarker) return;          // 既没 marker 也没开常驻：完全惰性
+                _worldMode = true;
+                _hasTerrainAt = true;                   // 世界模式下自建地形，绝不 FindActor 抢产品地形
+                _terrainAt = Actor.Position + OwnTerrainAt;
+                UseRealDem = !string.IsNullOrEmpty(DemDir) && Directory.Exists(DemDir);
+            }
             try
             {
-                ParseMarker(_markerPath);
+                if (!_worldMode) ParseMarker(_markerPath);
                 Start();
             }
             catch (Exception e)
@@ -167,6 +184,7 @@ namespace HundunWorld.Game.Planet
             _frameSumMs += frameMs;
             _frameMaxMs = Math.Max(_frameMaxMs, frameMs);
 
+            if (_worldMode) return;          // 常驻形态没有"跑完了"这回事
             if (_frameNo >= MaxFrames && !_settling)
             {
                 _settling = true;
@@ -340,7 +358,8 @@ namespace HundunWorld.Game.Planet
         {
             _frameNo++;
 
-            if (StepFrames > 0 && _frameNo % StepFrames == 0) AdvancePlayer();
+            if (_worldMode) FollowPlayer();
+            else if (StepFrames > 0 && _frameNo % StepFrames == 0) AdvancePlayer();
 
             var plan = _streamer.BuildPlan(_localX, _localZ);
             if (plan.ReadyInWindow > _worstReadyInWindow) _worstReadyInWindow = plan.ReadyInWindow;
@@ -439,6 +458,24 @@ namespace HundunWorld.Game.Planet
             return _streamer.BuildPlan(_localX, _localZ).IsSatisfied;
         }
 
+        /// <summary>
+        /// 常驻形态的窗口跟随：读本地玩家相对这块地形的世界坐标，把它当成星球局部坐标
+        /// （世界放置约定：Flax 的 +X = 该帧的东、+Z = 南、+Y = 上），再走与走查同一段换区判定。
+        /// </summary>
+        private void FollowPlayer()
+        {
+            if (_swapPending) return;
+            var actor = HundunWorldGame.Instance?.LocalPlayerActor;
+            if (actor == null) return;
+            var anchor = _terrain != null ? _terrain.Position : Actor.Position;
+            var p = actor.Position - anchor;
+            if (!double.IsFinite(p.X) || !double.IsFinite(p.Z)) return;
+            _localX = p.X;
+            _localZ = p.Z;
+            MaybeRequestWatch(crossedRegionId: 0);
+            MaybeCross(_frame.GlobalFromLocalCm(new PlanetVector3(_localX, 0, _localZ)));
+        }
+
         private void AdvancePlayer()
         {
             if (_swapPending) return;      // 坐标系正在换手的这几帧里不许再推进玩家，否则会连着投第二次换区
@@ -452,7 +489,16 @@ namespace HundunWorld.Game.Planet
             if (_steps % Math.Max(1, StepsPerRegion) != 0) return;
 
             // 换区：先拿"这一步的全局点"，再按新区域重算局部坐标（否则切平面基变了，坐标会整体错位）
-            var globalCm = _frame.GlobalFromLocalCm(new PlanetVector3(_localX, 0, _localZ));
+            MaybeCross(_frame.GlobalFromLocalCm(new PlanetVector3(_localX, 0, _localZ)));
+        }
+
+        /// <summary>
+        /// 拿一个全局点判断要不要换区。<b>合成走查与"跟玩家"两条路共用这一段</b>：
+        /// 换基的取样顺序（反查真实区域 → 校验共边 → 按新帧重算局部坐标）只许有一份，
+        /// 两处各写一遍迟早有一处拿旧帧算局部坐标（§13.53 那类取样顺序病）。
+        /// </summary>
+        private void MaybeCross(PlanetVector3 globalCm)
+        {
             var dir = globalCm / (PlanetConstants.PlanetRadiusCm + 100_000.0);   // 归一到单位方向（高度只当校验用）
             // 局部 +X 是这一面的"东"，而 cube 面的 uv 轴向六个面各不相同：按固定 UPlus 取邻居
             // 会在某些面上走到玩家根本没去的那一块（v1 实测换区后局部坐标凭空多出一整个区域宽）。
@@ -825,10 +871,15 @@ namespace HundunWorld.Game.Planet
             return File.Exists(inAppData) ? inAppData : null;
         }
 
-        private void Say(string line) { _log.Add(line); }
+        private void Say(string line)
+        {
+            if (_worldMode) { FlaxEngine.Debug.Log("planet_world " + OneLine(line)); return; }
+            _log.Add(line);
+        }
 
         private void WriteReceipt()
         {
+            if (_worldMode) return;          // 常驻形态不写回执：那是自测的产物
             try
             {
                 string dir = Path.Combine(Globals.ProjectFolder, "Saved");

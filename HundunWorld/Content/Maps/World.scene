@@ -1035,7 +1035,7 @@
 			"ID": "bf02c12f0ef442faa66828814362e34a",
 			"TypeName": "HundunWorld.Game.Planet.PlanetNearFieldDriver",
 			"ParentID": "568bed9efe5746e9979ee84acfb5dd62",
-			"Name": "PlanetNearFieldDriver",
+			"Name": "PlanetNearFieldDriver", "RunWithoutMarker": true, "OwnTerrainAt": {"X": 0.0, "Y": 2000.0, "Z": 0.0}, "DemDir": "C:/Works/GitHubProjects/HundunWorld/Data/GEBCO_2026/derived", "LatDeg": 30.0, "LonDeg": 110.0,
 			"Enabled": true
 		}
 	]
