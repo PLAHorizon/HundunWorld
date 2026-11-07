@@ -184,8 +184,10 @@ public class PlanetActorPoseRulesTests
         // 反向：整份驱动里<em>只许</em>有一处直接构造 PlanetVector3，就是那个合成走查点。
         // 角色位姿的换轴必须在 PlanetActorPoseRules 那一处——第二份换轴的形状就是
         // "两档口径各写一遍，然后只有一档是对的"，而它的差别是角色站在地面上还是两公里下面。
+        // 判的是"有几种形状"，不是"出现几次"：v19 起合成走查与跟玩家走是同一段取样
+        // （`MaybeCross`），两处各构造一次同一个点，不代表出现了第二份换轴。
         var ctors = System.Text.RegularExpressions.Regex.Matches(code, @"new\s+PlanetVector3\([^)]*\)")
-                             .Cast<Match>().Select(m => m.Value.Replace("\r", "").Trim()).ToList();
+                             .Cast<Match>().Select(m => m.Value.Replace("\r", "").Trim()).Distinct().ToList();
         Assert.Equal(new[] { "new PlanetVector3(_localX, 0, _localZ)" }, ctors);
     }
 
