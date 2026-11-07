@@ -1,0 +1,113 @@
+name: minimal-ci
+
+# 最小 CI：把仓库里已有的三条判据搬到 GitHub Actions 上，消掉"本地全绿、干净检出编不过"
+# 这条风险（bdc2ac5 的动机，见 docs/P0执行任务_2026-11-07.md）。
+#
+# 为什么只跑这三条：
+#   · 它们是 scripts/verify-planet-clean-checkout.sh 的全部内容——那个脚本证明"仓库里的提交能
+#     自己站起来"，而 CI 的检出本身就是干净树，等价于那个场景，所以不再另造一套闸门。
+#   · scripts/verify-planet.sh 的第 0/4/5 段依赖本机 Flax 引擎目录与 Cache/*.response，
+#     第 6 段依赖不入库的 Data/GEBCO_2026，因此**不在 CI 里跑**；本地全量闸门保持人工执行。
+#   · 判据的最小通过条数与 scripts/verify-planet-clean-checkout.sh 一致（planet 300、网关星球 148），
+#     低于门槛即视为"判据没跑起来"，不是"跑绿了"。
+#
+# 说明：判据步骤用 bash（windows-latest 自带 Git Bash）实现，做法与仓库脚本的 stage() 相同：
+# 只认输出里的 "Passed!" 标记 + Passed 条数，不只看退出码——dotnet test 在 filter 一条都没匹配上时照样退 0。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: minimal-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  planet-gate:
+    name: 星球判据（Windows）
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    env:
+      DOTNET_CLI_UI_LANGUAGE: en
+      DOTNET_NOLOGO: '1'
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 记录 SDK 与仓库版本
+        run: |
+          dotnet --info
+          git log --oneline -1
+
+      - name: 缓存 NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\NuGet\Cache
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: 还原（集中包管理：Directory.Packages.props）
+        run: dotnet restore Horizon.Planet.Tests/Horizon.Planet.Tests.csproj
+
+      - name: 判据（planet 库 / 网关星球家族 / Silo 编译）
+        shell: bash
+        run: |
+          set -u
+
+          # 与 scripts/verify-planet.sh 的 stage() 同口径：
+          #   stage <名字> <成功标记> <最少通过条数(0=不查)> <命令...>
+          stage() {
+            local name="$1" needle="$2" min="$3"; shift 3
+            local out code got
+            out=$("$@" 2>&1); code=$?
+            printf '%s\n' "$out"
+            got=$(printf '%s' "$out" | sed -n 's/.*Passed:[[:space:]]*\([0-9]*\).*/\1/p' | tail -1)
+            [ -z "$got" ] && got=0
+            if [ "$code" -ne 0 ]; then
+              echo "::error title=$name::exit=$code（判据失败，见上方日志）"
+              return 1
+            fi
+            if [ -n "$needle" ] && ! printf '%s' "$out" | grep -q "$needle"; then
+              echo "::error title=$name::缺少成功标记 '$needle'"
+              return 1
+            fi
+            if [ "$min" -gt 0 ] && [ "$got" -lt "$min" ]; then
+              echo "::error title=$name::只过了 $got 条，少于门槛 $min（判据没跑起来）"
+              return 1
+            fi
+            echo "ok    $name（passed=$got）"
+          }
+
+          echo "=== 1 planet 库判据（全量，门槛 300）==="
+          stage "planet 库判据" "^Passed!" 300 \
+            dotnet test Horizon.Planet.Tests/Horizon.Planet.Tests.csproj \
+              -p:BaseOutputPath=bin/Verify/ -v:q --nologo || exit 1
+
+          echo "=== 2 网关星球家族（与主闸门同一 filter，门槛 148）==="
+          stage "网关星球判据" "^Passed!" 148 \
+            dotnet test Horizon.Game.Gateway.Tests/Horizon.Game.Gateway.Tests.csproj \
+              -p:BaseOutputPath=bin/Verify/ -v:q --nologo \
+              --filter "FullyQualifiedName~PlanetRegion|FullyQualifiedName~PlanetActorPose|FullyQualifiedName~PlanetReceipt|FullyQualifiedName~PlanetSurfaceMotion|FullyQualifiedName~UnionRegistrationParity|FullyQualifiedName~PlanetWire" || exit 1
+
+          echo "=== 3 Silo 编译（服务端装配面）==="
+          # 编译只认退出码，不依赖本地化输出里的 "Build succeeded"/"生成成功" 字样
+          stage "Silo 编译" "" 0 \
+            dotnet build Horizon.Orleans.Silo/Horizon.Orleans.Silo.csproj \
+              -p:BaseOutputPath=bin/Verify/ -v:q --nologo || exit 1
+
+          echo "verdict=PASS"
