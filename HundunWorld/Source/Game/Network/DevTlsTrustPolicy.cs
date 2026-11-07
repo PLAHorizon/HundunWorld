@@ -44,11 +44,11 @@ namespace HundunWorld.Game.Network
 
         /// <summary>
         /// 开发环境 WebApi 自签证书指纹（SHA-256，对证书原始数据计算），
-        /// 与 Horizon.Game.GengDi/Core/Security/server_cert.pem、Horizon.WebApi/cert.pfx
-        /// 为同一张证书（CN=192.168.1.78，有效期至 2031-04-20）。
+        /// 与 Horizon.Game.GengDi/Core/Security/server_cert.pem、Horizon.WebApi/cert-2026-11-07.pfx
+        /// 为同一张证书（CN=192.168.1.78，有效期至 2031-11-07）。
         /// 证书轮换后在游戏目录放置 Config/server_cert.pem 即可覆盖，无需重新编译。
         /// </summary>
-        private const string BuiltInPinnedThumbprint = "8DB4E22EEBFE0CE24409C9DA631AAA870EDD14CD8BD86BE6F59DC29CC52466A6";
+        private const string BuiltInPinnedThumbprint = "502991A3F465FE54D9E022B112866E9D40CDBE636C61B38D33476B78C21661C8";
 
         private static readonly Lazy<string> s_pinnedThumbprint = new Lazy<string>(LoadPinnedThumbprint, isThreadSafe: true);
         private static readonly HashSet<string> s_loggedOnce = new HashSet<string>(StringComparer.Ordinal);
